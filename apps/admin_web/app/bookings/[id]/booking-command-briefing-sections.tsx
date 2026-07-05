@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
-import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminMetricGrid } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
-import { formatDate, shortId } from './booking-formatters';
+import { formatDate } from './booking-formatters';
 
 type SummaryLinkCard = {
   href: string;
@@ -130,8 +130,6 @@ export type BookingCommandDecisionStripSectionProps = {
 
 export function BookingDetailToolbar({
   bookingId,
-  serviceLabel,
-  status,
   customerProfileId,
   finalPartnerId,
   chatRoomId,
@@ -139,69 +137,61 @@ export function BookingDetailToolbar({
   refundId,
 }: BookingDetailToolbarProps) {
   return (
-    <AdminPageTemplate
-      actions={
-        <>
-          <AdminFormControlLink className="button-secondary admin-inline-action" href="/bookings">
-            <ArrowLeft aria-hidden="true" size={14} />
-            Back to booking monitor
-          </AdminFormControlLink>
-        {customerProfileId && (
-          <AdminFormControlLink className="button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
-            <User aria-hidden="true" size={14} />
-            Open customer
-          </AdminFormControlLink>
-        )}
-        {customerProfileId && (
-          <AdminFormControlLink
-            className="button-secondary admin-inline-action"
-            href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}
-          >
-            <MessageSquareText aria-hidden="true" size={14} />
-            All customer chats
-          </AdminFormControlLink>
-        )}
-        {finalPartnerId && (
-          <AdminFormControlLink className="button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
-            <Users aria-hidden="true" size={14} />
-            Open Partner
-          </AdminFormControlLink>
-        )}
-        {finalPartnerId && (
-          <AdminFormControlLink
-            className="button-secondary admin-inline-action"
-            href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}
-          >
-            <MessageSquareText aria-hidden="true" size={14} />
-            All Partner chats
-          </AdminFormControlLink>
-        )}
-        {chatRoomId && (
-          <AdminFormControlLink
-            className="button-secondary admin-inline-action"
-            href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
-          >
-            <MessageSquareText aria-hidden="true" size={14} />
-            Open chat archive
-          </AdminFormControlLink>
-        )}
-        {paymentId && (
-          <Link className="text-link" href={`/payments#payment-${paymentId}`}>
-            Open payment
-          </Link>
-        )}
-        {refundId && (
-          <Link className="text-link" href={`/refunds#refund-${refundId}`}>
-            Open refund
-          </Link>
-        )}
-        </>
-      }
-      description={`${serviceLabel} - ${status}`}
-      title={`Booking ${shortId(bookingId)}`}
-    >
-      {null}
-    </AdminPageTemplate>
+    <>
+      <AdminFormControlLink className="button-secondary admin-inline-action" href="/bookings">
+        <ArrowLeft aria-hidden="true" size={14} />
+        Back to booking monitor
+      </AdminFormControlLink>
+      {customerProfileId && (
+        <AdminFormControlLink className="button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
+          <User aria-hidden="true" size={14} />
+          Open customer
+        </AdminFormControlLink>
+      )}
+      {customerProfileId && (
+        <AdminFormControlLink
+          className="button-secondary admin-inline-action"
+          href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}
+        >
+          <MessageSquareText aria-hidden="true" size={14} />
+          All customer chats
+        </AdminFormControlLink>
+      )}
+      {finalPartnerId && (
+        <AdminFormControlLink className="button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
+          <Users aria-hidden="true" size={14} />
+          Open Partner
+        </AdminFormControlLink>
+      )}
+      {finalPartnerId && (
+        <AdminFormControlLink
+          className="button-secondary admin-inline-action"
+          href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}
+        >
+          <MessageSquareText aria-hidden="true" size={14} />
+          All Partner chats
+        </AdminFormControlLink>
+      )}
+      {chatRoomId && (
+        <AdminFormControlLink
+          className="button-secondary admin-inline-action"
+          href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
+        >
+          <MessageSquareText aria-hidden="true" size={14} />
+          Open chat archive
+        </AdminFormControlLink>
+      )}
+      {paymentId && (
+        <Link className="text-link" href={`/payments#payment-${paymentId}`}>
+          Open payment
+        </Link>
+      )}
+      {refundId && (
+        <Link className="text-link" href={`/refunds#refund-${refundId}`}>
+          Open refund
+        </Link>
+      )}
+    </>
   );
 }
 

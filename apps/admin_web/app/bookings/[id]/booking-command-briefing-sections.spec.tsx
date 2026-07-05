@@ -84,7 +84,7 @@ describe('BookingCommandBriefingSections', () => {
     expect(source).not.toContain('<section className="grid admin-mb-16">');
   });
 
-  it('renders the booking detail header on the shared Vuexy page header surface', () => {
+  it('renders booking detail toolbar actions without owning the page shell', () => {
     const toolbar = BookingDetailToolbar({
       bookingId: 'booking-detail-1',
       serviceLabel: 'Massage',
@@ -96,10 +96,12 @@ describe('BookingCommandBriefingSections', () => {
       refundId: 'refund-1',
     });
     const markup = renderToStaticMarkup(toolbar);
+    const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
 
-    expect(markup).toContain('toolbar admin-page-header');
-    expect(markup).toContain('Booking booking-');
     expect(markup).toContain('Back to booking monitor');
+    expect(markup).toContain('Open customer');
+    expect(markup).not.toContain('toolbar admin-page-header');
+    expect(source).not.toContain('AdminPageTemplate');
   });
 
   it('renders booking command briefing cards with the shared Vuexy admin section surface', () => {

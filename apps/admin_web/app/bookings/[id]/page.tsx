@@ -141,6 +141,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
+import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
@@ -769,10 +770,13 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   ].filter((item): item is { label: string; tone: string } => Boolean(item));
 
   return (
-    <div className="booking-detail-page">
+    <AdminPageTemplate
+      actions={<BookingDetailToolbar {...toolbarProps} />}
+      contentClassName="booking-detail-page"
+      description={`${toolbarProps.serviceLabel} - ${toolbarProps.status}`}
+      title={`Booking ${shortId(booking.id)}`}
+    >
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
-
-      <BookingDetailToolbar {...toolbarProps} />
 
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
 
@@ -890,7 +894,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           )}
         </BookingDetailDisclosureGroup>
       )}
-    </div>
+    </AdminPageTemplate>
   );
 }
 
