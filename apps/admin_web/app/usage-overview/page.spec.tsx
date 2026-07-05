@@ -66,6 +66,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('formatDateTime,');
+    expect(pageSource).not.toContain('function formatDateTime(value: string)');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');

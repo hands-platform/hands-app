@@ -33,6 +33,7 @@ import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   formatCurrencyAmount as money,
+  formatDateTime,
   formatPercentLabel,
   formatWholeNumber as formatNumber,
 } from '../../lib/admin-format';
@@ -1003,19 +1004,6 @@ function buildUsageFunnelSteps(overview: AdminUsageOverview) {
       widthPercent: Math.max(step.value > 0 ? 6 : 0, Math.round((step.value / maxValue) * 100)),
     };
   });
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return 'Unknown';
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 function paymentMethodLabel(value: string) {
