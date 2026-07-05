@@ -1303,7 +1303,7 @@ a {
 .calendar-sidebar-section {
   display: grid;
   gap: 12px;
-  padding: 16px;
+  padding: 24px;
 }
 
 .calendar-sidebar-section + .calendar-sidebar-section {
@@ -1354,7 +1354,7 @@ a {
 
 .calendar-sidebar-section:has(.calendar-mini-picker) {
   justify-content: center;
-  padding-inline: 0;
+  padding: 0;
 }
 
 .calendar-datepicker-field .react-datepicker-wrapper,
