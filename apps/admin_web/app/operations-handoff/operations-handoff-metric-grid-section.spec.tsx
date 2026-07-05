@@ -49,7 +49,7 @@ describe('OperationsHandoffMetricGridSection', () => {
     const rendered = textContent(section);
     const hrefs = hrefsIn(section);
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminMetricGrid');
     expect(rendered).toContain('Active bookings');
     expect(rendered).toContain('Cash fee debt');
     expect(rendered).toContain('125.000 VND');
@@ -114,6 +114,8 @@ describe('OperationsHandoffMetricGridSection', () => {
   });
 
   it('uses the shared money atom for cash debt helper amounts', () => {
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).not.toContain('<section className="grid admin-mt-16 admin-mb-16"');
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across Partner wallet gates`}');
