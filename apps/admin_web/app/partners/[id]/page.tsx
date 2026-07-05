@@ -1102,7 +1102,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   : null
               }
               lastLocationLabel={
-                provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
+                provider.currentLocationUpdatedAt ? (
+                  <DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />
+                ) : null
               }
               snapshots={partnerLocationSnapshotBadges}
             />

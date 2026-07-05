@@ -85,6 +85,17 @@ describe('partner detail profile and location sections', () => {
     );
   });
 
+  it('keeps the profile location timestamp on the shared DateTimeText atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-profile-finance-summary-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('readonly lastLocationLabel?: ReactNode;');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />');
+    expect(pageSource).not.toContain(
+      'lastLocationLabel={\\n                provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null\\n              }',
+    );
+  });
+
   it('renders accepted agreements as table rows', () => {
     const section = PartnerDetailAgreementsCard({
       agreements: [

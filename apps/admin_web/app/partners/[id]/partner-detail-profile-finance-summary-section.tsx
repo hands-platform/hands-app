@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -52,7 +54,7 @@ type PartnerDetailRecentPayoutRecordsCardProps = {
 
 type PartnerDetailLocationActivityCardProps = {
   readonly coordinatesLabel?: string | null;
-  readonly lastLocationLabel?: string | null;
+  readonly lastLocationLabel?: ReactNode;
   readonly snapshots: readonly PartnerLocationSnapshotBadge[];
 };
 
@@ -210,7 +212,7 @@ export function PartnerDetailLocationActivityCard({
               <strong>Last location</strong>
             </td>
             <td>
-              <ProfileValue value={lastLocationLabel} />
+              {lastLocationLabel ?? <AdminInlineFallback>Missing</AdminInlineFallback>}
             </td>
           </tr>
           <tr>
