@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Landmark, ReceiptText, ShieldCheck, UsersRound, WalletCards } from 'lucide-react';
 
 import type {
@@ -9,6 +8,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeLink } from '../../../components/status-badge';
 import { FinanceDataTable } from '../finance-data-table';
@@ -179,9 +179,9 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
             {tableRows.map((row) => (
               <tr key={`${row.providerProfileId}-${row.period}`}>
                 <td>
-                  <Link className="text-link" href={`/partners/${row.providerProfileId}?section=full`}>
+                  <AdminTextLink href={`/partners/${row.providerProfileId}?section=full`}>
                     {row.partnerName}
-                  </Link>
+                  </AdminTextLink>
                   <div className="muted">{row.partnerPhone ?? '-'}</div>
                 </td>
                 <td>{row.period}</td>

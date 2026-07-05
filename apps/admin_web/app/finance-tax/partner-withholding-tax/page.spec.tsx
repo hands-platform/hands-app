@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('PartnerWithholdingTaxPage', () => {
   beforeEach(() => {
@@ -39,6 +42,13 @@ describe('PartnerWithholdingTaxPage', () => {
     expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('class="form-input"');
+  });
+
+  it('uses the shared Vuexy text link atom for partner profile links', () => {
+    expect(source).toContain("import { AdminTextLink } from '../../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
   });
 
   it('shows monthly remittance status from the tax closing summary', async () => {
