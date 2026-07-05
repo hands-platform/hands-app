@@ -1092,7 +1092,13 @@ function buildCustomerBookingOperationMetrics(
 
   return [
     {
-      helper: latestActivityAt ? `Latest update ${formatDate(latestActivityAt)}` : 'No booking activity loaded.',
+      helper: latestActivityAt ? (
+        <>
+          Latest update <DateTimeText value={latestActivityAt} />
+        </>
+      ) : (
+        'No booking activity loaded.'
+      ),
       label: 'Total bookings',
       tone: 'pill-info',
       value: String(bookings.length),
@@ -1178,7 +1184,11 @@ function buildCustomerBookingOperationRows(
 
     return {
       addressLabel: compactText(customerBookingAddressListLabel(booking), 84),
-      bookingHelper: `${booking.status} / State ${formatDate(stateAt)}`,
+      bookingHelper: (
+        <>
+          {booking.status} / State <DateTimeText value={stateAt} />
+        </>
+      ),
       bookingHref: `/bookings/${booking.id}`,
       bookingLabel: shortId(booking.id),
       id: booking.id,
@@ -1188,11 +1198,11 @@ function buildCustomerBookingOperationRows(
       partnerLabel: partnerId ? bookingPartnerDisplayName(booking) : 'No Partner selected',
       paymentDetailLabel: customerBookingPaymentDetailLabel(booking),
       paymentTypeLabel: customerBookingPaymentTypeLabel(booking),
-      requestTimeLabel: formatDate(bookingRequestOpenedAt(booking)),
+      requestTimeLabel: <DateTimeText value={bookingRequestOpenedAt(booking)} />,
       serviceLabel: bookingServiceLabel(booking),
       servicePriceAmount: bookingTotal(booking),
       servicePriceCurrency: 'VND',
-      stateDetail: formatDate(stateAt),
+      stateDetail: <DateTimeText value={stateAt} />,
       stateLabel: customerBookingStateLabel(booking),
       stateTone: bookingStatusPillClass(booking.status),
     };
@@ -1659,7 +1669,13 @@ function buildCustomerAccountFacts({
     {
       label: 'CS / admin notes',
       value: notes.length.toString(),
-      helper: notes[0]?.createdAt ? `Latest ${formatDate(notes[0].createdAt)}` : 'No support note saved',
+      helper: notes[0]?.createdAt ? (
+        <>
+          Latest <DateTimeText value={notes[0].createdAt} />
+        </>
+      ) : (
+        'No support note saved'
+      ),
     },
     {
       label: 'Notifications',
@@ -1890,16 +1906,25 @@ function buildCustomerUsageSummary({
     helper: 'Built from stored sessions, service addresses, and Partner links. No live GPS polling.',
     items: [
       {
-        helper: latestSession
-          ? `Latest ${formatDate(latestSession.lastSeenAt)} / ${latestSession.platform ?? 'Unknown platform'}`
-          : 'No app session loaded.',
+        helper: latestSession ? (
+          <>
+            Latest <DateTimeText value={latestSession.lastSeenAt} /> /{' '}
+            {latestSession.platform ?? 'Unknown platform'}
+          </>
+        ) : (
+          'No app session loaded.'
+        ),
         label: 'App sessions',
         value: String(appSessions.length),
       },
       {
-        helper: primaryRegion
-          ? `${primaryRegion.count} booking row(s) / latest ${formatDate(primaryRegion.latestAt)}`
-          : 'Stored booking address snapshots will populate this.',
+        helper: primaryRegion ? (
+          <>
+            {primaryRegion.count} booking row(s) / latest <DateTimeText value={primaryRegion.latestAt} />
+          </>
+        ) : (
+          'Stored booking address snapshots will populate this.'
+        ),
         label: 'Primary booking region',
         value: primaryRegion?.label ?? 'No booking region',
       },
@@ -1917,7 +1942,11 @@ function buildCustomerUsageSummary({
     regionRows:
       bookingRegions.length > 0
         ? bookingRegions.slice(0, 3).map((region) => ({
-            helper: `Latest ${formatDate(region.latestAt)}`,
+            helper: (
+              <>
+                Latest <DateTimeText value={region.latestAt} />
+              </>
+            ),
             label: region.label,
             value: `${region.count}`,
           }))

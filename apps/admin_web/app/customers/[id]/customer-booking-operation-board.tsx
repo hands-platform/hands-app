@@ -11,7 +11,7 @@ import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/s
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerBookingOperationMetric = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly label: string;
   readonly tone: string;
   readonly value: string;
@@ -19,7 +19,7 @@ export type CustomerBookingOperationMetric = {
 
 export type CustomerBookingOperationRow = {
   readonly addressLabel: string;
-  readonly bookingHelper: string;
+  readonly bookingHelper: ReactNode;
   readonly bookingHref: string;
   readonly bookingLabel: string;
   readonly id: string;
@@ -29,11 +29,11 @@ export type CustomerBookingOperationRow = {
   readonly partnerLabel: string;
   readonly paymentDetailLabel: ReactNode;
   readonly paymentTypeLabel: string;
-  readonly requestTimeLabel: string;
+  readonly requestTimeLabel: ReactNode;
   readonly serviceLabel: string;
   readonly servicePriceAmount: number;
   readonly servicePriceCurrency: string;
-  readonly stateDetail: string;
+  readonly stateDetail: ReactNode;
   readonly stateLabel: string;
   readonly stateTone: string;
 };

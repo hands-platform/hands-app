@@ -35,13 +35,13 @@ export type CustomerDetailPartnerRail = {
 };
 
 export type CustomerDetailUsageSummaryItem = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly label: string;
   readonly value: string;
 };
 
 export type CustomerDetailUsageSummary = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly items: readonly CustomerDetailUsageSummaryItem[];
   readonly regionRows: readonly CustomerDetailUsageSummaryItem[];
   readonly title: string;

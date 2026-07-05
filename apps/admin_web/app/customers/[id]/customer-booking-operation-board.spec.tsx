@@ -66,6 +66,20 @@ describe('CustomerBookingOperationBoard', () => {
     expect(pageSource).not.toContain('return `${booking.payment.status} / ${formatMoney(');
   });
 
+  it('accepts shared date atoms for visible operation board timestamps', () => {
+    expect(boardSource).toContain('readonly helper: ReactNode;');
+    expect(boardSource).toContain('readonly bookingHelper: ReactNode;');
+    expect(boardSource).toContain('readonly requestTimeLabel: ReactNode;');
+    expect(boardSource).toContain('readonly stateDetail: ReactNode;');
+    expect(pageSource).toContain('<DateTimeText value={latestActivityAt} />');
+    expect(pageSource).toContain('<DateTimeText value={bookingRequestOpenedAt(booking)} />');
+    expect(pageSource).toContain('<DateTimeText value={stateAt} />');
+    expect(pageSource).not.toContain('helper: latestActivityAt ? `Latest update ${formatDate(latestActivityAt)}`');
+    expect(pageSource).not.toContain('bookingHelper: `${booking.status} / State ${formatDate(stateAt)}`');
+    expect(pageSource).not.toContain('requestTimeLabel: formatDate(bookingRequestOpenedAt(booking))');
+    expect(pageSource).not.toContain('stateDetail: formatDate(stateAt)');
+  });
+
   it('uses the shared table pagination footer for customer booking operation groups', () => {
     expect(boardSource).toContain('AdminTablePanel');
     expect(boardSource).not.toContain(

@@ -20,6 +20,19 @@ describe('CustomerDetailOverviewShell', () => {
     expect(source).not.toContain('<p className="customer-detail-partner-empty">{rail.emptyMessage}</p>');
   });
 
+  it('accepts shared date atoms for usage summary helper copy', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-overview-shell.tsx', 'utf8');
+    const pageSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('readonly helper: ReactNode;');
+    expect(pageSource).toContain('<DateTimeText value={latestSession.lastSeenAt} />');
+    expect(pageSource).toContain('<DateTimeText value={primaryRegion.latestAt} />');
+    expect(pageSource).toContain('<DateTimeText value={region.latestAt} />');
+    expect(pageSource).not.toContain('`Latest ${formatDate(latestSession.lastSeenAt)} /');
+    expect(pageSource).not.toContain('latest ${formatDate(primaryRegion.latestAt)}');
+    expect(pageSource).not.toContain('helper: `Latest ${formatDate(region.latestAt)}`');
+  });
+
   it('renders a focused one-card customer overview', () => {
     const section = CustomerDetailOverviewShell({
       avatarStatus: 'online',
