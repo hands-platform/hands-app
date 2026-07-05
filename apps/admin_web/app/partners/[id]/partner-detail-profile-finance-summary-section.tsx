@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { StatusBadge } from '../../../components/status-badge';
@@ -12,6 +13,7 @@ import {
 const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
 
 export type PartnerDetailInfoLine = {
+  readonly dateValue?: string | null;
   readonly label: string;
   readonly value?: string | null;
 };
@@ -29,6 +31,7 @@ export type PartnerRecentPayoutRecordLine = {
 export type PartnerLocationSnapshotBadge = {
   readonly id: string;
   readonly label: string;
+  readonly recordedAt?: string | null;
 };
 
 type PartnerDetailBasicProfileCardProps = {
@@ -74,7 +77,7 @@ export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasic
                 <strong>{row.label}</strong>
               </td>
               <td>
-                <ProfileValue value={row.value} />
+                <ProfileValue dateValue={row.dateValue} value={row.value} />
               </td>
             </tr>
           ))}
@@ -226,7 +229,11 @@ export function PartnerDetailLocationActivityCard({
                 <div className="participant-list">
                   {snapshots.map((snapshot) => (
                     <StatusBadge key={snapshot.id} tone="neutral">
-                      {snapshot.label}
+                      {snapshot.recordedAt ? (
+                        <DateTimeText fallback={snapshot.label} value={snapshot.recordedAt} />
+                      ) : (
+                        snapshot.label
+                      )}
                     </StatusBadge>
                   ))}
                 </div>
@@ -254,7 +261,17 @@ const locationTableHeaders = ['Signal', 'Evidence'] as const;
 const agreementTableHeaders = ['Agreement', 'Status'] as const;
 const payoutRecordTableHeaders = ['Record', 'Evidence'] as const;
 
-function ProfileValue({ value }: { readonly value?: string | null }) {
+function ProfileValue({
+  dateValue,
+  value,
+}: {
+  readonly dateValue?: string | null;
+  readonly value?: string | null;
+}) {
+  if (dateValue) {
+    return <DateTimeText fallback="Missing" value={dateValue} />;
+  }
+
   return <span>{value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}</span>;
 }
 

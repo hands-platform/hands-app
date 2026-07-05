@@ -6,7 +6,6 @@ import type {
 } from './partner-detail-profile-finance-summary-section';
 import {
   formatCurrency,
-  formatDate,
   formatDateOnly,
   formatJsonList,
   formatJsonSummary,
@@ -80,7 +79,7 @@ export function buildPartnerBasicProfileRows(
     { label: 'Service city', value: provider.city },
     { label: 'Service area', value: formatJsonSummary(provider.serviceArea) },
     { label: 'Feedback records', value: `${provider.reviewCount ?? 0} record(s) saved` },
-    { label: 'Next available', value: formatDate(provider.nextAvailableAt) },
+    { dateValue: provider.nextAvailableAt, label: 'Next available' },
     { label: 'User name', value: provider.user?.fullName },
     { label: 'Supabase user', value: provider.user?.supabaseUserId },
   ];
@@ -113,6 +112,7 @@ export function buildPartnerLocationSnapshotBadges(
 ): PartnerLocationSnapshotBadge[] {
   return (provider.locationSnapshots ?? []).slice(0, 5).map((snapshot) => ({
     id: snapshot.id,
-    label: formatDate(snapshot.recordedAt),
+    label: 'Recorded location snapshot',
+    recordedAt: snapshot.recordedAt,
   }));
 }

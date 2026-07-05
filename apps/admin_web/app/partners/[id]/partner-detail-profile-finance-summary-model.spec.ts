@@ -39,8 +39,10 @@ describe('partner detail profile finance summary model', () => {
         { label: 'Experience', value: '4 year(s)' },
         { label: 'Phone', value: '+84000000001' },
         { label: 'Feedback records', value: '7 record(s) saved' },
+        { dateValue: '2026-06-13T03:15:00.000Z', label: 'Next available' },
       ]),
     );
+    expect(rows.find((row) => row.label === 'Next available')?.value).toBeUndefined();
   });
 
   it('maps accepted agreements and recent payout records', () => {
@@ -88,5 +90,16 @@ describe('partner detail profile finance summary model', () => {
         status: 'APPROVED',
       }),
     ).toHaveLength(5);
+    expect(
+      buildPartnerLocationSnapshotBadges({
+        displayName: 'Linh Tran',
+        id: 'provider-1',
+        locationSnapshots: snapshots,
+        status: 'APPROVED',
+      })[0],
+    ).toMatchObject({
+      id: 'snapshot-0',
+      recordedAt: '2026-06-10T00:00:00.000Z',
+    });
   });
 });

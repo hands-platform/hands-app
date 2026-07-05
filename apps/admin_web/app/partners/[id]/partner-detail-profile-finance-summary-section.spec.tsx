@@ -15,6 +15,7 @@ describe('partner detail profile and location sections', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('<strong>No profile evidence found</strong>');
     expect(source).not.toContain('<span className="pill pill-success">ACCEPTED</span>');
     expect(source).not.toContain('<span className="pill pill-neutral" key={snapshot.id}>');
@@ -26,15 +27,17 @@ describe('partner detail profile and location sections', () => {
       rows: [
         { label: 'Display name', value: 'Linh Wellness' },
         { label: 'Phone', value: '+84900000000' },
+        { dateValue: '2026-06-13T03:15:00.000Z', label: 'Next available' },
       ],
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Basic profile');
-    expect(rendered).toContain('2 field(s)');
+    expect(rendered).toContain('3 field(s)');
     expect(rendered).toContain('Display name');
     expect(rendered).toContain('Linh Wellness');
+    expect(rendered).toContain('13 Jun 2026, 10:15');
     expect(rendered).toContain('Operator note');
     expect(rendered).toContain('Partner prefers evening bookings.');
     expect(classNamesIn(section)).toEqual(
@@ -53,8 +56,8 @@ describe('partner detail profile and location sections', () => {
       coordinatesLabel: '21.02776, 105.83416',
       lastLocationLabel: '20 Jun 2026, 10:30',
       snapshots: [
-        { id: 'loc-1', label: '20 Jun 2026, 10:30' },
-        { id: 'loc-2', label: '20 Jun 2026, 09:15' },
+        { id: 'loc-1', label: '20 Jun 2026, 10:30', recordedAt: '2026-06-20T03:30:00.000Z' },
+        { id: 'loc-2', label: '20 Jun 2026, 09:15', recordedAt: '2026-06-20T02:15:00.000Z' },
       ],
     });
 
@@ -65,6 +68,8 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Last location');
     expect(rendered).toContain('Location evidence');
     expect(rendered).toContain('Recent snapshots');
+    expect(rendered).toContain('20 Jun 2026, 10:30');
+    expect(rendered).toContain('20 Jun 2026, 09:15');
     expect(rendered).toContain('Partner location saved for dispatch checks.');
     expect(rendered).not.toContain('21.02776, 105.83416');
     expect(classNamesIn(section)).toEqual(
