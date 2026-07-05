@@ -57,6 +57,26 @@ describe('PayoutStatusLanesSection', () => {
     expect(textContent(section)).toContain('No paid payout batch.');
   });
 
+  it('uses the shared Vuexy empty state atom for empty payout lanes', () => {
+    const section = PayoutStatusLanesSection({
+      batchCount: 0,
+      lanes: [
+        {
+          batches: [],
+          emptyText: 'No blocked payout batch.',
+          pillClass: 'pill-warn',
+          title: 'Needs review',
+        },
+      ],
+    });
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
+
+    expect(classNamesIn(section)).toContain('admin-mt-8');
+    expect(textContent(section)).toContain('No blocked payout batch.');
+    expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('<p className="muted">{lane.emptyText}</p>');
+  });
+
   it('does not duplicate the base pill class for lane count badges', () => {
     const section = PayoutStatusLanesSection({
       batchCount: 0,

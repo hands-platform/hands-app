@@ -1,4 +1,5 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
@@ -64,7 +65,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
                 ))}
               </div>
             ) : (
-              <p className="muted">{lane.emptyText}</p>
+              <AdminEmptyState className="admin-mt-8" message={lane.emptyText} title={null} />
             )}
           </div>
         ))}
