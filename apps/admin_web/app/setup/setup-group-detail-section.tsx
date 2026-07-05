@@ -1,5 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
 
@@ -44,7 +44,7 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
             key={group.id}
             title={group.title}
           >
-            <div className="detail-grid admin-mt-12">
+            <AdminDetailGrid className="admin-mt-12">
               <div>
                 <h3>Environment values</h3>
                 <div className="participant-list">
@@ -66,10 +66,10 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                   <strong>Exit criteria:</strong> {group.exitCriteria}
                 </p>
               </div>
-            </div>
+            </AdminDetailGrid>
             <div className="setup-command-block">
               <h3>Readiness focus</h3>
-              <div className="detail-grid admin-mt-12">
+              <AdminDetailGrid className="admin-mt-12">
                 <div>
                   <h4>Attention values</h4>
                   <p className="muted">
@@ -94,7 +94,7 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                   <p className="muted">Run this first, then continue through the grouped command list.</p>
                   <CommandCopyRow command={nextCommand} />
                 </div>
-              </div>
+              </AdminDetailGrid>
             </div>
             <div className="setup-command-block">
               <h3>Verification commands</h3>
