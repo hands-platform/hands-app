@@ -16,7 +16,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
-import { StatusBadge } from '../../components/status-badge';
+import { StatusBadge, type StatusBadgeTone, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
 
@@ -135,7 +135,7 @@ function CouponManagementCard({
           <div className="coupon-code-line">
             <strong>{row.code}</strong>
             <span className="coupon-window-title">{row.windowLabel}</span>
-            <span className={row.statusClassName}>{row.statusLabel}</span>
+            <StatusBadge tone={couponStatusBadgeTone(row.statusClassName)}>{row.statusLabel}</StatusBadge>
           </div>
         </div>
         <div className="coupon-discount-summary">
@@ -200,6 +200,14 @@ function CouponManagementCard({
       </AdminDisclosure>
     </AdminCard>
   );
+}
+
+function couponStatusBadgeTone(className: string): StatusBadgeTone {
+  if (className.includes('ok') || className.includes('success')) {
+    return 'success';
+  }
+
+  return statusBadgeToneFromPillClass(className);
 }
 
 function CouponUsageBookingTable({
