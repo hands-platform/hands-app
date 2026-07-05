@@ -431,7 +431,7 @@ function ReferralAttributionRewardCell({
     summary.closed.amount;
 
   if (rewardCount === 0) {
-    return <span className="muted">No reward yet</span>;
+    return <AdminInlineFallback>No reward yet</AdminInlineFallback>;
   }
 
   return (
@@ -524,7 +524,7 @@ function ReferralRewardActions({
   const canCredit = reward.status === 'AVAILABLE';
   const canReverse = reward.status === 'PENDING' || reward.status === 'AVAILABLE' || reward.status === 'HELD';
   if (!canHold && !canCredit && !canReverse && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
-    return <span className="muted">No action</span>;
+    return <AdminInlineFallback>No action</AdminInlineFallback>;
   }
 
   const actions = referralRewardActionItems({
