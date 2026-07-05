@@ -6821,8 +6821,7 @@ a.action-button-card:hover {
   z-index: 6;
 }
 
-.vietnam-map-display-toggle span,
-.vietnam-map-display-toggle button {
+.vietnam-map-display-toggle .booking-date-filter-button {
   align-items: center;
   background: transparent;
   border: 0;
@@ -6841,12 +6840,12 @@ a.action-button-card:hover {
     color 150ms ease;
 }
 
-.vietnam-map-display-toggle button {
+.vietnam-map-display-toggle .booking-date-filter-button {
   cursor: pointer;
 }
 
-.vietnam-map-display-toggle button:hover,
-.vietnam-map-display-toggle button:focus-visible,
+.vietnam-map-display-toggle .booking-date-filter-button:hover,
+.vietnam-map-display-toggle .booking-date-filter-button:focus-visible,
 .vietnam-map-display-toggle .is-active {
   background: rgb(var(--admin-primary-channel) / 0.12);
   color: var(--admin-accent-strong);

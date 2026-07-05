@@ -28,6 +28,16 @@ describe('Vietnam overview map tooltip CSS', () => {
     expect(zoomButtonBlock).toContain('padding: 0');
     expect(zoomButtonBlock).toContain('width: 30px');
   });
+
+  it('keeps the map display toggle on shared Vuexy segmented control items', () => {
+    const displayItemIndex = globalsCss.indexOf('.vietnam-map-display-toggle .booking-date-filter-button {');
+    const displayItemBlock = cssRuleBlockAt(displayItemIndex);
+
+    expect(displayItemIndex).toBeGreaterThan(-1);
+    expect(displayItemBlock).toContain('min-width: 72px');
+    expect(displayItemBlock).toContain('border-radius: 999px');
+    expect(globalsCss).not.toContain('.vietnam-map-display-toggle span,\n.vietnam-map-display-toggle button');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

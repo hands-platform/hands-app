@@ -9,6 +9,7 @@ import {
   type VietnamOverviewMetricDotKey,
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
@@ -49,7 +50,7 @@ export function VietnamOverviewMapClusters({
         <>
           <MapDensityToggle
             isDensityVisible={isDensityVisible}
-            onToggle={() => setIsDensityVisible((current) => !current)}
+            onSelect={setIsDensityVisible}
           />
           {selectedCluster ? (
             <ClusterDetailPanel
@@ -77,23 +78,37 @@ export function VietnamOverviewMapClusters({
 
 function MapDensityToggle({
   isDensityVisible,
-  onToggle,
+  onSelect,
 }: {
   readonly isDensityVisible: boolean;
-  readonly onToggle: () => void;
+  readonly onSelect: (isDensityVisible: boolean) => void;
 }) {
   return (
-    <div className="vietnam-map-display-toggle" aria-label="Vietnam map display mode">
-      <span className={!isDensityVisible ? 'is-active' : ''}>Signals</span>
-      <button
-        aria-pressed={isDensityVisible}
-        className={isDensityVisible ? 'is-active' : ''}
-        onClick={onToggle}
-        type="button"
-      >
-        Density
-      </button>
-    </div>
+    <AdminSegmentedControl
+      activeValue={isDensityVisible ? 'density' : 'signals'}
+      ariaLabel="Vietnam map display mode"
+      className="vietnam-map-display-toggle"
+      options={[
+        {
+          href: '#vietnam-map-signals',
+          label: 'Signals',
+          onClick: (event) => {
+            event.preventDefault();
+            onSelect(false);
+          },
+          value: 'signals',
+        },
+        {
+          href: '#vietnam-map-density',
+          label: 'Density',
+          onClick: (event) => {
+            event.preventDefault();
+            onSelect(true);
+          },
+          value: 'density',
+        },
+      ]}
+    />
   );
 }
 
