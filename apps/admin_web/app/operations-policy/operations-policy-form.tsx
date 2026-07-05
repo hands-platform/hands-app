@@ -9,10 +9,10 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard, AdminLinkCard, AdminNotePanel } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
-import { formatDateTime } from '../../lib/admin-format';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
 import { policyImpactDetails } from './policy-impact-details';
@@ -180,7 +180,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       </AdminFormControlButton>
       {setting.updatedAt ? (
         <p className="muted admin-mt-10">
-          Last changed {formatDate(setting.updatedAt)} by{' '}
+          Last changed <DateTimeText value={setting.updatedAt} /> by{' '}
           {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
         </p>
       ) : (
@@ -188,8 +188,4 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
       )}
     </AdminFormCard>
   );
-}
-
-function formatDate(value: string) {
-  return formatDateTime(value);
 }

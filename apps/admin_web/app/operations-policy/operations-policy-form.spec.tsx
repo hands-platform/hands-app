@@ -24,6 +24,12 @@ describe('OperationsPolicyForm', () => {
     expect(sectionSource).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared DateTimeText atom for policy update timestamps', () => {
+    expect(sectionSource).toContain('DateTimeText');
+    expect(sectionSource).not.toContain("import { formatDateTime } from '../../lib/admin-format';");
+    expect(sectionSource).not.toContain('return formatDateTime(value);');
+  });
+
   it('renders policy status, related booking guidance, and save checks', () => {
     const setting = {
       category: 'Matching',
