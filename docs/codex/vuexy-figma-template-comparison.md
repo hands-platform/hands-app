@@ -56,6 +56,7 @@ API contracts, auth/session behavior, or route ownership.
 | `src/components/layout/vertical/VerticalMenu.tsx` | Vertical menu implementation | Yes | Reference behavior/density; do not replace HANDS shell wholesale | Medium |
 | `src/@menu/styles/vertical/*` | Vertical menu styling | Yes | Map rhythm/active state into existing sidebar CSS | Low |
 | `src/@core/components/mui/TextField.tsx` | Vuexy input/select baseline | Yes | Reflect sizing/state tokens in `admin-form-controls` and `globals.css` | Low |
+| `src/views/pages/auth/LoginV2.tsx` | Split authentication page with left illustration and right form panel | Yes | Keep Admin login free of sidebar/topbar and avoid text overlapping the illustration | Low |
 | `src/@core/components/mui/IconButton.tsx` | Icon button styling | Yes | Apply to topbar/table row/icon-only actions | Low |
 | `src/@core/components/mui/Chip.tsx` | Chip/status visual model | Yes | Align pills/status chips through shared tone helpers | Low |
 | `src/@core/components/mui/Avatar.tsx` | Avatar visual model | Yes | Keep person cells/status indicators consistent | Low |

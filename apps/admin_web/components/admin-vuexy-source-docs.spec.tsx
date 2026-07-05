@@ -22,6 +22,7 @@ const vuexyTemplatePath =
   'C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/nextjs-version/typescript-version/full-version';
 const vuexyTemplateAnchors = [
   'src/@core/components/mui/TextField.tsx',
+  'src/views/pages/auth/LoginV2.tsx',
   'src/views/apps/calendar/SidebarLeft.tsx',
   'src/views/apps/calendar/AddEventSidebar.tsx',
   'src/views/apps/calendar/Calendar.tsx',

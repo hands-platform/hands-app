@@ -107,6 +107,7 @@ Useful template paths:
 - `src/data/navigation/verticalMenuData.tsx`
 - `src/components/layout/vertical/VerticalMenu.tsx`
 - `src/@core/components/mui/TextField.tsx`
+- `src/views/pages/auth/LoginV2.tsx`
 - `src/views/react-table/BasicDataTables.tsx`
 - `src/views/react-table/KitchenSink.tsx`
 - `src/views/apps/user/list`
@@ -515,6 +516,12 @@ Calendar:
 
 - Follow Vuexy calendar drawer and sidebar behavior.
 - Keep event actions focused and compact.
+
+Login:
+
+- Follow Vuexy `LoginV2` split-auth structure: no sidebar, no navbar, no
+  marketing copy over the illustration, and form controls aligned to the shared
+  TextField atom.
 
 Vietnam overview:
 
