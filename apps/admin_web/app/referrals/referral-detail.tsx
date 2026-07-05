@@ -7,6 +7,7 @@ import { AdminFormControlButton, AdminFormInput } from '../../components/admin-f
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
@@ -198,8 +199,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
 
       <ReferralRewardDecisionTimeline referrals={props.row.referrals} summary={reviewSummary} />
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         resultLabel={`${props.row.referrals.length} attribution(s)`}
         resultTone="info"
         title="Referral attributions"
@@ -241,10 +241,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             })}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         resultLabel={`${rewardRows.length} reward(s)`}
         resultTone="info"
         title="Reward ledger"
@@ -300,7 +299,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </AdminTablePanel>
     </AdminPageTemplate>
   );
 }

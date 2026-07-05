@@ -15,9 +15,9 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
   AdminReferralAudience,
@@ -176,10 +176,10 @@ export function ReferralCashoutQueuePage({
         </div>
       </AdminFilterPanel>
 
-      <AdminSection
+      <AdminTableSection
         actions={<StatusBadge tone="neutral">{rows.length} shown</StatusBadge>}
         bodyClassName="booking-monitor"
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        className="booking-monitor-filter-panel admin-mt-16"
         description="Open only the parent detail when deeper attribution evidence is needed."
         title="Referral cashout queue"
       >
@@ -204,7 +204,7 @@ export function ReferralCashoutQueuePage({
             totalPages={totalPages}
             totalRows={summary.totalCount}
           />
-      </AdminSection>
+      </AdminTableSection>
     </AdminPageTemplate>
   );
 }

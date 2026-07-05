@@ -23,6 +23,7 @@ import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -619,8 +620,7 @@ function CustomerReferralParentTable({
   readonly rows: readonly AdminCustomerReferralParent[];
 }) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Parent customer accounts only. The full customer directory stays in Customer Management."
       resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"
@@ -680,7 +680,7 @@ function CustomerReferralParentTable({
         </AdminDataTable>
       </AdminTableScroll>
       <ReferralParentPagination audience={audience} filters={filters} pagination={pagination} />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 
@@ -700,8 +700,7 @@ function PartnerReferralParentTable({
   readonly rows: readonly AdminPartnerReferralParent[];
 }) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Parent Partner accounts only. The full Partner directory stays in Partners."
       resultLabel={`${filteredCount} parent account(s)`}
       resultTone="info"
@@ -761,7 +760,7 @@ function PartnerReferralParentTable({
         </AdminDataTable>
       </AdminTableScroll>
       <ReferralParentPagination audience={audience} filters={filters} pagination={pagination} />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

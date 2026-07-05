@@ -232,6 +232,13 @@ describe('ReferralDashboard', () => {
     expect(dashboardSource).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy table panel wrapper for referral parent lists', () => {
+    expect(dashboardSource).toContain('AdminTablePanel');
+    expect(dashboardSource).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
+  });
+
   it('does not render NaN when referral totals come from an older API shape', () => {
     const [legacyRow] = rows.map((row) => ({
       ...row,

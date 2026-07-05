@@ -118,6 +118,13 @@ describe('Referral cashout queue', () => {
     );
   });
 
+  it('uses the shared Vuexy table section wrapper for the cashout queue', () => {
+    expect(cashoutQueueSource).toContain('AdminTableSection');
+    expect(cashoutQueueSource).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
+  });
+
   it('uses the shared money atom for cashout exposure and row amounts', () => {
     expect(cashoutQueueSource).toContain('MoneyText');
     expect(cashoutQueueSource).not.toContain("value: formatMoney(summary.totalAmount, 'VND', '0 VND')");
@@ -149,7 +156,7 @@ describe('Referral cashout queue', () => {
 
     expect(markup).toContain('Referral Cashouts');
     expect(markup).toContain(
-      'card admin-section booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+      'card admin-section vuexy-booking-table-card vuexy-booking-table-group booking-monitor-filter-panel admin-mt-16',
     );
     expect(markup).not.toContain('admin-filter-panel-eyebrow">Queue');
     expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Apply filters');

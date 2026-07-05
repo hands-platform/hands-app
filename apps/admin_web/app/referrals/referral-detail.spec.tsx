@@ -295,6 +295,13 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy table panel wrapper for attribution and reward tables', () => {
+    expect(detailSource).toContain('AdminTablePanel');
+    expect(detailSource).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
+  });
+
   it('renders a wallet credit action only for available uncredited reward candidates', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
