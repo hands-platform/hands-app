@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
@@ -17,6 +18,7 @@ export type PartnerDetailFastOverviewCard = {
 export type PartnerDetailFastOverviewInfoLine = {
   readonly label: string;
   readonly value?: string | null;
+  readonly valueNode?: ReactNode;
 };
 
 export type PartnerDetailFastOverviewLink = {
@@ -111,16 +113,18 @@ function OverviewDetailCard({
   return (
     <AdminSection className="partner-fast-overview-panel" title={title}>
       {rows.map((row) => (
-        <InfoLine key={row.label} label={row.label} value={row.value} />
+        <InfoLine key={row.label} label={row.label} value={row.value} valueNode={row.valueNode} />
       ))}
     </AdminSection>
   );
 }
 
-function InfoLine({ label, value }: PartnerDetailFastOverviewInfoLine) {
+function InfoLine({ label, value, valueNode }: PartnerDetailFastOverviewInfoLine) {
+  const displayValue = value && value.trim() ? marketplaceDisplayText(value) : 'Missing';
+
   return (
     <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
+      <strong>{label}:</strong> {valueNode ?? displayValue}
     </p>
   );
 }

@@ -13,6 +13,7 @@ import { adminGet, providerDocumentLabel, providerDocumentReviewHint } from '../
 import { ActionMenu } from '../../../components/action-menu';
 import type { ActionMenuItem } from '../../../components/action-menu';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
+import { DateTimeText } from '../../../components/date-time-text';
 import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
@@ -1431,8 +1432,8 @@ function PartnerDetailFastOverview({
     { label: 'Legal name', value: provider.legalName },
     { label: 'Phone', value: provider.user?.phone },
     { label: 'City', value: provider.city },
-    { label: 'Joined', value: provider.user?.createdAt ? formatDate(provider.user.createdAt) : null },
-    { label: 'Last access', value: latestAccessAt ? formatDate(latestAccessAt) : null },
+    { label: 'Joined', valueNode: <DateTimeText fallback="Missing" value={provider.user?.createdAt} /> },
+    { label: 'Last access', valueNode: <DateTimeText fallback="Missing" value={latestAccessAt} /> },
   ];
   const bookingCommandRows: PartnerDetailFastOverviewInfoLine[] = [
     {
