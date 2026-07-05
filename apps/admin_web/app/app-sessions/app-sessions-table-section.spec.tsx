@@ -28,7 +28,7 @@ describe('AppSessionsTableSection', () => {
     expect(rendered).toContain('ios');
     expect(rendered).toContain('1.0.2');
     expect(rendered).toContain('Updated just now');
-    expect(rendered).toContain('2026-06-09 10:00');
+    expect(rendered).toContain('9 Jun 2026, 10:00');
     expect(rendered).toContain('device-123');
     expect(rendered).toContain('127.0.0.1');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
@@ -51,6 +51,14 @@ describe('AppSessionsTableSection', () => {
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>');
+  });
+
+  it('uses the shared DateTimeText atom for last-seen timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-table-section.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly lastSeenAtLabel: string;');
+    expect(source).not.toContain('<div className="muted">{row.lastSeenAtLabel}</div>');
   });
 });
 
@@ -80,7 +88,7 @@ function buildRow(): AppSessionTableRow {
     deviceIdLabel: 'device-123',
     id: 'session-1',
     ipAddressLabel: '127.0.0.1',
-    lastSeenAtLabel: '2026-06-09 10:00',
+    lastSeenAt: '2026-06-09T03:00:00.000Z',
     partnerHref: '/partners/partner-1',
     platformLabel: 'ios',
     relativeLastSeenLabel: 'Updated just now',

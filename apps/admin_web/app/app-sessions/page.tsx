@@ -6,7 +6,7 @@ import { StatusBadge } from '../../components/status-badge';
 import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
-import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
+import { formatRelativeTime } from '../../lib/admin-format';
 import {
   AppSessionsBreakdownSection,
   type AppSessionPlatformRow,
@@ -145,7 +145,7 @@ function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSess
       deviceIdLabel: shortDeviceId(session.deviceId),
       id: session.id,
       ipAddressLabel: session.ipAddress ?? 'no ip',
-      lastSeenAtLabel: formatDateTime(session.lastSeenAt),
+      lastSeenAt: session.lastSeenAt,
       partnerHref: partnerId ? `/partners/${partnerId}` : null,
       platformLabel: session.platform ?? 'unknown',
       relativeLastSeenLabel: formatRelativeTime(session.lastSeenAt),

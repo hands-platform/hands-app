@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { DateTimeText } from '../../components/date-time-text';
 import { RoleBadge } from '../../components/role-badge';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -10,7 +11,7 @@ export type AppSessionTableRow = {
   readonly deviceIdLabel: string;
   readonly id: string;
   readonly ipAddressLabel: string;
-  readonly lastSeenAtLabel: string;
+  readonly lastSeenAt: string | null;
   readonly partnerHref: string | null;
   readonly platformLabel: string;
   readonly relativeLastSeenLabel: string;
@@ -71,7 +72,9 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
               <td>{row.appVersionLabel}</td>
               <td>
                 {row.relativeLastSeenLabel}
-                <div className="muted">{row.lastSeenAtLabel}</div>
+                <div className="muted">
+                  <DateTimeText value={row.lastSeenAt} />
+                </div>
               </td>
               <td>
                 <code>{row.deviceIdLabel}</code>
