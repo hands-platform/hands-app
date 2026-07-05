@@ -436,7 +436,7 @@ function buildPaymentDetailCallbackTimelineRows(
       attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
         ? money(attempt.callbackAmount, currency)
         : 'unknown',
-    createdAtLabel: formatDate(attempt.createdAt),
+    createdAt: attempt.createdAt ?? null,
     errorCodeLabel: attempt.errorCode ?? 'No error',
     errorMessage: attempt.errorMessage ?? 'Callback did not record a processing error.',
     id: attempt.id,

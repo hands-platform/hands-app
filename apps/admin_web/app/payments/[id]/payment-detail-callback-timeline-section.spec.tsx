@@ -12,13 +12,23 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     expect(source).not.toContain('PillClassBadge');
   });
 
+  it('uses the shared date time atom for received callback timestamps', () => {
+    const source = readFileSync('app/payments/[id]/payment-detail-callback-timeline-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/payments/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('<td>{row.createdAtLabel}</td>');
+    expect(pageSource).not.toContain('createdAtLabel: formatDate(attempt.createdAt)');
+  });
+
   it('renders callback rows with gateway and payload evidence', () => {
     const section = PaymentDetailCallbackTimelineSection({
       reviewCount: 1,
       rows: [
         {
           amountLabel: '1.000.000 VND',
-          createdAtLabel: '2026-06-09 10:00',
+          createdAt: '2026-06-09T03:00:00.000Z',
           errorCodeLabel: 'SIG_MISMATCH',
           errorMessage: 'Signature did not match.',
           id: 'attempt-1',
@@ -61,7 +71,7 @@ describe('PaymentDetailCallbackTimelineSection', () => {
       rows: [
         {
           amountLabel: '1.000.000 VND',
-          createdAtLabel: '2026-06-09 10:00',
+          createdAt: '2026-06-09T03:00:00.000Z',
           errorCodeLabel: 'SIG_MISMATCH',
           errorMessage: 'Signature did not match.',
           id: 'attempt-1',

@@ -2,11 +2,12 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 export type PaymentDetailCallbackTimelineRow = {
   readonly amountLabel: string;
-  readonly createdAtLabel: string;
+  readonly createdAt: string | null;
   readonly errorCodeLabel: string;
   readonly errorMessage: string;
   readonly id: string;
@@ -41,7 +42,9 @@ export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: Paym
       >
         {rows.map((row) => (
           <tr id={`callback-attempt-${row.id}`} key={row.id}>
-            <td>{row.createdAtLabel}</td>
+            <td>
+              <DateTimeText fallback="-" value={row.createdAt} />
+            </td>
             <td>
               <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>
               <div className="muted">Signature: {row.signatureLabel}</div>
