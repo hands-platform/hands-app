@@ -4,6 +4,7 @@ import { Minus, Plus, RotateCcw } from 'lucide-react';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { useRef, useState } from 'react';
 
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { vietnamOverviewMapZoomLevels } from './vietnam-overview-model';
 
 type VietnamOverviewMapZoomProps = {
@@ -103,38 +104,38 @@ export function VietnamOverviewMapZoom({ children, overlay }: VietnamOverviewMap
       </div>
       {overlay}
       <div className="vietnam-map-zoom-controls" aria-label="Map zoom controls">
-        <button
-          type="button"
-          className="vietnam-map-zoom-button"
+        <AdminFormControlButton
           aria-label="Zoom out"
+          className="button-secondary vietnam-map-zoom-button"
           disabled={!canZoomOut}
           onClick={() => setZoomIndex((current) => Math.max(0, current - 1))}
+          type="button"
         >
           <Minus size={16} aria-hidden="true" />
-        </button>
+        </AdminFormControlButton>
         <span className="vietnam-map-zoom-value" aria-live="polite">
           {zoomLevel.label}
         </span>
-        <button
-          type="button"
-          className="vietnam-map-zoom-button"
+        <AdminFormControlButton
           aria-label="Zoom in"
+          className="button-secondary vietnam-map-zoom-button"
           disabled={!canZoomIn}
           onClick={() =>
             setZoomIndex((current) => Math.min(vietnamOverviewMapZoomLevels.length - 1, current + 1))
           }
+          type="button"
         >
           <Plus size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="vietnam-map-zoom-button"
+        </AdminFormControlButton>
+        <AdminFormControlButton
           aria-label="Reset map zoom"
+          className="button-secondary vietnam-map-zoom-button"
           disabled={zoomIndex === 0 && !hasMoved}
           onClick={resetMap}
+          type="button"
         >
           <RotateCcw size={15} aria-hidden="true" />
-        </button>
+        </AdminFormControlButton>
       </div>
     </div>
   );

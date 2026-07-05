@@ -17,6 +17,17 @@ describe('Vietnam overview map tooltip CSS', () => {
     expect(tooltipBlock).not.toContain('font-weight: 700');
     expect(tooltipBlock).not.toContain('padding: 10px 12px');
   });
+
+  it('keeps shared map zoom button atoms on the compact Vuexy icon-button footprint', () => {
+    const zoomButtonIndex = globalsCss.indexOf('.admin-form-control-button.vietnam-map-zoom-button {');
+    const zoomButtonBlock = cssRuleBlockAt(zoomButtonIndex);
+
+    expect(zoomButtonIndex).toBeGreaterThan(-1);
+    expect(zoomButtonBlock).toContain('height: 30px');
+    expect(zoomButtonBlock).toContain('min-height: 30px');
+    expect(zoomButtonBlock).toContain('padding: 0');
+    expect(zoomButtonBlock).toContain('width: 30px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
