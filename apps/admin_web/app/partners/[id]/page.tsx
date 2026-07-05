@@ -964,7 +964,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
           emptyDetail="Use a wider date range to show older booking rows."
           emptyTitle="No partner booking journey matched this filter"
-          formatLatestAt={formatDate}
           id="partner-booking-journey"
           rows={partnerBookingJourneyRows}
           title="Partner booking journey"

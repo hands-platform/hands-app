@@ -9,8 +9,10 @@ const sectionSource = readFileSync(new URL('./partner-detail-booking-journey-sec
 describe('PartnerDetailBookingJourneySection', () => {
   it('uses the shared Vuexy badge atom for journey steps', () => {
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<span className={`pill ${step.tone}`}');
+    expect(sectionSource).not.toContain('formatLatestAt');
   });
 
   it('renders booking journey rows with booking, step, and related links', () => {
@@ -18,7 +20,6 @@ describe('PartnerDetailBookingJourneySection', () => {
       description: 'Booking-by-booking factual journey.',
       emptyDetail: 'Use a wider date range.',
       emptyTitle: 'No partner booking journey matched this filter',
-      formatLatestAt: (value) => `formatted ${value}`,
       id: 'partner-booking-journey',
       rows: buildRows(),
       title: 'Partner booking journey',
@@ -39,7 +40,7 @@ describe('PartnerDetailBookingJourneySection', () => {
     expect(rendered).toContain('BK-1001 / Deep tissue');
     expect(rendered).toContain('First-pick : Customer selected');
     expect(rendered).toContain('Money : earning READY');
-    expect(rendered).toContain('formatted 2026-06-09T02:00:00.000Z');
+    expect(rendered).toContain('9 Jun 2026, 09:00');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -60,7 +61,6 @@ describe('PartnerDetailBookingJourneySection', () => {
       description: 'Booking-by-booking factual journey.',
       emptyDetail: 'Use a wider date range.',
       emptyTitle: 'No partner booking journey matched this filter',
-      formatLatestAt: (value) => value,
       id: 'partner-booking-journey',
       rows: [],
       title: 'Partner booking journey',
