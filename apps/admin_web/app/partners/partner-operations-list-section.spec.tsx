@@ -17,6 +17,7 @@ describe('PartnerOperationsListSection', () => {
 
     expect(source).toContain('AdminSignal');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`signal ${partnerOperationSignalClass(row.acceptanceTone)}`}>');
     expect(source).not.toContain('<span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>');
@@ -25,6 +26,8 @@ describe('PartnerOperationsListSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{row.provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');
     expect(source).not.toContain('<span className={`pill ${row.provider.blockedAt ? \'pill-danger\' : \'pill-success\'}`}>');
     expect(source).not.toContain('<span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>');
+    expect(source).not.toContain("row.lastWorkAt ? formatDate(row.lastWorkAt) : 'none'");
+    expect(source).not.toContain("row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'");
   });
 
   it('uses the shared Vuexy table panel wrapper instead of hand-composed table card classes', () => {
@@ -68,6 +71,8 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).toContain('Preferred');
     expect(rendered).toContain('active');
     expect(rendered).toContain('4 completed');
+    expect(rendered).toContain('Last work: 30 May 2026, 07:00');
+    expect(rendered).toContain('Last app activity: 1 Jun 2026, 07:00');
     expect(rendered).toContain('First revenue: yes');
     expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));

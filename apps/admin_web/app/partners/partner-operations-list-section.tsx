@@ -2,6 +2,7 @@ import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../..
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import {
   AdminSignal,
   StatusBadge,
@@ -10,7 +11,7 @@ import {
 } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
-import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
+import { providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import { partnerOperationPillClass, type PartnerOperationRow } from './partner-operation-row';
 
 export type PartnerOperationsListSectionRow = PartnerOperationRow;
@@ -115,7 +116,9 @@ export function PartnerOperationsListSection({
               </td>
               <td>
                 <strong>{row.completedWorkCount} completed</strong>
-                <p className="muted">Last work: {row.lastWorkAt ? formatDate(row.lastWorkAt) : 'none'}</p>
+                <p className="muted">
+                  Last work: <DateTimeText fallback="none" value={row.lastWorkAt} />
+                </p>
                 <p className="muted">
                   First revenue: {providerHasFirstRevenueSignal(row.provider) ? 'yes' : 'no'}
                 </p>
@@ -137,7 +140,7 @@ export function PartnerOperationsListSection({
                 <strong>{providerLocationLabel(row.locationState)}</strong>
                 <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
                 <p className="muted">
-                  Last app activity: {row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'}
+                  Last app activity: <DateTimeText fallback="not recorded" value={row.lastActivityAt} />
                 </p>
                 <strong>{row.nextAction.status}</strong>
                 <p className="muted">{row.nextAction.detail}</p>
