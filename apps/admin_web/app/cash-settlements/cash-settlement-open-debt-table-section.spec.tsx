@@ -15,6 +15,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).toContain('FinanceDataTable');
     expect(source).toContain('ActionMenu');
     expect(source).toContain('AdminNotePanel');

@@ -11,8 +11,8 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminNotePanel } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
@@ -73,8 +73,7 @@ export function CashSettlementOpenDebtTableSection({
   const rows = pagination.rows;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Settle only after confirming a Partner deposit or a documented admin offset. The backend rejects missing references."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'warning' : 'success'}
@@ -277,6 +276,6 @@ export function CashSettlementOpenDebtTableSection({
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
