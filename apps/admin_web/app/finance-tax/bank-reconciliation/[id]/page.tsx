@@ -18,6 +18,7 @@ import {
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
+  AdminFormShell,
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
@@ -509,7 +510,7 @@ function ReconciliationMatchActionCell({
   }
 
   return (
-    <form action={reverseBankReconciliationMatchAction} className="finance-reconciliation-reverse-form">
+    <AdminFormShell action={reverseBankReconciliationMatchAction} className="finance-reconciliation-reverse-form">
       <input name="bankTransactionId" type="hidden" value={transactionId} />
       <input name="matchId" type="hidden" value={match.id} />
       <input
@@ -530,7 +531,7 @@ function ReconciliationMatchActionCell({
         </AdminFormControlButton>
         <span className="muted">Requires approver ID before reversal.</span>
       </div>
-    </form>
+    </AdminFormShell>
   );
 }
 
