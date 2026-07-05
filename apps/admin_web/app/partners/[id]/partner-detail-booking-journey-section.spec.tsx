@@ -10,9 +10,17 @@ describe('PartnerDetailBookingJourneySection', () => {
   it('uses the shared Vuexy badge atom for journey steps', () => {
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('DateTimeText');
+    expect(sectionSource).toContain('readonly value: ReactNode;');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<span className={`pill ${step.tone}`}');
     expect(sectionSource).not.toContain('formatLatestAt');
+  });
+
+  it('keeps response timestamps on the shared DateTimeText atom from the detail page', () => {
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(pageSource).toContain('{participant.status} <DateTimeText fallback="Missing" value={participant.respondedAt} />');
+    expect(pageSource).not.toContain('`${participant.status} ${formatDate(participant.respondedAt)}`');
   });
 
   it('renders booking journey rows with booking, step, and related links', () => {

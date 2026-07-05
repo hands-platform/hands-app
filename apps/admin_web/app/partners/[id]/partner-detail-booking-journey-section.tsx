@@ -26,7 +26,7 @@ export type PartnerBookingJourneyRow = {
   readonly steps: readonly {
     readonly label: string;
     readonly tone: string;
-    readonly value: string;
+    readonly value: ReactNode;
   }[];
 };
 

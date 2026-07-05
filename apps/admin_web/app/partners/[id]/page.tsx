@@ -2017,11 +2017,15 @@ function buildPartnerBookingJourneyRows(
         },
         {
           label: 'Response',
-          value: participant?.respondedAt
-            ? `${participant.status} ${formatDate(participant.respondedAt)}`
-            : participant?.joinedAt
-              ? `${participant.status} participation`
-              : 'No response row',
+          value: participant?.respondedAt ? (
+            <>
+              {participant.status} <DateTimeText fallback="Missing" value={participant.respondedAt} />
+            </>
+          ) : participant?.joinedAt ? (
+            `${participant.status} participation`
+          ) : (
+            'No response row'
+          ),
           tone: participant?.respondedAt
             ? 'pill-success'
             : participant?.joinedAt
