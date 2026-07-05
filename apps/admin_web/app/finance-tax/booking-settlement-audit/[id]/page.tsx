@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { shortId } from '../../../../lib/admin-format';
@@ -88,9 +88,9 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem
             label="Booking"
             value={
-              <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
+              <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
                 {shortId(snapshot.bookingId)}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem label="Booking status" value={snapshot.booking?.status ?? '-'} />
@@ -99,9 +99,9 @@ export default async function BookingSettlementAuditDetailPage({
             label="Payment"
             value={
               snapshot.paymentId ? (
-                <Link className="text-link" href={`/payments/${snapshot.paymentId}`}>
+                <AdminTextLink href={`/payments/${snapshot.paymentId}`}>
                   {shortId(snapshot.paymentId)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -114,10 +114,10 @@ export default async function BookingSettlementAuditDetailPage({
           <FinanceDetailInfoItem
             label="Partner"
             value={
-              <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
+              <AdminTextLink href={`/partners/${snapshot.providerProfileId}?section=full`}>
                 {snapshot.providerProfile?.displayName ??
                   financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem label="Monthly period" value={snapshot.monthlyPeriod} />
@@ -285,9 +285,9 @@ function SettlementJournalEvidence({ snapshot }: { readonly snapshot: AdminBooki
       value={
         journal ? (
           <>
-            <Link className="text-link" href={generalLedgerDetailHref(journal.id)}>
+            <AdminTextLink href={generalLedgerDetailHref(journal.id)}>
               {status}
-            </Link>
+            </AdminTextLink>
             <span className="muted admin-block">
               Debit <MoneyText amount={journal.totalDebit} currency={snapshot.currency} /> · Credit{' '}
               <MoneyText amount={journal.totalCredit} currency={snapshot.currency} />
@@ -312,9 +312,9 @@ function PaymentClearingEvidence({ snapshot }: { readonly snapshot: AdminBooking
       value={
         clearing ? (
           <>
-            <Link className="text-link" href={paymentClearingDetailHref(clearing.id)}>
+            <AdminTextLink href={paymentClearingDetailHref(clearing.id)}>
               {status}
-            </Link>
+            </AdminTextLink>
             <span className="muted admin-block">
               {clearing.type} · <MoneyText amount={clearing.amount} currency={clearing.currency} />
             </span>
@@ -342,9 +342,9 @@ function SettlementReversalEvidence({ snapshot }: { readonly snapshot: AdminBook
       label="Refund after payout reversal"
       value={
         <>
-          <Link className="text-link" href={bookingSettlementReversalDetailHref(reversal.id)}>
+          <AdminTextLink href={bookingSettlementReversalDetailHref(reversal.id)}>
             {reversal.reason ?? 'Settlement reversal'}
-          </Link>
+          </AdminTextLink>
           <span className="muted admin-block">
             Journal {journal?.status ?? 'missing'} · Clearing {clearing?.status ?? 'missing'}
           </span>

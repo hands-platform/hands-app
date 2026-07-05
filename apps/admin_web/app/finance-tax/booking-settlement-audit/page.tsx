@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, ReceiptText, ShieldCheck } from 'lucide-react';
 
 import type {
@@ -10,6 +9,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -199,13 +199,13 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             {tableRows.map((snapshot) => (
               <tr key={snapshot.id}>
                   <td>
-                    <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
+                    <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
                       {shortId(snapshot.bookingId)}
-                    </Link>
+                    </AdminTextLink>
                     <div>
-                      <Link className="text-link" href={bookingSettlementAuditDetailHref(snapshot.id)}>
+                      <AdminTextLink href={bookingSettlementAuditDetailHref(snapshot.id)}>
                         Snapshot {shortId(snapshot.id)}
-                      </Link>
+                      </AdminTextLink>
                     </div>
                     <div className="muted">
                       <DateTimeText value={snapshot.postedAt} />
@@ -221,10 +221,10 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     )}
                   </td>
                   <td>
-                    <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
+                    <AdminTextLink href={`/partners/${snapshot.providerProfileId}?section=full`}>
                       {snapshot.providerProfile?.displayName ??
                         financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
-                    </Link>
+                    </AdminTextLink>
                     {snapshot.providerProfile?.user?.phone ? (
                       <div className="muted">{snapshot.providerProfile.user.phone}</div>
                     ) : (
@@ -242,9 +242,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     </div>
                   </td>
                   <td>
-                    <Link className="text-link" href={bookingSettlementAuditDetailHref(snapshot.id)}>
+                    <AdminTextLink href={bookingSettlementAuditDetailHref(snapshot.id)}>
                       View coupon snapshot
-                    </Link>
+                    </AdminTextLink>
                     <div className="muted">Discount, expense, and funding source are loaded on detail.</div>
                   </td>
                   <td>
