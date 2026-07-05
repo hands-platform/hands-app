@@ -5,6 +5,7 @@ import { PartnerDetailOperatorNotesSection } from './partner-detail-operator-not
 describe('PartnerDetailOperatorNotesSection', () => {
   it('uses the shared Vuexy badge atom for note count', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-notes-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminSectionHeader');
@@ -12,6 +13,10 @@ describe('PartnerDetailOperatorNotesSection', () => {
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<div className="card ops-note-panel admin-mb-16"');
     expect(source).not.toContain('<span className="pill pill-info">{totalCount} note(s)</span>');
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdLabel: string;');
+    expect(source).not.toContain('<strong>{note.createdLabel}</strong>');
+    expect(pageSource).not.toContain('createdLabel: formatDate(log.createdAt)');
   });
 
   it('renders partner operation notes and the note form', () => {
@@ -19,7 +24,7 @@ describe('PartnerDetailOperatorNotesSection', () => {
       notes: [
         {
           actorTargetLabel: 'Admin Hoa',
-          createdLabel: '20 Jun 2026, 10:00',
+          createdAt: '2026-06-20T10:00:00.000Z',
           id: 'note-1',
           note: 'Partner location refresh requested.',
         },

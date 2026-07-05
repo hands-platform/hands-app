@@ -9,6 +9,7 @@ import {
 import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { addProviderOpsNote } from '../actions';
 
@@ -33,7 +34,7 @@ const PARTNER_NOTE_PRESET_OPTIONS = [
 
 export type PartnerOperatorNoteRow = {
   readonly actorTargetLabel: string;
-  readonly createdLabel: string;
+  readonly createdAt?: string | null;
   readonly id: string;
   readonly note: string;
 };
@@ -60,7 +61,9 @@ export function PartnerDetailOperatorNotesSection({
         {notes.length ? (
           notes.map((note) => (
             <div className="ops-note-entry" key={note.id}>
-              <strong>{note.createdLabel}</strong>
+              <strong>
+                <DateTimeText fallback="Missing" value={note.createdAt} />
+              </strong>
               <p>{note.note}</p>
               <small className="muted">{note.actorTargetLabel}</small>
             </div>

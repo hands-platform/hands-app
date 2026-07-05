@@ -4219,7 +4219,7 @@ function buildPartnerOperatorNoteRows(logs: AdminAuditLog[]): PartnerOperatorNot
     actorTargetLabel: `${marketplaceDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System')} / ${marketplaceDisplayText(
       log.target,
     )}`,
-    createdLabel: formatDate(log.createdAt),
+    createdAt: log.createdAt,
     id: log.id,
     note: auditLogNoteText(log),
   }));
