@@ -27,6 +27,15 @@ describe('PartnerOperationsListSection', () => {
     expect(source).not.toContain('<span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>');
   });
 
+  it('uses the shared Vuexy table panel wrapper instead of hand-composed table card classes', () => {
+    const source = readFileSync('app/partners/partner-operations-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16',
+    );
+  });
+
   it('renders operations rows with approval, booking access, wallet, and app check facts', () => {
     const section = PartnerOperationsListSection({
       directReadyCount: 1,

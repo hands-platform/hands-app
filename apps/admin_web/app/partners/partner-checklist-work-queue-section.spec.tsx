@@ -23,6 +23,15 @@ describe('PartnerChecklistWorkQueueSection', () => {
     expect(source).not.toContain('<span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>');
   });
 
+  it('uses the shared Vuexy table panel wrapper instead of hand-composed table card classes', () => {
+    const source = readFileSync('app/partners/partner-checklist-work-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16',
+    );
+  });
+
   it('renders partner checklist queue counters, row facts, and detail links', () => {
     const section = PartnerChecklistWorkQueueSection({
       partnerName: (provider) => provider.displayName,

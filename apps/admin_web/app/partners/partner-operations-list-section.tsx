@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import {
   AdminSignal,
   StatusBadge,
@@ -40,8 +40,8 @@ export function PartnerOperationsListSection({
   totalPartnerCount,
 }: PartnerOperationsListSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16"
+    <AdminTablePanel
+      className="vuexy-partner-table-card admin-mb-16"
       description="List-first partner control view. Operators can check approval readiness, booking access, work history, wallet state, app activity, and the next operator check before opening the full partner record."
       id="partner-operations-list"
       resultLabel={`${totalPartnerCount} partner(s)`}
@@ -160,7 +160,7 @@ export function PartnerOperationsListSection({
       <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerOperationsListFooterLabel(rows.length)}</span>
       </AdminTableFooter>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

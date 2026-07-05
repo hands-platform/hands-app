@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -33,8 +33,8 @@ export function PartnerChecklistWorkQueueSection({
   queue,
 }: PartnerChecklistWorkQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16"
+    <AdminTablePanel
+      className="vuexy-partner-table-card admin-mb-16"
       description="Compact follow-up list for the current partner filter. It groups acceptance holds, withdrawal setup, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
       id="partner-checklist-work-queue"
       resultLabel={`${queue.urgentCount} urgent`}
@@ -92,7 +92,7 @@ export function PartnerChecklistWorkQueueSection({
       <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerChecklistQueueFooterLabel(queue.rows.length)}</span>
       </AdminTableFooter>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 
