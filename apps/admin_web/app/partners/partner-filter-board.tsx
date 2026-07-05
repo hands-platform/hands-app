@@ -6,6 +6,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -63,7 +64,7 @@ export function PartnerFilterBoard({
         </div>
       }
     >
-      <form action="/partners" className="vuexy-partner-form admin-directory-filter-form">
+      <AdminDirectoryFilterForm action="/partners" className="vuexy-partner-form">
         <input name="sort" type="hidden" value={filters.sort} />
         {filters.review && !showAdvancedFilters ? (
           <input name="review" type="hidden" value={filters.review} />
@@ -177,7 +178,7 @@ export function PartnerFilterBoard({
             {locationFreshnessLabel}
           </AdminFormControlLink>
         </div>
-      </form>
+      </AdminDirectoryFilterForm>
     </AdminFilterPanel>
   );
 }

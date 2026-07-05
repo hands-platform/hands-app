@@ -141,6 +141,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps directory filter form shells inside shared Vuexy directory filter atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-directory-filter-form.tsx')
+      .filter((filePath) => rawDirectoryFilterFormPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -157,6 +166,8 @@ const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"
 const rawAdminDisclosureDetailsPattern = /<details\b[^>]*className=(?:"[^"]*\badmin-disclosure\b[^"]*"|'[^']*\badmin-disclosure\b[^']*'|\{`[^`]*\badmin-disclosure\b[^`]*`\})/s;
 const rawRangeSegmentedControlPattern =
   /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:usage-overview|vietnam-overview)-range-buttons\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:usage-overview|vietnam-overview)-range-buttons\b[^']*')/s;
+const rawDirectoryFilterFormPattern =
+  /<form\b[^>]*className=(?:"[^"]*\badmin-directory-filter-form\b[^"]*"|'[^']*\badmin-directory-filter-form\b[^']*')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

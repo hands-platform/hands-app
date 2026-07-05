@@ -6,6 +6,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -333,7 +334,7 @@ function ReferralListFilterPanel({
           ))}
         </div>
       </div>
-      <form action={referralListPath(audience)} className="vuexy-customer-form admin-directory-filter-form">
+      <AdminDirectoryFilterForm action={referralListPath(audience)} className="vuexy-customer-form">
         <div className="vuexy-customer-filter-grid admin-directory-filter-grid">
           <div className="vuexy-customer-filter-group admin-directory-filter-group is-primary" aria-label="Referral list filters">
             <AdminFormSearch
@@ -365,7 +366,7 @@ function ReferralListFilterPanel({
             <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
           </div>
         </div>
-      </form>
+      </AdminDirectoryFilterForm>
     </AdminFilterPanel>
   );
 }

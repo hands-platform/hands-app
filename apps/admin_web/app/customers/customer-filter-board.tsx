@@ -6,6 +6,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { StatusBadge } from '../../components/status-badge';
 import { buildCustomerListHref, type CustomerFilters } from './customer-filters';
@@ -49,7 +50,7 @@ export function CustomerFilterBoard({
         </div>
       }
     >
-      <form action="/customers" className="vuexy-customer-form admin-directory-filter-form">
+      <AdminDirectoryFilterForm action="/customers" className="vuexy-customer-form">
         <input name="pageSize" type="hidden" value={filters.pageSize} />
         <div className="vuexy-customer-filter-grid admin-directory-filter-grid">
           <div className="vuexy-customer-filter-group admin-directory-filter-group is-primary" aria-label="Customer list filters">
@@ -117,7 +118,7 @@ export function CustomerFilterBoard({
           />
           <CustomerReservationSortGroup filters={filters} />
         </div>
-      </form>
+      </AdminDirectoryFilterForm>
     </AdminFilterPanel>
   );
 }
