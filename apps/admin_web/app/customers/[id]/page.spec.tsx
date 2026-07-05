@@ -96,6 +96,15 @@ describe('CustomerDetailPage', () => {
     );
     expect(customerDetailSource).not.toContain('<span>{formatMoney(wallet.capturedSpend)}</span>');
   });
+
+  it('uses the shared MoneyText atom for customer overview payment helper amounts', () => {
+    expect(customerDetailSource).not.toContain(
+      '`${latestPaymentBooking.payment.status} / ${formatMoney(Number(latestPaymentBooking.payment.amount ?? 0))}`',
+    );
+    expect(customerDetailSource).not.toContain(
+      'helper: formatMoney(refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0))',
+    );
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

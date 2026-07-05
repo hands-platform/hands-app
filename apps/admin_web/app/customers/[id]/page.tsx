@@ -1542,6 +1542,7 @@ function buildCustomerAccountFacts({
   ).length;
   const notes = (customer.auditLogs ?? []).filter((log) => log.action === 'customer.ops_note.add');
   const latestPaymentBooking = bookings.find((booking) => booking.payment);
+  const refundAmount = refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0);
   const frequentService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
   const frequentPartner = mostCommonLabel(
     bookings.map((booking) => bookingPartnerDisplayName(booking)).filter(Boolean) as string[],
@@ -1597,13 +1598,21 @@ function buildCustomerAccountFacts({
       label: 'Last payment',
       value: latestPaymentBooking?.payment?.method ?? 'No payment',
       helper: latestPaymentBooking?.payment
-        ? `${latestPaymentBooking.payment.status} / ${formatMoney(Number(latestPaymentBooking.payment.amount ?? 0))}`
+        ? (
+            <>
+              {latestPaymentBooking.payment.status} /{' '}
+              <MoneyText
+                amount={Number(latestPaymentBooking.payment.amount ?? 0)}
+                currency={latestPaymentBooking.payment.currency ?? 'VND'}
+              />
+            </>
+          )
         : 'No payment row loaded',
     },
     {
       label: 'Refund records',
       value: refunds.length.toString(),
-      helper: formatMoney(refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0)),
+      helper: <MoneyText amount={refundAmount} />,
     },
     {
       label: 'Saved addresses',
