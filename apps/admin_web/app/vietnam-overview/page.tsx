@@ -30,6 +30,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
+import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 
 export const dynamic = 'force-dynamic';
 
@@ -922,10 +923,6 @@ function vietnamRegionLoadLabel(level: ReturnType<typeof vietnamRegionLoadLevel>
     default:
       return 'Quiet';
   }
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
 
 function formatSignedNumber(value: number) {

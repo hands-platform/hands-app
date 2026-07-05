@@ -60,6 +60,8 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminKpiCard');
+    expect(pageSource).toContain('formatWholeNumber as formatNumber');
+    expect(pageSource).not.toContain('function formatNumber(value: number)');
     expect(mapClustersSource).toContain('AdminCard');
     expect(markup).toContain('empty-state vietnam-realtime-empty');
     expect(mapClustersSource).not.toContain('<article key={item.key} className={`vietnam-map-cluster-summary-card');
