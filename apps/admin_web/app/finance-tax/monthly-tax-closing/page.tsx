@@ -14,9 +14,9 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -399,9 +399,15 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(closingRemittanceState.tone))}>
                       {closingRemittanceState.label}
                     </StatusBadge>
-                    <div className="muted admin-mt-8">Declared {formatDateTime(closing.declaredAt)}</div>
-                    <div className="muted">Paid {formatDateTime(closing.paidAt)}</div>
-                    <div className="muted">Closed {formatDateTime(closing.closedAt)}</div>
+                    <div className="muted admin-mt-8">
+                      Declared <DateTimeText value={closing.declaredAt} />
+                    </div>
+                    <div className="muted">
+                      Paid <DateTimeText value={closing.paidAt} />
+                    </div>
+                    <div className="muted">
+                      Closed <DateTimeText value={closing.closedAt} />
+                    </div>
                     <div className="muted">{closingRemittanceState.detail}</div>
                     {closingRemittanceState.evidenceHref ? (
                       <a className="text-link" href={closingRemittanceState.evidenceHref} rel="noreferrer" target="_blank">

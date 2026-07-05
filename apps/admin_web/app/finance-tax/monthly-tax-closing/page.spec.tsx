@@ -44,6 +44,15 @@ describe('MonthlyTaxClosingPage', () => {
     expect(source).not.toContain('className="pill pill-success"');
   });
 
+  it('uses the shared DateTimeText atom for stored closing timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('Declared {formatDateTime(closing.declaredAt)}');
+    expect(source).not.toContain('Paid {formatDateTime(closing.paidAt)}');
+    expect(source).not.toContain('Closed {formatDateTime(closing.closedAt)}');
+  });
+
   it('keeps period and remittance forms on shared AdminForm atoms', async () => {
     const page = await MonthlyTaxClosingPage({
       searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
