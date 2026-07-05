@@ -2625,6 +2625,16 @@ a.action-button-card:hover {
   margin-bottom: 0;
 }
 
+.admin-filter-panel-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-filter-panel-header > .pill {
+  flex-shrink: 0;
+}
+
 .admin-filter-panel-body {
   display: grid;
   gap: 14px;

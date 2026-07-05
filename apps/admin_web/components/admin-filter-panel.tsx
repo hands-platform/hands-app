@@ -33,7 +33,7 @@ export function AdminFilterPanel({
       aria-labelledby={headingId}
     >
       <div className="ops-section-header admin-filter-panel-header admin-section-header">
-        <div>
+        <div className="admin-filter-panel-copy">
           <h2 id={headingId}>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
