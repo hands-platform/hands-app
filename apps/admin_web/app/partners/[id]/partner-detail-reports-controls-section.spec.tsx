@@ -6,6 +6,7 @@ import { PartnerDetailReportsControlsSection } from './partner-detail-reports-co
 describe('PartnerDetailReportsControlsSection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminDetailGrid');
@@ -30,6 +31,10 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(source).not.toContain(
       '<span className={`pill ${controlStatusPill(control.status)}`}>{control.status}</span>',
     );
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdLabel: string;');
+    expect(source).not.toContain('{report.category} / {report.source} / {report.createdLabel}');
+    expect(pageSource).not.toContain('createdLabel: formatDate(report.createdAt)');
   });
 
   it('renders reports and account controls as Vuexy tables', () => {
@@ -58,7 +63,7 @@ describe('PartnerDetailReportsControlsSection', () => {
           bookingHref: '/bookings/booking-1',
           bookingLabel: 'booking-1',
           category: 'payout',
-          createdLabel: '20 Jun 2026, 10:00',
+          createdAt: '2026-06-20T03:00:00.000Z',
           defaultControlType: 'ACCOUNT_BLOCK',
           details: 'Customer uploaded supporting evidence.',
           id: 'report-1',

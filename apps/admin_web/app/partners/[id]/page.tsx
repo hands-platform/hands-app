@@ -4243,7 +4243,7 @@ function buildPartnerReportRows(provider: ProviderDetail): PartnerReportRow[] {
     bookingHref: report.bookingId ? `/bookings/${report.bookingId}` : undefined,
     bookingLabel: report.bookingId ? shortRecordId(report.bookingId) : undefined,
     category: report.category,
-    createdLabel: formatDate(report.createdAt),
+    createdAt: report.createdAt,
     defaultControlType: report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING',
     details: report.details,
     id: report.id,

@@ -16,6 +16,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   createProviderReport,
@@ -39,7 +40,7 @@ export type PartnerReportRow = {
   readonly bookingHref?: string;
   readonly bookingLabel?: string;
   readonly category: string;
-  readonly createdLabel: string;
+  readonly createdAt?: string | null;
   readonly defaultControlType: 'ACCOUNT_BLOCK' | 'WARNING';
   readonly details?: string | null;
   readonly id: string;
@@ -219,7 +220,8 @@ export function PartnerDetailReportsControlsSection({
                   <td>
                     <strong>{report.summary}</strong>
                     <p className="muted">
-                      {report.category} / {report.source} / {report.createdLabel}
+                      {report.category} / {report.source} /{' '}
+                      <DateTimeText fallback="Missing" value={report.createdAt} />
                     </p>
                     {report.details ? <p className="muted">{report.details}</p> : null}
                     {report.resolutionNote ? (
