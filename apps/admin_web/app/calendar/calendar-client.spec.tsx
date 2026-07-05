@@ -15,4 +15,13 @@ describe('CalendarClient', () => {
     expect(source).not.toContain('className="calendar-segmented-control" role="tablist"');
     expect(source).not.toContain('role="tab"');
   });
+
+  it('uses the shared Vuexy button atom for calendar navigation controls', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n                  aria-label="Previous calendar period"');
+    expect(source).not.toContain('<button\n                  className="calendar-icon-button"');
+    expect(source).not.toContain('<button\n                  aria-label="Next calendar period"');
+  });
 });

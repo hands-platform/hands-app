@@ -365,30 +365,32 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
                 }))}
               />
               <div className="calendar-nav-buttons">
-                <button
+                <AdminFormControlButton
                   aria-label="Previous calendar period"
-                  className="calendar-icon-button"
+                  className="button-secondary calendar-icon-button"
                   onClick={() => navigateCalendar('prev')}
+                  title="Previous calendar period"
                   type="button"
                 >
                   <ChevronLeft aria-hidden="true" size={16} />
-                </button>
-                <button
-                  className="calendar-icon-button"
+                </AdminFormControlButton>
+                <AdminFormControlButton
+                  className="button-secondary calendar-icon-button"
                   onClick={() => navigateCalendar('today')}
                   type="button"
                 >
                   <CalendarDays aria-hidden="true" size={16} />
                   Today
-                </button>
-                <button
+                </AdminFormControlButton>
+                <AdminFormControlButton
                   aria-label="Next calendar period"
-                  className="calendar-icon-button"
+                  className="button-secondary calendar-icon-button"
                   onClick={() => navigateCalendar('next')}
+                  title="Next calendar period"
                   type="button"
                 >
                   <ChevronRight aria-hidden="true" size={16} />
-                </button>
+                </AdminFormControlButton>
               </div>
             </div>
           </div>
