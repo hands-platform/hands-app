@@ -14495,6 +14495,15 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.admin-form-action-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .admin-form-control-help {
   color: var(--admin-muted);
   font-size: 12px;

@@ -116,6 +116,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps form action rows inside shared Vuexy form atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => rawFormActionRowPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps date filter width tweaks on the shared Vuexy form control token', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => readFileSync(filePath, 'utf8').includes('admin-date-filter-field'))
@@ -422,6 +431,8 @@ const rawBookingMonitorSegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"booking-date-filter-buttons"|'booking-date-filter-buttons')[^>]*aria-label=(?:"Booking list period"|'Booking list period')/s;
 const rawFinanceFilterChipRowPattern =
   /<div\b[^>]*className=(?:"filter-row admin-mt-12"|'filter-row admin-mt-12')/s;
+const rawFormActionRowPattern =
+  /<div\b[^>]*className=(?:"[^"]*\b(?:form-actions|finance-reconciliation-form-actions)\b[^"]*"|'[^']*\b(?:form-actions|finance-reconciliation-form-actions)\b[^']*')/s;
 const rawGetFilterFormShellPattern =
   /<form\b[^>]*className=(?:"(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)"|'(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)')/s;
 const rawAdminInlineActionFormPattern =

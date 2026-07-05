@@ -12,6 +12,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
+  AdminFormActionRow,
   AdminFormDate,
   AdminFormDateTime,
   AdminFormGrid,
@@ -248,11 +249,11 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             <AdminFormInput label="Transfer reference" labelVisibility="visible" name="transferRef" />
             <AdminFormInput label="Counterparty" labelVisibility="visible" name="counterpartyName" />
             <AdminFormTextarea className="admin-grid-span-2" label="Description" labelVisibility="visible" name="description" rows={2} />
-            <div className="form-actions form-grid-wide">
+            <AdminFormActionRow>
               <AdminFormControlButton className="button-primary" disabled={!companyBankAccounts.length}>
                 Import bank transaction
               </AdminFormControlButton>
-            </div>
+            </AdminFormActionRow>
           </AdminFormGrid>
         </AdminDisclosure>
       </AdminFilterPanel>

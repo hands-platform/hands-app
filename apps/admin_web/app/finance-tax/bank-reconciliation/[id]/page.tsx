@@ -15,6 +15,7 @@ import {
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormActionRow,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
@@ -311,12 +312,12 @@ export default async function BankReconciliationDetailPage({
                   placeholder="Why this bank row matches the selected payment clearing evidence"
                   rows={3}
                 />
-                <div className="finance-reconciliation-form-actions admin-grid-span-2">
+                <AdminFormActionRow className="finance-reconciliation-form-actions admin-grid-span-2">
                   <AdminFormControlButton disabled={!paymentClearingOptions.length}>Create match</AdminFormControlButton>
                   <span className="muted">
                     Suggested amount: <MoneyText amount={suggestedMatchAmount} currency={transaction.currency} />
                   </span>
-                </div>
+                </AdminFormActionRow>
               </AdminFormGrid>
             </div>
 
@@ -373,10 +374,10 @@ export default async function BankReconciliationDetailPage({
                   placeholder="Why this bank row matches the selected finance source"
                   rows={3}
                 />
-                <div className="finance-reconciliation-form-actions admin-grid-span-2">
+                <AdminFormActionRow className="finance-reconciliation-form-actions admin-grid-span-2">
                   <AdminFormControlButton>Create advanced match</AdminFormControlButton>
                   <span className="muted">Requires explicit source id and approver evidence.</span>
-                </div>
+                </AdminFormActionRow>
               </AdminFormGrid>
             </AdminDisclosure>
           </div>

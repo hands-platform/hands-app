@@ -133,6 +133,12 @@ type AdminFormControlStackProps = {
   readonly className?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
+type AdminFormActionRowProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly wide?: boolean;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
 type AdminFormGridProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -201,6 +207,14 @@ export function AdminDrawerFormGridFields({ children, className, ...divProps }: 
 export function AdminFormControlStack({ children, className, ...divProps }: AdminFormControlStackProps) {
   return (
     <div {...divProps} className={joinClassNames('admin-form-control-stack', className)}>
+      {children}
+    </div>
+  );
+}
+
+export function AdminFormActionRow({ children, className, wide = true, ...divProps }: AdminFormActionRowProps) {
+  return (
+    <div {...divProps} className={joinClassNames('admin-form-action-row', wide ? 'form-grid-wide' : undefined, className)}>
       {children}
     </div>
   );

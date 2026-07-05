@@ -4,6 +4,7 @@ import {
   AdminDrawerFormGrid,
   AdminDrawerFormGridFields,
   AdminFormCheckbox,
+  AdminFormActionRow,
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormControlStack,
@@ -76,6 +77,17 @@ describe('Admin form controls', () => {
 
     expect(stack.props.className).toBe('admin-form-control-stack booking-action-note-stack');
     expect(textContent(stack)).toBe('Field plus helper');
+  });
+
+  it('renders form action rows through the shared Vuexy helper surface', () => {
+    const row = AdminFormActionRow({
+      children: 'Save changes',
+      className: 'finance-reconciliation-form-actions',
+    });
+
+    expect(row.type).toBe('div');
+    expect(row.props.className).toBe('admin-form-action-row form-grid-wide finance-reconciliation-form-actions');
+    expect(textContent(row)).toBe('Save changes');
   });
 
   it('renders Vuexy-style select and search controls with stable labels', () => {
