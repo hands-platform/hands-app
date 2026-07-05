@@ -22,6 +22,7 @@ import {
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
@@ -121,7 +122,7 @@ export default async function PartnerOverviewPage({
             value: option.value,
           }))}
         />
-        <form className="partner-overview-filter-grid" action="/partners/overview">
+        <AdminFormGrid action="/partners/overview" className="partner-overview-filter-grid">
           <input type="hidden" name="range" value={range} />
           {filters.selectionIssue ? <input type="hidden" name="selectionIssue" value={filters.selectionIssue} /> : null}
           {filters.selectionSort ? <input type="hidden" name="selectionSort" value={filters.selectionSort} /> : null}
@@ -170,7 +171,7 @@ export default async function PartnerOverviewPage({
           <AdminFormControlButton className="button-primary" type="submit">
             Apply filters
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
         {activeFilters.length > 0 ? (
           <div className="partner-overview-active-filters" aria-label="Active partner overview filters">
             <span>Active filters</span>
@@ -756,7 +757,7 @@ function SelectionFrictionCard({
             }))}
           />
         </div>
-        <form action="/partners/overview" className="partner-overview-selection-sort-form">
+        <AdminFormGrid action="/partners/overview" className="partner-overview-selection-sort-form">
           <input type="hidden" name="range" value={range} />
           {filters.city ? <input type="hidden" name="city" value={filters.city} /> : null}
           {filters.onlineStatus ? <input type="hidden" name="onlineStatus" value={filters.onlineStatus} /> : null}
@@ -777,7 +778,7 @@ function SelectionFrictionCard({
           <AdminFormControlButton className="button-secondary" type="submit">
             Apply
           </AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
       </div>
       <AdminTableScroll className="usage-overview-table-wrap">
         <AdminDataTable

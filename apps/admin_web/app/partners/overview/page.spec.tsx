@@ -48,6 +48,9 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('class="admin-form-input admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-control-button button button-primary"');
+    expect(pageSource).toContain('AdminFormGrid');
+    expect(pageSource).not.toContain('<form className="partner-overview-filter-grid"');
+    expect(pageSource).not.toContain('<form action="/partners/overview" className="partner-overview-selection-sort-form">');
     expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-operating-board');
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
     expect(markup).toContain('card admin-card partner-overview-operating-card');
