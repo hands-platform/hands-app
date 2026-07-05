@@ -1,6 +1,7 @@
 import {
   AdminFormControlButton,
   AdminFormInput,
+  AdminFormShell,
 } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminCard } from '../../components/admin-surface';
@@ -37,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Sign in failed. Check your admin credentials and try again.
           </AdminInlineNotice>
         ) : null}
-        <form action={action} className="admin-auth-form" method="post">
+        <AdminFormShell action={action} className="admin-auth-form" method="post">
           <AdminFormInput
             autoComplete="username"
             className="admin-form-control-fluid"
@@ -59,7 +60,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <AdminFormControlButton className="button-primary admin-auth-submit" type="submit">
             Sign in
           </AdminFormControlButton>
-        </form>
+        </AdminFormShell>
       </AdminCard>
     </main>
   );
