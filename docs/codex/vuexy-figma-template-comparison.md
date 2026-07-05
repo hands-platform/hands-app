@@ -97,6 +97,31 @@ API contracts, auth/session behavior, or route ownership.
 | Admin operators | `/admin-operators` | User/list/settings | Operator list, permission chips, audit log | Master all access; operator category permissions | In progress |
 | Setup | `/setup` | Settings/forms | Form controls, status cards | Keep payload bounded and operational | In progress |
 
+## Expanded Route And Menu Coverage
+
+The current Admin Web route scan found 68 `page.tsx` routes. The sidebar
+navigation exposes 52 primary menu links. Detail pages, legacy aliases, audit
+search pages, and intentionally hidden hubs are covered by
+`apps/admin_web/lib/admin-hidden-route-policy.ts` instead of the sidebar.
+
+| Area | Menu Routes | Detail / Hidden Routes | Vuexy Reference | Coverage Status |
+| --- | --- | --- | --- | --- |
+| Command Center | `/`, `/calendar`, `/app-sessions`, `/operations-handoff` | None | Vertical layout, Calendar app, CRM dashboard | Menu covered |
+| Analytics | `/vietnam-overview`, `/usage-overview`, `/partners/overview`, `/marketing-analytics` | None | CRM dashboard widgets and map/dashboard composition | Menu covered |
+| Bookings | `/bookings`, `/bookings/completed`, `/bookings/post-match-cancellations` | `/bookings/[id]` | React Table, timeline, user/detail views | Detail route intentionally hidden |
+| Customers / Reviews | `/customers`, `/referrals/customers`, `/reviews`, `/reviews/partner-customer-evaluations` | `/customers/[id]`, `/referrals/customers/[id]` | User list/view and review/comment tables | Detail routes intentionally hidden |
+| Partners | `/partners`, `/partners?review=unapproved`, `/partners?review=unsettled`, `/referrals/partners`, `/files` | `/partners/[id]`, `/providers`, `/providers/[id]`, `/partner-controls`, `/referrals/partners/[id]` | User list/view, file list, status chips | Provider routes are compatibility aliases; partner controls is deep evidence |
+| Finance | `/finance-overview`, `/finance-closeout`, `/payments`, `/finance-tax/payment-clearing`, `/cash-settlements`, `/wallet-adjustments`, `/earnings`, `/payouts`, `/referrals/cashouts`, `/refunds` | `/payments/[id]`, `/finance-tax/payment-clearing/[id]` | Dashboard, React Table, invoice/payment examples | Detail routes intentionally hidden |
+| Tax & Accounting | `/finance-tax`, `/finance-tax/general-ledger`, `/finance-tax/bank-reconciliation`, `/finance-tax/company-bank-accounts`, `/finance-tax/booking-settlement-audit`, `/finance-tax/coupon-finance`, `/finance-tax/settlement-reversals`, `/finance-tax/monthly-tax-closing`, `/finance-tax/platform-vat`, `/finance-tax/partner-withholding-tax`, `/finance-tax/payment-fees`, `/tax-policy` | `/finance-tax/general-ledger/[id]`, `/finance-tax/bank-reconciliation/[id]`, `/finance-tax/booking-settlement-audit/[id]`, `/finance-tax/settlement-reversals/[id]` | React Table, dashboard cards, finance/detail pages | Detail routes intentionally hidden |
+| Communications | `/notifications`, `/notifications/templates`, `/notifications/push-send` | None | Table/filter/form and campaign dashboard patterns | Menu covered |
+| Policies & Setup | `/operations-policy`, `/services`, `/coupons`, `/setup` | None | Settings/forms, dialog examples, card lists | Menu covered |
+| Admin Control | `/admin-operators`, `/finance-tax/finance-approvers`, `/audit-log` | `/chat-archive`, `/login`, `/referrals` | User/list/settings, audit table, auth pages | Login is auth boundary; chat archive and referral hub intentionally hidden |
+
+When a route is not in the menu, it must either be documented in
+`admin-hidden-route-policy.ts` or added to the sidebar intentionally. Future
+route/menu inventory changes should update this section and the hidden-route
+policy together.
+
 ## Immediate Implementation Direction
 
 1. Keep tightening shared atoms before page-specific redesigns:
