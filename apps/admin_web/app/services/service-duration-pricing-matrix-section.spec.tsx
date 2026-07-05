@@ -39,10 +39,10 @@ describe('ServiceDurationPricingMatrixSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type.name).toBe('AdminSection');
+    expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+      className: 'admin-card-scroll admin-mb-16',
       statusLabel: '60 / 90 / 120 min',
       statusTone: 'info',
       title: 'Duration pricing matrix',

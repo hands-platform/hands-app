@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
@@ -33,9 +33,9 @@ export function ServiceDurationPricingMatrixSection({
   visibleGroups,
 }: ServiceDurationPricingMatrixSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+      className="admin-card-scroll admin-mb-16"
       description="One row is one service name. Each duration cell shows customer minimum, Partner payout, and projected company commission after VAT, withholding, and other configured costs."
       statusLabel={`${SERVICE_MATRIX_DURATIONS.join(' / ')} min`}
       statusTone="info"
@@ -108,7 +108,7 @@ export function ServiceDurationPricingMatrixSection({
           page responsive. Full totals above still use the complete catalog.
         </p>
       ) : null}
-    </AdminSection>
+    </AdminTableSection>
   );
 }
 
