@@ -8,6 +8,7 @@ import {
   WalletCards,
   XCircle,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import {
   type AdminVietnamOverview,
   AdminVietnamOverviewSummary,
@@ -29,11 +30,9 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
-import {
-  formatPendingDateTime as formatDateTime,
-  formatWholeNumber as formatNumber,
-} from '../../lib/admin-format';
+import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,7 +122,6 @@ export default async function VietnamOverviewPage({
   const maxRegionOperatingScore = Math.max(1, ...visibleRegions.map(vietnamRegionOperatingScore));
   const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions);
   const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys });
-  const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metricTotals = activeRegion ?? overview.totals;
   const customerMetricScopeLabel = activeRegion ? `${activeRegion.shortName} customers` : 'stored customers';
   const periodClosedWorkCount = metricTotals.completedBookingCount + metricTotals.cancellationCount;
@@ -134,8 +132,14 @@ export default async function VietnamOverviewPage({
   const partnerReadyRate = percentage(metricTotals.onlinePartnerCount, metricTotals.partnerCount);
   const activeCustomerRate = percentage(metricTotals.activeCustomerCount, metricTotals.customerCount);
   const activeBookingShare = percentage(metricTotals.activeBookingCount, periodWorkVolume);
-  const periodWindowLabel = overview.windowStartAt && overview.windowEndAt
-    ? `${formatDateTime(overview.windowStartAt)} - ${formatDateTime(overview.windowEndAt)}`
+  const periodWindowLabel: ReactNode = overview.windowStartAt && overview.windowEndAt
+    ? (
+        <>
+          <DateTimeText fallback="pending" value={overview.windowStartAt} />
+          {' - '}
+          <DateTimeText fallback="pending" value={overview.windowEndAt} />
+        </>
+      )
     : 'All stored period data';
   const regionRealtimeSummary = [
     { label: 'All customers', value: formatNumber(allMapPointCounts.customers), tone: 'primary' },
@@ -178,7 +182,11 @@ export default async function VietnamOverviewPage({
       value: formatPercent(periodCompletionRate),
       detail: periodClosedWorkCount > 0
         ? `${formatNumber(metricTotals.completedBookingCount)} completed of ${formatNumber(periodClosedWorkCount)} closed`
-        : `Generated ${lastGeneratedAt}`,
+        : (
+            <>
+              Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
+            </>
+          ),
       tone: periodClosedWorkCount > 0 ? 'success' : 'neutral',
     },
   ];
@@ -470,7 +478,11 @@ export default async function VietnamOverviewPage({
       </section>
 
       <AdminSection
-        actions={<StatusBadge tone="info">Generated {lastGeneratedAt}</StatusBadge>}
+        actions={
+          <StatusBadge tone="info">
+            Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
+          </StatusBadge>
+        }
         bodyClassName="vietnam-overview-map-layout"
         className="vietnam-overview-map-card"
         title="Realtime Vietnam operating map"

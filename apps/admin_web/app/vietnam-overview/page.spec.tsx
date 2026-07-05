@@ -60,8 +60,11 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('AdminKpiCard');
+    expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain('formatWholeNumber as formatNumber');
-    expect(pageSource).toContain('formatPendingDateTime as formatDateTime');
+    expect(pageSource).not.toContain('formatPendingDateTime as formatDateTime');
+    expect(pageSource).not.toContain('const lastGeneratedAt = formatDateTime(overview.generatedAt);');
+    expect(pageSource).not.toContain('`${formatDateTime(overview.windowStartAt)} - ${formatDateTime(overview.windowEndAt)}`');
     expect(pageSource).not.toContain('function formatNumber(value: number)');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');
     expect(mapClustersSource).toContain('AdminCard');
