@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
@@ -241,7 +241,7 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-        <div className="ops-task-note admin-mt-14">
+        <AdminNotePanel className="admin-mt-14">
           <AdminSectionHeader
             actions={<StatusBadge tone="info">{decisionNotePresets.length} preset(s)</StatusBadge>}
             description="Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout handling. Use these before changing booking outcomes."
@@ -263,7 +263,7 @@ export function BookingEvidenceSections({
               </AdminCard>
             ))}
           </div>
-        </div>
+        </AdminNotePanel>
       </AdminSection>
 
       <AdminSection
