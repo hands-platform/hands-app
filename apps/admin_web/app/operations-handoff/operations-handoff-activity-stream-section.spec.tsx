@@ -9,6 +9,8 @@ describe('OperationsHandoffActivityStreamSection', () => {
 
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableScroll');
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('<small className="muted">{formatDateTime(item.createdAt)}</small>');
     expect(source).not.toContain('<Link className="button button-secondary"');
     expect(source).not.toContain('<a\n            className="button button-secondary"');
     expect(source).not.toContain('<div className="admin-table-scroll">');

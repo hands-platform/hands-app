@@ -2,7 +2,8 @@ import { Download, ExternalLink, FileClock, MessageSquare } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
-import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
+import { DateTimeText } from '../../components/date-time-text';
+import { formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
 
 type OperationsHandoffActivityStreamSectionProps = {
@@ -52,7 +53,7 @@ export function OperationsHandoffActivityStreamSection({
             <tr key={item.id}>
               <td>
                 <div>{relativeTime(item.createdAt)}</div>
-                <small className="muted">{formatDateTime(item.createdAt)}</small>
+                <DateTimeText value={item.createdAt} />
               </td>
               <td>
                 <span className={item.className}>{item.area}</span>
