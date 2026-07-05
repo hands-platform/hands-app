@@ -17,6 +17,7 @@ import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { AdminEmptyState } from './admin-empty-state';
 import { AdminFormShell } from './admin-form-controls';
+import { AdminIconButton } from './admin-icon-button';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
@@ -151,7 +152,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           <CircleHelp aria-hidden="true" size={18} />
         </Link>
         <div className="topbar-menu">
-          <button
+          <AdminIconButton
             aria-expanded={notificationsOpen}
             aria-haspopup="dialog"
             className="topbar-icon-chip topbar-icon-button"
@@ -163,7 +164,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           >
             <Bell aria-hidden="true" size={18} />
             {totalAttentionCount > 0 ? <AdminAttentionBadge>{totalAttentionCount}</AdminAttentionBadge> : null}
-          </button>
+          </AdminIconButton>
           {notificationsOpen ? (
             <div className="topbar-dropdown topbar-notification-menu" role="dialog" aria-label="Operation alerts">
               <div className="topbar-dropdown-title">Operation alerts</div>
@@ -196,9 +197,14 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           Live Workspace
         </span>
         <AdminFormShell action="/api/admin/session/logout" method="post">
-          <button className="topbar-icon-chip topbar-icon-button" aria-label="Sign out" title="Sign out" type="submit">
+          <AdminIconButton
+            className="topbar-icon-chip topbar-icon-button"
+            aria-label="Sign out"
+            title="Sign out"
+            type="submit"
+          >
             <LogOut aria-hidden="true" size={18} />
-          </button>
+          </AdminIconButton>
         </AdminFormShell>
       </div>
     </header>

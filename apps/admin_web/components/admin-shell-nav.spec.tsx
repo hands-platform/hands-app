@@ -139,6 +139,13 @@ describe('admin shell navigation', () => {
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-attention-badge">{totalAttentionCount}</span>');
   });
 
+  it('keeps topbar icon buttons inside the shared Vuexy icon button atom', () => {
+    expect(workspaceHeaderSource).toContain("import { AdminIconButton } from './admin-icon-button';");
+    expect(workspaceHeaderSource).toContain('<AdminIconButton');
+    expect(workspaceHeaderSource).not.toContain('<button className="topbar-icon-chip topbar-icon-button"');
+    expect(workspaceHeaderSource).not.toContain('className="topbar-icon-chip topbar-icon-button" type="submit"');
+  });
+
   it('keeps topbar empty states inside the shared Vuexy empty-state atom', () => {
     expect(workspaceHeaderSource).toContain('AdminEmptyState');
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No matching admin pages</span>');
