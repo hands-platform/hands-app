@@ -32,6 +32,16 @@ describe('PartnerMasterListSection', () => {
     expect(source).not.toContain('<span>{partnerMasterListFooterLabel(pagination)}</span>');
   });
 
+  it('uses the shared Vuexy table panel atom instead of repeating table card classes', () => {
+    const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
+    );
+  });
+
   it('renders partner master rows with operations facts and detail links', () => {
     const section = PartnerMasterListSection({
       filters: buildFilters({ review: 'unapproved' }),

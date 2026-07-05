@@ -19,6 +19,16 @@ describe('CustomersTableSection', () => {
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
+  it('uses the shared Vuexy table panel atom instead of repeating table card classes', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card',
+    );
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),

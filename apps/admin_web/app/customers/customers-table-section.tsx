@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { CustomerFilters } from './customer-filters';
 import { buildCustomerListHref } from './customer-filters';
 import type { CustomerPagination } from './customer-list-model';
@@ -17,8 +17,8 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
   const rows = pagination.rows;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card"
+    <AdminTablePanel
+      className="vuexy-customer-table-card"
       description={`Sorted by ${sortLabel}`}
       id="customer-directory"
       resultLabel={`${pagination.totalRows} customer(s)`}
@@ -83,7 +83,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

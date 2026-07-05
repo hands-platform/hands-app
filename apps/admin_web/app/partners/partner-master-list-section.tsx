@@ -4,8 +4,8 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -70,8 +70,8 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
   const headers = partnerMasterTableHeaders(mode);
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card"
+    <AdminTablePanel
+      className="vuexy-partner-table-card"
       description={copy.description}
       id={`partner-master-list-${mode}`}
       resultLabel={copy.statusLabel}
@@ -97,7 +97,7 @@ export function PartnerMasterListSection({ filters, mode = 'default', pagination
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 
