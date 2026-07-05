@@ -7,6 +7,7 @@ import {
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
+  AdminFormShell,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -423,7 +424,7 @@ function CreateAdjustmentForm({
     preview.affects.bankCash;
 
   return (
-    <form action={createManualWalletAdjustment} className="participant-list">
+    <AdminFormShell action={createManualWalletAdjustment} className="participant-list">
       <HiddenAdjustmentInputs formState={formState} />
       {blockedAccountingImpact ? (
         <StatusBadge tone="danger">Blocked accounting impact</StatusBadge>
@@ -437,7 +438,7 @@ function CreateAdjustmentForm({
       >
         Create manual adjustment
       </AdminFormControlButton>
-    </form>
+    </AdminFormShell>
   );
 }
 
