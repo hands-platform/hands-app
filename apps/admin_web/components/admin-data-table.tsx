@@ -139,7 +139,7 @@ export function AdminDataTable({
 
 function renderEmptyMessage(emptyMessage: ReactNode) {
   if (typeof emptyMessage === 'string') {
-    return AdminEmptyState({ framed: true, message: emptyMessage, title: null });
+    return AdminEmptyState({ message: emptyMessage, title: null });
   }
 
   return emptyMessage;

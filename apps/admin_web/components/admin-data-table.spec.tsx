@@ -27,7 +27,7 @@ describe('AdminDataTable', () => {
     expect(table.props.children[1].props.children[1]).toBeNull();
   });
 
-  it('renders a full-width empty row when there is no data', () => {
+  it('renders a full-width table-owned empty row when there is no data', () => {
     const table = AdminDataTable({
       children: null,
       className: 'vuexy-customer-table',
@@ -48,10 +48,8 @@ describe('AdminDataTable', () => {
     expect(emptyContainer.props).toMatchObject({
       className: 'admin-data-table-empty',
     });
-    expect(emptyContainer.props.children.props).toMatchObject({
-      className: 'empty-state',
-    });
-    expect(emptyContainer.props.children.props.children[1].props.children).toBe('No feedback records loaded.');
+    expect(classNamesIn(emptyContainer)).not.toContain('empty-state');
+    expect(normalizeText(textContent(emptyContainer))).toBe('No feedback records loaded.');
   });
 
   it('does not render an empty row when the caller provides no empty message', () => {
