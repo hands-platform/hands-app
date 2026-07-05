@@ -1,5 +1,7 @@
+import { createElement, Fragment, type ReactNode } from 'react';
+
 import type { AdminProviderWalletWithdrawalRequest } from '../lib/admin-api';
-import { formatMoney } from '../lib/admin-format';
+import { MoneyText } from './money-text';
 
 type AdminWithdrawalAccountingPreviewProps = {
   readonly request: AdminProviderWalletWithdrawalRequest;
@@ -14,17 +16,19 @@ export function AdminWithdrawalAccountingPreview({ request }: AdminWithdrawalAcc
   return (
     <div className="admin-mini-ledger" aria-label={`Accounting preview for withdrawal ${request.id}`}>
       <span>Accounting preview</span>
-      {lines.map((line) => (
-        <small key={line}>{line}</small>
+      {lines.map((line, index) => (
+        <small key={`${request.id}-withdrawal-accounting-${index}`}>{line}</small>
       ))}
     </div>
   );
 }
 
 export function withdrawalAccountingPreviewLines(request: AdminProviderWalletWithdrawalRequest) {
-  const amount = formatMoney(request.amount, request.currency);
   if (request.status === 'PAID') {
-    return [`Dr Partner withdrawal payable ${amount}`, `Cr Bank ${amount}`];
+    return [
+      previewLine('Dr Partner withdrawal payable ', request.amount, request.currency),
+      previewLine('Cr Bank ', request.amount, request.currency),
+    ];
   }
   if (
     request.status === 'REJECTED' ||
@@ -32,7 +36,10 @@ export function withdrawalAccountingPreviewLines(request: AdminProviderWalletWit
     request.status === 'FAILED' ||
     request.status === 'REVERSED'
   ) {
-    return [`Dr Partner withdrawal payable ${amount}`, `Cr Partner wallet liability ${amount}`];
+    return [
+      previewLine('Dr Partner withdrawal payable ', request.amount, request.currency),
+      previewLine('Cr Partner wallet liability ', request.amount, request.currency),
+    ];
   }
   if (
     request.status === 'REQUESTED' ||
@@ -42,7 +49,14 @@ export function withdrawalAccountingPreviewLines(request: AdminProviderWalletWit
     request.status === 'HOLD' ||
     request.status === 'NEEDS_BANK_CORRECTION'
   ) {
-    return [`Dr Partner wallet liability ${amount}`, `Cr Partner withdrawal payable ${amount}`];
+    return [
+      previewLine('Dr Partner wallet liability ', request.amount, request.currency),
+      previewLine('Cr Partner withdrawal payable ', request.amount, request.currency),
+    ];
   }
   return [];
+}
+
+function previewLine(label: string, amount: number, currency: string): ReactNode {
+  return createElement(Fragment, null, label, createElement(MoneyText, { amount, currency }));
 }
