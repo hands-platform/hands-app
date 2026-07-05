@@ -77,6 +77,19 @@ export function formatDateTime(value?: string | null, fallback = 'Not set') {
   }).format(date);
 }
 
+export function formatPendingDateTime(value?: string | null, fallback = 'pending') {
+  if (!value) {
+    return fallback;
+  }
+
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp) || timestamp === 0) {
+    return fallback;
+  }
+
+  return formatDateTime(value, fallback);
+}
+
 export function formatDateOnly(value?: string | null, fallback = 'Not set') {
   if (!value) {
     return fallback;

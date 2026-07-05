@@ -20,6 +20,8 @@ describe('VietnamOverviewMapClusters', () => {
     const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
 
     expect(source).toContain('formatWholeNumber as formatNumber');
+    expect(source).toContain('formatPendingDateTime as formatDateTime');
     expect(source).not.toContain('function formatNumber(value: number)');
+    expect(source).not.toContain('function formatDateTime(value: string)');
   });
 });

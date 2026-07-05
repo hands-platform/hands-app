@@ -13,7 +13,10 @@ import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
-import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
+import {
+  formatPendingDateTime as formatDateTime,
+  formatWholeNumber as formatNumber,
+} from '../../lib/admin-format';
 import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
 
 export type VietnamOverviewMapPointCluster = {
@@ -441,22 +444,6 @@ function vietnamOverviewHeatCells(
 
 function formatClusterCount(value: number) {
   return value > 99 ? '99+' : formatNumber(value);
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime()) || date.getTime() === 0) {
-    return 'pending';
-  }
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    hour: '2-digit',
-    hour12: false,
-    minute: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
 }
 
 function eventTimeMs(value: string) {

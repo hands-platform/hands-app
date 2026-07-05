@@ -1,5 +1,6 @@
 import {
   formatCurrencyAmount,
+  formatPendingDateTime,
   formatPercentLabel,
   formatWholeNumber,
 } from './admin-format';
@@ -18,5 +19,12 @@ describe('admin formatting helpers', () => {
   it('formats whole-number percent labels', () => {
     expect(formatPercentLabel(42)).toBe('42%');
     expect(formatPercentLabel(1234)).toBe('1,234%');
+  });
+
+  it('formats pending date-time values for realtime operation signals', () => {
+    expect(formatPendingDateTime(null)).toBe('pending');
+    expect(formatPendingDateTime('not-a-date')).toBe('pending');
+    expect(formatPendingDateTime(new Date(0).toISOString())).toBe('pending');
+    expect(formatPendingDateTime('2026-06-26T20:39:00.000Z')).toBe('27 Jun 2026, 03:39');
   });
 });

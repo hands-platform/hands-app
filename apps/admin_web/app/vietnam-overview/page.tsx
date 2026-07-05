@@ -30,7 +30,10 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
-import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
+import {
+  formatPendingDateTime as formatDateTime,
+  formatWholeNumber as formatNumber,
+} from '../../lib/admin-format';
 
 export const dynamic = 'force-dynamic';
 
@@ -943,20 +946,4 @@ function formatPercent(value: number) {
 function formatCurrency(value: number, currency: string) {
   if (value <= 0) return `0 ${currency}`;
   return `${formatNumber(value)} ${currency}`;
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime()) || date.getTime() === 0) {
-    return 'pending';
-  }
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date);
 }
