@@ -6,9 +6,11 @@ describe('RefundsTableSection', () => {
   it('reuses the shared Admin table pagination footer atom', () => {
     const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="ops-task-note admin-mt-10">');
     expect(source).not.toContain('AdminRoundedPagination');
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
