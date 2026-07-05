@@ -274,6 +274,13 @@ describe('AdminReviewRecordsSection', () => {
     const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
 
     expect(source).toContain('DateTimeText');
+    expect(source).toContain('reviewRequestTimeValue');
+    expect(source).toContain('partnerEvaluationRequestTimeValue');
+    expect(source).not.toContain('<div className="muted">{reviewRequestTimeLabel(review)}</div>');
+    expect(source).not.toContain('<div className="muted">{partnerEvaluationRequestTimeLabel(review)}</div>');
+    expect(source).not.toContain(
+      "return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');",
+    );
     expect(source).not.toContain("Review submitted {formatDateTime(review.createdAt, 'No reviewed date')}");
     expect(source).not.toContain("Evaluation submitted {formatDateTime(review.createdAt, 'No logged date')}");
   });

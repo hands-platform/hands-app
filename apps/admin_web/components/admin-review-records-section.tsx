@@ -18,7 +18,7 @@ import {
   type AdminAvatarStatus,
 } from '../lib/admin-avatar-status';
 import type { AdminPartnerCustomerReview, AdminReview } from '../lib/admin-api';
-import { formatDateTime, shortId } from '../lib/admin-format';
+import { shortId } from '../lib/admin-format';
 
 const CUSTOMER_REVIEW_HEADERS = ['Request Time', 'Partner', 'Customer', 'Review', 'Visibility'] as const;
 const PARTNER_EVALUATION_HEADERS = ['Request Time', 'Partner', 'Customer', 'Customer evaluation'] as const;
@@ -254,7 +254,9 @@ function reviewRequestCell(review: AdminReview) {
           <span className="muted">No booking link</span>
         )}
       </div>
-      <div className="muted">{reviewRequestTimeLabel(review)}</div>
+      <div className="muted">
+        <DateTimeText fallback="No request time" value={reviewRequestTimeValue(review)} />
+      </div>
       <div className="muted vuexy-review-submitted-line">
         Review submitted <DateTimeText fallback="No reviewed date" value={review.createdAt} />
       </div>
@@ -276,7 +278,9 @@ function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
           <span className="muted">No booking link</span>
         )}
       </div>
-      <div className="muted">{partnerEvaluationRequestTimeLabel(review)}</div>
+      <div className="muted">
+        <DateTimeText fallback="No request time" value={partnerEvaluationRequestTimeValue(review)} />
+      </div>
       <div className="muted vuexy-review-submitted-line">
         Evaluation submitted <DateTimeText fallback="No logged date" value={review.createdAt} />
       </div>
@@ -480,12 +484,12 @@ function reviewAppVisibilityLabel(status?: string | null) {
   return 'Visibility not mapped';
 }
 
-function reviewRequestTimeLabel(review: AdminReview) {
-  return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');
+function reviewRequestTimeValue(review: AdminReview) {
+  return review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt;
 }
 
-function partnerEvaluationRequestTimeLabel(review: AdminPartnerCustomerReview) {
-  return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');
+function partnerEvaluationRequestTimeValue(review: AdminPartnerCustomerReview) {
+  return review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt;
 }
 
 function reviewRecordMs(review: AdminReview) {
