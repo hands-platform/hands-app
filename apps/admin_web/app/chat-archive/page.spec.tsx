@@ -63,9 +63,7 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('Chat integrity repair queue');
     expect(markup).toContain('Chat evidence index');
     expect(markup).toContain('class="card admin-card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
-    expect(markup).toContain(
-      'class="card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
-    );
+    expect(markup).toContain('vuexy-booking-table-card vuexy-booking-table-group admin-mb-16');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
   });
 
@@ -142,8 +140,10 @@ describe('ChatArchivePage', () => {
   });
 
   it('uses the shared table pagination footer for the chat evidence index', () => {
+    expect(pageSource).toContain('AdminTableSection');
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('ariaLabel="Chat evidence pages"');
+    expect(pageSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
   });
