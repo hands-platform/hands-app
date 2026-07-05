@@ -130,6 +130,14 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<strong>No recent earning tax snapshots</strong>');
   });
 
+  it('uses the shared DateTimeText atom for visible tax policy timestamps', () => {
+    expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).not.toContain("`Effective from ${formatDateTime(preview.policy.effectiveFrom, 'No date')}`");
+    expect(pageSource).not.toContain("{formatDateTime(policy.effectiveFrom, 'No date')}");
+    expect(pageSource).not.toContain("` - ${formatDateTime(policy.effectiveTo, 'No date')}`");
+    expect(pageSource).not.toContain("formatDateTime(row.createdAt, 'Unknown time')");
+  });
+
   it('uses shared Vuexy badge atoms instead of raw tax policy pill spans', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('AdminSignal');

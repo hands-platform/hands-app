@@ -6,10 +6,12 @@ describe('payment page presenters', () => {
 
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-8">');
     expect(source).not.toContain('<span className="signal signal-warn">Callback check</span>');
     expect(source).not.toContain('<span className="signal signal-warn">Cash fee debt</span>');
     expect(source).not.toContain('<span className="signal signal-info">Cash collection</span>');
     expect(source).not.toContain('<span className="signal signal-ok">Settled</span>');
+    expect(source).not.toContain('<strong>{formatDateTime(callback.receivedAt)}</strong>');
   });
 });

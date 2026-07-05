@@ -11,9 +11,10 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
@@ -147,7 +148,11 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <strong>{preview.policy?.name ?? 'No active policy available now'}</strong>
               <p className="muted">
                 {preview.policy
-                  ? `Effective from ${formatDateTime(preview.policy.effectiveFrom, 'No date')}`
+                  ? (
+                      <>
+                        Effective from <DateTimeText fallback="No date" value={preview.policy.effectiveFrom} />
+                      </>
+                    )
                   : 'Create or activate one policy before partner earnings are settled.'}
               </p>
             </div>
@@ -244,8 +249,13 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <AdminSectionHeader
               description={
                 <>
-                  {formatDateTime(policy.effectiveFrom, 'No date')}
-                  {policy.effectiveTo ? ` - ${formatDateTime(policy.effectiveTo, 'No date')}` : ''}
+                  <DateTimeText fallback="No date" value={policy.effectiveFrom} />
+                  {policy.effectiveTo ? (
+                    <>
+                      {' - '}
+                      <DateTimeText fallback="No date" value={policy.effectiveTo} />
+                    </>
+                  ) : null}
                 </>
               }
               status={
@@ -481,7 +491,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <div>
               <strong>{row.actionLabel}</strong>
               <p className="muted">
-                {row.detail} / {row.actorLabel} / {formatDateTime(row.createdAt, 'Unknown time')}
+                {row.detail} / {row.actorLabel} /{' '}
+                <DateTimeText fallback="Unknown time" value={row.createdAt} />
               </p>
             </div>
             <small>{row.targetLabel}</small>

@@ -2,8 +2,9 @@ import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminDisclosure, AdminNotePanel } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
-import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
+import { formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 import type { PaymentConfirmationAction } from './payment-action-confirmation';
 import { paymentActionConfirmHref } from './payment-action-confirmation';
@@ -160,7 +161,9 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
         <div className="setup-stage-item">
           <StatusBadge tone="info">Received</StatusBadge>
           <div>
-            <strong>{formatDateTime(callback.receivedAt)}</strong>
+            <strong>
+              <DateTimeText value={callback.receivedAt} />
+            </strong>
             <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
           </div>
         </div>
