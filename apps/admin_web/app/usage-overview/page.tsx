@@ -26,7 +26,12 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from '../../components/admin-overview-card';
+import {
+  AdminMiniMetricStrip,
+  AdminOverviewCommandCard,
+  AdminOverviewCommandGrid,
+  AdminOverviewGrid,
+} from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
@@ -745,12 +750,15 @@ function UsageInsightCard({
       description={description}
       title={title}
     >
-      {rows.map((row) => (
-        <div key={row.label} className={`usage-overview-mini-metric is-${row.tone}`}>
-          <span>{row.label}</span>
-          <strong>{formatNumber(row.value)}</strong>
-        </div>
-      ))}
+      <AdminMiniMetricStrip
+        className="usage-overview-mini-metric-list"
+        itemClassName="usage-overview-mini-metric"
+        metrics={rows.map((row) => ({
+          label: row.label,
+          tone: row.tone,
+          value: formatNumber(row.value),
+        }))}
+      />
     </AdminSection>
   );
 }
@@ -776,24 +784,16 @@ function PaymentCouponInsightCard({
       description="Completed-booking payment mix and coupon usage signal."
       title="Payment & coupon"
     >
-      <div className="usage-overview-payment-summary">
-        <div className="usage-overview-mini-metric is-info">
-          <span>Coupon bookings</span>
-          <strong>{formatNumber(couponBookingCount)}</strong>
-        </div>
-        <div className="usage-overview-mini-metric is-danger">
-          <span>Failed payments</span>
-          <strong>{formatNumber(paymentFailureCount)}</strong>
-        </div>
-        <div className="usage-overview-mini-metric is-warning">
-          <span>Refund amount</span>
-          <strong>{money(refundAmount)}</strong>
-        </div>
-        <div className="usage-overview-mini-metric is-primary">
-          <span>Methods</span>
-          <strong>{formatNumber(rows.length)}</strong>
-        </div>
-      </div>
+      <AdminMiniMetricStrip
+        className="usage-overview-payment-summary"
+        itemClassName="usage-overview-mini-metric"
+        metrics={[
+          { label: 'Coupon bookings', tone: 'info', value: formatNumber(couponBookingCount) },
+          { label: 'Failed payments', tone: 'danger', value: formatNumber(paymentFailureCount) },
+          { label: 'Refund amount', tone: 'warning', value: money(refundAmount) },
+          { label: 'Methods', tone: 'primary', value: formatNumber(rows.length) },
+        ]}
+      />
       {rows.length > 0 ? (
         <div className="usage-overview-payment-mix">
           {rows.map((row) => {

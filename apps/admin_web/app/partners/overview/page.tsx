@@ -27,7 +27,12 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from '../../../components/admin-overview-card';
+import {
+  AdminMiniMetricStrip,
+  AdminOverviewCommandCard,
+  AdminOverviewCommandGrid,
+  AdminOverviewGrid,
+} from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
@@ -658,14 +663,15 @@ function WalletRiskCard({
 
 function MiniKpiStrip({ kpis }: { readonly kpis: readonly AdminPartnerOverviewKpi[] }) {
   return (
-    <div className="partner-overview-mini-kpis">
-      {kpis.slice(0, 5).map((kpi) => (
-        <div key={kpi.key}>
-          <span>{kpi.label}</span>
-          <strong>{formatKpiValue(kpi)}</strong>
-        </div>
-      ))}
-    </div>
+    <AdminMiniMetricStrip
+      className="partner-overview-mini-kpis"
+      limit={5}
+      metrics={kpis.map((kpi) => ({
+        key: kpi.key,
+        label: kpi.label,
+        value: formatKpiValue(kpi),
+      }))}
+    />
   );
 }
 

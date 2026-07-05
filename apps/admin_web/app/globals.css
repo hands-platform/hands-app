@@ -14504,6 +14504,16 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.admin-mini-metric-strip {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-mini-metric {
+  min-width: 0;
+}
+
 .admin-form-control-help {
   color: var(--admin-muted);
   font-size: 12px;

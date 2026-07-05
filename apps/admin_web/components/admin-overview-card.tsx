@@ -30,6 +30,21 @@ type AdminOverviewCommandCardProps = {
   readonly value: ReactNode;
 };
 
+type AdminMiniMetric = {
+  readonly key?: string;
+  readonly label: ReactNode;
+  readonly tone?: string;
+  readonly value: ReactNode;
+};
+
+type AdminMiniMetricStripProps = {
+  readonly ariaLabel?: string;
+  readonly className?: string;
+  readonly itemClassName?: string;
+  readonly limit?: number;
+  readonly metrics: readonly AdminMiniMetric[];
+};
+
 export function AdminOverviewCommandGrid({ ariaLabel, children, className }: AdminOverviewCommandGridProps) {
   return (
     <AdminOverviewGrid ariaLabel={ariaLabel} className={className} variant="command">
@@ -43,6 +58,30 @@ export function AdminOverviewGrid({ ariaLabel, children, className, variant }: A
     <section className={joinClassNames(adminOverviewGridClassNames[variant], className)} aria-label={ariaLabel}>
       {children}
     </section>
+  );
+}
+
+export function AdminMiniMetricStrip({
+  ariaLabel,
+  className,
+  itemClassName,
+  limit,
+  metrics,
+}: AdminMiniMetricStripProps) {
+  const visibleMetrics = typeof limit === 'number' ? metrics.slice(0, limit) : metrics;
+
+  return (
+    <div aria-label={ariaLabel} className={joinClassNames('admin-mini-metric-strip', className)}>
+      {visibleMetrics.map((metric, index) => (
+        <div
+          className={joinClassNames('admin-mini-metric', itemClassName, metric.tone ? `is-${metric.tone}` : undefined)}
+          key={miniMetricKey(metric, index)}
+        >
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -89,6 +128,12 @@ export function AdminOverviewCommandCard({
 
 function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ');
+}
+
+function miniMetricKey(metric: AdminMiniMetric, index: number) {
+  if (metric.key) return metric.key;
+  if (typeof metric.label === 'string' || typeof metric.label === 'number') return String(metric.label);
+  return `metric-${index}`;
 }
 
 const adminOverviewGridClassNames: Record<AdminOverviewGridVariant, string> = {

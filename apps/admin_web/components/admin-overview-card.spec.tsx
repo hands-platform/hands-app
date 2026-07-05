@@ -1,6 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid, AdminOverviewGrid } from './admin-overview-card';
+import {
+  AdminMiniMetricStrip,
+  AdminOverviewCommandCard,
+  AdminOverviewCommandGrid,
+  AdminOverviewGrid,
+} from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
   it('renders the shared Vuexy overview command grid shell', () => {
@@ -86,5 +91,23 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('href="/finance-tax/payment-clearing"');
     expect(markup).toContain('<strong>3</strong>');
     expect(markup).toContain('<em>120.000 VND</em>');
+  });
+
+  it('renders shared mini metric strips for overview cards', () => {
+    const markup = renderToStaticMarkup(
+      <AdminMiniMetricStrip
+        className="usage-overview-payment-summary"
+        itemClassName="usage-overview-mini-metric"
+        metrics={[
+          { label: 'Coupon bookings', tone: 'info', value: '12' },
+          { label: 'Failed payments', tone: 'danger', value: '2' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('class="admin-mini-metric-strip usage-overview-payment-summary"');
+    expect(markup).toContain('class="admin-mini-metric usage-overview-mini-metric is-info"');
+    expect(markup).toContain('<span>Coupon bookings</span>');
+    expect(markup).toContain('<strong>12</strong>');
   });
 });
