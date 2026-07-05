@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -199,7 +200,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                 ))}
               </div>
             </div>
-            <form className="actions" action={updateTransferRefAction}>
+            <AdminActionsForm action={updateTransferRefAction}>
               <input type="hidden" name="payoutBatchId" value={row.id} />
               <AdminFormInput
                 defaultValue={row.transferRef}
@@ -211,7 +212,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <AdminFormControlButton className="button-primary" type="submit">
                 Save
               </AdminFormControlButton>
-            </form>
+            </AdminActionsForm>
             <div className="actions admin-mt-8">
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
               {row.payoutHold ? (

@@ -21,6 +21,14 @@ export function AdminInlineForm({ children, className, ...formProps }: AdminInli
   );
 }
 
+export function AdminActionsForm({ children, className, ...formProps }: AdminInlineActionFormProps) {
+  return (
+    <form {...formProps} className={mergeClassNames('actions', className)}>
+      {children}
+    </form>
+  );
+}
+
 function mergeClassNames(...classNames: Array<string | undefined>) {
   return classNames
     .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])

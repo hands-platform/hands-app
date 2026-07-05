@@ -32,6 +32,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
@@ -777,7 +778,7 @@ export default async function PartnerControlsPage({
                   ) : null}
                 </td>
                 <td>
-                  <form className="actions" action={createProviderSanction}>
+                  <AdminActionsForm action={createProviderSanction}>
                     <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
                     <input type="hidden" name="reportId" value={report.id} />
                     <AdminFormSelect
@@ -802,10 +803,10 @@ export default async function PartnerControlsPage({
                     <AdminFormControlButton className="button-primary" type="submit">
                       Apply
                     </AdminFormControlButton>
-                  </form>
+                  </AdminActionsForm>
                 </td>
                 <td>
-                  <form className="actions" action={updateProviderReport}>
+                  <AdminActionsForm action={updateProviderReport}>
                     <input type="hidden" name="reportId" value={report.id} />
                     <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
                     <AdminFormSelect
@@ -838,7 +839,7 @@ export default async function PartnerControlsPage({
                     <AdminFormControlButton className="button-primary" type="submit">
                       Update
                     </AdminFormControlButton>
-                  </form>
+                  </AdminActionsForm>
                 </td>
               </tr>
             ))}
