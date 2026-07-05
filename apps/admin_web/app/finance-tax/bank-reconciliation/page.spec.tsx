@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('BankReconciliationPage', () => {
   beforeEach(() => {
@@ -44,6 +47,13 @@ describe('BankReconciliationPage', () => {
       }
       return fallback;
     });
+  });
+
+  it('uses the shared Vuexy text link atom for bank transaction navigation', () => {
+    expect(source).toContain("import { AdminTextLink } from '../../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
   });
 
   it('keeps manual import bounded and shows validation failures without overlapping raw inputs', async () => {

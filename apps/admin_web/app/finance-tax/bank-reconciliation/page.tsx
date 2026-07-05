@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, Landmark, ReceiptText } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
@@ -23,6 +22,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -275,9 +275,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           {pagination.rows.map((transaction) => (
             <tr key={transaction.id}>
               <td>
-                <Link className="text-link" href={bankReconciliationDetailHref(transaction.id)}>
+                <AdminTextLink href={bankReconciliationDetailHref(transaction.id)}>
                   <strong>{transaction.transferRef ?? shortId(transaction.sourceKey)}</strong>
-                </Link>
+                </AdminTextLink>
                 <div className="muted">{transaction.type}</div>
                 <div className="muted">{shortId(transaction.id)}</div>
               </td>

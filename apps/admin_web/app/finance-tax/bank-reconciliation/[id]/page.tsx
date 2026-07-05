@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import type {
@@ -25,6 +24,7 @@ import {
 import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
+import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
@@ -202,9 +202,9 @@ export default async function BankReconciliationDetailPage({
             value={
               latestActiveMatch?.paymentClearingEntry ? (
                 <div className="admin-table-substack">
-                  <Link className="text-link" href={paymentClearingDetailHref(latestActiveMatch.paymentClearingEntry.id)}>
+                  <AdminTextLink href={paymentClearingDetailHref(latestActiveMatch.paymentClearingEntry.id)}>
                     {latestActiveMatch.paymentClearingEntry.type}
-                  </Link>
+                  </AdminTextLink>
                   <span className="muted">{latestActiveMatch.paymentClearingEntry.status}</span>
                 </div>
               ) : (
@@ -217,9 +217,9 @@ export default async function BankReconciliationDetailPage({
             value={
               latestActiveMatch?.accountingJournalEntry ? (
                 <div className="admin-table-substack">
-                  <Link className="text-link" href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}>
+                  <AdminTextLink href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}>
                     {latestActiveMatch.accountingJournalEntry.accountCode}
-                  </Link>
+                  </AdminTextLink>
                   <span className="muted">{latestActiveMatch.accountingJournalEntry.accountName}</span>
                 </div>
               ) : (
@@ -475,9 +475,9 @@ function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconci
 
   return (
     <div className="admin-table-substack">
-      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+      <AdminTextLink href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
         {match.accountingJournalEntry.accountCode}
-      </Link>
+      </AdminTextLink>
       <span className="muted">{match.accountingJournalEntry.accountName}</span>
     </div>
   );
@@ -490,9 +490,9 @@ function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBan
 
   return (
     <div className="admin-table-substack">
-      <Link className="text-link" href={paymentClearingDetailHref(match.paymentClearingEntry.id)}>
+      <AdminTextLink href={paymentClearingDetailHref(match.paymentClearingEntry.id)}>
         {match.paymentClearingEntry.type}
-      </Link>
+      </AdminTextLink>
       <span className="muted">{match.paymentClearingEntry.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}</span>
     </div>
   );
