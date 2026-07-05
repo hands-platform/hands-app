@@ -44,6 +44,14 @@ describe('MonthlyTaxClosingPage', () => {
     expect(source).not.toContain('className="pill pill-success"');
   });
 
+  it('uses the shared Vuexy text link atom for remittance evidence links', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
+
+    expect(source).toContain("import { AdminTextLink } from '../../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('<a className="text-link"');
+  });
+
   it('uses the shared DateTimeText atom for stored closing timestamps', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 

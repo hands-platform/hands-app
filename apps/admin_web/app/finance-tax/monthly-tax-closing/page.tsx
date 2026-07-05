@@ -14,6 +14,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -410,9 +411,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     </div>
                     <div className="muted">{closingRemittanceState.detail}</div>
                     {closingRemittanceState.evidenceHref ? (
-                      <a className="text-link" href={closingRemittanceState.evidenceHref} rel="noreferrer" target="_blank">
+                      <AdminTextLink href={closingRemittanceState.evidenceHref} rel="noreferrer" target="_blank">
                         Open remittance evidence
-                      </a>
+                      </AdminTextLink>
                     ) : null}
                     {closing.notes ? <div className="muted admin-mt-8">{closing.notes}</div> : null}
                   </td>
