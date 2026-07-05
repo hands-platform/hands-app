@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -14,7 +15,7 @@ export type PartnerCashDebtOriginRow = {
   readonly amountLabel: string;
   readonly bookingHref?: string;
   readonly bookingLabel: string;
-  readonly createdLabel: string;
+  readonly createdAt?: string | null;
   readonly evidenceLabel: string;
   readonly handsFeeLabel: string;
   readonly id: string;
@@ -106,7 +107,8 @@ export function PartnerDetailCashDebtOriginSection({
                 </td>
                 <td>
                   <p className="muted">
-                    Booking {row.bookingLabel} / payment {row.paymentMethod} / created {row.createdLabel}
+                    Booking {row.bookingLabel} / payment {row.paymentMethod} / created{' '}
+                    <DateTimeText fallback="Missing" value={row.createdAt} />
                   </p>
                 </td>
                 <td>

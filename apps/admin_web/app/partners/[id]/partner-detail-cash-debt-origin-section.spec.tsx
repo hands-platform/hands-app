@@ -5,11 +5,16 @@ import { PartnerDetailCashDebtOriginSection } from './partner-detail-cash-debt-o
 describe('PartnerDetailCashDebtOriginSection', () => {
   it('uses the shared Vuexy badge atoms for cash debt pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-danger">HANDS fee');
     expect(source).not.toContain('<span className="pill pill-warn">Tax');
     expect(source).not.toContain('<span className="pill pill-info">{row.evidenceLabel}</span>');
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdLabel: string;');
+    expect(source).not.toContain('created {row.createdLabel}');
+    expect(pageSource).not.toContain('createdLabel: formatDate(earning.createdAt)');
   });
 
   it('renders cash debt origins as a Vuexy table', () => {
@@ -23,7 +28,7 @@ describe('PartnerDetailCashDebtOriginSection', () => {
           amountLabel: '-120,000 VND',
           bookingHref: '/bookings/booking-1',
           bookingLabel: 'BK-1001',
-          createdLabel: '20 Jun 2026, 10:00',
+          createdAt: '2026-06-20T03:00:00.000Z',
           evidenceLabel: 'Needs ref',
           handsFeeLabel: '100,000 VND',
           id: 'debt-1',

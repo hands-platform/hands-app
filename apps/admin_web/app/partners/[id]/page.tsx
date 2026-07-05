@@ -4103,7 +4103,7 @@ function buildPartnerCashDebtOriginRows(
     amountLabel: formatCurrency(Math.abs(amountValue(earning.netAmount))),
     bookingHref: earning.bookingId ? `/bookings/${earning.bookingId}` : undefined,
     bookingLabel: earning.bookingId ? shortRecordId(earning.bookingId) : 'unknown',
-    createdLabel: formatDate(earning.createdAt),
+    createdAt: earning.createdAt,
     evidenceLabel: partnerCashDebtEvidenceLabel(earning),
     handsFeeLabel: formatCurrency(earning.platformFee),
     id: earning.id,
