@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminNotePanel } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
@@ -104,7 +105,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                 <div className="muted admin-mt-8">
                   {row.opsHint}
                 </div>
-                <div className="ops-task-note admin-mt-10">
+                <AdminNotePanel className="admin-mt-10">
                   <strong>Payment action execution map</strong>
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((executionRow) => (
@@ -120,7 +121,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                       </div>
                     ))}
                   </div>
-                </div>
+                </AdminNotePanel>
               </td>
               <td>
                 <div>{row.providerRef}</div>
