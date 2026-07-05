@@ -1,7 +1,13 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminCard,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskCard,
+} from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
@@ -24,7 +30,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
       statusTone="info"
       title="Owner decision backlog"
     >
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <AdminSectionHeader
           actions={(
             <StatusBadge
@@ -59,7 +65,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             />
           ))}
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="ops-task-grid admin-mt-14">
         {backlog.map((item) => (
           <AdminTaskCard
@@ -78,7 +84,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
                 </AdminCard>
               ))}
             </div>
-            <div className="ops-task-note admin-mt-12">
+            <AdminNotePanel className="admin-mt-12">
               <strong>Recommended direction</strong>
               <p className="muted">{item.recommendation}</p>
               <strong>Decision trigger</strong>
@@ -87,7 +93,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
                 <ExternalLink size={14} aria-hidden="true" />
                 Review data
               </AdminFormControlLink>
-            </div>
+            </AdminNotePanel>
           </AdminTaskCard>
         ))}
       </div>

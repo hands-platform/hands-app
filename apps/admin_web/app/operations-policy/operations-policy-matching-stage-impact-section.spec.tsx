@@ -10,9 +10,11 @@ const sectionSource = readFileSync(
 
 describe('OperationsPolicyMatchingStageImpactSection', () => {
   it('uses shared Vuexy badge atoms for scenario labels', () => {
+    expect(sectionSource).toContain('AdminNotePanel');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="ops-task-note admin-mt-14">');
   });
 
   it('renders matching stage scenarios and usage note', () => {

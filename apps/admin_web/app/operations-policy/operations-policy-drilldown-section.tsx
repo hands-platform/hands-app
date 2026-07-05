@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminNotePanel, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
@@ -67,7 +67,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
       {list.rows.length ? (
         <div className="ops-task-breakdown">
           {list.rows.map((row) => (
-            <div className="ops-task-note" key={`${list.key}-${row.id}`}>
+            <AdminNotePanel key={`${list.key}-${row.id}`}>
               <AdminFormControlLink className="button-secondary policy-inline-action" href={row.href}>
                 <ExternalLink aria-hidden="true" size={14} />
                 {row.title}
@@ -84,13 +84,13 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
                 ))}
               </div>
               <small>{row.operatorAction}</small>
-            </div>
+            </AdminNotePanel>
           ))}
         </div>
       ) : (
-        <div className="ops-task-note">
+        <AdminNotePanel>
           <p className="muted admin-m-0">{list.emptyText}</p>
-        </div>
+        </AdminNotePanel>
       )}
     </AdminTaskCard>
   );

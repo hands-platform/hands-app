@@ -8,7 +8,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminCard, AdminFormCard, AdminLinkCard } from '../../components/admin-surface';
+import { AdminCard, AdminFormCard, AdminLinkCard, AdminNotePanel } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -66,7 +66,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           <strong>{relatedBookings.recordCount}</strong>
         </div>
       </div>
-      <div className="ops-task-note admin-mt-12">
+      <AdminNotePanel className="admin-mt-12">
         <div className="ops-row">
           <div>
             <strong>{impact.title}</strong>
@@ -76,8 +76,8 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             {setting.enforced ? 'Live behavior' : 'Decision log'}
           </StatusBadge>
         </div>
-      </div>
-      <div className="ops-task-note admin-mt-12">
+      </AdminNotePanel>
+      <AdminNotePanel className="admin-mt-12">
         <div className="ops-row">
           <div>
             <strong>{relatedBookings.title}</strong>
@@ -111,8 +111,8 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             </AdminCard>
           ) : null}
         </div>
-      </div>
-      <div className="ops-task-note admin-mt-12">
+      </AdminNotePanel>
+      <AdminNotePanel className="admin-mt-12">
         <strong>Before saving this policy</strong>
         <p className="muted">
           Review these operating surfaces first, then write the reason so the shift team can trace why the
@@ -126,7 +126,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             </AdminLinkCard>
           ))}
         </div>
-      </div>
+      </AdminNotePanel>
       {setting.options?.length ? (
         <>
           <AdminFormSelect

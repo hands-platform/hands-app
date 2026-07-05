@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminNotePanel, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { MatchingStageImpactPreview } from './matching-stage-impact-preview';
 
@@ -64,14 +64,14 @@ export function OperationsPolicyMatchingStageImpactSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <strong>How to use this preview</strong>
         <p className="muted">
           If a tested value increases Stage 2 marketplace count without increasing stale/no-supply checks, it
           may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve Partner
           location freshness, push delivery, or city supply before changing policy.
         </p>
-      </div>
+      </AdminNotePanel>
     </AdminSection>
   );
 }

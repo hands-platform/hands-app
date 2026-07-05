@@ -58,7 +58,9 @@ describe('OperationsPolicyPage', () => {
   });
 
   it('uses the shared empty-state atom for missing policy setup copy', () => {
+    expect(pageSource).toContain('AdminNotePanel');
     expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).not.toContain('<div className="ops-task-note admin-m-0">');
     expect(pageSource).not.toContain('<h3>No matching policies loaded</h3>');
     expect(pageSource).not.toContain('<p className="muted">\n                Seed operational policies');
   });
