@@ -8,7 +8,11 @@ type AdminFilterChipGroupProps = {
 
 export function AdminFilterChipGroup({ ariaLabel, children, className }: AdminFilterChipGroupProps) {
   return (
-    <div aria-label={ariaLabel} className={mergeClassNames('participant-list admin-filter-chip-group', className)}>
+    <div
+      aria-label={ariaLabel}
+      className={mergeClassNames('participant-list admin-filter-chip-group', className)}
+      role="group"
+    >
       {children}
     </div>
   );
