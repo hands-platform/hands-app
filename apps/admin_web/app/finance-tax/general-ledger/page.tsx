@@ -205,7 +205,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                     {shortId(batch.bookingId)}
                   </Link>
                 ) : (
-                  <span className="muted">-</span>
+                  <AdminInlineFallback>No booking link</AdminInlineFallback>
                 )}
                 <div>
                   <AdminInlineFallback>{batch.booking?.status ?? 'No booking'}</AdminInlineFallback>
@@ -219,7 +219,11 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 ) : (
                   <strong>{financePersonName(batch.customerProfile?.user, 'Unknown customer')}</strong>
                 )}
-                <div className="muted">{batch.customerProfile?.user?.phone ?? '-'}</div>
+                {batch.customerProfile?.user?.phone ? (
+                  <div className="muted">{batch.customerProfile.user.phone}</div>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No customer phone</AdminInlineFallback>
+                )}
               </td>
               <td>
                 {batch.providerProfileId ? (
@@ -227,12 +231,20 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                     {batch.providerProfile?.displayName ?? financePersonName(batch.providerProfile?.user, 'Unknown partner')}
                   </Link>
                 ) : (
-                  <span className="muted">-</span>
+                  <AdminInlineFallback>No partner link</AdminInlineFallback>
                 )}
-                <div className="muted">{batch.providerProfile?.user?.phone ?? '-'}</div>
+                {batch.providerProfile?.user?.phone ? (
+                  <div className="muted">{batch.providerProfile.user.phone}</div>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No partner phone</AdminInlineFallback>
+                )}
               </td>
               <td>
-                <strong>{batch.monthlyPeriod ?? '-'}</strong>
+                {batch.monthlyPeriod ? (
+                  <strong>{batch.monthlyPeriod}</strong>
+                ) : (
+                  <AdminInlineFallback>No monthly period</AdminInlineFallback>
+                )}
                 <div className="muted">
                   <DateTimeText value={batch.postedAt} />
                 </div>

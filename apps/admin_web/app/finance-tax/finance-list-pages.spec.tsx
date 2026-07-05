@@ -474,6 +474,16 @@ describe('finance list pages', () => {
     expect(source).not.toContain('<div className="muted">Credit {formatMoney(batch.totalCredit, batch.currency)}</div>');
   });
 
+  it('uses shared inline fallback atoms for general ledger missing relationship cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<span className="muted">-</span>');
+    expect(source).not.toContain('<div className="muted">{batch.customerProfile?.user?.phone ?? \'-\'}</div>');
+    expect(source).not.toContain('<div className="muted">{batch.providerProfile?.user?.phone ?? \'-\'}</div>');
+    expect(source).not.toContain('<strong>{batch.monthlyPeriod ?? \'-\'}</strong>');
+  });
+
   it('uses shared badge atoms for booking settlement audit status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
 
