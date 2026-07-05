@@ -361,8 +361,8 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
         ) : null}
         <div className="referral-reward-action-button-list">
           {actions.map((item) => (
-            <button
-              className="admin-action-item admin-action-button"
+            <AdminFormControlButton
+              className="button-secondary admin-action-item admin-action-button"
               formAction={item.action}
               formNoValidate={item.formNoValidate}
               key={item.label}
@@ -370,7 +370,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
               type="submit"
             >
               <span>{item.label}</span>
-            </button>
+            </AdminFormControlButton>
           ))}
         </div>
       </ActionMenuDropdownForm>

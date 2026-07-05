@@ -126,8 +126,7 @@ type AdminFormControlLinkProps = {
 type AdminFormControlButtonProps = {
   readonly children: ReactNode;
   readonly className?: string;
-  readonly type?: 'button' | 'submit';
-} & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'disabled' | 'onClick' | 'title'>;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'className'>;
 
 type AdminFormControlStackProps = {
   readonly children: ReactNode;

@@ -96,6 +96,20 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
   });
 
+  it('uses the shared Vuexy button atom for cashout decision submit actions', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'all', q: '', status: 'approved' }}
+        rows={[row]}
+        summary={summary}
+      />,
+    );
+
+    expect(cashoutQueueSource).not.toContain('<button\n              className="admin-action-item admin-action-button"');
+    expect(markup).toContain('admin-form-control-button button button-secondary admin-action-item admin-action-button');
+  });
+
   it('uses the shared table pagination footer for the cashout queue', () => {
     expect(cashoutQueueSource).toContain('AdminTablePaginationFooter');
     expect(cashoutQueueSource).not.toContain('<AdminTableFooter>');
