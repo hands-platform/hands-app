@@ -1,6 +1,7 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -62,9 +63,9 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
                   {row.paymentIdLabel}
                   <div className="muted">{row.paymentStatus ?? 'UNKNOWN'}</div>
                   {row.bookingHref ? (
-                    <a className="text-link" href={row.bookingHref}>
+                    <AdminTextLink href={row.bookingHref}>
                       Open booking
-                    </a>
+                    </AdminTextLink>
                   ) : null}
                 </>
               ) : (

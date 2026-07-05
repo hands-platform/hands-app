@@ -4,6 +4,7 @@ import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -87,18 +88,18 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                 <div className="muted">{row.customerPhone}</div>
                 {row.cashDebtLabel ? <div className="muted">{row.cashDebtLabel}</div> : null}
                 <div className="actions admin-mt-8">
-                  <a className="text-link" href={row.bookingHref}>
+                  <AdminTextLink href={row.bookingHref}>
                     Open booking
-                  </a>
+                  </AdminTextLink>
                   {row.earningHref ? (
-                    <a className="text-link" href={row.earningHref}>
+                    <AdminTextLink href={row.earningHref}>
                       Open earning
-                    </a>
+                    </AdminTextLink>
                   ) : null}
                   {row.refundHref ? (
-                    <a className="text-link" href={row.refundHref}>
+                    <AdminTextLink href={row.refundHref}>
                       Open refund
-                    </a>
+                    </AdminTextLink>
                   ) : null}
                 </div>
               </td>
