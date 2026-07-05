@@ -30,6 +30,40 @@ describe('PartnerDetailKycDecisionSection', () => {
     expect(pageSource).not.toContain('submittedLabel={formatDate(provider.kyc?.submittedAt)}');
   });
 
+  it('prefers shared detail nodes for checklist timestamps', () => {
+    const section = PartnerDetailKycDecisionSection({
+      canApprove: true,
+      cccdNumberLast4: '1234',
+      evidence: {
+        allRequiredApproved: true,
+        decisionChecklist: [
+          {
+            detail: 'Fallback submitted date text',
+            detailNode: <span>Shared submitted date marker</span>,
+            label: 'KYC record submitted',
+            ok: true,
+          },
+        ],
+        nextAction: 'No KYC action required.',
+        rows: [],
+      },
+      rejectionReason: null,
+      reviewActions: [],
+      reviewedLabel: 'Missing',
+      status: 'APPROVED',
+      submittedLabel: 'Missing',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared submitted date marker');
+    expect(rendered).not.toContain('Fallback submitted date text');
+    expect(source).toContain('readonly detailNode?: ReactNode;');
+    expect(source).toContain('item.detailNode ?? item.detail');
+    expect(pageSource).toContain('Submitted <DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />.');
+  });
+
   it('renders KYC checklist and evidence as Vuexy tables', () => {
     const section = PartnerDetailKycDecisionSection({
       canApprove: false,

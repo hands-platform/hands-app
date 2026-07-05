@@ -4209,6 +4209,11 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
         detail: kycRecordReady
           ? `Submitted ${formatDate(provider.kyc?.submittedAt)}.`
           : 'Partner must submit identity data before admin can approve KYC.',
+        detailNode: kycRecordReady ? (
+          <>
+            Submitted <DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />.
+          </>
+        ) : undefined,
       },
       {
         label: 'Legal name present',

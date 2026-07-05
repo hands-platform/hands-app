@@ -22,6 +22,7 @@ export type PartnerKycDecisionEvidence = {
 
 type PartnerKycDecisionChecklistItem = {
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly label: string;
   readonly ok: boolean;
 };
@@ -110,7 +111,7 @@ export function PartnerDetailKycDecisionSection({
                 </StatusBadge>
               </td>
               <td>
-                <p className="muted">{item.detail}</p>
+                <p className="muted">{item.detailNode ?? item.detail}</p>
               </td>
               <td>
                 <span className="muted">{item.ok ? 'Clear' : 'Needs review'}</span>
