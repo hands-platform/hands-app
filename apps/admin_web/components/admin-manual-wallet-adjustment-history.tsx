@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
-import { formatDateTime } from '../lib/admin-format';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminTablePanel } from './admin-table-panel';
+import { DateTimeText } from './date-time-text';
 import { MoneyText } from './money-text';
 import { StatusBadge } from './status-badge';
 
@@ -50,7 +50,9 @@ export function AdminManualWalletAdjustmentHistory({
           {rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <strong>{formatDateTime(row.createdAt)}</strong>
+                <strong>
+                  <DateTimeText value={row.createdAt} />
+                </strong>
                 <p className="muted">{row.ledgerType}</p>
               </td>
               <td>

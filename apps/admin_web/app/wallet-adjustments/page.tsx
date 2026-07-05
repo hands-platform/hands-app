@@ -13,6 +13,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type {
@@ -24,7 +25,6 @@ import type {
   AdminManualWalletAdjustmentType,
 } from '../../lib/admin-api';
 import { adminGet, adminPost } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { createManualWalletAdjustment } from './actions';
 
@@ -214,7 +214,9 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           {historyPagination.rows.map((row) => (
             <tr key={row.id}>
               <td>
-                <strong>{formatDateTime(row.createdAt)}</strong>
+                <strong>
+                  <DateTimeText value={row.createdAt} />
+                </strong>
                 <p className="muted">{row.ledgerType}</p>
               </td>
               <td>

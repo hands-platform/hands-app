@@ -299,6 +299,7 @@ describe('WalletAdjustmentsPage', () => {
     );
     expect(markup).toContain('Manual adjustment history');
     expect(markup).toContain('Smoke Partner');
+    expect(markup).toContain('date-time-text');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-partner-1');
     expect(markup).toContain('Launch bonus');
@@ -306,6 +307,7 @@ describe('WalletAdjustmentsPage', () => {
 
   it('uses the shared FinanceDataTable shell for wallet ledger tables', () => {
     expect(pageSource).toContain('FinanceDataTable');
+    expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).toContain('AdminTablePanel');
     expect(pageSource).not.toContain(
@@ -315,6 +317,7 @@ describe('WalletAdjustmentsPage', () => {
       'className="admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
     );
     expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
+    expect(pageSource).not.toContain('<strong>{formatDateTime(row.createdAt)}</strong>');
     expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
     expect(pageSource).not.toContain('<td>{formatMoney(entry.amount, currency)}</td>');
     expect(pageSource).not.toContain('AdminTableScroll');
