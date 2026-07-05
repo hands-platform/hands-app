@@ -16,6 +16,7 @@ import {
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
+  AdminFormShell,
   AdminFormStaticValue,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -289,7 +290,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
               ))}
             </div>
 
-            <form action={sendPushCampaign} className="notification-push-send-confirm-form">
+            <AdminFormShell action={sendPushCampaign} className="notification-push-send-confirm-form">
               <input name="targetRole" type="hidden" value={targetRole} />
               <input name="targetSegment" type="hidden" value={targetSegment} />
               <input name="appDestination" type="hidden" value={appDestination} />
@@ -300,7 +301,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
               <AdminFormControlButton disabled={preview.willSendCount === 0}>
                 Send push
               </AdminFormControlButton>
-            </form>
+            </AdminFormShell>
           </AdminCard>
         ) : null}
       </AdminFilterPanel>

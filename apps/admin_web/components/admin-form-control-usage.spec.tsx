@@ -273,6 +273,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps push send confirmation forms inside the shared Vuexy form shell atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => hasRawFormClassToken(readFileSync(filePath, 'utf8'), 'notification-push-send-confirm-form'))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
