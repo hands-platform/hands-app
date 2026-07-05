@@ -6,6 +6,7 @@ import { AdminInlineActionForm } from '../../components/admin-inline-action-form
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime } from '../../lib/admin-format';
 import {
@@ -119,8 +120,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
         </div>
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         description="Recent Admin Web page visits and server actions are stored in the shared audit log by resolved operator identity."
         resultLabel={`${operatorActivityLogs.length} recent action(s)`}
         resultTone="info"
@@ -151,10 +151,9 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         description="This table uses the existing bounded /admin/users API and only displays users with the ADMIN role."
         resultLabel={`${adminUsers.length} admin(s)`}
         resultTone="info"
@@ -254,7 +253,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             })}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminFilterPanel>
+      </AdminTablePanel>
     </AdminPageTemplate>
   );
 }
