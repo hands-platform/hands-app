@@ -200,6 +200,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
+    expect(pageSource).toContain('AdminOverviewCommandGrid className="finance-overview-section-grid"');
+    expect(pageSource).not.toContain('<section className="finance-overview-section-grid"');
     expect(markup).toContain('Gross Booking Amount');
     expect(markup).toContain('Platform Fee');
     expect(markup).toContain('Customer paid amount is not company revenue');

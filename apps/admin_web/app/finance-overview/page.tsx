@@ -201,11 +201,11 @@ export default async function FinanceOverviewPage({
         ))}
       </AdminSection>
 
-      <section className="finance-overview-section-grid" aria-label="Finance overview sections">
+      <AdminOverviewCommandGrid className="finance-overview-section-grid" ariaLabel="Finance overview sections">
         {sections.map((section) => (
           <FinanceOverviewSectionCard key={section.title} section={section} />
         ))}
-      </section>
+      </AdminOverviewCommandGrid>
 
       <AdminSection
         actions={<AlertTriangle size={18} aria-hidden="true" />}
