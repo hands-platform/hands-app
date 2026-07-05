@@ -2317,6 +2317,23 @@ function buildPartnerActivityRecords(
       detail: `${sanction.reason}${
         sanction.liftedAt ? ` / lifted ${formatDate(sanction.liftedAt)}` : ''
       }${sanction.expiresAt ? ` / expires ${formatDate(sanction.expiresAt)}` : ''}`,
+      detailNode: (
+        <>
+          {sanction.reason}
+          {sanction.liftedAt ? (
+            <>
+              {' '}
+              / lifted <DateTimeText fallback="Missing" value={sanction.liftedAt} />
+            </>
+          ) : null}
+          {sanction.expiresAt ? (
+            <>
+              {' '}
+              / expires <DateTimeText fallback="Missing" value={sanction.expiresAt} />
+            </>
+          ) : null}
+        </>
+      ),
     });
   }
 

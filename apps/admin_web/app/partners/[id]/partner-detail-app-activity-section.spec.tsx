@@ -111,6 +111,11 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(source).toContain('detailNode?: ReactNode;');
     expect(source).toContain('{record.detailNode ?? record.detail}');
   });
+
+  it('keeps sanction detail timestamps on shared DateTimeText nodes from the detail page', () => {
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.liftedAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.expiresAt} />');
+  });
 });
 
 function textContent(value: unknown): string {
