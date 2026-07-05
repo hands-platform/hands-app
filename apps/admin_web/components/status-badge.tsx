@@ -85,11 +85,25 @@ function mergeBadgeClassName(baseClassName: string, className?: string) {
   return Array.from(
     new Set(
       [baseClassName, className].flatMap((value) =>
-        value ? value.split(/\s+/).filter(Boolean) : [],
+        value
+          ? value
+              .split(/\s+/)
+              .filter(Boolean)
+              .filter((token) => value === baseClassName || !legacyPillToneTokens.has(token))
+          : [],
       ),
     ),
   ).join(' ');
 }
+
+const legacyPillToneTokens = new Set([
+  'pill-danger',
+  'pill-info',
+  'pill-neutral',
+  'pill-primary',
+  'pill-success',
+  'pill-warn',
+]);
 
 export function StatusBadge({ ariaDisabled, children, className, tone, title }: StatusBadgeProps) {
   return (

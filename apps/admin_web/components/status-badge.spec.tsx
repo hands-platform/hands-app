@@ -38,6 +38,23 @@ describe('StatusBadge', () => {
     });
   });
 
+  it('keeps only the requested Vuexy pill tone when legacy tone classes are passed during migration', () => {
+    const badge = StatusBadge({
+      children: 'Ready',
+      className: 'pill-danger booking-status-chip',
+      tone: 'success',
+    });
+    const link = StatusBadgeLink({
+      children: 'Open',
+      className: 'pill pill-warn finance-chip',
+      href: '/finance-tax',
+      tone: 'info',
+    });
+
+    expect(badge.props.className).toBe('pill pill-success booking-status-chip');
+    expect(link.props.className).toBe('pill pill-info finance-chip');
+  });
+
   it('does not export legacy pill-class badge components', () => {
     const source = readFileSync('components/status-badge.tsx', 'utf8');
 
