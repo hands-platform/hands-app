@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { ActionMenuDropdownSurface } from '../../components/action-menu';
+import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
@@ -321,7 +321,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
       menuClassName="action-menu-panel referral-reward-action-panel"
       title="Cashout actions"
     >
-      <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
+      <ActionMenuDropdownForm action={actions[0]?.action} className="referral-reward-action-form">
         <input name="audience" type="hidden" value={row.audience === 'PARTNER' ? 'partner' : 'customer'} />
         <input name="parentId" type="hidden" value={row.parent.id} />
         <input name="rewardId" type="hidden" value={row.id} />
@@ -373,7 +373,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
             </button>
           ))}
         </div>
-      </form>
+      </ActionMenuDropdownForm>
     </ActionMenuDropdownSurface>
   );
 }

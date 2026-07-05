@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { FormHTMLAttributes, ReactNode } from 'react';
 
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 
@@ -45,6 +45,11 @@ type ActionMenuProps = {
   readonly triggerClassName?: string;
   readonly variant?: 'dropdown' | 'pill-list';
 };
+
+type ActionMenuDropdownFormProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
 
 export function actionMenuItemClassName(item: Pick<ActionMenuBaseItem, 'disabled' | 'tone'>) {
   return statusBadgeClassName(actionMenuItemTone(item));
@@ -117,6 +122,19 @@ export function ActionMenuDropdownSurface({
   );
 }
 
+export function ActionMenuDropdownForm({
+  children,
+  className,
+  role = 'none',
+  ...formProps
+}: ActionMenuDropdownFormProps) {
+  return (
+    <form {...formProps} className={joinClassNames('admin-action-form', className)} role={role}>
+      {children}
+    </form>
+  );
+}
+
 function ActionMenuDropdownControl({
   item,
   itemClassName,
@@ -160,7 +178,7 @@ function ActionMenuDropdownControl({
   }
 
   return (
-    <form action={item.action} className="admin-action-form" role="none">
+    <ActionMenuDropdownForm action={item.action}>
       {item.hiddenInputs?.map((input) => (
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}
@@ -174,7 +192,7 @@ function ActionMenuDropdownControl({
       >
         {content}
       </button>
-    </form>
+    </ActionMenuDropdownForm>
   );
 }
 

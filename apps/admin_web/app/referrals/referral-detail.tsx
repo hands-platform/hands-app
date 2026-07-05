@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { ActionMenuDropdownSurface } from '../../components/action-menu';
+import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormInput } from '../../components/admin-form-controls';
@@ -529,7 +529,7 @@ function ReferralRewardActions({
       menuClassName="action-menu-panel referral-reward-action-panel"
       title="Reward actions"
     >
-      <form action={actions[0]?.action} className="admin-action-form referral-reward-action-form" role="none">
+      <ActionMenuDropdownForm action={actions[0]?.action} className="referral-reward-action-form">
         {hiddenInputs.map((input) => (
           <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
         ))}
@@ -579,7 +579,7 @@ function ReferralRewardActions({
             </button>
           ))}
         </div>
-      </form>
+      </ActionMenuDropdownForm>
     </ActionMenuDropdownSurface>
   );
 }
