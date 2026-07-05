@@ -1,9 +1,11 @@
+import { DateTimeText } from './date-time-text';
+
 export type AdminChatWindowMessageRole = 'ADMIN' | 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
 
 export type AdminChatWindowMessage = {
   readonly body: string;
   readonly createdDateTime?: string;
-  readonly createdLabel: string;
+  readonly createdLabel?: string;
   readonly id: string;
   readonly role: AdminChatWindowMessageRole;
   readonly senderLabel: string;
@@ -72,11 +74,7 @@ export function AdminChatMessageBubble({ message }: { readonly message: AdminCha
         <p className="admin-chat-message-bubble">{message.body}</p>
         <div className="admin-chat-message-meta">
           <span>{message.senderLabel}</span>
-          {message.createdDateTime ? (
-            <time dateTime={message.createdDateTime}>{message.createdLabel}</time>
-          ) : (
-            <span>{message.createdLabel}</span>
-          )}
+          <DateTimeText fallback={message.createdLabel ?? 'Missing'} value={message.createdDateTime} />
         </div>
       </div>
     </div>

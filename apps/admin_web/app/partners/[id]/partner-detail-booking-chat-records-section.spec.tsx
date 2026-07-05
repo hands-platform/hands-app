@@ -1,12 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingChatRecordsSection } from './partner-detail-booking-chat-records-section';
 
+const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
 describe('PartnerDetailBookingChatRecordsSection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('<strong>No booking records matched this date filter</strong>');
+    expect(pageSource).not.toContain('createdLabel: formatDate(message.createdAt)');
+    expect(pageSource).toContain('createdDateTime: message.createdAt');
   });
 
   it('uses shared Vuexy badge atoms instead of raw chat record pill spans', () => {
@@ -31,7 +35,7 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
           chatMessages: [
             {
               body: 'I am arriving in 10 minutes.',
-              createdLabel: '20 Jun 2026, 10:15',
+              createdDateTime: '2026-06-20T10:15:00.000Z',
               id: 'message-1',
               role: 'PROVIDER',
               senderLabel: 'Partner',
@@ -63,6 +67,7 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(rendered).toContain('Paid 400,000 VND.');
     expect(rendered).toContain('Admin chat archive');
     expect(rendered).toContain('I am arriving in 10 minutes.');
+    expect(rendered).toContain('20 Jun 2026, 17:15');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/bookings', '/bookings/booking-1', '/customers/customer-1', '/chat-archive?bookingId=booking-1']),
     );

@@ -19,7 +19,10 @@ describe('AdminChatWindow', () => {
 
     expect(markup).toContain('admin-chat-message is-outgoing');
     expect(markup).toContain('admin-chat-message-bubble');
-    expect(markup).toContain('<time dateTime="2026-07-05T02:30:00.000Z">05 Jul 2026, 02:30</time>');
+    expect(markup).toContain(
+      '<time class="date-time-text" dateTime="2026-07-05T02:30:00.000Z">5 Jul 2026, 09:30</time>',
+    );
+    expect(markup).not.toContain('05 Jul 2026, 02:30');
   });
 
   it('renders window messages through the shared bubble atom', () => {

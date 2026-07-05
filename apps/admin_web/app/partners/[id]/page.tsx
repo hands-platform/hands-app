@@ -1763,7 +1763,7 @@ function buildPartnerBookingChatRecordRows(
       }${lastMessage}`,
       chatMessages: messages.map((message) => ({
         body: message.body,
-        createdLabel: formatDate(message.createdAt),
+        createdDateTime: message.createdAt,
         id: message.id,
         role: partnerChatMessageRole(message),
         senderLabel: chatSenderLabel(message),
