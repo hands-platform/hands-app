@@ -149,8 +149,10 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
     expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain("import { formatDateTime } from '../../../lib/admin-format';");
+    expect(pageSource).toContain('formatDateTime,');
     expect(pageSource).not.toContain('function formatDateTime(value?: string | null)');
+    expect(pageSource).toContain('formatWholeNumber as formatNumber');
+    expect(pageSource).not.toContain('function formatNumber(value: number)');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam supply</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');

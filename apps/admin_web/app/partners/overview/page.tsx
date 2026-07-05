@@ -34,7 +34,10 @@ import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admi
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime } from '../../../lib/admin-format';
+import {
+  formatDateTime,
+  formatWholeNumber as formatNumber,
+} from '../../../lib/admin-format';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -960,10 +963,6 @@ function formatDurationSeconds(value: number | null) {
   if (minutes === 0) return `${remainingSeconds}s`;
   if (remainingSeconds === 0) return `${minutes}m`;
   return `${minutes}m ${remainingSeconds}s`;
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US').format(value);
 }
 
 function formatPriorityCount(value: number, singular: string) {
