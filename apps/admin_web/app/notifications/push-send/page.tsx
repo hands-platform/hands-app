@@ -19,6 +19,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
@@ -308,22 +309,16 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         resultLabel={`${campaigns.length} loaded of ${totalCampaigns} total`}
         title={`Recent push campaigns / ${campaignRangeLabel}`}
       >
-        <div
-          className="booking-date-filter-buttons notification-push-campaign-range-row"
-          aria-label="Push campaign date range"
-          role="group"
-        >
-          {pushCampaignDateRangeLinks.map((item) => (
-            <a
-              aria-current={item.range === campaignRange ? 'page' : undefined}
-              className={`booking-date-filter-button${item.range === campaignRange ? ' is-active' : ''}`}
-              href={buildPushCampaignListHref(item.range, params)}
-              key={item.range}
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={campaignRange}
+          ariaLabel="Push campaign date range"
+          className="notification-push-campaign-range-row"
+          options={pushCampaignDateRangeLinks.map((item) => ({
+            href: buildPushCampaignListHref(item.range, params),
+            label: item.label,
+            value: item.range,
+          }))}
+        />
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage="No manual push campaigns yet."

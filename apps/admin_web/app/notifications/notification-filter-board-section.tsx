@@ -1,5 +1,5 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { NotificationDateRange } from './notification-page-model';
 
@@ -86,18 +86,16 @@ export function NotificationFilterBoardSection({
             className="booking-date-filter-bar notification-date-filter-bar"
             aria-label="Notification date range"
           >
-            <div className="booking-date-filter-buttons notification-date-filter-buttons" role="group">
-              {rangeLinks.map((link) => (
-                <AdminFormControlLink
-                  aria-current={activeRange === link.range ? 'page' : undefined}
-                  className={activeRange === link.range ? 'is-active' : undefined}
-                  href={link.href}
-                  key={link.range}
-                >
-                  {link.label}
-                </AdminFormControlLink>
-              ))}
-            </div>
+            <AdminSegmentedControl
+              activeValue={activeRange}
+              ariaLabel="Notification date range"
+              className="notification-date-filter-buttons"
+              options={rangeLinks.map((link) => ({
+                href: link.href,
+                label: link.label,
+                value: link.range,
+              }))}
+            />
           </div>
           {activeReviewRunbook ? (
             <div className="admin-mt-10">

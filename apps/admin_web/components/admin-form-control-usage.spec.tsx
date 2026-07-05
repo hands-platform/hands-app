@@ -168,6 +168,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps notification segmented filter buttons inside the shared Vuexy segmented atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-segmented-control.tsx')
+      .filter((filePath) => rawNotificationSegmentedButtonsPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -190,6 +199,8 @@ const rawDirectorySegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:vuexy-customer-date-buttons|vuexy-partner-filter-buttons|referral-reward-filter-buttons)\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:vuexy-customer-date-buttons|vuexy-partner-filter-buttons|referral-reward-filter-buttons)\b[^']*')/s;
 const rawReviewSegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:vuexy-review-date-buttons|vuexy-review-sort-buttons)\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:vuexy-review-date-buttons|vuexy-review-sort-buttons)\b[^']*')/s;
+const rawNotificationSegmentedButtonsPattern =
+  /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:notification-date-filter-buttons|notification-push-campaign-range-row)\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:notification-date-filter-buttons|notification-push-campaign-range-row)\b[^']*')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

@@ -54,7 +54,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-form-control-link button button-secondary is-active',
+        'booking-date-filter-button is-active',
         'pill pill-success',
         'pill pill-warn',
       ]),
@@ -83,7 +83,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-form-control-link button button-secondary is-active', 'pill pill-warn']),
+      expect.arrayContaining(['booking-date-filter-button is-active', 'pill pill-warn']),
     );
   });
 
@@ -95,6 +95,7 @@ describe('NotificationFilterBoardSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('AdminSegmentedControl');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<span className="pill pill-info">{activeReviewRunbook.title}</span>');
     expect(source).not.toContain('<AdminFormControlLink className="pill pill-success" href={clearHref}>');
