@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -28,8 +28,7 @@ type EarningsMoneyFlowSectionProps = {
 
 export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMoneyFlowSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax, company net, and cash debt before payout."
       resultLabel={`${checks.length} check(s)`}
       resultTone={checks.length > 0 ? 'warning' : 'success'}
@@ -67,6 +66,6 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
           />
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

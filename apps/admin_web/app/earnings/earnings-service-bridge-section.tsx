@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -34,8 +34,7 @@ type EarningsServiceBridgeSectionProps = {
 
 export function EarningsServiceBridgeSection({ currency, items }: EarningsServiceBridgeSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Confirms which service duration options are creating Partner net, HANDS platform fee, tax withholding, cash wallet debt, and payout-batch pressure."
       resultLabel={`${items.length} option(s)`}
       resultTone={items.length > 0 ? 'info' : 'warning'}
@@ -138,7 +137,7 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
             ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

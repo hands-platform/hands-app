@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import {
   AdminSignal,
   StatusBadge,
@@ -71,8 +71,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
   const rows = pagination.rows;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash fee settlement correction."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
@@ -199,6 +198,6 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

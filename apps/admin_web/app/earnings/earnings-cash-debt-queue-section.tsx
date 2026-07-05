@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsCashDebtTotals = {
@@ -41,8 +41,7 @@ type EarningsCashDebtQueueSectionProps = {
 
 export function EarningsCashDebtQueueSection({ currency, items, totals }: EarningsCashDebtQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or finance offsets it."
       resultLabel={`${items.length} blocked wallet(s)`}
       resultTone={items.length > 0 ? 'danger' : 'success'}
@@ -125,7 +124,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
       ) : (
         <AdminEmptyState framed message="No Partner has unsettled cash fee debt in the current admin result window." />
       )}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsPartnerPayoutQueueGroup = {
@@ -28,8 +28,7 @@ type EarningsPartnerPayoutQueueSectionProps = {
 
 export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPayoutQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Grouped by Partner so finance can create one payout batch for all eligible unpaid earnings."
       resultLabel={`${groups.length} Partner(s)`}
       resultTone={groups.length > 0 ? 'info' : 'warning'}
@@ -83,6 +82,6 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
       ) : (
         <AdminEmptyState framed message="No Partner has unpaid earnings in the current admin result window." />
       )}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

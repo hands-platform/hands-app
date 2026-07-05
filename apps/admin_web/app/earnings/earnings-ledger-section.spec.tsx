@@ -6,7 +6,9 @@ describe('EarningsLedgerSection', () => {
   it('reuses the shared Admin table pagination footer atom', () => {
     const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('AdminRoundedPagination');
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });

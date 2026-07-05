@@ -6,7 +6,9 @@ describe('EarningsPartnerPayoutQueueSection', () => {
   it('uses the shared Vuexy money atom for visible amounts', () => {
     const source = readFileSync('app/earnings/earnings-partner-payout-queue-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('MoneyText');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('formatMoney(');
   });
 
