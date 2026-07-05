@@ -124,6 +124,20 @@ describe('Admin form control CSS', () => {
     expect(selectedBlock).toContain('font-weight: 400');
   });
 
+  it('keeps the react-datepicker time panel on the Vuexy surface in dark mode', () => {
+    const timeContainerIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-container {');
+    const timeContainerBlock = cssRuleBlockAt(timeContainerIndex);
+    const timeSurfaceIndex = globalsCss.indexOf(
+      '.react-datepicker.calendar-vuexy-datepicker .react-datepicker__time-container .react-datepicker__time,',
+    );
+    const timeSurfaceBlock = cssRuleBlockAt(timeSurfaceIndex);
+
+    expect(timeContainerIndex).toBeGreaterThan(-1);
+    expect(timeSurfaceIndex).toBeGreaterThan(-1);
+    expect(timeContainerBlock).toContain('background: var(--admin-surface)');
+    expect(timeSurfaceBlock).toContain('background: var(--admin-surface) !important');
+  });
+
   it('matches Vuexy text field focus weight on shared form controls', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const focusBlock = cssRuleBlockAt(focusIndex);

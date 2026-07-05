@@ -1585,6 +1585,7 @@ a {
 }
 
 .calendar-vuexy-datepicker .react-datepicker__time-container {
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   border-left-style: solid;
   border-left-width: 1px;
