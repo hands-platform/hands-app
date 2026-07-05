@@ -5,6 +5,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
@@ -192,10 +193,14 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                       {user.appSessions?.[0]?.lastSeenAt ? (
                         <DateTimeText value={user.appSessions[0].lastSeenAt} />
                       ) : (
-                        'No recent session'
+                        <AdminInlineFallback>No recent session</AdminInlineFallback>
                       )}
                     </strong>
-                    <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
+                    {user.appSessions?.[0]?.platform ? (
+                      <div className="muted">{user.appSessions[0].platform}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No platform</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <strong>{user.pushDevices?.filter((device) => device.enabled).length ?? 0} enabled</strong>

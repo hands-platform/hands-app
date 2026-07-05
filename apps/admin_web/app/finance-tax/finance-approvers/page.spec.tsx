@@ -87,4 +87,12 @@ describe('FinanceApproversPage', () => {
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
   });
+
+  it('uses shared inline fallback atoms for missing approver session fields', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain("'No recent session'");
+    expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
+  });
 });
