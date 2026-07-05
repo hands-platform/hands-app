@@ -89,12 +89,13 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Post-match cancellations (1)');
     expect(rendered).not.toContain('No-show (0)');
     expect(rendered).toContain('Start with active bookings.');
-    expect(renderToStaticMarkup(section)).toContain('aria-pressed="true"');
+    expect(renderToStaticMarkup(section)).toContain('aria-current="page"');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
         'booking-date-filter-bar admin-mb-14',
         'booking-date-filter-buttons',
+        'booking-date-filter-button is-active',
       ]),
     );
   });

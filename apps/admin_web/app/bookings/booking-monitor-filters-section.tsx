@@ -1,5 +1,6 @@
 import { AdminFormControlButton, AdminFormDate } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
 import type { BookingPageView } from './booking-page-params';
 
@@ -150,20 +151,16 @@ export function BookingMonitorFiltersSection({
       footer={<p className="muted">{activeView.operatorHint}</p>}
     >
       <div className="booking-date-filter-bar admin-mb-14" aria-label="Booking list date range">
-        <div className="booking-date-filter-buttons" role="group" aria-label="Booking list period">
-          {visibleDateRangeOptions.map((option) => (
-            <a
-              key={option.value}
-              aria-pressed={dateRangeFilter === option.value}
-              className={dateRangeFilter === option.value ? 'is-active' : undefined}
-              href={dateRangeHrefFor(option.value)}
-              onClick={() => onDateRangeFilterChange(option.value)}
-              role="button"
-            >
-              {option.label}
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={dateRangeFilter}
+          ariaLabel="Booking list period"
+          options={visibleDateRangeOptions.map((option) => ({
+            href: dateRangeHrefFor(option.value),
+            label: option.label,
+            onClick: () => onDateRangeFilterChange(option.value),
+            value: option.value,
+          }))}
+        />
         {showCustomDateRange && (
           <form className="booking-custom-date-grid" action={dateRangeFormAction} method="get">
             {dateRangeHiddenInputs

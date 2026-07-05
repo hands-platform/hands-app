@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 
 export type AdminSegmentedControlOption<Value extends string = string> = {
   readonly ariaLabel?: string;
   readonly href: string;
   readonly label: ReactNode;
+  readonly onClick?: MouseEventHandler<HTMLAnchorElement>;
   readonly title?: string;
   readonly value: Value;
 };
@@ -33,6 +34,7 @@ export function AdminSegmentedControl<Value extends string = string>({
             className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
             href={option.href}
             key={option.value}
+            onClick={option.onClick}
             title={option.title}
           >
             {option.label}
