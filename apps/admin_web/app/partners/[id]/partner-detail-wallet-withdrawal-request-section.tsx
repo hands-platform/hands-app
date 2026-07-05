@@ -8,10 +8,11 @@ import {
   AdminFormInput,
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
-import { formatCurrency, formatDate, shortRecordId } from './partner-detail-format';
+import { formatCurrency, shortRecordId } from './partner-detail-format';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -53,7 +54,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
             <tr key={request.id}>
               <td>
                 <strong>{shortRecordId(request.id)}</strong>
-                <p className="muted">{formatDate(request.createdAt)}</p>
+                <p className="muted">
+                  <DateTimeText fallback="Missing" value={request.createdAt} />
+                </p>
                 {request.requestNote ? <p className="muted">{request.requestNote}</p> : null}
               </td>
               <td>
@@ -95,7 +98,11 @@ function WithdrawalRequestActions({
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
   if (request.status === 'PAID') {
-    return <span className="muted">Paid {formatDate(request.paidAt)}</span>;
+    return (
+      <span className="muted">
+        Paid <DateTimeText fallback="Missing" value={request.paidAt} />
+      </span>
+    );
   }
   if (
     request.status === 'REJECTED' ||

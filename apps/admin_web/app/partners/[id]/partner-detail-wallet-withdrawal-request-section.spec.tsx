@@ -214,6 +214,13 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<span className="pill pill-warn">Finance review required before payout</span>');
     expect(sectionSource).not.toContain('<span className="pill pill-info">Manual bank transfer pending</span>');
   });
+
+  it('uses the shared date time atom for visible withdrawal timestamps', () => {
+    expect(sectionSource).toContain('DateTimeText');
+    expect(sectionSource).not.toContain('formatDate,');
+    expect(sectionSource).not.toContain('{formatDate(request.createdAt)}');
+    expect(sectionSource).not.toContain('Paid {formatDate(request.paidAt)}');
+  });
 });
 
 function textContent(value: unknown): string {
