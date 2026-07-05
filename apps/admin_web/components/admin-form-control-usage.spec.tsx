@@ -61,6 +61,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps page-local buttons inside shared Vuexy action atoms', () => {
+    const offenders = listTsxFiles(join(process.cwd(), 'app'))
+      .filter((filePath) => !filePath.endsWith('.spec.tsx'))
+      .filter((filePath) => rawButtonPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps inline alert copy inside shared Vuexy notice atoms', () => {
     const allowedNoticeFiles = new Set([
       'components/admin-inline-notice.tsx',
@@ -442,6 +451,7 @@ const nativeCalendarInputTypePattern = /<input\b[^>]*\btype=["'](?:date|datetime
 const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
 const rawSelectPattern = /<select\b/s;
 const rawTextareaPattern = /<textarea\b/s;
+const rawButtonPattern = /<button\b/s;
 const rawInlineNoticePattern =
   /className=["'][^"']*(?:admin-form-error|form-error|calendar-readonly-alert|admin-auth-error)[^"']*["']/;
 const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
