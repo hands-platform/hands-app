@@ -923,7 +923,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         >
           <PartnerDetailOperationsDigestSection
             description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
-            formatLatestAt={formatDate}
             id="partner-operations-digest"
             rows={partnerOperationsDigest}
             title="Partner operations digest"

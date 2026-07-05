@@ -10,14 +10,15 @@ describe('PartnerDetailOperationsDigestSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}');
+    expect(source).not.toContain('formatLatestAt');
   });
 
   it('renders digest lanes with evidence, links, and latest dates', () => {
     const section = PartnerDetailOperationsDigestSection({
       description: 'One-screen factual digest for partner operations.',
-      formatLatestAt: (value) => `formatted ${value}`,
       id: 'partner-operations-digest',
       rows: buildRows(),
       title: 'Partner operations digest',
@@ -38,7 +39,7 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(rendered).toContain('KYC approved');
     expect(rendered).toContain('Chat');
     expect(rendered).toContain('No date');
-    expect(rendered).toContain('formatted 2026-06-09T04:00:00.000Z');
+    expect(rendered).toContain('9 Jun 2026, 11:00');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#identity', '#chat']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -57,7 +58,6 @@ describe('PartnerDetailOperationsDigestSection', () => {
   it('renders an empty operations digest table state', () => {
     const section = PartnerDetailOperationsDigestSection({
       description: 'One-screen factual digest for partner operations.',
-      formatLatestAt: (value) => `formatted ${value}`,
       id: 'partner-operations-digest',
       rows: [],
       title: 'Partner operations digest',

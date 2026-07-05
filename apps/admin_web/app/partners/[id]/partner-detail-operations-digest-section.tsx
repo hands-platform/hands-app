@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -15,7 +16,6 @@ export type { PartnerOperationsDigestRow };
 
 type PartnerDetailOperationsDigestSectionProps = {
   readonly description: string;
-  readonly formatLatestAt: (value: string) => string;
   readonly id: string;
   readonly rows: readonly PartnerOperationsDigestRow[];
   readonly title: string;
@@ -25,7 +25,6 @@ const operationsDigestHeaders = ['Lane', 'Status', 'Detail', 'Evidence', 'Latest
 
 export function PartnerDetailOperationsDigestSection({
   description,
-  formatLatestAt,
   id,
   rows,
   title,
@@ -71,7 +70,9 @@ export function PartnerDetailOperationsDigestSection({
                   </div>
                 </td>
                 <td>
-                  <small>{row.latestAt ? formatLatestAt(row.latestAt) : 'No date'}</small>
+                  <small>
+                    <DateTimeText fallback="No date" value={row.latestAt} />
+                  </small>
                 </td>
               </tr>
             ))}
