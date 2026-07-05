@@ -71,6 +71,7 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).toContain('MoneyText');
     expect(partnerControlsSource).not.toContain('helper={`Wallet ${formatMoney(item.walletBalance)}');
     expect(partnerControlsSource).not.toContain('<strong>{formatMoney(item.walletBalance)}</strong>');
+    expect(partnerControlsSource).not.toContain("metric(\n          'Debt',\n          formatMoney");
   });
 
   it('uses shared labeled form atoms for partner control forms', async () => {

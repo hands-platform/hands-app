@@ -1028,7 +1028,7 @@ type PartnerControlCommandCenterInput = {
 
 type PartnerControlCommandMetric = {
   label: string;
-  value: string;
+  value: ReactNode;
   tone:
     | 'ops-task-breakdown-ok'
     | 'ops-task-breakdown-info'
@@ -1245,7 +1245,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
         metric('Wallets', walletDebtItems.length, walletDebtItems.length ? 'danger' : 'ok'),
         metric(
           'Debt',
-          formatMoney(walletDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)),
+          <MoneyText amount={walletDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)} />,
           walletDebtItems.length ? 'danger' : 'ok',
         ),
         metric('Payout holds', activePayoutHolds.length, activePayoutHolds.length ? 'warn' : 'ok'),
@@ -1482,7 +1482,7 @@ function buildBookingAcceptanceUnblockBoard(
         metric('Blocked', cashDebtItems.length, cashDebtItems.length ? 'danger' : 'ok'),
         metric(
           'Debt',
-          formatMoney(cashDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)),
+          <MoneyText amount={cashDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)} />,
           cashDebtItems.length ? 'danger' : 'ok',
         ),
         metric('Rule', 'Negative wallet', cashDebtItems.length ? 'warn' : 'ok'),
@@ -1739,7 +1739,7 @@ function partnerHasDeviceContactGap(provider: AdminProvider) {
 
 function metric(
   label: string,
-  value: string | number,
+  value: ReactNode,
   tone: 'ok' | 'info' | 'warn' | 'danger',
 ): PartnerControlCommandMetric {
   const toneClass: Record<'ok' | 'info' | 'warn' | 'danger', PartnerControlCommandMetric['tone']> = {
@@ -1751,7 +1751,7 @@ function metric(
 
   return {
     label,
-    value: typeof value === 'number' ? value.toString() : value,
+    value,
     tone: toneClass[tone],
   };
 }
