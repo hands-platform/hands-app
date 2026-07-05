@@ -2455,6 +2455,11 @@ function buildPartnerActivityCommandSnapshot(
       helper: latestEvent
         ? `${latestEvent.type} / ${formatDate(latestEvent.at)}`
         : 'No record in this filter.',
+      helperNode: latestEvent ? (
+        <>
+          {latestEvent.type} / <DateTimeText fallback="Missing" value={latestEvent.at} />
+        </>
+      ) : undefined,
       href: latestEvent ? partnerActivityRecordHref(latestEvent) : '#app-activity',
     },
     {
@@ -2465,6 +2470,12 @@ function buildPartnerActivityCommandSnapshot(
             bookingLatestActivityAt(latestCompletedBooking),
           )}`
         : 'No completed booking in this filter.',
+      helperNode: latestCompletedBooking ? (
+        <>
+          Latest {bookingServiceLabel(latestCompletedBooking)} /{' '}
+          <DateTimeText fallback="Missing" value={bookingLatestActivityAt(latestCompletedBooking)} />
+        </>
+      ) : undefined,
       href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
     },
     {
@@ -2491,6 +2502,11 @@ function buildPartnerActivityCommandSnapshot(
       helper: latestAccessAt
         ? `Recent app access ${formatDate(latestAccessAt)}`
         : 'No app access row loaded.',
+      helperNode: latestAccessAt ? (
+        <>
+          Recent app access <DateTimeText fallback="Missing" value={latestAccessAt} />
+        </>
+      ) : undefined,
       href: '#location',
     },
     {
@@ -2499,6 +2515,11 @@ function buildPartnerActivityCommandSnapshot(
       helper: latestStaffRecord
         ? `${latestStaffRecord.title} / ${formatDate(latestStaffRecord.at)}`
         : 'No staff record in this filter.',
+      helperNode: latestStaffRecord ? (
+        <>
+          {latestStaffRecord.title} / <DateTimeText fallback="Missing" value={latestStaffRecord.at} />
+        </>
+      ) : undefined,
       href: '#partner-operator-notes',
     },
   ];

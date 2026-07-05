@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react';
 import { StatusBadge } from '../../../components/status-badge';
 
 export type PartnerDetailCommandSnapshotItem = {
   readonly helper: string;
+  readonly helperNode?: ReactNode;
   readonly href: string;
   readonly label: string;
   readonly value: string;
@@ -33,7 +35,7 @@ export function PartnerDetailCommandSnapshotSection({
             <a href={item.href} key={item.label}>
               <span>{item.label}</span>
               <strong>{item.value}</strong>
-              <small>{item.helper}</small>
+              <small>{item.helperNode ?? item.helper}</small>
             </a>
           ))}
         </div>

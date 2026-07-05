@@ -42,6 +42,32 @@ describe('PartnerDetailCommandSnapshotSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{items.length} fact groups</span>');
   });
+
+  it('prefers shared helper nodes over fallback command helper text', () => {
+    const section = PartnerDetailCommandSnapshotSection({
+      items: [
+        {
+          helper: 'Fallback command helper date',
+          helperNode: <span>Shared command helper date marker</span>,
+          href: '#app-activity',
+          label: 'Latest event',
+          value: 'Location updated',
+        },
+      ],
+    });
+    const rendered = normalizedText(section);
+    const source = readFileSync('app/partners/[id]/partner-detail-command-snapshot-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared command helper date marker');
+    expect(rendered).not.toContain('Fallback command helper date');
+    expect(source).toContain('readonly helperNode?: ReactNode;');
+    expect(source).toContain('item.helperNode ?? item.helper');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestEvent.at} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingLatestActivityAt(latestCompletedBooking)} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestAccessAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={latestStaffRecord.at} />');
+  });
 });
 
 function textContent(value: unknown): string {
