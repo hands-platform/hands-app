@@ -1,6 +1,6 @@
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminDetailGrid } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortRecordId } from '../../lib/admin-format';
@@ -28,8 +28,7 @@ type PayoutStatusLanesSectionProps = {
 
 export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLanesSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Work from blocked and failed lanes first, then draft review, processing confirmation, and paid reconciliation."
       resultLabel={`${batchCount} batch(es)`}
       resultTone={batchCount > 0 ? 'info' : 'warning'}
@@ -70,6 +69,6 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
           </div>
         ))}
       </AdminDetailGrid>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

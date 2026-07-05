@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PayoutCommandSignal = {
@@ -20,8 +20,7 @@ type PayoutCommandQueueSectionProps = {
 
 export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Finance-first view for review money, active transfers, payout holds, and reconciliation warnings."
       resultLabel={`${signals.length} signal(s)`}
       resultTone={signals.length > 0 ? 'warning' : 'success'}
@@ -52,6 +51,6 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       ) : (
         <AdminEmptyState framed message="No payout command signal is visible for this range." />
       )}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

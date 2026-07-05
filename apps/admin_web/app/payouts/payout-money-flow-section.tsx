@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -30,8 +30,7 @@ type PayoutMoneyFlowSectionProps = {
 
 export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyFlowSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Reconciles payout batches against service pricing evidence before transfer: gross represented, partner payout, HANDS fee, withholding, and cash debt."
       id="release-blocker-queue"
       resultLabel={`${checks.length} check(s)`}
@@ -74,6 +73,6 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
       ) : (
         <AdminEmptyState framed message="No payout money flow check is visible for this range." />
       )}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
