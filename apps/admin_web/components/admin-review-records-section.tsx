@@ -6,9 +6,9 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from './admin-data-table';
-import { AdminFilterPanel } from './admin-filter-panel';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
+import { AdminTablePanel } from './admin-table-panel';
 import { StatusBadge } from './status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -71,8 +71,8 @@ export function AdminReviewRecordsSection({
   const totalRecords = customerRows.length + partnerRows.length;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
+    <AdminTablePanel
+      className="vuexy-review-card"
       description={description}
       id={id}
       resultLabel={`${totalRecords} record(s)`}
@@ -178,7 +178,7 @@ export function AdminReviewRecordsSection({
           />
         </section>
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

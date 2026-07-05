@@ -250,6 +250,10 @@ describe('AdminReviewRecordsSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain(
+      'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"',
+    );
     expect(source).not.toContain('<span className="pill pill-neutral">{customerRows.length} review(s)</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>');
     expect(source).not.toContain('<div className="ops-section-header admin-review-records-heading">');
