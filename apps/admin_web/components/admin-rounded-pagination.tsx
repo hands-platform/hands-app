@@ -26,7 +26,7 @@ export function AdminRoundedPagination({
   const pageItems = adminRoundedPaginationPages(page, lastPage);
 
   return (
-    <nav aria-label={ariaLabel} className={className}>
+    <nav aria-label={ariaLabel} className={joinClassNames(className)}>
       <AdminRoundedPaginationControl
         disabled={page <= 1}
         href={hrefForPage?.(1)}
@@ -106,7 +106,7 @@ function AdminRoundedPaginationControl({
   readonly onClick?: () => void;
   readonly pageLinkClassName: string;
 }) {
-  const className = active ? `${pageLinkClassName} is-active` : pageLinkClassName;
+  const className = joinClassNames(pageLinkClassName, active ? 'is-active' : undefined);
 
   if (onClick) {
     return (
@@ -125,7 +125,7 @@ function AdminRoundedPaginationControl({
 
   if (disabled || !href) {
     return (
-      <span aria-disabled="true" aria-label={label} className={`${pageLinkClassName} is-disabled`}>
+      <span aria-disabled="true" aria-label={label} className={joinClassNames(pageLinkClassName, 'is-disabled')}>
         {children}
       </span>
     );
@@ -140,4 +140,18 @@ function AdminRoundedPaginationControl({
 
 function clampPage(activePage: number, totalPages: number) {
   return Math.min(Math.max(1, activePage), totalPages);
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  const tokens = new Set<string>();
+
+  for (const className of classNames) {
+    for (const token of className?.split(/\s+/) ?? []) {
+      if (token) {
+        tokens.add(token);
+      }
+    }
+  }
+
+  return Array.from(tokens).join(' ');
 }

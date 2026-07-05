@@ -52,6 +52,25 @@ describe('AdminRoundedPagination', () => {
       ]),
     );
   });
+
+  it('deduplicates repeated Vuexy pagination classes from callers', () => {
+    const pagination = AdminRoundedPagination({
+      activePage: 2,
+      ariaLabel: 'Finance ledger pagination',
+      className: 'vuexy-booking-pagination vuexy-booking-pagination finance-pagination',
+      hrefForPage: (page) => `/finance-tax/general-ledger?page=${page}`,
+      pageLinkClassName: 'vuexy-booking-page-link vuexy-booking-page-link finance-page-link',
+      totalPages: 3,
+    });
+
+    expect(pagination.props.className).toBe('vuexy-booking-pagination finance-pagination');
+    expect(classNamesIn(pagination)).toEqual(
+      expect.arrayContaining([
+        'vuexy-booking-page-link finance-page-link',
+        'vuexy-booking-page-link finance-page-link is-active',
+      ]),
+    );
+  });
 });
 
 function hrefsIn(value: unknown): string[] {
