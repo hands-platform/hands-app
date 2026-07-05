@@ -139,6 +139,11 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('<span className={`pill ${statusPillClass(room.booking.status)}`}>');
   });
 
+  it('passes raw retained chat timestamps to the shared date atom instead of formatting locally', () => {
+    expect(pageSource).toContain('createdDateTime: message.createdAt');
+    expect(pageSource).not.toContain('createdLabel: formatDate(message.createdAt)');
+  });
+
   it('uses the shared table pagination footer for the chat evidence index', () => {
     expect(pageSource).toContain('AdminTableSection');
     expect(pageSource).toContain('AdminTablePaginationFooter');

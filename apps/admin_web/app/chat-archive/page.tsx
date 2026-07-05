@@ -792,7 +792,7 @@ function chatArchiveWindowMessages(messages: readonly AdminChatMessage[]): Admin
     const role = senderRole(message);
     return {
       body: message.body,
-      createdLabel: formatDate(message.createdAt),
+      createdDateTime: message.createdAt,
       id: message.id,
       role,
       senderLabel: senderLabel(message),
