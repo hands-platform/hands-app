@@ -15,7 +15,7 @@ import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
-import { AdminActionCard, AdminSection, AdminTaskCard } from '../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection, AdminTaskCard } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
   AdminSignal,
@@ -1540,7 +1540,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </AdminSection>
 
-          <section className="detail-grid admin-mt-20">
+          <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
                 <AdminFormControlLink href="/bookings?view=attention">
@@ -1665,9 +1665,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               </div>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
 
-          <section className="detail-grid admin-mt-20">
+          <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
                 <Link className="text-link" href="/bookings">
@@ -1781,9 +1781,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 />
               </AdminDataTable>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
 
-          <section className="detail-grid admin-mt-20">
+          <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={<StatusBadge tone="info">Asia/Ho_Chi_Minh</StatusBadge>}
               description="Bookings grouped by request hour in Vietnam time."
@@ -1836,9 +1836,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 )}
               </div>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
 
-          <section className="detail-grid admin-mt-20">
+          <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
                 <Link className="text-link" href="/partners">
@@ -1936,7 +1936,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 />
               </AdminDataTable>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
 
           <AdminSection
             actions={
@@ -2116,7 +2116,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </AdminSection>
 
-          <section className="detail-grid admin-mt-20 dashboard-queue-grid">
+          <AdminDetailGrid className="admin-mt-20 dashboard-queue-grid">
             <AdminSection
               actions={
                 <AdminSignal tone={fullDashboardData.queueSummary.high > 0 ? 'warn' : 'ok'}>
@@ -2234,9 +2234,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 )}
               </div>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
 
-          <section className="detail-grid admin-mt-20">
+          <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               description="Matching, chat, Partner location, and payment hold signals from the current admin snapshot."
               id="dashboard-realtime-flow-health"
@@ -2294,7 +2294,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 />
               </AdminDataTable>
             </AdminSection>
-          </section>
+          </AdminDetailGrid>
         </>
       ) : (
         <AdminSection

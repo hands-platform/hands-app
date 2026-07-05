@@ -343,6 +343,11 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('className="ops-task-card-action"');
   });
 
+  it('uses the shared detail grid surface for dashboard multi-panel groups', () => {
+    expect(dashboardSource).toContain('AdminDetailGrid');
+    expect(dashboardSource).not.toContain('<section className="detail-grid');
+  });
+
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],
