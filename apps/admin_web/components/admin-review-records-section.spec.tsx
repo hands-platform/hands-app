@@ -259,6 +259,15 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).not.toContain('<div className="ops-section-header admin-review-records-heading">');
   });
 
+  it('uses shared badge atoms for customer review visibility statuses', () => {
+    const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
+
+    expect(source).toContain('reviewStatusTone(review.status)');
+    expect(source).not.toContain(
+      '<span className={reviewStatusClassName(review.status)}>{reviewStatusLabel(review.status)}</span>',
+    );
+  });
+
   it('uses the shared table pagination footer while preserving review classes', () => {
     const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
 

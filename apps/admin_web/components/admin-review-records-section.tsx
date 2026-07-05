@@ -10,7 +10,7 @@ import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminTablePanel } from './admin-table-panel';
 import { DateTimeText } from './date-time-text';
-import { StatusBadge } from './status-badge';
+import { StatusBadge, type StatusBadgeTone } from './status-badge';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -291,7 +291,7 @@ function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
 function reviewVisibilityCell(review: AdminReview) {
   return (
     <>
-      <span className={reviewStatusClassName(review.status)}>{reviewStatusLabel(review.status)}</span>
+      <StatusBadge tone={reviewStatusTone(review.status)}>{reviewStatusLabel(review.status)}</StatusBadge>
       <small>{reviewAppVisibilityLabel(review.status)}</small>
     </>
   );
@@ -461,14 +461,17 @@ function reviewStatusLabel(status?: string | null) {
   return status ?? 'Unknown';
 }
 
-function reviewStatusClassName(status?: string | null) {
+function reviewStatusTone(status?: string | null): StatusBadgeTone {
   if (status === 'PUBLISHED') {
-    return 'review-status-chip review-status-published';
+    return 'success';
   }
   if (status === 'REPORTED') {
-    return 'review-status-chip review-status-reported';
+    return 'danger';
   }
-  return 'review-status-chip review-status-held';
+  if (status === 'HIDDEN') {
+    return 'warning';
+  }
+  return 'neutral';
 }
 
 function reviewAppVisibilityLabel(status?: string | null) {
