@@ -4,6 +4,7 @@ export type AdminSegmentedControlOption<Value extends string = string> = {
   readonly ariaLabel?: string;
   readonly href: string;
   readonly label: ReactNode;
+  readonly title?: string;
   readonly value: Value;
 };
 
@@ -32,6 +33,7 @@ export function AdminSegmentedControl<Value extends string = string>({
             className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
             href={option.href}
             key={option.value}
+            title={option.title}
           >
             {option.label}
           </a>

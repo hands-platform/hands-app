@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -110,18 +111,16 @@ export function PartnerFilterBoard({
         </div>
         <div className="booking-date-filter-bar vuexy-partner-filter-strip" aria-label="Partner sort filters">
           <span className="vuexy-partner-filter-group-label">Partner sort</span>
-          <div className="booking-date-filter-buttons vuexy-partner-filter-buttons" role="group">
-            {partnerSortButtonOptions.map((option) => (
-              <a
-                aria-current={filters.sort === option.value ? 'page' : undefined}
-                className={filters.sort === option.value ? 'is-active' : undefined}
-                href={buildPartnerListHref(filters, { sort: option.value })}
-                key={option.value}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={filters.sort}
+            ariaLabel="Partner sort"
+            className="vuexy-partner-filter-buttons"
+            options={partnerSortButtonOptions.map((option) => ({
+              href: buildPartnerListHref(filters, { sort: option.value }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
         </div>
         {showAdvancedFilters ? (
           <AdminDisclosure className="vuexy-partner-filter-details" open>

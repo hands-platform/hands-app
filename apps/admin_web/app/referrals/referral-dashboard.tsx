@@ -20,6 +20,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -316,23 +317,24 @@ function ReferralListFilterPanel({
       }
     >
       <div className="booking-date-filter-bar admin-mb-14" aria-label="Referral reward operation queue">
-        <div className="booking-date-filter-buttons referral-reward-filter-buttons" role="group" aria-label="Referral reward state">
-          {referralRewardQuickFilterOptions.map((option) => (
-            <a
-              key={option.reward}
-              aria-pressed={filters.reward === option.reward}
-              className={filters.reward === option.reward ? 'is-active' : undefined}
-              href={buildReferralListHref(audience, filters, { reward: option.reward })}
-              role="button"
-              title={option.description}
-            >
-              <span>{option.label}</span>
-              <span className="referral-reward-filter-meta">
-                <ReferralRewardQueueSummaryText summary={rewardSummaryByQueue.get(option.reward)} />
-              </span>
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={filters.reward}
+          ariaLabel="Referral reward state"
+          className="referral-reward-filter-buttons"
+          options={referralRewardQuickFilterOptions.map((option) => ({
+            href: buildReferralListHref(audience, filters, { reward: option.reward }),
+            label: (
+              <>
+                <span>{option.label}</span>
+                <span className="referral-reward-filter-meta">
+                  <ReferralRewardQueueSummaryText summary={rewardSummaryByQueue.get(option.reward)} />
+                </span>
+              </>
+            ),
+            title: option.description,
+            value: option.reward,
+          }))}
+        />
       </div>
       <AdminDirectoryFilterForm action={referralListPath(audience)} className="vuexy-customer-form">
         <div className="vuexy-customer-filter-grid admin-directory-filter-grid">

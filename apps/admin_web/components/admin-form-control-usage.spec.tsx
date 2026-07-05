@@ -150,6 +150,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps directory segmented filter buttons inside the shared Vuexy segmented atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-segmented-control.tsx')
+      .filter((filePath) => rawDirectorySegmentedButtonsPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -168,6 +177,8 @@ const rawRangeSegmentedControlPattern =
   /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:usage-overview|vietnam-overview)-range-buttons\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:usage-overview|vietnam-overview)-range-buttons\b[^']*')/s;
 const rawDirectoryFilterFormPattern =
   /<form\b[^>]*className=(?:"[^"]*\badmin-directory-filter-form\b[^"]*"|'[^']*\badmin-directory-filter-form\b[^']*')/s;
+const rawDirectorySegmentedButtonsPattern =
+  /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:vuexy-customer-date-buttons|vuexy-partner-filter-buttons|referral-reward-filter-buttons)\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:vuexy-customer-date-buttons|vuexy-partner-filter-buttons|referral-reward-filter-buttons)\b[^']*')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

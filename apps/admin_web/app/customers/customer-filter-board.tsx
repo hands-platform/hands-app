@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge } from '../../components/status-badge';
 import { buildCustomerListHref, type CustomerFilters } from './customer-filters';
 
@@ -158,18 +159,16 @@ function CustomerDateButtonGroup({
     <div className="booking-date-filter-bar vuexy-customer-date-filter-group">
       <span className="vuexy-customer-filter-group-label">{label}</span>
       <input name={rangeKey} type="hidden" value={activeRange} />
-      <div className="booking-date-filter-buttons vuexy-customer-date-buttons" role="group" aria-label={label}>
-        {customerDateRangeButtonOptions.map((option) => (
-          <a
-            key={option.value}
-            aria-current={activeRange === option.value ? 'page' : undefined}
-            className={activeRange === option.value ? 'is-active' : undefined}
-            href={buildCustomerListHref(filters, { [rangeKey]: option.value } as Partial<CustomerFilters>)}
-          >
-            {option.label}
-          </a>
-        ))}
-      </div>
+      <AdminSegmentedControl
+        activeValue={activeRange}
+        ariaLabel={label}
+        className="vuexy-customer-date-buttons"
+        options={customerDateRangeButtonOptions.map((option) => ({
+          href: buildCustomerListHref(filters, { [rangeKey]: option.value } as Partial<CustomerFilters>),
+          label: option.label,
+          value: option.value,
+        }))}
+      />
       {showCustomDateRange && (
         <div className="booking-custom-date-grid vuexy-customer-custom-date-grid">
           <AdminFormDate
@@ -197,22 +196,16 @@ function CustomerReservationSortGroup({ filters }: { readonly filters: CustomerF
   return (
     <div className="booking-date-filter-bar vuexy-customer-date-filter-group is-compact">
       <span className="vuexy-customer-filter-group-label">Reservation Count</span>
-      <div
-        className="booking-date-filter-buttons vuexy-customer-date-buttons"
-        role="group"
-        aria-label="Reservation count sort"
-      >
-        {reservationCountSortOptions.map((option) => (
-          <a
-            key={option.value}
-            aria-current={filters.sort === option.value ? 'page' : undefined}
-            className={filters.sort === option.value ? 'is-active' : undefined}
-            href={buildCustomerListHref(filters, { sort: option.value })}
-          >
-            {option.label}
-          </a>
-        ))}
-      </div>
+      <AdminSegmentedControl
+        activeValue={filters.sort}
+        ariaLabel="Reservation count sort"
+        className="vuexy-customer-date-buttons"
+        options={reservationCountSortOptions.map((option) => ({
+          href: buildCustomerListHref(filters, { sort: option.value }),
+          label: option.label,
+          value: option.value,
+        }))}
+      />
     </div>
   );
 }
