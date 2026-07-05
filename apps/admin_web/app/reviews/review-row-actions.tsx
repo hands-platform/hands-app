@@ -11,6 +11,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
 import { AdminCard } from '../../components/admin-surface';
 import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
@@ -128,11 +129,10 @@ function ReviewEditDrawer({
 
   return (
     <>
-      <button
+      <AdminDrawerBackdropButton
         aria-label="Close review editor"
-        className="calendar-drawer-backdrop review-edit-drawer-backdrop"
+        className="review-edit-drawer-backdrop"
         onClick={onClose}
-        type="button"
       />
       <aside
         aria-labelledby={titleId}

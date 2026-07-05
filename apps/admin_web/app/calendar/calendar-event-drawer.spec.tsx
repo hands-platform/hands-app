@@ -54,6 +54,13 @@ describe('CalendarEventDrawer', () => {
     expect(source).not.toContain('<div className="calendar-form-grid">');
   });
 
+  it('uses the shared Vuexy drawer backdrop atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDrawerBackdropButton');
+    expect(source).not.toContain('<button\n        aria-label="Close event editor"');
+  });
+
   it('uses the shared Vuexy button atom for visible drawer header actions', () => {
     const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
 
