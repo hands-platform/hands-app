@@ -19,6 +19,7 @@ import {
   AdminFormShell,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
@@ -804,7 +805,7 @@ function ReferralCodeCell({
   readonly code?: { readonly active: boolean; readonly code: string; readonly createdAt: string } | null;
 }) {
   if (!code) {
-    return <span className="muted">No code</span>;
+    return <AdminInlineFallback>No code</AdminInlineFallback>;
   }
 
   return (
@@ -929,7 +930,7 @@ function ReferralRewardCell({
 
 function LatestCustomerReferralCell({ row }: { readonly row: AdminCustomerReferralParent }) {
   const referral = row.referrals[0];
-  if (!referral) return <span className="muted">No referral activity</span>;
+  if (!referral) return <AdminInlineFallback>No referral activity</AdminInlineFallback>;
 
   return (
     <div>
@@ -955,7 +956,7 @@ function LatestCustomerReferralCell({ row }: { readonly row: AdminCustomerReferr
 
 function LatestPartnerReferralCell({ row }: { readonly row: AdminPartnerReferralParent }) {
   const referral = row.referrals[0];
-  if (!referral) return <span className="muted">No referral activity</span>;
+  if (!referral) return <AdminInlineFallback>No referral activity</AdminInlineFallback>;
 
   return (
     <div>

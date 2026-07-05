@@ -240,6 +240,12 @@ describe('ReferralDashboard', () => {
     expect(dashboardSource).not.toContain('{formatDateTime(createdAt)}');
   });
 
+  it('uses the shared inline fallback atom for missing referral code and activity values', () => {
+    expect(dashboardSource).toContain('AdminInlineFallback');
+    expect(dashboardSource).not.toContain('<span className="muted">No code</span>');
+    expect(dashboardSource).not.toContain('<span className="muted">No referral activity</span>');
+  });
+
   it('uses the shared Vuexy table panel wrapper for referral parent lists', () => {
     expect(dashboardSource).toContain('AdminTablePanel');
     expect(dashboardSource).not.toContain(
