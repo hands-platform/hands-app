@@ -17,6 +17,20 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(source).not.toContain('<span className={`pill ${timelinePillTone(item.tone)}`}>{item.statusLabel}</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible lifecycle timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-lifecycle-list-section.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('readonly timeLabel: ReactNode;');
+    expect(source).toContain('readonly meta: readonly { readonly label: string; readonly value: ReactNode }[];');
+    expect(source).toContain('fallback={row.openedDateLabel}');
+    expect(source).toContain('<DateTimeText value={booking.matchedAt ?? booking.statusChangedAt ?? booking.updatedAt} />');
+    expect(source).toContain('<DateTimeText value={booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt} />');
+    expect(source).toContain('Recorded <DateTimeText value={snapshot.recordedAt} />');
+    expect(source).not.toContain('timeLabel: formatDate(');
+    expect(source).not.toContain('capture: `Recorded ${formatDate(snapshot.recordedAt)}`');
+  });
+
   it('keeps realtime and post-match list rows for an in-progress booking detail', () => {
     const rows = bookingDetailLifecycleListRows(
       bookingFixture({ status: 'IN_SERVICE' }),
@@ -152,7 +166,7 @@ describe('bookingDetailLifecycleListRows', () => {
     const completed = items.find((item) => item.groupKey === 'completed');
 
     expect(completed?.meta.find((meta) => meta.label === 'Completion location')?.value).toBe('Lang, Ha Noi');
-    expect(completed?.meta.find((meta) => meta.label === 'Location capture')?.value).toContain(
+    expect(renderToStaticMarkup(<>{completed?.meta.find((meta) => meta.label === 'Location capture')?.value}</>)).toContain(
       '19 Jun 2026, 15:40',
     );
     expect(completed?.meta.find((meta) => meta.label === 'Partner gate')?.value).toBe(

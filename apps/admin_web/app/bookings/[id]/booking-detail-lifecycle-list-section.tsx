@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { AdminBasicTimeline, AdminSection, type AdminBasicTimelineItem } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
@@ -11,7 +12,7 @@ import {
 import { type BookingMonitorListRow, type BookingTableGroupKey } from '../booking-monitor-list-section';
 import { buildBookingMonitorListRow } from '../booking-monitor-list-row-model';
 import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
-import { bookingAddressSnapshotLabel, formatDate } from './booking-formatters';
+import { bookingAddressSnapshotLabel } from './booking-formatters';
 
 export type BookingDetailLifecycleListRow = {
   readonly groupKey: BookingTableGroupKey;
@@ -21,9 +22,9 @@ export type BookingDetailLifecycleListRow = {
 export type BookingDetailLifecycleTimelineItem = {
   readonly detail: string;
   readonly groupKey: BookingTableGroupKey;
-  readonly meta: readonly { readonly label: string; readonly value: string }[];
+  readonly meta: readonly { readonly label: string; readonly value: ReactNode }[];
   readonly statusLabel: string;
-  readonly timeLabel: string;
+  readonly timeLabel: ReactNode;
   readonly title: string;
   readonly tone: 'danger' | 'info' | 'primary' | 'success' | 'warning';
 };
@@ -224,7 +225,12 @@ function bookingDetailLifecycleTimelineItem(
       groupKey,
       meta: [...commonMeta, { label: 'Requested', value: requestedPartnerLabel }],
       statusLabel: row.stage.label,
-      timeLabel: row.openedDateLabel,
+      timeLabel: (
+        <DateTimeText
+          fallback={row.openedDateLabel}
+          value={booking.openedAt ?? booking.createdAt ?? booking.statusChangedAt ?? booking.updatedAt}
+        />
+      ),
       title: 'Realtime booking request',
       tone: 'primary',
     };
@@ -242,7 +248,7 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Next action', value: row.nextActionLabel },
       ],
       statusLabel: 'Post-match',
-      timeLabel: formatDate(booking.matchedAt ?? booking.statusChangedAt ?? booking.updatedAt),
+      timeLabel: <DateTimeText value={booking.matchedAt ?? booking.statusChangedAt ?? booking.updatedAt} />,
       title: 'Partner matched and service is moving',
       tone: 'info',
     };
@@ -275,7 +281,7 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Partner gate', value: 'Eligible after completion' },
       ],
       statusLabel: 'Completed',
-      timeLabel: formatDate(booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt),
+      timeLabel: <DateTimeText value={booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt} />,
       title: 'Service completed',
       tone: 'success',
     };
@@ -306,7 +312,7 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Partner gate', value: 'Eligible after cancellation' },
       ],
       statusLabel: 'Resolved',
-      timeLabel: formatDate(booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt),
+      timeLabel: <DateTimeText value={booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt} />,
       title: 'Post-match cancellation resolved',
       tone: 'success',
     };
@@ -336,7 +342,7 @@ function bookingDetailLifecycleTimelineItem(
       { label: 'Review', value: row.nextActionLabel },
     ],
     statusLabel: 'Needs review',
-    timeLabel: formatDate(booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt),
+    timeLabel: <DateTimeText value={booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt} />,
     title: 'Post-match cancellation needs admin review',
     tone: 'warning',
   };
@@ -406,7 +412,11 @@ function partnerLifecycleLocationCheckpoint(
     : 'Location recorded without readable address';
 
   return {
-    capture: `Recorded ${formatDate(snapshot.recordedAt)}`,
+    capture: (
+      <>
+        Recorded <DateTimeText value={snapshot.recordedAt} />
+      </>
+    ),
     detail:
       checkpoint === 'completion'
         ? 'Completion location is captured only when the Partner taps complete.'
