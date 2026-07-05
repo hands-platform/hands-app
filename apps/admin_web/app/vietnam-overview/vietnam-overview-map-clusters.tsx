@@ -10,6 +10,7 @@ import {
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminIconButton } from '../../components/admin-icon-button';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
@@ -173,7 +174,7 @@ function EventMapCluster({
   const isCluster = cluster.points.length > 1;
 
   return (
-    <button
+    <AdminIconButton
       aria-label={clusterAriaLabel(cluster)}
       aria-pressed={isSelected}
       className={[
@@ -195,7 +196,7 @@ function EventMapCluster({
           {formatClusterCount(cluster.points.length)}
         </span>
       ) : null}
-    </button>
+    </AdminIconButton>
   );
 }
 

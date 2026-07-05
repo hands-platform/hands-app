@@ -16,6 +16,14 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain('<button\n          aria-label="Close selected map signals"');
   });
 
+  it('keeps clickable map dots inside the shared Vuexy icon button atom', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain("import { AdminIconButton } from '../../components/admin-icon-button';");
+    expect(source).toContain('<AdminIconButton');
+    expect(source).not.toContain('<button');
+  });
+
   it('uses the shared number formatter for cluster counters', () => {
     const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
 
