@@ -14,6 +14,7 @@ import {
   AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormShell,
 } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge } from '../../components/status-badge';
@@ -97,7 +98,7 @@ export function PartnerCustomerEvaluationsSection({
             }))}
           />
           {filters.dateRange === 'custom' ? (
-            <form
+            <AdminFormShell
               action="/reviews/partner-customer-evaluations"
               className="booking-custom-date-grid vuexy-review-custom-date-grid"
             >
@@ -110,7 +111,7 @@ export function PartnerCustomerEvaluationsSection({
               <AdminFormControlButton className="button-primary booking-date-apply-button">
                 Apply dates
               </AdminFormControlButton>
-            </form>
+            </AdminFormShell>
           ) : null}
           <AdminSegmentedControl
             activeValue={filters.sort}

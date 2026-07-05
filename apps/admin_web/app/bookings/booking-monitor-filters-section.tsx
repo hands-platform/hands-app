@@ -1,4 +1,4 @@
-import { AdminFormControlButton, AdminFormDate } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormDate, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
@@ -162,7 +162,7 @@ export function BookingMonitorFiltersSection({
           }))}
         />
         {showCustomDateRange && (
-          <form className="booking-custom-date-grid" action={dateRangeFormAction} method="get">
+          <AdminFormShell className="booking-custom-date-grid" action={dateRangeFormAction} method="get">
             {dateRangeHiddenInputs
               .filter(([key]) => !['dateRange', 'dateFrom', 'dateTo'].includes(key))
               .map(([key, value], index) => (
@@ -186,7 +186,7 @@ export function BookingMonitorFiltersSection({
             <AdminFormControlButton className="button-primary booking-date-apply-button">
               Apply dates
             </AdminFormControlButton>
-          </form>
+          </AdminFormShell>
         )}
       </div>
       <div className="booking-monitor-view-categories" aria-label="Booking operation categories">
