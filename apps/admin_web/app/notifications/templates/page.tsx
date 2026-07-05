@@ -6,6 +6,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormInput,
+  AdminFormShell,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
@@ -107,7 +108,7 @@ export default async function NotificationTemplatesPage({
                 {TEMPLATE_LOCALES.map((locale) => {
                   const translation = template.translations.find((item) => item.locale === locale.value);
                   return (
-                    <form
+                    <AdminFormShell
                       action={updateNotificationTemplate}
                       className="notification-template-copy-form"
                       key={`${template.key}-${locale.value}`}
@@ -145,7 +146,7 @@ export default async function NotificationTemplatesPage({
                         rows={3}
                       />
                       <AdminFormControlButton>Save {locale.value.toUpperCase()}</AdminFormControlButton>
-                    </form>
+                    </AdminFormShell>
                   );
                 })}
               </div>
