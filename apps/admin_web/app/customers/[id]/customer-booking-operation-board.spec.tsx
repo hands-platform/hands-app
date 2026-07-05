@@ -53,6 +53,11 @@ describe('CustomerBookingOperationBoard', () => {
     expect(boardSource).not.toContain('<span className={`pill');
   });
 
+  it('uses the shared MoneyText atom for operation board service prices', () => {
+    expect(boardSource).toContain("from '../../../components/money-text'");
+    expect(boardSource).not.toContain('<p className="muted">{row.servicePriceLabel}</p>');
+  });
+
   it('uses the shared table pagination footer for customer booking operation groups', () => {
     expect(boardSource).toContain('AdminTablePaginationFooter');
     expect(boardSource).toContain('className="customer-booking-operation-footer"');
@@ -99,7 +104,8 @@ function group(key: string, title: string, description: string): CustomerBooking
         paymentTypeLabel: 'Wallet',
         requestTimeLabel: '19 Jun 2026, 09:30',
         serviceLabel: 'Aromatherapy Massage / 90 min',
-        servicePriceLabel: '500.000 VND',
+        servicePriceAmount: 500_000,
+        servicePriceCurrency: 'VND',
         stateDetail: '19 Jun 2026, 10:00',
         stateLabel: 'OPEN_MATCHING',
         stateTone: 'pill-info',

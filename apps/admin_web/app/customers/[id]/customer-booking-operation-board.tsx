@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -28,7 +29,8 @@ export type CustomerBookingOperationRow = {
   readonly paymentTypeLabel: string;
   readonly requestTimeLabel: string;
   readonly serviceLabel: string;
-  readonly servicePriceLabel: string;
+  readonly servicePriceAmount: number;
+  readonly servicePriceCurrency: string;
   readonly stateDetail: string;
   readonly stateLabel: string;
   readonly stateTone: string;
@@ -153,7 +155,9 @@ function CustomerBookingOperationSection({
             </td>
             <td>
               <strong>{row.serviceLabel}</strong>
-              <p className="muted">{row.servicePriceLabel}</p>
+              <p className="muted">
+                <MoneyText amount={row.servicePriceAmount} currency={row.servicePriceCurrency} />
+              </p>
             </td>
             <td>
               <AdminPersonCell
