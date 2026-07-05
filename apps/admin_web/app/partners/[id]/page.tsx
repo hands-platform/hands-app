@@ -20,6 +20,7 @@ import {
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
+import { AdminDetailGrid } from '../../../components/admin-surface';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import {
   bookingLatestActivityAt,
@@ -1058,7 +1059,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           label="Required approval evidence"
           status="5 cards"
         >
-          <section className="detail-grid partner-detail-dossier-grid">
+          <AdminDetailGrid className="partner-detail-dossier-grid">
             <PartnerDetailBasicProfileCard
               note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
               rows={partnerBasicProfileRows}
@@ -1083,7 +1084,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
 
             <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
-          </section>
+          </AdminDetailGrid>
         </PartnerDetailDossierCluster>
 
         <PartnerDetailReferenceDetails
@@ -1091,7 +1092,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           label="Profile and activity references"
           status="2 cards"
         >
-          <section className="detail-grid partner-detail-dossier-grid">
+          <AdminDetailGrid className="partner-detail-dossier-grid">
             <PartnerDetailLocationActivityCard
               coordinatesLabel={
                 provider.currentLat && provider.currentLng
@@ -1105,7 +1106,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             />
 
             <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
-          </section>
+          </AdminDetailGrid>
         </PartnerDetailReferenceDetails>
 
         <PartnerDetailReferenceDetails
@@ -1140,7 +1141,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             payoutBatchRows={payoutBatchRows}
             pillClassForTone={partnerOpsPillClass}
           />
-          <section className="detail-grid partner-detail-dossier-grid">
+          <AdminDetailGrid className="partner-detail-dossier-grid">
             <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
 
             <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
@@ -1150,7 +1151,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               earnings={partnerRecentPayoutRecordLines}
               payoutBatchCount={provider.payoutBatches?.length ?? 0}
             />
-          </section>
+          </AdminDetailGrid>
         </PartnerDetailReferenceDetails>
       </PartnerDetailSectionGroup>
     </AdminPageTemplate>

@@ -71,6 +71,13 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).toContain('AdminFormControlLink');
     expect(providerDetailSource).not.toContain('<Link className="button button-secondary"');
   });
+
+  it('uses the shared Vuexy detail grid for partner dossier groups', () => {
+    expect(providerDetailSource).toContain('AdminDetailGrid');
+    expect(providerDetailSource).not.toContain(
+      '<section className="detail-grid partner-detail-dossier-grid">',
+    );
+  });
 });
 
 function partnerDetail(): AdminProvider {
