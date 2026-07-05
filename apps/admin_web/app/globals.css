@@ -1891,6 +1891,14 @@ a {
   min-width: 1040px;
 }
 
+.calendar-board-surface .fc .fc-col-header,
+.calendar-board-surface .fc .fc-daygrid-body,
+.calendar-board-surface .fc .fc-scrollgrid-sync-table,
+.calendar-board-surface .fc .fc-timegrid-body,
+.calendar-board-surface .fc .fc-timegrid-body table {
+  width: 100% !important;
+}
+
 .calendar-board-surface .fc-theme-standard td,
 .calendar-board-surface .fc-theme-standard th,
 .calendar-board-surface .fc-theme-standard .fc-scrollgrid {
@@ -1980,6 +1988,32 @@ a {
 
 .calendar-board-surface .fc .fc-day-today {
   background: var(--admin-action-hover);
+}
+
+.calendar-board-surface .fc .fc-timegrid .fc-scrollgrid-section .fc-col-header-cell,
+.calendar-board-surface .fc .fc-timegrid .fc-scrollgrid-section .fc-timegrid-axis {
+  background: transparent;
+  border-color: var(--admin-border);
+  border-left: 0;
+  border-right: 0;
+}
+
+.calendar-board-surface .fc .fc-timegrid-slot {
+  border-color: var(--admin-border);
+  height: 3rem;
+}
+
+.calendar-board-surface .fc .fc-timegrid-slot-label {
+  border-right: 0;
+  vertical-align: top;
+}
+
+.calendar-board-surface .fc .fc-timegrid-slot-lane {
+  border-left: 0;
+}
+
+.calendar-board-surface .fc .fc-timegrid-divider {
+  display: none;
 }
 
 .calendar-event {
