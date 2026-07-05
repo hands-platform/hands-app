@@ -3862,10 +3862,10 @@ function buildPartnerBankPayoutGateView(
     reviewStateLabel: reviewState.label,
     reviewActions: buildPartnerBankReviewActions(providerId, bank),
     reviewTimeline: buildPartnerBankReviewTimeline({ bank, bankAccounts, logs }),
-    reviewedAtLabel: bank.reviewedAt ? formatDate(bank.reviewedAt) : null,
+    reviewedAt: bank.reviewedAt ?? null,
     status: bank.status,
-    submittedAtLabel: bank.createdAt ? formatDate(bank.createdAt) : null,
-    updatedAtLabel: bank.updatedAt ? formatDate(bank.updatedAt) : null,
+    submittedAt: bank.createdAt ?? null,
+    updatedAt: bank.updatedAt ?? null,
   };
 }
 

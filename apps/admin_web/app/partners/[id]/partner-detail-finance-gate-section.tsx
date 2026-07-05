@@ -1,7 +1,10 @@
+import type { ReactNode } from 'react';
+
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminBasicTimeline, type AdminBasicTimelineItem } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -18,10 +21,10 @@ export type PartnerBankPayoutGateView = {
   readonly reviewStateDetail?: string | null;
   readonly reviewStateLabel?: string | null;
   readonly reviewActions: readonly ActionMenuItem[];
-  readonly reviewedAtLabel?: string | null;
+  readonly reviewedAt?: string | null;
   readonly status: string;
-  readonly submittedAtLabel?: string | null;
-  readonly updatedAtLabel?: string | null;
+  readonly submittedAt?: string | null;
+  readonly updatedAt?: string | null;
   readonly reviewTimeline?: readonly PartnerBankReviewTimelineItem[];
 };
 
@@ -86,9 +89,9 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <EvidenceLine label="Account" value={bank.accountLabel} />
                 <EvidenceLine label="Holder" value={bank.holderName} />
                 <EvidenceLine label="Rejection reason" value={bank.rejectionReason} />
-                <EvidenceLine label="Submitted" value={bank.submittedAtLabel} />
-                <EvidenceLine label="Reviewed" value={bank.reviewedAtLabel} />
-                <EvidenceLine label="Updated" value={bank.updatedAtLabel} />
+                <EvidenceLine label="Submitted" value={<DateTimeText fallback="Missing" value={bank.submittedAt} />} />
+                <EvidenceLine label="Reviewed" value={<DateTimeText fallback="Missing" value={bank.reviewedAt} />} />
+                <EvidenceLine label="Updated" value={<DateTimeText fallback="Missing" value={bank.updatedAt} />} />
               </td>
               <td>
                 <StatusBadge tone={financeEvidenceStatusBadgeTone(bank.status)}>{bank.status}</StatusBadge>
@@ -166,10 +169,13 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
 
 const financeEvidenceHeaders = ['Gate', 'Evidence', 'Status', 'Actions'] as const;
 
-function EvidenceLine({ label, value }: { readonly label: string; readonly value?: string | null }) {
+function EvidenceLine({ label, value }: { readonly label: string; readonly value?: ReactNode }) {
+  const renderedValue =
+    typeof value === 'string' ? (value.trim() ? marketplaceDisplayText(value) : 'Missing') : (value ?? 'Missing');
+
   return (
     <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
+      <strong>{label}:</strong> {renderedValue}
     </p>
   );
 }

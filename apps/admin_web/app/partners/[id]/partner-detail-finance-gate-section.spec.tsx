@@ -15,6 +15,19 @@ describe('partner detail finance gate sections', () => {
     expect(source).not.toContain('<span className={`pill ${financeEvidenceStatusTone(taxProfile.status)}`}>');
   });
 
+  it('uses the shared date time atom for withdrawal evidence timestamps', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-finance-gate-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly reviewedAtLabel?: string | null;');
+    expect(source).not.toContain('readonly submittedAtLabel?: string | null;');
+    expect(source).not.toContain('readonly updatedAtLabel?: string | null;');
+    expect(pageSource).not.toContain('reviewedAtLabel: bank.reviewedAt ? formatDate(bank.reviewedAt) : null');
+    expect(pageSource).not.toContain('submittedAtLabel: bank.createdAt ? formatDate(bank.createdAt) : null');
+    expect(pageSource).not.toContain('updatedAtLabel: bank.updatedAt ? formatDate(bank.updatedAt) : null');
+  });
+
   it('renders bank payout evidence in a Vuexy table with dropdown actions', () => {
     const section = PartnerDetailBankPayoutGateCard({
       bank: {
