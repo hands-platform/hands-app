@@ -213,6 +213,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps operator note form shells inside the shared Vuexy ops note atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-ops-note-form.tsx')
+      .filter((filePath) => rawOpsNoteFormPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -245,6 +254,8 @@ const rawGetFilterFormShellPattern =
   /<form\b[^>]*className=(?:"(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)"|'(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)')/s;
 const rawAdminInlineActionFormPattern =
   /<form\b[^>]*className=(?:"admin-inline-form"|'admin-inline-form')/s;
+const rawOpsNoteFormPattern =
+  /<form\b[^>]*className=(?:"[^"]*\bops-note-form\b[^"]*"|'[^']*\bops-note-form\b[^']*')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

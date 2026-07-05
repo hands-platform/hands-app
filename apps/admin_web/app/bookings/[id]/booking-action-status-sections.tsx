@@ -5,6 +5,7 @@ import {
   AdminFormControlStack,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
@@ -260,11 +261,11 @@ function BookingChatRepairSection({
       title="Chat room repair"
     >
       {chatRepair.canSubmit ? (
-        <form action={repairBookingChatRoom} className="ops-note-form">
+        <AdminOpsNoteForm action={repairBookingChatRoom}>
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminFormControlButton type="submit">Repair chat room</AdminFormControlButton>
           <small>{chatRepair.helper}</small>
-        </form>
+        </AdminOpsNoteForm>
       ) : null}
       <p className="muted">{chatRepair.helper}</p>
     </AdminSection>
@@ -412,7 +413,7 @@ function BookingOperatorNotesSection({
           <AdminEmptyState framed message="No internal notes yet." />
         )}
       </div>
-      <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
+      <AdminOpsNoteForm action={addBookingOpsNote} className="booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
         <AdminCard className="booking-action-note-panel">
           <AdminFormControlStack className="admin-form-control-fluid">
@@ -425,7 +426,7 @@ function BookingOperatorNotesSection({
             </AdminFormControlButton>
           </div>
         </AdminCard>
-      </form>
+      </AdminOpsNoteForm>
     </AdminSection>
   );
 }
@@ -450,7 +451,7 @@ function BookingCompletedCloseoutSection({
       title="Completed closeout"
     >
       {closeout.canSubmit ? (
-        <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
+        <AdminOpsNoteForm action={closeoutCompletedBooking} className="booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminCard className="booking-action-note-panel">
             <AdminFormControlStack className="admin-form-control-fluid">
@@ -470,7 +471,7 @@ function BookingCompletedCloseoutSection({
               </AdminFormControlButton>
             </div>
           </AdminCard>
-        </form>
+        </AdminOpsNoteForm>
       ) : (
         <p className="muted admin-mt-12">No manual closeout action is available for this booking.</p>
       )}
@@ -493,7 +494,7 @@ function BookingMatchingExpirySection({
       title="Matching expiry handling"
     >
       {matchingExpiry.canSubmit ? (
-        <form action={expireBooking} className="ops-note-form">
+        <AdminOpsNoteForm action={expireBooking}>
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminFormTextarea
             label="Expiry reason"
@@ -501,7 +502,7 @@ function BookingMatchingExpirySection({
             placeholder="Example: Matching window passed and no suitable Partner was available."
           />
           <AdminFormControlButton type="submit">Expire matching</AdminFormControlButton>
-        </form>
+        </AdminOpsNoteForm>
       ) : (
         <StatusBadge tone={matchingExpiry.status === 'EXPIRED' ? 'warning' : 'neutral'}>
           {matchingExpiry.status === 'EXPIRED' ? 'Already expired' : 'Expiry not available for this status'}
@@ -526,7 +527,7 @@ function BookingNoShowHandlingSection({
       title="No-show handling"
     >
       {noShow.canSubmit ? (
-        <form action={markBookingNoShow} className="ops-note-form">
+        <AdminOpsNoteForm action={markBookingNoShow}>
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminFormTextarea
             label="No-show reason"
@@ -534,7 +535,7 @@ function BookingNoShowHandlingSection({
             placeholder="Example: Customer did not answer calls after Partner arrival."
           />
           <AdminFormControlButton type="submit">Mark no-show</AdminFormControlButton>
-        </form>
+        </AdminOpsNoteForm>
       ) : (
         <StatusBadge tone={noShow.status === 'NO_SHOW' ? 'danger' : 'neutral'}>
           {noShow.status === 'NO_SHOW' ? 'Already no-show' : 'No-show not available for this status'}

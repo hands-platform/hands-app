@@ -6,6 +6,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -72,7 +73,7 @@ export function PartnerDetailOperatorNotesSection({
           />
         )}
       </div>
-      <form action={addProviderOpsNote} className="ops-note-form">
+      <AdminOpsNoteForm action={addProviderOpsNote}>
         <input type="hidden" name="providerId" value={providerId} />
         <AdminFormSelect
           className="partner-note-preset"
@@ -91,7 +92,7 @@ export function PartnerDetailOperatorNotesSection({
           <Save aria-hidden="true" size={16} />
           Save partner operation note
         </AdminFormControlButton>
-      </form>
+      </AdminOpsNoteForm>
     </AdminCard>
   );
 }

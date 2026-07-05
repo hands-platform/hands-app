@@ -7,6 +7,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminOpsNoteForm } from '../../components/admin-ops-note-form';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { formatRelativeTime } from '../../lib/admin-format';
@@ -31,7 +32,7 @@ export function OperationsHandoffOperatorNotesSection({
       description="Shift, Customer, Partner, and booking notes written by admins."
       title="Latest operator notes"
     >
-      <form action={addOperationsHandoffNote} className="ops-note-form admin-mb-14">
+      <AdminOpsNoteForm action={addOperationsHandoffNote} className="admin-mb-14">
         <AdminFormGridFields className="compact-form">
           <AdminFormSelect
             defaultValue="Shift handoff"
@@ -83,7 +84,7 @@ export function OperationsHandoffOperatorNotesSection({
           <Save aria-hidden="true" size={16} />
           Save handoff note
         </AdminFormControlButton>
-      </form>
+      </AdminOpsNoteForm>
       <div className="stack">
         {notes.slice(0, 8).map((note) => (
           <AdminActionCard
