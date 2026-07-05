@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { StatusBadgeLink } from '../../../components/status-badge';
@@ -120,11 +121,13 @@ function OverviewDetailCard({
 }
 
 function InfoLine({ label, value, valueNode }: PartnerDetailFastOverviewInfoLine) {
-  const displayValue = value && value.trim() ? marketplaceDisplayText(value) : 'Missing';
-
   return (
     <p className="muted">
-      <strong>{label}:</strong> {valueNode ?? displayValue}
+      <strong>{label}:</strong> {valueNode ?? renderInfoLineValue(value)}
     </p>
   );
+}
+
+function renderInfoLineValue(value?: string | null) {
+  return value && value.trim() ? marketplaceDisplayText(value) : <AdminInlineFallback>Missing</AdminInlineFallback>;
 }

@@ -83,6 +83,14 @@ describe('PartnerDetailFastOverviewSection', () => {
     expect(source).not.toContain('<Link className="pill pill-info" href={link.href} key={link.href}>');
   });
 
+  it('uses the shared inline fallback atom for empty fast overview values', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).toContain('renderInfoLineValue');
+    expect(source).not.toContain("value && value.trim() ? marketplaceDisplayText(value) : 'Missing'");
+  });
+
   it('uses the shared Vuexy form control link for button-style overview actions', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
 
