@@ -6,6 +6,7 @@ import {
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormControlStack,
   AdminFormDate,
   AdminFormDatePickerInput,
   AdminFormDateTime,
@@ -65,6 +66,16 @@ describe('Admin form controls', () => {
     expect(fields.props.className).toBe('calendar-form-grid calendar-event-fields');
     expect(textContent(form)).toBe('Drawer form');
     expect(textContent(fields)).toBe('Drawer fields');
+  });
+
+  it('renders form control stacks through the shared Vuexy helper surface', () => {
+    const stack = AdminFormControlStack({
+      children: 'Field plus helper',
+      className: 'booking-action-note-stack',
+    });
+
+    expect(stack.props.className).toBe('admin-form-control-stack booking-action-note-stack');
+    expect(textContent(stack)).toBe('Field plus helper');
   });
 
   it('renders Vuexy-style select and search controls with stable labels', () => {

@@ -90,7 +90,8 @@ describe('BookingActionStatusSections', () => {
     expect(source).not.toContain('<div className={`dispatch-step-card');
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
     expect(source).not.toContain('className="card admin-card booking-action-note-panel"');
-    expect(source).toContain('admin-form-control-stack admin-form-control-fluid');
+    expect(source).toContain('AdminFormControlStack');
+    expect(source).not.toContain('<div className="admin-form-control-stack admin-form-control-fluid">');
     expect(source).toContain('admin-form-control-help');
     expect(source).not.toContain('booking-action-note-field');
     expect(source).not.toContain('booking-action-note-label');

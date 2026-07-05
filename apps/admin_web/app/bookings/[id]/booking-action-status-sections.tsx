@@ -1,5 +1,10 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFormControlButton, AdminFormControlLink, AdminFormTextarea } from '../../../components/admin-form-controls';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormControlStack,
+  AdminFormTextarea,
+} from '../../../components/admin-form-controls';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
@@ -410,10 +415,10 @@ function BookingOperatorNotesSection({
       <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
         <AdminCard className="booking-action-note-panel">
-          <div className="admin-form-control-stack admin-form-control-fluid">
+          <AdminFormControlStack className="admin-form-control-fluid">
             <BookingOperatorNotesEditor />
             <small className="admin-form-control-help">Use one short note per action or decision.</small>
-          </div>
+          </AdminFormControlStack>
           <div className="booking-action-note-actions">
             <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
               Add note
@@ -448,7 +453,7 @@ function BookingCompletedCloseoutSection({
         <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
           <AdminCard className="booking-action-note-panel">
-            <div className="admin-form-control-stack admin-form-control-fluid">
+            <AdminFormControlStack className="admin-form-control-fluid">
               <AdminFormTextarea
                 className="admin-form-control-fluid"
                 label="Closeout note"
@@ -458,7 +463,7 @@ function BookingCompletedCloseoutSection({
                 rows={3}
               />
               <small className="admin-form-control-help">Use retained chat, payment, and Partner evidence.</small>
-            </div>
+            </AdminFormControlStack>
             <div className="booking-action-note-actions">
               <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
                 Reconcile booking

@@ -129,6 +129,11 @@ type AdminFormControlButtonProps = {
   readonly type?: 'button' | 'submit';
 } & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled' | 'onClick'>;
 
+type AdminFormControlStackProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
 type AdminFormGridProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -176,6 +181,14 @@ export function AdminDrawerFormGrid({ children, className, ...formProps }: Admin
 export function AdminDrawerFormGridFields({ children, className, ...divProps }: AdminDrawerFormGridFieldsProps) {
   return (
     <div {...divProps} className={joinClassNames('calendar-form-grid', className)}>
+      {children}
+    </div>
+  );
+}
+
+export function AdminFormControlStack({ children, className, ...divProps }: AdminFormControlStackProps) {
+  return (
+    <div {...divProps} className={joinClassNames('admin-form-control-stack', className)}>
       {children}
     </div>
   );
