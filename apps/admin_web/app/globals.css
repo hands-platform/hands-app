@@ -16894,7 +16894,7 @@ textarea:focus-visible {
 
 .admin-form-static-value strong {
   color: var(--admin-text);
-  font-size: var(--admin-input-font-size);
+  font-size: var(--admin-input-font-md);
   font-weight: 500;
   line-height: var(--admin-input-line-height);
   min-width: 0;

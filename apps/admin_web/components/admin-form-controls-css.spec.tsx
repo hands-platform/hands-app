@@ -230,6 +230,15 @@ describe('Admin form control CSS', () => {
     expect(textareaLabelBlock).not.toContain('color: var(--admin-muted)');
   });
 
+  it('keeps shared static values on the Vuexy text field font token', () => {
+    const staticValueIndex = globalsCss.indexOf('.admin-form-static-value strong {');
+    const staticValueBlock = cssRuleBlockAt(staticValueIndex);
+
+    expect(staticValueIndex).toBeGreaterThan(-1);
+    expect(staticValueBlock).toContain('font-size: var(--admin-input-font-md)');
+    expect(staticValueBlock).not.toContain('font-size: var(--admin-input-font-size)');
+  });
+
   it('keeps disabled shared form atoms on the Vuexy disabled surface', () => {
     const shellDisabledIndex = globalsCss.indexOf('.admin-form-search:has(input:disabled),');
     const shellDisabledBlock = cssRuleBlockAt(shellDisabledIndex);
