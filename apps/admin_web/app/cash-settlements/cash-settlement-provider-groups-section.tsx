@@ -3,6 +3,7 @@ import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminDetailGrid } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
@@ -26,7 +27,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
         </Link>
       </div>
       {providers.length ? (
-        <div className="detail-grid admin-mt-16">
+        <AdminDetailGrid className="admin-mt-16">
           {providers.map((provider) => (
             <div key={provider.providerProfileId}>
               <AdminSectionHeader
@@ -59,7 +60,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
               </div>
             </div>
           ))}
-        </div>
+        </AdminDetailGrid>
       ) : (
         <AdminEmptyState framed message="No Partner has open cash settlement debt." title={null} />
       )}

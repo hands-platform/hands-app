@@ -1,5 +1,6 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminDetailGrid } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortRecordId } from '../../lib/admin-format';
@@ -34,7 +35,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
       resultTone={batchCount > 0 ? 'info' : 'warning'}
       title="Payout status lanes"
     >
-      <div className="detail-grid admin-mt-16">
+      <AdminDetailGrid className="admin-mt-16">
         {lanes.map((lane) => (
           <div key={lane.title}>
             <AdminSectionHeader
@@ -68,7 +69,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
             )}
           </div>
         ))}
-      </div>
+      </AdminDetailGrid>
     </AdminFilterPanel>
   );
 }

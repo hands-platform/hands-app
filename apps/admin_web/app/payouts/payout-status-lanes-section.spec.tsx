@@ -89,6 +89,13 @@ describe('PayoutStatusLanesSection', () => {
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('{formatMoney(batch.amount, batch.currency)}');
   });
+
+  it('uses the shared Vuexy detail grid for payout lane cards', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<div className="detail-grid admin-mt-16">');
+  });
 });
 
 function textContent(value: unknown): string {

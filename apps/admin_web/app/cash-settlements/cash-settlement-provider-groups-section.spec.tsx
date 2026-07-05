@@ -65,6 +65,16 @@ describe('CashSettlementProviderGroupsSection', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy detail grid for Partner debt group cards', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-provider-groups-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<div className="detail-grid admin-mt-16">');
+  });
+
   it('keeps partner debt groups on the grouped Vuexy table-card shell', () => {
     const section = CashSettlementProviderGroupsSection({
       providers: [
