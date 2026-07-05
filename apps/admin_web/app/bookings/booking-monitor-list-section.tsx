@@ -658,14 +658,14 @@ function BookingChatMessageRow({ message }: { readonly message: BookingChatMessa
   const senderRole = bookingChatSenderRole(message.sender?.roles);
 
   return (
-    <article className="booking-chat-message">
+    <div className="booking-chat-message">
       <div className="booking-chat-message-meta">
         <strong>{senderName}</strong>
         <StatusBadge tone="neutral">{senderRole}</StatusBadge>
         <time>{formatBookingDate(message.createdAt)}</time>
       </div>
       <p>{message.body || 'No message body retained.'}</p>
-    </article>
+    </div>
   );
 }
 

@@ -386,6 +386,14 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps page-local article tags out of production TSX surfaces', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => rawArticleTagPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -426,6 +434,7 @@ const rawBookingPostMatchDecisionFormPattern =
 const rawBookingPresetActionFormPattern =
   /<form\b[^>]*action=\{(?:addBookingOpsNote|updateBookingOpsTask)\}/s;
 const rawAdminLogoutFormPattern = /<form\b[^>]*action=(?:"\/api\/admin\/session\/logout"|'\/api\/admin\/session\/logout')/s;
+const rawArticleTagPattern = /<\/?article\b/;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;
