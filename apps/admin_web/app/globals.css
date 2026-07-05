@@ -14186,10 +14186,13 @@ textarea:focus-visible {
 }
 
 .table.vuexy-data-table th:first-child,
-.table.vuexy-data-table td:first-child,
+.table.vuexy-data-table td:first-child {
+  padding: 8px 16px 8px 24px;
+}
+
 .table.vuexy-data-table th:last-child,
 .table.vuexy-data-table td:last-child {
-  padding: 8px 16px;
+  padding: 8px 24px 8px 16px;
 }
 
 .table.vuexy-data-table th {
