@@ -12,6 +12,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminNotePanel } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
@@ -159,7 +160,7 @@ export function CashSettlementOpenDebtTableSection({
                 <small>{row.nextAction}</small>
               </div>
               {showOperationsEvidence ? (
-                <div className="ops-task-note admin-mt-10">
+                <AdminNotePanel className="admin-mt-10">
                   <strong>Cash settlement action execution map</strong>
                   <div className="setup-stage-list admin-mt-8">
                     {row.actionRows.map((item) => (
@@ -173,7 +174,7 @@ export function CashSettlementOpenDebtTableSection({
                       </div>
                     ))}
                   </div>
-                </div>
+                </AdminNotePanel>
               ) : null}
             </td>
             <td>
