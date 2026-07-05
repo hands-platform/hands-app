@@ -16,6 +16,7 @@ import {
 import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { AdminEmptyState } from './admin-empty-state';
+import { AdminFormShell } from './admin-form-controls';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
@@ -194,11 +195,11 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           <ShieldCheck aria-hidden="true" size={14} />
           Live Workspace
         </span>
-        <form action="/api/admin/session/logout" method="post">
+        <AdminFormShell action="/api/admin/session/logout" method="post">
           <button className="topbar-icon-chip topbar-icon-button" aria-label="Sign out" title="Sign out" type="submit">
             <LogOut aria-hidden="true" size={18} />
           </button>
-        </form>
+        </AdminFormShell>
       </div>
     </header>
   );
