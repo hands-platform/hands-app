@@ -6,7 +6,9 @@ describe('PaymentDetailCallbackTimelineSection', () => {
   it('uses shared Vuexy status badge atoms for callback labels', () => {
     const source = readFileSync('app/payments/[id]/payment-detail-callback-timeline-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
   });
 

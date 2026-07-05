@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 export type PaymentDetailActionMapRow = {
@@ -30,8 +30,7 @@ export function PaymentDetailActionMapSection({
   rows,
 }: PaymentDetailActionMapSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Operator action checks for sync, capture, release, refund, and cash fee settlement."
       id="payment-action-map"
       resultLabel={hasBlockingReview ? 'Review needed' : 'No urgent block'}
@@ -55,6 +54,6 @@ export function PaymentDetailActionMapSection({
         <ActionMenu actions={actions} label={actionLabel} />
       </div>
       {cashDebtSettlementForm}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 export type PaymentDetailCallbackTimelineRow = {
@@ -26,8 +26,7 @@ type PaymentDetailCallbackTimelineSectionProps = {
 
 export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: PaymentDetailCallbackTimelineSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Accepted, replayed, rejected, and conflicting callbacks connected to this payment or gateway reference."
       id="callback-timeline"
       resultLabel={reviewCount ? `${reviewCount} review` : 'Trace ready'}
@@ -61,6 +60,6 @@ export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: Paym
           </tr>
         ))}
       </AdminDataTable>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
