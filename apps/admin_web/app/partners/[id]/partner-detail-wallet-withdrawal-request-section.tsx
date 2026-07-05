@@ -9,6 +9,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../../components/date-time-text';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
@@ -60,7 +61,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 {request.requestNote ? <p className="muted">{request.requestNote}</p> : null}
               </td>
               <td>
-                <strong>{formatCurrency(request.amount, request.currency)}</strong>
+                <strong>
+                  <MoneyText amount={request.amount} currency={request.currency} />
+                </strong>
                 <AdminWithdrawalAccountingPreview request={request} />
               </td>
               <td>

@@ -221,6 +221,12 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('{formatDate(request.createdAt)}');
     expect(sectionSource).not.toContain('Paid {formatDate(request.paidAt)}');
   });
+
+  it('uses the shared money atom for visible withdrawal request amounts', () => {
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).toContain('<MoneyText amount={request.amount} currency={request.currency} />');
+    expect(sectionSource).not.toContain('<strong>{formatCurrency(request.amount, request.currency)}</strong>');
+  });
 });
 
 function textContent(value: unknown): string {
