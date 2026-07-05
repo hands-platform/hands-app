@@ -5,8 +5,9 @@ import type { AdminBookingSettlementSnapshot } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
-import { formatDateTime, shortId } from '../../../../lib/admin-format';
+import { shortId } from '../../../../lib/admin-format';
 import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
@@ -73,7 +74,12 @@ export default async function BookingSettlementAuditDetailPage({
       title="Booking Settlement Audit Detail"
     >
       <FinanceTablePanel
-        description={`Snapshot ${shortId(snapshot.id)} · Posted ${formatDateTime(snapshot.postedAt)} · Period ${snapshot.monthlyPeriod}`}
+        description={
+          <>
+            Snapshot {shortId(snapshot.id)} · Posted <DateTimeText value={snapshot.postedAt} /> · Period{' '}
+            {snapshot.monthlyPeriod}
+          </>
+        }
         resultLabel={snapshot.taxStatus}
         resultTone={financeTaxCloseoutStatusTone(snapshot.taxStatus)}
         title="Settlement snapshot overview"
@@ -115,7 +121,10 @@ export default async function BookingSettlementAuditDetailPage({
             }
           />
           <FinanceDetailInfoItem label="Monthly period" value={snapshot.monthlyPeriod} />
-          <FinanceDetailInfoItem label="Closed at" value={snapshot.closedAt ? formatDateTime(snapshot.closedAt) : 'Open'} />
+          <FinanceDetailInfoItem
+            label="Closed at"
+            value={snapshot.closedAt ? <DateTimeText value={snapshot.closedAt} /> : 'Open'}
+          />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
@@ -340,7 +349,7 @@ function SettlementReversalEvidence({ snapshot }: { readonly snapshot: AdminBook
             Journal {journal?.status ?? 'missing'} · Clearing {clearing?.status ?? 'missing'}
           </span>
           <span className="muted admin-block">
-            {reversal.taxStatus} · {formatDateTime(reversal.occurredAt)}
+            {reversal.taxStatus} · <DateTimeText value={reversal.occurredAt} />
           </span>
         </>
       }

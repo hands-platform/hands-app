@@ -5,9 +5,10 @@ import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-ap
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge } from '../../../../components/status-badge';
-import { formatDateTime, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -60,7 +61,11 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       title="General Ledger Detail"
     >
       <FinanceTablePanel
-        description={`${batch.sourceType} / ${shortId(batch.sourceId)} · Posted ${formatDateTime(batch.postedAt)}`}
+        description={
+          <>
+            {batch.sourceType} / {shortId(batch.sourceId)} · Posted <DateTimeText value={batch.postedAt} />
+          </>
+        }
         resultLabel={batch.status}
         resultTone={financeJournalBatchStatusTone(batch.status)}
         title="Journal batch overview"
@@ -240,7 +245,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
                   <strong>
                     <MoneyText amount={entry.amount} currency={entry.currency} />
                   </strong>
-                  <div className="muted">{formatDateTime(entry.createdAt)}</div>
+                  <div className="muted">
+                    <DateTimeText value={entry.createdAt} />
+                  </div>
                 </td>
                 <td>{entry.memo ?? '-'}</td>
                 <td>

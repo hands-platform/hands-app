@@ -24,9 +24,10 @@ import {
 } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
+import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
-import { formatDateTime, formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { formatMoney, readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
@@ -121,7 +122,12 @@ export default async function BankReconciliationDetailPage({
       title="Bank Reconciliation Detail"
     >
       <FinanceTablePanel
-        description={`${transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred ${formatDateTime(transaction.occurredAt)}`}
+        description={
+          <>
+            {transaction.transferRef ?? shortId(transaction.sourceKey)} · Occurred{' '}
+            <DateTimeText value={transaction.occurredAt} />
+          </>
+        }
         resultLabel={transaction.status}
         resultTone={financeBankReconciliationStatusTone(transaction.status)}
         title="Bank transaction overview"
@@ -130,7 +136,10 @@ export default async function BankReconciliationDetailPage({
           <FinanceDetailInfoItem label="Bank account" value={transaction.bankAccount?.name ?? 'Unknown account'} />
           <FinanceDetailInfoItem label="Bank" value={transaction.bankAccount?.bankName ?? '-'} />
           <FinanceDetailInfoItem label="Counterparty" value={transaction.counterpartyName ?? '-'} />
-          <FinanceDetailInfoItem label="Value date" value={transaction.valueDate ? formatDateTime(transaction.valueDate) : '-'} />
+          <FinanceDetailInfoItem
+            label="Value date"
+            value={transaction.valueDate ? <DateTimeText value={transaction.valueDate} /> : '-'}
+          />
           <FinanceDetailInfoItem label="Transfer reference" value={transaction.transferRef ?? '-'} />
           <FinanceDetailInfoItem label="Source key" value={transaction.sourceKey} />
           <FinanceDetailInfoItem label="Description" value={transaction.description ?? '-'} />
@@ -451,7 +460,9 @@ function ReconciliationMatchedSourceCell({ match }: { readonly match: AdminBankR
   return (
     <div className="finance-reconciliation-source-cell">
       <strong>{shortId(match.sourceKey)}</strong>
-      <span className="muted">{formatDateTime(match.matchedAt)}</span>
+      <span className="muted">
+        <DateTimeText value={match.matchedAt} />
+      </span>
     </div>
   );
 }

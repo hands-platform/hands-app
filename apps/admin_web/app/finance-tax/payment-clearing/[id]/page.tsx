@@ -5,9 +5,10 @@ import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/adm
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../../lib/admin-format';
+import { shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -68,7 +69,11 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       title="Payment Clearing Detail"
     >
       <FinanceTablePanel
-        description={`${entry.type} / ${shortId(entry.sourceKey)} · Occurred ${formatDateTime(entry.occurredAt)}`}
+        description={
+          <>
+            {entry.type} / {shortId(entry.sourceKey)} · Occurred <DateTimeText value={entry.occurredAt} />
+          </>
+        }
         resultLabel={entry.status}
         resultTone={financePaymentClearingStatusTone(entry.status)}
         title="Clearing overview"
@@ -140,7 +145,10 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               )
             }
           />
-          <FinanceDetailInfoItem label="Cleared at" value={entry.clearedAt ? formatDateTime(entry.clearedAt) : 'Waiting'} />
+          <FinanceDetailInfoItem
+            label="Cleared at"
+            value={entry.clearedAt ? <DateTimeText value={entry.clearedAt} /> : 'Waiting'}
+          />
           <FinanceDetailInfoItem label="Matched amount" value={<MoneyText amount={matchedAmount} currency={entry.currency} />} />
           <FinanceDetailInfoItem label="Remaining amount" value={<MoneyText amount={remainingAmount} currency={entry.currency} />} />
         </FinanceDetailGrid>
@@ -282,7 +290,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                     </div>
                   ) : null}
                 </td>
-                <td>{formatDateTime(match.matchedAt)}</td>
+                <td>
+                  <DateTimeText value={match.matchedAt} />
+                </td>
                 <td>
                   <StatusBadge tone={statusBadgeToneFromPillClass(financeBankReconciliationStatusPill(match.status))}>
                     {match.status}

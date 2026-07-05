@@ -1007,6 +1007,53 @@ describe('finance detail pages', () => {
     expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
   });
 
+  it.each([
+    [
+      'booking settlement audit detail',
+      'app/finance-tax/booking-settlement-audit/[id]/page.tsx',
+      [
+        'formatDateTime(snapshot.postedAt)',
+        'formatDateTime(snapshot.closedAt)',
+        'formatDateTime(reversal.occurredAt)',
+      ],
+    ],
+    [
+      'payment clearing detail',
+      'app/finance-tax/payment-clearing/[id]/page.tsx',
+      [
+        'formatDateTime(entry.occurredAt)',
+        'formatDateTime(entry.clearedAt)',
+        'formatDateTime(match.matchedAt)',
+      ],
+    ],
+    [
+      'general ledger detail',
+      'app/finance-tax/general-ledger/[id]/page.tsx',
+      ['formatDateTime(batch.postedAt)', 'formatDateTime(entry.createdAt)'],
+    ],
+    [
+      'bank reconciliation detail',
+      'app/finance-tax/bank-reconciliation/[id]/page.tsx',
+      [
+        'formatDateTime(transaction.occurredAt)',
+        'formatDateTime(transaction.valueDate)',
+        'formatDateTime(match.matchedAt)',
+      ],
+    ],
+    [
+      'settlement reversal detail',
+      'app/finance-tax/settlement-reversals/[id]/page.tsx',
+      ['formatDateTime(reversal.occurredAt)', 'formatDateTime(originalSettlement.postedAt)'],
+    ],
+  ] as const)('uses shared date time atoms for %s visible date values', (_name, sourcePath, directFormatCalls) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    for (const directFormatCall of directFormatCalls) {
+      expect(source).not.toContain(directFormatCall);
+    }
+  });
+
   it('uses the shared Vuexy detail grid shell for finance detail facts', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-detail-info-item.tsx'), 'utf8');
 

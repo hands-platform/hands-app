@@ -5,8 +5,9 @@ import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
-import { formatDateTime, readPlainRecord, shortId } from '../../../../lib/admin-format';
+import { readPlainRecord, shortId } from '../../../../lib/admin-format';
 import { FinanceDataTable } from '../../finance-data-table';
 import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
@@ -93,7 +94,12 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       title="Settlement Reversal Detail"
     >
       <FinanceTablePanel
-        description={`Reversal ID ${shortId(reversal.id)} · Occurred ${formatDateTime(reversal.occurredAt)} · Period ${reversal.monthlyPeriod}`}
+        description={
+          <>
+            Reversal ID {shortId(reversal.id)} · Occurred <DateTimeText value={reversal.occurredAt} /> · Period{' '}
+            {reversal.monthlyPeriod}
+          </>
+        }
         resultLabel={evidenceState.label}
         resultTone={evidenceState.tone}
         title="Refund after payout evidence"
@@ -357,7 +363,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           />
           <FinanceDetailInfoItem
             label="Original posted"
-            value={originalSettlement?.postedAt ? formatDateTime(originalSettlement.postedAt) : '-'}
+            value={originalSettlement?.postedAt ? <DateTimeText value={originalSettlement.postedAt} /> : '-'}
           />
           <FinanceDetailInfoItem label="Original tax status" value={originalSettlement?.taxStatus ?? '-'} />
           <FinanceDetailInfoItem label="Original booking status" value={originalSettlement?.booking?.status ?? '-'} />
