@@ -16,7 +16,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
   buildUnifiedActivityStream,
@@ -219,7 +219,7 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffFinanceActionSection actions={financeHandoffActions} />
 
-      <section className="detail-grid admin-mb-16">
+      <AdminDetailGrid ariaLabel="Shift brief and operator notes" className="admin-mb-16">
         <OperationsHandoffShiftBriefSection
           activeBookingCount={activeBookings.length}
           cashDebtPartnerCount={cashSummary.providerCount}
@@ -229,7 +229,7 @@ export default async function OperationsHandoffPage({
           partnerIssueCount={partnerSignals.attentionCount}
         />
         <OperationsHandoffOperatorNotesSection notes={operatorNotes} />
-      </section>
+      </AdminDetailGrid>
 
       {shouldRenderFullDetails ? (
         <>

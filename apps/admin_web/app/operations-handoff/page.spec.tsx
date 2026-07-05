@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +15,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
 describe('OperationsHandoffPage', () => {
   beforeEach(() => {
@@ -32,5 +34,10 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('/operations-handoff?details=all');
+  });
+
+  it('uses the shared Vuexy detail grid atom for brief and note panels', () => {
+    expect(pageSource).toContain('AdminDetailGrid');
+    expect(pageSource).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 });
