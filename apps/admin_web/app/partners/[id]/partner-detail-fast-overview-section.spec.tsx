@@ -107,6 +107,18 @@ describe('PartnerDetailFastOverviewSection', () => {
     );
     expect(pageSource).not.toContain("{ label: 'Last access', value: latestAccessAt ? formatDate(latestAccessAt) : null }");
   });
+
+  it('keeps fast overview cash-debt money values on the shared MoneyText atom', () => {
+    const sectionSource = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(sectionSource).toContain('readonly detail: ReactNode;');
+    expect(pageSource).toContain("import { MoneyText } from '../../../components/money-text';");
+    expect(pageSource).toContain('<MoneyText amount={cashDebt} /> company fee debt');
+    expect(pageSource).toContain("valueNode: cashDebt > 0 ? <MoneyText amount={cashDebt} /> : undefined");
+    expect(pageSource).not.toContain('${formatCurrency(cashDebt)} company fee debt');
+    expect(pageSource).not.toContain("{ label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' }");
+  });
 });
 
 function textContent(value: unknown): string {

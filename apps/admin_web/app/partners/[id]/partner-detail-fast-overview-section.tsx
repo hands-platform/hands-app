@@ -8,7 +8,7 @@ import { StatusBadgeLink } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerDetailFastOverviewCard = {
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly href: string;
   readonly label: string;
   readonly tone: string;

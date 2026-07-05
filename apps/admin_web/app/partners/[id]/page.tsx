@@ -23,6 +23,7 @@ import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-ma
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminDetailGrid } from '../../../components/admin-surface';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
+import { MoneyText } from '../../../components/money-text';
 import {
   bookingLatestActivityAt,
   bookingRecordCreatedAt,
@@ -1373,7 +1374,13 @@ function PartnerDetailFastOverview({
       value: cashDebt > 0 ? 'Company fee unpaid' : 'Clear',
       detail:
         cashDebt > 0
-          ? `${formatCurrency(cashDebt)} company fee debt is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.`
+          ? (
+              <>
+                <MoneyText amount={cashDebt} /> company fee debt is a settlement warning. Marketplace visibility and
+                participation stay visible, but final acceptance, service start, and payout release wait for
+                settlement.
+              </>
+            )
           : 'No partner cash-fee debt is loaded.',
       href: fullSectionHref('#cash-debt-origin'),
       tone: cashDebt > 0 ? 'pill-danger' : 'pill-success',
@@ -1453,7 +1460,11 @@ function PartnerDetailFastOverview({
   const payoutReadinessRows: PartnerDetailFastOverviewInfoLine[] = [
     { label: 'Withdrawal details', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
     { label: 'Tax profile optional', value: provider.taxProfile?.status ?? 'Not required' },
-    { label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' },
+    {
+      label: 'Cash fee debt',
+      value: cashDebt > 0 ? undefined : 'Clear',
+      valueNode: cashDebt > 0 ? <MoneyText amount={cashDebt} /> : undefined,
+    },
     { label: 'Payout status', value: payoutOps.status },
   ];
   const nextOperatorActionNotes = [
