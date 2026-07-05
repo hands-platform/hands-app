@@ -44,8 +44,10 @@ describe('CouponsTableSection', () => {
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
     expect(sectionSource).toContain('AdminCard');
     expect(sectionSource).toContain('AdminDisclosure');
+    expect(sectionSource).toContain('AdminTextLink');
     expect(sectionSource).not.toContain('AdminDisclosureCard');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('className="text-link"');
     expect(sectionSource).not.toContain('<details className="admin-disclosure coupon-section-disclosure"');
     expect(sectionSource).not.toContain('coupon-active-field');
     expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');

@@ -16,6 +16,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, type StatusBadgeTone, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
@@ -149,9 +150,9 @@ function CouponManagementCard({
       <div className="coupon-section-footer">
         <span>{usageCount > 0 ? `Used ${usageCount} booking(s)` : 'Booking usage loads on demand'}</span>
         <span>{row.opsHint}</span>
-        <Link className="text-link" href={usageHrefForPage(row.id, 1)}>
+        <AdminTextLink href={usageHrefForPage(row.id, 1)}>
           View usage
-        </Link>
+        </AdminTextLink>
         <Link className="coupon-delete-link" href={couponDeleteConfirmHref(row.id)}>
           Delete
         </Link>
@@ -241,10 +242,10 @@ function CouponUsageBookingTable({
             <tr key={booking.bookingHref}>
               <td>
                 <div className="vuexy-booking-id-line">
-                  <Link className="text-link" href={booking.bookingHref} title="Open booking detail">
+                  <AdminTextLink href={booking.bookingHref} title="Open booking detail">
                     <Eye aria-hidden="true" size={14} />
                     {booking.bookingLabel}
-                  </Link>
+                  </AdminTextLink>
                 </div>
                 <div className="muted">{booking.requestTimeLabel}</div>
               </td>
