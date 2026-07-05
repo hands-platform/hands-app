@@ -3,6 +3,8 @@
 import { Check, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { AdminIconButton } from './admin-icon-button';
+
 const COPY_STATE_RESET_MS = 1600;
 
 type CommandCopyButtonProps = {
@@ -41,7 +43,7 @@ export function CommandCopyButton({
   const accessibleLabel = copyState === 'copied' ? copiedLabel : copyState === 'failed' ? failedLabel : label;
 
   return (
-    <button
+    <AdminIconButton
       aria-label={accessibleLabel}
       className={`command-copy-button${copyState === 'copied' ? ' is-copied' : ''}${
         copyState === 'failed' ? ' is-failed' : ''
@@ -51,6 +53,6 @@ export function CommandCopyButton({
       type="button"
     >
       <Icon aria-hidden="true" size={16} strokeWidth={2.4} />
-    </button>
+    </AdminIconButton>
   );
 }
