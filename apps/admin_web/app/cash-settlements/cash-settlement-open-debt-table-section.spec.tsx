@@ -29,6 +29,19 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).not.toContain('<Link className="pill" href={row.partnerHref}>');
   });
 
+  it('uses the shared money atom for primary open debt table amounts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-open-debt-table-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('debtAmountLabel: string');
+    expect(source).not.toContain('bookingAmountLabel: string');
+    expect(source).not.toContain('platformFeeLabel: string');
+    expect(source).not.toContain('taxAmountLabel: string');
+  });
+
   it('renders compact open cash debt rows without per-row operations evidence by default', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([buildRow()], { totalRows: 12 }),
@@ -146,12 +159,13 @@ function buildRow(input: { actionPillClass?: string } = {}): CashSettlementOpenD
         status: 'Debt open',
       },
     ],
-    bookingAmountLabel: '1.000.000 VND',
+    bookingAmount: 1_000_000,
     bookingHref: '/bookings/booking-1',
     bookingLabel: 'bookin',
-    cashCouponOffsetLabel: '60.000 VND',
+    cashCouponOffsetAmount: 60_000,
     createdAtLabel: '26h ago',
-    debtAmountLabel: '500.000 VND',
+    currency: 'VND',
+    debtAmount: 500_000,
     depositAmountDefault: '500000',
     debtOrigin: 'Partner collected customer cash; HANDS fee/tax is still unpaid.',
     earningId: 'earning-1',
@@ -159,7 +173,7 @@ function buildRow(input: { actionPillClass?: string } = {}): CashSettlementOpenD
     nextAction: 'Confirm Partner deposit before settling.',
     partnerHref: '/partners/partner-1',
     paymentMethod: 'CASH',
-    platformFeeLabel: '400.000 VND',
+    platformFee: 400_000,
     providerProfileId: 'provider-1',
     providerName: 'Partner One',
     providerPhone: '+84900000000',
@@ -169,7 +183,7 @@ function buildRow(input: { actionPillClass?: string } = {}): CashSettlementOpenD
     settlementMethodLabel: 'Partner deposit',
     settlementNotesDefault: 'Partner deposit or approved offset for 500.000 VND using HANDS-CASH-BOOKIN',
     settlementReference: 'HANDS-CASH-BOOKIN',
-    taxAmountLabel: '100.000 VND',
+    taxAmount: 100_000,
     cashAccountingPreview: [
       'Dr Partner receivable 110.000 VND',
       'Cr Platform fee net revenue 58.519 VND',

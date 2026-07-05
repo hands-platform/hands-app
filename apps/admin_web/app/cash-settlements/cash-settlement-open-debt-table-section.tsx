@@ -9,6 +9,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { recordPartnerBankDeposit } from './actions';
@@ -25,13 +26,14 @@ export type CashSettlementOpenDebtActionExecutionRow = {
 
 export type CashSettlementOpenDebtTableRow = {
   readonly actionRows: readonly CashSettlementOpenDebtActionExecutionRow[];
-  readonly bookingAmountLabel: string;
+  readonly bookingAmount: number;
   readonly bookingHref: string;
   readonly bookingLabel: string;
   readonly cashAccountingPreview: readonly string[];
-  readonly cashCouponOffsetLabel: string | null;
+  readonly cashCouponOffsetAmount: number | null;
   readonly createdAtLabel: string;
-  readonly debtAmountLabel: string;
+  readonly currency: string;
+  readonly debtAmount: number;
   readonly depositAmountDefault: string;
   readonly debtOrigin: string;
   readonly earningId: string;
@@ -39,7 +41,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly nextAction: string;
   readonly partnerHref: string;
   readonly paymentMethod: string;
-  readonly platformFeeLabel: string;
+  readonly platformFee: number;
   readonly providerProfileId: string;
   readonly providerName: string;
   readonly providerPhone: string;
@@ -49,7 +51,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly settlementMethodLabel: string;
   readonly settlementNotesDefault: string;
   readonly settlementReference: string;
-  readonly taxAmountLabel: string;
+  readonly taxAmount: number;
   readonly walletDeductionBreakdown: readonly string[];
 };
 
@@ -105,10 +107,16 @@ export function CashSettlementOpenDebtTableSection({
               <div className="muted">{row.serviceLabel}</div>
             </td>
             <td>
-              <strong>{row.debtAmountLabel}</strong>
-              <div className="muted">Cash collected: {row.bookingAmountLabel}</div>
-              {row.cashCouponOffsetLabel ? (
-                <div className="muted">Company coupon offset: {row.cashCouponOffsetLabel}</div>
+              <strong>
+                <MoneyText amount={row.debtAmount} currency={row.currency} />
+              </strong>
+              <div className="muted">
+                Cash collected: <MoneyText amount={row.bookingAmount} currency={row.currency} />
+              </div>
+              {row.cashCouponOffsetAmount ? (
+                <div className="muted">
+                  Company coupon offset: <MoneyText amount={row.cashCouponOffsetAmount} currency={row.currency} />
+                </div>
               ) : null}
               <div className="muted">{row.debtOrigin}</div>
               {showOperationsEvidence && row.cashAccountingPreview.length ? (
@@ -124,8 +132,12 @@ export function CashSettlementOpenDebtTableSection({
               ) : null}
             </td>
             <td>
-              <div>HANDS fee {row.platformFeeLabel}</div>
-              <div className="muted">Tax {row.taxAmountLabel}</div>
+              <div>
+                HANDS fee <MoneyText amount={row.platformFee} currency={row.currency} />
+              </div>
+              <div className="muted">
+                Tax <MoneyText amount={row.taxAmount} currency={row.currency} />
+              </div>
               {showOperationsEvidence && row.walletDeductionBreakdown.length ? (
                 <div className="service-matrix-cell admin-mt-8">
                   {row.walletDeductionBreakdown.map((item) => (

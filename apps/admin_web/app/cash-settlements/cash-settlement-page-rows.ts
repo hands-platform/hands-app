@@ -98,16 +98,14 @@ export function buildCashSettlementOpenDebtTableRows(
     const breakdown = row.walletDeductionBreakdown;
     return {
       actionRows: cashSettlementActionExecutionMap(row),
-      bookingAmountLabel: formatMoney(row.bookingAmount, row.earning.currency),
+      bookingAmount: row.bookingAmount,
       bookingHref: `/bookings/${row.earning.bookingId}`,
       bookingLabel: shortRecordId(row.earning.bookingId),
       cashAccountingPreview: cashAccountingPreviewLabels(row, row.earning.currency),
-      cashCouponOffsetLabel:
-        breakdown.companyCouponExpense > 0
-          ? formatMoney(breakdown.companyCouponExpense, row.earning.currency)
-          : null,
+      cashCouponOffsetAmount: breakdown.companyCouponExpense > 0 ? breakdown.companyCouponExpense : null,
       createdAtLabel: row.createdAtLabel,
-      debtAmountLabel: formatMoney(row.debtAmount, row.earning.currency),
+      currency: row.earning.currency,
+      debtAmount: row.debtAmount,
       depositAmountDefault: String(row.debtAmount),
       debtOrigin: row.debtOrigin,
       earningId: row.earning.id,
@@ -115,7 +113,7 @@ export function buildCashSettlementOpenDebtTableRows(
       nextAction: row.nextAction,
       partnerHref: `/partners/${row.earning.providerProfileId}`,
       paymentMethod: row.paymentMethod,
-      platformFeeLabel: formatMoney(row.platformFee, row.earning.currency),
+      platformFee: row.platformFee,
       providerProfileId: row.earning.providerProfileId,
       providerName: row.providerName,
       providerPhone: row.providerPhone,
@@ -128,7 +126,7 @@ export function buildCashSettlementOpenDebtTableRows(
         row.earning.currency,
       )} using ${row.settlementReference}`,
       settlementReference: row.settlementReference,
-      taxAmountLabel: formatMoney(row.taxAmount, row.earning.currency),
+      taxAmount: row.taxAmount,
       walletDeductionBreakdown: cashWalletDeductionLabels(breakdown, row.earning.currency),
     };
   });
