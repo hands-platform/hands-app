@@ -19,6 +19,7 @@ export type PartnerPayoutOperationsTone = 'done' | 'pending' | 'blocked';
 export type PartnerPayoutOperationsCard = {
   readonly action: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly status: string;
   readonly title: string;
   readonly tone: PartnerPayoutOperationsTone;
@@ -90,7 +91,7 @@ export function PartnerDetailPayoutOperationsSection({
           <AdminTaskCard
             actionLabel={card.action}
             className={cardClassForTone(card.tone)}
-            detail={card.detail}
+            detail={card.detailNode ?? card.detail}
             key={card.title}
             leading={
               <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(card.tone))}>

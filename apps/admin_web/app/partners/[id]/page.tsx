@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 import type {
   AdminAuditLog,
   AdminManualWalletAdjustmentRow,
@@ -1547,6 +1548,7 @@ type ProviderOpsCard = {
   title: string;
   status: string;
   detail: string;
+  detailNode?: ReactNode;
   action: string;
   tone: PartnerOpsTone;
 };
@@ -3289,6 +3291,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       title: 'Unpaid net',
       status: unpaidEarnings.length ? `${unpaidEarnings.length} ITEM(S)` : '0 ITEM',
       detail: formatCurrency(unpaidNetAmount),
+      detailNode: <MoneyText amount={unpaidNetAmount} />,
       action: unpaidEarnings.length
         ? 'Eligible only after all payout gates are clear.'
         : 'No unpaid earning record.',
@@ -3298,6 +3301,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       title: 'Withholding',
       status: earnings.length ? 'TRACKED' : 'NONE',
       detail: formatCurrency(withholdingAmount),
+      detailNode: <MoneyText amount={withholdingAmount} />,
       action: earnings.length ? 'Fee and withholding records are preserved for accounting.' : 'No first earning yet.',
       tone: earnings.length ? 'done' : 'pending',
     },
@@ -3307,6 +3311,11 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       detail: latestBatch
         ? `${latestBatch.status} / ${formatCurrency(latestBatch.totalNetAmount)}`
         : 'No batch created yet.',
+      detailNode: latestBatch ? (
+        <>
+          {latestBatch.status} / <MoneyText amount={latestBatch.totalNetAmount} />
+        </>
+      ) : undefined,
       action: latestBatch?.paidAt
         ? `Last paid ${formatDate(latestBatch.paidAt)}.`
         : 'Open payouts to create or process batch.',

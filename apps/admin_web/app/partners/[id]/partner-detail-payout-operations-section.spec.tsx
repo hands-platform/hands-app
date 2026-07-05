@@ -157,6 +157,41 @@ describe('PartnerDetailPayoutOperationsSection', () => {
       ]),
     );
   });
+
+  it('prefers shared money detail nodes over fallback payout operation card text', () => {
+    const cardsWithDetailNode = [
+      {
+        action: 'Review payout',
+        detail: 'Fallback money string',
+        detailNode: <span>Shared money atom marker</span>,
+        status: 'TRACKED',
+        title: 'Unpaid net',
+        tone: 'pending',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailPayoutOperationsSection>[0]['operations']['cards'];
+    const section = PartnerDetailPayoutOperationsSection({
+      cardClassForTone: (tone) => `card-${tone}`,
+      earningsRows: [],
+      hasCashFeeDebt: false,
+      operations: {
+        blockers: [],
+        cards: cardsWithDetailNode,
+        hold: null,
+        status: 'Payout pending',
+        tone: 'pending',
+      },
+      partnerControlsHref: '#partner-controls',
+      payoutBatchRows: [],
+      pillClassForTone: (tone) => `pill-${tone}`,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared money atom marker');
+    expect(rendered).not.toContain('Fallback money string');
+    expect(source).toContain('readonly detailNode?: ReactNode;');
+    expect(source).toContain('detail={card.detailNode ?? card.detail}');
+  });
 });
 
 function textContent(value: unknown): string {
