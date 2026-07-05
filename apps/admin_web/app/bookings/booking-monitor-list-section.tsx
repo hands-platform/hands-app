@@ -7,7 +7,6 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
 import {
   AdminAvatarStatusDot,
@@ -15,6 +14,7 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -357,8 +357,7 @@ function BookingMonitorTableGroup({
   }, [totalPages]);
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description={group.description}
       id={`booking-table-${group.key}`}
       resultLabel={`${group.rows.length} booking(s)`}
@@ -388,7 +387,7 @@ function BookingMonitorTableGroup({
         totalPages={totalPages}
         totalRows={group.rows.length}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

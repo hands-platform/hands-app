@@ -206,6 +206,15 @@ describe('BookingMonitorFiltersSection', () => {
     expect(markup).toContain('admin-form-control-button button button-secondary booking-monitor-view-option');
   });
 
+  it('uses the shared Vuexy table panel wrapper for the filter card', () => {
+    const source = readFileSync('app/bookings/booking-monitor-filters-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
+  });
+
   it('can show empty route workspace options on dedicated pages', () => {
     const rendered = normalizedText(
       renderToStaticMarkup(

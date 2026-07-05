@@ -1,6 +1,6 @@
 import { AdminFormControlButton, AdminFormDate, AdminFormShell } from '../../components/admin-form-controls';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
 import type { BookingPageView } from './booking-page-params';
 
@@ -137,8 +137,7 @@ export function BookingMonitorFiltersSection({
   const showCustomDateRange = dateRangeFilter === 'custom';
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description={(
         <>
           Active queue: <strong>{activeView.label}</strong> - {activeView.description}
@@ -216,7 +215,7 @@ export function BookingMonitorFiltersSection({
           </section>
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

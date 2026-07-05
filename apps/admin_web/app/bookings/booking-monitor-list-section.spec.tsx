@@ -46,8 +46,12 @@ describe('BookingMonitorListSection', () => {
   it('uses the shared table pagination footer for booking status groups', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).not.toContain('<AdminTableFooter>');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(source).not.toContain('Showing {pageFrom} to {pageTo} of {group.rows.length} entries');
   });
 
