@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 
 import { AdminKpiCard } from './admin-surface';
-import type { MetricCardProps } from './metric-card';
 
 export type AdminPageMetric = Pick<
-  MetricCardProps,
-  'className' | 'helper' | 'href' | 'icon' | 'iconSize' | 'label' | 'value'
->;
+  ComponentProps<typeof AdminKpiCard>,
+  'className' | 'href' | 'icon' | 'iconSize' | 'label' | 'value'
+> & {
+  readonly helper?: ComponentProps<typeof AdminKpiCard>['helper'];
+};
 
 type AdminPageTemplateProps = {
   readonly actions?: ReactNode;

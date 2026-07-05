@@ -14,9 +14,11 @@ describe('PartnerDetailStatusCardsSection', () => {
     const classNames = classNamesIn(section);
     const source = readFileSync('app/partners/[id]/partner-detail-status-cards-section.tsx', 'utf8');
 
-    expect(classNames).toContain('partner-detail-metric-grid admin-mb-16');
-    expect(classNames).toContain('card admin-card admin-kpi-card partner-detail-metric-card');
-    expect(source).toContain('AdminCard');
+    expect(classNames).toContain('admin-metric-grid partner-detail-metric-grid admin-mb-16');
+    expect(classNames).toContain('metric-card');
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).not.toContain('AdminCard');
+    expect(source).not.toContain('<section className="partner-detail-metric-grid admin-mb-16"');
     expect(source).not.toContain('<div className="card admin-kpi-card partner-detail-metric-card"');
     expect(textContent(section)).toContain('Bookings done');
     expect(textContent(section)).toContain('450.000 VND');
