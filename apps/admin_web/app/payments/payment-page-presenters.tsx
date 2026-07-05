@@ -1,7 +1,7 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
-import { AdminDisclosure } from '../../components/admin-surface';
+import { AdminDisclosure, AdminNotePanel } from '../../components/admin-surface';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
@@ -142,19 +142,19 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
   const callback = paymentCallbackMeta(payment);
   if (!callback.receivedAt) {
     return (
-      <div className="ops-task-note admin-mt-8">
+      <AdminNotePanel className="admin-mt-8">
         <StatusBadge tone="neutral">No callback</StatusBadge>
         <p className="muted admin-mt-6">
           No gateway callback has been stored yet.
         </p>
-      </div>
+      </AdminNotePanel>
     );
   }
 
   const callbackLabel = callback.verified ? 'Verified callback' : 'Review callback';
 
   return (
-    <div className="ops-task-note admin-mt-8">
+    <AdminNotePanel className="admin-mt-8">
       <StatusBadge tone={callback.verified ? 'success' : 'warning'}>{callbackLabel}</StatusBadge>
       <div className="setup-stage-list admin-mt-8">
         <div className="setup-stage-item">
@@ -181,7 +181,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
           <p className="muted">{callback.rawKeys.join(', ')}</p>
         </AdminDisclosure>
       ) : null}
-    </div>
+    </AdminNotePanel>
   );
 }
 
