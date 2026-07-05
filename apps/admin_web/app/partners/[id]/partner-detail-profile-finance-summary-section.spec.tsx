@@ -14,9 +14,11 @@ describe('partner detail profile and location sections', () => {
     );
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('<strong>No profile evidence found</strong>');
+    expect(source).not.toContain('<span className="muted">Missing</span>');
     expect(source).not.toContain('<span className="pill pill-success">ACCEPTED</span>');
     expect(source).not.toContain('<span className="pill pill-neutral" key={snapshot.id}>');
   });

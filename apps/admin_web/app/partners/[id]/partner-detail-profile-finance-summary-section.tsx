@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -238,7 +239,7 @@ export function PartnerDetailLocationActivityCard({
                   ))}
                 </div>
               ) : (
-                <span className="muted">Missing</span>
+                <AdminInlineFallback>Missing</AdminInlineFallback>
               )}
             </td>
           </tr>
@@ -272,7 +273,11 @@ function ProfileValue({
     return <DateTimeText fallback="Missing" value={dateValue} />;
   }
 
-  return <span>{value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}</span>;
+  return value && value.trim() ? (
+    <span>{marketplaceDisplayText(value)}</span>
+  ) : (
+    <AdminInlineFallback>Missing</AdminInlineFallback>
+  );
 }
 
 function ProfileEmptyState({ message }: { readonly message: string }) {
