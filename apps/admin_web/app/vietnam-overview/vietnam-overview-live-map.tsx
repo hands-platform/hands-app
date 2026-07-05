@@ -218,13 +218,10 @@ export function VietnamOverviewLiveMap({
 
       {points.length === 0 ? (
         <div className="vietnam-map-tile-empty">
-          <div className="vietnam-map-empty-icon" aria-hidden="true" />
-          <div>
-            <AdminEmptyState
-              message="Change filters or clear region focus."
-              title="No live dots for selected filters"
-            />
-          </div>
+          <AdminEmptyState
+            message="Change filters or clear region focus."
+            title="No live dots for selected filters"
+          />
           <div className="vietnam-map-empty-stats" aria-label="Current realtime filter state">
             <span>
               <strong>{formatNumber(points.length)}</strong>

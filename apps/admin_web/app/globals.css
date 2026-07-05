@@ -7443,7 +7443,7 @@ a.action-button-card:hover {
 }
 
 .vietnam-map-tile-empty {
-  align-items: flex-start;
+  align-items: stretch;
   background: rgb(var(--admin-surface-channel) / 0.92);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
   border-radius: var(--admin-radius-lg);
@@ -7451,7 +7451,7 @@ a.action-button-card:hover {
   color: var(--admin-muted);
   display: grid;
   gap: 12px;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   justify-items: stretch;
   padding: 16px;
   position: absolute;
@@ -7461,29 +7461,6 @@ a.action-button-card:hover {
   transform: translateX(-50%);
   width: min(520px, calc(100% - 48px));
   z-index: 5;
-}
-
-.vietnam-map-tile-empty > svg,
-.vietnam-map-empty-icon {
-  background: rgb(var(--admin-primary-channel) / 0.12);
-  border-radius: var(--admin-radius);
-  color: var(--admin-accent-strong);
-  height: 38px;
-  padding: 8px;
-  width: 38px;
-}
-
-.vietnam-map-empty-icon::before {
-  background: currentColor;
-  border-radius: 999px;
-  box-shadow:
-    10px 8px 0 rgb(var(--admin-success-channel) / 0.72),
-    5px 18px 0 rgb(var(--admin-warning-channel) / 0.72);
-  content: '';
-  display: block;
-  height: 8px;
-  margin: 7px auto 0;
-  width: 8px;
 }
 
 .vietnam-map-tile-empty strong {
