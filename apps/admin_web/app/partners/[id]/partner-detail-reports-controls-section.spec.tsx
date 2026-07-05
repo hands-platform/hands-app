@@ -8,11 +8,13 @@ describe('PartnerDetailReportsControlsSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminTaskCard className="partner-report-command-grid admin-mt-16"');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="detail-grid">');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<div className="partner-report-command-grid');
     expect(source).not.toContain('className="ops-task-card');

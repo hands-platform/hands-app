@@ -4,7 +4,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminTaskCard } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -203,7 +203,7 @@ export function PartnerDetailReportsControlsSection({
           </div>
         </AdminFormGrid>
       </AdminTaskCard>
-      <div className="detail-grid">
+      <AdminDetailGrid>
         <div>
           <h3>Recent reports</h3>
           <AdminTableScroll>
@@ -303,7 +303,7 @@ export function PartnerDetailReportsControlsSection({
           </AdminTableScroll>
           <PartnerDetailVuexyTableFooter rowCount={accountControls.length} />
         </div>
-      </div>
+      </AdminDetailGrid>
       <PartnerReportCommandPanel providerId={providerId} reports={reports} />
     </AdminFilterPanel>
   );
