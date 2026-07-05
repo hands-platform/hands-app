@@ -170,6 +170,32 @@ describe('Admin form controls', () => {
     expect(textContent(date)).toContain('From date');
   });
 
+  it('dedupes repeated Vuexy form atom classes when page hooks include base classes', () => {
+    const grid = AdminFormGrid({
+      children: 'Filters',
+      className: 'form-grid compact-form form-grid',
+    });
+    const date = AdminFormDate({
+      className: 'admin-form-date-picker settlement-date admin-form-input-date-picker',
+      label: 'Settlement date',
+      name: 'settlementDate',
+    });
+    const input = AdminFormInput({
+      className: 'admin-form-date-picker admin-form-input-date-picker closing-period',
+      label: 'Closing period',
+      name: 'closingPeriod',
+      type: 'month',
+    });
+
+    expect(grid.props.className).toBe('form-grid compact-form');
+    expect(date.props.className).toBe(
+      'admin-form-date admin-form-date-picker admin-form-input-date-picker settlement-date',
+    );
+    expect(input.props.className).toBe(
+      'admin-form-input admin-form-date-picker admin-form-input-date-picker closing-period',
+    );
+  });
+
   it('renders month controls through the shared date atom', () => {
     const month = AdminFormDate({
       className: 'finance-period',

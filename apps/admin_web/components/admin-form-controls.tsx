@@ -558,7 +558,7 @@ export function AdminFormControlButton({
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  return mergeClassNameTokens(classNames.flatMap(splitClassNames));
 }
 
 function normalizeButtonClassNames(className: string | undefined, defaultClassName: string) {
@@ -588,6 +588,10 @@ function normalizeButtonClassNames(className: string | undefined, defaultClassNa
 
 function splitClassNames(className: string | undefined) {
   return className?.split(/\s+/).filter(Boolean) ?? [];
+}
+
+function mergeClassNameTokens(tokens: string[]) {
+  return tokens.filter((token, index) => tokens.indexOf(token) === index).join(' ');
 }
 
 function ensureButtonBaseToken(tokens: string[]) {
