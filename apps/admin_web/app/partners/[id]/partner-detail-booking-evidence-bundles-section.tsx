@@ -12,6 +12,7 @@ import {
 
 export type PartnerBookingEvidenceRow = {
   readonly bookingLabel: string;
+  readonly bookingLabelNode?: ReactNode;
   readonly chatDetail: string;
   readonly chatHref?: string;
   readonly chatStatus: string;
@@ -23,6 +24,7 @@ export type PartnerBookingEvidenceRow = {
   readonly moneyDetailNode?: ReactNode;
   readonly moneyStatus: string;
   readonly opsDetail: string;
+  readonly opsDetailNode?: ReactNode;
   readonly opsStatus: string;
   readonly relation: string;
   readonly roleDetail: string;
@@ -69,7 +71,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
           {rows.map((row) => (
             <tr key={`${row.id}-${row.relation}`}>
               <td>
-                <strong>{row.bookingLabel}</strong>
+                <strong>{row.bookingLabelNode ?? row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabelNode ?? row.serviceLabel}</p>
                 <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
                   {row.status}
@@ -93,7 +95,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
               </td>
               <td>
                 <strong>{row.opsStatus}</strong>
-                <p className="muted">{row.opsDetail}</p>
+                <p className="muted">{row.opsDetailNode ?? row.opsDetail}</p>
               </td>
               <td>
                 <Link className="text-link" href={`/bookings/${row.id}`}>

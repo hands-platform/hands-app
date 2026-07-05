@@ -119,6 +119,49 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     expect(source).toContain('{row.serviceLabelNode ?? row.serviceLabel}');
     expect(source).toContain('{row.moneyDetailNode ?? row.moneyDetail}');
   });
+
+  it('prefers shared date nodes over fallback booking evidence date text', () => {
+    const rowsWithDateNodes = [
+      {
+        bookingLabel: 'Fallback booking date',
+        bookingLabelNode: <span>Shared booking date marker</span>,
+        chatDetail: 'No chat room',
+        chatStatus: 'No chat room',
+        customerDetail: 'Service address saved on booking',
+        customerStatus: 'Customer snapshot',
+        id: 'BK-2003',
+        moneyDetail: 'Cash payment and Partner earning linked',
+        moneyStatus: 'Money trace linked',
+        opsDetail: 'Fallback ops date detail',
+        opsDetailNode: <span>Shared ops date marker</span>,
+        opsStatus: 'Ops reviewed',
+        relation: 'Selected',
+        roleDetail: 'Partner accepted and completed service',
+        roleStatus: 'Selected Partner',
+        serviceLabel: 'Aromatherapy',
+        status: 'COMPLETED',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailBookingEvidenceBundlesSection>[0]['rows'];
+    const section = PartnerDetailBookingEvidenceBundlesSection({
+      rows: rowsWithDateNodes,
+      statusPillClass: () => 'pill-success',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared booking date marker');
+    expect(rendered).toContain('Shared ops date marker');
+    expect(rendered).not.toContain('Fallback booking date');
+    expect(rendered).not.toContain('Fallback ops date detail');
+    expect(source).toContain('readonly bookingLabelNode?: ReactNode;');
+    expect(source).toContain('readonly opsDetailNode?: ReactNode;');
+    expect(source).toContain('{row.bookingLabelNode ?? row.bookingLabel}');
+    expect(source).toContain('{row.opsDetailNode ?? row.opsDetail}');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />');
+    expect(pageSource).toContain('participated <DateTimeText fallback="Missing" value={participant.joinedAt} />');
+    expect(pageSource).toContain('responded <DateTimeText fallback="Missing" value={participant.respondedAt} />');
+  });
 });
 
 function textContent(value: unknown): string {

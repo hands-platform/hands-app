@@ -1890,6 +1890,11 @@ function buildPartnerBookingEvidenceRows(
       id: booking.id,
       relation: record.relation,
       bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
+      bookingLabelNode: (
+        <>
+          {shortRecordId(booking.id)} / <DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />
+        </>
+      ),
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatCurrency(bookingTotal(booking))}`,
       serviceLabelNode: (
         <>
@@ -1943,6 +1948,28 @@ function buildPartnerBookingEvidenceRows(
           ? 'Records linked'
           : 'Minimal records',
       opsDetail: opsParts.join(' / '),
+      opsDetailNode: (
+        <>
+          participant {participant?.status ?? 'not linked'} /{' '}
+          {participant?.joinedAt ? (
+            <>
+              participated <DateTimeText fallback="Missing" value={participant.joinedAt} />
+            </>
+          ) : (
+            'participation time not stored'
+          )}
+          {' / '}
+          {participant?.respondedAt ? (
+            <>
+              responded <DateTimeText fallback="Missing" value={participant.respondedAt} />
+            </>
+          ) : (
+            'response time not stored'
+          )}
+          {' / '}
+          {booking.opsTasks?.length ?? 0} staff task(s) / location {latestLocation}
+        </>
+      ),
     };
   });
 }
