@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
@@ -30,9 +30,9 @@ export function ServicePayoutLedgerSection({
   visibleRows,
 }: ServicePayoutLedgerSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+      className="admin-card-scroll admin-mb-16"
       description="Finance view for the current minimum price of every active duration option. This is the fastest way to confirm customer price, Partner payout, tax/cost assumptions, and customer-app visibility before Partners start selling."
       statusLabel={`${activeServiceCount} active option(s)`}
       statusTone="info"
@@ -112,6 +112,6 @@ export function ServicePayoutLedgerSection({
           include every active option.
         </p>
       ) : null}
-    </AdminSection>
+    </AdminTableSection>
   );
 }
