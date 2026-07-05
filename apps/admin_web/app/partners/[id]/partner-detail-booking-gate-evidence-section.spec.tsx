@@ -105,6 +105,37 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
       ]),
     );
   });
+
+  it('prefers shared detail nodes over fallback gate evidence text', () => {
+    const section = PartnerDetailBookingGateEvidenceSection({
+      loadedAttempts: [],
+      filteredAttempts: [
+        {
+          addressLabel: 'Cau Giay, Ha Noi',
+          at: '2026-06-20T10:00:00.000Z',
+          auditHref: '/audit-log?bucket=Booking&q=attempt-1',
+          bookingMonitorHref: '/bookings?view=blocked-create&attemptId=attempt-1',
+          detail: 'Fallback GPS evidence date',
+          detailNode: <span>Shared GPS evidence date marker</span>,
+          distanceLabel: '51.2 km',
+          gate: 'first-pick-distance',
+          gateLabel: 'DISTANCE',
+          id: 'attempt-1',
+          reasonLabel: 'First-pick distance blocked',
+          tone: 'pill-danger',
+        },
+      ],
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared GPS evidence date marker');
+    expect(rendered).not.toContain('Fallback GPS evidence date');
+    expect(source).toContain('readonly detailNode?: ReactNode;');
+    expect(source).toContain('attempt.detailNode ?? attempt.detail');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={currentLocationRecordedAt} />');
+  });
 });
 
 function textContent(value: unknown): string {

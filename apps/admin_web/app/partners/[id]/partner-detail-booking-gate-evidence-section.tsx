@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -17,6 +18,7 @@ export type PartnerBookingGateAttemptRow = {
   readonly auditHref: string;
   readonly bookingMonitorHref: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly distanceLabel: string;
   readonly gate: string;
   readonly gateLabel: string;
@@ -89,7 +91,7 @@ export function PartnerDetailBookingGateEvidenceSection({
                 <Link className="text-link" href={attempt.bookingMonitorHref}>
                   <strong>{attempt.reasonLabel}</strong>
                 </Link>
-                <p className="muted">{attempt.detail}</p>
+                <p className="muted">{attempt.detailNode ?? attempt.detail}</p>
               </td>
               <td>
                 <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>

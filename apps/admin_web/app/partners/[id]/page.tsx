@@ -2564,6 +2564,22 @@ function buildPartnerBookingGateAttemptRows(
         serviceId ? `Service ${shortRecordId(serviceId)}` : null,
         customerProfileId ? `Customer ${shortRecordId(customerProfileId)}` : null,
       ].filter(Boolean);
+      const detailNode = (
+        <>
+          {addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing'}
+          {' / '}
+          {currentLocationRecordedAt ? (
+            <>
+              Optional customer GPS evidence:{' '}
+              <DateTimeText fallback="Missing" value={currentLocationRecordedAt} />
+            </>
+          ) : (
+            'No optional GPS timestamp'
+          )}
+          {serviceId ? <> / Service {shortRecordId(serviceId)}</> : null}
+          {customerProfileId ? <> / Customer {shortRecordId(customerProfileId)}</> : null}
+        </>
+      );
 
       return {
         id: log.id,
@@ -2572,6 +2588,7 @@ function buildPartnerBookingGateAttemptRows(
         gateLabel: bookingCreateGateFilterLabel(gate),
         reasonLabel: bookingCreateGateReasonLabel(reasonCode, 'partnerDetail'),
         detail: detailParts.join(' / '),
+        detailNode,
         addressLabel: addressText ? trimText(addressText, 72) : 'No address metadata',
         distanceLabel: distanceParts.length ? distanceParts.join(' / ') : 'No distance value',
         bookingMonitorHref: `/bookings?view=blocked-create&gate=${gate}`,
