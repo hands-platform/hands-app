@@ -7,10 +7,12 @@ describe('BookingMonitorMatchingEscalationSection', () => {
   it('uses shared Vuexy badge atoms for policy defaults, metrics, and evidence tags', () => {
     const source = readFileSync('app/bookings/booking-monitor-matching-escalation-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<span className="muted">No sample bookings</span>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(lane.tone)}`}>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(step.tone)}`}>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(item.tone)}`}>');

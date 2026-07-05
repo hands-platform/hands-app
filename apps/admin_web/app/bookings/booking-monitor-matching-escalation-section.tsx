@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
@@ -161,7 +162,7 @@ export function BookingMonitorMatchingEscalationSection({
                       ))}
                     </div>
                   ) : (
-                    <span className="muted">No sample bookings</span>
+                    <AdminInlineFallback>No sample bookings</AdminInlineFallback>
                   )}
                 </td>
                 <td>{lane.operatorAction}</td>
@@ -217,7 +218,7 @@ export function BookingMonitorMatchingEscalationSection({
                       ))}
                     </div>
                   ) : (
-                    <span className="muted">No sample bookings</span>
+                    <AdminInlineFallback>No sample bookings</AdminInlineFallback>
                   )}
                 </td>
                 <td>{step.operatorAction}</td>
