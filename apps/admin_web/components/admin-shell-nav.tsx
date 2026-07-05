@@ -147,7 +147,7 @@ export function AdminShellNav({ sections }: AdminShellNavProps) {
           <details
             className="nav-section"
             data-active={sectionActive ? 'true' : undefined}
-            key={section.label}
+            key={`${section.label}-${index}`}
             open={openByDefault}
           >
             <summary className="nav-section-summary" title={section.description}>
@@ -165,7 +165,7 @@ export function AdminShellNav({ sections }: AdminShellNavProps) {
               <ChevronRight aria-hidden="true" className="nav-section-chevron" size={16} strokeWidth={2.25} />
             </summary>
             <div className="nav-submenu">
-              {section.links.map((link) => {
+              {section.links.map((link, linkIndex) => {
                 const active = hrefMatchesPath(link.href, pathname, search);
 
                 return (
@@ -174,7 +174,7 @@ export function AdminShellNav({ sections }: AdminShellNavProps) {
                     className="nav-link"
                     data-active={active ? 'true' : undefined}
                     href={link.href}
-                    key={link.href}
+                    key={`${link.href}-${linkIndex}`}
                     title={link.description}
                   >
                     <NavIcon label={link.label} />

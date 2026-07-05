@@ -79,6 +79,31 @@ describe('admin shell navigation', () => {
     expect(html).toContain('>3<');
   });
 
+  it('keeps duplicate section labels and link hrefs on unique React keys during menu migrations', () => {
+    const nav = AdminShellNav({
+      sections: [
+        {
+          label: 'Finance',
+          description: 'First finance group.',
+          links: [
+            { href: '/finance-tax', label: 'Tax Overview', description: 'Open tax overview.' },
+            { href: '/finance-tax', label: 'Tax Overview', description: 'Open tax overview duplicate.' },
+          ],
+        },
+        {
+          label: 'Finance',
+          description: 'Second finance group.',
+          links: [{ href: '/finance-overview', label: 'Finance Overview', description: 'Open finance overview.' }],
+        },
+      ],
+    });
+    const sections = nav.props.children as Array<{ key: string; props: { children: unknown[] } }>;
+    const firstSubmenu = sections[0].props.children[1] as { props: { children: Array<{ key: string }> } };
+
+    expect(sections.map((section) => section.key)).toEqual(['Finance-0', 'Finance-1']);
+    expect(firstSubmenu.props.children.map((link) => link.key)).toEqual(['/finance-tax-0', '/finance-tax-1']);
+  });
+
   it('renders workspace breadcrumbs and active page header from the active route', () => {
     const html = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
 
