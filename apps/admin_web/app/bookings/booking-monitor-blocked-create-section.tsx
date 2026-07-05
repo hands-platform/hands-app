@@ -7,6 +7,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -18,7 +19,6 @@ import {
   type BookingGateTriageItem,
 } from './booking-gate-filters';
 import { bookingGateRejectionInfo } from './booking-gate-rejections';
-import { formatBookingDate as formatDate } from './booking-list-time';
 
 type BookingMonitorBlockedCreateSectionProps = {
   readonly bookingGateTriage: readonly BookingGateTriageItem[];
@@ -166,7 +166,9 @@ export function BookingMonitorBlockedCreateSection({
                       <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
                         {shortId(log.id)}
                       </Link>
-                      <div className="muted">Created {formatDate(log.createdAt)}</div>
+                      <div className="muted">
+                        Created <DateTimeText value={log.createdAt} />
+                      </div>
                     </td>
                     <td>
                       <AdminSignal tone={commandSignalTone(evidence.tone)}>

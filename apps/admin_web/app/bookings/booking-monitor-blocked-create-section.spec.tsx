@@ -130,4 +130,14 @@ describe('BookingMonitorBlockedCreateSection', () => {
     expect(source).not.toContain('<span className="pill">{evidence.customerDistanceLabel}</span>');
     expect(source).not.toContain('<span className="pill">{evidence.preferredPartnerDistanceLabel}</span>');
   });
+
+  it('uses the shared DateTimeText atom for visible blocked-create timestamps', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('Created {formatDate(log.createdAt)}');
+  });
 });
