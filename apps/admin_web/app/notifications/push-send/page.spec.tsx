@@ -85,4 +85,11 @@ describe('PushSendPage', () => {
     expect(pageSource).not.toContain('className="admin-table-pagination-footer"');
     expect(pageSource).not.toContain('pageLinkClassName="vuexy-booking-pagination-link"');
   });
+
+  it('uses the shared DateTimeText atom for visible campaign timestamps', () => {
+    expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).not.toContain(
+      '<span className="muted">{formatDateTime(campaign.sentAt ?? campaign.createdAt)}</span>',
+    );
+  });
 });

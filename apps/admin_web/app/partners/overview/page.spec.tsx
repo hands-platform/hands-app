@@ -107,7 +107,8 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Available soon · Low rating reviews');
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('+84900001111 · Ho Chi Minh City');
-    expect(markup).toContain('Online available · Last activity 27 Jun 2026, 03:39');
+    expect(markup).toContain('Online available · Last activity');
+    expect(markup).toContain('date-time-text');
     expect(markup).toContain(
       'aria-label="Smoke Partner, +84900001111, Ho Chi Minh City, Online available, last activity 27 Jun 2026, 03:39, Verification incomplete, Finish KYC approval"',
     );
@@ -156,7 +157,11 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain('formatDateTime,');
+    expect(pageSource).not.toContain('const generatedAt = formatDateTime(overview.generatedAt);');
+    expect(pageSource).not.toContain('<small>Next {formatDateTime(row.nextAvailableAt)}</small>');
+    expect(pageSource).not.toContain('{partnerStatus} · Last activity {lastActivity}');
     expect(pageSource).not.toContain('function formatDateTime(value?: string | null)');
     expect(pageSource).toContain('formatWholeNumber as formatNumber');
     expect(pageSource).not.toContain('function formatNumber(value: number)');

@@ -81,7 +81,11 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-group"');
     expect(pageSource).toContain('AdminOverviewGroup');
     expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain('formatDateTime,');
+    expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).not.toContain('formatDateTime,');
+    expect(pageSource).not.toContain('const generatedAt = formatDateTime(overview.generatedAt);');
+    expect(pageSource).not.toContain('Last active ${formatDateTime(row.lastActivityAt)}');
+    expect(pageSource).not.toContain('<time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) :');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam only</span>');

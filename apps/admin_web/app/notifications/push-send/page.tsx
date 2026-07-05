@@ -24,6 +24,7 @@ import {
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { formatDateTime, shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
@@ -331,7 +332,9 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
               <tr key={campaign.id}>
                 <td>
                   <strong>{shortId(campaign.id)}</strong>
-                  <span className="muted">{formatDateTime(campaign.sentAt ?? campaign.createdAt)}</span>
+                  <span className="muted">
+                    <DateTimeText value={campaign.sentAt ?? campaign.createdAt} />
+                  </span>
                 </td>
                 <td>
                   <StatusBadge tone={campaign.targetRole === 'PROVIDER' ? 'info' : 'warning'}>

@@ -36,10 +36,10 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   formatCurrencyAmount as money,
-  formatDateTime,
   formatPercentLabel,
   formatWholeNumber as formatNumber,
 } from '../../lib/admin-format';
@@ -69,7 +69,6 @@ export default async function UsageOverviewPage({
     emptyUsageOverview(range),
   );
   const overview = usageOverviewWithDefaults(rawOverview, range);
-  const generatedAt = formatDateTime(overview.generatedAt);
   const funnelSteps = buildUsageFunnelSteps(overview);
   const usageHealthCards: UsageCommandCardConfig[] = [
     {
@@ -137,7 +136,9 @@ export default async function UsageOverviewPage({
       actions={
         <>
           <StatusBadge tone="success">Vietnam only</StatusBadge>
-          <StatusBadge tone="info">Generated {generatedAt}</StatusBadge>
+          <StatusBadge tone="info">
+            Generated <DateTimeText value={overview.generatedAt} />
+          </StatusBadge>
         </>
       }
       contentClassName="usage-overview-page"
@@ -478,7 +479,7 @@ function PlatformUsageCard({ rows }: { readonly rows: readonly AdminUsageOvervie
                 <div>
                   <strong>{platformLabel(row.platform)}</strong>
                   <small>
-                    {row.lastActivityAt ? `Last active ${formatDateTime(row.lastActivityAt)}` : 'No last activity'}
+                    Last active <DateTimeText fallback="No last activity" value={row.lastActivityAt} />
                   </small>
                 </div>
               </div>
@@ -541,7 +542,7 @@ function PartnerDiscoveryConversionCard({
               <span>{formatNumber(row.viewToRequestRate)}% view to request</span>
               <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
             </div>
-            <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
+            <DateTimeText fallback="No date" value={row.lastActivityAt} />
           </AdminCard>
         ))
       ) : (
@@ -911,7 +912,7 @@ function UsageRankingCard({
               <strong>{formatNumber(row.value)}</strong>
               <span>{valueHeading}</span>
             </div>
-            <time>{row.lastActivityAt ? formatDateTime(row.lastActivityAt) : 'No date'}</time>
+            <DateTimeText fallback="No date" value={row.lastActivityAt} />
           </AdminCard>
         ))
       ) : (

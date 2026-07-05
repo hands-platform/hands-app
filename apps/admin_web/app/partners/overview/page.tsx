@@ -37,6 +37,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -99,7 +100,6 @@ export default async function PartnerOverviewPage({
     emptyPartnerOverview(range),
   );
   const overview = partnerOverviewWithDefaults(rawOverview, range);
-  const generatedAt = formatDateTime(overview.generatedAt);
   const activeFilters = partnerOverviewActiveFilters(range, filters);
 
   return (
@@ -107,7 +107,9 @@ export default async function PartnerOverviewPage({
       actions={
         <>
           <StatusBadge tone="success">Vietnam supply</StatusBadge>
-          <StatusBadge tone="info">Generated {generatedAt}</StatusBadge>
+          <StatusBadge tone="info">
+            Generated <DateTimeText value={overview.generatedAt} />
+          </StatusBadge>
         </>
       }
       contentClassName="usage-overview-page partner-overview-page"
@@ -829,7 +831,9 @@ function SelectionFrictionCard({
               <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
               <td>
                 {row.availabilityStatus}
-                <small>Next {formatDateTime(row.nextAvailableAt)}</small>
+                <small>
+                  Next <DateTimeText value={row.nextAvailableAt} />
+                </small>
               </td>
               <td>
                 {row.hasProfileImage ? 'Profile image ready' : 'No profile image'}
@@ -901,7 +905,7 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
         <strong>{row.partnerName}</strong>
         <small>{[row.phone, row.area].filter(Boolean).join(' · ') || 'No contact area'}</small>
         <small>
-          {partnerStatus} · Last activity {lastActivity}
+          {partnerStatus} · Last activity <DateTimeText value={row.lastActivityAt} />
         </small>
       </span>
       <span className="partner-overview-action-reason">
