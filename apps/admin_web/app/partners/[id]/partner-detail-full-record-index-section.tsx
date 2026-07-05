@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -5,7 +7,7 @@ import { StatusBadge } from '../../../components/status-badge';
 type PartnerDetailFullRecordIndexSectionProps = {
   readonly appActivityCount: number;
   readonly bookingRecordCount: number;
-  readonly cashDebtLabel: string;
+  readonly cashDebtLabel: ReactNode;
   readonly dailyDigestCount: number;
   readonly missingKycDocumentCount: number;
 };

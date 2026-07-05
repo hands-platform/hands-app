@@ -11,10 +11,19 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(source).not.toContain('<span className="pill pill-danger">HANDS fee');
     expect(source).not.toContain('<span className="pill pill-warn">Tax');
     expect(source).not.toContain('<span className="pill pill-info">{row.evidenceLabel}</span>');
+    expect(source).toContain("import type { ReactNode } from 'react';");
+    expect(source).toContain('readonly amountLabel: ReactNode;');
+    expect(source).toContain('readonly handsFeeLabel: ReactNode;');
+    expect(source).toContain('readonly openDebtLabel: ReactNode;');
+    expect(source).toContain('readonly taxLabel: ReactNode;');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('readonly createdLabel: string;');
     expect(source).not.toContain('created {row.createdLabel}');
     expect(pageSource).not.toContain('createdLabel: formatDate(earning.createdAt)');
+    expect(pageSource).toContain('openDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
+    expect(pageSource).toContain('amountLabel: <MoneyText amount={Math.abs(amountValue(earning.netAmount))} />');
+    expect(pageSource).toContain('handsFeeLabel: <MoneyText amount={earning.platformFee} />');
+    expect(pageSource).toContain('taxLabel: <MoneyText amount={earning.withholdingAmount} />');
   });
 
   it('renders cash debt origins as a Vuexy table', () => {

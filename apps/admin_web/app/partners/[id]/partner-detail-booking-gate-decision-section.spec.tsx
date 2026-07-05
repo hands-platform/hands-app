@@ -5,11 +5,15 @@ import { PartnerDetailBookingGateDecisionSection } from './partner-detail-bookin
 describe('PartnerDetailBookingGateDecisionSection', () => {
   it('uses the shared Vuexy badge atoms for decision policy pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">First response window:');
     expect(source).not.toContain('<span className={`pill ${bookingGatePillClass(gate)}`}>');
+    expect(source).toContain("import type { ReactNode } from 'react';");
+    expect(source).toContain('readonly cashDebtLabel: ReactNode;');
+    expect(pageSource).toContain('cashDebtLabel: <MoneyText amount={bookingAcceptance.cashDebt} />');
   });
 
   it('renders marketplace booking gate decisions as a Vuexy table', () => {

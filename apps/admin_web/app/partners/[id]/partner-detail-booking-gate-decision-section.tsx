@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -24,7 +25,7 @@ export type PartnerBookingGateDecisionView = {
   readonly bookableServices: string;
   readonly canDirectFirstPick: boolean;
   readonly canJoinMarketplace: boolean;
-  readonly cashDebtLabel: string;
+  readonly cashDebtLabel: ReactNode;
   readonly directFirstPickReason: string;
   readonly gates: readonly PartnerBookingGateDecisionGate[];
   readonly locationAge: string;

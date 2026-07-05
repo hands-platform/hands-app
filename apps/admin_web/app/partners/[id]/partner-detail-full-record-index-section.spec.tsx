@@ -12,8 +12,12 @@ describe('PartnerDetailFullRecordIndexSection', () => {
 
   it('uses a shared badge atom for the booking record count', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-full-record-index-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{bookingRecordCount} booking record(s)</span>');
+    expect(source).toContain("import type { ReactNode } from 'react';");
+    expect(source).toContain('readonly cashDebtLabel: ReactNode;');
+    expect(pageSource).toContain('cashDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}');
   });
 });

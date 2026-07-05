@@ -932,7 +932,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <PartnerDetailFullRecordIndexSection
             appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
             bookingRecordCount={partnerBookingArchive.length}
-            cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
+            cashDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}
             dailyDigestCount={partnerDailyActivityDigest.length}
             missingKycDocumentCount={missingKycDocumentCount}
           />
@@ -1117,7 +1117,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <PartnerDetailCashDebtOriginSection
             hasCashFeeDebt={hasCashFeeDebt}
             hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
-            openDebtLabel={formatCurrency(cashFeeDebtTotal)}
+            openDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}
             openRowCount={openCashDebtEarnings.length}
             rows={cashDebtOriginRows}
           />
@@ -4108,16 +4108,16 @@ function buildPartnerCashDebtOriginRows(
   earnings: Array<NonNullable<ProviderDetail['earnings']>[number]>,
 ): PartnerCashDebtOriginRow[] {
   return earnings.slice(0, 5).map((earning) => ({
-    amountLabel: formatCurrency(Math.abs(amountValue(earning.netAmount))),
+    amountLabel: <MoneyText amount={Math.abs(amountValue(earning.netAmount))} />,
     bookingHref: earning.bookingId ? `/bookings/${earning.bookingId}` : undefined,
     bookingLabel: earning.bookingId ? shortRecordId(earning.bookingId) : 'unknown',
     createdAt: earning.createdAt,
     evidenceLabel: partnerCashDebtEvidenceLabel(earning),
-    handsFeeLabel: formatCurrency(earning.platformFee),
+    handsFeeLabel: <MoneyText amount={earning.platformFee} />,
     id: earning.id,
     originLabel: partnerCashDebtOriginLabel(earning),
     paymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
-    taxLabel: formatCurrency(earning.withholdingAmount),
+    taxLabel: <MoneyText amount={earning.withholdingAmount} />,
   }));
 }
 
@@ -4200,7 +4200,7 @@ function buildPartnerBookingGateDecisionView(
     bookableServices: bookingAcceptance.bookableServices,
     canDirectFirstPick: bookingAcceptance.canDirectFirstPick,
     canJoinMarketplace: bookingAcceptance.canJoinMarketplace,
-    cashDebtLabel: formatCurrency(bookingAcceptance.cashDebt),
+    cashDebtLabel: <MoneyText amount={bookingAcceptance.cashDebt} />,
     directFirstPickReason: bookingAcceptance.directFirstPickReason,
     gates: bookingAcceptance.gates,
     locationAge: bookingAcceptance.locationAge,

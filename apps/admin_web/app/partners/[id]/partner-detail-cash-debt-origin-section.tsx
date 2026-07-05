@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -12,22 +13,22 @@ import {
 } from './partner-detail-vuexy-table';
 
 export type PartnerCashDebtOriginRow = {
-  readonly amountLabel: string;
+  readonly amountLabel: ReactNode;
   readonly bookingHref?: string;
   readonly bookingLabel: string;
   readonly createdAt?: string | null;
   readonly evidenceLabel: string;
-  readonly handsFeeLabel: string;
+  readonly handsFeeLabel: ReactNode;
   readonly id: string;
   readonly originLabel: string;
   readonly paymentMethod: string;
-  readonly taxLabel: string;
+  readonly taxLabel: ReactNode;
 };
 
 type PartnerDetailCashDebtOriginSectionProps = {
   readonly hasCashFeeDebt: boolean;
   readonly hasSettlementRef: boolean;
-  readonly openDebtLabel: string;
+  readonly openDebtLabel: ReactNode;
   readonly openRowCount: number;
   readonly rows: readonly PartnerCashDebtOriginRow[];
 };
