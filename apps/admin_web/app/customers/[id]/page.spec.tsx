@@ -95,6 +95,17 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('<td>{formatDate(log.createdAt)}</td>');
   });
 
+  it('uses the shared DateTimeText atom for visible customer overview timestamps', () => {
+    expect(customerDetailSource).toContain('value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />');
+    expect(customerDetailSource).toContain(
+      'value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />',
+    );
+    expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />');
+    expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(latestBooking)} />');
+    expect(customerDetailSource).not.toContain('value: formatDate(customer.user?.createdAt)');
+    expect(customerDetailSource).not.toContain('value: formatDate(latestSession?.lastSeenAt)');
+  });
+
   it('uses the shared table pagination footer for customer chat history', () => {
     expect(customerDetailSource).toContain('AdminTablePaginationFooter');
     expect(customerDetailSource).toContain('className="customer-chat-history-footer"');

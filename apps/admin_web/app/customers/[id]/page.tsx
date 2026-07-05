@@ -314,9 +314,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     {
       label: 'Completed work',
       value: `${bookingStats.completed}`,
-      helper: lastCompletedBooking
-        ? `Latest ${formatDate(bookingLatestActivityAt(lastCompletedBooking))}`
-        : 'No completed service record yet.',
+      helper: lastCompletedBooking ? (
+        <>
+          Latest <DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />
+        </>
+      ) : (
+        'No completed service record yet.'
+      ),
     },
     {
       label: 'Saved addresses',
@@ -337,14 +341,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Sign-up Date',
-      value: formatDate(customer.user?.createdAt),
-      helper: customer.user?.updatedAt
-        ? `Last account update ${formatDate(customer.user.updatedAt)}`
-        : 'No account update timestamp loaded.',
+      value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />,
+      helper: customer.user?.updatedAt ? (
+        <>
+          Last account update <DateTimeText value={customer.user.updatedAt} />
+        </>
+      ) : (
+        'No account update timestamp loaded.'
+      ),
     },
     {
       label: 'Last Login Date',
-      value: formatDate(latestSession?.lastSeenAt),
+      value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />,
       helper: latestSession
         ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
         : 'No app session loaded.',
@@ -369,9 +377,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     {
       label: 'Latest Reservation',
       value: latestBooking ? shortId(latestBooking.id) : 'None',
-      helper: latestBooking
-        ? `${latestBooking.status} / ${formatDate(bookingLatestActivityAt(latestBooking))}`
-        : 'No booking has been created for this customer.',
+      helper: latestBooking ? (
+        <>
+          {latestBooking.status} / <DateTimeText value={bookingLatestActivityAt(latestBooking)} />
+        </>
+      ) : (
+        'No booking has been created for this customer.'
+      ),
     },
     {
       label: 'Wallet Amount',
