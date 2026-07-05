@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminNotePanel, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -89,7 +90,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
         </div>
       ) : (
         <AdminNotePanel>
-          <p className="muted admin-m-0">{list.emptyText}</p>
+          <AdminEmptyState className="admin-m-0" message={list.emptyText} title={null} />
         </AdminNotePanel>
       )}
     </AdminTaskCard>
