@@ -1,4 +1,5 @@
 import { AdminDisclosure } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import {
   StatusBadge,
   StatusBadgeLink,
@@ -6,9 +7,9 @@ import {
 } from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
-  readonly attemptedAtLabel: string;
+  readonly attemptedAt: string | null;
   readonly deviceFreshnessLabel: string;
-  readonly deviceLastSeenAtLabel: string;
+  readonly deviceLastSeenAt: string | null;
   readonly deviceStateLabel: string;
   readonly enableDeviceHref: string | null;
   readonly failureCodeLabel: string;
@@ -49,8 +50,13 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
         </StatusBadge>{' '}
         <strong>{attempts} attempts</strong>{' '}
         <span className="muted">
-          / latest {latest.provider} / {latest.platformLabel} / {latest.attemptedAtLabel}
-          {previous ? ` / previous ${previous.status} at ${previous.attemptedAtLabel}` : ''}
+          / latest {latest.provider} / {latest.platformLabel} / <DateTimeText value={latest.attemptedAt} />
+          {previous ? (
+            <>
+              {' '}
+              / previous {previous.status} at <DateTimeText value={previous.attemptedAt} />
+            </>
+          ) : null}
           {hiddenAttempts ? ` / ${hiddenAttempts} older in audit` : ''}
         </span>
       </summary>
@@ -85,10 +91,11 @@ function NotificationDeliveryAttempt({
         <span className="muted">/ {delivery.platformLabel}</span>
       </div>
       <div className="muted admin-mt-4">
-        {delivery.deviceStateLabel} - Attempted {delivery.attemptedAtLabel}
+        {delivery.deviceStateLabel} - Attempted <DateTimeText value={delivery.attemptedAt} />
       </div>
       <div className="muted admin-mt-4">
-        Device last seen {delivery.deviceLastSeenAtLabel} / {delivery.deviceFreshnessLabel}
+        Device last seen <DateTimeText fallback="-" value={delivery.deviceLastSeenAt} /> /{' '}
+        {delivery.deviceFreshnessLabel}
       </div>
       <div className="muted admin-mt-4">
         Failure {delivery.failureCodeLabel} / HTTP {delivery.httpStatusLabel}

@@ -46,9 +46,9 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('IOS');
     expect(rendered).toContain('Device disabled');
     expect(rendered).toContain('Attempted');
-    expect(rendered).toContain('2026-06-09 10:01');
+    expect(rendered).toContain('9 Jun 2026, 10:01');
     expect(rendered).toContain('Device last seen');
-    expect(rendered).toContain('2026-06-09 10:02');
+    expect(rendered).toContain('9 Jun 2026, 10:02');
     expect(rendered).toContain('Token timestamp current');
     expect(rendered).toContain('Failure');
     expect(rendered).toContain('invalid_token');
@@ -91,7 +91,7 @@ describe('NotificationsTableSection', () => {
           deliveryRows: [
             {
               ...row.deliveryRows[0],
-              attemptedAtLabel: '2026-06-09 10:03',
+              attemptedAt: '2026-06-09T03:03:00.000Z',
               deviceStateLabel: 'Device enabled',
               enableDeviceHref: null,
               failureCodeLabel: '-',
@@ -112,8 +112,8 @@ describe('NotificationsTableSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('2 attempts');
-    expect(rendered).toContain('latest FCM / Android / 2026-06-09 10:03');
-    expect(rendered).toContain('previous FAILED at 2026-06-09 10:01');
+    expect(rendered).toContain('latest FCM / Android / 9 Jun 2026, 10:03');
+    expect(rendered).toContain('previous FAILED at 9 Jun 2026, 10:01');
     expect(rendered).toContain('Latest attempt / FCM SENT / Android');
     expect(rendered).not.toContain('Previous attempt / FCM FAILED / IOS');
     expect(rendered).toContain('Previous delivery evidence is summarized above.');
@@ -138,6 +138,16 @@ describe('NotificationsTableSection', () => {
     expect(source).not.toContain('<span className={latest.statusClassName}>{latest.status}</span>');
     expect(source).not.toContain('<span className={delivery.statusClassName}>{delivery.status}</span>');
     expect(source).not.toContain('<AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>');
+  });
+
+  it('uses the shared DateTimeText atom for delivery attempt timestamps', () => {
+    const source = readFileSync('app/notifications/notification-delivery-cell.tsx', 'utf8');
+    const modelSource = readFileSync('app/notifications/notification-page-model.ts', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly attemptedAtLabel: string;');
+    expect(source).not.toContain('readonly deviceLastSeenAtLabel: string;');
+    expect(modelSource).not.toContain('attemptedAtLabel: formatDateTime(delivery.attemptedAt)');
   });
 
   it('uses the shared AdminSignal atom for notification ops status chips', () => {
@@ -168,7 +178,7 @@ describe('NotificationsTableSection', () => {
           deliveryRows: [
             {
               ...row.deliveryRows[0],
-              attemptedAtLabel: '2026-06-09 10:04',
+              attemptedAt: '2026-06-09T03:04:00.000Z',
               failureCodeLabel: 'messaging/internal-error',
               failureReasonLabel: 'temporary provider error for [masked]',
               id: 'delivery-2',
@@ -177,7 +187,7 @@ describe('NotificationsTableSection', () => {
             },
             {
               ...row.deliveryRows[0],
-              attemptedAtLabel: '2026-06-09 10:03',
+              attemptedAt: '2026-06-09T03:03:00.000Z',
               deviceStateLabel: 'Device enabled',
               enableDeviceHref: null,
               failureCodeLabel: '-',
@@ -197,7 +207,7 @@ describe('NotificationsTableSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain(
-      'FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04 / previous SENT at 2026-06-09 10:03',
+      'FAILED 2 attempts / latest FCM / Android / 9 Jun 2026, 10:04 / previous SENT at 9 Jun 2026, 10:03',
     );
     expect(rendered).toContain('Latest attempt / FCM FAILED / Android');
     expect(rendered).not.toContain('Previous attempt / FCM SENT / Android');
@@ -260,9 +270,9 @@ function buildRow(): NotificationTableRow {
     deliveryAttemptCount: 1,
     deliveryRows: [
       {
-        attemptedAtLabel: '2026-06-09 10:01',
+        attemptedAt: '2026-06-09T03:01:00.000Z',
         deviceFreshnessLabel: 'Token timestamp current',
-        deviceLastSeenAtLabel: '2026-06-09 10:02',
+        deviceLastSeenAt: '2026-06-09T03:02:00.000Z',
         deviceStateLabel: 'Device disabled',
         enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-1',
         failureCodeLabel: 'invalid_token',

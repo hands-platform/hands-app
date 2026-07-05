@@ -980,11 +980,9 @@ function buildNotificationDeliveryRows(
   return newestDeliveries(notificationDeliveries(notification))
     .slice(0, NOTIFICATION_TABLE_DELIVERY_LIMIT)
     .map((delivery) => ({
-      attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+      attemptedAt: delivery.attemptedAt,
       deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
-      deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
-        ? formatDateTime(delivery.pushDevice.lastSeenAt)
-        : '-',
+      deviceLastSeenAt: delivery.pushDevice?.lastSeenAt ?? null,
       deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
       enableDeviceHref:
         delivery.pushDevice?.enabled === false && delivery.pushDevice.id

@@ -979,8 +979,9 @@ describe('notification page model', () => {
       tone: 'warning',
     });
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      attemptedAt: '2026-06-01T10:01:00.000Z',
       deviceFreshnessLabel: 'Token timestamp current',
-      deviceLastSeenAtLabel: '1 Jun 2026, 17:02',
+      deviceLastSeenAt: '2026-06-01T10:02:00.000Z',
       deviceStateLabel: 'Device disabled',
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
