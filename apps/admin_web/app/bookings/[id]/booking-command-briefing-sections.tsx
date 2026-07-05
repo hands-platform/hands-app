@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
+import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
@@ -224,13 +224,7 @@ export type BookingOperatorFirstReadSectionProps = {
 };
 
 export function BookingMetricGridSection({ metrics }: BookingMetricGridSectionProps) {
-  return (
-    <section className="grid admin-mb-16">
-      {metrics.map((metric) => (
-        <AdminKpiCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
-      ))}
-    </section>
-  );
+  return <AdminMetricGrid className="admin-mb-16" metrics={metrics} />;
 }
 
 export type BookingMetricGridSectionProps = {

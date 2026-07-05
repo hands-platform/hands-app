@@ -6,6 +6,7 @@ import {
   BookingDetailToolbar,
   BookingCommandDecisionStripSection,
   BookingMatchingRuleSnapshotSection,
+  BookingMetricGridSection,
   BookingMvpAuthorityContractSection,
   BookingOperatorFirstReadSection,
   BookingOperationsQuickRailSection,
@@ -62,6 +63,25 @@ describe('BookingCommandBriefingSections', () => {
     expect(source).not.toContain('actions={<span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>}');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
     expect(source).not.toContain('actions={<span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>}');
+  });
+
+  it('uses the shared metric grid for booking detail command metrics', () => {
+    const section = BookingMetricGridSection({
+      metrics: [
+        {
+          helper: 'Customer payment is captured.',
+          label: 'Payment',
+          value: 'Captured',
+        },
+      ],
+    });
+    const markup = renderToStaticMarkup(section);
+    const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
+
+    expect(markup).toContain('admin-metric-grid admin-mb-16');
+    expect(markup).toContain('Payment');
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).not.toContain('<section className="grid admin-mb-16">');
   });
 
   it('renders the booking detail header on the shared Vuexy page header surface', () => {
