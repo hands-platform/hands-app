@@ -14,7 +14,7 @@ import type {
   AdminFinanceOverviewSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
@@ -123,11 +123,11 @@ export default async function FinanceOverviewPage({
         ))}
       </AdminSection>
 
-      <section className="finance-overview-control-board" aria-label="Finance control board">
+      <AdminOverviewCommandGrid className="finance-overview-control-board" ariaLabel="Finance control board">
         {controlMetrics.map((metric) => (
           <FinanceControlMetricCard key={metric.label} metric={metric} />
         ))}
-      </section>
+      </AdminOverviewCommandGrid>
 
       <section className="finance-overview-principle-grid" aria-label="Finance accounting principles">
         <AdminCard className="finance-overview-principle-card is-primary">

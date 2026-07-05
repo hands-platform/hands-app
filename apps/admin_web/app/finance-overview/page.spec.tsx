@@ -178,6 +178,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card finance-overview-priority-card');
     expect(markup).toContain('card admin-card usage-overview-command-card finance-overview-control-card');
+    expect(pageSource).toContain('AdminOverviewCommandGrid');
+    expect(pageSource).not.toContain('<section className="finance-overview-control-board"');
     expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).not.toContain('<AdminLinkCard className={`finance-overview-control-card');
     expect(markup).toContain('Core Finance KPI');
