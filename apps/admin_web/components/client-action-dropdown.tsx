@@ -4,14 +4,25 @@ import Link from 'next/link';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export type ClientActionDropdownItem = {
+type ClientActionDropdownBaseItem = {
   readonly description?: string;
   readonly disabled?: boolean;
-  readonly href: string;
   readonly icon?: LucideIcon;
   readonly label: string;
   readonly tone?: string;
 };
+
+type ClientActionDropdownLinkItem = ClientActionDropdownBaseItem & {
+  readonly href: string;
+  readonly onSelect?: never;
+};
+
+type ClientActionDropdownButtonItem = ClientActionDropdownBaseItem & {
+  readonly href?: never;
+  readonly onSelect: () => void;
+};
+
+export type ClientActionDropdownItem = ClientActionDropdownLinkItem | ClientActionDropdownButtonItem;
 
 type ClientActionDropdownProps = {
   readonly actions: readonly ClientActionDropdownItem[];
@@ -112,10 +123,29 @@ function ClientActionDropdownControl({
     );
   }
 
+  if (typeof item.href === 'string') {
+    return (
+      <Link className={className} href={item.href} onClick={onSelect} role="menuitem" title={item.description}>
+        {content}
+      </Link>
+    );
+  }
+
+  const handleItemSelect = item.onSelect;
+
   return (
-    <Link className={className} href={item.href} onClick={onSelect} role="menuitem" title={item.description}>
+    <button
+      className={className}
+      onClick={() => {
+        handleItemSelect();
+        onSelect();
+      }}
+      role="menuitem"
+      title={item.description}
+      type="button"
+    >
       {content}
-    </Link>
+    </button>
   );
 }
 

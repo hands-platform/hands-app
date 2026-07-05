@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { CheckCircle2, EyeOff, Flag, MoreVertical, Pencil, Save, Star, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, EyeOff, Flag, Pencil, Save, Star, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import { ClientActionDropdown, type ClientActionDropdownItem } from '../../components/client-action-dropdown';
 import {
   AdminDrawerFormGrid,
   AdminFormControlButton,
@@ -43,73 +43,23 @@ const reviewRatingOptions = [5, 4, 3, 2, 1].map((rating) => ({
 }));
 
 export function ReviewRowActions({ actions, editReview, label }: ReviewRowActionsProps) {
-  const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const rootRef = useRef<HTMLDivElement>(null);
   const search = searchParams.toString();
   const returnTo = `${pathname}${search ? `?${search}` : ''}`;
-  const visibleActions = visibleReviewActionItems(actions);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function closeOnOutsidePointer(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', closeOnOutsidePointer);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePointer);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [open]);
+  const visibleActions = reviewRowActionDropdownItems(visibleReviewActionItems(actions), () => setEditing(true));
 
   return (
     <>
-      <div className="admin-action-dropdown vuexy-review-action-dropdown" ref={rootRef}>
-        <button
-          aria-expanded={open}
-          aria-haspopup="menu"
-          aria-label={label}
-          className="admin-action-trigger vuexy-review-action-trigger"
-          onClick={() => setOpen((value) => !value)}
-          type="button"
-        >
-          <MoreVertical aria-hidden="true" size={20} />
-        </button>
-        {open ? (
-          <div className="admin-action-menu vuexy-review-action-menu" role="menu">
-            <button
-              className="admin-action-item vuexy-review-action-item is-info vuexy-review-edit-action"
-              onClick={() => {
-                setEditing(true);
-                setOpen(false);
-              }}
-              role="menuitem"
-              type="button"
-            >
-              <Pencil aria-hidden="true" size={16} />
-              <span>Edit Review</span>
-            </button>
-            {visibleActions.map((action) => (
-              <ReviewActionLink action={action} key={action.label} onSelect={() => setOpen(false)} />
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <ClientActionDropdown
+        actions={visibleActions}
+        className="vuexy-review-action-dropdown"
+        itemClassName={reviewRowActionDropdownItemClassName}
+        label={label}
+        menuClassName="vuexy-review-action-menu"
+        triggerClassName="vuexy-review-action-trigger"
+      />
 
       {editing ? (
         <ReviewEditDrawer editReview={editReview} onClose={() => setEditing(false)} returnTo={returnTo} />
@@ -122,27 +72,36 @@ export function visibleReviewActionItems(actions: readonly ReviewActionItem[]) {
   return actions.filter((action) => !action.disabled);
 }
 
-function ReviewActionLink({
-  action,
-  onSelect,
-}: {
-  readonly action: ReviewActionItem;
-  readonly onSelect: () => void;
-}) {
-  const Icon = actionIcons[action.label as keyof typeof actionIcons] ?? Flag;
+function reviewRowActionDropdownItems(
+  actions: readonly ReviewActionItem[],
+  onEdit: () => void,
+): readonly ClientActionDropdownItem[] {
+  return [
+    {
+      description: 'Edit retained review copy and rating.',
+      icon: Pencil,
+      label: 'Edit Review',
+      onSelect: onEdit,
+      tone: 'info',
+    },
+    ...actions.map((action) => ({
+      description: action.description,
+      href: action.href,
+      icon: actionIcons[action.label as keyof typeof actionIcons] ?? Flag,
+      label: action.label,
+      tone: action.tone,
+    })),
+  ];
+}
 
-  return (
-    <Link
-      className={`admin-action-item vuexy-review-action-item is-${action.tone}`}
-      href={action.href}
-      onClick={onSelect}
-      role="menuitem"
-      title={action.description}
-    >
-      <Icon aria-hidden="true" size={16} />
-      <span>{action.label}</span>
-    </Link>
-  );
+function reviewRowActionDropdownItemClassName(item: ClientActionDropdownItem) {
+  return [
+    'vuexy-review-action-item',
+    item.tone ? `is-${item.tone}` : undefined,
+    item.label === 'Edit Review' ? 'vuexy-review-edit-action' : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function ReviewEditDrawer({
