@@ -12,7 +12,7 @@ describe('AuditLogTableSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('2026-06-09 10:00');
+    expect(rendered).toContain('9 Jun 2026, 10:00');
     expect(rendered).toContain('Updated just now');
     expect(rendered).toContain('Booking / Ops status updated');
     expect(rendered).toContain('Dispatch');
@@ -49,6 +49,16 @@ describe('AuditLogTableSection', () => {
     expect(source).toContain('tone={item.tone}');
   });
 
+  it('uses the shared DateTimeText atom for audit timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/audit-log/audit-log-table-section.tsx'), 'utf8');
+    const pageSource = readFileSync(join(process.cwd(), 'app/audit-log/page-content.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('<div>{row.createdAtLabel}</div>');
+    expect(pageSource).not.toContain('createdAtLabel: formatDateTime(log.createdAt)');
+  });
+
   it('keeps audit metadata highlights on the shared StatusBadge tone model', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/audit-log/page-content.tsx'), 'utf8');
 
@@ -65,7 +75,7 @@ function buildRow(): AuditLogTableRow {
     actorLabel: 'Operator One',
     bucketClassName: 'signal signal-info',
     bucketLabel: 'Dispatch',
-    createdAtLabel: '2026-06-09 10:00',
+    createdAt: '2026-06-09T03:00:00.000Z',
     id: 'audit-1',
     metadataHighlights: [{ label: 'Changed status', tone: 'info' }],
     metadataPreview: '{\n  "status": "MATCHED"\n}',

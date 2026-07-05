@@ -16,7 +16,6 @@ import {
 } from '../../components/admin-form-controls';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
 import {
-  formatDateTime,
   formatDistanceMeters,
   formatMoney as money,
   formatRelativeTime,
@@ -227,7 +226,7 @@ export function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLog
     actorLabel: operationalDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
     bucketClassName: signalClass(log.action),
     bucketLabel: actionBucketLabel(log.action),
-    createdAtLabel: formatDateTime(log.createdAt),
+    createdAt: log.createdAt,
     id: log.id,
     metadataHighlights: metadataHighlights(log),
     metadataPreview: metadataPreviewForLog(log),

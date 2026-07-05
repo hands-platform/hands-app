@@ -1,5 +1,6 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { DateTimeText } from '../../components/date-time-text';
 import {
   AdminSignal,
   StatusBadge,
@@ -17,7 +18,7 @@ export type AuditLogTableRow = {
   readonly actorLabel: string;
   readonly bucketClassName: string;
   readonly bucketLabel: string;
-  readonly createdAtLabel: string;
+  readonly createdAt: string | null;
   readonly id: string;
   readonly metadataHighlights: readonly AuditLogMetadataHighlight[];
   readonly metadataPreview: string;
@@ -46,7 +47,9 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
       {rows.map((row) => (
         <tr key={row.id}>
           <td>
-            <div>{row.createdAtLabel}</div>
+            <div>
+              <DateTimeText value={row.createdAt} />
+            </div>
             <div className="muted">{row.relativeTimeLabel}</div>
           </td>
           <td>
