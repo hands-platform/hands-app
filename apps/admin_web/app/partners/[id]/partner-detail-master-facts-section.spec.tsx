@@ -16,4 +16,17 @@ describe('PartnerDetailMasterFactsSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{facts.length} field(s)</span>');
   });
+
+  it('keeps partner master fact finance values on the shared MoneyText atom', () => {
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(pageSource).toContain("import { MoneyText } from '../../../components/money-text';");
+    expect(pageSource).toContain('value: <MoneyText amount={totalRevenue} />');
+    expect(pageSource).toContain('Platform fee <MoneyText amount={platformFee} />');
+    expect(pageSource).toContain('Available <MoneyText amount={payoutReadyAmount} /> / cash debt');
+    expect(pageSource).toContain('<MoneyText amount={cashFeeDebtTotal} />');
+    expect(pageSource).not.toContain('value: formatCurrency(totalRevenue)');
+    expect(pageSource).not.toContain('helper: `Platform fee ${formatCurrency(platformFee)}`');
+    expect(pageSource).not.toContain('helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(cashFeeDebtTotal)}`');
+  });
 });

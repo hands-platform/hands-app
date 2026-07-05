@@ -2530,13 +2530,13 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Revenue',
-      value: formatCurrency(totalRevenue),
-      helper: `Platform fee ${formatCurrency(platformFee)}`,
+      value: <MoneyText amount={totalRevenue} />,
+      helper: <>Platform fee <MoneyText amount={platformFee} /></>,
     },
     {
       label: 'Payout',
       value: payoutOps.status,
-      helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(cashFeeDebtTotal)}`,
+      helper: <>Available <MoneyText amount={payoutReadyAmount} /> / cash debt <MoneyText amount={cashFeeDebtTotal} /></>,
     },
     {
       label: 'Tax profile optional',
