@@ -13,6 +13,12 @@ describe('ClientActionDropdown', () => {
     expect(source).not.toContain('<button\n      className={className}');
   });
 
+  it('uses the shared Vuexy icon button atom for client dropdown triggers', () => {
+    expect(source).toContain("import { AdminIconButton } from './admin-icon-button';");
+    expect(source).toContain('<AdminIconButton');
+    expect(source).not.toContain('<button\n        aria-expanded={open}');
+  });
+
   it('keeps duplicate client dropdown labels on unique React keys', () => {
     expect(source).toContain('actions.map((item, itemIndex) => (');
     expect(source).toContain('key={`${item.label}:${itemIndex}`}');
@@ -32,7 +38,7 @@ describe('ClientActionDropdown', () => {
     );
 
     expect(html).toContain('class="admin-action-dropdown customer-client-actions"');
-    expect(html).toContain('class="admin-action-trigger customer-client-trigger"');
+    expect(html).toContain('class="admin-icon-button admin-action-trigger customer-client-trigger"');
     expect(html).not.toContain('admin-action-dropdown admin-action-dropdown');
     expect(html).not.toContain('admin-action-trigger admin-action-trigger');
   });
@@ -61,7 +67,7 @@ describe('ClientActionDropdown', () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('Customer actions');
     expect(html).toContain('admin-action-dropdown customer-client-actions');
-    expect(html).toContain('admin-action-trigger customer-client-trigger');
+    expect(html).toContain('admin-icon-button admin-action-trigger customer-client-trigger');
     expect(html).not.toContain('role="menu"');
   });
 });

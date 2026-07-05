@@ -5,6 +5,7 @@ import { MoreVertical, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { AdminFormControlButton } from './admin-form-controls';
+import { AdminIconButton } from './admin-icon-button';
 
 type ClientActionDropdownBaseItem = {
   readonly description?: string;
@@ -73,7 +74,7 @@ export function ClientActionDropdown({
 
   return (
     <div className={joinClassNames('admin-action-dropdown', className)} ref={rootRef}>
-      <button
+      <AdminIconButton
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
@@ -82,7 +83,7 @@ export function ClientActionDropdown({
         type="button"
       >
         <MoreVertical aria-hidden="true" size={20} />
-      </button>
+      </AdminIconButton>
       {open ? (
         <div className={joinClassNames('admin-action-menu', menuClassName)} role="menu">
           {actions.map((item, itemIndex) => (
