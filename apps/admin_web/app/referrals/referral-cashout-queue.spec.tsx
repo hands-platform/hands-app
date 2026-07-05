@@ -139,6 +139,14 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('Updated {formatDateTime(account.updatedAt)}');
   });
 
+  it('uses the shared inline fallback atom for missing cashout ledger and decision values', () => {
+    expect(cashoutQueueSource).toContain('AdminInlineFallback');
+    expect(cashoutQueueSource).not.toContain(
+      "<div className=\"muted\">{row.walletLedgerReference ?? 'No wallet ledger yet'}</div>",
+    );
+    expect(cashoutQueueSource).not.toContain('<span className="muted">No decision yet</span>');
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 

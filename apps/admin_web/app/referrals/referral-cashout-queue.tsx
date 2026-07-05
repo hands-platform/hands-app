@@ -15,6 +15,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -238,7 +239,11 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         <strong>
           <MoneyText amount={row.amount} currency={row.currency} fallback="0 VND" />
         </strong>
-        <div className="muted">{row.walletLedgerReference ?? 'No wallet ledger yet'}</div>
+        {row.walletLedgerReference ? (
+          <div className="muted">{row.walletLedgerReference}</div>
+        ) : (
+          <AdminInlineFallback className="admin-mt-6">No wallet ledger yet</AdminInlineFallback>
+        )}
       </td>
       <td>
         <ReferralCashoutPayoutProfileCell profile={row.payoutProfile} />
@@ -257,7 +262,7 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
             </div>
           </>
         ) : (
-          <span className="muted">No decision yet</span>
+          <AdminInlineFallback>No decision yet</AdminInlineFallback>
         )}
       </td>
       <td>
