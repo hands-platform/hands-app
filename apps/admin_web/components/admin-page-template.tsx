@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 
 import { AdminKpiCard } from './admin-surface';
+import type { MetricCardProps } from './metric-card';
 
-export type AdminPageMetric = {
-  readonly helper: string;
-  readonly href?: string;
-  readonly label: string;
-  readonly value: ReactNode;
-};
+export type AdminPageMetric = Pick<
+  MetricCardProps,
+  'className' | 'helper' | 'href' | 'icon' | 'iconSize' | 'label' | 'value'
+>;
 
 type AdminPageTemplateProps = {
   readonly actions?: ReactNode;
@@ -19,6 +18,8 @@ type AdminPageTemplateProps = {
 };
 
 type AdminMetricGridProps = {
+  readonly ariaLabel?: string;
+  readonly className?: string;
   readonly metrics: readonly AdminPageMetric[];
 };
 
@@ -55,13 +56,16 @@ export function AdminPageTemplate({
   );
 }
 
-export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
+export function AdminMetricGrid({ ariaLabel, className, metrics }: AdminMetricGridProps) {
   return (
-    <section className="admin-metric-grid">
+    <section aria-label={ariaLabel} className={joinClassNames('admin-metric-grid', className)}>
       {metrics.map((metric) => (
         <AdminKpiCard
+          className={metric.className}
           helper={metric.helper}
           href={metric.href}
+          icon={metric.icon}
+          iconSize={metric.iconSize}
           key={metric.label}
           label={metric.label}
           value={metric.value}

@@ -24,4 +24,11 @@ describe('CalendarClient', () => {
     expect(source).not.toContain('<button\n                  className="calendar-icon-button"');
     expect(source).not.toContain('<button\n                  aria-label="Next calendar period"');
   });
+
+  it('uses the shared Vuexy metric grid atom for calendar metrics', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).not.toContain('<section className="admin-metric-grid"');
+  });
 });

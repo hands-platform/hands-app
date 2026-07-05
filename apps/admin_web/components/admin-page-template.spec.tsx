@@ -18,15 +18,26 @@ describe('AdminPageTemplate', () => {
 
   it('renders metric cards through the shared metric grid', () => {
     const grid = AdminMetricGrid({
+      ariaLabel: 'Notification metrics',
+      className: 'notification-metric-grid',
       metrics: [
         { helper: 'Loaded from API fallback.', label: 'Total', value: 12 },
-        { helper: 'Clean route.', href: '/notifications?review=sent', label: 'Sent', value: '8' },
+        {
+          className: 'is-success',
+          helper: 'Clean route.',
+          href: '/notifications?review=sent',
+          iconSize: 18,
+          label: 'Sent',
+          value: '8',
+        },
       ],
     });
 
     expect(grid.type).toBe('section');
-    expect(grid.props.className).toBe('admin-metric-grid');
+    expect(grid.props.className).toBe('admin-metric-grid notification-metric-grid');
+    expect(grid.props['aria-label']).toBe('Notification metrics');
     expect(grid.props.children).toHaveLength(2);
+    expect(grid.props.children[1].props.className).toContain('is-success');
   });
 
   it('renders a reusable admin section header with status and actions', () => {

@@ -84,7 +84,9 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('card admin-kpi-card vietnam-overview-metric');
     expect(markup).toContain('class="metric-card"');
     expect(markup).not.toContain('<article class="card admin-kpi-card metric-card vietnam-overview-metric');
-    expect(pageSource).toContain('AdminKpiCard');
+    expect(pageSource).toContain('AdminMetricGrid');
+    expect(pageSource).not.toContain('AdminKpiCard');
+    expect(pageSource).not.toContain('<section className="vietnam-overview-metric-grid"');
     expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel marketing-analytics-filter-panel');
     expect(markup).not.toContain('card admin-filter-panel marketing-spend-panel');
     expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-funnel-card');

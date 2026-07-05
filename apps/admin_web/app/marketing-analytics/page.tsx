@@ -21,9 +21,9 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminOverviewGrid } from '../../components/admin-overview-card';
-import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -342,19 +342,18 @@ export default async function MarketingAnalyticsPage({
 
       <ManualSpendForm filters={filters} />
 
-      <section className="vietnam-overview-metric-grid">
-        {cards.map(({ label, value, detail, icon: Icon, tone }) => (
-          <AdminKpiCard
-            className={`vietnam-overview-metric is-${tone}`}
-            helper={detail}
-            icon={Icon}
-            iconSize={18}
-            key={label}
-            label={label}
-            value={value}
-          />
-        ))}
-      </section>
+      <AdminMetricGrid
+        ariaLabel="Marketing summary metrics"
+        className="vietnam-overview-metric-grid"
+        metrics={cards.map(({ label, value, detail, icon, tone }) => ({
+          className: `vietnam-overview-metric is-${tone}`,
+          helper: detail,
+          icon,
+          iconSize: 18,
+          label,
+          value,
+        }))}
+      />
 
       <AdminOverviewGrid
         ariaLabel="Marketing analytics funnel and breakdowns"

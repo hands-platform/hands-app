@@ -16,9 +16,9 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminMetricGrid, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminAsideCard, AdminCard, AdminKpiCard } from '../../components/admin-surface';
+import { AdminAsideCard, AdminCard } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   buildCalendarMetrics,
@@ -251,20 +251,23 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
 
   return (
     <div className="calendar-page">
-      <section className="admin-metric-grid">
-        <AdminKpiCard
-          helper="Filtered across the active calendar categories."
-          label="Visible events"
-          value={metrics.total}
-        />
-        <AdminKpiCard helper="Events scheduled for the current day." label="Today" value={metrics.today} />
-        <AdminKpiCard
-          helper="Upcoming working blocks and operator reminders."
-          label="Next 7 days"
-          value={metrics.upcoming}
-        />
-        <AdminKpiCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
-      </section>
+      <AdminMetricGrid
+        ariaLabel="Calendar summary metrics"
+        metrics={[
+          {
+            helper: 'Filtered across the active calendar categories.',
+            label: 'Visible events',
+            value: metrics.total,
+          },
+          { helper: 'Events scheduled for the current day.', label: 'Today', value: metrics.today },
+          {
+            helper: 'Upcoming working blocks and operator reminders.',
+            label: 'Next 7 days',
+            value: metrics.upcoming,
+          },
+          { helper: 'The next visible event on the board.', label: 'Next up', value: metrics.nextLabel },
+        ]}
+      />
 
       {mutationError ? (
         <AdminInlineNotice className="calendar-error-banner" role="alert" tone="danger">
