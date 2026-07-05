@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -140,7 +140,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
       title="Booking stage snapshot"
     >
       <SummaryCardGrid cards={stageSnapshot.metrics} />
-      <div className={`ops-task-note ${stageSnapshot.noteClassName} admin-mt-14`}>
+      <AdminNotePanel className={`${stageSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{stageSnapshot.headline}</strong>
@@ -151,7 +151,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
             {stageSnapshot.actionLabel}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
     </AdminSection>
   );
 }
@@ -175,7 +175,7 @@ export function BookingCustomerWaitPanelSection({
       id="audit"
       title="Customer wait and matching decision"
     >
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <strong>{customerWaitPanel.headline}</strong>
@@ -186,7 +186,7 @@ export function BookingCustomerWaitPanelSection({
             {customerWaitPanel.nextActionLabel}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       <OpsTaskCardGrid cards={customerWaitPanel.cards} />
     </AdminSection>
   );
@@ -210,7 +210,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
       title="Applied operations policy"
     >
       <SummaryCardGrid cards={policySnapshot.metrics} />
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <StatusBadge tone={statusBadgeToneFromPillClass(policySnapshot.decisionTone)}>
@@ -223,7 +223,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             Review decision
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="ops-task-grid admin-mt-14">
         {policySnapshot.decisionCards.map((decision) => (
           <AdminTaskCard
@@ -302,7 +302,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
       description="Usable Partner supply and operational blockers for this booking pin."
       title="Booking-address supply check"
     >
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <strong>{marketplaceSupply.candidateCommand.title}</strong>
@@ -312,7 +312,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             {marketplaceSupply.candidateCommand.action}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="grid admin-mt-14">
         <AdminCard className="ops-task-note booking-supply-panel">
           <h3>Top usable Partners</h3>
@@ -398,7 +398,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
       title="Marketplace Partner supply for this booking"
     >
       <SummaryCardGrid cards={marketplaceSupply.metrics} />
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <StatusBadge tone={statusBadgeToneFromPillClass(marketplaceSupply.decisionTone)}>
@@ -411,7 +411,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
             Open Partners
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="stack admin-mt-14">
         {marketplaceSupply.rows.map((row) => (
           <div className="ops-row" key={row.id}>
