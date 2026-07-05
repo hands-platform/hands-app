@@ -1263,12 +1263,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminActionCard>
               ))}
               {fullDashboardData.shiftBriefing.nextActions.length === 0 && (
-                <AdminEmptyState
-                  className="ops-task-note"
-                  framed
-                  message="Keep monitoring live matching, Partner locations, cash debt, and notification delivery as demand changes."
-                  title="No same-shift queue item is visible."
-                />
+                <AdminNotePanel>
+                  <AdminEmptyState
+                    framed
+                    message="Keep monitoring live matching, Partner locations, cash debt, and notification delivery as demand changes."
+                    title="No same-shift queue item is visible."
+                  />
+                </AdminNotePanel>
               )}
             </div>
           </AdminSection>
@@ -1981,12 +1982,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminActionCard>
               ))}
               {fullDashboardData.partnerOpsQueue.items.length === 0 && (
-                <AdminEmptyState
-                  className="ops-task-note"
-                  framed
-                  message="Verified Partners, wallet debt, location freshness, payout readiness, and app contactability are clear in the current snapshot."
-                  title="No Partner blocker is currently visible."
-                />
+                <AdminNotePanel>
+                  <AdminEmptyState
+                    framed
+                    message="Verified Partners, wallet debt, location freshness, payout readiness, and app contactability are clear in the current snapshot."
+                    title="No Partner blocker is currently visible."
+                  />
+                </AdminNotePanel>
               )}
             </div>
             <div className="service-trace-summary admin-mt-14">

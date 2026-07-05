@@ -302,6 +302,7 @@ describe('DashboardPage', () => {
 
   it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {
     expect(dashboardSource).toContain('AdminEmptyState');
+    expect(dashboardSource).not.toContain('className="ops-task-note"\n                  framed');
     expect(dashboardSource).not.toContain('<strong>No same-shift queue item is visible.</strong>');
     expect(dashboardSource).not.toContain('<strong>No Partner blocker is currently visible.</strong>');
     expect(dashboardSource).not.toContain('<p className="muted">No open matching booking is waiting right now.</p>');
