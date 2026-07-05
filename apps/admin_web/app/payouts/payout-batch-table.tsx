@@ -4,6 +4,7 @@ import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
+import { AdminNotePanel } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -183,7 +184,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.paidAtRelativeLabel}</div>
           </td>
           <td>
-            <div className="ops-task-note admin-mb-10">
+            <AdminNotePanel className="admin-mb-10">
               <strong>Payout action execution map</strong>
               <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
@@ -199,7 +200,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                   </div>
                 ))}
               </div>
-            </div>
+            </AdminNotePanel>
             <AdminActionsForm action={updateTransferRefAction}>
               <input type="hidden" name="payoutBatchId" value={row.id} />
               <AdminFormInput

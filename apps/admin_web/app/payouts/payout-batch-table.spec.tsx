@@ -4,6 +4,13 @@ import { join } from 'node:path';
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 
 describe('PayoutBatchTable', () => {
+  it('uses the shared Vuexy note panel for payout action execution maps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
+
+    expect(source).toContain('AdminNotePanel');
+    expect(source).not.toContain('<div className="ops-task-note admin-mb-10">');
+  });
+
   it('renders payout batch rows with finance actions and row anchors', () => {
     const table = PayoutBatchTable({
       rows: [
