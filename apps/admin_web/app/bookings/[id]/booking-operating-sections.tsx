@@ -7,8 +7,8 @@ import {
   AdminSection,
   type AdminBasicTimelineItem,
 } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDate } from './booking-formatters';
 
 type SummaryCard = {
   label: string;
@@ -410,7 +410,7 @@ function bookingOperatingBasicTimelineItems(
       ],
       statusLabel: item.status,
       statusTone: statusBadgeToneFromPillClass(operatingTimelinePillTone(tone)),
-      time: item.at ? formatDate(item.at) : item.status,
+      time: <DateTimeText fallback={item.status} value={item.at} />,
       title: item.title,
       tone,
     };

@@ -31,6 +31,14 @@ describe('Booking operating sections', () => {
     expect(source).not.toContain('<span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible operating timeline timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operating-sections.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('<DateTimeText fallback={item.status} value={item.at} />');
+    expect(source).not.toContain('time: item.at ? formatDate(item.at) : item.status');
+  });
+
   it('renders marketplace wallet evidence rows as compact ledgers', () => {
     const section = BookingMarketplaceWalletEvidenceSection({
       marketplaceWalletEvidence: {
