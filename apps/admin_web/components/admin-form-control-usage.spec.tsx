@@ -231,6 +231,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps finance inline action forms inside the shared Vuexy inline action atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-inline-action-form.tsx')
+      .filter((filePath) => hasRawFormClassToken(readFileSync(filePath, 'utf8'), 'inline-admin-action-form'))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -313,9 +322,13 @@ function hasRawDrawerFormGridClassToken(source: string) {
 }
 
 function hasRawInlineFormClassToken(source: string) {
+  return hasRawFormClassToken(source, 'inline-form');
+}
+
+function hasRawFormClassToken(source: string, token: string) {
   for (const match of source.matchAll(formTagPattern)) {
     const className = match.groups?.className ?? '';
-    if (className.split(/\s+/).includes('inline-form')) {
+    if (className.split(/\s+/).includes(token)) {
       return true;
     }
   }

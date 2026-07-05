@@ -3,6 +3,7 @@ import { ShieldCheck, UserCheck, UserCog, UsersRound } from 'lucide-react';
 import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
@@ -195,7 +196,10 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                     <div className="muted">{user.pushDevices?.length ?? 0} registered</div>
                   </td>
                   <td>
-                    <form action={updateFinanceApproverRole} className="inline-admin-action-form">
+                    <AdminInlineActionForm
+                      action={updateFinanceApproverRole}
+                      className="inline-admin-action-form"
+                    >
                       <input name="userId" type="hidden" value={user.id} />
                       <input name="enabled" type="hidden" value={enabled ? 'false' : 'true'} />
                       <input name="returnTo" type="hidden" value="/finance-tax/finance-approvers" />
@@ -212,7 +216,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                       >
                         {enabled ? 'Revoke approver' : 'Grant approver'}
                       </AdminFormControlButton>
-                    </form>
+                    </AdminInlineActionForm>
                   </td>
                 </tr>
               );
