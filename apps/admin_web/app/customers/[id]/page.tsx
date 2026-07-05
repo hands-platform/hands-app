@@ -29,7 +29,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   AdminAppSession,
@@ -507,7 +507,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       >
         <div className="setup-stage-list admin-mt-14">
           {customerOperatorCommandQueue.commands.map((command) => (
-            <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
+            <AdminNotePanel className={`ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
                 <div>
                   <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(command.tone))}>
@@ -519,7 +519,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 </div>
                 <CustomerOperatorCommandAction command={command} customerId={customer.id} />
               </div>
-            </div>
+            </AdminNotePanel>
           ))}
         </div>
       </AdminSection>
@@ -605,7 +605,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         }
         title="Customer activity action panel"
       >
-        <div className="ops-task-note ops-task-pending admin-mt-14">
+        <AdminNotePanel className="ops-task-pending admin-mt-14">
           <div className="ops-row">
             <div>
               <strong>{activityPlan.headline}</strong>
@@ -625,7 +625,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               {activityPlan.primaryAction}
             </Link>
           </div>
-        </div>
+        </AdminNotePanel>
         <AdminFormGrid action={addCustomerOpsNote} className="compact-form admin-mt-14">
           <input type="hidden" name="customerId" value={customer.id} />
           <AdminFormSelect
@@ -713,7 +713,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         title="Customer account operations"
       >
         <div className="setup-stage-list admin-mt-12">
-          <div className="ops-task-note ops-task-info">
+          <AdminNotePanel className="ops-task-info">
             <AdminSectionHeader
               actions={
                 <StatusBadge tone="info">
@@ -743,8 +743,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <strong>Customer balance</strong>
               <MoneyText amount={wallet.customerBalance} />
             </div>
-          </div>
-          <div className="ops-task-note ops-task-info" id="addresses">
+          </AdminNotePanel>
+          <AdminNotePanel className="ops-task-info" id="addresses">
             <AdminSectionHeader
               actions={<StatusBadge tone="neutral">{addresses.length} row(s)</StatusBadge>}
               description="Profile addresses and map pins selected in the customer app."
@@ -760,7 +760,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ) : (
               <AdminEmptyState framed message="No saved address yet." title={null} />
             )}
-          </div>
+          </AdminNotePanel>
         </div>
       </AdminSection>
       <AdminManualWalletAdjustmentHistory
