@@ -7,6 +7,9 @@ import type {
   PartnerDetailUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 
+const modelSource = readFileSync('app/partners/[id]/partner-detail-summary-rail-model.ts', 'utf8');
+const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
 describe('PartnerDetailSummaryRailSection', () => {
   it('renders summary rail items with links and status label', () => {
     const section = PartnerDetailSummaryRailSection({
@@ -43,6 +46,15 @@ describe('PartnerDetailSummaryRailSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{statusLabel}</span>');
+  });
+
+  it('keeps cash debt rail money values on the shared MoneyText atom', () => {
+    expect(modelSource).toContain("import type { ReactNode } from 'react';");
+    expect(modelSource).toContain('readonly value: ReactNode;');
+    expect(modelSource).toContain('readonly detail: ReactNode;');
+    expect(modelSource).not.toContain('readonly cashDebtLabel: string;');
+    expect(pageSource).toContain('cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />');
+    expect(pageSource).not.toContain('cashDebtLabel: formatCurrency(cashFeeDebtTotal)');
   });
 });
 

@@ -706,7 +706,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     activityTypeLabel: detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
     bookingJourneyRowCount: partnerBookingJourneyRows.length,
-    cashDebtLabel: formatCurrency(cashFeeDebtTotal),
+    cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />,
     chatRetentionRowCount: partnerChatRetentionRows.length,
     connectedRecordLinkCount: connectedPartnerRecordLinks.length,
     dateFilterLabel: dateFilters.label,
@@ -734,7 +734,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerOperatorFirstRead = buildPartnerOperatorFirstRead({
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
     bookingRecordCount: partnerBookingArchive.length,
-    cashDebtLabel: formatCurrency(cashFeeDebtTotal),
+    cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />,
     chatMessageCount: partnerChatMessageCount,
     chatRetentionRowCount: partnerChatRetentionRows.length,
     displayLabel: partnerDisplayLabel,

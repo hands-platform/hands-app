@@ -1,12 +1,14 @@
+import { Fragment, createElement } from 'react';
+import type { ReactNode } from 'react';
 import { bookingLatestActivityAt } from '../../../lib/admin-booking-time';
 import { readAddressText, serviceAddressAreaLabel } from '../../bookings/booking-address-readers';
 import { dateValue, formatDate } from './partner-detail-format';
 
 export type PartnerDetailSummaryRailItem = {
-  readonly detail: string;
+  readonly detail: ReactNode;
   readonly href: string;
   readonly label: string;
-  readonly value: string;
+  readonly value: ReactNode;
 };
 
 export type PartnerDetailUsageSummaryItem = {
@@ -70,7 +72,7 @@ export function buildPartnerOperatorFirstRead({
 }: {
   readonly backupRadiusMeters: number;
   readonly bookingRecordCount: number;
-  readonly cashDebtLabel: string;
+  readonly cashDebtLabel: ReactNode;
   readonly chatMessageCount: number;
   readonly chatRetentionRowCount: number;
   readonly displayLabel: string;
@@ -104,7 +106,12 @@ export function buildPartnerOperatorFirstRead({
       label: 'Cash fee gate',
       value: hasCashFeeDebt ? 'Acceptance blocked' : 'Clear',
       detail: hasCashFeeDebt
-        ? `${cashDebtLabel} company fee must be settled before final acceptance, service start, and payout release.`
+        ? createElement(
+            Fragment,
+            null,
+            cashDebtLabel,
+            ' company fee must be settled before final acceptance, service start, and payout release.',
+          )
         : 'No unpaid cash fee debt is gating final acceptance, service start, or payout release.',
     },
     {
@@ -219,7 +226,7 @@ export function buildPartnerOperationsQuickRail({
   readonly activityRecordCount: number;
   readonly activityTypeLabel: string;
   readonly backupRadiusMeters: number;
-  readonly cashDebtLabel: string;
+  readonly cashDebtLabel: ReactNode;
   readonly chatRetentionRowCount: number;
   readonly connectedRecordLinkCount: number;
   readonly dateFilterLabel: string;
