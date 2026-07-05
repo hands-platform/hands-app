@@ -14,6 +14,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge } from '../../components/status-badge';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
@@ -80,26 +81,20 @@ export function PartnerCustomerEvaluationsSection({
         }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Partner evaluation filters">
-          <div
-            className="booking-date-filter-buttons vuexy-review-date-buttons"
-            role="group"
-            aria-label="Evaluation request date"
-          >
-            {partnerEvaluationDateButtonOptions.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.dateRange === option.value ? 'page' : undefined}
-                className={filters.dateRange === option.value ? 'is-active' : undefined}
-                href={buildPartnerCustomerEvaluationListHref(filters, {
-                  dateFrom: '',
-                  dateRange: option.value,
-                  dateTo: '',
-                })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={filters.dateRange}
+            ariaLabel="Evaluation request date"
+            className="vuexy-review-date-buttons"
+            options={partnerEvaluationDateButtonOptions.map((option) => ({
+              href: buildPartnerCustomerEvaluationListHref(filters, {
+                dateFrom: '',
+                dateRange: option.value,
+                dateTo: '',
+              }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
           {filters.dateRange === 'custom' ? (
             <form
               action="/reviews/partner-customer-evaluations"
@@ -116,22 +111,16 @@ export function PartnerCustomerEvaluationsSection({
               </AdminFormControlButton>
             </form>
           ) : null}
-          <div
-            className="booking-date-filter-buttons vuexy-review-sort-buttons"
-            role="group"
-            aria-label="Evaluation sort"
-          >
-            {partnerEvaluationSortOptions.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.sort === option.value ? 'page' : undefined}
-                className={filters.sort === option.value ? 'is-active' : undefined}
-                href={buildPartnerCustomerEvaluationListHref(filters, { sort: option.value })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={filters.sort}
+            ariaLabel="Evaluation sort"
+            className="vuexy-review-sort-buttons"
+            options={partnerEvaluationSortOptions.map((option) => ({
+              href: buildPartnerCustomerEvaluationListHref(filters, { sort: option.value }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
           <form action="/reviews/partner-customer-evaluations" className="vuexy-review-controls">
             <input name="dateRange" type="hidden" value={filters.dateRange} />
             <input name="dateFrom" type="hidden" value={filters.dateFrom} />

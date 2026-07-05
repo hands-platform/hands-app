@@ -15,6 +15,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge } from '../../components/status-badge';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
@@ -115,38 +116,29 @@ export function ReviewsTableSection({
         }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Review list filters">
-          <div className="booking-date-filter-buttons" role="group" aria-label="Review status">
-            {reviewStatusButtonOptions.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.review === option.value ? 'page' : undefined}
-                className={filters.review === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, { review: option.value })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
-          <div
-            className="booking-date-filter-buttons vuexy-review-date-buttons"
-            role="group"
-            aria-label="Review request date"
-          >
-            {reviewDateButtonOptions.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.dateRange === option.value ? 'page' : undefined}
-                className={filters.dateRange === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, {
-                  dateFrom: '',
-                  dateRange: option.value,
-                  dateTo: '',
-                })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={filters.review}
+            ariaLabel="Review status"
+            options={reviewStatusButtonOptions.map((option) => ({
+              href: buildReviewListHref(filters, { review: option.value }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
+          <AdminSegmentedControl
+            activeValue={filters.dateRange}
+            ariaLabel="Review request date"
+            className="vuexy-review-date-buttons"
+            options={reviewDateButtonOptions.map((option) => ({
+              href: buildReviewListHref(filters, {
+                dateFrom: '',
+                dateRange: option.value,
+                dateTo: '',
+              }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
           {filters.dateRange === 'custom' ? (
             <form action="/reviews" className="booking-custom-date-grid vuexy-review-custom-date-grid">
               <input name="review" type="hidden" value={filters.review} />
@@ -161,22 +153,16 @@ export function ReviewsTableSection({
               </AdminFormControlButton>
             </form>
           ) : null}
-          <div
-            className="booking-date-filter-buttons vuexy-review-sort-buttons"
-            role="group"
-            aria-label="Review sort"
-          >
-            {REVIEW_SORT_OPTIONS.map((option) => (
-              <a
-                key={option.value}
-                aria-current={filters.sort === option.value ? 'page' : undefined}
-                className={filters.sort === option.value ? 'is-active' : undefined}
-                href={buildReviewListHref(filters, { sort: option.value })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={filters.sort}
+            ariaLabel="Review sort"
+            className="vuexy-review-sort-buttons"
+            options={REVIEW_SORT_OPTIONS.map((option) => ({
+              href: buildReviewListHref(filters, { sort: option.value }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
           <form action="/reviews" className="vuexy-review-controls">
             <input name="review" type="hidden" value={filters.review} />
             <input name="dateRange" type="hidden" value={filters.dateRange} />
