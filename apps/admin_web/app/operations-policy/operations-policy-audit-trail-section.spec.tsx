@@ -9,6 +9,10 @@ describe('OperationsPolicyAuditTrailSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('AdminTableSection');
+    expect(source).not.toContain(
+      'className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
+    );
     expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain("<span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>");
   });
@@ -34,10 +38,10 @@ describe('OperationsPolicyAuditTrailSection', () => {
 
     const rendered = normalizedTextContent(section);
 
-    expect(section.type.name).toBe('AdminSection');
+    expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+      className: 'admin-card-scroll admin-mb-16',
       title: 'Recent policy audit trail',
     });
     expect(rendered).toContain('Recent policy audit trail');

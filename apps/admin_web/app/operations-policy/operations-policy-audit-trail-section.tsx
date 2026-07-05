@@ -3,7 +3,7 @@ import { marketplaceDisplayText as displayOperationalWording } from '../../lib/a
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { PolicyAuditRow } from './policy-audit-rows';
@@ -24,7 +24,7 @@ const POLICY_AUDIT_TRAIL_HEADERS = [
 
 export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAuditTrailSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       actions={
         <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
           <ExternalLink size={16} aria-hidden="true" />
@@ -32,7 +32,7 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
         </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+      className="admin-card-scroll admin-mb-16"
       description="Shows who changed a policy, the previous value, the new value, and whether the setting is already enforced by live booking logic."
       title="Recent policy audit trail"
     >
@@ -75,6 +75,6 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
       ) : (
         <AdminEmptyState framed message="No policy change has been audited yet." />
       )}
-    </AdminSection>
+    </AdminTableSection>
   );
 }

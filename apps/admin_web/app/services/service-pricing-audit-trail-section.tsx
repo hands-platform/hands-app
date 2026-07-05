@@ -2,7 +2,7 @@ import { FileClock } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
@@ -25,7 +25,7 @@ const SERVICE_PRICING_AUDIT_HEADERS = [
 
 export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTrailSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       actions={
         <AdminFormControlLink className="button-secondary" href="/audit-log?bucket=Service%2FPricing">
           <FileClock aria-hidden="true" size={16} />
@@ -33,7 +33,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
         </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+      className="admin-card-scroll admin-mb-16"
       description="Tracks who changed service prices, Partner payout amounts, VAT, other costs, and duration settings. Use this before investigating unexpected commission or payout changes."
       title="Recent pricing audit trail"
     >
@@ -82,6 +82,6 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
       ) : (
         <AdminEmptyState framed message="No recent service pricing audit event has been recorded yet." />
       )}
-    </AdminSection>
+    </AdminTableSection>
   );
 }
