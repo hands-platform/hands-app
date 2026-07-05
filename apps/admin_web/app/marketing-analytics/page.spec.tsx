@@ -140,4 +140,12 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
   });
+
+  it('uses the shared money atom for visible breakdown table amounts', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).toContain('<MoneyText amount={row.adSpend} />');
+    expect(pageSource).toContain('<MoneyText amount={row.platformFeeRevenue} />');
+    expect(pageSource).not.toContain('<td>{formatCurrency(row.adSpend)}</td>');
+    expect(pageSource).not.toContain('<td>{formatCurrency(row.platformFeeRevenue)}</td>');
+  });
 });

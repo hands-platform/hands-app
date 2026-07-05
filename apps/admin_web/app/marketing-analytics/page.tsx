@@ -25,6 +25,7 @@ import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -694,9 +695,13 @@ function MarketingTable({
                 <td>{formatNumber(row.bookingCreated)}</td>
                 <td>{formatNumber(row.bookingCompleted)}</td>
                 <td>{formatNumber(row.bookingCancelled)}</td>
-                <td>{formatCurrency(row.adSpend)}</td>
+                <td>
+                  <MoneyText amount={row.adSpend} />
+                </td>
                 <td>{formatNullableCurrency(row.conversionRates.cpaBookingCompleted)}</td>
-                <td>{formatCurrency(row.platformFeeRevenue)}</td>
+                <td>
+                  <MoneyText amount={row.platformFeeRevenue} />
+                </td>
                 <td>{formatNullableMultiplier(row.conversionRates.roas)}</td>
               </tr>
           ))}
