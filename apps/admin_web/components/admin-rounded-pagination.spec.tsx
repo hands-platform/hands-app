@@ -1,6 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { AdminRoundedPagination, adminRoundedPaginationPages } from './admin-rounded-pagination';
 
+const source = readFileSync(join(__dirname, 'admin-rounded-pagination.tsx'), 'utf8');
+
 describe('AdminRoundedPagination', () => {
+  it('uses the shared Vuexy pagination button atom for client pagination controls', () => {
+    expect(source).toContain("import { AdminPaginationButton } from './admin-pagination-button';");
+    expect(source).toContain('<AdminPaginationButton');
+    expect(source).not.toContain('<button');
+  });
+
   it('builds a stable rounded five-page window', () => {
     expect(adminRoundedPaginationPages(1, 10)).toEqual([1, 2, 3, 4, 5]);
     expect(adminRoundedPaginationPages(5, 10)).toEqual([3, 4, 5, 6, 7]);
@@ -47,8 +58,8 @@ describe('AdminRoundedPagination', () => {
     expect(elementTypesIn(pagination)).toContain('button');
     expect(classNamesIn(pagination)).toEqual(
       expect.arrayContaining([
-        'vuexy-booking-page-link is-active',
-        'vuexy-booking-page-link',
+        'admin-pagination-button vuexy-booking-page-link is-active',
+        'admin-pagination-button vuexy-booking-page-link',
       ]),
     );
   });

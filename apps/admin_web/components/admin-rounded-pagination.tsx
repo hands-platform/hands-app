@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { AdminPaginationButton } from './admin-pagination-button';
+
 type AdminRoundedPaginationProps = {
   readonly activePage: number;
   readonly ariaLabel: string;
@@ -110,7 +112,7 @@ function AdminRoundedPaginationControl({
 
   if (onClick) {
     return (
-      <button
+      <AdminPaginationButton
         aria-current={active ? 'page' : undefined}
         aria-label={label}
         className={className}
@@ -119,7 +121,7 @@ function AdminRoundedPaginationControl({
         type="button"
       >
         {children}
-      </button>
+      </AdminPaginationButton>
     );
   }
 
