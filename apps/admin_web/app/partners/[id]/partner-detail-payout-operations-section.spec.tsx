@@ -196,6 +196,86 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(source).toContain('readonly detailNode?: ReactNode;');
     expect(source).toContain('detail={card.detailNode ?? card.detail}');
   });
+
+  it('prefers shared date nodes over fallback payout operation date text', () => {
+    const section = PartnerDetailPayoutOperationsSection({
+      cardClassForTone: (tone) => `card-${tone}`,
+      earningsRows: [
+        {
+          amountLine: 'Gross 400,000 VND / withholding 20,000 VND / net 380,000 VND',
+          detailLine: 'Fallback earning created date',
+          detailLineNode: <span>Shared earning created date marker</span>,
+          id: 'earning-2',
+          settlementRef: null,
+          smallLabel: 'Fallback earning settled date',
+          smallLabelNode: <span>Shared earning settled date marker</span>,
+          statusLabel: 'PAID',
+          title: 'Completed massage service',
+          walletLines: [],
+        },
+      ],
+      hasCashFeeDebt: false,
+      operations: {
+        blockers: [],
+        cards: [
+          {
+            action: 'Fallback card paid date',
+            actionNode: <span>Shared card paid date marker</span>,
+            detail: 'Payout batch detail',
+            status: 'RECENT',
+            title: 'Payout batches',
+            tone: 'done',
+          },
+        ],
+        hold: null,
+        status: 'Payout paid',
+        tone: 'done',
+      },
+      partnerControlsHref: '#partner-controls',
+      payoutBatchRows: [
+        {
+          createdLine: 'Fallback batch created date',
+          createdLineNode: <span>Shared batch created date marker</span>,
+          href: '/payouts?payoutId=batch-2',
+          id: 'batch-2',
+          paidLine: 'Fallback batch paid date',
+          paidLineNode: <span>Shared batch paid date marker</span>,
+          status: 'PAID',
+          totalNetLabel: '380,000 VND',
+        },
+      ],
+      pillClassForTone: (tone) => `pill-${tone}`,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared card paid date marker');
+    expect(rendered).toContain('Shared earning created date marker');
+    expect(rendered).toContain('Shared earning settled date marker');
+    expect(rendered).toContain('Shared batch created date marker');
+    expect(rendered).toContain('Shared batch paid date marker');
+    expect(rendered).not.toContain('Fallback earning created date');
+    expect(rendered).not.toContain('Fallback earning settled date');
+    expect(rendered).not.toContain('Fallback batch created date');
+    expect(rendered).not.toContain('Fallback batch paid date');
+    expect(rendered).not.toContain('Fallback card paid date');
+    expect(source).toContain('readonly actionNode?: ReactNode;');
+    expect(source).toContain('readonly detailLineNode?: ReactNode;');
+    expect(source).toContain('readonly smallLabelNode?: ReactNode;');
+    expect(source).toContain('readonly createdLineNode?: ReactNode;');
+    expect(source).toContain('readonly paidLineNode?: ReactNode;');
+    expect(source).toContain('{earning.detailLineNode ?? earning.detailLine}');
+    expect(source).toContain('{earning.smallLabelNode ?? earning.smallLabel}');
+    expect(source).toContain('{batch.createdLineNode ?? batch.createdLine}');
+    expect(source).toContain('{batch.paidLineNode ?? batch.paidLine}');
+    expect(source).toContain('actionLabel={card.actionNode ?? card.action}');
+    expect(pageSource).toContain('Last paid <DateTimeText fallback="Missing" value={latestBatch.paidAt} />.');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={earning.createdAt} />');
+    expect(pageSource).toContain('Settled <DateTimeText fallback="Missing" value={earning.paidAt} />');
+    expect(pageSource).toContain('Created <DateTimeText fallback="Missing" value={batch.createdAt} />');
+    expect(pageSource).toContain('Paid <DateTimeText fallback="Missing" value={batch.paidAt} />');
+  });
 });
 
 function textContent(value: unknown): string {

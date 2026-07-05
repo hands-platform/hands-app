@@ -1554,6 +1554,7 @@ type ProviderOpsCard = {
   detail: string;
   detailNode?: ReactNode;
   action: string;
+  actionNode?: ReactNode;
   tone: PartnerOpsTone;
 };
 
@@ -3460,6 +3461,11 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       action: latestBatch?.paidAt
         ? `Last paid ${formatDate(latestBatch.paidAt)}.`
         : 'Open payouts to create or process batch.',
+      actionNode: latestBatch?.paidAt ? (
+        <>
+          Last paid <DateTimeText fallback="Missing" value={latestBatch.paidAt} />.
+        </>
+      ) : undefined,
       tone: latestBatch?.status === 'PAID' ? 'done' : payoutBatches.length ? 'pending' : 'pending',
     },
     {
@@ -4320,6 +4326,12 @@ function buildPartnerPayoutEarningRows(
       detailLine: `${bookingPrefix}payment ${earning.booking?.payment?.method ?? 'UNKNOWN'} / created ${formatDate(
         earning.createdAt,
       )}`,
+      detailLineNode: (
+        <>
+          {bookingPrefix}payment {earning.booking?.payment?.method ?? 'UNKNOWN'} / created{' '}
+          <DateTimeText fallback="Missing" value={earning.createdAt} />
+        </>
+      ),
       id: earning.id,
       settlementNotes: earning.settlementNotes,
       settlementRef: earning.settlementRef,
@@ -4328,6 +4340,11 @@ function buildPartnerPayoutEarningRows(
         : cashDebt
           ? 'Settlement warning'
           : 'Unpaid',
+      smallLabelNode: earning.paidAt ? (
+        <>
+          Settled <DateTimeText fallback="Missing" value={earning.paidAt} />
+        </>
+      ) : undefined,
       statusLabel: cashDebt ? 'CASH DEBT' : earning.status,
       title: cashDebt
         ? (
@@ -4361,9 +4378,20 @@ function buildPartnerPayoutBatchRows(
     createdLine: `Created ${formatDate(batch.createdAt)}${
       batch.transferRef ? ` / transfer ${batch.transferRef}` : ''
     }`,
+    createdLineNode: (
+      <>
+        Created <DateTimeText fallback="Missing" value={batch.createdAt} />
+        {batch.transferRef ? ` / transfer ${batch.transferRef}` : ''}
+      </>
+    ),
     href: `/payouts#${batch.id}`,
     id: batch.id,
     paidLine: batch.paidAt ? `Paid ${formatDate(batch.paidAt)}` : null,
+    paidLineNode: batch.paidAt ? (
+      <>
+        Paid <DateTimeText fallback="Missing" value={batch.paidAt} />
+      </>
+    ) : undefined,
     status: batch.status,
     totalNetLabel: <MoneyText amount={batch.totalNetAmount} />,
   }));

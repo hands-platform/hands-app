@@ -19,6 +19,7 @@ export type PartnerPayoutOperationsTone = 'done' | 'pending' | 'blocked';
 
 export type PartnerPayoutOperationsCard = {
   readonly action: string;
+  readonly actionNode?: ReactNode;
   readonly detail: string;
   readonly detailNode?: ReactNode;
   readonly status: string;
@@ -41,10 +42,12 @@ export type PartnerPayoutOperationsView = {
 export type PartnerPayoutEarningRow = {
   readonly amountLine: ReactNode;
   readonly detailLine: string;
+  readonly detailLineNode?: ReactNode;
   readonly id: string;
   readonly settlementNotes?: string | null;
   readonly settlementRef?: string | null;
   readonly smallLabel: string;
+  readonly smallLabelNode?: ReactNode;
   readonly statusLabel: string;
   readonly title: ReactNode;
   readonly walletLines: readonly ReactNode[];
@@ -52,9 +55,11 @@ export type PartnerPayoutEarningRow = {
 
 export type PartnerPayoutBatchRow = {
   readonly createdLine: string;
+  readonly createdLineNode?: ReactNode;
   readonly href: string;
   readonly id: string;
   readonly paidLine?: string | null;
+  readonly paidLineNode?: ReactNode;
   readonly status: string;
   readonly totalNetLabel: ReactNode;
 };
@@ -90,7 +95,7 @@ export function PartnerDetailPayoutOperationsSection({
       <div className="ops-task-grid">
         {operations.cards.map((card) => (
           <AdminTaskCard
-            actionLabel={card.action}
+            actionLabel={card.actionNode ?? card.action}
             className={cardClassForTone(card.tone)}
             detail={card.detailNode ?? card.detail}
             key={card.title}
@@ -208,7 +213,7 @@ export function PartnerDetailPayoutOperationsSection({
                     <p>
                       <strong>{earning.title}</strong>
                     </p>
-                    <p className="muted">{earning.detailLine}</p>
+                    <p className="muted">{earning.detailLineNode ?? earning.detailLine}</p>
                   </td>
                   <td>
                     <span>{earning.amountLine}</span>
@@ -233,7 +238,7 @@ export function PartnerDetailPayoutOperationsSection({
                     )}
                   </td>
                   <td>
-                    <span className="muted">{earning.smallLabel}</span>
+                    <span className="muted">{earning.smallLabelNode ?? earning.smallLabel}</span>
                   </td>
                 </tr>
               ))}
@@ -270,8 +275,10 @@ export function PartnerDetailPayoutOperationsSection({
                     </StatusBadge>
                   </td>
                   <td>
-                    <span className="muted">{batch.createdLine}</span>
-                    {batch.paidLine ? <p className="muted">{batch.paidLine}</p> : null}
+                    <span className="muted">{batch.createdLineNode ?? batch.createdLine}</span>
+                    {batch.paidLine || batch.paidLineNode ? (
+                      <p className="muted">{batch.paidLineNode ?? batch.paidLine}</p>
+                    ) : null}
                   </td>
                   <td>
                     <Link className="text-link" href={batch.href}>
