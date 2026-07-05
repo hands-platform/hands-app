@@ -13,6 +13,7 @@ import {
   reviewRecordsForCustomer,
 } from '../../../components/admin-review-records-section';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
+import { MoneyText } from '../../../components/money-text';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -299,8 +300,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Wallet amount',
-      value: formatMoney(wallet.customerBalance),
-      helper: `Captured ${formatMoney(wallet.capturedSpend)} / refunded ${formatMoney(wallet.refundAmount)}`,
+      value: <MoneyText amount={wallet.customerBalance} />,
+      helper: (
+        <>
+          Captured <MoneyText amount={wallet.capturedSpend} /> / refunded{' '}
+          <MoneyText amount={wallet.refundAmount} />
+        </>
+      ),
     },
     {
       label: 'Completed work',
@@ -366,8 +372,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Wallet Amount',
-      value: formatMoney(wallet.customerBalance),
-      helper: `${wallet.refundCount} refund row(s) / captured spend ${formatMoney(wallet.capturedSpend)}`,
+      value: <MoneyText amount={wallet.customerBalance} />,
+      helper: (
+        <>
+          {wallet.refundCount} refund row(s) / captured spend <MoneyText amount={wallet.capturedSpend} />
+        </>
+      ),
     },
   ];
   return (
@@ -687,7 +697,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <AdminSection
         actions={
           <>
-            <StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>
+            <StatusBadge tone="info">
+              <MoneyText amount={wallet.customerBalance} />
+            </StatusBadge>
             <StatusBadge tone="neutral">{addresses.length} saved address(es)</StatusBadge>
             <Link className="text-link" href={customerWalletAdjustmentHref}>
               Review or create adjustment
@@ -702,29 +714,33 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         <div className="setup-stage-list admin-mt-12">
           <div className="ops-task-note ops-task-info">
             <AdminSectionHeader
-              actions={<StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>}
+              actions={
+                <StatusBadge tone="info">
+                  <MoneyText amount={wallet.customerBalance} />
+                </StatusBadge>
+              }
               description={wallet.operatorNote}
               title="Payment ledger"
             />
             <div className="ops-row">
               <strong>Captured payments</strong>
-              <span>{formatMoney(wallet.capturedSpend)}</span>
+              <MoneyText amount={wallet.capturedSpend} />
             </div>
             <div className="ops-row">
               <strong>Authorized / pending</strong>
-              <span>{formatMoney(wallet.pendingPaymentAmount)}</span>
+              <MoneyText amount={wallet.pendingPaymentAmount} />
             </div>
             <div className="ops-row">
               <strong>Refund exposure</strong>
-              <span>{formatMoney(wallet.refundAmount)}</span>
+              <MoneyText amount={wallet.refundAmount} />
             </div>
             <div className="ops-row">
               <strong>Cash bookings</strong>
-              <span>{formatMoney(wallet.cashBookingAmount)}</span>
+              <MoneyText amount={wallet.cashBookingAmount} />
             </div>
             <div className="ops-row">
               <strong>Customer balance</strong>
-              <span>{formatMoney(wallet.customerBalance)}</span>
+              <MoneyText amount={wallet.customerBalance} />
             </div>
           </div>
           <div className="ops-task-note ops-task-info" id="addresses">

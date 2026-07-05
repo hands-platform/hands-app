@@ -86,6 +86,16 @@ describe('CustomerDetailPage', () => {
       'Showing {chatHistoryPageFrom} to {chatHistoryPageTo} of {filteredChatBookings.length} rooms',
     );
   });
+
+  it('uses the shared MoneyText atom for visible customer wallet money values', () => {
+    expect(customerDetailSource).toContain("from '../../../components/money-text'");
+    expect(customerDetailSource).toContain('value: <MoneyText amount={wallet.customerBalance}');
+    expect(customerDetailSource).not.toContain('value: formatMoney(wallet.customerBalance)');
+    expect(customerDetailSource).not.toContain(
+      '<StatusBadge tone="info">{formatMoney(wallet.customerBalance)}</StatusBadge>',
+    );
+    expect(customerDetailSource).not.toContain('<span>{formatMoney(wallet.capturedSpend)}</span>');
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

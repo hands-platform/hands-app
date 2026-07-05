@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { AdminCard } from '../../../components/admin-surface';
@@ -6,15 +7,15 @@ import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerDetailOverviewFact = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly label: string;
-  readonly value: string;
+  readonly value: ReactNode;
 };
 
 export type CustomerDetailOverviewHighlight = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly label: string;
-  readonly value: string;
+  readonly value: ReactNode;
 };
 
 export type CustomerDetailPartnerAvatar = {
