@@ -51,6 +51,20 @@ describe('AdminPageTemplate', () => {
     expect(grid.props.children.map((child: { key: string }) => child.key)).toEqual(['Open-0', 'Open-1']);
   });
 
+  it('deduplicates shared Vuexy shell class tokens during page migrations', () => {
+    const grid = AdminMetricGrid({
+      className: 'admin-metric-grid usage-overview-grid admin-metric-grid',
+      metrics: [{ helper: 'Needs operator review.', label: 'Open', value: 4 }],
+    });
+    const header = AdminSectionHeader({
+      className: 'ops-section-header admin-section-header admin-mt-16 admin-section-header',
+      title: 'Command board',
+    });
+
+    expect(grid.props.className).toBe('admin-metric-grid usage-overview-grid');
+    expect(header.props.className).toBe('ops-section-header admin-section-header admin-mt-16');
+  });
+
   it('renders a reusable admin section header with status and actions', () => {
     const header = AdminSectionHeader({
       actions: <a href="/operations-policy">Open policy</a>,
