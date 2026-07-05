@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   AppSessionsBreakdownSection,
   type AppSessionPlatformRow,
@@ -6,6 +8,13 @@ import {
 } from './app-sessions-breakdown-section';
 
 describe('AppSessionsBreakdownSection', () => {
+  it('uses the shared Vuexy detail grid atom', () => {
+    const source = readFileSync('app/app-sessions/app-sessions-breakdown-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
+  });
+
   it('renders role, platform, and app version breakdown rows', () => {
     const section = AppSessionsBreakdownSection({
       platformRows: buildPlatformRows(),

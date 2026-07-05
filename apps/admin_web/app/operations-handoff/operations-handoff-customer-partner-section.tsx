@@ -1,7 +1,7 @@
 import { Briefcase, Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
@@ -22,7 +22,7 @@ export function OperationsHandoffCustomerPartnerSection({
   }
 
   return (
-    <section className="detail-grid admin-mb-16">
+    <AdminDetailGrid ariaLabel="Customer and Partner handoff" className="admin-mb-16">
       {visibleCustomers.length > 0 ? (
         <AdminSection
           actions={
@@ -92,6 +92,6 @@ export function OperationsHandoffCustomerPartnerSection({
           </div>
         </AdminSection>
       ) : null}
-    </section>
+    </AdminDetailGrid>
   );
 }

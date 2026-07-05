@@ -14,6 +14,13 @@ type AdminCardProps = {
   readonly id?: string;
 };
 
+type AdminDetailGridProps = {
+  readonly ariaLabel?: string;
+  readonly ariaLabelledBy?: string;
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminNoticeCardProps = AdminCardProps & {
   readonly role?: 'alert' | 'status';
   readonly tone?: AdminNoticeTone;
@@ -146,6 +153,18 @@ export function AdminAsideCard({ ariaLabel, ariaLabelledBy, children, className,
     >
       {children}
     </aside>
+  );
+}
+
+export function AdminDetailGrid({ ariaLabel, ariaLabelledBy, children, className }: AdminDetailGridProps) {
+  return (
+    <section
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('detail-grid', className)}
+    >
+      {children}
+    </section>
   );
 }
 

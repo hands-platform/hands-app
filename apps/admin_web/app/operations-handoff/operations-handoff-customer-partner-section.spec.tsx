@@ -29,6 +29,16 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy detail grid atom', () => {
+    const source = readFileSync(
+      'app/operations-handoff/operations-handoff-customer-partner-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
+  });
+
   it('renders Customer and Partner handoff cards with links', () => {
     const section = OperationsHandoffCustomerPartnerSection({
       customers: [
@@ -72,7 +82,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
 
     expect(section).not.toBeNull();
     if (section === null) throw new Error('Expected customer partner handoff section to render.');
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminDetailGrid');
     expect(rendered).toContain('Customer handoff');
     expect(rendered).toContain('Customer Mai');
     expect(rendered).toContain('Partner handoff');

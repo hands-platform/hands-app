@@ -9,6 +9,7 @@ import {
   AdminDisclosure,
   AdminDialogCard,
   AdminDisclosureCard,
+  AdminDetailGrid,
   AdminErrorState,
   AdminFormCard,
   AdminKpiCard,
@@ -79,6 +80,20 @@ describe('Admin surface components', () => {
     expect(section.props.children[0].props.children[1].props.children[0].props.tone).toBe('success');
     expect(section.props.children[1].props.className).toBe('admin-section-body');
     expect(section.props.children[2].props.className).toBe('admin-section-footer');
+  });
+
+  it('renders a reusable detail grid wrapper with aria hooks', () => {
+    const grid = AdminDetailGrid({
+      ariaLabel: 'Session breakdown',
+      children: <section>Rows</section>,
+      className: 'admin-mb-16',
+    });
+
+    expect(grid.type).toBe('section');
+    expect(grid.props).toMatchObject({
+      'aria-label': 'Session breakdown',
+      className: 'detail-grid admin-mb-16',
+    });
   });
 
   it('keeps KPI cards on the existing shared metric-card implementation', () => {
