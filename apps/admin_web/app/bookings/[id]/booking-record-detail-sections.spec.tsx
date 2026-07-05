@@ -142,6 +142,16 @@ describe('BookingRecordDetailSections', () => {
     expect(source).not.toContain('className="card admin-card booking-participant-row-card"');
   });
 
+  it('uses the shared detail grid surface for booking detail record groups', () => {
+    const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
+    const markup = renderSections();
+
+    expect(markup).toContain('detail-grid');
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<section className="detail-grid">');
+    expect(source).not.toContain('<section className="detail-grid admin-mt-16">');
+  });
+
   it('uses shared Vuexy badge atoms for booking detail status chips', () => {
     const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
 

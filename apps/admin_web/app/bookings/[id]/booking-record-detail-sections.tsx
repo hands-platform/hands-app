@@ -1,6 +1,6 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -180,7 +180,7 @@ export function BookingRecordDetailSections({
 }: BookingRecordDetailSectionsProps) {
   return (
     <>
-      <section className="detail-grid">
+      <AdminDetailGrid>
         <AdminSection id="flow" title="Operations timeline">
           <div className="timeline">
             {timelineStages.map((stage) => (
@@ -218,9 +218,9 @@ export function BookingRecordDetailSections({
         >
           <InfoRows rows={handoffRows} />
         </AdminSection>
-      </section>
+      </AdminDetailGrid>
 
-      <section className="detail-grid admin-mt-16">
+      <AdminDetailGrid className="admin-mt-16">
         <ParticipantLedgerSection participantLedger={participantLedger} />
 
         <AdminSection id="payment" title="Payment and refund">
@@ -282,7 +282,7 @@ export function BookingRecordDetailSections({
             )}
           </div>
         </AdminSection>
-      </section>
+      </AdminDetailGrid>
     </>
   );
 }
