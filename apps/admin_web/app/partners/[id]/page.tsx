@@ -1764,7 +1764,10 @@ function buildPartnerBookingChatRecordRows(
   return records.slice(0, 10).map((record) => {
     const booking = record.booking;
     const messages = readPartnerChatMessages(booking);
-    const paymentAmount = formatCurrency(booking.payment?.amount ?? 0, booking.payment?.currency ?? 'VND');
+    const paymentAmount = Number(booking.payment?.amount ?? 0);
+    const paymentCurrency = booking.payment?.currency ?? 'VND';
+    const paymentMethod = booking.payment?.method ?? 'UNKNOWN';
+    const participantCount = booking.participants?.length ?? 0;
     const lastMessage = record.lastMessage ? ` / last: ${record.lastMessage}` : '';
 
     return {
@@ -1790,9 +1793,13 @@ function buildPartnerBookingChatRecordRows(
       hasChatRoom: Boolean(booking.chatRoom),
       heading: `${bookingServiceLabel(booking)} / ${booking.status ?? 'UNKNOWN'}`,
       key: `${booking.id}-${record.relation}`,
-      paymentLine: `Payment ${booking.payment?.method ?? 'UNKNOWN'} / ${paymentAmount} / participants ${
-        booking.participants?.length ?? 0
-      }`,
+      paymentLine: `Payment ${paymentMethod} / ${formatCurrency(paymentAmount, paymentCurrency)} / participants ${participantCount}`,
+      paymentLineNode: (
+        <>
+          Payment {paymentMethod} / <MoneyText amount={paymentAmount} currency={paymentCurrency} /> / participants{' '}
+          {participantCount}
+        </>
+      ),
       relation: record.relation,
     };
   });

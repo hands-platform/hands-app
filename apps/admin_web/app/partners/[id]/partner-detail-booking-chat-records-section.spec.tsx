@@ -119,6 +119,34 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
       ]),
     );
   });
+
+  it('prefers shared payment nodes over fallback booking chat payment text', () => {
+    const rowsWithPaymentNode = [
+      {
+        bookingHref: '/bookings/booking-3',
+        chatLine: 'No chat room is linked.',
+        chatMessages: [],
+        customerLine: 'Customer Minh Tran',
+        hasChatRoom: false,
+        heading: 'Booking booking-3',
+        key: 'booking-3',
+        paymentLine: 'Fallback money string',
+        paymentLineNode: <span>Shared money atom marker</span>,
+        relation: 'MISSING',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailBookingChatRecordsSection>[0]['rows'];
+    const section = PartnerDetailBookingChatRecordsSection({
+      openBookingsHref: '/bookings',
+      rows: rowsWithPaymentNode,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared money atom marker');
+    expect(rendered).not.toContain('Fallback money string');
+    expect(source).toContain('readonly paymentLineNode?: ReactNode;');
+    expect(source).toContain('{row.paymentLineNode ?? row.paymentLine}');
+  });
 });
 
 function textContent(value: unknown): string {

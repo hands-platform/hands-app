@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import {
   AdminChatWindow,
@@ -29,6 +30,7 @@ export type PartnerBookingChatRecordRow = {
   readonly heading: string;
   readonly key: string;
   readonly paymentLine: string;
+  readonly paymentLineNode?: ReactNode;
   readonly relation: string;
 };
 
@@ -75,7 +77,7 @@ export function PartnerDetailBookingChatRecordsSection({
                 <p className="muted">{row.customerLine}</p>
               </td>
               <td>
-                <span className="muted">{row.paymentLine}</span>
+                <span className="muted">{row.paymentLineNode ?? row.paymentLine}</span>
                 {row.closureLine ? <p className="muted">{row.closureLine}</p> : null}
               </td>
               <td>
