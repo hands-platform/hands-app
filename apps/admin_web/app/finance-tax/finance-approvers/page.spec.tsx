@@ -67,6 +67,8 @@ describe('FinanceApproversPage', () => {
     expect(markup).toContain('admin-form-input admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).toContain('admin-form-control-button button button-outline');
+    expect(markup).toContain('admin-form-control-button button button-primary');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
   });
@@ -94,5 +96,14 @@ describe('FinanceApproversPage', () => {
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain("'No recent session'");
     expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
+  });
+
+  it('uses Vuexy button tone classes without legacy btn aliases', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
+
+    expect(source).toContain("className={enabled ? 'button-outline' : 'button-primary'}");
+    expect(source).not.toContain('className={`btn ${enabled ?');
+    expect(source).not.toContain('btn-outline');
+    expect(source).not.toContain('btn-primary');
   });
 });

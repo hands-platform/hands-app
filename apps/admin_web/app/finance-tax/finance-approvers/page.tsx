@@ -222,7 +222,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                         required
                       />
                       <AdminFormControlButton
-                        className={`btn ${enabled ? 'btn-outline' : 'btn-primary'}`}
+                        className={enabled ? 'button-outline' : 'button-primary'}
                         type="submit"
                       >
                         {enabled ? 'Revoke approver' : 'Grant approver'}
