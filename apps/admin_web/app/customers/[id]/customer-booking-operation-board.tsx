@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -125,8 +126,8 @@ function CustomerBookingOperationSection({
   const pageTo = Math.min(group.rows.length, pageStartIndex + visibleRows.length);
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section"
+    <AdminTablePanel
+      className="booking-monitor customer-booking-operation-section"
       description={group.description}
       id={sectionId}
       resultLabel={`${group.rows.length} booking(s)`}
@@ -196,7 +197,7 @@ function CustomerBookingOperationSection({
         totalPages={totalPages}
         totalRows={group.rows.length}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

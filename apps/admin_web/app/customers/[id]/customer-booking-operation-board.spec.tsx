@@ -33,7 +33,7 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).not.toContain('View');
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section admin-section',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group booking-monitor customer-booking-operation-section admin-section',
         'card admin-section admin-mb-16 customer-booking-operation-summary-card',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-pagination',
@@ -59,6 +59,10 @@ describe('CustomerBookingOperationBoard', () => {
   });
 
   it('uses the shared table pagination footer for customer booking operation groups', () => {
+    expect(boardSource).toContain('AdminTablePanel');
+    expect(boardSource).not.toContain(
+      'className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section"',
+    );
     expect(boardSource).toContain('AdminTablePaginationFooter');
     expect(boardSource).toContain('className="customer-booking-operation-footer"');
     expect(boardSource).not.toContain('<AdminTableFooter');
