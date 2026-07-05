@@ -77,9 +77,9 @@ export function buildPartnerOperatorFirstRead({
   readonly chatRetentionRowCount: number;
   readonly displayLabel: string;
   readonly hasCashFeeDebt: boolean;
-  readonly joinedAtLabel: string;
-  readonly latestStaffNoteDetail?: string;
-  readonly locationRecordedAtLabel?: string;
+  readonly joinedAtLabel: ReactNode;
+  readonly latestStaffNoteDetail?: ReactNode;
+  readonly locationRecordedAtLabel?: ReactNode;
   readonly noteCount: number;
   readonly payoutBlockerDetail?: string;
   readonly payoutStatus: string;
@@ -93,7 +93,7 @@ export function buildPartnerOperatorFirstRead({
       href: '#partner-master-facts',
       label: 'Identity',
       value: displayLabel,
-      detail: `${userPhone ?? 'No phone'} / joined ${joinedAtLabel}`,
+      detail: partnerIdentityDetail(userPhone, joinedAtLabel),
     },
     {
       href: '#partner-booking-journey',
@@ -106,12 +106,7 @@ export function buildPartnerOperatorFirstRead({
       label: 'Cash fee gate',
       value: hasCashFeeDebt ? 'Acceptance blocked' : 'Clear',
       detail: hasCashFeeDebt
-        ? createElement(
-            Fragment,
-            null,
-            cashDebtLabel,
-            ' company fee must be settled before final acceptance, service start, and payout release.',
-          )
+        ? partnerCashDebtDetail(cashDebtLabel)
         : 'No unpaid cash fee debt is gating final acceptance, service start, or payout release.',
     },
     {
@@ -292,6 +287,24 @@ export function buildPartnerOperationsQuickRail({
 
 function partnerMarketplacePolicyDetail(responseWindowMinutes: number, backupRadiusMeters: number) {
   return `${responseWindowMinutes}m first-pick / ${Math.round(backupRadiusMeters / 1000)}km marketplace`;
+}
+
+function partnerIdentityDetail(userPhone: string | null | undefined, joinedAtLabel: ReactNode) {
+  const prefix = `${userPhone ?? 'No phone'} / joined `;
+  if (typeof joinedAtLabel === 'string' || typeof joinedAtLabel === 'number') {
+    return `${prefix}${joinedAtLabel}`;
+  }
+
+  return createElement(Fragment, null, prefix, joinedAtLabel);
+}
+
+function partnerCashDebtDetail(cashDebtLabel: ReactNode) {
+  const suffix = ' company fee must be settled before final acceptance, service start, and payout release.';
+  if (typeof cashDebtLabel === 'string' || typeof cashDebtLabel === 'number') {
+    return `${cashDebtLabel}${suffix}`;
+  }
+
+  return createElement(Fragment, null, cashDebtLabel, suffix);
 }
 
 function buildPartnerBookingRegionRows(

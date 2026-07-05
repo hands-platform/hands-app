@@ -56,6 +56,17 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(pageSource).toContain('cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />');
     expect(pageSource).not.toContain('cashDebtLabel: formatCurrency(cashFeeDebtTotal)');
   });
+
+  it('keeps operator first-read dates on the shared DateTimeText atom', () => {
+    expect(modelSource).toContain('readonly joinedAtLabel: ReactNode;');
+    expect(modelSource).toContain('readonly latestStaffNoteDetail?: ReactNode;');
+    expect(modelSource).toContain('readonly locationRecordedAtLabel?: ReactNode;');
+    expect(pageSource).toContain('joinedAtLabel: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={partnerOpsNotes[0].createdAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />');
+    expect(pageSource).not.toContain('joinedAtLabel: formatDate(provider.user?.createdAt)');
+    expect(pageSource).not.toContain('locationRecordedAtLabel: provider.currentLocationUpdatedAt\\n      ? formatDate(provider.currentLocationUpdatedAt)');
+  });
 });
 
 function buildItems(): PartnerDetailSummaryRailItem[] {

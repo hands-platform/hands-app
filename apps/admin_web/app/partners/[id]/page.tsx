@@ -741,13 +741,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     chatRetentionRowCount: partnerChatRetentionRows.length,
     displayLabel: partnerDisplayLabel,
     hasCashFeeDebt,
-    joinedAtLabel: formatDate(provider.user?.createdAt),
-    latestStaffNoteDetail: partnerOpsNotes[0]
-      ? `${formatDate(partnerOpsNotes[0].createdAt)} / ${auditLogNoteText(partnerOpsNotes[0])}`
-      : undefined,
-    locationRecordedAtLabel: provider.currentLocationUpdatedAt
-      ? formatDate(provider.currentLocationUpdatedAt)
-      : undefined,
+    joinedAtLabel: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />,
+    latestStaffNoteDetail: partnerOpsNotes[0] ? (
+      <>
+        <DateTimeText fallback="Missing" value={partnerOpsNotes[0].createdAt} /> / {auditLogNoteText(partnerOpsNotes[0])}
+      </>
+    ) : undefined,
+    locationRecordedAtLabel: provider.currentLocationUpdatedAt ? (
+      <DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />
+    ) : undefined,
     nextActionDetail: partnerFirstReadNextAction.action,
     nextActionStatus: partnerFirstReadNextAction.status,
     noteCount: partnerOpsNotes.length,
