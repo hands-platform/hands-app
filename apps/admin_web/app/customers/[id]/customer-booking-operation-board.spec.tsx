@@ -7,6 +7,7 @@ import {
 } from './customer-booking-operation-board';
 
 const boardSource = readFileSync('app/customers/[id]/customer-booking-operation-board.tsx', 'utf8');
+const pageSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
 
 describe('CustomerBookingOperationBoard', () => {
   it('renders booking situation metrics and Partner avatar rows', () => {
@@ -56,6 +57,13 @@ describe('CustomerBookingOperationBoard', () => {
   it('uses the shared MoneyText atom for operation board service prices', () => {
     expect(boardSource).toContain("from '../../../components/money-text'");
     expect(boardSource).not.toContain('<p className="muted">{row.servicePriceLabel}</p>');
+  });
+
+  it('uses the shared MoneyText atom for operation board payment amounts', () => {
+    expect(boardSource).toContain("import type { ReactNode } from 'react';");
+    expect(boardSource).toContain('readonly paymentDetailLabel: ReactNode;');
+    expect(pageSource).toContain('amount={Number(booking.payment.amount ?? 0)}');
+    expect(pageSource).not.toContain('return `${booking.payment.status} / ${formatMoney(');
   });
 
   it('uses the shared table pagination footer for customer booking operation groups', () => {

@@ -1208,10 +1208,15 @@ function customerBookingPaymentDetailLabel(booking: AdminBookingDetail) {
     return 'No payment row';
   }
 
-  return `${booking.payment.status} / ${formatMoney(
-    Number(booking.payment.amount ?? 0),
-    booking.payment.currency ?? 'VND',
-  )}`;
+  return (
+    <>
+      {booking.payment.status} /{' '}
+      <MoneyText
+        amount={Number(booking.payment.amount ?? 0)}
+        currency={booking.payment.currency ?? 'VND'}
+      />
+    </>
+  );
 }
 
 function readCustomerBookingOperationPage(

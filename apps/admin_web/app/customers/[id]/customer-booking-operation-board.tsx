@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -26,7 +27,7 @@ export type CustomerBookingOperationRow = {
   readonly partnerHelper: string;
   readonly partnerHref: string | null;
   readonly partnerLabel: string;
-  readonly paymentDetailLabel: string;
+  readonly paymentDetailLabel: ReactNode;
   readonly paymentTypeLabel: string;
   readonly requestTimeLabel: string;
   readonly serviceLabel: string;
