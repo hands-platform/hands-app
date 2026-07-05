@@ -24,6 +24,7 @@ import { AdminOverviewGrid } from '../../components/admin-overview-card';
 import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminSection } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -44,7 +45,6 @@ import {
 } from '../../lib/admin-api';
 import {
   formatCurrencyAmount as formatCurrency,
-  formatDateTime,
   formatPercentLabel as formatPercent,
   formatWholeNumber as formatNumber,
 } from '../../lib/admin-format';
@@ -202,7 +202,6 @@ export default async function MarketingAnalyticsPage({
   );
   const overview = marketingOverviewFromSummary(summary);
   const dimensionPages = includeBreakdowns ? await loadMarketingDimensionPages(filters, params) : null;
-  const generatedAt = formatDateTime(overview.generatedAt);
   const cards = [
     {
       label: 'First opens',
@@ -274,7 +273,9 @@ export default async function MarketingAnalyticsPage({
       actions={
         <>
           <StatusBadge tone="success">No live ad API</StatusBadge>
-          <StatusBadge tone="info">Generated {generatedAt}</StatusBadge>
+          <StatusBadge tone="info">
+            Generated <DateTimeText value={overview.generatedAt} />
+          </StatusBadge>
         </>
       }
       contentClassName="marketing-analytics-page usage-overview-page"
