@@ -36,9 +36,21 @@ describe('DateTimeText', () => {
 
   it('keeps date time tone classes backed by global design tokens', () => {
     const globals = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+    const dateTimeBlock = cssRuleBlock(globals, '.date-time-text {');
 
     expect(globals).toContain('.date-time-text {');
+    expect(dateTimeBlock).toContain('white-space: nowrap;');
     expect(globals).toContain('.date-time-text-muted {');
     expect(globals).toContain('color: var(--admin-muted);');
   });
 });
+
+function cssRuleBlock(source: string, selector: string) {
+  const index = source.indexOf(selector);
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = source.indexOf('}', index);
+  return source.slice(index, endIndex + 1);
+}

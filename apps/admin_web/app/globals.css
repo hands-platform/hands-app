@@ -2440,6 +2440,7 @@ a.action-button-card:hover {
 
 .date-time-text {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .date-time-text-muted {

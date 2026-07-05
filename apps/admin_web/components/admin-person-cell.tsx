@@ -32,22 +32,22 @@ export function AdminPersonCell({
   linkClassName,
 }: AdminPersonCellProps) {
   return (
-    <div className={className}>
+    <div className={joinClassNames(className)}>
       <AdminAvatar
         className={avatarClassName}
         initials={initials ?? adminPersonInitials(label)}
         status={avatarStatus}
         statusLabel={avatarStatusLabel}
       />
-      <div className={copyClassName}>
+      <div className={joinClassNames(copyClassName)}>
         {href ? (
-          <Link className={linkClassName} href={href}>
+          <Link className={joinClassNames(linkClassName)} href={href}>
             {label}
           </Link>
         ) : (
           <strong>{label}</strong>
         )}
-        {helper === undefined || helper === null ? null : <div className={helperClassName}>{helper}</div>}
+        {helper === undefined || helper === null ? null : <div className={joinClassNames(helperClassName)}>{helper}</div>}
       </div>
     </div>
   );
@@ -71,7 +71,7 @@ type AdminAvatarProps = {
 export function AdminAvatar({ className, initials, label, status, statusLabel }: AdminAvatarProps) {
   return (
     <span aria-label={label} className="admin-person-avatar-shell">
-      <span aria-hidden="true" className={className}>
+      <span aria-hidden="true" className={joinClassNames(className)}>
         {initials}
       </span>
       {status ? <AdminAvatarStatusDot label={statusLabel} status={status} /> : null}
@@ -95,4 +95,18 @@ export function AdminAvatarStatusDot({ label, status }: AdminAvatarStatusDotProp
       title={statusLabel}
     />
   );
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  const tokens = new Set<string>();
+
+  for (const className of classNames) {
+    for (const token of className?.split(/\s+/) ?? []) {
+      if (token) {
+        tokens.add(token);
+      }
+    }
+  }
+
+  return Array.from(tokens).join(' ');
 }

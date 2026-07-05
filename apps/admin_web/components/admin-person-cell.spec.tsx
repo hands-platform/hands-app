@@ -38,6 +38,24 @@ describe('AdminPersonCell', () => {
     expect(markup).not.toContain('admin-avatar-status-dot');
   });
 
+  it('deduplicates repeated Vuexy person cell classes from page callers', () => {
+    const markup = renderToStaticMarkup(
+      <AdminPersonCell
+        avatarClassName="vuexy-booking-avatar vuexy-booking-avatar is-customer"
+        className="vuexy-booking-person vuexy-booking-person customer-person"
+        copyClassName="vuexy-booking-person-copy vuexy-booking-person-copy"
+        helper="Wallet clear"
+        helperClassName="muted muted customer-helper"
+        label="Customer A"
+      />,
+    );
+
+    expect(markup).toContain('class="vuexy-booking-person customer-person"');
+    expect(markup).toContain('class="vuexy-booking-avatar is-customer"');
+    expect(markup).toContain('class="vuexy-booking-person-copy"');
+    expect(markup).toContain('class="muted customer-helper"');
+  });
+
   it('normalizes initials for table avatars', () => {
     expect(adminPersonInitials('Partner C')).toBe('PC');
     expect(adminPersonInitials('Customer')).toBe('CU');
