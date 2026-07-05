@@ -7,6 +7,7 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -195,7 +196,7 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
             <ExternalLink size={16} aria-hidden="true" />
           </a>
         ) : (
-          <span className="muted">No read URL</span>
+          <AdminInlineFallback>No read URL</AdminInlineFallback>
         )}
       </td>
       <td>

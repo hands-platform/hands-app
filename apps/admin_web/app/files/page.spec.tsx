@@ -52,4 +52,9 @@ describe('FilesPage', () => {
     expect(pageSource).toContain('DateTimeText');
     expect(pageSource).not.toContain('<p className="muted">{formatDateTime(row.uploadedAt)}</p>');
   });
+
+  it('uses the shared inline fallback atom for unavailable file links', () => {
+    expect(pageSource).toContain('AdminInlineFallback');
+    expect(pageSource).not.toContain('<span className="muted">No read URL</span>');
+  });
 });
