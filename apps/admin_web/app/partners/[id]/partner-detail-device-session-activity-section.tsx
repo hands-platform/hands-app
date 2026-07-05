@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
@@ -23,9 +24,11 @@ export type PartnerDeviceSessionSecurityCard = {
 export type PartnerDeviceRow = {
   readonly actionLabel: string;
   readonly actions: readonly ActionMenuItem[];
+  readonly blockedAt?: string | null;
   readonly blockReason?: string | null;
   readonly detail: string;
   readonly id: string;
+  readonly lastSeenAt?: string | null;
   readonly smallLabel: string;
   readonly statusLabel: string;
   readonly title: string;
@@ -34,6 +37,8 @@ export type PartnerDeviceRow = {
 export type PartnerSessionRow = {
   readonly detail: string;
   readonly id: string;
+  readonly lastSeenAt?: string | null;
+  readonly loggedInAt?: string | null;
   readonly sessionNote?: string | null;
   readonly smallLabel: string;
   readonly statusLabel: string;
@@ -43,6 +48,7 @@ export type PartnerSessionRow = {
 export type PartnerSharedDeviceRow = {
   readonly detail: string;
   readonly id: string;
+  readonly lastSeenAt?: string | null;
   readonly smallLabel: string;
   readonly title: string;
 };
@@ -119,8 +125,17 @@ export function PartnerDetailDeviceSessionActivitySection({
                     ) : null}
                   </td>
                   <td>
-                    <p className="muted">{device.detail}</p>
-                    <small>{device.smallLabel}</small>
+                    <p className="muted">
+                      {device.detail}
+                      <LastSeenText value={device.lastSeenAt} />
+                    </p>
+                    <small>
+                      {device.blockedAt ? (
+                        <DateTimeText fallback={device.smallLabel} value={device.blockedAt} />
+                      ) : (
+                        device.smallLabel
+                      )}
+                    </small>
                   </td>
                   <td>
                     <ActionMenu actions={device.actions} label={device.actionLabel} />
@@ -152,8 +167,17 @@ export function PartnerDetailDeviceSessionActivitySection({
                     ) : null}
                   </td>
                   <td>
-                    <p className="muted">{session.detail}</p>
-                    <small>{session.smallLabel}</small>
+                    <p className="muted">
+                      {session.detail}
+                      <LastSeenText value={session.lastSeenAt} />
+                    </p>
+                    <small>
+                      {session.loggedInAt ? (
+                        <DateTimeText fallback={session.smallLabel} value={session.loggedInAt} />
+                      ) : (
+                        session.smallLabel
+                      )}
+                    </small>
                   </td>
                 </tr>
               ))}
@@ -180,7 +204,10 @@ export function PartnerDetailDeviceSessionActivitySection({
                     <strong>{match.title}</strong>
                   </td>
                   <td>
-                    <p className="muted">{match.detail}</p>
+                    <p className="muted">
+                      {match.detail}
+                      <LastSeenText value={match.lastSeenAt} />
+                    </p>
                     <small>{match.smallLabel}</small>
                   </td>
                 </tr>
@@ -196,4 +223,13 @@ export function PartnerDetailDeviceSessionActivitySection({
 
 function PartnerDeviceSessionEmptyState({ message }: { readonly message: string }) {
   return <AdminEmptyState framed message={message} />;
+}
+
+function LastSeenText({ value }: { readonly value?: string | null }) {
+  return value ? (
+    <>
+      {' / last seen '}
+      <DateTimeText fallback="Missing" value={value} />
+    </>
+  ) : null;
 }

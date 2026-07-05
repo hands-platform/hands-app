@@ -6,7 +6,7 @@ import type {
   PartnerSessionRow,
   PartnerSharedDeviceRow,
 } from './partner-detail-device-session-activity-section';
-import { formatDate, maskDeviceId } from './partner-detail-format';
+import { maskDeviceId } from './partner-detail-format';
 
 type PartnerDeviceSessionProvider = Pick<
   AdminProvider,
@@ -42,11 +42,11 @@ export function buildPartnerDeviceRows(
       actionLabel: `Device actions for ${title}`,
       actions: buildActions(device),
       blockReason: device.blockReason,
-      detail: `${device.platform ?? 'unknown platform'} / ${device.appVersion ?? 'unknown app'} / last seen ${formatDate(
-        device.lastSeenAt,
-      )}`,
+      blockedAt: device.blockedAt,
+      detail: `${device.platform ?? 'unknown platform'} / ${device.appVersion ?? 'unknown app'}`,
       id: device.id,
-      smallLabel: device.blockedAt ? formatDate(device.blockedAt) : 'Active',
+      lastSeenAt: device.lastSeenAt,
+      smallLabel: device.blockedAt ? 'Blocked' : 'Active',
       statusLabel: device.blockedAt ? 'BLOCKED' : device.enabled ? 'ENABLED' : 'DISABLED',
       title,
     };
@@ -57,12 +57,12 @@ export function buildPartnerSessionRows(
   provider: PartnerDeviceSessionProvider,
 ): PartnerSessionRow[] {
   return (provider.sessions ?? []).slice(0, 6).map((session) => ({
-    detail: `IP ${session.ipAddress ?? 'missing'} / ${session.appVersion ?? 'unknown app'} / last seen ${formatDate(
-      session.lastSeenAt,
-    )}`,
+    detail: `IP ${session.ipAddress ?? 'missing'} / ${session.appVersion ?? 'unknown app'}`,
     id: session.id,
+    lastSeenAt: session.lastSeenAt,
+    loggedInAt: session.loggedInAt,
     sessionNote: session.suspiciousReason ? displaySessionCheckText(session.suspiciousReason) : null,
-    smallLabel: formatDate(session.loggedInAt),
+    smallLabel: 'Login missing',
     statusLabel: session.suspicious ? 'CHECK' : 'OK',
     title: maskDeviceId(session.deviceId),
   }));
@@ -74,8 +74,9 @@ export function buildPartnerSharedDeviceRows(
   return (provider.sharedDeviceMatches ?? []).map((match) => ({
     detail: `Also used by ${marketplaceDisplayText(match.providerProfile?.displayName ?? 'another partner')} (${
       match.providerProfile?.user?.phone ?? 'no phone'
-    }) / last seen ${formatDate(match.lastSeenAt)}`,
+    })`,
     id: match.id,
+    lastSeenAt: match.lastSeenAt,
     smallLabel: match.enabled ? 'Enabled' : 'Disabled',
     title: maskDeviceId(match.deviceId),
   }));

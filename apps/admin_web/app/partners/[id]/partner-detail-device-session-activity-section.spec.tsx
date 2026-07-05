@@ -10,6 +10,7 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
     expect(sectionSource).toContain('AdminDetailGrid');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).toContain('AdminTaskCard');
     expect(sectionSource).not.toContain('<div className="detail-grid admin-mt-16">');
@@ -34,9 +35,11 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
             },
           ],
           blockReason: 'Push token failed repeatedly.',
-          detail: 'Android / last seen 20 Jun 2026, 10:00',
+          blockedAt: '2026-06-20T03:00:00.000Z',
+          detail: 'Android / partner app 1.2.3',
           id: 'device-1',
-          smallLabel: 'dev-1',
+          lastSeenAt: '2026-06-20T04:00:00.000Z',
+          smallLabel: 'Active',
           statusLabel: 'Blocked',
           title: 'Samsung S24',
         },
@@ -56,6 +59,8 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
         {
           detail: 'Logged in from partner app.',
           id: 'session-1',
+          lastSeenAt: '2026-06-20T04:30:00.000Z',
+          loggedInAt: '2026-06-20T02:30:00.000Z',
           sessionNote: 'Fresh login',
           smallLabel: 'sess-1',
           statusLabel: 'Active',
@@ -66,6 +71,7 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
         {
           detail: 'Same device appears on another partner profile.',
           id: 'shared-1',
+          lastSeenAt: '2026-06-20T05:00:00.000Z',
           smallLabel: 'match-1',
           title: 'Shared device match',
         },
@@ -84,14 +90,16 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
     expect(rendered).toContain('Action');
     expect(rendered).toContain('Samsung S24');
     expect(rendered).toContain('Block reason: Push token failed repeatedly.');
-    expect(rendered).toContain('Android / last seen 20 Jun 2026, 10:00');
+    expect(rendered).toContain('Android / partner app 1.2.3 / last seen 20 Jun 2026, 11:00');
+    expect(rendered).toContain('20 Jun 2026, 10:00');
     expect(rendered).toContain('Review device');
     expect(rendered).toContain('Recent sessions');
     expect(rendered).toContain('Session');
     expect(rendered).toContain('Mobile session');
     expect(rendered).toContain('Session note: Fresh login');
+    expect(rendered).toContain('Logged in from partner app. / last seen 20 Jun 2026, 11:30');
     expect(rendered).toContain('Shared device match');
-    expect(rendered).toContain('Same device appears on another partner profile.');
+    expect(rendered).toContain('Same device appears on another partner profile. / last seen 20 Jun 2026, 12:00');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#device-review']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([

@@ -38,11 +38,32 @@ describe('partner detail device session model', () => {
         actionLabel: expect.stringContaining('Device actions for'),
         actions: [action],
         blockReason: 'duplicate login',
+        blockedAt: '2026-06-13T03:15:00.000Z',
         id: 'device-1',
+        lastSeenAt: '2026-06-13T03:16:00.000Z',
         statusLabel: 'BLOCKED',
         title: expect.stringContaining('devi'),
       }),
     ]);
+    const [row] = buildPartnerDeviceRows(
+      {
+        devices: [
+          {
+            appVersion: '1.2.3',
+            blockReason: 'duplicate login',
+            blockedAt: '2026-06-13T03:15:00.000Z',
+            deviceId: 'device-abcdef-123456',
+            enabled: true,
+            id: 'device-1',
+            lastSeenAt: '2026-06-13T03:16:00.000Z',
+            platform: 'android',
+          },
+        ],
+        id: 'provider-1',
+      },
+      () => [action],
+    );
+    expect(row.detail).not.toContain('13 Jun 2026');
   });
 
   it('limits partner sessions and neutralizes risky wording in session notes', () => {
@@ -63,9 +84,12 @@ describe('partner detail device session model', () => {
     expect(rows).toHaveLength(6);
     expect(rows[0]).toMatchObject({
       id: 'session-0',
+      lastSeenAt: '2026-06-13T03:16:00.000Z',
+      loggedInAt: '2026-06-13T03:00:00.000Z',
       sessionNote: 'session check account review account review',
       statusLabel: 'CHECK',
     });
+    expect(rows[0].detail).not.toContain('13 Jun 2026');
     expect(displaySessionCheckText('trusted partner abuse controls')).toBe(
       'active partner account controls',
     );
@@ -95,10 +119,12 @@ describe('partner detail device session model', () => {
       expect.objectContaining({
         detail: expect.stringContaining('Other Partner'),
         id: 'match-1',
+        lastSeenAt: '2026-06-13T03:16:00.000Z',
         smallLabel: 'Disabled',
         title: expect.stringContaining('shar'),
       }),
     ]);
     expect(rows[0].detail).not.toContain('Provider');
+    expect(rows[0].detail).not.toContain('13 Jun 2026');
   });
 });
