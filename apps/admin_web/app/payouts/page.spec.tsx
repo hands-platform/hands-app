@@ -144,10 +144,13 @@ describe('PayoutsPage', () => {
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className={`ops-task-card');

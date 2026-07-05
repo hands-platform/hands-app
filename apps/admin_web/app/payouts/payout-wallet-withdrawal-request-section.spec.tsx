@@ -47,7 +47,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(hrefsIn(section)).toContain('/partners/provider-1?section=full#finance');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-wallet-withdrawal-request-section admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
         'admin-form-input',
@@ -260,7 +260,9 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
   });
 
   it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminTablePanel');
     expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('className="payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 

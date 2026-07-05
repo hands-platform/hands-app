@@ -11,9 +11,9 @@ import {
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -173,8 +173,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
       ) : null}
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"
+      <AdminTablePanel
+        className="payout-date-range-card"
         description={`Range: ${dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service evidence use payout batch record dates.`}
         resultLabel={`${summary.total} batch(es)`}
         resultTone={summary.total > 0 ? 'info' : 'warning'}
@@ -202,9 +202,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </StatusBadgeLink>
           ))}
         </AdminFilterChipGroup>
-      </AdminFilterPanel>
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"
+      </AdminTablePanel>
+      <AdminTablePanel
+        className="payout-release-policy-card"
         description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
         resultLabel={`${releasePolicyDesk.length} gate(s)`}
         resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
@@ -299,7 +299,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             />
           ))}
         </div>
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
       <PayoutMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
 

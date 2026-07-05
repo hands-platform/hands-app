@@ -32,7 +32,7 @@ describe('PayoutPartnerFinanceQueueSection', () => {
     expect(hrefsIn(section)).toContain('/partners/provider-1#bank');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-partner-finance-queue-section admin-mb-16 admin-section',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
       ]),
@@ -40,7 +40,9 @@ describe('PayoutPartnerFinanceQueueSection', () => {
   });
 
   it('uses the shared empty-state atom for no-row messaging', () => {
+    expect(sectionSource).toContain('AdminTablePanel');
     expect(sectionSource).toContain('AdminEmptyState');
+    expect(sectionSource).not.toContain('className="payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type { PayoutPartnerFinanceQueueRow } from './payout-partner-finance-queue-model';
 
@@ -16,8 +16,8 @@ export function PayoutPartnerFinanceQueueSection({
   rows,
 }: PayoutPartnerFinanceQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="payout-partner-finance-queue-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
+      className="payout-partner-finance-queue-section admin-mb-16"
       description="Partner-facing payout readiness queue. This shows bank detail issues, payout holds, negative wallet evidence, and transfer reference gaps before finance marks a payout paid."
       id="payout-partner-finance-queue"
       resultLabel={rows.length ? `${rows.length} item(s)` : 'Clear'}
@@ -56,7 +56,7 @@ export function PayoutPartnerFinanceQueueSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

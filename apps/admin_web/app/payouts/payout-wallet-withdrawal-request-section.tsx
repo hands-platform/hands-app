@@ -2,7 +2,6 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import {
   AdminFormControlButton,
@@ -10,6 +9,7 @@ import {
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -41,8 +41,8 @@ export function PayoutWalletWithdrawalRequestSection({
   const summary = buildWithdrawalRequestSummary(requests);
 
   return (
-    <AdminFilterPanel
-      className="payout-wallet-withdrawal-request-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
+      className="payout-wallet-withdrawal-request-section admin-mb-16"
       description="Partner wallet withdrawal requests from the partner app. Finance can request bank correction, approve, reject, or mark paid after manual bank transfer."
       id="partner-wallet-withdrawal-requests"
       resultLabel={needsActionCount ? `${needsActionCount} needs action` : 'Clear'}
@@ -132,7 +132,7 @@ export function PayoutWalletWithdrawalRequestSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 
