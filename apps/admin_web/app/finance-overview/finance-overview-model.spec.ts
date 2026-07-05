@@ -71,10 +71,15 @@ describe('finance-overview-model', () => {
     });
 
     expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')?.value).toContain('100.000.000');
+    expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')).toMatchObject({
+      amount: 100_000_000,
+      currency: 'VND',
+    });
     expect(kpis.find((kpi) => kpi.label === 'Platform Fee')?.value).toContain('22.000.000');
     expect(kpis.find((kpi) => kpi.label === 'Net Platform Revenue Estimate')?.value).toContain(
       '19.000.000',
     );
+    expect(kpis.find((kpi) => kpi.label === 'Reconciliation Issues')?.amount).toBeUndefined();
     expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')?.detail).toContain(
       'not company revenue',
     );

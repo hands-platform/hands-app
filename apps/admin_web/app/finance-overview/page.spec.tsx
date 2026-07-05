@@ -237,6 +237,11 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain('trailing={<em>{item.amountLabel}</em>}');
   });
 
+  it('uses the shared money atom for finance KPI card amounts', () => {
+    expect(pageSource).toContain('FinanceOverviewMetricValue');
+    expect(pageSource).not.toContain('value={kpi.value}');
+  });
+
   it('uses shared Vuexy badge atoms for page header status chips', () => {
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');

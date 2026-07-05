@@ -72,6 +72,8 @@ export type FinanceOverviewApiHrefs = {
 };
 
 export type FinanceOverviewKpi = {
+  readonly amount?: number;
+  readonly currency?: string;
   readonly detail: string;
   readonly href?: string;
   readonly label: string;
@@ -324,6 +326,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
 
   return [
     {
+      ...financeOverviewMoneyValue(input.settlementSummary.customerPaymentAmount, currency),
       detail: 'Customer paid amount is not company revenue.',
       href: bookingSettlementAuditHref(financeSettlementFilters('today')),
       label: 'Gross Booking Amount',
@@ -331,6 +334,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.settlementSummary.customerPaymentAmount, currency),
     },
     {
+      ...financeOverviewMoneyValue(input.settlementSummary.platformFeeNetRevenue, currency),
       detail: `Actual company revenue snapshot. Gross platform fee: ${formatMoney(
         input.settlementSummary.platformFeeGross,
         currency,
@@ -341,6 +345,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.settlementSummary.platformFeeNetRevenue, currency),
     },
     {
+      ...financeOverviewMoneyValue(netRevenueEstimate, currency),
       detail: 'Platform fee minus company-funded coupon expense and payment processing fee.',
       href: '/finance-tax/payment-fees',
       label: 'Net Platform Revenue Estimate',
@@ -348,6 +353,10 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(netRevenueEstimate, currency),
     },
     {
+      ...financeOverviewMoneyValue(
+        input.earningsSummary?.pendingNetAmount ?? input.settlementSummary.partnerPayoutAmount,
+        currency,
+      ),
       detail: 'Partner payable still pending or available before payout execution.',
       href: '/earnings',
       label: 'Partner Payout Pending',
@@ -360,6 +369,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       ),
     },
     {
+      ...financeOverviewMoneyValue(input.earningsSummary?.paidNetAmount ?? 0, currency),
       detail: 'Partner net amount already marked paid in earning records.',
       href: '/payouts',
       label: 'Partner Payout Completed',
@@ -367,6 +377,10 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.earningsSummary?.paidNetAmount ?? 0, currency),
     },
     {
+      ...financeOverviewMoneyValue(
+        input.withdrawalSummary.pendingWithdrawalPayableAmount,
+        input.withdrawalSummary.currency,
+      ),
       detail: 'Approved/requested Partner withdrawals that still create withdrawal payable exposure.',
       href: '/payouts?withdrawalStatus=REVIEW_REQUIRED',
       label: 'Withdrawal Payable',
@@ -374,6 +388,10 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.withdrawalSummary.pendingWithdrawalPayableAmount, input.withdrawalSummary.currency),
     },
     {
+      ...financeOverviewMoneyValue(
+        input.walletSummary.customerWalletLiabilityAmount,
+        input.walletSummary.currency,
+      ),
       detail: `${input.walletSummary.customerWalletAccountCount} customer wallet account(s) with positive balance.`,
       href: '/wallet-adjustments?ownerType=CUSTOMER',
       label: 'Customer Wallet Liability',
@@ -384,6 +402,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       ),
     },
     {
+      ...financeOverviewMoneyValue(partnerWalletLiability, input.walletSummary.currency),
       detail: `${input.walletSummary.partnerPositiveWalletAccountCount} Partner wallet account(s) with positive balance.`,
       href: '/wallet-adjustments?ownerType=PARTNER',
       label: 'Partner Wallet Liability',
@@ -391,6 +410,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(partnerWalletLiability, input.walletSummary.currency),
     },
     {
+      ...financeOverviewMoneyValue(negativePartnerWallet, input.walletSummary.currency),
       detail: 'Partner negative wallet is company receivable from cash booking fee or tax debt.',
       href: '/cash-settlements',
       label: 'Negative Partner Wallet',
@@ -398,6 +418,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(negativePartnerWallet, input.walletSummary.currency),
     },
     {
+      ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
       detail: 'Cash booking amount still requiring settlement evidence.',
       href: '/cash-settlements',
       label: 'Cash Pending Amount',
@@ -405,6 +426,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: input.cashSummary ? formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency) : '—',
     },
     {
+      ...financeOverviewMoneyValue(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
       detail: `${input.refundSummary?.openCount ?? 0} open refund case(s).`,
       href: '/refunds?review=open',
       label: 'Refund Pending Amount',
@@ -412,6 +434,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
     },
     {
+      ...financeOverviewMoneyValue(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
       detail: `${input.refundSummary?.completedCount ?? 0} completed refund case(s).`,
       href: '/refunds?review=completed',
       label: 'Refund Completed Amount',
@@ -419,6 +442,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       value: formatMoney(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
     },
     {
+      ...financeOverviewMoneyValue(input.amountSummary.paymentFailedAmount, input.amountSummary.currency),
       detail: `${input.paymentSummary?.needsAction ?? 0} payment row(s) still need review.`,
       href: '/payments?review=needs-action',
       label: 'Payment Failed Amount',
@@ -849,6 +873,10 @@ export function buildFinanceOverviewActionItems(
 
 export function buildFinanceOverviewRangeLabel(range: FinanceOverviewRange) {
   return dateRangeLabel(range);
+}
+
+function financeOverviewMoneyValue(amount: number | null | undefined, currency: string) {
+  return amount === null || amount === undefined ? {} : { amount, currency };
 }
 
 export function financeOverviewCurrency(input: FinanceOverviewSummaryInput) {

@@ -246,7 +246,7 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
       href={kpi.href}
       icon={<Icon size={18} aria-hidden="true" />}
       label={kpi.label}
-      value={kpi.value}
+      value={<FinanceOverviewMetricValue metric={kpi} />}
     />
   );
 }
@@ -330,6 +330,14 @@ function FinanceActionAmount({ item }: { readonly item: FinanceOverviewActionIte
         <MoneyText amount={item.amount} currency={item.currency ?? 'VND'} />
       )}
     </em>
+  );
+}
+
+function FinanceOverviewMetricValue({ metric }: { readonly metric: FinanceOverviewKpi }) {
+  return metric.amount === undefined ? (
+    metric.value
+  ) : (
+    <MoneyText amount={metric.amount} currency={metric.currency ?? 'VND'} />
   );
 }
 
