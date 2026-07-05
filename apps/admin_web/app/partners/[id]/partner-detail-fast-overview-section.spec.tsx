@@ -40,11 +40,19 @@ describe('PartnerDetailFastOverviewSection', () => {
       expect.arrayContaining(['/partners', '/partners/partner-1?section=full', '#booking-gates', '#wallet', '#kyc']),
     );
     expect(classNames.filter((className) => className === 'metric-card')).toHaveLength(2);
+    expect(classNames).toContain('admin-metric-grid admin-mb-16');
+    expect(classNames).toContain('detail-grid');
     expect(
       classNames.filter(
         (className) => className.split(' ').includes('card') && className.includes('partner-fast-overview-panel'),
       ),
     ).toHaveLength(4);
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<section className="grid admin-mb-16">');
+    expect(source).not.toContain('<section className="detail-grid">');
   });
 
   it('uses shared badge link atoms for next action pill links', () => {

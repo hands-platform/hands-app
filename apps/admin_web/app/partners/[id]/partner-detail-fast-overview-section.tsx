@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
-import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
+import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { StatusBadgeLink } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
@@ -67,13 +67,17 @@ export function PartnerDetailFastOverviewSection({
       description={marketplaceDisplayText(subtitle)}
       title={partnerName}
     >
-      <section className="grid admin-mb-16">
-        {overviewCards.map((card) => (
-          <AdminKpiCard helper={card.detail} href={card.href} key={card.label} label={card.label} value={card.value} />
-        ))}
-      </section>
+      <AdminMetricGrid
+        className="admin-mb-16"
+        metrics={overviewCards.map((card) => ({
+          helper: card.detail,
+          href: card.href,
+          label: card.label,
+          value: card.value,
+        }))}
+      />
 
-      <section className="detail-grid">
+      <AdminDetailGrid>
         <OverviewDetailCard title="Identity" rows={identityRows} />
         <OverviewDetailCard title="Booking command" rows={bookingCommandRows} />
         <OverviewDetailCard title="Payout readiness" rows={payoutReadinessRows} />
@@ -92,7 +96,7 @@ export function PartnerDetailFastOverviewSection({
             ))}
           </div>
         </AdminSection>
-      </section>
+      </AdminDetailGrid>
     </AdminPageTemplate>
   );
 }
