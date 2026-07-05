@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { AdminFormControlButton } from './admin-form-controls';
+
 type ClientActionDropdownBaseItem = {
   readonly description?: string;
   readonly disabled?: boolean;
@@ -134,8 +136,8 @@ function ClientActionDropdownControl({
   const handleItemSelect = item.onSelect;
 
   return (
-    <button
-      className={className}
+    <AdminFormControlButton
+      className={joinClassNames('button-secondary', className)}
       onClick={() => {
         handleItemSelect();
         onSelect();
@@ -145,7 +147,7 @@ function ClientActionDropdownControl({
       type="button"
     >
       {content}
-    </button>
+    </AdminFormControlButton>
   );
 }
 

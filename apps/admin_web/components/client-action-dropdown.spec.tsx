@@ -1,10 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { Eye } from 'lucide-react';
 
 import { ClientActionDropdown } from './client-action-dropdown';
 
+const source = readFileSync('components/client-action-dropdown.tsx', 'utf8');
+
 describe('ClientActionDropdown', () => {
+  it('uses the shared Vuexy button atom for client dropdown item actions', () => {
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n      className={className}');
+  });
+
   it('renders a closed Vuexy-style client action trigger by default', () => {
     const html = renderToStaticMarkup(
       <ClientActionDropdown
