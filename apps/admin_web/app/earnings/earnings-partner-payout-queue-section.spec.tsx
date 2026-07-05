@@ -7,9 +7,11 @@ describe('EarningsPartnerPayoutQueueSection', () => {
     const source = readFileSync('app/earnings/earnings-partner-payout-queue-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
+    expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<span className="muted">No batch action</span>');
   });
 
   it('renders Partner payout queue rows and review action', () => {

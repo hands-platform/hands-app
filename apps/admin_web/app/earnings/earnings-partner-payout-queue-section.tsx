@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 
@@ -73,7 +74,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                     </AdminFormControlButton>
                   </AdminFormShell>
                 ) : (
-                  <span className="muted">No batch action</span>
+                  <AdminInlineFallback>No batch action</AdminInlineFallback>
                 )}
               </div>
             </div>
