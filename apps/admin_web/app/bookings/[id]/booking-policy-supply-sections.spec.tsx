@@ -16,11 +16,12 @@ describe('booking policy supply sections', () => {
   it('uses shared Vuexy admin card surfaces for supply panels', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 
-    expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminNoteCard');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('<div className={`ops-task-note');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-14">');
+    expect(source).not.toContain('<AdminCard className="ops-task-note booking-supply-panel">');
     expect(source).not.toContain('className="card admin-card ops-task-note booking-supply-panel"');
     expect(source).not.toContain('<strong>No usable marketplace participant</strong>');
   });

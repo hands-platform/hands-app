@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminNoteCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -314,7 +314,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
         </div>
       </AdminNotePanel>
       <div className="grid admin-mt-14">
-        <AdminCard className="ops-task-note booking-supply-panel">
+        <AdminNoteCard className="booking-supply-panel">
           <h3>Top usable Partners</h3>
           <p className="muted">
             Closest eligible Partners under the booking pin, radius, online, verification, and location freshness
@@ -352,8 +352,8 @@ export function BookingDispatchCandidateDecisionMatrixSection({
               </div>
             ) : null}
           </div>
-        </AdminCard>
-        <AdminCard className="ops-task-note booking-supply-panel">
+        </AdminNoteCard>
+        <AdminNoteCard className="booking-supply-panel">
           <h3>Operational supply blockers</h3>
           <p className="muted">
             Non-wallet supply repair groups for this booking pin. Wallet debt repair is handled outside the
@@ -374,7 +374,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
               </div>
             ))}
           </div>
-        </AdminCard>
+        </AdminNoteCard>
       </div>
     </AdminSection>
   );

@@ -15,6 +15,7 @@ import {
   AdminKpiCard,
   AdminLinkCard,
   AdminLoadingState,
+  AdminNoteCard,
   AdminNotePanel,
   AdminNoticeCard,
   AdminSection,
@@ -106,6 +107,18 @@ describe('Admin surface components', () => {
     expect(panel.type).toBe('div');
     expect(panel.props).toMatchObject({
       className: 'ops-task-note admin-mt-14',
+    });
+  });
+
+  it('renders a reusable Vuexy note card surface on the shared admin card', () => {
+    const card = AdminNoteCard({
+      children: <p>Operational card note</p>,
+      className: 'booking-supply-panel',
+    });
+
+    expect(card.type.name).toBe('AdminCard');
+    expect(card.props).toMatchObject({
+      className: 'ops-task-note booking-supply-panel',
     });
   });
 

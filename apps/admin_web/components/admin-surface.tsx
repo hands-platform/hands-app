@@ -149,6 +149,19 @@ export function AdminCard({ ariaLabel, ariaLabelledBy, children, className, id }
   );
 }
 
+export function AdminNoteCard({ ariaLabel, ariaLabelledBy, children, className, id }: AdminCardProps) {
+  return (
+    <AdminCard
+      ariaLabel={ariaLabel}
+      ariaLabelledBy={ariaLabelledBy}
+      className={joinClassNames('ops-task-note', className)}
+      id={id}
+    >
+      {children}
+    </AdminCard>
+  );
+}
+
 export function AdminAsideCard({ ariaLabel, ariaLabelledBy, children, className, id }: AdminCardProps) {
   return (
     <aside

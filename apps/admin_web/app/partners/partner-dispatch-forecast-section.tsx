@@ -2,7 +2,7 @@ import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminActionCard, AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminNoteCard, AdminSection } from '../../components/admin-surface';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -72,7 +72,7 @@ export function PartnerDispatchForecastSection({
         ))}
       </div>
       <div className="grid admin-mt-12">
-        <AdminCard className="ops-task-note partner-dispatch-panel">
+        <AdminNoteCard className="partner-dispatch-panel">
           <h3>Dispatch blockers</h3>
           <div className="setup-stage-list admin-mt-12">
             {forecast.blockers.map((item) => (
@@ -89,8 +89,8 @@ export function PartnerDispatchForecastSection({
               </div>
             ))}
           </div>
-        </AdminCard>
-        <AdminCard className="ops-task-note partner-dispatch-panel">
+        </AdminNoteCard>
+        <AdminNoteCard className="partner-dispatch-panel">
           <h3>City supply lanes</h3>
           <p className="muted">
             Use this to see which partner onboarding, location refresh, or push registration records need
@@ -129,7 +129,7 @@ export function PartnerDispatchForecastSection({
               </div>
             ) : null}
           </div>
-        </AdminCard>
+        </AdminNoteCard>
       </div>
     </AdminSection>
   );
