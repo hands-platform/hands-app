@@ -403,6 +403,32 @@ describe('Admin surface components', () => {
     expect(secondItem.props.children[0].props.children.filter(Boolean)).toHaveLength(1);
   });
 
+  it('keeps duplicate timeline item ids and meta labels on unique React keys', () => {
+    const timeline = AdminBasicTimeline({
+      items: [
+        {
+          id: 'settlement',
+          meta: [
+            { label: 'Amount', value: '100,000 VND' },
+            { label: 'Amount', value: '20,000 VND' },
+          ],
+          title: 'Settlement event',
+          tone: 'success',
+        },
+        {
+          id: 'settlement',
+          title: 'Settlement reversal',
+          tone: 'warning',
+        },
+      ],
+    });
+    const items = timeline.props.children;
+    const firstMetaItems = items[0].props.children[1].props.children[2].props.children;
+
+    expect(items.map((item: { key: string }) => item.key)).toEqual(['settlement-0', 'settlement-1']);
+    expect(firstMetaItems.map((metaItem: { key: string }) => metaItem.key)).toEqual(['Amount-0', 'Amount-1']);
+  });
+
   it('renders standard loading and error states with operational roles', () => {
     const loading = AdminLoadingState({ message: 'Checking latest booking records.' });
     const error = AdminErrorState({

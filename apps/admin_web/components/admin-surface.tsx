@@ -467,7 +467,7 @@ export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasic
   return (
     <div className={joinClassNames('vuexy-basic-timeline', className)}>
       {items.map((item, index) => (
-        <div className="vuexy-basic-timeline-item" key={item.id}>
+        <div className="vuexy-basic-timeline-item" key={`${item.id}-${index}`}>
           <div className="vuexy-basic-timeline-separator" aria-hidden="true">
             <span className={`vuexy-basic-timeline-dot is-${item.tone}`} />
             {index < items.length - 1 ? <span className="vuexy-basic-timeline-connector" /> : null}
@@ -490,14 +490,14 @@ export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasic
             ) : null}
             {item.meta?.length ? (
               <div className={joinClassNames('vuexy-basic-timeline-meta', compactMeta ? 'is-compact' : undefined)}>
-                {item.meta.map((metaItem) => {
+                {item.meta.map((metaItem, metaIndex) => {
                   const ariaValue = timelineMetaAriaValue(metaItem.value);
 
                   return (
                     <div
                       aria-label={ariaValue ? `${metaItem.label}: ${ariaValue}` : undefined}
                       className="vuexy-basic-timeline-meta-item"
-                      key={metaItem.label}
+                      key={`${metaItem.label}-${metaIndex}`}
                     >
                       <span>{metaItem.label}</span> <strong>{metaItem.value}</strong>
                     </div>
