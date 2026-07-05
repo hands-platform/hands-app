@@ -3924,6 +3924,17 @@ function buildPartnerTypedDocumentRows(provider: ProviderDetail): PartnerTypedDo
     assetLabel: `${document.fileAsset?.contentType ?? 'Unknown type'}${
       document.fileAsset?.uploadedAt ? ` / ${formatDate(document.fileAsset.uploadedAt)}` : ''
     }`,
+    assetLabelNode: (
+      <>
+        {document.fileAsset?.contentType ?? 'Unknown type'}
+        {document.fileAsset?.uploadedAt ? (
+          <>
+            {' / '}
+            <DateTimeText fallback="Missing" value={document.fileAsset.uploadedAt} />
+          </>
+        ) : null}
+      </>
+    ),
     fileHref: document.fileAsset?.id ? `/files/${document.fileAsset.id}/open` : undefined,
     fileLabel: document.fileAsset?.key ?? 'No file key',
     id: document.id,
@@ -3967,12 +3978,25 @@ function buildPartnerPublicMediaRows(provider: ProviderDetail): PartnerPublicMed
     detailLabel: `${file.contentType ?? 'Unknown type'}${file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}${
       file.uploadedAt ? ` / uploaded ${formatDate(file.uploadedAt)}` : ''
     }`,
+    detailLabelNode: (
+      <>
+        {file.contentType ?? 'Unknown type'}
+        {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
+        {file.uploadedAt ? (
+          <>
+            {' / uploaded '}
+            <DateTimeText fallback="Missing" value={file.uploadedAt} />
+          </>
+        ) : null}
+      </>
+    ),
     fileHref: file.url,
     fileLabel: file.key ?? 'No file key',
     id: file.id,
     reviewActions: buildPartnerPublicMediaReviewActions(provider.id, file),
     reviewLabel: `Media review actions for ${shortRecordId(file.id)}`,
     reviewedLabel: file.reviewedAt ? formatDate(file.reviewedAt) : null,
+    reviewedLabelNode: file.reviewedAt ? <DateTimeText fallback="Missing" value={file.reviewedAt} /> : undefined,
     reviewReason: file.reviewReason,
     reviewStatus: file.reviewStatus ?? 'PENDING_REVIEW',
     reviewStatusTone: partnerPublicMediaReviewStatusTone(file.reviewStatus),

@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -13,6 +14,7 @@ import {
 
 export type PartnerTypedDocumentRow = {
   readonly assetLabel: string;
+  readonly assetLabelNode?: ReactNode;
   readonly fileHref?: string;
   readonly fileLabel: string;
   readonly id: string;
@@ -27,12 +29,14 @@ export type PartnerTypedDocumentRow = {
 
 export type PartnerPublicMediaRow = {
   readonly detailLabel: string;
+  readonly detailLabelNode?: ReactNode;
   readonly fileHref?: string | null;
   readonly fileLabel: string;
   readonly id: string;
   readonly reviewActions: readonly ActionMenuItem[];
   readonly reviewLabel: string;
   readonly reviewedLabel?: string | null;
+  readonly reviewedLabelNode?: ReactNode;
   readonly reviewReason?: string | null;
   readonly reviewStatus: string;
   readonly reviewStatusTone: string;
@@ -71,7 +75,7 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
                 <p className="muted">{document.reviewHint}</p>
               </td>
               <td>
-                <strong>{marketplaceDisplayText(document.assetLabel)}</strong>
+                <strong>{document.assetLabelNode ?? marketplaceDisplayText(document.assetLabel)}</strong>
                 {document.rejectionReason ? (
                   <p className="muted">Partner app correction: {document.rejectionReason}</p>
                 ) : null}
@@ -124,7 +128,7 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
             <tr key={file.id}>
               <td>
                 <strong>{file.typeLabel}</strong>
-                <p className="muted">{file.detailLabel}</p>
+                <p className="muted">{file.detailLabelNode ?? file.detailLabel}</p>
               </td>
               <td>
                 <FileOpenAction
@@ -140,7 +144,9 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
                 <StatusBadge tone={statusBadgeToneFromPillClass(file.reviewStatusTone)}>
                   {file.reviewStatus}
                 </StatusBadge>
-                {file.reviewedLabel ? <p className="muted">Reviewed {file.reviewedLabel}</p> : null}
+                {file.reviewedLabel || file.reviewedLabelNode ? (
+                  <p className="muted">Reviewed {file.reviewedLabelNode ?? file.reviewedLabel}</p>
+                ) : null}
                 {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
               </td>
               <td>

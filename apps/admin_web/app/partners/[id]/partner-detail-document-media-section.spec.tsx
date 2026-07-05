@@ -115,6 +115,66 @@ describe('partner detail document and media sections', () => {
       ]),
     );
   });
+
+  it('prefers shared date nodes over fallback document and media date text', () => {
+    const typedDocuments = PartnerDetailTypedDocumentsCard({
+      rows: [
+        {
+          assetLabel: 'Fallback document uploaded date',
+          assetLabelNode: <span>Shared document uploaded date marker</span>,
+          fileHref: '/files/file-2/open',
+          fileLabel: 'private/cccd-back.jpg',
+          id: 'doc-2',
+          rejectionReason: null,
+          reviewActions: [],
+          reviewHint: 'Back side must match the KYC identity.',
+          reviewLabel: 'Document review actions for doc-2',
+          status: 'APPROVED',
+          statusTone: 'pill-success',
+          typeLabel: 'CCCD back',
+        },
+      ],
+    });
+    const publicMedia = PartnerDetailPublicProfileMediaCard({
+      rows: [
+        {
+          detailLabel: 'Fallback media uploaded date',
+          detailLabelNode: <span>Shared media uploaded date marker</span>,
+          fileHref: 'https://cdn.example.test/work.png',
+          fileLabel: 'public/work.png',
+          id: 'media-2',
+          reviewActions: [],
+          reviewLabel: 'Media review actions for media-2',
+          reviewedLabel: 'Fallback reviewed date',
+          reviewedLabelNode: <span>Shared reviewed date marker</span>,
+          reviewReason: null,
+          reviewStatus: 'APPROVED',
+          reviewStatusTone: 'pill-success',
+          uploadStatus: 'UPLOADED',
+          typeLabel: 'Work photo',
+        },
+      ],
+    });
+    const rendered = normalizeSpaces(`${textContent(typedDocuments)} ${textContent(publicMedia)}`);
+    const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared document uploaded date marker');
+    expect(rendered).toContain('Shared media uploaded date marker');
+    expect(rendered).toContain('Shared reviewed date marker');
+    expect(rendered).not.toContain('Fallback document uploaded date');
+    expect(rendered).not.toContain('Fallback media uploaded date');
+    expect(rendered).not.toContain('Fallback reviewed date');
+    expect(source).toContain('readonly assetLabelNode?: ReactNode;');
+    expect(source).toContain('readonly detailLabelNode?: ReactNode;');
+    expect(source).toContain('readonly reviewedLabelNode?: ReactNode;');
+    expect(source).toContain('document.assetLabelNode ?? marketplaceDisplayText(document.assetLabel)');
+    expect(source).toContain('file.detailLabelNode ?? file.detailLabel');
+    expect(source).toContain('file.reviewedLabelNode ?? file.reviewedLabel');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={document.fileAsset.uploadedAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={file.uploadedAt} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={file.reviewedAt} />');
+  });
 });
 
 function textContent(value: unknown): string {
