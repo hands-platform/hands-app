@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
@@ -195,7 +196,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                     Payment {shortId(entry.paymentId)}
                   </Link>
                 ) : (
-                  <span className="muted">No payment record</span>
+                  <AdminInlineFallback>No payment record</AdminInlineFallback>
                 )}
                 <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
                   Booking {shortId(entry.bookingId)}
@@ -273,7 +274,11 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                   ) : (
                     <span className="muted">-</span>
                   )}
-                  <div className="muted">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>
+                  <div>
+                    <AdminInlineFallback>
+                      {match.accountingJournalEntry?.accountName ?? 'No journal link'}
+                    </AdminInlineFallback>
+                  </div>
                 </td>
                 <td>{match.bankTransaction?.counterpartyName ?? '-'}</td>
                 <td>

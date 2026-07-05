@@ -1075,6 +1075,17 @@ describe('finance detail pages', () => {
     expect(source).not.toContain('className="button button-secondary"');
   });
 
+  it('uses shared inline fallback atoms for payment clearing detail missing evidence labels', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/payment-clearing/[id]/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<span className="muted">No payment record</span>');
+    expect(source).not.toContain("<div className=\"muted\">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>");
+  });
+
   it.each([
     ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],
     ['general ledger detail', 'app/finance-tax/general-ledger/[id]/page.tsx'],
