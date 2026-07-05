@@ -1,11 +1,12 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
   readonly amountLabel: string;
   readonly bookingHref: string | null;
-  readonly createdAtLabel: string;
+  readonly createdAt: string | null;
   readonly errorMessage: string | null;
   readonly gatewayTransactionId: string;
   readonly id: string;
@@ -40,7 +41,9 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
       >
         {rows.slice(0, 10).map((row) => (
           <tr id={`callback-attempt-${row.id}`} key={row.id}>
-            <td>{row.createdAtLabel}</td>
+            <td>
+              <DateTimeText value={row.createdAt} />
+            </td>
             <td>{row.method}</td>
             <td>
               <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>

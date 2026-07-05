@@ -10,7 +10,7 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
         {
           amountLabel: '1.000.000 VND',
           bookingHref: '/bookings/booking-1',
-          createdAtLabel: '2026-06-09 10:00',
+          createdAt: '2026-06-09T03:00:00.000Z',
           errorMessage: null,
           gatewayTransactionId: 'gw-1',
           id: 'attempt-1',
@@ -54,7 +54,7 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
         {
           amountLabel: '1.000.000 VND',
           bookingHref: '/bookings/booking-1',
-          createdAtLabel: '2026-06-09 10:00',
+          createdAt: '2026-06-09T03:00:00.000Z',
           errorMessage: null,
           gatewayTransactionId: 'gw-1',
           id: 'attempt-1',
@@ -88,6 +88,19 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">Signature</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">Gateway</span>');
+  });
+
+  it('uses the shared DateTimeText atom for callback received timestamps', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/payments/payment-callback-attempt-ledger-section.tsx'),
+      'utf8',
+    );
+    const modelSource = readFileSync(join(process.cwd(), 'app/payments/payment-page-model.ts'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('<td>{row.createdAtLabel}</td>');
+    expect(modelSource).not.toContain('createdAtLabel: formatDateTime(attempt.createdAt)');
   });
 });
 
