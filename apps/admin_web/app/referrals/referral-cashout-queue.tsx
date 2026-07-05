@@ -14,6 +14,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -24,7 +25,7 @@ import type {
   AdminReferralCashoutQueueSummary,
   AdminReferralRewardStatus,
 } from '../../lib/admin-api';
-import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { formatDateTime } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import {
@@ -98,7 +99,7 @@ export function ReferralCashoutQueuePage({
     },
     {
       label: 'Cashout exposure',
-      value: formatMoney(summary.totalAmount, 'VND', '0 VND'),
+      value: <MoneyText amount={summary.totalAmount} fallback="0 VND" />,
       helper: 'Total amount in the current cashout filter.',
     },
     {
@@ -167,7 +168,7 @@ export function ReferralCashoutQueuePage({
             >
               <span>{referralCashoutStatusFilterLabel(item.status)}</span>
               <strong>
-                {item.count} · {formatMoney(item.amount, 'VND', '0 VND')}
+                {item.count} · <MoneyText amount={item.amount} fallback="0 VND" />
               </strong>
             </Link>
           ))}
@@ -231,7 +232,9 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         <ReferralCashoutPersonCell person={row.referred} />
       </td>
       <td>
-        <strong>{formatMoney(row.amount, row.currency, '0 VND')}</strong>
+        <strong>
+          <MoneyText amount={row.amount} currency={row.currency} fallback="0 VND" />
+        </strong>
         <div className="muted">{row.walletLedgerReference ?? 'No wallet ledger yet'}</div>
       </td>
       <td>

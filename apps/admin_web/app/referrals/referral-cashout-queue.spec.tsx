@@ -104,6 +104,13 @@ describe('Referral cashout queue', () => {
     );
   });
 
+  it('uses the shared money atom for cashout exposure and row amounts', () => {
+    expect(cashoutQueueSource).toContain('MoneyText');
+    expect(cashoutQueueSource).not.toContain("value: formatMoney(summary.totalAmount, 'VND', '0 VND')");
+    expect(cashoutQueueSource).not.toContain('{item.count} · {formatMoney(item.amount, \'VND\', \'0 VND\')}');
+    expect(cashoutQueueSource).not.toContain('<strong>{formatMoney(row.amount, row.currency, \'0 VND\')}</strong>');
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 
