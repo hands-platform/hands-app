@@ -15,7 +15,13 @@ import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
-import { AdminActionCard, AdminDetailGrid, AdminSection, AdminTaskCard } from '../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminDetailGrid,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskCard,
+} from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
   AdminSignal,
@@ -1050,10 +1056,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
               {item.sample ? (
-                <div className="ops-task-note admin-mt-10">
+                <AdminNotePanel className="admin-mt-10">
                   <strong>{item.sample.label}</strong>
                   <p className="muted">{item.sample.detail}</p>
-                </div>
+                </AdminNotePanel>
               ) : null}
               <div className="participant-list admin-mt-10">
                 {item.checks.map((check) => (
@@ -1212,7 +1218,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-shift-command-briefing"
             title="Shift command briefing"
           >
-            <div className="ops-task-note admin-mt-14">
+            <AdminNotePanel className="admin-mt-14">
               <div className="ops-row">
                 <div>
                   <StatusBadge tone="warning">Next best move</StatusBadge>
@@ -1224,7 +1230,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   {fullDashboardData.shiftBriefing.primaryAction.label}
                 </AdminFormControlLink>
               </div>
-            </div>
+            </AdminNotePanel>
             <div className="service-trace-summary admin-mt-14">
               {fullDashboardData.shiftBriefing.stats.map((stat) => (
                 <Link
@@ -1337,7 +1343,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               ))}
             </div>
             <AdminDetailGrid className="admin-mt-14">
-              <div className="ops-task-note">
+              <AdminNotePanel>
                 <AdminSectionHeader
                   actions={(
                     <DashboardStatusBadge pillClass={matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}>
@@ -1373,8 +1379,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     />
                   ) : null}
                 </div>
-              </div>
-              <div className="ops-task-note">
+              </AdminNotePanel>
+              <AdminNotePanel>
                 <AdminSectionHeader
                   actions={(
                     <DashboardStatusBadge pillClass={matchingControl.healthPillClass}>
@@ -1397,7 +1403,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     </AdminTaskCard>
                   ))}
                 </div>
-              </div>
+              </AdminNotePanel>
             </AdminDetailGrid>
           </AdminSection>
 
@@ -1443,7 +1449,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             {fullDashboardData.policySummary.activeOverrides.length ||
             fullDashboardData.policySummary.recentChanges.length ? (
               <AdminDetailGrid className="admin-mt-14">
-                <div className="ops-task-note">
+                <AdminNotePanel>
                   <div className="ops-row">
                     <div>
                       <strong>Active policy overrides</strong>
@@ -1479,8 +1485,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       </p>
                     ) : null}
                   </div>
-                </div>
-                <div className="ops-task-note">
+                </AdminNotePanel>
+                <AdminNotePanel>
                   <div className="ops-row">
                     <div>
                       <strong>Recent policy changes</strong>
@@ -1519,7 +1525,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       />
                     ) : null}
                   </div>
-                </div>
+                </AdminNotePanel>
               </AdminDetailGrid>
             ) : null}
             <div className="ops-task-grid admin-mt-14">
@@ -2057,7 +2063,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             title="Today command lanes"
           >
             {fullDashboardData.topCommandSignal && (
-              <div className="ops-task-note admin-mt-14">
+              <AdminNotePanel className="admin-mt-14">
                 <div className="ops-row">
                   <div>
                     <DashboardStatusBadge pillClass={fullDashboardData.topCommandSignal.pillClass}>
@@ -2070,7 +2076,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     {fullDashboardData.topCommandSignal.action}
                   </Link>
                 </div>
-              </div>
+              </AdminNotePanel>
             )}
             <div className="ops-task-grid">
               {fullDashboardData.commandSignals.map((signal) => (
@@ -2153,7 +2159,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               </div>
               {fullDashboardData.queueSummary.first && (
-                <div className="ops-task-note admin-mt-14">
+                <AdminNotePanel className="admin-mt-14">
                   <div>
                     <DashboardStatusBadge
                       pillClass={
@@ -2175,7 +2181,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <Link className="text-link" href={fullDashboardData.queueSummary.first.href}>
                     Open task
                   </Link>
-                </div>
+                </AdminNotePanel>
               )}
               <div className="ops-check-list">
                 {queue.slice(0, 10).map((item, index) => (
