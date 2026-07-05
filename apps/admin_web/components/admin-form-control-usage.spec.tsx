@@ -72,6 +72,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps raw table elements inside the shared Vuexy data table atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-data-table.tsx')
+      .filter((filePath) => rawTableElementPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps literal pill chips inside shared Vuexy status badge atoms', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/status-badge.tsx')
@@ -415,6 +424,7 @@ const rawInlineNoticePattern =
   /className=["'][^"']*(?:admin-form-error|form-error|calendar-readonly-alert|admin-auth-error)[^"']*["']/;
 const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
 const rawTableFooterPattern = /<div\s+className=["'][^"']*\bvuexy-booking-table-footer\b[^"']*["']/;
+const rawTableElementPattern = /<(?:table|thead|tbody)\b/;
 const rawLiteralPillSpanPattern = /<span\s+className=["'][^"']*\bpill(?:\s|-)[^"']*["']/;
 const rawAdminDisclosureDetailsPattern = /<details\b[^>]*className=(?:"[^"]*\badmin-disclosure\b[^"]*"|'[^']*\badmin-disclosure\b[^']*'|\{`[^`]*\badmin-disclosure\b[^`]*`\})/s;
 const rawRangeSegmentedControlPattern =
