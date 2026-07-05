@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, adminSignalToneFromClassName } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { NotificationDeliveryCell, type NotificationDeliveryRow } from './notification-delivery-cell';
@@ -9,7 +10,7 @@ export type NotificationTableRow = {
   readonly actions: readonly ActionMenuItem[];
   readonly body: string;
   readonly bookingDataHint: string | null;
-  readonly createdAtLabel: string;
+  readonly createdAt: string | null;
   readonly deliveryAttemptCount: number;
   readonly deliveryRows: readonly NotificationDeliveryRow[];
   readonly id: string;
@@ -40,7 +41,9 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
   return (
     <tr id={row.id}>
       <td>
-        <div>{row.createdAtLabel}</div>
+        <div>
+          <DateTimeText value={row.createdAt} />
+        </div>
         <div className="muted">{row.relativeCreatedAtLabel}</div>
       </td>
       <td>

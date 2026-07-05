@@ -34,7 +34,7 @@ describe('NotificationsTableSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('2026-06-09 10:00');
+    expect(rendered).toContain('9 Jun 2026, 10:00');
     expect(rendered).toContain('Updated just now');
     expect(rendered).toContain('Linh Partner');
     expect(rendered).toContain('Partner Massage Pro');
@@ -147,6 +147,16 @@ describe('NotificationsTableSection', () => {
     expect(source).not.toContain('<span className={row.signalClassName}>{row.opsSignal}</span>');
   });
 
+  it('uses the shared DateTimeText atom for notification created timestamps', () => {
+    const source = readFileSync('app/notifications/notification-table-row.tsx', 'utf8');
+    const modelSource = readFileSync('app/notifications/notification-page-model.ts', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly createdAtLabel: string;');
+    expect(source).not.toContain('<div>{row.createdAtLabel}</div>');
+    expect(modelSource).not.toContain('createdAtLabel: formatDateTime(notification.createdAt)');
+  });
+
   it('keeps failure evidence visible inside multi-attempt delivery disclosures', () => {
     const row = buildRow();
     const section = NotificationsTableSection({
@@ -246,7 +256,7 @@ function buildRow(): NotificationTableRow {
     ],
     body: 'Partner request delivery body',
     bookingDataHint: 'booking bookin / partner partne',
-    createdAtLabel: '2026-06-09 10:00',
+    createdAt: '2026-06-09T03:00:00.000Z',
     deliveryAttemptCount: 1,
     deliveryRows: [
       {

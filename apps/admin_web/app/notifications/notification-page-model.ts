@@ -597,7 +597,7 @@ export function buildNotificationTableRows(
       actions: notificationActionMenuItems(notification, actionContext, deliveryHealth),
       body: marketplaceDisplayText(notification.body),
       bookingDataHint: notificationDataHint(notification),
-      createdAtLabel: formatDateTime(notification.createdAt),
+      createdAt: notification.createdAt,
       deliveryAttemptCount: notificationDeliveries(notification).length,
       deliveryRows: buildNotificationDeliveryRows(notification, actionContext),
       id: notification.id,
