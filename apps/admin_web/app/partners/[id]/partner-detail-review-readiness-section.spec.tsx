@@ -106,6 +106,51 @@ describe('Partner detail review readiness sections', () => {
       ]),
     );
   });
+
+  it('prefers shared detail nodes over fallback readiness detail text', () => {
+    const approvalSection = PartnerDetailApprovalChecklistSection({
+      checklist: {
+        blockers: 0,
+        ready: true,
+        items: [
+          {
+            detail: 'Fallback location freshness date',
+            detailNode: <span>Shared location freshness date marker</span>,
+            label: 'Location freshness',
+            ok: true,
+            status: 'RECENT',
+          },
+        ],
+      },
+    });
+    const dossierSection = PartnerDetailRegistrationDossierSection({
+      dossier: {
+        blockers: 0,
+        ready: true,
+        items: [
+          {
+            detail: 'Fallback registration dossier date',
+            detailNode: <span>Shared registration dossier date marker</span>,
+            label: 'Joined',
+            ok: true,
+            operatorAction: 'No action.',
+            status: 'READY',
+          },
+        ],
+      },
+    });
+    const rendered = normalizeSpaces(`${textContent(approvalSection)} ${textContent(dossierSection)}`);
+    const source = readFileSync('app/partners/[id]/partner-detail-review-readiness-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared location freshness date marker');
+    expect(rendered).toContain('Shared registration dossier date marker');
+    expect(rendered).not.toContain('Fallback location freshness date');
+    expect(rendered).not.toContain('Fallback registration dossier date');
+    expect(source).toContain('detailNode?: ReactNode;');
+    expect(source).toContain('item.detailNode ?? item.detail');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />');
+  });
 });
 
 function textContent(value: unknown): string {

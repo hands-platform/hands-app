@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -10,6 +12,7 @@ import {
 
 type PartnerReadinessItem = {
   detail: string;
+  detailNode?: ReactNode;
   label: string;
   ok: boolean;
   status: string;
@@ -69,7 +72,7 @@ export function PartnerDetailApprovalChecklistSection({
                 </StatusBadge>
               </td>
               <td>
-                <p className="muted">{item.detail}</p>
+                <p className="muted">{item.detailNode ?? item.detail}</p>
               </td>
               <td>
                 <span className="muted">{item.ok ? 'OK' : 'Check'}</span>
@@ -113,7 +116,7 @@ export function PartnerDetailRegistrationDossierSection({
                 </StatusBadge>
               </td>
               <td>
-                <p className="muted">{item.detail}</p>
+                <p className="muted">{item.detailNode ?? item.detail}</p>
               </td>
               <td>
                 <p className="muted">{item.operatorAction}</p>

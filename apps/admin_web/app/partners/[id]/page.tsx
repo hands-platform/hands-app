@@ -3893,6 +3893,12 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
       detail: provider.currentLocationUpdatedAt
         ? `Last shared at ${formatDate(provider.currentLocationUpdatedAt)}. Policy requires ${dispatchPolicy.locationFreshnessMinutes}m freshness.`
         : 'Partner app has not shared a location.',
+      detailNode: provider.currentLocationUpdatedAt ? (
+        <>
+          Last shared at <DateTimeText fallback="Missing" value={provider.currentLocationUpdatedAt} />. Policy
+          requires {dispatchPolicy.locationFreshnessMinutes}m freshness.
+        </>
+      ) : undefined,
     },
     {
       label: 'Push device',
