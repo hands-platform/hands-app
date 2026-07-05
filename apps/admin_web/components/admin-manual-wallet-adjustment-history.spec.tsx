@@ -39,7 +39,7 @@ describe('AdminManualWalletAdjustmentHistory', () => {
 
     expect(markup).toContain('Recent manual wallet adjustments');
     expect(markup).toContain(
-      'card admin-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
     );
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('PARTNER_BONUS');
@@ -50,6 +50,10 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(markup).toContain('250.000 VND');
     expect(markup).toContain('/wallet-adjustments?ownerType=PARTNER&amp;ownerId=provider-1');
     expect(componentSource).toContain('MoneyText');
+    expect(componentSource).toContain('AdminTablePanel');
+    expect(componentSource).not.toContain(
+      "className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group'",
+    );
     expect(componentSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(componentSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
   });

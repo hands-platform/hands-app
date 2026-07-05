@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
 import { formatDateTime } from '../lib/admin-format';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
-import { AdminFilterPanel } from './admin-filter-panel';
+import { AdminTablePanel } from './admin-table-panel';
 import { MoneyText } from './money-text';
 import { StatusBadge } from './status-badge';
 
@@ -24,12 +24,12 @@ type AdminManualWalletAdjustmentHistoryProps = {
 };
 
 export function AdminManualWalletAdjustmentHistory({
-  className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+  className,
   rows,
   walletAdjustmentsHref,
 }: AdminManualWalletAdjustmentHistoryProps) {
   return (
-    <AdminFilterPanel
+    <AdminTablePanel
       className={className}
       description="Recent manual wallet adjustments are loaded separately from the detail payload and never move bank or cash accounts."
       resultLabel={`${rows.length} row(s)`}
@@ -86,7 +86,7 @@ export function AdminManualWalletAdjustmentHistory({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 
