@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge } from '../../../../components/status-badge';
@@ -92,9 +92,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             label="Booking"
             value={
               batch.bookingId ? (
-                <Link className="text-link" href={`/bookings/${batch.bookingId}`}>
+                <AdminTextLink href={`/bookings/${batch.bookingId}`}>
                   {shortId(batch.bookingId)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -108,9 +108,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
               settlementTraceLinks.length > 0 ? (
                 <div className="admin-table-substack">
                   {settlementTraceLinks.map((link) => (
-                    <Link className="text-link" href={link.href} key={link.label}>
+                    <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
-                    </Link>
+                    </AdminTextLink>
                   ))}
                 </div>
               ) : (
@@ -168,9 +168,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
               settlementTraceLinks.length > 0 ? (
                 <div className="admin-table-substack">
                   {settlementTraceLinks.map((link) => (
-                    <Link className="text-link" href={link.href} key={link.label}>
+                    <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
-                    </Link>
+                    </AdminTextLink>
                   ))}
                 </div>
               ) : (

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, ReceiptText, Scale } from 'lucide-react';
 
 import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } from '../../../lib/admin-api';
@@ -7,6 +6,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -193,17 +193,17 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           {pagination.rows.map((batch) => (
             <tr key={batch.id}>
               <td>
-                <Link className="text-link" href={generalLedgerDetailHref(batch.id)}>
+                <AdminTextLink href={generalLedgerDetailHref(batch.id)}>
                   <strong>{batch.sourceType}</strong>
-                </Link>
+                </AdminTextLink>
                 <div className="muted">{shortId(batch.sourceId)}</div>
                 <div className="muted">{batch._count?.entries ?? 0} entries</div>
               </td>
               <td>
                 {batch.bookingId ? (
-                  <Link className="text-link" href={`/bookings/${batch.bookingId}`}>
+                  <AdminTextLink href={`/bookings/${batch.bookingId}`}>
                     {shortId(batch.bookingId)}
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <AdminInlineFallback>No booking link</AdminInlineFallback>
                 )}
@@ -213,9 +213,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
               </td>
               <td>
                 {batch.customerProfileId ? (
-                  <Link className="text-link" href={`/customers/${batch.customerProfileId}`}>
+                  <AdminTextLink href={`/customers/${batch.customerProfileId}`}>
                     {financePersonName(batch.customerProfile?.user, 'Unknown customer')}
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <strong>{financePersonName(batch.customerProfile?.user, 'Unknown customer')}</strong>
                 )}
@@ -227,9 +227,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
               </td>
               <td>
                 {batch.providerProfileId ? (
-                  <Link className="text-link" href={`/partners/${batch.providerProfileId}?section=full`}>
+                  <AdminTextLink href={`/partners/${batch.providerProfileId}?section=full`}>
                     {batch.providerProfile?.displayName ?? financePersonName(batch.providerProfile?.user, 'Unknown partner')}
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <AdminInlineFallback>No partner link</AdminInlineFallback>
                 )}
