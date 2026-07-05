@@ -3,6 +3,7 @@ import type { FormHTMLAttributes, ReactNode } from 'react';
 
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 
+import { AdminFormControlButton } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
 import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
@@ -182,16 +183,16 @@ function ActionMenuDropdownControl({
       {item.hiddenInputs?.map((input) => (
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}
-      <button
+      <AdminFormControlButton
         aria-label={item.ariaLabel}
-        className={joinClassNames('admin-action-item admin-action-button', itemClassName)}
+        className={joinClassNames('button-secondary admin-action-item admin-action-button', itemClassName)}
         disabled={item.disabled}
         role="menuitem"
         title={readActionMenuTitle(item.description)}
         type="submit"
       >
         {content}
-      </button>
+      </AdminFormControlButton>
     </ActionMenuDropdownForm>
   );
 }

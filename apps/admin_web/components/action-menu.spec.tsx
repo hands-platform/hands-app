@@ -18,6 +18,27 @@ describe('ActionMenu', () => {
     expect(source).not.toContain('<button className={actionMenuItemClassName(item)}');
   });
 
+  it('renders dropdown submit actions through the shared Vuexy button atom', () => {
+    const menu = ActionMenu({
+      actions: [
+        {
+          action: '/notifications/review',
+          hiddenInputs: [{ name: 'notificationId', value: 'notification-1' }],
+          kind: 'submit',
+          label: 'Request review',
+        },
+      ],
+      label: 'Notification row actions',
+      variant: 'dropdown',
+    });
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n        aria-label={item.ariaLabel}');
+    expect(classNamesIn(menu)).toContain(
+      'admin-form-control-button button button-secondary admin-action-item admin-action-button',
+    );
+  });
+
   it('uses string descriptions as native titles only', () => {
     expect(readActionMenuTitle('Review booking')).toBe('Review booking');
     expect(readActionMenuTitle(<span>Review booking</span>)).toBeUndefined();
@@ -81,7 +102,7 @@ describe('ActionMenu', () => {
         'admin-action-menu action-menu-panel',
         'admin-action-item',
         'admin-action-form',
-        'admin-action-item admin-action-button',
+        'admin-form-control-button button button-secondary admin-action-item admin-action-button',
       ]),
     );
   });
