@@ -72,8 +72,10 @@ describe('PayoutBatchListSection', () => {
   it('uses shared badge atoms for payout batch toolbar shortcuts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-list-section.tsx'), 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('<span className="pill pill-success">Newest active first</span>');
     expect(source).not.toContain('<span className="pill pill-info">Payout record</span>');
     expect(source).not.toContain('<span className="pill pill-warn">Reconciliation</span>');

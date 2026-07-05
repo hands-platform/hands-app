@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 
 export type PayoutInclusionAuditCard = {
   readonly helper: ReactNode;
@@ -31,8 +31,7 @@ type PayoutInclusionAuditSectionProps = {
 
 export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Unbatched earning review before finance creates the next weekly, monthly, or admin-selected partner settlement batch."
       resultLabel={`${audit.readyCount} ready / ${audit.blockedCount} held`}
       resultTone={audit.blockedCount ? 'warning' : 'success'}
@@ -74,6 +73,6 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
           </div>
         ) : null}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

@@ -6,8 +6,10 @@ describe('PayoutReleaseBlockerQueueSection', () => {
   it('uses the shared Vuexy empty-state atom for clear release queues', () => {
     const source = readFileSync('app/payouts/payout-release-blocker-queue-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No payout release blocker</strong>');
   });

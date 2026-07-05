@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -29,8 +29,7 @@ export function PayoutServiceEvidenceSection({
   items,
 }: PayoutServiceEvidenceSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Shows which service duration options are inside payout batches, so finance can reconcile partner net, HANDS fee, tax withholding, and cash wallet debt before bank transfer."
       resultLabel={`${items.length} option(s)`}
       resultTone={items.length > 0 ? 'info' : 'warning'}
@@ -120,7 +119,7 @@ export function PayoutServiceEvidenceSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

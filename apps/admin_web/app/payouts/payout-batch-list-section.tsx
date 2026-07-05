@@ -1,6 +1,6 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { PayoutServerPagination } from './payouts-page-model';
 
@@ -20,8 +20,7 @@ export function PayoutBatchListSection({
   updateTransferRefAction,
 }: PayoutBatchListSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Partner settlement batches ordered so unresolved money movement stays at the top."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
@@ -48,6 +47,6 @@ export function PayoutBatchListSection({
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

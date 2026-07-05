@@ -1,5 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -26,8 +26,7 @@ type PayoutReleaseBlockerQueueSectionProps = {
 
 export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlockerQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and bank references are clean."
       resultLabel={items.length ? `${items.length} blocker(s)` : 'Clear'}
       resultTone={items.length > 0 ? 'danger' : 'success'}
@@ -71,6 +70,6 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
           </div>
         ) : null}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
