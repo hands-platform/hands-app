@@ -264,7 +264,7 @@ export default async function UsageOverviewPage({
 
       <ActionPrioritiesBoard overview={overview} />
 
-      <section className="usage-overview-grid">
+      <AdminOverviewGrid ariaLabel="Customer and Partner usage rankings" variant="content">
         <section className="usage-overview-group">
           <div className="usage-overview-group-heading">
             <span>Customer behavior</span>
@@ -327,7 +327,7 @@ export default async function UsageOverviewPage({
           />
         </section>
         <RegionUsageCard rows={overview.regionUsage} />
-      </section>
+      </AdminOverviewGrid>
     </AdminPageTemplate>
   );
 }

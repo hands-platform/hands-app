@@ -96,6 +96,8 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('empty-state marketing-breakdown-loader-empty');
     expect(markup).toContain('admin-form-control-link button button-primary');
     expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).toContain('AdminOverviewGrid');
+    expect(pageSource).not.toContain('<section className="usage-overview-grid');
     expect(pageSource).not.toContain('<a className="button button-primary"');
     expect(pageSource).not.toContain('bodyClassName="empty-state"');
   });

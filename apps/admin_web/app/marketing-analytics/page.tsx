@@ -20,6 +20,7 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminOverviewGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
@@ -355,7 +356,11 @@ export default async function MarketingAnalyticsPage({
         ))}
       </section>
 
-      <section className="usage-overview-grid marketing-analytics-grid">
+      <AdminOverviewGrid
+        ariaLabel="Marketing analytics funnel and breakdowns"
+        className="marketing-analytics-grid"
+        variant="content"
+      >
         <FunnelCard overview={overview} />
         <InsightCard overview={overview} />
         {dimensionPages ? (
@@ -412,7 +417,7 @@ export default async function MarketingAnalyticsPage({
         ) : (
           <MarketingBreakdownLoader filters={filters} />
         )}
-      </section>
+      </AdminOverviewGrid>
     </AdminPageTemplate>
   );
 }
