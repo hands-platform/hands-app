@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { AdminDetailGrid } from '../../components/admin-surface';
+
 type FinanceDetailInfoItemProps = {
   readonly label: string;
   readonly value: ReactNode;
@@ -15,5 +17,5 @@ export function FinanceDetailInfoItem({ label, value }: FinanceDetailInfoItemPro
 }
 
 export function FinanceDetailGrid({ children }: { readonly children: ReactNode }) {
-  return <div className="detail-grid admin-mt-16">{children}</div>;
+  return <AdminDetailGrid className="admin-mt-16">{children}</AdminDetailGrid>;
 }

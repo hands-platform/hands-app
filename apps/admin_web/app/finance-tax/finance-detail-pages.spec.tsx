@@ -1007,6 +1007,13 @@ describe('finance detail pages', () => {
     expect(source).not.toContain('<strong>{formatMoney(entry.amount, entry.currency)}</strong>');
   });
 
+  it('uses the shared Vuexy detail grid shell for finance detail facts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-detail-info-item.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<div className="detail-grid admin-mt-16">');
+  });
+
   it.each([
     ['booking settlement audit detail', 'app/finance-tax/booking-settlement-audit/[id]/page.tsx'],
     ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],
