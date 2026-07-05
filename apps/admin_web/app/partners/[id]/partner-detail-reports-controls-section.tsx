@@ -303,7 +303,7 @@ export function PartnerDetailReportsControlsSection({
                         variant="dropdown"
                       />
                     ) : (
-                      <span className="muted">No action</span>
+                      <AdminInlineFallback>No action</AdminInlineFallback>
                     )}
                   </td>
                 </tr>
