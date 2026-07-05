@@ -68,8 +68,12 @@ describe('FinanceTaxPage', () => {
   it('uses shared money atoms for bank match evidence amounts', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-bank-match-evidence.tsx'), 'utf8');
 
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
     expect(source).toContain('MoneyText');
     expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain("import Link from 'next/link';");
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<span className="muted">No bank transaction</span>');
     expect(source).not.toContain('<span className="muted">No journal entry</span>');

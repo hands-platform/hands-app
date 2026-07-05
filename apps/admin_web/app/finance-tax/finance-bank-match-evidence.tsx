@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { shortId } from '../../lib/admin-format';
 import { bankReconciliationDetailHref, generalLedgerDetailHref, paymentClearingDetailHref } from './tax-settlement-page-model';
@@ -49,17 +49,17 @@ export function FinanceBankMatchEvidence({
       {matches.map((match) => (
         <div key={match.id}>
           {match.bankTransactionId ? (
-            <Link className="text-link" href={bankReconciliationDetailHref(match.bankTransactionId)}>
+            <AdminTextLink href={bankReconciliationDetailHref(match.bankTransactionId)}>
               Bank {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
-            </Link>
+            </AdminTextLink>
           ) : (
             <AdminInlineFallback>No bank transaction</AdminInlineFallback>
           )}
           {showJournalLink ? (
             match.accountingJournalEntry ? (
-              <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+              <AdminTextLink href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
                 Journal {match.accountingJournalEntry.accountCode}
-              </Link>
+              </AdminTextLink>
             ) : (
               <AdminInlineFallback>No journal entry</AdminInlineFallback>
             )
@@ -72,9 +72,9 @@ export function FinanceBankMatchEvidence({
             <span className="muted">{match.status}</span>
           )}
           {showPaymentClearingLink && match.paymentClearingEntryId ? (
-            <Link className="text-link" href={paymentClearingDetailHref(match.paymentClearingEntryId)}>
+            <AdminTextLink href={paymentClearingDetailHref(match.paymentClearingEntryId)}>
               Clearing {shortId(match.paymentClearingEntryId)}
-            </Link>
+            </AdminTextLink>
           ) : null}
         </div>
       ))}
