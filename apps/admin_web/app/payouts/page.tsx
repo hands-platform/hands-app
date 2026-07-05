@@ -400,7 +400,7 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
       totalAmount: batch.totalNetAmount,
       withholdingAmount: batchWithholdingAmount(batch),
       taxLogCount: batch.withholdingLogs?.length ?? 0,
-      paidAtLabel: formatDateTime(batch.paidAt, '-'),
+      paidAt: batch.paidAt ?? null,
       paidAtRelativeLabel: batch.paidAt
         ? formatRelativeTime(batch.paidAt, { justNow: 'Updated just now' })
         : 'Awaiting settlement',

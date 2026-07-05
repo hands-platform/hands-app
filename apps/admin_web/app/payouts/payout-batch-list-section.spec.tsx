@@ -21,7 +21,7 @@ describe('PayoutBatchListSection', () => {
           opsHint: 'Ready for finance review.',
           opsSignal: 'Ready',
           opsSignalClassName: 'signal signal-ok',
-          paidAtLabel: '-',
+          paidAt: null,
           paidAtRelativeLabel: 'Awaiting settlement',
           paidBlockedByReleaseCheck: false,
           partnerChecksHref: '/partners/partner-1',

@@ -5,6 +5,7 @@ import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminNotePanel } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -51,7 +52,7 @@ export type PayoutBatchTableRow = {
   readonly opsHint: string;
   readonly opsSignal: string;
   readonly opsSignalClassName: string;
-  readonly paidAtLabel: string;
+  readonly paidAt: string | null;
   readonly paidAtRelativeLabel: string;
   readonly paidBlockedByReleaseCheck: boolean;
   readonly partnerChecksHref: string;
@@ -180,7 +181,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.taxLogCount} tax log(s)</div>
           </td>
           <td>
-            <div>{row.paidAtLabel}</div>
+            <DateTimeText fallback="-" value={row.paidAt} />
             <div className="muted">{row.paidAtRelativeLabel}</div>
           </td>
           <td>

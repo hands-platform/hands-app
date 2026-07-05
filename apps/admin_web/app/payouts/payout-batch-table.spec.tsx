@@ -52,7 +52,7 @@ describe('PayoutBatchTable', () => {
           earningsHint: '2/2 linked to this batch',
           id: 'batch-123456',
           notes: 'Manual transfer',
-          paidAtLabel: '-',
+          paidAt: null,
           paidAtRelativeLabel: 'Awaiting settlement',
           partnerChecksHref: '/partners/partner-1',
           partnerLabel: 'Partner One',
@@ -143,7 +143,7 @@ describe('PayoutBatchTable', () => {
             },
           ],
           notes: 'Final settlement memo',
-          paidAtLabel: 'Jun 11, 2026, 9:00 AM',
+          paidAt: '2026-06-11T02:00:00.000Z',
           paidAtRelativeLabel: 'Settled today',
           paidBlockedByReleaseCheck: false,
           payoutHold: false,
@@ -233,6 +233,16 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('{item.label}: {item.value}');
   });
 
+  it('uses the shared date time atom for paid timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
+    const pageSource = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly paidAtLabel: string;');
+    expect(source).not.toContain('<div>{row.paidAtLabel}</div>');
+    expect(pageSource).not.toContain("paidAtLabel: formatDateTime(batch.paidAt, '-')");
+  });
+
   it('allows action execution reasons to render shared money atoms', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
@@ -252,7 +262,7 @@ function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): Payo
     earningsHint: '0/0 linked to this batch',
     id: 'batch-123456',
     notes: '',
-    paidAtLabel: '-',
+    paidAt: null,
     paidAtRelativeLabel: 'Awaiting settlement',
     partnerChecksHref: '/partners/partner-1',
     partnerLabel: 'Partner One',
