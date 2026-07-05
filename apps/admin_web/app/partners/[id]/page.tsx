@@ -4147,9 +4147,13 @@ function buildPartnerPayoutEarningRows(
     const bookingPrefix = earning.bookingId ? `Booking ${shortRecordId(earning.bookingId)} / ` : '';
 
     return {
-      amountLine: `Gross ${formatCurrency(earning.grossAmount)} / platform fee ${formatCurrency(
-        earning.platformFee,
-      )} / withholding ${formatCurrency(earning.withholdingAmount)}`,
+      amountLine: (
+        <>
+          Gross <MoneyText amount={earning.grossAmount} /> / platform fee{' '}
+          <MoneyText amount={earning.platformFee} /> / withholding{' '}
+          <MoneyText amount={earning.withholdingAmount} />
+        </>
+      ),
       detailLine: `${bookingPrefix}payment ${earning.booking?.payment?.method ?? 'UNKNOWN'} / created ${formatDate(
         earning.createdAt,
       )}`,
@@ -4163,14 +4167,25 @@ function buildPartnerPayoutEarningRows(
           : 'Unpaid',
       statusLabel: cashDebt ? 'CASH DEBT' : earning.status,
       title: cashDebt
-        ? `Owes HANDS ${formatCurrency(Math.abs(amountValue(earning.netAmount)))}`
-        : `Net ${formatCurrency(earning.netAmount)}`,
+        ? (
+            <>
+              Owes HANDS <MoneyText amount={Math.abs(amountValue(earning.netAmount))} />
+            </>
+          )
+        : (
+            <>
+              Net <MoneyText amount={earning.netAmount} />
+            </>
+          ),
       walletLines: (earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => {
         const reference = entry.reference ? ` / ref ${entry.reference}` : '';
-        return `Wallet ${walletLedgerLabel(entry.type)}: ${formatCurrency(
-          entry.amount,
-          entry.currency ?? earning.currency ?? 'VND',
-        )}${reference}`;
+        return (
+          <>
+            Wallet {walletLedgerLabel(entry.type)}:{' '}
+            <MoneyText amount={entry.amount} currency={entry.currency ?? earning.currency ?? 'VND'} />
+            {reference}
+          </>
+        );
       }),
     };
   });
@@ -4187,7 +4202,7 @@ function buildPartnerPayoutBatchRows(
     id: batch.id,
     paidLine: batch.paidAt ? `Paid ${formatDate(batch.paidAt)}` : null,
     status: batch.status,
-    totalNetLabel: formatCurrency(batch.totalNetAmount),
+    totalNetLabel: <MoneyText amount={batch.totalNetAmount} />,
   }));
 }
 

@@ -5,9 +5,19 @@ import { PartnerDetailPayoutOperationsSection } from './partner-detail-payout-op
 describe('PartnerDetailPayoutOperationsSection', () => {
   it('uses shared Vuexy badge atoms for payout operation statuses', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain("import type { ReactNode } from 'react';");
+    expect(source).toContain('readonly amountLine: ReactNode;');
+    expect(source).toContain('readonly title: ReactNode;');
+    expect(source).toContain('readonly totalNetLabel: ReactNode;');
+    expect(source).toContain('readonly walletLines: readonly ReactNode[];');
+    expect(pageSource).toContain('Gross <MoneyText amount={earning.grossAmount} />');
+    expect(pageSource).toContain('<MoneyText amount={earning.platformFee} />');
+    expect(pageSource).toContain('<MoneyText amount={earning.withholdingAmount} />');
+    expect(pageSource).toContain('<MoneyText amount={batch.totalNetAmount} />');
     expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -36,15 +37,15 @@ export type PartnerPayoutOperationsView = {
 };
 
 export type PartnerPayoutEarningRow = {
-  readonly amountLine: string;
+  readonly amountLine: ReactNode;
   readonly detailLine: string;
   readonly id: string;
   readonly settlementNotes?: string | null;
   readonly settlementRef?: string | null;
   readonly smallLabel: string;
   readonly statusLabel: string;
-  readonly title: string;
-  readonly walletLines: readonly string[];
+  readonly title: ReactNode;
+  readonly walletLines: readonly ReactNode[];
 };
 
 export type PartnerPayoutBatchRow = {
@@ -53,7 +54,7 @@ export type PartnerPayoutBatchRow = {
   readonly id: string;
   readonly paidLine?: string | null;
   readonly status: string;
-  readonly totalNetLabel: string;
+  readonly totalNetLabel: ReactNode;
 };
 
 type PartnerDetailPayoutOperationsSectionProps = {
