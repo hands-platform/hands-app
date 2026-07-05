@@ -18,6 +18,9 @@ describe('LoginPage', () => {
     expect(markup).not.toContain('Welcome to HANDS Admin');
     expect(markup).not.toContain('Sign in to continue to the operations console.');
     expect(markup).not.toContain('Master and operator access is controlled by HANDS admin policy.');
+    expect(markup).not.toContain('HANDS Operations');
+    expect(markup).not.toContain('Command center access for trusted operators');
+    expect(markup).not.toContain('Secure operator workspace');
     expect(markup).not.toContain('ADMIN_ACCESS_TOKEN');
     expect(markup).not.toContain('ADMIN_WEB_SESSION_COOKIE_SECRET');
   });
@@ -30,6 +33,7 @@ describe('LoginPage', () => {
 
     expect(markup).toContain('admin-auth-page');
     expect(markup).toContain('admin-auth-visual');
+    expect(markup).not.toContain('admin-auth-visual-copy');
     expect(markup).toContain('card admin-card admin-auth-card');
     expect(markup).not.toContain('Welcome to HANDS Admin');
     expect(markup).toContain('Sign in failed. Check your admin credentials and try again.');

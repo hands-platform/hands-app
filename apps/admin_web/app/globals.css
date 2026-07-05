@@ -434,35 +434,6 @@ a {
   right: 7%;
 }
 
-.admin-auth-visual-copy {
-  display: grid;
-  gap: 14px;
-  max-width: 520px;
-  position: relative;
-  z-index: 2;
-}
-
-.admin-auth-visual-copy span {
-  color: var(--admin-accent-strong);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.admin-auth-visual-copy h1 {
-  font-size: 38px;
-  line-height: 1.12;
-  margin: 0;
-}
-
-.admin-auth-visual-copy p {
-  color: var(--admin-muted);
-  font-size: 16px;
-  line-height: 1.7;
-  margin: 0;
-}
-
 .admin-auth-illustration {
   background: url('/images/illustrations/auth/v2-login-light.png') center / contain no-repeat;
   bottom: 72px;
@@ -16794,6 +16765,7 @@ textarea:focus-visible {
   box-shadow: none;
   display: grid;
   gap: 6px;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   padding: 0;
 }
@@ -16941,9 +16913,9 @@ textarea:focus-visible {
 }
 
 .admin-form-search input,
-.admin-form-date input,
-.admin-form-input input,
-.admin-form-select select,
+.admin-form-date:not(.admin-form-control-labeled) input,
+.admin-form-input:not(.admin-form-control-labeled) input,
+.admin-form-select:not(.admin-form-control-labeled) select,
 .admin-directory-filter-search input,
 .admin-directory-filter-select select,
 .vuexy-customer-number-field input {
@@ -16995,16 +16967,16 @@ textarea:focus-visible {
     [type='hidden']
   ):not([type='color']),
 :root
-  .admin-form-date
+  .admin-form-date:not(.admin-form-control-labeled)
   > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']),
 :root
-  .admin-form-input
+  .admin-form-input:not(.admin-form-control-labeled)
   > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
     [type='hidden']
   ):not([type='color']),
-:root .admin-form-select > select {
+:root .admin-form-select:not(.admin-form-control-labeled) > select {
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -17015,9 +16987,9 @@ textarea:focus-visible {
 }
 
 :root .admin-form-search > input:focus,
-:root .admin-form-date > input:focus,
-:root .admin-form-input > input:focus,
-:root .admin-form-select > select:focus {
+:root .admin-form-date:not(.admin-form-control-labeled) > input:focus,
+:root .admin-form-input:not(.admin-form-control-labeled) > input:focus,
+:root .admin-form-select:not(.admin-form-control-labeled) > select:focus {
   border: 0;
   box-shadow: none;
   outline: 0;
@@ -17285,9 +17257,9 @@ textarea:focus-visible {
 }
 
 .admin-form-search input:focus,
-.admin-form-date input:focus,
-.admin-form-input input:focus,
-.admin-form-select select:focus,
+.admin-form-date:not(.admin-form-control-labeled) input:focus,
+.admin-form-input:not(.admin-form-control-labeled) input:focus,
+.admin-form-select:not(.admin-form-control-labeled) select:focus,
 .admin-directory-filter-search input:focus,
 .admin-directory-filter-select select:focus,
 .vuexy-customer-number-field input:focus {
@@ -17341,9 +17313,9 @@ textarea:focus-visible {
 }
 
 .admin-form-search input,
-.admin-form-date input,
-.admin-form-input input,
-.admin-form-select select,
+.admin-form-date:not(.admin-form-control-labeled) input,
+.admin-form-input:not(.admin-form-control-labeled) input,
+.admin-form-select:not(.admin-form-control-labeled) select,
 .admin-directory-filter-search input,
 .admin-directory-filter-select select,
 .vuexy-customer-number-field input {
@@ -17355,7 +17327,7 @@ textarea:focus-visible {
   padding: 0;
 }
 
-.admin-form-select select,
+.admin-form-select:not(.admin-form-control-labeled) select,
 .admin-directory-filter-select select {
   padding-inline-end: 32px;
 }

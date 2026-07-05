@@ -230,12 +230,43 @@ describe('Admin form control CSS', () => {
     expect(shellBlock).toContain('background: transparent');
     expect(shellBlock).toContain('border: 0');
     expect(shellBlock).toContain('.admin-form-textarea.admin-form-control-labeled');
+    expect(shellBlock).toContain('grid-template-columns: minmax(0, 1fr)');
     expect(shellBlock).toContain('padding: 0');
     expect(fieldBlock).toContain('background: var(--admin-surface)');
     expect(fieldBlock).toContain('border: 1px solid var(--admin-input-border)');
     expect(fieldBlock).toContain('min-height: var(--admin-control-height-sm)');
     expect(dateIconBlock).toContain('bottom: 10px');
     expect(selectArrowBlock).toContain('bottom: 15px');
+  });
+
+  it('keeps late compact input resets from stripping visible-label field borders', () => {
+    const visibleFieldIndex = globalsCss.lastIndexOf(
+      '.admin-form-date.admin-form-control-labeled input,\n' +
+        '.admin-form-input.admin-form-control-labeled input,\n' +
+        '.admin-form-select.admin-form-control-labeled select,\n' +
+        '.admin-form-static-value.admin-form-control-labeled strong {',
+    );
+    const lateResetIndex = globalsCss.lastIndexOf(
+      '.admin-form-search input,\n' +
+        '.admin-form-date:not(.admin-form-control-labeled) input,\n' +
+        '.admin-form-input:not(.admin-form-control-labeled) input,',
+    );
+    const lateResetBlock = cssRuleBlockAt(lateResetIndex);
+
+    expect(visibleFieldIndex).toBeGreaterThan(-1);
+    expect(lateResetIndex).toBeGreaterThan(visibleFieldIndex);
+    expect(globalsCss).toContain(':root\n  .admin-form-date:not(.admin-form-control-labeled)');
+    expect(globalsCss).toContain(':root\n  .admin-form-input:not(.admin-form-control-labeled)');
+    expect(globalsCss).toContain(':root .admin-form-select:not(.admin-form-control-labeled) > select');
+    expect(globalsCss).not.toContain(':root\n  .admin-form-date\n  > input:not');
+    expect(globalsCss).not.toContain(':root\n  .admin-form-input\n  > input:not');
+    expect(globalsCss).not.toContain(':root .admin-form-select > select {');
+    expect(lateResetBlock).toContain('.admin-form-date:not(.admin-form-control-labeled) input');
+    expect(lateResetBlock).toContain('.admin-form-input:not(.admin-form-control-labeled) input');
+    expect(lateResetBlock).toContain('.admin-form-select:not(.admin-form-control-labeled) select');
+    expect(lateResetBlock).not.toContain('\n.admin-form-date input,');
+    expect(lateResetBlock).not.toContain('\n.admin-form-input input,');
+    expect(lateResetBlock).not.toContain('\n.admin-form-select select,');
   });
 
   it('keeps standalone native fields from resizing on Vuexy focused border weight', () => {
@@ -250,9 +281,13 @@ describe('Admin form control CSS', () => {
   });
 
   it('reserves Vuexy select end-adornment space after native field resets', () => {
-    const resetIndex = globalsCss.lastIndexOf('.admin-form-search input,\n.admin-form-date input,');
+    const resetIndex = globalsCss.lastIndexOf(
+      '.admin-form-search input,\n.admin-form-date:not(.admin-form-control-labeled) input,',
+    );
     const resetBlock = cssRuleBlockAt(resetIndex);
-    const selectPaddingIndex = globalsCss.lastIndexOf('.admin-form-select select,\n.admin-directory-filter-select select {');
+    const selectPaddingIndex = globalsCss.lastIndexOf(
+      '.admin-form-select:not(.admin-form-control-labeled) select,\n.admin-directory-filter-select select {',
+    );
     const selectPaddingBlock = cssRuleBlockAt(selectPaddingIndex);
 
     expect(resetIndex).toBeGreaterThan(-1);
