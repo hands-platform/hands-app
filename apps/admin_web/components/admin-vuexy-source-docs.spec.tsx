@@ -12,9 +12,12 @@ const comparisonDoc = readFileSync(
   resolve(repoRoot, 'docs/codex/vuexy-figma-template-comparison.md'),
   'utf8',
 );
+const figmaReadme = readFileSync(resolve(repoRoot, 'design/figma/README.md'), 'utf8');
+const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf8');
 
 const figmaSourcePath =
   'C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig';
+const repoFigmaMirrorPath = resolve(repoRoot, 'design/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig');
 const vuexyTemplatePath =
   'C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/nextjs-version/typescript-version/full-version';
 const vuexyTemplateAnchors = [
@@ -43,6 +46,15 @@ describe('Admin Vuexy source documentation', () => {
     expect(comparisonDoc).toContain('ZIP package');
     expect(comparisonDoc).toContain('fig-kiwi');
     expect(comparisonDoc).toContain('thumbnail.png');
+  });
+
+  it('documents why the large Figma binary is not committed as a repo-local mirror', () => {
+    expect(existsSync(repoFigmaMirrorPath)).toBe(false);
+    expect(gitignore).toContain('design/figma/*.fig');
+    expect(figmaReadme).toContain('large binary asset');
+    expect(comparisonDoc).toContain('design/figma/README.md');
+    expect(comparisonDoc).toContain('about 167 MB');
+    expect(comparisonDoc).toContain('Do not commit copied `.fig` files');
   });
 
   it('documents the verified Figma package metadata and the local Vuexy implementation anchors', () => {
