@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   buildCalendarTagFilters,
   buildCalendarMetrics,
@@ -9,6 +11,13 @@ import {
 } from './calendar-model';
 
 describe('calendar-model', () => {
+  it('uses the shared admin date-time formatter for summary labels', () => {
+    const source = readFileSync('app/calendar/calendar-model.ts', 'utf8');
+
+    expect(source).toContain('formatDateTime as formatAdminDateTime');
+    expect(source).not.toContain('new Intl.DateTimeFormat');
+  });
+
   it('filters events by selected hashtags', () => {
     const events = createSeedEvents(new Date('2026-06-16T09:00:00.000Z'));
 

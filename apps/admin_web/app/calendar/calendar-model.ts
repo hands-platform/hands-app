@@ -1,5 +1,7 @@
 import type { EventInput } from '@fullcalendar/core';
 
+import { formatDateTime as formatAdminDateTime } from '../../lib/admin-format';
+
 export const CALENDAR_TAG_TONES = ['accent', 'info', 'success', 'warning', 'danger'] as const;
 
 export type CalendarTagTone = (typeof CALENDAR_TAG_TONES)[number];
@@ -281,13 +283,7 @@ export function createBlankDraft(date = new Date()): CalendarEventDraft {
 }
 
 export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+  return formatAdminDateTime(value);
 }
 
 function createSeedEvent(
