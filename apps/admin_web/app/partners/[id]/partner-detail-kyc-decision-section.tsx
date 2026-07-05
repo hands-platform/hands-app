@@ -2,6 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
@@ -148,7 +149,7 @@ export function PartnerDetailKycDecisionSection({
                 {row.rejectionReason ? (
                   <span className="muted">Rejection: {row.rejectionReason}</span>
                 ) : (
-                  <span className="muted">No rejection note</span>
+                  <AdminInlineFallback>No rejection note</AdminInlineFallback>
                 )}
               </td>
             </tr>
