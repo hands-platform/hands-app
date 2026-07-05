@@ -78,6 +78,37 @@ describe('PartnerDetailOperationsDigestSection', () => {
     );
     expect(rendered).toContain('Showing 0 entries');
   });
+
+  it('prefers shared detail nodes over fallback operations digest detail text', () => {
+    const section = PartnerDetailOperationsDigestSection({
+      description: 'One-screen factual digest for partner operations.',
+      id: 'partner-operations-digest',
+      rows: [
+        {
+          detail: 'Fallback operations digest date',
+          detailNode: <span>Shared operations digest date marker</span>,
+          evidence: ['1 session'],
+          href: '#app-activity',
+          lane: 'App reachability',
+          status: 'Push-ready',
+          tone: 'pill-success',
+        },
+      ],
+      title: 'Partner operations digest',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const sectionSource = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
+    const modelSource = readFileSync('app/partners/[id]/partner-detail-operations-digest-model.ts', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared operations digest date marker');
+    expect(rendered).not.toContain('Fallback operations digest date');
+    expect(sectionSource).toContain('row.detailNode ?? row.detail');
+    expect(modelSource).toContain('readonly detailNode?: ReactNode;');
+    expect(pageSource).toContain(
+      '<DateTimeText fallback="Missing" value={partnerOperationsDigestLatestAccessAt} />',
+    );
+  });
 });
 
 function buildRows(): PartnerOperationsDigestRow[] {

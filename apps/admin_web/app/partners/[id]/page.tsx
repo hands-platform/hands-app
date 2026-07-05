@@ -649,7 +649,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     bookingAcceptance,
     providerServicePricing,
   );
-  const partnerOperationsDigest = buildPartnerOperationsDigest({
+  const partnerOperationsDigestBase = buildPartnerOperationsDigest({
     provider,
     bookingArchive: filteredPartnerBookingArchive,
     bookingAcceptance,
@@ -657,6 +657,19 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     dispatchPolicy,
     activityRecords: filteredPartnerActivityRecords,
   });
+  const partnerOperationsDigestLatestAccessAt = latestPartnerAccessAt(provider);
+  const partnerOperationsDigest = partnerOperationsDigestBase.map((row) =>
+    row.lane === 'App reachability' && partnerOperationsDigestLatestAccessAt
+      ? {
+          ...row,
+          detailNode: (
+            <>
+              Last app access <DateTimeText fallback="Missing" value={partnerOperationsDigestLatestAccessAt} />.
+            </>
+          ),
+        }
+      : row,
+  );
   const partnerBookingJourneyRows = buildPartnerBookingJourneyRows(
     provider,
     filteredPartnerBookingArchive,

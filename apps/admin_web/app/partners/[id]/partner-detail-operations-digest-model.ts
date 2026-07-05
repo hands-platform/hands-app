@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { providerDocumentLabel } from '../../../lib/admin-api';
 import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../../lib/operations-policy';
@@ -10,6 +11,7 @@ const STAFF_ACTIVITY_TYPES: readonly string[] = ['VERIFY', 'DOCUMENT', 'BANK', '
 
 export type PartnerOperationsDigestRow = {
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly evidence: readonly string[];
   readonly href: string;
   readonly lane: string;

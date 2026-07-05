@@ -58,7 +58,7 @@ export function PartnerDetailOperationsDigestSection({
                   </Link>
                 </td>
                 <td>
-                  <p className="muted">{row.detail}</p>
+                  <p className="muted">{row.detailNode ?? row.detail}</p>
                 </td>
                 <td>
                   <div className="participant-list">
