@@ -207,6 +207,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/setup#referrals"');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');
+    expect(markup).toContain('date-time-text');
     expect(markup).toContain(
       'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
     );
@@ -230,6 +231,13 @@ describe('ReferralDashboard', () => {
   it('uses the shared MoneyText atom for visible referral money values', () => {
     expect(dashboardSource).toContain('MoneyText');
     expect(dashboardSource).not.toContain('formatMoney(');
+  });
+
+  it('uses the shared DateTimeText atom for referral dashboard timestamps', () => {
+    expect(dashboardSource).toContain('DateTimeText');
+    expect(dashboardSource).not.toContain('<small className="muted">{formatDateTime(code.createdAt)}</small>');
+    expect(dashboardSource).not.toContain('<span className="muted">{formatDateTime(latestDecision.createdAt)}</span>');
+    expect(dashboardSource).not.toContain('{formatDateTime(createdAt)}');
   });
 
   it('uses the shared Vuexy table panel wrapper for referral parent lists', () => {

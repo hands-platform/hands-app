@@ -24,6 +24,7 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -33,7 +34,6 @@ import {
   type AdminReferralReward,
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { isReferralRewardCredited, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
@@ -812,7 +812,9 @@ function ReferralCodeCell({
       <strong>{code.code}</strong>
       <div className="participant-list admin-mt-8">
         <StatusBadge tone={code.active ? 'success' : 'neutral'}>{code.active ? 'Active' : 'Paused'}</StatusBadge>
-        <small className="muted">{formatDateTime(code.createdAt)}</small>
+        <small className="muted">
+          <DateTimeText value={code.createdAt} />
+        </small>
       </div>
     </div>
   );
@@ -914,7 +916,9 @@ function ReferralRewardCell({
             <summary>Decision details</summary>
             <div className="participant-list referral-parent-reward-decision-evidence">
               {latestDecision.reason ? <span className="muted">{latestDecision.reason}</span> : null}
-              <span className="muted">{formatDateTime(latestDecision.createdAt)}</span>
+              <span className="muted">
+                <DateTimeText value={latestDecision.createdAt} />
+              </span>
             </div>
           </AdminDisclosure>
         </>
@@ -992,7 +996,7 @@ function ReferralStatusLine({
       <StatusBadge tone={fraudReviewStatus === 'CLEAR' ? 'success' : 'warning'}>{fraudReviewStatus}</StatusBadge>
       <small className="muted">
         {platform ? `${platform} · ` : ''}
-        {formatDateTime(createdAt)}
+        <DateTimeText value={createdAt} />
       </small>
     </div>
   );
