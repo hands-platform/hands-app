@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
+import { AdminInlineFallback } from './admin-inline-fallback';
 import { AdminTablePanel } from './admin-table-panel';
 import { DateTimeText } from './date-time-text';
 import { MoneyText } from './money-text';
@@ -77,7 +78,11 @@ export function AdminManualWalletAdjustmentHistory({
               </td>
               <td>
                 <strong>{row.approvalId ?? 'Missing approval'}</strong>
-                <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
+                {row.attachmentUrl ? (
+                  <p className="muted">Attachment saved</p>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No attachment</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <strong>{renderBalanceChange(row)}</strong>

@@ -10,6 +10,7 @@ import {
   AdminFormShell,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -244,7 +245,11 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 <p className="muted">
                   {row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}
                 </p>
-                <p className="muted">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>
+                {row.attachmentUrl ? (
+                  <p className="muted">Attachment saved</p>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No attachment</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <strong>{formatBalanceChange(row)}</strong>

@@ -310,6 +310,7 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).toContain('AdminTablePanel');
+    expect(pageSource).toContain('AdminInlineFallback');
     expect(pageSource).not.toContain(
       'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
     );
@@ -319,6 +320,9 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(pageSource).not.toContain('<strong>{formatDateTime(row.createdAt)}</strong>');
     expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
+    expect(pageSource).not.toContain(
+      '<p className="muted">{row.attachmentUrl ? \'Attachment saved\' : \'No attachment\'}</p>',
+    );
     expect(pageSource).not.toContain('<td>{formatMoney(entry.amount, currency)}</td>');
     expect(pageSource).not.toContain('AdminTableScroll');
     expect(pageSource).not.toContain('className="vuexy-booking-table"');

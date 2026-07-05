@@ -53,8 +53,12 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(componentSource).toContain('MoneyText');
     expect(componentSource).toContain('DateTimeText');
     expect(componentSource).toContain('AdminTablePanel');
+    expect(componentSource).toContain('AdminInlineFallback');
     expect(componentSource).not.toContain(
       "className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group'",
+    );
+    expect(componentSource).not.toContain(
+      '<p className="muted">{row.attachmentUrl ? \'Attachment saved\' : \'No attachment\'}</p>',
     );
     expect(componentSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(componentSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
