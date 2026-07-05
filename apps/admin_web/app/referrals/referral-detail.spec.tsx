@@ -311,6 +311,11 @@ describe('Referral detail presentation', () => {
     );
   });
 
+  it('uses the shared inline fallback atom for missing qualifying bookings', () => {
+    expect(detailSource).toContain('AdminInlineFallback');
+    expect(detailSource).not.toContain('<span className="muted">No qualifying booking linked</span>');
+  });
+
   it('uses the shared Vuexy table panel wrapper for attribution and reward tables', () => {
     expect(detailSource).toContain('AdminTablePanel');
     expect(detailSource).not.toContain(

@@ -5,6 +5,7 @@ import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../compone
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
@@ -834,7 +835,7 @@ function referralRewardRequiresOperatorReason(reward: AdminReferralReward) {
 
 function ReferralQualifyingBookingCell({ bookingId }: { readonly bookingId?: string | null }) {
   if (!bookingId) {
-    return <span className="muted">No qualifying booking linked</span>;
+    return <AdminInlineFallback>No qualifying booking linked</AdminInlineFallback>;
   }
 
   return (
