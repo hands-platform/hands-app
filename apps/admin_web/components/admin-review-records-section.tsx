@@ -6,6 +6,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from './admin-data-table';
+import { AdminInlineFallback } from './admin-inline-fallback';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminTablePanel } from './admin-table-panel';
@@ -251,7 +252,7 @@ function reviewRequestCell(review: AdminReview) {
             {shortId(bookingId)}
           </Link>
         ) : (
-          <span className="muted">No booking link</span>
+          <AdminInlineFallback>No booking link</AdminInlineFallback>
         )}
       </div>
       <div className="muted">
@@ -275,7 +276,7 @@ function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
             {shortId(bookingId)}
           </Link>
         ) : (
-          <span className="muted">No booking link</span>
+          <AdminInlineFallback>No booking link</AdminInlineFallback>
         )}
       </div>
       <div className="muted">

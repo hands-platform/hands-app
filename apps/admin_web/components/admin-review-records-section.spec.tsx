@@ -248,6 +248,7 @@ describe('AdminReviewRecordsSection', () => {
   it('uses shared badge atoms for review and evaluation counters', () => {
     const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
 
+    expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTablePanel');
@@ -256,6 +257,7 @@ describe('AdminReviewRecordsSection', () => {
     );
     expect(source).not.toContain('<span className="pill pill-neutral">{customerRows.length} review(s)</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{partnerRows.length} evaluation(s)</span>');
+    expect(source).not.toContain('<span className="muted">No booking link</span>');
     expect(source).not.toContain('<div className="ops-section-header admin-review-records-heading">');
   });
 
