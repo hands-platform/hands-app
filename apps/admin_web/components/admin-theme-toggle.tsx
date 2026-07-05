@@ -4,6 +4,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { ADMIN_THEME_STORAGE_KEY } from '../lib/admin-theme';
+import { AdminIconButton } from './admin-icon-button';
 
 type AdminTheme = 'light' | 'dark';
 
@@ -53,7 +54,7 @@ export function AdminThemeToggle() {
 
   return (
     <div aria-label="Theme mode" className="theme-toggle" role="group">
-      <button
+      <AdminIconButton
         aria-pressed={theme === 'light'}
         className="theme-toggle-button"
         onClick={() => changeTheme('light')}
@@ -61,8 +62,8 @@ export function AdminThemeToggle() {
         type="button"
       >
         <Sun aria-hidden="true" size={16} />
-      </button>
-      <button
+      </AdminIconButton>
+      <AdminIconButton
         aria-pressed={theme === 'dark'}
         className="theme-toggle-button"
         onClick={() => changeTheme('dark')}
@@ -70,7 +71,7 @@ export function AdminThemeToggle() {
         type="button"
       >
         <Moon aria-hidden="true" size={16} />
-      </button>
+      </AdminIconButton>
     </div>
   );
 }

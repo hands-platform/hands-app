@@ -19,6 +19,7 @@ import { AdminEmptyState } from './admin-empty-state';
 import { AdminFormShell } from './admin-form-controls';
 import { AdminIconButton } from './admin-icon-button';
 import { AdminThemeToggle } from './admin-theme-toggle';
+import { AdminTopbarButton } from './admin-topbar-button';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
 
@@ -103,7 +104,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
 
       <div className="topbar-actions" aria-label="Workspace actions">
         <div className="topbar-menu">
-          <button
+          <AdminTopbarButton
             aria-expanded={searchOpen}
             aria-haspopup="dialog"
             className="topbar-search topbar-search-trigger"
@@ -118,7 +119,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
               Search
             </span>
             <kbd>Ctrl K</kbd>
-          </button>
+          </AdminTopbarButton>
           {searchOpen ? (
             <div className="topbar-dropdown topbar-search-menu" role="dialog" aria-label="Search admin pages">
               <AdminTopbarSearchInput

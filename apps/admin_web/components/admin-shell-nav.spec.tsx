@@ -8,6 +8,7 @@ import { AdminWorkspaceHeader } from './admin-workspace-header';
 
 const workspaceHeaderSource = readFileSync('components/admin-workspace-header.tsx', 'utf8');
 const topbarSearchInputSourcePath = 'components/admin-topbar-search-input.tsx';
+const themeToggleSource = readFileSync('components/admin-theme-toggle.tsx', 'utf8');
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/partners',
@@ -134,6 +135,12 @@ describe('admin shell navigation', () => {
     expect(topbarSearchInputSource).not.toContain('topbar-search-input');
   });
 
+  it('keeps the topbar search trigger inside the shared Vuexy topbar button atom', () => {
+    expect(workspaceHeaderSource).toContain("import { AdminTopbarButton } from './admin-topbar-button';");
+    expect(workspaceHeaderSource).toContain('<AdminTopbarButton');
+    expect(workspaceHeaderSource).not.toContain('<button');
+  });
+
   it('keeps topbar notification counts inside the shared Vuexy badge atom', () => {
     expect(workspaceHeaderSource).toContain('AdminAttentionBadge');
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-attention-badge">{totalAttentionCount}</span>');
@@ -144,6 +151,12 @@ describe('admin shell navigation', () => {
     expect(workspaceHeaderSource).toContain('<AdminIconButton');
     expect(workspaceHeaderSource).not.toContain('<button className="topbar-icon-chip topbar-icon-button"');
     expect(workspaceHeaderSource).not.toContain('className="topbar-icon-chip topbar-icon-button" type="submit"');
+  });
+
+  it('keeps theme mode icon buttons inside the shared Vuexy icon button atom', () => {
+    expect(themeToggleSource).toContain("import { AdminIconButton } from './admin-icon-button';");
+    expect(themeToggleSource).toContain('<AdminIconButton');
+    expect(themeToggleSource).not.toContain('<button');
   });
 
   it('keeps topbar empty states inside the shared Vuexy empty-state atom', () => {
