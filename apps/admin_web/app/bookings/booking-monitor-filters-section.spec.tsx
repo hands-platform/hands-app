@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { normalizedText } from './booking-section-test-utils';
@@ -182,6 +183,27 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('Realtime Bookings');
     expect(rendered).not.toContain('Post-match Cancellations');
     expect(rendered).not.toContain('All bookings');
+  });
+
+  it('uses the shared Vuexy button atom for route workspace options', () => {
+    const source = readFileSync('app/bookings/booking-monitor-filters-section.tsx', 'utf8');
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[0],
+        baseVisibleBookingCount: 7,
+        onViewChange: vi.fn(),
+        view: 'active',
+        viewCounts: new Map([
+          ['active', 3],
+          ['all', 7],
+        ]),
+        viewOptions,
+        visibleBookingCount: 3,
+      }),
+    );
+
+    expect(source).not.toContain('<button\n                  key={option.view}');
+    expect(markup).toContain('admin-form-control-button button button-secondary booking-monitor-view-option');
   });
 
   it('can show empty route workspace options on dedicated pages', () => {

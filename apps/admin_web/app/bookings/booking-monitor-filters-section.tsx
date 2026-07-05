@@ -198,15 +198,19 @@ export function BookingMonitorFiltersSection({
             </div>
             <div className="participant-list">
               {options.map((option) => (
-                <button
-                  key={option.view}
-                  type="button"
-                  onClick={() => onViewChange(option.view)}
+                <AdminFormControlButton
+                  className={[
+                    view === option.view ? 'button-primary is-active' : 'button-secondary',
+                    'booking-monitor-view-option',
+                  ].join(' ')}
                   disabled={view === option.view}
+                  key={option.view}
+                  onClick={() => onViewChange(option.view)}
                   title={option.description}
+                  type="button"
                 >
                   {option.label} ({viewCounts.get(option.view) ?? 0})
-                </button>
+                </AdminFormControlButton>
               ))}
             </div>
           </section>
