@@ -319,7 +319,7 @@ function PartnerReportCommandPanel({
   const firstReport = reports[0];
 
   return (
-    <div className="partner-report-command-grid admin-mt-16">
+    <AdminTaskCard className="partner-report-command-grid admin-mt-16">
       <div>
         <h3>Report command panel</h3>
         <p className="muted">
@@ -396,7 +396,7 @@ function PartnerReportCommandPanel({
       ) : (
         <ReportsControlsEmptyState message="No report commands are available until a report is recorded." />
       )}
-    </div>
+    </AdminTaskCard>
   );
 }
 

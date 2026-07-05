@@ -10,9 +10,11 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskCard className="partner-report-command-grid admin-mt-16"');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
+    expect(source).not.toContain('<div className="partner-report-command-grid');
     expect(source).not.toContain('className="ops-task-card');
     expect(source).not.toContain('<strong>No records found</strong>');
     expect(source).not.toContain("<span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>");
@@ -106,7 +108,7 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-form-textarea admin-form-control-labeled full-span',
         'admin-form-control-button button button-primary',
         'admin-form-control-link button button-secondary',
-        'partner-report-command-grid admin-mt-16',
+        'ops-task-card partner-report-command-grid admin-mt-16',
         'form-grid compact-form partner-report-command-form',
         'pill pill-danger',
         'admin-action-dropdown action-menu-dropdown',
