@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminBasicTimeline, AdminSection, type AdminBasicTimelineItem } from '../../../components/admin-surface';
+import {
+  AdminBasicTimeline,
+  AdminNotePanel,
+  AdminSection,
+  type AdminBasicTimelineItem,
+} from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { formatDate } from './booking-formatters';
 
@@ -233,7 +238,7 @@ export function BookingCloseoutReadinessSection({
       <p className="muted admin-mt-8">
         {closeoutReadiness.helper}
       </p>
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <AdminSectionHeader
           actions={(
             <StatusBadge tone={closeoutReadiness.openItems.length > 0 ? 'warning' : 'success'}>
@@ -270,7 +275,7 @@ export function BookingCloseoutReadinessSection({
             No closeout exceptions for the current booking stage.
           </p>
         )}
-      </div>
+      </AdminNotePanel>
     </AdminSection>
   );
 }
@@ -304,7 +309,7 @@ export function BookingOperatingSnapshotSection({
           </div>
         ))}
       </div>
-      <div className={`ops-task-note ${operatingSnapshot.noteClassName} admin-mt-14`}>
+      <AdminNotePanel className={`${operatingSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{operatingSnapshot.nextAction}</strong>
@@ -314,7 +319,7 @@ export function BookingOperatingSnapshotSection({
             {operatingSnapshot.hrefLabel}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
     </AdminSection>
   );
 }
@@ -473,7 +478,7 @@ export function BookingCommunicationMovementHandoffSection({
           </div>
         ))}
       </div>
-      <div className={`ops-task-note ${communicationMovementHandoff.noteClassName} admin-mt-14`}>
+      <AdminNotePanel className={`${communicationMovementHandoff.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{communicationMovementHandoff.nextAction}</strong>
@@ -483,7 +488,7 @@ export function BookingCommunicationMovementHandoffSection({
             {communicationMovementHandoff.hrefLabel}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       {communicationMovementHandoff.events.length ? (
         <BookingVuexyTimelineList
           items={communicationMovementHandoff.events.map((event) => ({
