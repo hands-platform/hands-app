@@ -6,8 +6,8 @@ import { AdminFormControlButton, AdminFormInput } from '../../../components/admi
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
-import { formatDateTime } from '../../../lib/admin-format';
 import { ADMIN_OPERATOR_BASE_ROLE, FINANCE_APPROVER_ROLE } from '../../../lib/admin-operator-permissions';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent } from '../finance-list-command-card';
@@ -188,7 +188,13 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                     </div>
                   </td>
                   <td>
-                    <strong>{latestSessionLabel(user)}</strong>
+                    <strong>
+                      {user.appSessions?.[0]?.lastSeenAt ? (
+                        <DateTimeText value={user.appSessions[0].lastSeenAt} />
+                      ) : (
+                        'No recent session'
+                      )}
+                    </strong>
                     <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
                   </td>
                   <td>
@@ -229,11 +235,6 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
 
 function isFinanceApprover(user: AdminUser) {
   return user.roles.includes(FINANCE_APPROVER_ROLE);
-}
-
-function latestSessionLabel(user: AdminUser) {
-  const latest = user.appSessions?.[0];
-  return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) : 'No recent session';
 }
 
 function roleNoticeMessage(notice: string) {

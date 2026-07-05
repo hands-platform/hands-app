@@ -80,4 +80,11 @@ describe('FinanceApproversPage', () => {
       "<span className={`pill ${role === FINANCE_APPROVER_ROLE ? 'pill-success' : 'pill-neutral'}`} key={role}>",
     );
   });
+
+  it('uses the shared DateTimeText atom for latest session timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
+  });
 });
