@@ -26,7 +26,7 @@ import { AdminSegmentedControl } from '../../../components/admin-segmented-contr
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { sendPushCampaign } from './actions';
 import {
   buildPushCampaignApiHref,
@@ -163,9 +163,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         {
           label: 'Last send',
           value: campaigns[0] ? shortId(campaigns[0].id) : '-',
-          helper: campaigns[0]
-            ? formatDateTime(campaigns[0].sentAt ?? campaigns[0].createdAt)
-            : 'No campaign yet',
+          helper: campaigns[0] ? (
+            <DateTimeText value={campaigns[0].sentAt ?? campaigns[0].createdAt} />
+          ) : (
+            'No campaign yet'
+          ),
         },
         {
           label: 'Recipients',

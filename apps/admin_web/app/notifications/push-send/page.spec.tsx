@@ -91,5 +91,6 @@ describe('PushSendPage', () => {
     expect(pageSource).not.toContain(
       '<span className="muted">{formatDateTime(campaign.sentAt ?? campaign.createdAt)}</span>',
     );
+    expect(pageSource).not.toContain('formatDateTime(campaigns[0].sentAt ?? campaigns[0].createdAt)');
   });
 });
