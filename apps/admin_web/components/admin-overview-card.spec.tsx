@@ -1,8 +1,22 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { AdminOverviewCommandCard } from './admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
+  it('renders the shared Vuexy overview command grid shell', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandGrid ariaLabel="Finance command board" className="finance-list-command-board admin-mb-16">
+        <span>Card slot</span>
+      </AdminOverviewCommandGrid>,
+    );
+
+    expect(markup).toContain(
+      'class="usage-overview-command-grid finance-list-command-board admin-mb-16"',
+    );
+    expect(markup).toContain('aria-label="Finance command board"');
+    expect(markup).toContain('<span>Card slot</span>');
+  });
+
   it('renders the shared Vuexy overview command card structure', () => {
     const markup = renderToStaticMarkup(
       <AdminOverviewCommandCard

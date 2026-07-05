@@ -537,6 +537,13 @@ describe('finance list pages', () => {
     );
   });
 
+  it('uses the shared overview command grid shell for finance command boards', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
+
+    expect(source).toContain('AdminOverviewCommandGrid');
+    expect(source).not.toContain('<section className="finance-list-command-board admin-mb-16"');
+  });
+
   it('uses shared money atoms for platform VAT total cells', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 

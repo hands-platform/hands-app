@@ -2,6 +2,12 @@ import type { ReactNode } from 'react';
 
 import { AdminCard, AdminLinkCard } from './admin-surface';
 
+type AdminOverviewCommandGridProps = {
+  readonly ariaLabel: string;
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminOverviewCommandCardProps = {
   readonly ariaLabel?: string;
   readonly children?: ReactNode;
@@ -14,6 +20,14 @@ type AdminOverviewCommandCardProps = {
   readonly trailing?: ReactNode;
   readonly value: ReactNode;
 };
+
+export function AdminOverviewCommandGrid({ ariaLabel, children, className }: AdminOverviewCommandGridProps) {
+  return (
+    <section className={joinClassNames('usage-overview-command-grid', className)} aria-label={ariaLabel}>
+      {children}
+    </section>
+  );
+}
 
 export function AdminOverviewCommandCard({
   ariaLabel,

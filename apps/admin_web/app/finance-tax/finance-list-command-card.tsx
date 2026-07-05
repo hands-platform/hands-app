@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
+import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
 
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
@@ -13,9 +13,9 @@ export function FinanceListCommandBoard({
   readonly children: ReactNode;
 }) {
   return (
-    <section className="finance-list-command-board admin-mb-16" aria-label={ariaLabel}>
+    <AdminOverviewCommandGrid className="finance-list-command-board admin-mb-16" ariaLabel={ariaLabel}>
       {children}
-    </section>
+    </AdminOverviewCommandGrid>
   );
 }
 
