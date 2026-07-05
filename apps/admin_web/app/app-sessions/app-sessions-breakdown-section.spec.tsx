@@ -15,6 +15,14 @@ describe('AppSessionsBreakdownSection', () => {
     expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 
+  it('uses the shared Vuexy table section atom for breakdown tables', () => {
+    const source = readFileSync('app/app-sessions/app-sessions-breakdown-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTableSection');
+    expect(source).not.toContain('AdminSection');
+    expect(source).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
+  });
+
   it('renders role, platform, and app version breakdown rows', () => {
     const section = AppSessionsBreakdownSection({
       platformRows: buildPlatformRows(),

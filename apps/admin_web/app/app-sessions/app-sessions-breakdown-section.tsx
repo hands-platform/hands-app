@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { InfoRow } from '../../components/info-row';
 
 export type AppSessionRoleRow = {
@@ -41,7 +42,7 @@ export function AppSessionsBreakdownSection({
 }: AppSessionsBreakdownSectionProps) {
   return (
     <AdminDetailGrid ariaLabel="App session breakdowns" className="admin-mb-16">
-      <AdminSection className="vuexy-booking-table-card vuexy-booking-table-group" title="Role split">
+      <AdminTableSection title="Role split">
         <AdminTableScroll>
           <AdminDataTable emptyMessage={null} headers={APP_SESSION_ROLE_HEADERS} rowCount={roleRows.length}>
             {roleRows.map((row) => (
@@ -54,9 +55,9 @@ export function AppSessionsBreakdownSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminSection>
+      </AdminTableSection>
 
-      <AdminSection className="vuexy-booking-table-card vuexy-booking-table-group" title="Platform and version">
+      <AdminTableSection title="Platform and version">
         <AdminTableScroll>
           <AdminDataTable
             emptyMessage={null}
@@ -81,7 +82,7 @@ export function AppSessionsBreakdownSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </AdminSection>
+      </AdminTableSection>
     </AdminDetailGrid>
   );
 }
