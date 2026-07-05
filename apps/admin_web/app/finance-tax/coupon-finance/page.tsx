@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import type {
   AdminBookingSettlementSnapshot,
   AdminCouponFinanceSummary,
@@ -8,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
@@ -187,9 +186,9 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
               return (
                 <tr key={snapshot.id}>
                   <td>
-                    <Link className="text-link" href={`/bookings/${snapshot.bookingId}`}>
+                    <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
                       {shortId(snapshot.bookingId)}
-                    </Link>
+                    </AdminTextLink>
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
                   <td>
@@ -209,10 +208,10 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     )}
                   </td>
                   <td>
-                    <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
+                    <AdminTextLink href={`/partners/${snapshot.providerProfileId}?section=full`}>
                       {snapshot.providerProfile?.displayName ??
                         financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
-                    </Link>
+                    </AdminTextLink>
                     {snapshot.providerProfile?.user?.phone ? (
                       <div className="muted">{snapshot.providerProfile.user.phone}</div>
                     ) : (
