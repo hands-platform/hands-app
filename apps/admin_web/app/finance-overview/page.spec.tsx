@@ -231,6 +231,12 @@ describe('FinanceOverviewPage', () => {
     );
   });
 
+  it('uses the shared money atom for finance action and priority amounts', () => {
+    expect(pageSource).toContain('FinanceActionAmount');
+    expect(pageSource).not.toContain('<em>{item.amountLabel}</em>');
+    expect(pageSource).not.toContain('trailing={<em>{item.amountLabel}</em>}');
+  });
+
   it('uses shared Vuexy badge atoms for page header status chips', () => {
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');

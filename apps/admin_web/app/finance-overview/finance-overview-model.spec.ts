@@ -230,6 +230,11 @@ describe('finance-overview-model', () => {
         '/refunds?review=open',
       ]),
     );
+    expect(actions.find((action) => action.label === 'Payment clearing open')).toMatchObject({
+      amount: 900_000,
+      currency: 'VND',
+    });
+    expect(actions.find((action) => action.label === 'General ledger audit')?.amount).toBeUndefined();
   });
 
   it('preserves range in UI hrefs', () => {

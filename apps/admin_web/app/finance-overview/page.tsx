@@ -300,7 +300,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
         <strong>{item.countLabel}</strong>
         <small>{item.detail}</small>
       </div>
-      <em>{item.amountLabel}</em>
+      <FinanceActionAmount item={item} />
     </AdminLinkCard>
   );
 }
@@ -315,9 +315,21 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
       href={item.href}
       icon={<Icon size={18} aria-hidden="true" />}
       label={item.label}
-      trailing={<em>{item.amountLabel}</em>}
+      trailing={<FinanceActionAmount item={item} />}
       value={item.countLabel}
     />
+  );
+}
+
+function FinanceActionAmount({ item }: { readonly item: FinanceOverviewActionItem }) {
+  return (
+    <em>
+      {item.amount === undefined ? (
+        item.amountLabel
+      ) : (
+        <MoneyText amount={item.amount} currency={item.currency ?? 'VND'} />
+      )}
+    </em>
   );
 }
 
