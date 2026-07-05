@@ -1,7 +1,7 @@
 import { Bell, LayoutDashboard } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
@@ -118,14 +118,13 @@ export default async function AppSessionsPage({
 
       <AppSessionsCheckQueueSection items={checkRows} />
 
-      <AdminSection
-        className="vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTableSection
         description="Sorted by last heartbeat. Live means the session expiry is still in the future."
         status={<StatusBadge tone="info">{sessions.length} loaded</StatusBadge>}
         title="Latest app sessions"
       >
         <AppSessionsTableSection emptyMessage="No app sessions loaded." pagination={sessionPagination} />
-      </AdminSection>
+      </AdminTableSection>
     </AdminPageTemplate>
   );
 }

@@ -85,7 +85,9 @@ describe('AppSessionsPage', () => {
   it('uses the shared StatusBadge atom for the loaded session count', () => {
     const source = readFileSync(join(process.cwd(), 'app/app-sessions/page.tsx'), 'utf8');
 
+    expect(source).toContain('AdminTableSection');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('<span className="pill pill-info">{sessions.length} loaded</span>');
   });
 
