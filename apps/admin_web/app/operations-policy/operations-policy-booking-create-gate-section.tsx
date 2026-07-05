@@ -3,7 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
@@ -46,8 +46,8 @@ export function OperationsPolicyBookingCreateGateSection({
   review,
 }: OperationsPolicyBookingCreateGateSectionProps) {
   return (
-    <AdminSection
-      className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTableSection
+      className="admin-mb-16"
       description="These policies stop unsafe bookings before payment authorization and matching. Customers can browse globally, but immediate booking must pass the selected address, Vietnam service area, and first-pick Partner distance checks. Customer GPS is optional evidence only."
       statusLabel={review.currentPolicyLabel}
       statusTone="info"
@@ -127,6 +127,6 @@ export function OperationsPolicyBookingCreateGateSection({
           ))}
         </div>
       )}
-    </AdminSection>
+    </AdminTableSection>
   );
 }

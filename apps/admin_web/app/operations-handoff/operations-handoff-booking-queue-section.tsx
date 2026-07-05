@@ -2,7 +2,7 @@ import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -24,7 +24,7 @@ export function OperationsHandoffBookingQueueSection({
   bookings,
 }: OperationsHandoffBookingQueueSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       actions={
         <div className="actions">
           <AdminFormControlLink className="button-secondary" href="/bookings?view=attention">
@@ -37,7 +37,7 @@ export function OperationsHandoffBookingQueueSection({
           </AdminFormControlLink>
         </div>
       }
-      className="admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group"
+      className="operations-handoff-booking-queue-card admin-mb-16"
       description="Open and recently changed bookings with payment, chat, Partner, and next action."
       title="Booking handoff queue"
     >
@@ -96,7 +96,7 @@ export function OperationsHandoffBookingQueueSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </AdminSection>
+    </AdminTableSection>
   );
 }
 

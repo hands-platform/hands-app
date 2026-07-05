@@ -11,11 +11,13 @@ const sectionSource = readFileSync(
 
 describe('OperationsPolicyBookingCreateGateSection', () => {
   it('uses the shared AdminFormControlLink atom for evidence actions', () => {
+    expect(sectionSource).toContain('AdminTableSection');
     expect(sectionSource).toContain('AdminSectionHeader');
     expect(sectionSource).toContain('AdminFormControlLink');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(sectionSource).not.toContain('<Link className="button button-secondary"');
   });
@@ -59,7 +61,7 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     const rendered = normalizedTextContent(section);
 
     expect(classNamesIn(section)).toContain(
-      'card admin-section admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group',
+      'card admin-section vuexy-booking-table-card vuexy-booking-table-group admin-mb-16',
     );
     expect(rendered).toContain('Booking create gate controls');
     expect(rendered).toContain('Distance gates active');

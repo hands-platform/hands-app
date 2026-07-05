@@ -7,8 +7,12 @@ describe('OperationsHandoffBookingQueueSection', () => {
   it('uses the shared AdminFormControlLink atom for booking queue actions', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-booking-queue-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTableSection');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableScroll');
+    expect(source).not.toContain(
+      'admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
+    );
     expect(source).not.toContain('<Link className="button button-secondary"');
     expect(source).not.toContain('<div className="admin-table-scroll">');
   });
@@ -57,7 +61,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-avatar-status-dot is-working',
-        'card admin-section admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
+        'card admin-section vuexy-booking-table-card vuexy-booking-table-group operations-handoff-booking-queue-card admin-mb-16',
         'table-link',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-person',
