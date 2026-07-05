@@ -8,8 +8,10 @@ describe('SetupProgressControlSection', () => {
     const source = readFileSync(new URL('./setup-progress-control-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).not.toContain('<span className="signal signal-info">');
     expect(source).not.toContain('<span className="signal signal-ok">');
+    expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 
   it('renders the progress sequence and verified baseline commands', () => {
@@ -27,7 +29,7 @@ describe('SetupProgressControlSection', () => {
 
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminDetailGrid');
     expect(rendered).toContain('Master progress control');
     expect(rendered).toContain('Roadmap locked');
     expect(rendered).toContain('Stabilize core');

@@ -8,6 +8,7 @@ describe('SetupReadinessOrderSection', () => {
     const source = readFileSync(new URL('./setup-readiness-order-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-warn">BLOCKED</span>');
@@ -15,6 +16,7 @@ describe('SetupReadinessOrderSection', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">Secret-safe</span>');
     expect(source).not.toContain('<a className="pill pill-neutral"');
     expect(source).not.toContain('<span className={`pill ${readinessStatusPillClass(check.status)}`}>');
+    expect(source).not.toContain('<section className="detail-grid">');
   });
 
   it('renders live readiness rows and recommended order links', () => {
@@ -45,7 +47,7 @@ describe('SetupReadinessOrderSection', () => {
 
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
-    expect(section.type).toBe('section');
+    expect(section.type.name).toBe('AdminDetailGrid');
     expect(rendered).toContain('Live readiness');
     expect(rendered).toContain('FCM push service');
     expect(rendered).toContain('Customer and partner push credentials are required.');

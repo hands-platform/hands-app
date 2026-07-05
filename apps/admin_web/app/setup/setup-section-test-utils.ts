@@ -5,6 +5,7 @@ const DEFAULT_RENDERABLE_COMPONENTS = new Set([
   'AdminActionCard',
   'AdminFormControlLink',
   'AdminMetricGrid',
+  'AdminDetailGrid',
   'AdminSectionHeader',
   'CommandCopyRow',
   'MetricCard',

@@ -1,5 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
 import { AdminSignal } from '../../components/status-badge';
 
@@ -20,7 +20,7 @@ export function SetupProgressControlSection({
   verifiedBaseline,
 }: SetupProgressControlSectionProps) {
   return (
-    <section className="detail-grid admin-mb-16">
+    <AdminDetailGrid ariaLabel="Setup progress control" className="admin-mb-16">
       <AdminSection
         actions={<AdminSignal tone="info">Roadmap locked</AdminSignal>}
         description="This is the single operating order for HANDS MVP work. Keep new requests inside this sequence unless an urgent production blocker appears."
@@ -65,6 +65,6 @@ export function SetupProgressControlSection({
           </div>
         </div>
       </AdminSection>
-    </section>
+    </AdminDetailGrid>
   );
 }

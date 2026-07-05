@@ -27,8 +27,10 @@ describe('SetupPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/setup/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminPageTemplate');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('contentClassName="setup-page"');
     expect(source).not.toContain('<div className="setup-page">');
+    expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 
   it('renders setup readiness content inside the shared page header rhythm', async () => {

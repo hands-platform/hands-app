@@ -1,6 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
@@ -23,7 +23,7 @@ export function SetupReadinessOrderSection({
   recommendedOrder,
 }: SetupReadinessOrderSectionProps) {
   return (
-    <section className="detail-grid">
+    <AdminDetailGrid ariaLabel="Setup readiness order">
       <AdminSection
         description="This panel is backed by the API endpoint, so it reflects the current `.env` and process environment."
         title="Live readiness"
@@ -55,7 +55,7 @@ export function SetupReadinessOrderSection({
           ))}
         </div>
       </AdminSection>
-    </section>
+    </AdminDetailGrid>
   );
 }
 

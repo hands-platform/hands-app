@@ -1,6 +1,6 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadgeLink } from '../../components/status-badge';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
@@ -73,11 +73,11 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
 
       <SetupRegistrationHandoffSection registrationPlan={registrationPlan} />
 
-      <section className="detail-grid admin-mb-16">
+      <AdminDetailGrid ariaLabel="Setup operator actions and migration runway" className="admin-mb-16">
         <SetupOperatorActionsSection nextActions={nextActions} deferredActions={deferredActions} />
 
         <SetupMigrationRunwaySection groupStatuses={groupStatuses} />
-      </section>
+      </AdminDetailGrid>
 
       <SetupReadinessOrderSection
         commandMode={commandMode}
