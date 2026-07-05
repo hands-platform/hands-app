@@ -22,8 +22,10 @@ describe('PartnerDetailWalletSummarySection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('<MoneyText amount={summary.negativeWalletReceivable} currency={summary.currency} />');
     expect(source).toContain('<MoneyText amount={summary.currentBalance} currency={summary.currency} />');
     expect(source).toContain('<MoneyText amount={row.amount} currency={row.currency} />');
+    expect(source).not.toContain('formatCurrency(summary.negativeWalletReceivable');
     expect(source).not.toContain('<strong>{formatCurrency(summary.currentBalance, summary.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatCurrency(row.amount, row.currency)}</strong>');
   });

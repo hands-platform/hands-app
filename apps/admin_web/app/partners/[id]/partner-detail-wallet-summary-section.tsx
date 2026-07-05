@@ -4,7 +4,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
-import { formatCurrency, walletLedgerLabel } from './partner-detail-format';
+import { walletLedgerLabel } from './partner-detail-format';
 import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
 import {
   PartnerDetailVuexyTableFooter,
@@ -27,9 +27,13 @@ export function PartnerDetailWalletSummarySection({
       description="Partner wallet balance, manual bank deposits, negative-wallet recovery, and cash-service deductions. This is a bounded detail-page evidence window; full ledger/audit remains owned by finance APIs."
       id="partner-wallet-detail"
       resultLabel={
-        summary.negativeWalletReceivable > 0
-          ? `${formatCurrency(summary.negativeWalletReceivable, summary.currency)} receivable`
-          : 'Wallet clear'
+        summary.negativeWalletReceivable > 0 ? (
+          <>
+            <MoneyText amount={summary.negativeWalletReceivable} currency={summary.currency} /> receivable
+          </>
+        ) : (
+          'Wallet clear'
+        )
       }
       resultTone={resultTone(summary.reviewTone)}
       title="Partner wallet detail"
