@@ -183,7 +183,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('9%');
     expect(markup).toContain('name="platformFeeVatRate"');
     expect(markup).toContain('15.000 VND');
-    expect(markup).toContain('Credited 15.000 VND');
+    expect(markup).toContain('Credited <span class="money-text money-text-positive">15.000 VND</span>');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Wallet posting still happens from each reward detail action');
     expect(markup).toContain('Referral rewards are company marketing/acquisition expenses');
@@ -225,6 +225,11 @@ describe('ReferralDashboard', () => {
   it('uses the shared StatusBadge atom for active referral filter labels', () => {
     expect(dashboardSource).toContain('StatusBadge');
     expect(dashboardSource).not.toContain('<span className="pill pill-warn" key={filter}>');
+  });
+
+  it('uses the shared MoneyText atom for visible referral money values', () => {
+    expect(dashboardSource).toContain('MoneyText');
+    expect(dashboardSource).not.toContain('formatMoney(');
   });
 
   it('does not render NaN when referral totals come from an older API shape', () => {
@@ -362,11 +367,11 @@ describe('ReferralDashboard', () => {
 
     expect(markup).toContain('aria-label="Referral reward operation queue"');
     expect(markup).toContain('Ready to credit');
-    expect(markup).toContain('1 · 25.000 VND');
+    expect(markup).toContain('1 · <span class="money-text money-text-positive">25.000 VND</span>');
     expect(markup).toContain('Pending checks');
-    expect(markup).toContain('1 · 5.000 VND');
+    expect(markup).toContain('1 · <span class="money-text money-text-positive">5.000 VND</span>');
     expect(markup).toContain('Held review');
-    expect(markup).toContain('1 · 10.000 VND');
+    expect(markup).toContain('1 · <span class="money-text money-text-positive">10.000 VND</span>');
     expect(markup).toContain('Credited');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending"');
     expect(markup).toContain('href="/referrals/customers?q=smoke&amp;status=pending&amp;reward=held"');
@@ -415,7 +420,7 @@ describe('ReferralDashboard', () => {
       <ReferralDashboard audience="customer" policy={policy} rows={[heldParent]} />,
     ).replace(/\s+/g, ' ');
 
-    expect(markup).toContain('Held 10.000 VND');
+    expect(markup).toContain('Held <span class="money-text money-text-positive">10.000 VND</span>');
   });
 
   it('filters referral parents by search, referral status, and reward state', () => {

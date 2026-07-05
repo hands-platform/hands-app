@@ -20,6 +20,7 @@ import {
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminDisclosure } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   type AdminCustomerReferralParent,
@@ -28,7 +29,7 @@ import {
   type AdminReferralReward,
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
-import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { formatDateTime } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { isReferralRewardCredited, referralRewardDecisionLabel } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
@@ -140,21 +141,23 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
     },
     {
       label: 'Ready reward candidates',
-      value: formatMoney(availableRewards, props.policy.currency, '0 VND'),
+      value: <MoneyText amount={availableRewards} currency={props.policy.currency} fallback="0 VND" />,
       helper: 'Reward candidates ready for credit. Wallet credit is separate.',
     },
     {
       label: 'Credited rewards',
-      value: formatMoney(creditedRewards, props.policy.currency, '0 VND'),
+      value: <MoneyText amount={creditedRewards} currency={props.policy.currency} fallback="0 VND" />,
       helper: 'Rewards already posted to customer or Partner wallets.',
     },
     {
       label: 'Pending / held',
-      value: `${formatMoney(pendingRewards, props.policy.currency, '0 VND')} / ${formatMoney(
-        heldRewards,
-        props.policy.currency,
-        '0 VND',
-      )}`,
+      value: (
+        <>
+          <MoneyText amount={pendingRewards} currency={props.policy.currency} fallback="0 VND" />
+          {' / '}
+          <MoneyText amount={heldRewards} currency={props.policy.currency} fallback="0 VND" />
+        </>
+      ),
       helper: 'Amounts that still need policy, fraud, or booking completion checks.',
     },
   ];
@@ -324,7 +327,7 @@ function ReferralListFilterPanel({
             >
               <span>{option.label}</span>
               <span className="referral-reward-filter-meta">
-                {formatReferralRewardQueueSummary(rewardSummaryByQueue.get(option.reward))}
+                <ReferralRewardQueueSummaryText summary={rewardSummaryByQueue.get(option.reward)} />
               </span>
             </a>
           ))}
@@ -372,10 +375,6 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
     policy.rewardMode === 'COMMISSION_PERCENT' && policy.commissionPercentBps !== null
       ? `${(Number(policy.commissionPercentBps ?? 0) / 100).toFixed(2)}%`
       : 'Not set';
-  const fixedAmountLabel =
-    policy.rewardMode === 'FIXED_AMOUNT'
-      ? formatMoney(policy.fixedRewardAmount, policy.currency)
-      : 'Not applicable';
   const platformFeeVatLabel = formatBpsPercent(policy.platformFeeVatRateBps);
 
   return (
@@ -399,7 +398,13 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
         </div>
         <div>
           <span>Fixed reward</span>
-          <strong>{fixedAmountLabel}</strong>
+          <strong>
+            {policy.rewardMode === 'FIXED_AMOUNT' ? (
+              <MoneyText amount={policy.fixedRewardAmount} currency={policy.currency} />
+            ) : (
+              'Not applicable'
+            )}
+          </strong>
           <small className="muted">Used for Partner referral rewards.</small>
         </div>
         <div>
@@ -414,7 +419,9 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
         </div>
         <div>
           <span>Per-user cap</span>
-          <strong>{formatMoney(policy.totalRewardCapAmount, policy.currency)}</strong>
+          <strong>
+            <MoneyText amount={policy.totalRewardCapAmount} currency={policy.currency} />
+          </strong>
           <small className="muted">Maximum total referral rewards per parent account.</small>
         </div>
         <div>
@@ -883,10 +890,18 @@ function ReferralRewardCell({
 }) {
   return (
     <div>
-      <strong>{formatMoney(availableAmount, 'VND', '0 VND')}</strong>
-      <p className="muted">Credited {formatMoney(creditedAmount, 'VND', '0 VND')}</p>
-      <p className="muted">Pending {formatMoney(pendingAmount, 'VND', '0 VND')}</p>
-      <p className="muted">Held {formatMoney(heldAmount, 'VND', '0 VND')}</p>
+      <strong>
+        <MoneyText amount={availableAmount} fallback="0 VND" />
+      </strong>
+      <p className="muted">
+        Credited <MoneyText amount={creditedAmount} fallback="0 VND" />
+      </p>
+      <p className="muted">
+        Pending <MoneyText amount={pendingAmount} fallback="0 VND" />
+      </p>
+      <p className="muted">
+        Held <MoneyText amount={heldAmount} fallback="0 VND" />
+      </p>
       {latestDecision ? (
         <>
           <p className="muted">
@@ -1263,9 +1278,12 @@ function referralListPath(audience: ReferralAudienceSlug) {
   return audience === 'partner' ? '/referrals/partners' : '/referrals/customers';
 }
 
-function formatReferralRewardQueueSummary(summary: ReferralRewardQueueSummary | undefined) {
-  if (!summary) return `0 · ${formatMoney(0, 'VND', '0 VND')}`;
-  return `${summary.count} · ${formatMoney(summary.amount, 'VND', '0 VND')}`;
+function ReferralRewardQueueSummaryText({ summary }: { readonly summary: ReferralRewardQueueSummary | undefined }) {
+  return (
+    <>
+      {summary?.count ?? 0} · <MoneyText amount={summary?.amount ?? 0} fallback="0 VND" />
+    </>
+  );
 }
 
 function appendReferralParentApiFilterParams(params: URLSearchParams, filters: ReferralDashboardFilters) {
