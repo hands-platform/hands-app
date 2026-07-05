@@ -1838,6 +1838,10 @@ function buildPartnerBookingEvidenceRows(
     const participant = (booking.participants ?? []).find((item) => item.providerProfileId === provider.id);
     const earning = earningsByBookingId.get(booking.id);
     const walletRows = earning?.walletLedgerEntries ?? [];
+    const paymentAmount = Number(booking.payment?.amount ?? 0);
+    const paymentCurrency = booking.payment?.currency ?? 'VND';
+    const earningNetAmount = Number(earning?.netAmount ?? 0);
+    const earningCurrency = earning?.currency ?? 'VND';
     const latestLocation = provider.currentLocationUpdatedAt
       ? `${locationAgeLabel(provider.currentLocationUpdatedAt)} / ${partnerLocationSavedLabel()}`
       : 'No latest location loaded';
@@ -1871,6 +1875,11 @@ function buildPartnerBookingEvidenceRows(
       relation: record.relation,
       bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatCurrency(bookingTotal(booking))}`,
+      serviceLabelNode: (
+        <>
+          {bookingServiceLabel(booking)} / <MoneyText amount={bookingTotal(booking)} currency={paymentCurrency} />
+        </>
+      ),
       status: booking.status ?? 'UNKNOWN',
       roleStatus:
         record.relation === 'Selected'
@@ -1891,6 +1900,28 @@ function buildPartnerBookingEvidenceRows(
       chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
       moneyStatus: earning?.status ?? booking.payment?.status ?? 'No earning',
       moneyDetail: moneyParts.join(' / '),
+      moneyDetailNode: (
+        <>
+          {booking.payment ? (
+            <>
+              {booking.payment.status ?? 'UNKNOWN'} {booking.payment.method ?? 'UNKNOWN'}{' '}
+              <MoneyText amount={paymentAmount} currency={paymentCurrency} />
+            </>
+          ) : (
+            'No payment row'
+          )}
+          {' / '}
+          {earning ? (
+            <>
+              earning {earning.status} net <MoneyText amount={earningNetAmount} currency={earningCurrency} />
+            </>
+          ) : (
+            'no earning row'
+          )}
+          {' / '}
+          {walletRows.length ? `${walletRows.length} wallet row(s)` : 'no wallet rows'}
+        </>
+      ),
       opsStatus:
         isClosedPartnerBooking(booking) || participant?.respondedAt || earning
           ? 'Records linked'

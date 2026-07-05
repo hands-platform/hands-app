@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -19,6 +20,7 @@ export type PartnerBookingEvidenceRow = {
   readonly customerStatus: string;
   readonly id: string;
   readonly moneyDetail: string;
+  readonly moneyDetailNode?: ReactNode;
   readonly moneyStatus: string;
   readonly opsDetail: string;
   readonly opsStatus: string;
@@ -26,6 +28,7 @@ export type PartnerBookingEvidenceRow = {
   readonly roleDetail: string;
   readonly roleStatus: string;
   readonly serviceLabel: string;
+  readonly serviceLabelNode?: ReactNode;
   readonly status: string;
 };
 
@@ -67,7 +70,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
             <tr key={`${row.id}-${row.relation}`}>
               <td>
                 <strong>{row.bookingLabel}</strong>
-                <p className="muted">{row.serviceLabel}</p>
+                <p className="muted">{row.serviceLabelNode ?? row.serviceLabel}</p>
                 <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
                   {row.status}
                 </StatusBadge>
@@ -86,7 +89,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
               </td>
               <td>
                 <strong>{row.moneyStatus}</strong>
-                <p className="muted">{row.moneyDetail}</p>
+                <p className="muted">{row.moneyDetailNode ?? row.moneyDetail}</p>
               </td>
               <td>
                 <strong>{row.opsStatus}</strong>

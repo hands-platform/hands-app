@@ -80,6 +80,45 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
       ]),
     );
   });
+
+  it('prefers shared money nodes over fallback booking evidence amount text', () => {
+    const rowsWithMoneyNodes = [
+      {
+        bookingLabel: 'BK-2002 / 10 Jun 2026',
+        chatDetail: 'No chat room',
+        chatStatus: 'No chat room',
+        customerDetail: 'Service address saved on booking',
+        customerStatus: 'Customer snapshot',
+        id: 'BK-2002',
+        moneyDetail: 'Fallback money detail',
+        moneyDetailNode: <span>Shared money detail marker</span>,
+        moneyStatus: 'Money trace linked',
+        opsDetail: 'Admin closeout evidence retained',
+        opsStatus: 'Ops reviewed',
+        relation: 'Selected',
+        roleDetail: 'Partner accepted and completed service',
+        roleStatus: 'Selected Partner',
+        serviceLabel: 'Fallback service money',
+        serviceLabelNode: <span>Shared service money marker</span>,
+        status: 'COMPLETED',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailBookingEvidenceBundlesSection>[0]['rows'];
+    const section = PartnerDetailBookingEvidenceBundlesSection({
+      rows: rowsWithMoneyNodes,
+      statusPillClass: () => 'pill-success',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared service money marker');
+    expect(rendered).toContain('Shared money detail marker');
+    expect(rendered).not.toContain('Fallback service money');
+    expect(rendered).not.toContain('Fallback money detail');
+    expect(source).toContain('readonly serviceLabelNode?: ReactNode;');
+    expect(source).toContain('readonly moneyDetailNode?: ReactNode;');
+    expect(source).toContain('{row.serviceLabelNode ?? row.serviceLabel}');
+    expect(source).toContain('{row.moneyDetailNode ?? row.moneyDetail}');
+  });
 });
 
 function textContent(value: unknown): string {
