@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormInput } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
@@ -568,15 +568,15 @@ function ReferralRewardActions({
         ) : null}
         <div className="referral-reward-action-button-list">
           {actions.map((item) => (
-            <button
-              className="admin-action-item admin-action-button"
+            <AdminFormControlButton
+              className="button-secondary admin-action-item admin-action-button"
               formAction={item.action}
               key={item.label}
               role="menuitem"
               type="submit"
             >
               <span>{item.label}</span>
-            </button>
+            </AdminFormControlButton>
           ))}
         </div>
       </ActionMenuDropdownForm>

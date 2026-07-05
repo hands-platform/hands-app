@@ -268,6 +268,28 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
   });
 
+  it('uses the shared Vuexy button atom for reward decision submit actions', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'PENDING',
+              walletLedgerReference: null,
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />);
+
+    expect(detailSource).not.toContain('<button\n              className="admin-action-item admin-action-button"');
+    expect(markup).toContain('admin-form-control-button button button-secondary admin-action-item admin-action-button');
+  });
+
   it('uses the shared MoneyText atom for visible referral detail money values', () => {
     expect(detailSource).toContain('MoneyText');
     expect(detailSource).not.toContain('formatMoney(');
