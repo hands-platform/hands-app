@@ -8,9 +8,10 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
@@ -196,7 +197,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     <Link className="text-link" href={`/bookings/${reversal.bookingId}`}>
                       {shortId(reversal.bookingId)}
                     </Link>
-                    <div className="muted">{formatDateTime(reversal.occurredAt)}</div>
+                    <div className="muted">
+                      <DateTimeText value={reversal.occurredAt} />
+                    </div>
                     <div className="muted">{shortId(reversal.sourceKey)}</div>
                   </td>
                   <td>

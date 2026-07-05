@@ -9,10 +9,11 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -205,7 +206,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                         Snapshot {shortId(snapshot.id)}
                       </Link>
                     </div>
-                    <div className="muted">{formatDateTime(snapshot.postedAt)}</div>
+                    <div className="muted">
+                      <DateTimeText value={snapshot.postedAt} />
+                    </div>
                     <div className="muted">{snapshot.booking?.status ?? 'Unknown status'}</div>
                   </td>
                   <td>
@@ -277,7 +280,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                       label={`Booking settlement evidence actions for ${snapshot.id}`}
                     />
                     <div className="muted">Snapshot {shortId(snapshot.id)}</div>
-                    <div className="muted">Posted {formatDateTime(snapshot.postedAt)}</div>
+                    <div className="muted">
+                      Posted <DateTimeText value={snapshot.postedAt} />
+                    </div>
                   </td>
                 </tr>
             ))}

@@ -373,6 +373,11 @@ describe('finance list pages', () => {
 
   it.each([
     [
+      'booking settlement audit',
+      'app/finance-tax/booking-settlement-audit/page.tsx',
+      ['formatDateTime(snapshot.postedAt)'],
+    ],
+    [
       'general ledger',
       'app/finance-tax/general-ledger/page.tsx',
       ['formatDateTime(batch.postedAt)', 'formatDateTime(batch.reversedAt)'],
@@ -381,6 +386,11 @@ describe('finance list pages', () => {
       'bank reconciliation',
       'app/finance-tax/bank-reconciliation/page.tsx',
       ['formatDateTime(transaction.occurredAt)', 'formatDateTime(transaction.valueDate)'],
+    ],
+    [
+      'settlement reversals',
+      'app/finance-tax/settlement-reversals/page.tsx',
+      ['formatDateTime(reversal.occurredAt)'],
     ],
   ] as const)('uses shared date time atoms for %s event cells', (_name, sourcePath, directFormatCalls) => {
     const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
