@@ -7,7 +7,7 @@ import {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminDisclosure } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminNotePanel } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -100,13 +100,13 @@ export function PartnerDetailBookingChatRecordsSection({
                     />
                   </AdminDisclosure>
                 ) : (
-                  <div className="ops-task-note admin-mt-10">
+                  <AdminNotePanel className="admin-mt-10">
                     <strong>Chat room missing</strong>
                     <p className="muted">
                       A matched booking should create a chat room. Open the booking detail if this booking
                       is already matched or in service.
                     </p>
-                  </div>
+                  </AdminNotePanel>
                 )}
               </td>
               <td>

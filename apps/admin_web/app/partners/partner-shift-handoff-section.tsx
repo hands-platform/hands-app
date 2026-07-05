@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminNotePanel, AdminSection } from '../../components/admin-surface';
 import {
   AdminSignal,
   StatusBadge,
@@ -28,7 +28,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
       description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
       title="Partner shift handoff"
     >
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <StatusBadge tone="info">Next best partner move</StatusBadge>
@@ -39,7 +39,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             {handoff.primaryAction.label}
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="service-trace-summary admin-mt-14">
         {handoff.stats.map((stat) => (
           <Link
