@@ -346,6 +346,7 @@ describe('DashboardPage', () => {
   it('uses the shared detail grid surface for dashboard multi-panel groups', () => {
     expect(dashboardSource).toContain('AdminDetailGrid');
     expect(dashboardSource).not.toContain('<section className="detail-grid');
+    expect(dashboardSource).not.toContain('<div className="detail-grid');
   });
 
   it('renders full dashboard briefing panels with the shared Vuexy admin section shell', async () => {

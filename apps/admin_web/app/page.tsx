@@ -1336,7 +1336,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               ))}
             </div>
-            <div className="detail-grid admin-mt-14">
+            <AdminDetailGrid className="admin-mt-14">
               <div className="ops-task-note">
                 <AdminSectionHeader
                   actions={(
@@ -1398,7 +1398,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   ))}
                 </div>
               </div>
-            </div>
+            </AdminDetailGrid>
           </AdminSection>
 
           <AdminSection
@@ -1442,7 +1442,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
             {fullDashboardData.policySummary.activeOverrides.length ||
             fullDashboardData.policySummary.recentChanges.length ? (
-              <div className="detail-grid admin-mt-14">
+              <AdminDetailGrid className="admin-mt-14">
                 <div className="ops-task-note">
                   <div className="ops-row">
                     <div>
@@ -1520,7 +1520,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </AdminDetailGrid>
             ) : null}
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policySummary.decisions.map((decision) => (
@@ -1621,7 +1621,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               id="dashboard-service-payment-mix"
               title="Service and payment mix"
             >
-              <div className="detail-grid">
+              <AdminDetailGrid>
                 <div>
                   <h3>Top service demand</h3>
                   <div className="stack">
@@ -1663,7 +1663,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </AdminDetailGrid>
             </AdminSection>
           </AdminDetailGrid>
 
