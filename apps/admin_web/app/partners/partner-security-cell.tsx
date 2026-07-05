@@ -1,9 +1,9 @@
 import { ShieldCheck } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
-import { formatDate } from './partner-list-ops';
 import { maskToken } from './partner-list-profile';
 import { providerSecurityLabel } from './partner-filters';
 import {
@@ -38,12 +38,14 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
       </p>
       {provider.blockedAt ? (
         <p className="muted admin-mb-4">
-          Account block: {provider.blockedReason ?? 'No reason saved'} / {formatDate(provider.blockedAt)}
+          Account block: {provider.blockedReason ?? 'No reason saved'} /{' '}
+          <DateTimeText fallback="Missing" value={provider.blockedAt} />
         </p>
       ) : null}
       {latestSession ? (
         <p className="muted admin-mb-4">
-          Last session: {latestSession.ipAddress ?? 'no IP'} / {formatDate(latestSession.lastSeenAt)}
+          Last session: {latestSession.ipAddress ?? 'no IP'} /{' '}
+          <DateTimeText fallback="Missing" value={latestSession.lastSeenAt} />
         </p>
       ) : null}
       {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}

@@ -8,8 +8,11 @@ describe('PartnerSecurityCell', () => {
     const source = readFileSync('app/partners/partner-security-cell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${partnerSecurityPillClass(status)}`}>');
+    expect(source).not.toContain('formatDate(provider.blockedAt)');
+    expect(source).not.toContain('formatDate(latestSession.lastSeenAt)');
   });
 
   it('renders account block, latest device, latest session, and issue counters', () => {
@@ -47,8 +50,8 @@ describe('PartnerSecurityCell', () => {
 
     expect(rendered).toContain('Account blocked');
     expect(rendered).toContain('Last app device: androi...3456 / android');
-    expect(rendered).toContain('Account block: Safety hold');
-    expect(rendered).toContain('Last session: 203.0.113.9');
+    expect(rendered).toContain('Account block: Safety hold / 8 Jun 2026, 17:00');
+    expect(rendered).toContain('Last session: 203.0.113.9 / 8 Jun 2026, 15:30');
     expect(rendered).toContain('1 blocked device(s)');
     expect(rendered).toContain('1 session check(s)');
     expect(rendered).toContain('1 shared device id(s)');
