@@ -8,6 +8,7 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -213,14 +214,22 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                   </td>
                   <td>
                     <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
-                    <div className="muted">{snapshot.customerProfile?.user?.phone ?? '-'}</div>
+                    {snapshot.customerProfile?.user?.phone ? (
+                      <div className="muted">{snapshot.customerProfile.user.phone}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No customer phone</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <Link className="text-link" href={`/partners/${snapshot.providerProfileId}?section=full`}>
                       {snapshot.providerProfile?.displayName ??
                         financePersonName(snapshot.providerProfile?.user, 'Unknown partner')}
                     </Link>
-                    <div className="muted">{snapshot.providerProfile?.user?.phone ?? '-'}</div>
+                    {snapshot.providerProfile?.user?.phone ? (
+                      <div className="muted">{snapshot.providerProfile.user.phone}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No partner phone</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <strong>{snapshot.paymentMethod}</strong>

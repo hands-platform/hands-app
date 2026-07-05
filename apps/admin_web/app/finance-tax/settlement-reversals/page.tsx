@@ -7,6 +7,7 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -209,14 +210,22 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   </td>
                   <td>
                     <strong>{financePersonName(reversal.originalSettlementSnapshot?.customerProfile?.user, 'Unknown customer')}</strong>
-                    <div className="muted">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? '-'}</div>
+                    {reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ? (
+                      <div className="muted">{reversal.originalSettlementSnapshot.customerProfile.user.phone}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No customer phone</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <Link className="text-link" href={`/partners/${reversal.providerProfileId}?section=full`}>
                       {reversal.originalSettlementSnapshot?.providerProfile?.displayName ??
                         financePersonName(reversal.originalSettlementSnapshot?.providerProfile?.user, 'Unknown partner')}
                     </Link>
-                    <div className="muted">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? '-'}</div>
+                    {reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ? (
+                      <div className="muted">{reversal.originalSettlementSnapshot.providerProfile.user.phone}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No partner phone</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <strong>{reversal.paymentMethod}</strong>

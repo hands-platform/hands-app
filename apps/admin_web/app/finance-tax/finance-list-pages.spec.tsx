@@ -522,6 +522,40 @@ describe('finance list pages', () => {
     expect(source).not.toContain('<strong>{formatMoney(snapshot.platformFeeGross, snapshot.currency)}</strong>');
   });
 
+  it.each([
+    [
+      'booking settlement audit',
+      'app/finance-tax/booking-settlement-audit/page.tsx',
+      [
+        "<div className=\"muted\">{snapshot.customerProfile?.user?.phone ?? '-'}</div>",
+        "<div className=\"muted\">{snapshot.providerProfile?.user?.phone ?? '-'}</div>",
+      ],
+    ],
+    [
+      'coupon finance',
+      'app/finance-tax/coupon-finance/page.tsx',
+      [
+        "<div className=\"muted\">{snapshot.customerProfile?.user?.phone ?? '-'}</div>",
+        "<div className=\"muted\">{snapshot.providerProfile?.user?.phone ?? '-'}</div>",
+      ],
+    ],
+    [
+      'settlement reversals',
+      'app/finance-tax/settlement-reversals/page.tsx',
+      [
+        "<div className=\"muted\">{reversal.originalSettlementSnapshot?.customerProfile?.user?.phone ?? '-'}</div>",
+        "<div className=\"muted\">{reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ?? '-'}</div>",
+      ],
+    ],
+  ] as const)('uses shared inline fallback atoms for %s participant phone cells', (_name, sourcePath, rawFallbacks) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    for (const rawFallback of rawFallbacks) {
+      expect(source).not.toContain(rawFallback);
+    }
+  });
+
   it('uses shared badge atoms for settlement reversal status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
