@@ -47,4 +47,9 @@ describe('FilesPage', () => {
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
   });
+
+  it('uses the shared DateTimeText atom for uploaded file timestamps', () => {
+    expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).not.toContain('<p className="muted">{formatDateTime(row.uploadedAt)}</p>');
+  });
 });

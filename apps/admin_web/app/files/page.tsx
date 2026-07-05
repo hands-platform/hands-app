@@ -12,10 +12,11 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { formatBytes, formatDateTime, shortId } from '../../lib/admin-format';
+import { formatBytes, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import {
   approvePublicProviderMedia,
@@ -174,7 +175,9 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
       </td>
       <td>
         <StatusBadge tone={row.uploadStatus === 'UPLOADED' ? 'success' : 'warning'}>{row.uploadStatus}</StatusBadge>
-        <p className="muted">{formatDateTime(row.uploadedAt)}</p>
+        <p className="muted">
+          <DateTimeText value={row.uploadedAt} />
+        </p>
       </td>
       <td>
         <p className="muted">{row.contentType}</p>
