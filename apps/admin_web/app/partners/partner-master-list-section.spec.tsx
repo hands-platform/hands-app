@@ -14,6 +14,7 @@ describe('PartnerMasterListSection', () => {
     const source = readFileSync('app/partners/partner-master-list-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.online ? \'pill-success\' : \'pill-neutral\'}`}>');
     expect(source).not.toContain('<span className="pill pill-warn">Withdrawal action</span>');
@@ -21,6 +22,8 @@ describe('PartnerMasterListSection', () => {
     expect(source).not.toContain('<span className="pill pill-success">Approval clear</span>');
     expect(source).not.toContain('className={`pill ${');
     expect(source).not.toContain('<span className={`pill ${row.accountBlocked ? \'pill-danger\' : \'pill-success\'}`}>');
+    expect(source).not.toContain("{row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}");
+    expect(source).not.toContain("Joined {row.joinedAt ? formatDate(row.joinedAt) : 'not recorded'}");
   });
 
   it('uses the shared table pagination footer for partner master pagination', () => {
@@ -71,6 +74,8 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).not.toContain('Ops trail');
     expect(rendered).toContain('ONLINE_AVAILABLE');
     expect(rendered).toContain('KYC APPROVED');
+    expect(rendered).toContain('1 Jun 2026, 07:00');
+    expect(rendered).toContain('Joined 1 May 2026, 07:00');
     expect(rendered).toContain('2 approval need(s)');
     expect(rendered).not.toContain('verification review');
     expect(rendered).not.toContain('bank MISSING');

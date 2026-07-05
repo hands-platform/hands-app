@@ -6,9 +6,10 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
-import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
+import { providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import {
   buildPartnerListHref,
   type PartnerPagination,
@@ -197,8 +198,12 @@ function renderLevelCell(row: PartnerMasterListSectionRow) {
 function renderAccessCell(row: PartnerMasterListSectionRow) {
   return (
     <div className="vuexy-partner-stack">
-      <strong>{row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</strong>
-      <small>Joined {row.joinedAt ? formatDate(row.joinedAt) : 'not recorded'}</small>
+      <strong>
+        <DateTimeText fallback="No session" value={row.lastSeenAt} />
+      </strong>
+      <small>
+        Joined <DateTimeText fallback="not recorded" value={row.joinedAt} />
+      </small>
       <small>{row.latestSessionIp}</small>
     </div>
   );
