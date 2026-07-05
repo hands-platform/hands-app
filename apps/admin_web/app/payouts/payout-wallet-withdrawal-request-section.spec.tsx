@@ -266,6 +266,13 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
 
+  it('uses the shared inline fallback atom for missing partner phone values', () => {
+    expect(sectionSource).toContain('AdminInlineFallback');
+    expect(sectionSource).not.toContain(
+      '<p className="muted">{request.providerProfile?.user?.phone ?? \'No phone on file\'}</p>',
+    );
+  });
+
   it('uses shared badge atoms for withdrawal status and action warnings', () => {
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeTone');

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
@@ -98,7 +99,11 @@ export function PayoutWalletWithdrawalRequestSection({
                 >
                   {partnerLabel(request)}
                 </Link>
-                <p className="muted">{request.providerProfile?.user?.phone ?? 'No phone on file'}</p>
+                {request.providerProfile?.user?.phone ? (
+                  <p className="muted">{request.providerProfile.user.phone}</p>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No phone on file</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <strong>
