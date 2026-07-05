@@ -24,7 +24,7 @@ export function AdminSegmentedControl<Value extends string = string>({
 }: AdminSegmentedControlProps<Value>) {
   return (
     <div aria-label={ariaLabel} className={mergeClassNames('booking-date-filter-buttons', className)}>
-      {options.map((option) => {
+      {options.map((option, index) => {
         const active = option.value === activeValue;
 
         return (
@@ -33,7 +33,7 @@ export function AdminSegmentedControl<Value extends string = string>({
             aria-label={option.ariaLabel}
             className={mergeClassNames('booking-date-filter-button', active ? 'is-active' : undefined)}
             href={option.href}
-            key={option.value}
+            key={`${option.value}-${index}`}
             onClick={option.onClick}
             title={option.title}
           >
