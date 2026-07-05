@@ -204,6 +204,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps inline admin action form shells inside the shared Vuexy inline action atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-inline-action-form.tsx')
+      .filter((filePath) => rawAdminInlineActionFormPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -234,6 +243,8 @@ const rawFinanceFilterChipRowPattern =
   /<div\b[^>]*className=(?:"filter-row admin-mt-12"|'filter-row admin-mt-12')/s;
 const rawGetFilterFormShellPattern =
   /<form\b[^>]*className=(?:"(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)"|'(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)')/s;
+const rawAdminInlineActionFormPattern =
+  /<form\b[^>]*className=(?:"admin-inline-form"|'admin-inline-form')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

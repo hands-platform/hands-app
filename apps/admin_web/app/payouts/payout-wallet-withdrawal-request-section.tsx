@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
@@ -229,7 +230,7 @@ function WithdrawalRequestActions({
       ) : null}
 
       {request.status === 'REQUESTED' || request.status === 'HOLD' || request.status === 'REVIEW_REQUIRED' ? (
-        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="APPROVED" />
           <AdminFormInput
@@ -241,11 +242,11 @@ function WithdrawalRequestActions({
           <AdminFormControlButton className="button-sm button-primary" type="submit">
             {request.status === 'REQUESTED' ? 'Approve' : 'Clear review'}
           </AdminFormControlButton>
-        </form>
+        </AdminInlineActionForm>
       ) : null}
 
       {request.status === 'APPROVED' ? (
-        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="BANK_TRANSFER_PENDING" />
           <AdminFormInput
@@ -257,7 +258,7 @@ function WithdrawalRequestActions({
           <AdminFormControlButton className="button-sm button-info" type="submit">
             Bank pending
           </AdminFormControlButton>
-        </form>
+        </AdminInlineActionForm>
       ) : null}
 
       {request.status === 'BANK_TRANSFER_PENDING' ? (
@@ -265,7 +266,7 @@ function WithdrawalRequestActions({
       ) : null}
 
       {request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING' ? (
-        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="PAID" />
           <AdminFormInput
@@ -297,11 +298,11 @@ function WithdrawalRequestActions({
           <AdminFormControlButton className="button-sm button-success" type="submit">
             Mark paid
           </AdminFormControlButton>
-        </form>
+        </AdminInlineActionForm>
       ) : null}
 
       {request.status === 'REQUESTED' ? (
-        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="NEEDS_BANK_CORRECTION" />
           <AdminFormInput
@@ -314,7 +315,7 @@ function WithdrawalRequestActions({
           <AdminFormControlButton className="button-sm button-outline" type="submit">
             Request correction
           </AdminFormControlButton>
-        </form>
+        </AdminInlineActionForm>
       ) : null}
 
       {request.status === 'REQUESTED' ||
@@ -322,7 +323,7 @@ function WithdrawalRequestActions({
       request.status === 'BANK_TRANSFER_PENDING' ||
       request.status === 'HOLD' ||
       request.status === 'REVIEW_REQUIRED' ? (
-        <form action={updateWithdrawalRequestAction} className="admin-inline-form">
+        <AdminInlineActionForm action={updateWithdrawalRequestAction}>
           <input name="requestId" type="hidden" value={request.id} />
           <input name="status" type="hidden" value="REJECTED" />
           <AdminFormInput
@@ -334,7 +335,7 @@ function WithdrawalRequestActions({
           <AdminFormControlButton className="button-sm button-danger" type="submit">
             Reject
           </AdminFormControlButton>
-        </form>
+        </AdminInlineActionForm>
       ) : null}
     </div>
   );
