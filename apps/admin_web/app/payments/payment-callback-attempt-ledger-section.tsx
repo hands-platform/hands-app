@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -47,7 +48,9 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             <td>{row.method}</td>
             <td>
               <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>
-              <div className="muted">{row.errorMessage ?? 'No processing error recorded.'}</div>
+              <div>
+                <AdminInlineFallback>{row.errorMessage ?? 'No processing error recorded.'}</AdminInlineFallback>
+              </div>
             </td>
             <td>
               {row.providerRef}
@@ -67,7 +70,9 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
               ) : (
                 <>
                   Not linked
-                  <div className="muted">Gateway reference did not match a saved payment.</div>
+                  <div>
+                    <AdminInlineFallback>Gateway reference did not match a saved payment.</AdminInlineFallback>
+                  </div>
                 </>
               )}
             </td>

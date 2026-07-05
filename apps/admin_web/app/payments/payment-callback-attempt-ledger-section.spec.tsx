@@ -102,6 +102,17 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     expect(source).not.toContain('<td>{row.createdAtLabel}</td>');
     expect(modelSource).not.toContain('createdAtLabel: formatDateTime(attempt.createdAt)');
   });
+
+  it('uses shared inline fallback atoms for callback absence labels', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/payments/payment-callback-attempt-ledger-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain("<div className=\"muted\">{row.errorMessage ?? 'No processing error recorded.'}</div>");
+    expect(source).not.toContain('<div className="muted">Gateway reference did not match a saved payment.</div>');
+  });
 });
 
 function textContent(value: unknown): string {
