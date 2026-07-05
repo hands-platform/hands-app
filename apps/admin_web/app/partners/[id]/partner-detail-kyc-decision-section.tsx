@@ -1,4 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -40,9 +41,9 @@ type PartnerDetailKycDecisionSectionProps = {
   readonly evidence: PartnerKycDecisionEvidence;
   readonly rejectionReason?: string | null;
   readonly reviewActions: readonly ActionMenuItem[];
-  readonly reviewedLabel: string;
+  readonly reviewedLabel: ReactNode;
   readonly status?: string | null;
-  readonly submittedLabel: string;
+  readonly submittedLabel: ReactNode;
 };
 
 export function PartnerDetailKycDecisionSection({

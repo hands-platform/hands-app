@@ -1073,9 +1073,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               evidence={kycEvidence}
               rejectionReason={provider.kyc?.rejectionReason}
               reviewActions={partnerKycReviewActions}
-              reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
+              reviewedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.reviewedAt} />}
               status={provider.kyc?.status}
-              submittedLabel={formatDate(provider.kyc?.submittedAt)}
+              submittedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />}
             />
 
             <PartnerDetailServicePricingSection

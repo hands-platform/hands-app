@@ -17,10 +17,17 @@ describe('PartnerDetailKycDecisionSection', () => {
 
   it('uses the shared date time atom for evidence upload timestamps', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('DateTimeText');
+    expect(source).toContain('readonly reviewedLabel: ReactNode;');
+    expect(source).toContain('readonly submittedLabel: ReactNode;');
+    expect(pageSource).toContain('reviewedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.reviewedAt} />}');
+    expect(pageSource).toContain('submittedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />}');
     expect(source).not.toContain("import { formatDate } from './partner-detail-format';");
     expect(source).not.toContain("{row.uploadedAt ? formatDate(row.uploadedAt) : 'Missing'}");
+    expect(pageSource).not.toContain('reviewedLabel={formatDate(provider.kyc?.reviewedAt)}');
+    expect(pageSource).not.toContain('submittedLabel={formatDate(provider.kyc?.submittedAt)}');
   });
 
   it('renders KYC checklist and evidence as Vuexy tables', () => {
