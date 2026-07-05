@@ -13,6 +13,14 @@ describe('PartnerDetailKycDecisionSection', () => {
     expect(source).not.toContain('<span className={`pill ${kycEvidencePill(row.status)}`}>{row.status}</span>');
   });
 
+  it('uses the shared date time atom for evidence upload timestamps', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain("import { formatDate } from './partner-detail-format';");
+    expect(source).not.toContain("{row.uploadedAt ? formatDate(row.uploadedAt) : 'Missing'}");
+  });
+
   it('renders KYC checklist and evidence as Vuexy tables', () => {
     const section = PartnerDetailKycDecisionSection({
       canApprove: false,

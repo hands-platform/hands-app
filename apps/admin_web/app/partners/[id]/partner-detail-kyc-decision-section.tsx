@@ -2,9 +2,9 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
-import { formatDate } from './partner-detail-format';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -140,7 +140,9 @@ export function PartnerDetailKycDecisionSection({
                 <span className="muted">{row.fileLabel}</span>
               </td>
               <td>
-                <span className="muted">{row.uploadedAt ? formatDate(row.uploadedAt) : 'Missing'}</span>
+                <span className="muted">
+                  <DateTimeText fallback="Missing" value={row.uploadedAt} />
+                </span>
               </td>
               <td>
                 {row.rejectionReason ? (
