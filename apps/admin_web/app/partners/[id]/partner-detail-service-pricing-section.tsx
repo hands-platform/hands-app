@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -16,7 +18,7 @@ export type PartnerServicePricingDisplayRow = {
   readonly issue: string;
   readonly name: string;
   readonly payoutRuleLabel: string;
-  readonly priceLine: string;
+  readonly priceLine: ReactNode;
 };
 
 type PartnerDetailServicePricingSectionProps = {

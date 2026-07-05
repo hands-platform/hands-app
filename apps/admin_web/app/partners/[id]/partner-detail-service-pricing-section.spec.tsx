@@ -11,8 +11,14 @@ describe('PartnerDetailServicePricingSection', () => {
 
   it('uses shared Vuexy status badges for service duration, payout, and visibility chips', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('<StatusBadge');
+    expect(source).toContain("import type { ReactNode } from 'react';");
+    expect(source).toContain('readonly priceLine: ReactNode;');
+    expect(pageSource).toContain('Customer <MoneyText amount={row.customerPrice} />');
+    expect(pageSource).toContain('<MoneyText amount={row.basePrice} />');
+    expect(pageSource).toContain('partner payout <MoneyText amount={row.providerPayoutAmount} />');
     expect(source).not.toContain('<span className="pill pill-info">{row.durationLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{row.payoutRuleLabel}</span>');
     expect(source).not.toContain("<span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>");

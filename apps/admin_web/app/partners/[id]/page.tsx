@@ -4305,9 +4305,18 @@ function buildPartnerServicePricingDisplayRows(
     issue: row.issue,
     name: row.name,
     payoutRuleLabel: `${row.payoutRuleCount} payout rule(s)`,
-    priceLine: `Customer ${formatCurrency(row.customerPrice)} / admin minimum ${formatCurrency(
-      row.basePrice,
-    )}${row.providerPayoutAmount !== null ? ` / partner payout ${formatCurrency(row.providerPayoutAmount)}` : ''}`,
+    priceLine: (
+      <>
+        Customer <MoneyText amount={row.customerPrice} /> / admin minimum{' '}
+        <MoneyText amount={row.basePrice} />
+        {row.providerPayoutAmount !== null ? (
+          <>
+            {' '}
+            / partner payout <MoneyText amount={row.providerPayoutAmount} />
+          </>
+        ) : null}
+      </>
+    ),
   }));
 }
 
