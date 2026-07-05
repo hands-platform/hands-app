@@ -28,6 +28,21 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(source).not.toContain('<p className="muted admin-mt-12">');
   });
 
+  it('uses the shared money atom for visible cash priority amounts', () => {
+    const sectionSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-priority-board-section.tsx'),
+      'utf8',
+    );
+    const modelSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-page-priority.ts'),
+      'utf8',
+    );
+
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).not.toContain('debtAmountLabel: string');
+    expect(modelSource).not.toContain('formatMoney(');
+  });
+
   it('renders priority rows with booking links and evidence requirements', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/cash-settlements/cash-settlement-priority-board-section.tsx'),
@@ -69,7 +84,8 @@ function buildRow(): CashSettlementPriorityBoardRow {
     ageLabel: '26h open',
     bookingHref: '/bookings/booking-1',
     bookingLabel: 'bookin',
-    debtAmountLabel: '500.000 VND',
+    currency: 'VND',
+    debtAmount: 500_000,
     pillClass: 'pill-danger',
     priority: 'High debt',
     providerName: 'Partner One',

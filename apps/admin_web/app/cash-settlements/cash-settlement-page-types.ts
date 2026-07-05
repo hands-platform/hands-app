@@ -51,9 +51,9 @@ export type CashSettlementPriorityItem = {
   priority: string;
   pillClass: string;
   ageLabel: string;
-  reason: string;
-  requiredEvidence: string[];
-  unlockResult: string[];
+  reason: ReactNode;
+  requiredEvidence: ReactNode[];
+  unlockResult: ReactNode[];
 };
 
 export type AppliedCashSettlementPolicyCard = {

@@ -1,4 +1,7 @@
+import type { ReactNode } from 'react';
+
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 
@@ -6,14 +9,15 @@ export type CashSettlementPriorityBoardRow = {
   readonly ageLabel: string;
   readonly bookingHref: string;
   readonly bookingLabel: string;
-  readonly debtAmountLabel: string;
+  readonly currency: string;
+  readonly debtAmount: number;
   readonly pillClass: string;
   readonly priority: string;
   readonly providerName: string;
   readonly providerPhone: string;
-  readonly reason: string;
-  readonly requiredEvidence: readonly string[];
-  readonly unlockResult: readonly string[];
+  readonly reason: ReactNode;
+  readonly requiredEvidence: readonly ReactNode[];
+  readonly unlockResult: readonly ReactNode[];
 };
 
 type CashSettlementPriorityBoardSectionProps = {
@@ -63,20 +67,22 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
             <div className="muted">{row.providerPhone}</div>
           </td>
           <td>
-            <strong>{row.debtAmountLabel}</strong>
+            <strong>
+              <MoneyText amount={row.debtAmount} currency={row.currency} />
+            </strong>
             <div className="muted">{row.reason}</div>
           </td>
           <td>
             <div className="service-matrix-cell">
-              {row.requiredEvidence.map((line) => (
-                <small key={line}>{line}</small>
+              {row.requiredEvidence.map((line, index) => (
+                <small key={`${row.bookingHref}-evidence-${index}`}>{line}</small>
               ))}
             </div>
           </td>
           <td>
             <div className="service-matrix-cell">
-              {row.unlockResult.map((line) => (
-                <small key={line}>{line}</small>
+              {row.unlockResult.map((line, index) => (
+                <small key={`${row.bookingHref}-unlock-${index}`}>{line}</small>
               ))}
             </div>
           </td>

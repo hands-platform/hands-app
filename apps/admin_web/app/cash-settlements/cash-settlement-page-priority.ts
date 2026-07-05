@@ -1,4 +1,7 @@
-import { formatMoney, shortRecordId } from '../../lib/admin-format';
+import { createElement, Fragment, type ReactNode } from 'react';
+
+import { MoneyText } from '../../components/money-text';
+import { shortRecordId } from '../../lib/admin-format';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { cashSettlementRowAgeHours } from './cash-settlement-page-helpers';
 import type { CashSettlementPriorityItem, CashSettlementRow } from './cash-settlement-page-types';
@@ -10,7 +13,8 @@ export function buildCashSettlementPriorityBoardRows(
     ageLabel: item.ageLabel,
     bookingHref: `/bookings/${item.row.earning.bookingId}`,
     bookingLabel: shortRecordId(item.row.earning.bookingId),
-    debtAmountLabel: formatMoney(item.row.debtAmount, item.row.earning.currency),
+    currency: item.row.earning.currency,
+    debtAmount: item.row.debtAmount,
     pillClass: item.pillClass,
     priority: item.priority,
     providerName: item.row.providerName,
@@ -71,7 +75,11 @@ function settlementPriorityReason(
   missingPaymentEvidence: boolean,
 ) {
   if (row.debtAmount >= 500_000) {
-    return `Largest debt lane: ${formatMoney(row.debtAmount, row.earning.currency)} is holding final acceptance.`;
+    return detailWithMoney(
+      'Largest debt lane: ',
+      moneyText(row.debtAmount, row.earning.currency),
+      ' is holding final acceptance.',
+    );
   }
   if (ageHours >= 24) {
     return `Aging lane: this cash-fee debt has been open for about ${Math.round(ageHours)} hours.`;
@@ -93,14 +101,17 @@ function settlementRequiredEvidence(
   return [
     missingPaymentEvidence
       ? 'Check booking payment method and customer cash amount.'
-      : `Cash payment evidence: ${formatMoney(row.bookingAmount, row.earning.currency)} collected.`,
+      : detailWithMoney('Cash payment evidence: ', moneyText(row.bookingAmount, row.earning.currency), ' collected.'),
     missingReference
       ? `Attach deposit or offset reference: ${row.settlementReference}.`
       : `Existing ref: ${row.earning.settlementRef ?? row.lastLedgerRef}.`,
-    `Confirm HANDS fee ${formatMoney(row.platformFee, row.earning.currency)} and tax ${formatMoney(
-      row.taxAmount,
-      row.earning.currency,
-    )}.`,
+    detailWithMoney(
+      'Confirm HANDS fee ',
+      moneyText(row.platformFee, row.earning.currency),
+      ' and tax ',
+      moneyText(row.taxAmount, row.earning.currency),
+      '.',
+    ),
   ];
 }
 
@@ -110,4 +121,12 @@ function settlementUnlockResult(row: CashSettlementRow) {
     'Payout release returns to batch review after settlement.',
     `Customer wallet stays unchanged; this is Partner cash-fee debt for booking ${shortRecordId(row.earning.bookingId)}.`,
   ];
+}
+
+function detailWithMoney(...children: ReactNode[]): ReactNode {
+  return createElement(Fragment, null, ...children);
+}
+
+function moneyText(amount: number, currency: string): ReactNode {
+  return createElement(MoneyText, { amount, currency });
 }
