@@ -316,6 +316,11 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toContain('<span className="muted">No qualifying booking linked</span>');
   });
 
+  it('uses the shared inline fallback atom for missing referral platform values', () => {
+    expect(detailSource).toContain('AdminInlineFallback');
+    expect(detailSource).not.toContain("<p className=\"muted\">{referral.platform ?? 'No platform captured'}</p>");
+  });
+
   it('uses the shared Vuexy table panel wrapper for attribution and reward tables', () => {
     expect(detailSource).toContain('AdminTablePanel');
     expect(detailSource).not.toContain(

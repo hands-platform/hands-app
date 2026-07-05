@@ -236,7 +236,11 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   </td>
                   <td>
                     <strong>{referral.installSource ?? 'Unknown'}</strong>
-                    <p className="muted">{referral.platform ?? 'No platform captured'}</p>
+                    {referral.platform ? (
+                      <p className="muted">{referral.platform}</p>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No platform captured</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     <ReferralAttributionRewardCell rewardCount={referral.rewards.length} summary={rewardSummary} />
