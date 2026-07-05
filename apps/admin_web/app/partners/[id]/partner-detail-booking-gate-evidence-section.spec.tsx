@@ -7,14 +7,17 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{attempt.addressLabel}</span>');
+    expect(source).not.toContain('readonly formatDate: (value?: string | null) => string;');
+    expect(source).not.toContain('formatDate(latestAttempt.at)');
+    expect(source).not.toContain('formatDate(attempt.at)');
   });
 
   it('renders booking create gate attempts as a Vuexy table', () => {
     const section = PartnerDetailBookingGateEvidenceSection({
-      formatDate: (value) => (value ? `formatted ${value}` : 'None'),
       loadedAttempts: [
         {
           addressLabel: 'Cau Giay, Ha Noi',
@@ -63,7 +66,7 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     expect(rendered).toContain('Requested service address is too far from current customer location.');
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('51.2 km');
-    expect(rendered).toContain('formatted 2026-06-20T10:00:00.000Z');
+    expect(rendered).toContain('20 Jun 2026, 17:00');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=blocked-create&gate=first-pick-distance',
@@ -85,7 +88,6 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
 
   it('renders an empty state inside the gate evidence table', () => {
     const section = PartnerDetailBookingGateEvidenceSection({
-      formatDate: () => 'None',
       loadedAttempts: [],
       filteredAttempts: [],
     });

@@ -970,7 +970,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         />
         <PartnerDetailBookingGateEvidenceSection
           filteredAttempts={filteredPartnerBookingGateAttempts}
-          formatDate={formatDate}
           loadedAttempts={partnerBookingGateAttempts}
         />
         <PartnerDetailBookingEvidenceBundlesSection

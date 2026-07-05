@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -26,13 +27,11 @@ export type PartnerBookingGateAttemptRow = {
 
 type PartnerDetailBookingGateEvidenceSectionProps = {
   readonly filteredAttempts: readonly PartnerBookingGateAttemptRow[];
-  readonly formatDate: (value?: string | null) => string;
   readonly loadedAttempts: readonly PartnerBookingGateAttemptRow[];
 };
 
 export function PartnerDetailBookingGateEvidenceSection({
   filteredAttempts,
-  formatDate,
   loadedAttempts,
 }: PartnerDetailBookingGateEvidenceSectionProps) {
   const latestAttempt = loadedAttempts[0];
@@ -65,7 +64,9 @@ export function PartnerDetailBookingGateEvidenceSection({
         <div>
           <span>Latest gate</span>
           <strong>{latestAttempt?.reasonLabel ?? 'None'}</strong>
-          <small>{latestAttempt ? formatDate(latestAttempt.at) : 'No gate row'}</small>
+          <small>
+            <DateTimeText fallback="No gate row" value={latestAttempt?.at} />
+          </small>
         </div>
       </div>
       <AdminTableScroll>
@@ -97,7 +98,9 @@ export function PartnerDetailBookingGateEvidenceSection({
                 <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
               </td>
               <td>
-                <span className="muted">{formatDate(attempt.at)}</span>
+                <span className="muted">
+                  <DateTimeText fallback="Missing" value={attempt.at} />
+                </span>
               </td>
               <td>
                 <div className="participant-list">
