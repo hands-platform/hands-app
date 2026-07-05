@@ -7,6 +7,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
@@ -147,8 +148,8 @@ export function PartnerCustomerEvaluationsSection({
         </div>
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
+      <AdminTablePanel
+        className="vuexy-review-card"
         description="Text-only notes Partners write about customers after a booking. This page is for admin review only."
         id="partner-customer-evaluation-table"
         resultLabel={`${pagination.totalRows} evaluation(s)`}
@@ -227,7 +228,7 @@ export function PartnerCustomerEvaluationsSection({
           totalPages={pagination.totalPages}
           totalRows={pagination.totalRows}
         />
-      </AdminFilterPanel>
+      </AdminTablePanel>
     </>
   );
 }

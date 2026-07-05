@@ -7,6 +7,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
@@ -198,8 +199,8 @@ export function ReviewsTableSection({
         </div>
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"
+      <AdminTablePanel
+        className="vuexy-review-card"
         description="Review rows use the same table card, rounded pagination, avatars, and operator action pattern as bookings."
         id="customer-review-table"
         resultLabel={`${pagination.totalRows} review(s)`}
@@ -310,7 +311,7 @@ export function ReviewsTableSection({
           totalPages={pagination.totalPages}
           totalRows={pagination.totalRows}
         />
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
     </>
   );

@@ -16,11 +16,15 @@ describe('ReviewsTableSection', () => {
   it('uses the shared table pagination footer while preserving review classes', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).toContain('className="vuexy-review-footer"');
     expect(source).toContain('paginationClassName="vuexy-review-pagination"');
     expect(source).toContain('pageLinkClassName="vuexy-review-page-link"');
     expect(source).not.toContain('<AdminTableFooter');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
+    );
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 

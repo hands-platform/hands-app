@@ -23,11 +23,15 @@ describe('PartnerCustomerEvaluationsSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).toContain('className="vuexy-review-footer"');
     expect(source).toContain('paginationClassName="vuexy-review-pagination"');
     expect(source).toContain('pageLinkClassName="vuexy-review-page-link"');
     expect(source).not.toContain('<AdminTableFooter');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card',
+    );
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
