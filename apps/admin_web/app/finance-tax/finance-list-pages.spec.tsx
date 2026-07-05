@@ -372,6 +372,16 @@ describe('finance list pages', () => {
   });
 
   it.each([
+    ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', "entry.payment?.status ?? 'No payment row'"],
+    ['general ledger', 'app/finance-tax/general-ledger/page.tsx', "batch.booking?.status ?? 'No booking'"],
+  ] as const)('uses shared inline fallback atoms for %s optional relationship labels', (_name, sourcePath, fallbackExpression) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain(`<div className="muted">{${fallbackExpression}}</div>`);
+  });
+
+  it.each([
     [
       'booking settlement audit',
       'app/finance-tax/booking-settlement-audit/page.tsx',

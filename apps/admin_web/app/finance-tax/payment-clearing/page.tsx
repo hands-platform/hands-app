@@ -5,6 +5,7 @@ import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSumma
 import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -182,7 +183,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
               </td>
               <td>
                 <strong>{entry.payment?.method ?? '-'}</strong>
-                <div className="muted">{entry.payment?.status ?? 'No payment row'}</div>
+                <div>
+                  <AdminInlineFallback>{entry.payment?.status ?? 'No payment row'}</AdminInlineFallback>
+                </div>
                 {entry.paymentId ? <div className="muted">{shortId(entry.paymentId)}</div> : null}
               </td>
               <td>

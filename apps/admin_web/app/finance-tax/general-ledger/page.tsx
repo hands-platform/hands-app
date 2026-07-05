@@ -5,6 +5,7 @@ import type { AdminAccountingJournalBatch, AdminAccountingJournalBatchSummary } 
 import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -206,7 +207,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 ) : (
                   <span className="muted">-</span>
                 )}
-                <div className="muted">{batch.booking?.status ?? 'No booking'}</div>
+                <div>
+                  <AdminInlineFallback>{batch.booking?.status ?? 'No booking'}</AdminInlineFallback>
+                </div>
               </td>
               <td>
                 {batch.customerProfileId ? (
