@@ -36,6 +36,13 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
   });
 
+  it('uses the shared Vuexy button atom for post-match chat close controls', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n            aria-label="Close chat evidence"');
+  });
+
   it('uses the shared table pagination footer for booking status groups', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 

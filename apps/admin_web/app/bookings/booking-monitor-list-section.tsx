@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import {
   AdminAvatarStatusDot,
   AdminPersonCell,
@@ -607,14 +608,15 @@ export function BookingPostMatchCancellationChatLayer({
               {postMatchCancellationResolutionLabel(resolution, autoApproved)}
             </p>
           </div>
-          <button
+          <AdminFormControlButton
             aria-label="Close chat evidence"
-            className="booking-chat-close"
+            className="button-secondary booking-chat-close"
             onClick={onClose}
+            title="Close chat evidence"
             type="button"
           >
             <X aria-hidden="true" size={18} />
-          </button>
+          </AdminFormControlButton>
         </div>
         <div className="booking-chat-evidence-grid" aria-label="Cancellation evidence snapshot">
           {evidenceRows.map((item) => (

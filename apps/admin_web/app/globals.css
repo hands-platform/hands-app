@@ -14690,6 +14690,13 @@ textarea:focus-visible {
   width: 30px;
 }
 
+.admin-form-control-button.booking-chat-close {
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  width: 34px;
+}
+
 .admin-form-control-button.button-success,
 .admin-form-control-link.button-success {
   background: color-mix(in srgb, var(--admin-success) 12%, var(--admin-surface));

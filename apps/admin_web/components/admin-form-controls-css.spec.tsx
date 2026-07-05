@@ -27,6 +27,17 @@ describe('Admin form control CSS', () => {
     expect(baseBlock).not.toContain('min-height: 40px');
   });
 
+  it('keeps shared booking chat close buttons on compact icon-button dimensions', () => {
+    const closeButtonIndex = globalsCss.indexOf('.admin-form-control-button.booking-chat-close {');
+    const closeButtonBlock = cssRuleBlockAt(closeButtonIndex);
+
+    expect(closeButtonIndex).toBeGreaterThan(-1);
+    expect(closeButtonBlock).toContain('height: 34px');
+    expect(closeButtonBlock).toContain('min-height: 34px');
+    expect(closeButtonBlock).toContain('padding: 0');
+    expect(closeButtonBlock).toContain('width: 34px');
+  });
+
   it('styles shared checkboxes through the Vuexy mark layer instead of the browser default control', () => {
     const baseIndex = globalsCss.indexOf('\n.admin-form-checkbox {');
     const inputIndex = globalsCss.indexOf('\n.admin-form-checkbox-input {');
