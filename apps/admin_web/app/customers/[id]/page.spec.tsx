@@ -122,6 +122,17 @@ describe('CustomerDetailPage', () => {
       'helper: formatMoney(refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0))',
     );
   });
+
+  it('uses the shared MoneyText atom for visible customer command queue payment amounts', () => {
+    expect(customerDetailSource).toContain('detailNode?: ReactNode;');
+    expect(customerDetailSource).toContain('{command.detailNode ?? command.detail}');
+    expect(customerDetailSource).toContain(
+      '<MoneyText amount={Number(paymentIssueBooking.payment?.amount ?? 0)}',
+    );
+    expect(customerDetailSource).not.toContain(
+      '} / ${formatMoney(Number(paymentIssueBooking.payment?.amount ?? 0))}`',
+    );
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import {
@@ -517,7 +518,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     {command.label}
                   </StatusBadge>
                   <h3>{command.title}</h3>
-                  <p className="muted">{command.detail}</p>
+                  <p className="muted">{command.detailNode ?? command.detail}</p>
                   <small className="muted">Owner: {command.owner}</small>
                 </div>
                 <CustomerOperatorCommandAction command={command} customerId={customer.id} />
@@ -974,6 +975,7 @@ type CustomerOperatorCommand = {
   label: string;
   title: string;
   detail: string;
+  detailNode?: ReactNode;
   owner: string;
   tone: CustomerOperatorTone;
   action:
@@ -1414,13 +1416,22 @@ function buildCustomerOperatorCommandQueue({
   }
 
   if (paymentIssueBooking) {
+    const paymentStatus = paymentIssueBooking.payment?.status ?? 'Unknown';
+    const paymentMethod = paymentIssueBooking.payment?.method ?? 'No method';
+    const paymentAmount = Number(paymentIssueBooking.payment?.amount ?? 0);
+    const paymentCurrency = paymentIssueBooking.payment?.currency ?? 'VND';
+
     commands.push({
       id: `payment-${paymentIssueBooking.id}`,
       label: 'Payment row',
       title: 'Review the latest non-captured payment status',
-      detail: `${paymentIssueBooking.payment?.status ?? 'Unknown'} / ${
-        paymentIssueBooking.payment?.method ?? 'No method'
-      } / ${formatMoney(Number(paymentIssueBooking.payment?.amount ?? 0))}`,
+      detail: `${paymentStatus} / ${paymentMethod} / ${formatMoney(paymentAmount, paymentCurrency)}`,
+      detailNode: (
+        <>
+          {paymentStatus} / {paymentMethod} /{' '}
+          <MoneyText amount={Number(paymentIssueBooking.payment?.amount ?? 0)} currency={paymentCurrency} />
+        </>
+      ),
       owner: 'Payments',
       tone: 'warn',
       action: { type: 'link', href: `/payments?customer=${customer.id}`, label: 'Open payments' },
