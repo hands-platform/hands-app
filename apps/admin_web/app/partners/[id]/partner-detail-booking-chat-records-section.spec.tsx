@@ -147,6 +147,44 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(source).toContain('readonly paymentLineNode?: ReactNode;');
     expect(source).toContain('{row.paymentLineNode ?? row.paymentLine}');
   });
+
+  it('prefers shared date nodes over fallback booking chat date text', () => {
+    const rowsWithDateNodes = [
+      {
+        bookingHref: '/bookings/booking-4',
+        chatLine: 'No chat room is linked.',
+        chatMessages: [],
+        closureLine: 'Fallback closed date',
+        closureLineNode: <span>Shared closure date atom marker</span>,
+        customerLine: 'Fallback customer requested date',
+        customerLineNode: <span>Shared customer date atom marker</span>,
+        hasChatRoom: false,
+        heading: 'Booking booking-4',
+        key: 'booking-4',
+        paymentLine: 'Payment pending.',
+        relation: 'MISSING',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailBookingChatRecordsSection>[0]['rows'];
+    const section = PartnerDetailBookingChatRecordsSection({
+      openBookingsHref: '/bookings',
+      rows: rowsWithDateNodes,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared customer date atom marker');
+    expect(rendered).toContain('Shared closure date atom marker');
+    expect(rendered).not.toContain('Fallback customer requested date');
+    expect(rendered).not.toContain('Fallback closed date');
+    expect(source).toContain('readonly customerLineNode?: ReactNode;');
+    expect(source).toContain('readonly closureLineNode?: ReactNode;');
+    expect(source).toContain('{row.customerLineNode ?? row.customerLine}');
+    expect(source).toContain('{row.closureLineNode ?? row.closureLine}');
+    expect(pageSource).toContain('closureLineNode: isClosedPartnerBooking(booking) ? (');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={booking.closedAt} />');
+    expect(pageSource).toContain('customerLineNode: (');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRequestOpenedAt(booking)} />');
+  });
 });
 
 function textContent(value: unknown): string {

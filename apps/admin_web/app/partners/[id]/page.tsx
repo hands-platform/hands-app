@@ -1791,10 +1791,21 @@ function buildPartnerBookingChatRecordRows(
       closureLine: isClosedPartnerBooking(booking)
         ? `Closed ${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
         : undefined,
+      closureLineNode: isClosedPartnerBooking(booking) ? (
+        <>
+          Closed <DateTimeText fallback="Missing" value={booking.closedAt} /> / {bookingClosureLabel(booking)}
+        </>
+      ) : undefined,
       customerHref: booking.customerProfileId ? `/customers/${booking.customerProfileId}` : undefined,
       customerLine: `Customer ${partnerBookingCustomer(booking)} / requested ${formatDate(
         bookingRequestOpenedAt(booking),
       )}`,
+      customerLineNode: (
+        <>
+          Customer {partnerBookingCustomer(booking)} / requested{' '}
+          <DateTimeText fallback="Missing" value={bookingRequestOpenedAt(booking)} />
+        </>
+      ),
       hasChatRoom: Boolean(booking.chatRoom),
       heading: `${bookingServiceLabel(booking)} / ${booking.status ?? 'UNKNOWN'}`,
       key: `${booking.id}-${record.relation}`,

@@ -24,8 +24,10 @@ export type PartnerBookingChatRecordRow = {
   readonly chatLine: string;
   readonly chatMessages: readonly PartnerBookingChatMessageRow[];
   readonly closureLine?: string;
+  readonly closureLineNode?: ReactNode;
   readonly customerHref?: string;
   readonly customerLine: string;
+  readonly customerLineNode?: ReactNode;
   readonly hasChatRoom: boolean;
   readonly heading: string;
   readonly key: string;
@@ -74,11 +76,13 @@ export function PartnerDetailBookingChatRecordsSection({
               </td>
               <td>
                 <strong>{row.heading}</strong>
-                <p className="muted">{row.customerLine}</p>
+                <p className="muted">{row.customerLineNode ?? row.customerLine}</p>
               </td>
               <td>
                 <span className="muted">{row.paymentLineNode ?? row.paymentLine}</span>
-                {row.closureLine ? <p className="muted">{row.closureLine}</p> : null}
+                {row.closureLine || row.closureLineNode ? (
+                  <p className="muted">{row.closureLineNode ?? row.closureLine}</p>
+                ) : null}
               </td>
               <td>
                 <p className="muted">{row.chatLine}</p>
