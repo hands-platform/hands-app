@@ -77,7 +77,11 @@ export function AdminManualWalletAdjustmentHistory({
                 </p>
               </td>
               <td>
-                <strong>{row.approvalId ?? 'Missing approval'}</strong>
+                {row.approvalId ? (
+                  <strong>{row.approvalId}</strong>
+                ) : (
+                  <AdminInlineFallback>Missing approval</AdminInlineFallback>
+                )}
                 {row.attachmentUrl ? (
                   <p className="muted">Attachment saved</p>
                 ) : (
@@ -88,7 +92,7 @@ export function AdminManualWalletAdjustmentHistory({
                 <strong>{renderBalanceChange(row)}</strong>
                 <p className="muted">{walletImpactLabel(row)}</p>
               </td>
-              <td>{row.reason ?? 'No reason stored'}</td>
+              <td>{row.reason ? row.reason : <AdminInlineFallback>No reason stored</AdminInlineFallback>}</td>
             </tr>
           ))}
         </AdminDataTable>

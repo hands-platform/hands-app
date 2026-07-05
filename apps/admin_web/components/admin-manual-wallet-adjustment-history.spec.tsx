@@ -57,6 +57,8 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(componentSource).not.toContain(
       "className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group'",
     );
+    expect(componentSource).not.toContain("row.approvalId ?? 'Missing approval'");
+    expect(componentSource).not.toContain("row.reason ?? 'No reason stored'");
     expect(componentSource).not.toContain(
       '<p className="muted">{row.attachmentUrl ? \'Attachment saved\' : \'No attachment\'}</p>',
     );
