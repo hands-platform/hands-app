@@ -3,6 +3,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormControlStack,
+  AdminFormShell,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
@@ -217,20 +218,20 @@ function BookingOutcomePostMatchDecision({
       </div>
       {decision.canResolve ? (
         <div className="booking-outcome-decision-actions">
-          <form action={approvePostMatchCancellationFromDetail}>
+          <AdminFormShell action={approvePostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.approveNote} />
             <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
               Approve cancellation
             </AdminFormControlButton>
-          </form>
-          <form action={holdPostMatchCancellationFromDetail}>
+          </AdminFormShell>
+          <AdminFormShell action={holdPostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.holdNote} />
             <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
               Hold fee deduction
             </AdminFormControlButton>
-          </form>
+          </AdminFormShell>
         </div>
       ) : (
         <span className="muted">This cancellation decision is already closed.</span>

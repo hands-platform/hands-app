@@ -335,6 +335,14 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps booking post-match decision forms inside shared Vuexy form atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => rawBookingPostMatchDecisionFormPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -370,6 +378,8 @@ const rawAdminInlineActionFormPattern =
 const rawOpsNoteFormPattern =
   /<form\b[^>]*className=(?:"[^"]*\bops-note-form\b[^"]*"|'[^']*\bops-note-form\b[^']*')/s;
 const rawEarningsActionFormPattern = /<form\b[^>]*action=(?:"\/earnings"|'\/earnings')/s;
+const rawBookingPostMatchDecisionFormPattern =
+  /<form\b[^>]*action=\{(?:approvePostMatchCancellationFromDetail|holdPostMatchCancellationFromDetail)\}/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminFormControlButton, AdminFormControlLink } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -73,22 +73,22 @@ export function BookingDetailPostMatchDecisionSection({
         </div>
         {decision.canResolve ? (
           <div className="booking-outcome-decision-actions">
-            <form action={approvePostMatchCancellationFromDetail}>
+            <AdminFormShell action={approvePostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.approveNote} />
               <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
                 Approve cancellation
               </AdminFormControlButton>
               <small>Restore eligible fee impact</small>
-            </form>
-            <form action={holdPostMatchCancellationFromDetail}>
+            </AdminFormShell>
+            <AdminFormShell action={holdPostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.holdNote} />
               <AdminFormControlButton className="button-secondary admin-inline-action" type="submit">
                 Hold fee deduction
               </AdminFormControlButton>
               <small>Keep existing deduction</small>
-            </form>
+            </AdminFormShell>
           </div>
         ) : (
           <span className="muted">This cancellation decision is already closed.</span>
