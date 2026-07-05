@@ -135,7 +135,8 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('18 views');
     expect(markup).toContain('3 favorites');
     expect(markup).toContain('0% selected');
-    expect(markup).toContain('550,000 VND');
+    expect(markup).toContain('money-text money-text-positive');
+    expect(markup).toContain('550.000 VND');
     expect(markup).toContain('3m');
     expect(markup).toContain('Available soon');
     expect(markup).toContain('Jun 27, 01:30 PM');
@@ -185,6 +186,15 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('No operating status data is available yet.');
     expect(markup).toContain('No Partners need this action right now.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('uses the shared money atom for partner overview money values', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain("if (kpi.unit === 'money') return formatMoney(kpi.value);");
+    expect(pageSource).not.toContain('{showWallet ? <td>{formatMoney(row.walletBalance)}</td> : null}');
+    expect(pageSource).not.toContain('<td>{formatPriceRange(row.minServicePrice, row.maxServicePrice)}</td>');
+    expect(pageSource).not.toContain('function formatMoney(value: number)');
+    expect(pageSource).not.toContain('function formatPlainVnd(value: number)');
   });
 });
 

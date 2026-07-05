@@ -30,6 +30,7 @@ import { AdminOverviewCommandCard } from '../../../components/admin-overview-car
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   AdminPartnerOverview,
@@ -695,7 +696,11 @@ function PartnerRiskTable({
             <td>{formatNumber(row.completedBookings)}</td>
             <td>{row.cancellationRate}%</td>
             <td>{formatNumber(row.noShowReports)}</td>
-            {showWallet ? <td>{formatMoney(row.walletBalance)}</td> : null}
+            {showWallet ? (
+              <td>
+                <MoneyText amount={row.walletBalance} />
+              </td>
+            ) : null}
             <td>
               <AdminFormControlLink
                 aria-label={`${row.recommendedAction} for ${row.partnerName}`}
@@ -808,7 +813,9 @@ function SelectionFrictionCard({
                 <small>{formatNumber(row.profileViewCustomers)} customers</small>
               </td>
               <td>{formatNumber(row.favoriteCount)} favorites</td>
-              <td>{formatPriceRange(row.minServicePrice, row.maxServicePrice)}</td>
+              <td>
+                <PartnerOverviewPriceRange maxValue={row.maxServicePrice} minValue={row.minServicePrice} />
+              </td>
               <td>{formatDurationSeconds(row.averageResponseSeconds)}</td>
               <td>
                 {row.availabilityStatus}
@@ -937,7 +944,7 @@ function firstParam(value: string | string[] | undefined) {
 
 function formatKpiValue(kpi: AdminPartnerOverviewKpi) {
   if (kpi.value === null) return 'Needs event';
-  if (kpi.unit === 'money') return formatMoney(kpi.value);
+  if (kpi.unit === 'money') return <MoneyText amount={kpi.value} />;
   if (kpi.unit === 'percent') return `${kpi.value}%`;
   if (kpi.unit === 'seconds') return formatDurationSeconds(kpi.value);
   if (kpi.unit === 'rating') return kpi.value.toFixed(2);
@@ -962,23 +969,23 @@ function formatPriorityCount(value: number, singular: string) {
   return `${formatNumber(value)} ${value === 1 ? singular : `${singular}s`}`;
 }
 
-function formatPlainVnd(value: number) {
-  return `${formatNumber(value)} VND`;
-}
-
-function formatPriceRange(minValue: number | null, maxValue: number | null) {
-  if (minValue === null && maxValue === null) return 'No price';
-  if (minValue === null) return formatPlainVnd(maxValue ?? 0);
-  if (maxValue === null || minValue === maxValue) return formatPlainVnd(minValue);
-  return `${formatPlainVnd(minValue)} - ${formatPlainVnd(maxValue)}`;
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 0,
-    style: 'currency',
-    currency: 'VND',
-  }).format(value);
+function PartnerOverviewPriceRange({
+  maxValue,
+  minValue,
+}: {
+  readonly maxValue: number | null;
+  readonly minValue: number | null;
+}) {
+  if (minValue === null && maxValue === null) return <>No price</>;
+  if (minValue === null) return <MoneyText amount={maxValue ?? 0} />;
+  if (maxValue === null || minValue === maxValue) return <MoneyText amount={minValue} />;
+  return (
+    <>
+      <MoneyText amount={minValue} />
+      {' - '}
+      <MoneyText amount={maxValue} />
+    </>
+  );
 }
 
 function formatDateTime(value?: string | null) {
