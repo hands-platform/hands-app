@@ -16,6 +16,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -26,7 +27,6 @@ import type {
   AdminReferralCashoutQueueSummary,
   AdminReferralRewardStatus,
 } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import {
@@ -218,7 +218,9 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         <Link className="text-link" href={row.detailHref}>
           {shortRewardId(row.id)}
         </Link>
-        <div className="muted">{formatDateTime(row.createdAt)}</div>
+        <div className="muted">
+          <DateTimeText value={row.createdAt} />
+        </div>
         {row.qualifyingBookingId ? (
           <Link className="text-link" href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
             Booking {shortRewardId(row.qualifyingBookingId)}
@@ -250,7 +252,9 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
           <>
             <strong>{row.latestDecision.actor?.fullName ?? row.latestDecision.actor?.phone ?? 'Admin'}</strong>
             <div className="muted">{row.latestDecision.reason ?? row.latestDecision.action}</div>
-            <div className="muted">{formatDateTime(row.latestDecision.createdAt)}</div>
+            <div className="muted">
+              <DateTimeText value={row.latestDecision.createdAt} />
+            </div>
           </>
         ) : (
           <span className="muted">No decision yet</span>
@@ -293,7 +297,11 @@ function ReferralCashoutPayoutProfileCell({ profile }: { readonly profile: Admin
             {account.accountNumberMasked ?? account.accountNumberLast4 ?? 'Masked account unavailable'}
           </div>
           <div className="muted">{account.accountHolderName}</div>
-          {account.updatedAt ? <div className="muted">Updated {formatDateTime(account.updatedAt)}</div> : null}
+          {account.updatedAt ? (
+            <div className="muted">
+              Updated <DateTimeText value={account.updatedAt} />
+            </div>
+          ) : null}
         </div>
       ) : null}
       <div className="muted">{profile.helper}</div>

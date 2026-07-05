@@ -132,6 +132,13 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('<strong>{formatMoney(row.amount, row.currency, \'0 VND\')}</strong>');
   });
 
+  it('uses the shared date time atom for cashout timestamps', () => {
+    expect(cashoutQueueSource).toContain('DateTimeText');
+    expect(cashoutQueueSource).not.toContain('<div className="muted">{formatDateTime(row.createdAt)}</div>');
+    expect(cashoutQueueSource).not.toContain('<div className="muted">{formatDateTime(row.latestDecision.createdAt)}</div>');
+    expect(cashoutQueueSource).not.toContain('Updated {formatDateTime(account.updatedAt)}');
+  });
+
   it('builds bounded cashout queue API hrefs from search params', () => {
     const filters = { audience: 'customer' as const, q: 'parent', status: 'approved' as const };
 
@@ -168,7 +175,8 @@ describe('Referral cashout queue', () => {
     expect(markup).toContain('VCB');
     expect(markup).toContain('****1234');
     expect(markup).toContain('Account holder name does not match KYC.');
-    expect(markup).toContain('Updated 24 Jun 2026, 17:00');
+    expect(markup).toContain('date-time-text');
+    expect(markup).toContain('Updated <time class="date-time-text"');
     expect(markup).toContain('approved for bank transfer');
     expect(markup).toContain('Mark paid');
     expect(markup).toContain('Transfer reference');
