@@ -74,6 +74,16 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain("metric(\n          'Debt',\n          formatMoney");
   });
 
+  it('uses the shared Vuexy date atom for visible report and account-control timestamps', () => {
+    expect(partnerControlsSource).toContain('DateTimeText');
+    expect(partnerControlsSource).not.toContain('formatDateTime,');
+    expect(partnerControlsSource).not.toContain('function formatDate(value?: string | null)');
+    expect(partnerControlsSource).not.toContain('{report.category} / {report.source} / {formatDate(report.createdAt)}');
+    expect(partnerControlsSource).not.toContain('Started: {formatDate(sanction.startsAt)}');
+    expect(partnerControlsSource).not.toContain('Expires: {formatDate(sanction.expiresAt)}');
+    expect(partnerControlsSource).not.toContain('Lifted: {formatDate(sanction.liftedAt)}');
+  });
+
   it('uses shared labeled form atoms for partner control forms', async () => {
     const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);

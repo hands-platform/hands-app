@@ -10,7 +10,6 @@ import {
 } from '../../lib/admin-api';
 import { marketplaceDisplayText as partnerDisplayText } from '../../lib/admin-copy';
 import {
-  formatDateTime,
   formatMoney,
   shortDisplayId,
 } from '../../lib/admin-format';
@@ -38,6 +37,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -748,7 +748,7 @@ export default async function PartnerControlsPage({
                 <td>
                   <strong>{partnerDisplayText(report.summary)}</strong>
                   <p className="muted">
-                    {report.category} / {report.source} / {formatDate(report.createdAt)}
+                    {report.category} / {report.source} / <PartnerControlDateText value={report.createdAt} />
                   </p>
                   {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
                   {report.bookingId ? (
@@ -904,9 +904,15 @@ export default async function PartnerControlsPage({
                   )}
                 </td>
                 <td>
-                  <p className="muted">Started: {formatDate(sanction.startsAt)}</p>
-                  <p className="muted">Expires: {formatDate(sanction.expiresAt)}</p>
-                  <p className="muted">Lifted: {formatDate(sanction.liftedAt)}</p>
+                  <p className="muted">
+                    Started: <PartnerControlDateText value={sanction.startsAt} />
+                  </p>
+                  <p className="muted">
+                    Expires: <PartnerControlDateText value={sanction.expiresAt} />
+                  </p>
+                  <p className="muted">
+                    Lifted: <PartnerControlDateText value={sanction.liftedAt} />
+                  </p>
                 </td>
                 <td>
                   {sanction.status === 'ACTIVE' ? (
@@ -2233,6 +2239,6 @@ function statusPill(status: string) {
   return 'pill-info';
 }
 
-function formatDate(value?: string | null) {
-  return formatDateTime(value, value ? 'Invalid' : 'None');
+function PartnerControlDateText({ value }: { readonly value?: string | null }) {
+  return <DateTimeText fallback={value ? 'Invalid' : 'None'} value={value} />;
 }
