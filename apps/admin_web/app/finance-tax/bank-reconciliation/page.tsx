@@ -22,9 +22,10 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListFilterLinks, FINANCE_LIST_DATE_RANGE_LINKS } from '../finance-list-filter-links';
@@ -297,8 +298,14 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 <div className="muted">{transaction.type === 'INFLOW' ? 'Bank inflow' : 'Bank outflow'}</div>
               </td>
               <td>
-                <strong>{formatDateTime(transaction.occurredAt)}</strong>
-                {transaction.valueDate ? <div className="muted">Value {formatDateTime(transaction.valueDate)}</div> : null}
+                <strong>
+                  <DateTimeText value={transaction.occurredAt} />
+                </strong>
+                {transaction.valueDate ? (
+                  <div className="muted">
+                    Value <DateTimeText value={transaction.valueDate} />
+                  </div>
+                ) : null}
               </td>
               <td>
                 <strong>{transaction._count?.reconciliationMatches ?? 0} match</strong>

@@ -6,9 +6,10 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
@@ -229,7 +230,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
               </td>
               <td>
                 <strong>{batch.monthlyPeriod ?? '-'}</strong>
-                <div className="muted">{formatDateTime(batch.postedAt)}</div>
+                <div className="muted">
+                  <DateTimeText value={batch.postedAt} />
+                </div>
               </td>
               <td>
                 <strong>
@@ -250,7 +253,11 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 <StatusBadge tone={statusBadgeToneFromPillClass(financeJournalBatchStatusPill(batch.status))}>
                   {batch.status}
                 </StatusBadge>
-                {batch.reversedAt ? <div className="muted admin-mt-8">{formatDateTime(batch.reversedAt)}</div> : null}
+                {batch.reversedAt ? (
+                  <div className="muted admin-mt-8">
+                    <DateTimeText value={batch.reversedAt} />
+                  </div>
+                ) : null}
               </td>
               <td>
                 <ActionMenu

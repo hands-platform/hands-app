@@ -6,9 +6,10 @@ import { adminGet } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePaymentClearingStatusPill } from '../finance-status-badge-model';
@@ -201,8 +202,14 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 ) : null}
               </td>
               <td>
-                <strong>{formatDateTime(entry.occurredAt)}</strong>
-                {entry.clearedAt ? <div className="muted">Cleared {formatDateTime(entry.clearedAt)}</div> : null}
+                <strong>
+                  <DateTimeText value={entry.occurredAt} />
+                </strong>
+                {entry.clearedAt ? (
+                  <div className="muted">
+                    Cleared <DateTimeText value={entry.clearedAt} />
+                  </div>
+                ) : null}
               </td>
               <td>
                 <StatusBadge tone={statusBadgeToneFromPillClass(financePaymentClearingStatusPill(entry.status))}>

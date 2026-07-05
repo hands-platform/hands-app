@@ -2379,6 +2379,14 @@ a.action-button-card:hover {
   line-height: 1.5;
 }
 
+.date-time-text {
+  font-variant-numeric: tabular-nums;
+}
+
+.date-time-text-muted {
+  color: var(--admin-muted);
+}
+
 .admin-text-subtle-12 {
   color: var(--admin-muted);
   font-size: 12px;

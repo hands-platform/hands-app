@@ -363,6 +363,34 @@ describe('finance list pages', () => {
     );
   });
 
+  it('uses shared date time atoms for payment clearing event cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('formatDateTime(entry.occurredAt)');
+    expect(source).not.toContain('formatDateTime(entry.clearedAt)');
+  });
+
+  it.each([
+    [
+      'general ledger',
+      'app/finance-tax/general-ledger/page.tsx',
+      ['formatDateTime(batch.postedAt)', 'formatDateTime(batch.reversedAt)'],
+    ],
+    [
+      'bank reconciliation',
+      'app/finance-tax/bank-reconciliation/page.tsx',
+      ['formatDateTime(transaction.occurredAt)', 'formatDateTime(transaction.valueDate)'],
+    ],
+  ] as const)('uses shared date time atoms for %s event cells', (_name, sourcePath, directFormatCalls) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    for (const directFormatCall of directFormatCalls) {
+      expect(source).not.toContain(directFormatCall);
+    }
+  });
+
   it('uses the shared table footer atom for finance pagination controls', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-table-pagination-footer.tsx'), 'utf8');
 
