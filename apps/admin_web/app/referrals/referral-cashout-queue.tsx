@@ -10,6 +10,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
@@ -126,7 +127,7 @@ export function ReferralCashoutQueuePage({
         resultTone="info"
         title="Referral cashout filters"
       >
-        <form className="admin-filter-form" method="get">
+        <AdminFormGrid className="admin-filter-form" method="get">
           <AdminFormSearch defaultValue={filters.q} label="Search cashouts" name="q" placeholder="Search parent, referred, booking, reward" />
           <AdminFormSelect
             defaultValue={filters.audience}
@@ -157,7 +158,7 @@ export function ReferralCashoutQueuePage({
           <AdminFormControlLink className="button-secondary" href="/referrals/cashouts">
             Reset
           </AdminFormControlLink>
-        </form>
+        </AdminFormGrid>
         <div aria-label="Referral cashout queue summary" className="referral-reward-queue">
           {summary.statusSummaries.map((item) => (
             <Link

@@ -12,6 +12,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -163,7 +164,7 @@ export function ReviewsTableSection({
               value: option.value,
             }))}
           />
-          <form action="/reviews" className="vuexy-review-controls">
+          <AdminFormGrid action="/reviews" className="vuexy-review-controls">
             <input name="review" type="hidden" value={filters.review} />
             <input name="dateRange" type="hidden" value={filters.dateRange} />
             <input name="dateFrom" type="hidden" value={filters.dateFrom} />
@@ -192,7 +193,7 @@ export function ReviewsTableSection({
               <Download aria-hidden="true" size={16} />
               Export
             </AdminFormControlLink>
-          </form>
+          </AdminFormGrid>
         </div>
       </AdminFilterPanel>
 

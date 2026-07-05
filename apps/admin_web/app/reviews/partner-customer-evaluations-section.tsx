@@ -11,6 +11,7 @@ import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -121,7 +122,7 @@ export function PartnerCustomerEvaluationsSection({
               value: option.value,
             }))}
           />
-          <form action="/reviews/partner-customer-evaluations" className="vuexy-review-controls">
+          <AdminFormGrid action="/reviews/partner-customer-evaluations" className="vuexy-review-controls">
             <input name="dateRange" type="hidden" value={filters.dateRange} />
             <input name="dateFrom" type="hidden" value={filters.dateFrom} />
             <input name="dateTo" type="hidden" value={filters.dateTo} />
@@ -141,7 +142,7 @@ export function PartnerCustomerEvaluationsSection({
               options={partnerEvaluationPageSizeOptions}
             />
             <AdminFormControlButton className="admin-directory-filter-button">Apply</AdminFormControlButton>
-          </form>
+          </AdminFormGrid>
         </div>
       </AdminFilterPanel>
 

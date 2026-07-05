@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   AdminFormControlButton,
+  AdminFormGrid,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -68,7 +69,7 @@ export function CashSettlementFilterSection({
           </StatusBadgeLink>
         ))}
       </AdminFilterChipGroup>
-      <form className="inline-form admin-mt-12" action="/cash-settlements">
+      <AdminFormGrid action="/cash-settlements" className="admin-mt-12">
         <input type="hidden" name="range" value={filters.range} />
         <input type="hidden" name="pageSize" value={filters.pageSize} />
         <AdminFormSearch
@@ -95,7 +96,7 @@ export function CashSettlementFilterSection({
         <Link className="text-link" href="/cash-settlements">
           Clear
         </Link>
-      </form>
+      </AdminFormGrid>
       <AdminFilterChipGroup ariaLabel="Cash settlement queue" className="admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
           <StatusBadgeLink

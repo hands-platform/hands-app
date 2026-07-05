@@ -13,6 +13,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormStaticValue,
@@ -189,7 +190,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         resultTone={preview ? (preview.willSendCount ? 'success' : 'warning') : 'info'}
         title="Create push campaign"
       >
-        <form className="notification-push-preview-form" method="get">
+        <AdminFormGrid className="notification-push-preview-form" method="get">
           <input name="preview" type="hidden" value="1" />
           <AdminFormSelect
             defaultValue={targetRole}
@@ -244,7 +245,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             rows={3}
           />
           <AdminFormControlButton>Preview recipients</AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
 
         {preview ? (
           <AdminCard className="notification-push-preview-card">

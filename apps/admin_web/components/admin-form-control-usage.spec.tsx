@@ -195,6 +195,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps GET filter/search form shells inside the shared Vuexy form grid atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => rawGetFilterFormShellPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -223,6 +232,8 @@ const rawBookingMonitorSegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"booking-date-filter-buttons"|'booking-date-filter-buttons')[^>]*aria-label=(?:"Booking list period"|'Booking list period')/s;
 const rawFinanceFilterChipRowPattern =
   /<div\b[^>]*className=(?:"filter-row admin-mt-12"|'filter-row admin-mt-12')/s;
+const rawGetFilterFormShellPattern =
+  /<form\b[^>]*className=(?:"(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)"|'(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;
