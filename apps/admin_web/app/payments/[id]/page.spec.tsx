@@ -70,6 +70,23 @@ describe('PaymentDetailPage', () => {
     expect(source).toContain('AdminFormControlLink');
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
+
+  it('uses shared grid wrappers for payment metrics and evidence panels', async () => {
+    mockedAdminGet.mockResolvedValue(paymentDetail());
+
+    const page = await PaymentDetailPage({
+      params: Promise.resolve({ id: 'payment-1' }),
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(markup).toContain('admin-metric-grid admin-mb-16');
+    expect(markup).toContain('detail-grid admin-mb-16');
+    expect(source).toContain('AdminMetricGrid');
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<section className="grid admin-mb-16">');
+  });
 });
 
 function paymentDetail(): AdminPaymentDetail {

@@ -106,6 +106,24 @@ describe('TaxPolicyPage', () => {
     expect(markup).toContain('card admin-section admin-mt-16 tax-policy-snapshot-consistency-card');
   });
 
+  it('uses the shared detail grid surface for policy version cards', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/tax-policy-versions')) {
+        return [taxPolicyFixture()];
+      }
+      return fallback;
+    });
+
+    const page = await TaxPolicyPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('detail-grid tax-policy-version-grid');
+    expect(pageSource).toContain('AdminDetailGrid');
+    expect(pageSource).not.toContain('<section className="grid tax-policy-version-grid">');
+  });
+
   it('uses shared Vuexy empty-state atoms for tax evidence fallbacks', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).not.toContain('<strong>No recent tax policy audit entries</strong>');

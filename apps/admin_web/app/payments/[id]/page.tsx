@@ -6,8 +6,8 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
-import { AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminDisclosure, AdminKpiCard } from '../../../components/admin-surface';
+import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -111,16 +111,31 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       description={`Payment ${shortId(payment.id)} - ${payment.method} - ${payment.status}`}
       title="Payment operation detail"
     >
-      <section className="grid admin-mb-16">
-        <AdminKpiCard label="Payment status" value={payment.status} helper={paymentStatusHint(payment)} />
-        <AdminKpiCard label="Method" value={payment.method} helper={gatewayReferenceLabel(payment)} />
-        <AdminKpiCard label="Amount" value={money(payment.amount, payment.currency)} helper={serviceLabel} />
-        <AdminKpiCard label="Booking" value={booking?.status ?? 'Not linked'} helper={bookingAddress} />
-        <AdminKpiCard label="Callbacks" value={`${callbacks.length} attempt(s)`} helper={`${callbackReviewCount} review item(s)`} />
-        <AdminKpiCard label="Accepted callbacks" value={`${acceptedCallbackCount}`} helper="Accepted or replayed with verified signature." />
-        <AdminKpiCard label="Cash fee gate" value={cashDebt ? 'Blocked' : 'Clear'} helper={cashDebtHint(payment)} />
-        <AdminKpiCard label="Audit trail" value={`${auditRows.length} event(s)`} helper="Payment and linked booking operation logs." />
-      </section>
+      <AdminMetricGrid
+        className="admin-mb-16"
+        metrics={[
+          { label: 'Payment status', value: payment.status, helper: paymentStatusHint(payment) },
+          { label: 'Method', value: payment.method, helper: gatewayReferenceLabel(payment) },
+          { label: 'Amount', value: money(payment.amount, payment.currency), helper: serviceLabel },
+          { label: 'Booking', value: booking?.status ?? 'Not linked', helper: bookingAddress },
+          {
+            label: 'Callbacks',
+            value: `${callbacks.length} attempt(s)`,
+            helper: `${callbackReviewCount} review item(s)`,
+          },
+          {
+            label: 'Accepted callbacks',
+            value: `${acceptedCallbackCount}`,
+            helper: 'Accepted or replayed with verified signature.',
+          },
+          { label: 'Cash fee gate', value: cashDebt ? 'Blocked' : 'Clear', helper: cashDebtHint(payment) },
+          {
+            label: 'Audit trail',
+            value: `${auditRows.length} event(s)`,
+            helper: 'Payment and linked booking operation logs.',
+          },
+        ]}
+      />
 
       <PaymentDetailActionMapSection
         actionLabel={`Payment detail actions for ${shortId(payment.id)}`}
@@ -159,7 +174,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
 
       <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
 
-      <section className="grid admin-mb-16">
+      <AdminDetailGrid className="admin-mb-16">
         <AdminFilterPanel
           className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
           description="Booking, customer, partner, address, service, and chat evidence attached to this payment."
@@ -195,7 +210,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
         </AdminFilterPanel>
-      </section>
+      </AdminDetailGrid>
 
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"

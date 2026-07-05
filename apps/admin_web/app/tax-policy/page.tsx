@@ -10,7 +10,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
@@ -238,7 +238,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </AdminFormGrid>
       </AdminSection>
 
-      <section className="grid tax-policy-version-grid">
+      <AdminDetailGrid className="tax-policy-version-grid">
         {policies.map((policy) => (
           <AdminCard className="tax-policy-version-card" key={policy.id}>
             <AdminSectionHeader
@@ -458,7 +458,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminFormGrid>
           </AdminCard>
         ))}
-      </section>
+      </AdminDetailGrid>
 
       <AdminSection
         actions={
