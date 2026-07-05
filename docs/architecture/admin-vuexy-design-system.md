@@ -43,6 +43,8 @@ Figma file:
 - `GXtaFRMuqQ5A14DgdPPJAv` - Vuexy Figma Dashboard UI Kit and Builder v4.
 - Local source file:
   `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig`.
+- Local package metadata: `meta.json` identifies the source as
+  `vuexy-figma-admin-dashboard-ui-kit`.
 
 Confirmed Figma nodes:
 
@@ -104,11 +106,15 @@ Useful template paths:
 - `src/configs/themeConfig.ts`
 - `src/data/navigation/verticalMenuData.tsx`
 - `src/components/layout/vertical/VerticalMenu.tsx`
+- `src/@core/components/mui/TextField.tsx`
 - `src/views/react-table/BasicDataTables.tsx`
 - `src/views/react-table/KitchenSink.tsx`
 - `src/views/apps/user/list`
 - `src/views/apps/user/view`
 - `src/views/apps/calendar`
+- `src/views/apps/calendar/SidebarLeft.tsx`
+- `src/views/apps/calendar/AddEventSidebar.tsx`
+- `src/views/apps/calendar/Calendar.tsx`
 - `src/views/dashboards/crm`
 
 ## Figma Component Inventory

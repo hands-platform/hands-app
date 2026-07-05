@@ -8,7 +8,7 @@ API contracts, auth/session behavior, or route ownership.
 
 | Source | Path | Readable? | Used For | Notes |
 | --- | --- | --- | --- | --- |
-| Figma design source | `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig` | Yes | Final visual source for fundamentals, atoms, components, states, spacing, radius, shadow, typography | User-provided file exists locally. It is a ZIP package containing `canvas.fig`, `thumbnail.png`, `meta.json`, and image assets; `canvas.fig` is a `fig-kiwi` binary canvas, so use the documented Figma node map plus the local Vuexy template when direct JSON inspection is not available. |
+| Figma design source | `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig` | Yes | Final visual source for fundamentals, atoms, components, states, spacing, radius, shadow, typography | User-provided file exists locally. It is a ZIP package containing `canvas.fig`, `thumbnail.png`, `meta.json`, and image assets; `meta.json` identifies the file as `vuexy-figma-admin-dashboard-ui-kit`; `canvas.fig` is a `fig-kiwi` binary canvas, so use the documented Figma node map plus the local Vuexy template when direct JSON inspection is not available. |
 | Figma design source, repo mirror | `C:/dev/massage-on-demand-vn/design/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig` | No | Intended stable repo reference | Not present yet. Keep using the ThemeForest source path unless the file is copied into the repo later. |
 | Vuexy Next.js TypeScript full version | `C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/nextjs-version/typescript-version/full-version` | Yes | Implementation reference for layout, menu, cards, tables, forms, dashboard widgets, calendar, dialogs | Do not copy demo data, demo routes, demo auth, or fake APIs. |
 | HANDS Admin Web | `C:/dev/massage-on-demand-vn/apps/admin_web` | Yes | Product implementation that must preserve HANDS operations behavior | Shared CSS/component wrappers remain the migration layer for now. |
@@ -64,6 +64,9 @@ API contracts, auth/session behavior, or route ownership.
 | `src/views/apps/user/list` | User directory/list patterns | Yes | Customers/Partners directories | Low |
 | `src/views/apps/user/view` | User detail composition | Yes | Customer/Partner detail sections | Medium |
 | `src/views/apps/calendar/*` | Calendar page, sidebar, event form | Yes | Calendar page and date/time atoms | Medium |
+| `src/views/apps/calendar/SidebarLeft.tsx` | Calendar sidebar filters and mini calendar layout | Yes | Reference sidebar spacing, checkbox/filter rhythm, and add-event placement | Low |
+| `src/views/apps/calendar/AddEventSidebar.tsx` | Calendar event drawer form | Yes | Reference event create/edit drawer fields, date/time controls, and action row spacing | Medium |
+| `src/views/apps/calendar/Calendar.tsx` | Calendar main grid/view controls | Yes | Reference FullCalendar toolbar, view switching, event rendering, and dark-mode table borders | Medium |
 | `src/views/pages/dialog-examples/*` | Dialog layouts | Yes | Services/coupons/admin action dialogs | Low |
 | `src/views/dashboards/crm` | Dashboard widgets | Yes | Usage/Partner/Finance overview metric and chart layout | Low |
 
