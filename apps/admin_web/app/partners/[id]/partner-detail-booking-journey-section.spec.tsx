@@ -82,6 +82,30 @@ describe('PartnerDetailBookingJourneySection', () => {
     expect(sectionSource).toContain('AdminEmptyState');
     expect(sectionSource).not.toContain('<div className="empty-state">');
   });
+
+  it('prefers shared detail nodes over fallback booking journey detail text', () => {
+    const rowsWithDetailNode = [
+      {
+        ...buildRows()[0],
+        detail: 'Fallback money journey detail',
+        detailNode: <span>Shared money journey marker</span>,
+      },
+    ] as unknown as PartnerBookingJourneyRow[];
+    const section = PartnerDetailBookingJourneySection({
+      description: 'Booking-by-booking factual journey.',
+      emptyDetail: 'Use a wider date range.',
+      emptyTitle: 'No partner booking journey matched this filter',
+      id: 'partner-booking-journey',
+      rows: rowsWithDetailNode,
+      title: 'Partner booking journey',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Shared money journey marker');
+    expect(rendered).not.toContain('Fallback money journey detail');
+    expect(sectionSource).toContain('readonly detailNode?: ReactNode;');
+    expect(sectionSource).toContain('{row.detailNode ?? row.detail}');
+  });
 });
 
 function buildRows(): PartnerBookingJourneyRow[] {

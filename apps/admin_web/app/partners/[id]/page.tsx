@@ -1982,6 +1982,12 @@ function buildPartnerBookingJourneyRows(
       detail: `${formatCurrency(bookingTotal(booking))} / ${partnerBookingAddressEvidenceLabel(booking)} / customer ${partnerBookingCustomer(
         booking,
       )}`,
+      detailNode: (
+        <>
+          <MoneyText amount={bookingTotal(booking)} currency={booking.payment?.currency ?? 'VND'} /> /{' '}
+          {partnerBookingAddressEvidenceLabel(booking)} / customer {partnerBookingCustomer(booking)}
+        </>
+      ),
       latestAt,
       steps: [
         {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -13,6 +14,7 @@ import {
 
 export type PartnerBookingJourneyRow = {
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly heading: string;
   readonly id: string;
   readonly latestAt?: string;
@@ -74,7 +76,7 @@ export function PartnerDetailBookingJourneySection({
                   </Link>
                 </td>
                 <td>
-                  <p className="muted">{row.detail}</p>
+                  <p className="muted">{row.detailNode ?? row.detail}</p>
                 </td>
                 <td>
                   <div className="participant-list">
