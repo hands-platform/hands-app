@@ -25,4 +25,15 @@ describe('Admin Vuexy source documentation', () => {
     expect(comparisonDoc).toContain(figmaSourcePath);
     expect(comparisonDoc).toContain(vuexyTemplatePath);
   });
+
+  it('documents the local Figma package format so future design work uses the right source path', () => {
+    const figmaHeader = readFileSync(figmaSourcePath).subarray(0, 256);
+
+    expect(figmaHeader.subarray(0, 2).toString('utf8')).toBe('PK');
+    expect(figmaHeader.toString('utf8')).toContain('canvas.fig');
+    expect(figmaHeader.toString('utf8')).toContain('fig-kiwi');
+    expect(comparisonDoc).toContain('ZIP package');
+    expect(comparisonDoc).toContain('fig-kiwi');
+    expect(comparisonDoc).toContain('thumbnail.png');
+  });
 });
