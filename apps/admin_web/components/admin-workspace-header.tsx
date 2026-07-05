@@ -128,11 +128,11 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
               />
               <div className="topbar-dropdown-list">
                 {filteredLinks.length > 0 ? (
-                  filteredLinks.map((link) => (
+                  filteredLinks.map((link, linkIndex) => (
                     <Link
                       className="topbar-dropdown-link"
                       href={link.href}
-                      key={`${link.sectionLabel}:${link.href}`}
+                      key={`${link.sectionLabel}:${link.href}:${linkIndex}`}
                       onClick={() => setSearchOpen(false)}
                     >
                       <span className="topbar-dropdown-label">{link.label}</span>
@@ -169,11 +169,11 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
               <div className="topbar-dropdown-title">Operation alerts</div>
               <div className="topbar-dropdown-list">
                 {attentionSections.length > 0 ? (
-                  attentionSections.map((section) => (
+                  attentionSections.map((section, sectionIndex) => (
                     <Link
                       className="topbar-dropdown-link"
                       href={section.links[0]?.href ?? '/'}
-                      key={section.label}
+                      key={`${section.label}:${sectionIndex}`}
                       onClick={() => setNotificationsOpen(false)}
                     >
                       <span className="topbar-dropdown-label">{section.label}</span>

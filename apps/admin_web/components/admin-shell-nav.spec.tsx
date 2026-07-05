@@ -144,4 +144,15 @@ describe('admin shell navigation', () => {
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No matching admin pages</span>');
     expect(workspaceHeaderSource).not.toContain('<span className="topbar-empty">No operation alerts</span>');
   });
+
+  it('keeps topbar dropdown links on stable keys during menu migrations', () => {
+    expect(workspaceHeaderSource).toContain('filteredLinks.map((link, linkIndex) => (');
+    expect(workspaceHeaderSource).toContain('key={`${link.sectionLabel}:${link.href}:${linkIndex}`}');
+    expect(workspaceHeaderSource).toContain('attentionSections.map((section, sectionIndex) => (');
+    expect(workspaceHeaderSource).toContain('key={`${section.label}:${sectionIndex}`}');
+    expect(workspaceHeaderSource).not.toContain('filteredLinks.map((link) => (');
+    expect(workspaceHeaderSource).not.toContain('attentionSections.map((section) => (');
+    expect(workspaceHeaderSource).not.toContain('key={`${link.sectionLabel}:${link.href}`}');
+    expect(workspaceHeaderSource).not.toContain('key={section.label}');
+  });
 });
