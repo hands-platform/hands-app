@@ -343,6 +343,14 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps booking preset note and task forms inside shared Vuexy form atoms', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => rawBookingPresetActionFormPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -380,6 +388,8 @@ const rawOpsNoteFormPattern =
 const rawEarningsActionFormPattern = /<form\b[^>]*action=(?:"\/earnings"|'\/earnings')/s;
 const rawBookingPostMatchDecisionFormPattern =
   /<form\b[^>]*action=\{(?:approvePostMatchCancellationFromDetail|holdPostMatchCancellationFromDetail)\}/s;
+const rawBookingPresetActionFormPattern =
+  /<form\b[^>]*action=\{(?:addBookingOpsNote|updateBookingOpsTask)\}/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

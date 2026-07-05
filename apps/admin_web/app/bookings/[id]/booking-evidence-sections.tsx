@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminFormControlButton } from '../../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -255,11 +255,11 @@ export function BookingEvidenceSections({
                   <strong>{preset.title}</strong>
                   <p className="muted">{preset.detail}</p>
                 </div>
-                <form action={addBookingOpsNote}>
+                <AdminFormShell action={addBookingOpsNote}>
                   <input type="hidden" name="bookingId" value={bookingId} />
                   <input type="hidden" name="preset" value={preset.preset} />
                   <AdminFormControlButton type="submit">Add note</AdminFormControlButton>
-                </form>
+                </AdminFormShell>
               </AdminCard>
             ))}
           </div>
