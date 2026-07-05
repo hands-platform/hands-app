@@ -8,6 +8,7 @@ import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormActionRow,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
@@ -168,7 +169,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 { label: 'Reference event', value: '1' },
               ]}
             />
-            <div className="actions full-span">
+            <AdminFormActionRow className="actions full-span">
               <AdminFormControlButton className="button-primary" type="submit">
                 <Filter aria-hidden="true" size={16} />
                 Apply filters
@@ -180,7 +181,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <span className="muted">
                 Showing {logs.length} of {totalEvents} events / {dateRangeLabel(filters.range)}
               </span>
-            </div>
+            </AdminFormActionRow>
           </AdminFormGrid>
         </AdminSection>
 

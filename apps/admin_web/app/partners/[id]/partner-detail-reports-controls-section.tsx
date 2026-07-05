@@ -8,6 +8,7 @@ import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surfac
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormActionRow,
   AdminFormDateTime,
   AdminFormGrid,
   AdminFormInput,
@@ -128,9 +129,9 @@ export function PartnerDetailReportsControlsSection({
           name="details"
           placeholder="Evidence, timeline, follow-up, or staff note"
         />
-        <div className="actions full-span">
+        <AdminFormActionRow className="actions full-span">
           <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
-        </div>
+        </AdminFormActionRow>
       </AdminFormGrid>
       <AdminTaskCard className="ops-task-pending admin-mb-16">
         <AdminSectionHeader
@@ -197,10 +198,10 @@ export function PartnerDetailReportsControlsSection({
             placeholder="Clear operator reason, visible in audit and payout controls"
             required
           />
-          <div className="actions full-span">
+          <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
-          </div>
+          </AdminFormActionRow>
         </AdminFormGrid>
       </AdminTaskCard>
       <AdminDetailGrid>
@@ -358,9 +359,9 @@ function PartnerReportCommandPanel({
               name="resolutionNote"
               placeholder="Resolution note"
             />
-            <div className="actions full-span">
+            <AdminFormActionRow className="actions full-span">
               <AdminFormControlButton type="submit">Update report</AdminFormControlButton>
-            </div>
+            </AdminFormActionRow>
           </AdminFormGrid>
           <AdminFormGrid action={createProviderSanction} className="compact-form partner-report-command-form">
             <input type="hidden" name="providerProfileId" value={providerId} />
@@ -388,9 +389,9 @@ function PartnerReportCommandPanel({
               placeholder="Control reason"
               required
             />
-            <div className="actions full-span">
+            <AdminFormActionRow className="actions full-span">
               <AdminFormControlButton type="submit">Apply linked control</AdminFormControlButton>
-            </div>
+            </AdminFormActionRow>
           </AdminFormGrid>
         </>
       ) : (

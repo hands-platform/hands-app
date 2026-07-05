@@ -27,6 +27,7 @@ import { AdminDataTable, AdminTablePaginationFooter } from '../../components/adm
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormActionRow,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
@@ -555,7 +556,7 @@ export default async function PartnerControlsPage({
               { label: 'Expired', value: 'EXPIRED' },
             ]}
           />
-          <div className="actions full-span">
+          <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
@@ -564,7 +565,7 @@ export default async function PartnerControlsPage({
               <X aria-hidden="true" size={16} />
               Clear filters
             </AdminFormControlLink>
-          </div>
+          </AdminFormActionRow>
           {activeFilters.length > 0 ? (
             <div className="participant-list full-span">
               <StatusBadge tone="info">Active filters</StatusBadge>
@@ -721,11 +722,11 @@ export default async function PartnerControlsPage({
             name="details"
             placeholder="Evidence, timeline, customer/partner statements, next step"
           />
-          <div className="actions full-span">
+          <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               Create report
             </AdminFormControlButton>
-          </div>
+          </AdminFormActionRow>
         </AdminFormGrid>
       </AdminSection>
 

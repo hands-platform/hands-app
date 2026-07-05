@@ -24,6 +24,7 @@ import { AdminDisclosureCard, AdminSection } from '../../components/admin-surfac
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormActionRow,
   AdminFormDate,
   AdminFormGrid,
   AdminFormInput,
@@ -261,7 +262,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             labelVisibility="visible"
             name="to"
           />
-          <div className="actions full-span">
+          <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
@@ -281,7 +282,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             <span className="muted">
               {rooms.length} room(s), {summary.messageCount} message(s)
             </span>
-          </div>
+          </AdminFormActionRow>
         </AdminFormGrid>
       </AdminSection>
 
