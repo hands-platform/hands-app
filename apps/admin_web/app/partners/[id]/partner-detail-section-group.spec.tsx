@@ -72,6 +72,25 @@ describe('PartnerDetailSectionGroup', () => {
     expect(props?.open).toBe(true);
   });
 
+  it('accepts Vuexy atom nodes in reference detail status slots', () => {
+    const section = PartnerDetailReferenceDetails({
+      children: <div>Finance details</div>,
+      helper: 'Money atoms keep dense finance chips visually consistent.',
+      label: 'Finance-only evidence',
+      status: (
+        <>
+          <span className="money-text money-text-negative">120.000 VND</span> open debt
+        </>
+      ),
+    });
+
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+    const rendered = normalizedText(section);
+
+    expect(source).toContain('readonly status: ReactNode;');
+    expect(rendered).toContain('120.000 VND open debt');
+  });
+
   it('renders a focused dossier cluster for required evidence cards', () => {
     const section = PartnerDetailDossierCluster({
       children: <div>Required KYC and profile cards</div>,

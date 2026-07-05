@@ -78,6 +78,15 @@ describe('ProviderDetailPage data loading', () => {
       '<section className="detail-grid partner-detail-dossier-grid">',
     );
   });
+
+  it('keeps finance-only evidence open debt status on the shared MoneyText atom', () => {
+    expect(providerDetailSource).toContain(
+      'status={hasCashFeeDebt ? <><MoneyText amount={cashFeeDebtTotal} /> open debt</> : \'Reference\'}',
+    );
+    expect(providerDetailSource).not.toContain(
+      "status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}",
+    );
+  });
 });
 
 function partnerDetail(): AdminProvider {

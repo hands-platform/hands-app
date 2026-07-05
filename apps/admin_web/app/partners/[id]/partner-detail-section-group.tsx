@@ -7,7 +7,7 @@ type PartnerDetailSectionGroupProps = {
   readonly description: string;
   readonly eyebrow: string;
   readonly id: string;
-  readonly status: string;
+  readonly status: ReactNode;
   readonly title: string;
 };
 
@@ -16,14 +16,14 @@ type PartnerDetailReferenceDetailsProps = {
   readonly defaultOpen?: boolean;
   readonly helper: string;
   readonly label: string;
-  readonly status: string;
+  readonly status: ReactNode;
 };
 
 type PartnerDetailDossierClusterProps = {
   readonly children: ReactNode;
   readonly helper: string;
   readonly label: string;
-  readonly status: string;
+  readonly status: ReactNode;
 };
 
 export function PartnerDetailSectionGroup({

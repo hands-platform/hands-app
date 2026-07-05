@@ -1111,7 +1111,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           defaultOpen={hasCashFeeDebt}
           helper="Wallet debt, withdrawal details, payout batches, and legacy tax rows are finance follow-up records. They do not gate Level 2 approval."
           label="Finance-only evidence"
-          status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}
+          status={hasCashFeeDebt ? <><MoneyText amount={cashFeeDebtTotal} /> open debt</> : 'Reference'}
         >
           <PartnerDetailFinanceFollowUpSection rows={partnerFinanceFollowUpRows} />
           <PartnerDetailCashDebtOriginSection
