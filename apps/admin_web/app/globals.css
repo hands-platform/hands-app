@@ -16787,10 +16787,14 @@ textarea:focus-visible {
 .admin-form-select.admin-form-control-labeled,
 .admin-form-static-value.admin-form-control-labeled {
   align-items: stretch;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   display: grid;
   gap: 6px;
-  min-height: 68px;
-  padding: 8px 12px;
+  min-height: 0;
+  padding: 0;
 }
 
 .admin-form-textarea.admin-form-control-labeled {
@@ -16814,7 +16818,7 @@ textarea:focus-visible {
 }
 
 .admin-form-select.admin-form-control-labeled::after {
-  bottom: 19px;
+  bottom: 15px;
   top: auto;
   transform: rotate(45deg);
 }
@@ -16866,12 +16870,16 @@ textarea:focus-visible {
 .admin-form-input.admin-form-control-labeled:focus-within,
 .admin-form-select.admin-form-control-labeled:focus-within,
 .admin-form-static-value.admin-form-control-labeled:focus-within {
-  padding: 7px 11px;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 .admin-form-date.admin-form-control-labeled:focus-within,
 .admin-form-input-date-picker.admin-form-control-labeled:focus-within {
-  padding: 7px 41px 7px 11px;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 .admin-form-select,
@@ -16902,7 +16910,7 @@ textarea:focus-visible {
 
 .admin-form-date.admin-form-control-labeled,
 .admin-form-input-date-picker.admin-form-control-labeled {
-  padding: 8px 42px 8px 12px;
+  padding: 0;
 }
 
 .admin-form-input-date-picker:has(input[type='month']) {
@@ -16910,7 +16918,7 @@ textarea:focus-visible {
 }
 
 .admin-form-input-date-picker:has(input[type='month']).admin-form-control-labeled {
-  min-height: 62px;
+  min-height: 0;
 }
 
 .admin-form-date::after,
@@ -16930,7 +16938,7 @@ textarea:focus-visible {
 
 .admin-form-date.admin-form-control-labeled::after,
 .admin-form-input-date-picker.admin-form-control-labeled::after {
-  bottom: 17px;
+  bottom: 10px;
   top: auto;
   transform: none;
 }
@@ -17016,6 +17024,80 @@ textarea:focus-visible {
   border: 0;
   box-shadow: none;
   outline: 0;
+}
+
+.admin-form-date.admin-form-control-labeled input,
+.admin-form-input.admin-form-control-labeled input,
+.admin-form-select.admin-form-control-labeled select,
+.admin-form-static-value.admin-form-control-labeled strong {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-input-radius-sm);
+  box-shadow: none;
+  color: var(--admin-text);
+  font: inherit;
+  font-size: var(--admin-input-font-md);
+  line-height: var(--admin-input-line-height);
+  min-height: var(--admin-control-height-sm);
+  padding: var(--admin-input-padding-sm);
+  transition:
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition),
+    background var(--admin-transition);
+  width: 100%;
+}
+
+.admin-form-select.admin-form-control-labeled select {
+  padding-inline-end: 32px;
+}
+
+.admin-form-date.admin-form-control-labeled input,
+.admin-form-input-date-picker.admin-form-control-labeled input {
+  padding-inline-end: 42px;
+}
+
+.admin-form-date.admin-form-control-labeled:hover input:not(:disabled),
+.admin-form-input.admin-form-control-labeled:hover input:not(:disabled),
+.admin-form-select.admin-form-control-labeled:hover select:not(:disabled),
+.admin-form-static-value.admin-form-control-labeled:hover strong {
+  border-color: var(--admin-input-hover-border);
+}
+
+.admin-form-date.admin-form-control-labeled input:focus,
+.admin-form-input.admin-form-control-labeled input:focus,
+.admin-form-select.admin-form-control-labeled select:focus {
+  border-color: var(--admin-accent);
+  border-width: 2px;
+  box-shadow: var(--admin-primary-shadow-sm);
+  outline: 0;
+  padding: var(--admin-input-padding-focused-sm);
+}
+
+.admin-form-date.admin-form-control-labeled input:focus,
+.admin-form-input-date-picker.admin-form-control-labeled input:focus {
+  padding: 6.25px 41px 6.25px 13px;
+}
+
+.admin-form-select.admin-form-control-labeled select:focus {
+  padding-inline-end: 31px;
+}
+
+.admin-form-date.admin-form-control-labeled:has(input:disabled),
+.admin-form-input.admin-form-control-labeled:has(input:disabled),
+.admin-form-input-date-picker.admin-form-control-labeled:has(input:disabled),
+.admin-form-select.admin-form-control-labeled:has(select:disabled) {
+  background: transparent;
+  color: var(--admin-disabled);
+  cursor: not-allowed;
+}
+
+.admin-form-date.admin-form-control-labeled input:disabled,
+.admin-form-input.admin-form-control-labeled input:disabled,
+.admin-form-input-date-picker.admin-form-control-labeled input:disabled,
+.admin-form-select.admin-form-control-labeled select:disabled {
+  background: var(--admin-action-hover);
+  color: var(--admin-disabled);
+  cursor: not-allowed;
 }
 
 .notification-template-page,

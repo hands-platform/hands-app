@@ -188,18 +188,51 @@ describe('Admin form control CSS', () => {
   it('keeps Vuexy focused input padding compensation so controls do not resize', () => {
     const compactFocusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const compactFocusBlock = cssRuleBlockAt(compactFocusIndex);
-    const labeledFocusIndex = globalsCss.indexOf('.admin-form-input.admin-form-control-labeled:focus-within,');
-    const labeledFocusBlock = cssRuleBlockAt(labeledFocusIndex);
     const compactDateFocusIndex = globalsCss.indexOf('.admin-form-date:focus-within,');
     const compactDateFocusBlock = cssRuleBlockAt(compactDateFocusIndex);
-    const dateFocusIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled:focus-within,');
-    const dateFocusBlock = cssRuleBlockAt(dateFocusIndex);
+    const labeledShellFocusIndex = globalsCss.indexOf('.admin-form-input.admin-form-control-labeled:focus-within,');
+    const labeledShellFocusBlock = cssRuleBlockAt(labeledShellFocusIndex);
+    const labeledFieldFocusIndex = globalsCss.indexOf('.admin-form-input.admin-form-control-labeled input:focus,');
+    const labeledFieldFocusBlock = cssRuleBlockAt(labeledFieldFocusIndex);
+    const dateFieldFocusIndex = globalsCss.lastIndexOf('.admin-form-date.admin-form-control-labeled input:focus,');
+    const dateFieldFocusBlock = cssRuleBlockAt(dateFieldFocusIndex);
 
     expect(compactFocusBlock).toContain('padding-inline: 13px');
     expect(compactDateFocusBlock).toContain('padding-inline: 13px 41px');
     expect(compactDateFocusBlock).not.toContain('padding-right: 41px');
-    expect(labeledFocusBlock).toContain('padding: 7px 11px');
-    expect(dateFocusBlock).toContain('padding: 7px 41px 7px 11px');
+    expect(labeledShellFocusBlock).toContain('border: 0');
+    expect(labeledShellFocusBlock).toContain('box-shadow: none');
+    expect(labeledShellFocusBlock).toContain('padding: 0');
+    expect(labeledFieldFocusBlock).toContain('border-width: 2px');
+    expect(labeledFieldFocusBlock).toContain('padding: var(--admin-input-padding-focused-sm)');
+    expect(dateFieldFocusBlock).toContain('padding: 6.25px 41px 6.25px 13px');
+  });
+
+  it('keeps visible-label form controls on the Vuexy label-outside field model', () => {
+    const shellIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled,');
+    const shellBlock = cssRuleBlockAt(shellIndex);
+    const fieldIndex = globalsCss.lastIndexOf(
+      '.admin-form-date.admin-form-control-labeled input,\n' +
+        '.admin-form-input.admin-form-control-labeled input,\n' +
+        '.admin-form-select.admin-form-control-labeled select,\n' +
+        '.admin-form-static-value.admin-form-control-labeled strong {',
+    );
+    const fieldBlock = cssRuleBlockAt(fieldIndex);
+    const dateIconIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled::after,');
+    const dateIconBlock = cssRuleBlockAt(dateIconIndex);
+    const selectArrowIndex = globalsCss.indexOf('.admin-form-select.admin-form-control-labeled::after');
+    const selectArrowBlock = cssRuleBlockAt(selectArrowIndex);
+
+    expect(shellIndex).toBeGreaterThan(-1);
+    expect(fieldIndex).toBeGreaterThan(shellIndex);
+    expect(shellBlock).toContain('background: transparent');
+    expect(shellBlock).toContain('border: 0');
+    expect(shellBlock).toContain('padding: 0');
+    expect(fieldBlock).toContain('background: var(--admin-surface)');
+    expect(fieldBlock).toContain('border: 1px solid var(--admin-input-border)');
+    expect(fieldBlock).toContain('min-height: var(--admin-control-height-sm)');
+    expect(dateIconBlock).toContain('bottom: 10px');
+    expect(selectArrowBlock).toContain('bottom: 15px');
   });
 
   it('keeps standalone native fields from resizing on Vuexy focused border weight', () => {
