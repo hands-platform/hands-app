@@ -65,6 +65,14 @@ describe('BookingCommandBriefingSections', () => {
     expect(source).not.toContain('actions={<span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>}');
   });
 
+  it('uses the shared DateTimeText atom for recent operation timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('<DateTimeText fallback={item.status} value={item.at} />');
+    expect(source).not.toContain('<small>{item.at ? formatDate(item.at) : item.status}</small>');
+  });
+
   it('uses the shared metric grid for booking detail command metrics', () => {
     const section = BookingMetricGridSection({
       metrics: [

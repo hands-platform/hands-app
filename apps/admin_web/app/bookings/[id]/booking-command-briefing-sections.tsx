@@ -4,9 +4,9 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
-import { formatDate } from './booking-formatters';
 
 type SummaryLinkCard = {
   href: string;
@@ -343,7 +343,9 @@ export function BookingRecentOperationsTimelineSection({
               <strong>{item.title}</strong>
               <p className="muted">{item.detail}</p>
             </div>
-            <small>{item.at ? formatDate(item.at) : item.status}</small>
+            <small>
+              <DateTimeText fallback={item.status} value={item.at} />
+            </small>
           </div>
         ))}
       </div>
