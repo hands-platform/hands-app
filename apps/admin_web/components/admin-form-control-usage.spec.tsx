@@ -41,6 +41,26 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps select controls inside shared Vuexy select atoms', () => {
+    const allowedRawSelectFiles = new Set(['components/admin-form-controls.tsx']);
+    const offenders = productionTsxFiles()
+      .filter((filePath) => !allowedRawSelectFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
+      .filter((filePath) => rawSelectPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps textarea controls inside shared Vuexy textarea atoms', () => {
+    const allowedRawTextareaFiles = new Set(['components/admin-form-controls.tsx']);
+    const offenders = productionTsxFiles()
+      .filter((filePath) => !allowedRawTextareaFiles.has(relative(process.cwd(), filePath).replaceAll('\\', '/')))
+      .filter((filePath) => rawTextareaPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps inline alert copy inside shared Vuexy notice atoms', () => {
     const allowedNoticeFiles = new Set([
       'components/admin-inline-notice.tsx',
@@ -420,6 +440,8 @@ const sharedFormButtonClassNamePattern =
   /<AdminFormControl(?:Button|Link)\b[^>]*className=(["'])(?<className>.*?)\1/gs;
 const nativeCalendarInputTypePattern = /<input\b[^>]*\btype=["'](?:date|datetime-local|month|time)["']/;
 const visibleRawInputPattern = /<input\b(?![^>]*\btype=["']hidden["'])/s;
+const rawSelectPattern = /<select\b/s;
+const rawTextareaPattern = /<textarea\b/s;
 const rawInlineNoticePattern =
   /className=["'][^"']*(?:admin-form-error|form-error|calendar-readonly-alert|admin-auth-error)[^"']*["']/;
 const rawTableScrollPattern = /<div\s+className=["']admin-table-scroll["']/;
