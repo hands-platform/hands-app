@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { DateTimeText } from '../../../components/date-time-text';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
 import { formatCurrency, walletLedgerLabel } from './partner-detail-format';
 import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
@@ -36,43 +37,55 @@ export function PartnerDetailWalletSummarySection({
       <div className="service-trace-summary admin-mt-12 partner-wallet-summary-grid">
         <div>
           <span>Current balance</span>
-          <strong>{formatCurrency(summary.currentBalance, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.currentBalance} currency={summary.currency} />
+          </strong>
           <small>Positive balance is HANDS liability/prepaid value held for the partner.</small>
         </div>
         <div>
           <span>Available / liability</span>
-          <strong>{formatCurrency(summary.partnerWalletLiability, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.partnerWalletLiability} currency={summary.currency} />
+          </strong>
           <small>Used for withdrawal review or future prepaid deduction, depending on policy.</small>
         </div>
         <div>
           <span>Negative receivable</span>
-          <strong>{formatCurrency(summary.negativeWalletReceivable, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.negativeWalletReceivable} currency={summary.currency} />
+          </strong>
           <small>Finance follow-up amount still owed by the partner.</small>
         </div>
         <div>
           <span>Bank deposits</span>
-          <strong>{formatCurrency(summary.manualBankDeposits, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.manualBankDeposits} currency={summary.currency} />
+          </strong>
           <small>Visible manually recorded partner bank deposits.</small>
         </div>
         <div>
           <span>Negative wallet cleared</span>
-          <strong>{formatCurrency(summary.appliedToNegativeWallet, summary.currency)}</strong>
+          <strong>
+            <MoneyText amount={summary.appliedToNegativeWallet} currency={summary.currency} />
+          </strong>
           <small>Deposit allocation applied to existing negative wallet balance.</small>
         </div>
         <div>
           <span>Cash-service deductions</span>
           <strong>
-            {formatCurrency(
-              summary.cashPlatformFeeDeductions +
+            <MoneyText
+              amount={
+                summary.cashPlatformFeeDeductions +
                 summary.cashCompanyVatDeductions +
-                summary.cashPartnerTaxDeductions,
-              summary.currency,
-            )}
+                summary.cashPartnerTaxDeductions
+              }
+              currency={summary.currency}
+            />
           </strong>
           <small>
-            Fee {formatCurrency(summary.cashPlatformFeeDeductions, summary.currency)} / VAT{' '}
-            {formatCurrency(summary.cashCompanyVatDeductions, summary.currency)} / tax{' '}
-            {formatCurrency(summary.cashPartnerTaxDeductions, summary.currency)}
+            Fee <MoneyText amount={summary.cashPlatformFeeDeductions} currency={summary.currency} /> / VAT{' '}
+            <MoneyText amount={summary.cashCompanyVatDeductions} currency={summary.currency} /> / tax{' '}
+            <MoneyText amount={summary.cashPartnerTaxDeductions} currency={summary.currency} />
           </small>
         </div>
       </div>
@@ -97,7 +110,9 @@ export function PartnerDetailWalletSummarySection({
                   <p className="muted">{row.type}</p>
                 </td>
                 <td>
-                  <strong>{formatCurrency(row.amount, row.currency)}</strong>
+                  <strong>
+                    <MoneyText amount={row.amount} currency={row.currency} />
+                  </strong>
                   <p className="muted">
                     <DateTimeText fallback="Missing" value={row.createdAt} />
                   </p>
@@ -107,10 +122,10 @@ export function PartnerDetailWalletSummarySection({
                     {row.type === 'PARTNER_BANK_DEPOSIT_RECEIVED' ? (
                       <>
                         <StatusBadge tone="success">
-                          Cleared {formatCurrency(summary.appliedToNegativeWallet, summary.currency)}
+                          Cleared <MoneyText amount={summary.appliedToNegativeWallet} currency={summary.currency} />
                         </StatusBadge>
                         <StatusBadge tone="info">
-                          Prepaid {formatCurrency(summary.recordedAsPrepaidBalance, summary.currency)}
+                          Prepaid <MoneyText amount={summary.recordedAsPrepaidBalance} currency={summary.currency} />
                         </StatusBadge>
                       </>
                     ) : (

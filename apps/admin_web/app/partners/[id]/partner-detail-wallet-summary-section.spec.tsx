@@ -18,6 +18,16 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(source).not.toContain('{formatDate(row.createdAt)}');
   });
 
+  it('uses the shared money atom for visible wallet summary and ledger amounts', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).toContain('<MoneyText amount={summary.currentBalance} currency={summary.currency} />');
+    expect(source).toContain('<MoneyText amount={row.amount} currency={row.currency} />');
+    expect(source).not.toContain('<strong>{formatCurrency(summary.currentBalance, summary.currency)}</strong>');
+    expect(source).not.toContain('<strong>{formatCurrency(row.amount, row.currency)}</strong>');
+  });
+
   it('renders partner wallet cards and visible ledger rows as a Vuexy table', () => {
     const section = PartnerDetailWalletSummarySection({
       summary: {
