@@ -15,7 +15,7 @@ export type MetricCardProps = {
   className?: string;
   label: string;
   value: ReactNode;
-  helper: string;
+  helper: ReactNode;
   href?: string;
   icon?: LucideIcon;
   iconSize?: number;

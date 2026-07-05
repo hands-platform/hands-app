@@ -1,6 +1,6 @@
 import { AdminKpiCard } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import type { AdminCashSettlementSummary } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
 
 type OperationsHandoffMetricGridSectionProps = {
   readonly activeBookingCount: number;
@@ -58,7 +58,11 @@ export function OperationsHandoffMetricGridSection({
       <AdminKpiCard
         label="Cash fee debt"
         value={cashSummary.providerCount}
-        helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across Partner wallet gates`}
+        helper={
+          <>
+            <MoneyText amount={cashSummary.totalDebtAmount} currency={cashSummary.currency} /> across Partner wallet gates
+          </>
+        }
         href="/cash-settlements"
       />
       <AdminKpiCard

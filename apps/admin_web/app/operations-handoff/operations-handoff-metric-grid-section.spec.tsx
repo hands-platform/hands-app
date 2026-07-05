@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+
+const source = readFileSync(new URL('./operations-handoff-metric-grid-section.tsx', import.meta.url), 'utf8');
 
 describe('OperationsHandoffMetricGridSection', () => {
   it('renders operations handoff metric links and visible counts', () => {
@@ -48,7 +52,8 @@ describe('OperationsHandoffMetricGridSection', () => {
     expect(section.type).toBe('section');
     expect(rendered).toContain('Active bookings');
     expect(rendered).toContain('Cash fee debt');
-    expect(rendered).toContain('125.000 VND across Partner wallet gates');
+    expect(rendered).toContain('125.000 VND');
+    expect(rendered).toContain('across Partner wallet gates');
     expect(rendered).toContain('11');
     expect(rendered).toContain('Recent FCM sent');
     expect(rendered).toContain('13 Jun 2026, 17:09');
@@ -106,5 +111,11 @@ describe('OperationsHandoffMetricGridSection', () => {
     expect(rendered).toContain('Recent FCM sent');
     expect(rendered).toContain('No send');
     expect(rendered).toContain('No FCM SENT delivery recorded yet');
+  });
+
+  it('uses the shared money atom for cash debt helper amounts', () => {
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across Partner wallet gates`}');
   });
 });
