@@ -1,5 +1,5 @@
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -25,8 +25,7 @@ export function EarningsBatchStateFilterSection({
   ledgerCount,
 }: EarningsBatchStateFilterSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue stay based on the selected date range."
       resultLabel={`${ledgerCount} ledger row(s)`}
       resultTone={ledgerCount > 0 ? 'info' : 'warning'}
@@ -57,7 +56,7 @@ export function EarningsBatchStateFilterSection({
             </div>
           ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

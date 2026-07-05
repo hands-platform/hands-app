@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type EarningsFinanceSignal = {
@@ -19,8 +19,7 @@ type EarningsFinanceQueueSectionProps = {
 
 export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Operator summary for Partner payout readiness, batched earnings, tax logs, and stale pending revenue."
       resultLabel={`${signals.length} signal(s)`}
       resultTone={signals.length > 0 ? 'info' : 'warning'}
@@ -47,6 +46,6 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
           />
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
