@@ -7,7 +7,13 @@ import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import {
+  AdminSignal,
+  adminSignalToneFromClassName,
+  StatusBadge,
+  StatusBadgeLink,
+  statusBadgeToneFromPillClass,
+} from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -119,7 +125,12 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.phase}</div>
           </td>
           <td>
-            <span className={row.opsSignalClassName}>{row.opsSignal}</span>
+            <AdminSignal
+              className={row.opsSignalClassName}
+              tone={adminSignalToneFromClassName(row.opsSignalClassName)}
+            >
+              {row.opsSignal}
+            </AdminSignal>
             <div className="muted admin-mt-6">
               {row.opsHint}
             </div>
