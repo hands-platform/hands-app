@@ -242,6 +242,11 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain('value={kpi.value}');
   });
 
+  it('uses the shared money atom for finance section row amounts', () => {
+    expect(pageSource).toContain('FinanceOverviewSectionRowValue');
+    expect(pageSource).not.toContain('<span>{row.value}</span>');
+  });
+
   it('uses shared Vuexy badge atoms for page header status chips', () => {
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');

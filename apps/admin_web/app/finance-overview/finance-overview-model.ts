@@ -82,6 +82,8 @@ export type FinanceOverviewKpi = {
 };
 
 export type FinanceOverviewSectionRow = {
+  readonly amount?: number;
+  readonly currency?: string;
   readonly detail: string;
   readonly href?: string;
   readonly label: string;
@@ -509,33 +511,39 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'success',
       rows: [
         {
+          ...financeOverviewMoneyValue(input.settlementSummary.customerPaymentAmount, currency),
           label: 'Gross booking amount',
           value: formatMoney(input.settlementSummary.customerPaymentAmount, currency),
           detail: 'Customer-paid amount, never treated as company revenue.',
         },
         {
+          ...financeOverviewMoneyValue(input.settlementSummary.platformFeeNetRevenue, currency),
           label: 'Platform fee net revenue',
           value: formatMoney(input.settlementSummary.platformFeeNetRevenue, currency),
           detail: 'Actual company revenue after output VAT split.',
         },
         {
+          ...financeOverviewMoneyValue(couponCost, input.couponSummary.currency),
           label: 'Company coupon cost',
           value: formatMoney(couponCost, input.couponSummary.currency),
           detail: 'Company-funded coupon expense from settlement metadata.',
           href: '/finance-tax/coupon-finance',
         },
         {
+          ...financeOverviewMoneyValue(input.settlementSummary.paymentProcessingFee, currency),
           label: 'Payment processing fee',
           value: formatMoney(input.settlementSummary.paymentProcessingFee, currency),
           detail: 'Gateway or payment fee cost stored in settlement snapshots.',
           href: '/finance-tax/payment-fees',
         },
         {
+          ...financeOverviewMoneyValue(netRevenueEstimate, currency),
           label: 'Net platform revenue estimate',
           value: formatMoney(netRevenueEstimate, currency),
           detail: 'Platform fee net revenue minus company coupon cost and processing fee.',
         },
         {
+          ...financeOverviewMoneyValue(averagePlatformFee, currency),
           label: 'Average platform fee',
           value: averagePlatformFee === null ? '—' : formatMoney(averagePlatformFee, currency),
           detail: `${input.settlementSummary.count} settlement snapshot row(s).`,
@@ -592,26 +600,34 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'warning',
       rows: [
         {
+          ...financeOverviewMoneyValue(input.settlementSummary.partnerPayoutAmount, currency),
           label: 'Partner payout amount',
           value: formatMoney(input.settlementSummary.partnerPayoutAmount, currency),
           detail: 'Partner payout from immutable settlement snapshots.',
         },
         {
+          ...financeOverviewMoneyValue(input.earningsSummary?.pendingNetAmount ?? 0, currency),
           label: 'Pending earning net',
           value: formatMoney(input.earningsSummary?.pendingNetAmount ?? 0, currency),
           detail: 'Partner earning net not yet available or paid.',
         },
         {
+          ...financeOverviewMoneyValue(input.earningsSummary?.availableNetAmount ?? 0, currency),
           label: 'Available earning net',
           value: formatMoney(input.earningsSummary?.availableNetAmount ?? 0, currency),
           detail: 'Partner earning net available for payout batching.',
         },
         {
+          ...financeOverviewMoneyValue(input.earningsSummary?.paidNetAmount ?? 0, currency),
           label: 'Paid earning net',
           value: formatMoney(input.earningsSummary?.paidNetAmount ?? 0, currency),
           detail: 'Partner earning net already paid.',
         },
         {
+          ...financeOverviewMoneyValue(
+            input.withdrawalSummary.pendingWithdrawalPayableAmount,
+            input.withdrawalSummary.currency,
+          ),
           label: 'Withdrawal payable',
           value: formatMoney(
             input.withdrawalSummary.pendingWithdrawalPayableAmount,
@@ -629,6 +645,10 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'info',
       rows: [
         {
+          ...financeOverviewMoneyValue(
+            input.walletSummary.customerWalletLiabilityAmount,
+            input.walletSummary.currency,
+          ),
           label: 'Customer wallet liability',
           value: formatMoney(
             input.walletSummary.customerWalletLiabilityAmount,
@@ -638,6 +658,10 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
           href: '/wallet-adjustments?ownerType=CUSTOMER',
         },
         {
+          ...financeOverviewMoneyValue(
+            input.walletSummary.partnerWalletLiabilityAmount,
+            input.walletSummary.currency,
+          ),
           label: 'Partner wallet liability',
           value: formatMoney(
             input.walletSummary.partnerWalletLiabilityAmount,
@@ -647,6 +671,10 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
           href: '/wallet-adjustments?ownerType=PARTNER',
         },
         {
+          ...financeOverviewMoneyValue(
+            input.walletSummary.negativePartnerWalletAmount,
+            input.walletSummary.currency,
+          ),
           label: 'Partner wallet receivable',
           value: formatMoney(
             input.walletSummary.negativePartnerWalletAmount,
@@ -670,6 +698,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'danger',
       rows: [
         {
+          ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
           label: 'Cash debt amount',
           value: input.cashSummary ? formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency) : '—',
           detail: `${input.cashSummary?.rowCount ?? 0} row(s), ${input.cashSummary?.providerCount ?? 0} Partner(s).`,
@@ -693,6 +722,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'warning',
       rows: [
         {
+          ...financeOverviewMoneyValue(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
           label: 'Open refunds',
           value: formatMoney(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
           detail: 'Refund rows still needing resolution.',
@@ -703,6 +733,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
           detail: 'Refund rows whose payment or booking state needs an update.',
         },
         {
+          ...financeOverviewMoneyValue(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
           label: 'Completed refunds',
           value: formatMoney(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
           detail: 'Completed refund cases in the active range.',
@@ -716,12 +747,14 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       tone: 'info',
       rows: [
         {
+          ...financeOverviewMoneyValue(input.settlementSummary.companyOutputVat, currency),
           label: 'Company output VAT',
           value: formatMoney(input.settlementSummary.companyOutputVat, currency),
           detail: 'Company VAT payable from platform fee snapshots.',
           href: '/finance-tax/platform-vat',
         },
         {
+          ...financeOverviewMoneyValue(input.partnerWithholdingSummary.totalPartnerTaxWithheld, currency),
           label: 'Partner withholding',
           value: formatMoney(input.partnerWithholdingSummary.totalPartnerTaxWithheld, currency),
           detail: `${input.partnerWithholdingSummary.partnerCountWithRevenue} Partner(s) with revenue in ${input.partnerWithholdingSummary.period}.`,
@@ -753,6 +786,10 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
           href: '/finance-tax/bank-reconciliation?review=unmatched',
         },
         {
+          ...financeOverviewMoneyValue(
+            input.monthlyClosingSummary.reconciliationDelta,
+            input.monthlyClosingSummary.currency,
+          ),
           label: 'Monthly formula delta',
           value: formatMoney(input.monthlyClosingSummary.reconciliationDelta, input.monthlyClosingSummary.currency),
           detail: 'Must be 0 before final closeout.',

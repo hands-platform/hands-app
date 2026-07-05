@@ -36,6 +36,7 @@ import {
   type FinanceOverviewControlMetric,
   type FinanceOverviewKpi,
   type FinanceOverviewSection,
+  type FinanceOverviewSectionRow,
 } from './finance-overview-model';
 
 export const dynamic = 'force-dynamic';
@@ -269,7 +270,7 @@ function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOver
               <strong>{row.label}</strong>
               <small>{row.detail}</small>
             </div>
-            <span>{row.value}</span>
+            <FinanceOverviewSectionRowValue row={row} />
           </>
         );
 
@@ -338,6 +339,18 @@ function FinanceOverviewMetricValue({ metric }: { readonly metric: FinanceOvervi
     metric.value
   ) : (
     <MoneyText amount={metric.amount} currency={metric.currency ?? 'VND'} />
+  );
+}
+
+function FinanceOverviewSectionRowValue({ row }: { readonly row: FinanceOverviewSectionRow }) {
+  return (
+    <span>
+      {row.amount === undefined ? (
+        row.value
+      ) : (
+        <MoneyText amount={row.amount} currency={row.currency ?? 'VND'} />
+      )}
+    </span>
   );
 }
 
