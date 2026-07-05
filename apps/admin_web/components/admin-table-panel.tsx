@@ -18,12 +18,16 @@ type AdminTableSectionProps = Omit<ComponentProps<typeof AdminSection>, 'classNa
   readonly grouped?: boolean;
 };
 
+export const adminTableCardChromeClassName = 'vuexy-booking-table-card';
+export const adminTableGroupClassName = 'vuexy-booking-table-group';
+export const adminTablePanelChromeClassName = 'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card';
+
 export function AdminTableCard({ className, grouped = true, ...props }: AdminTableCardProps) {
   return (
     <AdminCard
       className={joinClassNames(
-        'vuexy-booking-table-card',
-        grouped ? 'vuexy-booking-table-group' : undefined,
+        adminTableCardChromeClassName,
+        grouped ? adminTableGroupClassName : undefined,
         className,
       )}
       {...props}
@@ -35,8 +39,8 @@ export function AdminTableSection({ className, grouped = true, ...props }: Admin
   return (
     <AdminSection
       className={joinClassNames(
-        'vuexy-booking-table-card',
-        grouped ? 'vuexy-booking-table-group' : undefined,
+        adminTableCardChromeClassName,
+        grouped ? adminTableGroupClassName : undefined,
         className,
       )}
       {...props}
@@ -48,8 +52,8 @@ export function AdminTablePanel({ className, grouped = true, ...props }: AdminTa
   return (
     <AdminFilterPanel
       className={joinClassNames(
-        'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card',
-        grouped ? 'vuexy-booking-table-group' : undefined,
+        adminTablePanelChromeClassName,
+        grouped ? adminTableGroupClassName : undefined,
         className,
       )}
       {...props}

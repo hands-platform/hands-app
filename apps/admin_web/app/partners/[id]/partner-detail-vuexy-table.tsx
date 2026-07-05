@@ -1,5 +1,10 @@
+import {
+  adminTableGroupClassName,
+  adminTablePanelChromeClassName,
+} from '../../../components/admin-table-panel';
+
 export const partnerDetailReviewCardClassName =
-  'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card';
+  `${adminTablePanelChromeClassName} ${adminTableGroupClassName} vuexy-partner-detail-review-card`;
 
 export const partnerDetailReviewTableClassName =
   'vuexy-booking-table vuexy-partner-detail-review-table';

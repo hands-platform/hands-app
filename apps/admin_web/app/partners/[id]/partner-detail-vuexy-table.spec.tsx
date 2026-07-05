@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
   partnerDetailReviewFooterClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
+
+const partnerDetailShellSource = readFileSync('app/partners/[id]/partner-detail-vuexy-table.tsx', 'utf8');
 
 describe('partner detail Vuexy table shell', () => {
   it('keeps Partner detail table cards on the grouped Vuexy table shell', () => {
@@ -13,6 +17,13 @@ describe('partner detail Vuexy table shell', () => {
     expect(partnerDetailReviewTableClassName).toBe('vuexy-booking-table vuexy-partner-detail-review-table');
     expect(partnerDetailReviewFooterClassName).toBe(
       'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+    );
+  });
+
+  it('composes the Partner detail shell from the shared Vuexy table panel chrome token', () => {
+    expect(partnerDetailShellSource).toContain('adminTablePanelChromeClassName');
+    expect(partnerDetailShellSource).not.toContain(
+      "'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card'",
     );
   });
 
