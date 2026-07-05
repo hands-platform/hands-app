@@ -1,11 +1,30 @@
 import type { ComponentProps } from 'react';
 
 import { AdminFilterPanel } from './admin-filter-panel';
+import { AdminCard } from './admin-surface';
 
 type AdminTablePanelProps = Omit<ComponentProps<typeof AdminFilterPanel>, 'className'> & {
   readonly className?: string;
   readonly grouped?: boolean;
 };
+
+type AdminTableCardProps = Omit<ComponentProps<typeof AdminCard>, 'className'> & {
+  readonly className?: string;
+  readonly grouped?: boolean;
+};
+
+export function AdminTableCard({ className, grouped = true, ...props }: AdminTableCardProps) {
+  return (
+    <AdminCard
+      className={joinClassNames(
+        'vuexy-booking-table-card',
+        grouped ? 'vuexy-booking-table-group' : undefined,
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
 export function AdminTablePanel({ className, grouped = true, ...props }: AdminTablePanelProps) {
   return (

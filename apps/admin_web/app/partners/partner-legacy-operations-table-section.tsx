@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminCard } from '../../components/admin-surface';
+import { AdminTableCard } from '../../components/admin-table-panel';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 
@@ -51,7 +51,7 @@ export function PartnerLegacyOperationsTableSection({
   renderServices,
 }: PartnerLegacyOperationsTableSectionProps) {
   return (
-    <AdminCard className="admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card">
+    <AdminTableCard className="admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-partner-table-card">
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table vuexy-partner-table partner-legacy-table"
@@ -109,7 +109,7 @@ export function PartnerLegacyOperationsTableSection({
       <AdminTableFooter className="vuexy-partner-table-footer">
         <span>{partnerLegacyOperationsFooterLabel(providers.length)}</span>
       </AdminTableFooter>
-    </AdminCard>
+    </AdminTableCard>
   );
 }
 
