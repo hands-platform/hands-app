@@ -28,12 +28,15 @@ export function AdminEmptyState({
   ];
 
   if (className) {
-    return <div className={className}>{content}</div>;
+    return <div className={joinClassNames(className)}>{content}</div>;
   }
 
   return <>{content}</>;
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  return classNames
+    .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
+    .filter((className, index, values) => values.indexOf(className) === index)
+    .join(' ');
 }

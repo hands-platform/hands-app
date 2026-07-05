@@ -39,6 +39,17 @@ describe('AdminEmptyState', () => {
     expect(emptyState.props.className).toBe('empty-state admin-mt-14');
   });
 
+  it('deduplicates legacy empty-state class tokens on framed empty states', () => {
+    const emptyState = AdminEmptyState({
+      className: 'empty-state admin-mt-14 empty-state',
+      framed: true,
+      message: 'No booking evidence is visible for this range.',
+    });
+
+    expect(emptyState.type).toBe('div');
+    expect(emptyState.props.className).toBe('empty-state admin-mt-14');
+  });
+
   it('keeps custom spacing classes on unframed empty states when a page supplies them', () => {
     const emptyState = AdminEmptyState({
       className: 'admin-mt-8',
