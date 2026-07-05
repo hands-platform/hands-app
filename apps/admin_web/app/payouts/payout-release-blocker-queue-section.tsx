@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -54,9 +55,9 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
                 ))}
               </div>
             </div>
-            <a className="text-link" href={`#${item.id}`}>
+            <AdminTextLink href={`#${item.id}`}>
               Row
-            </a>
+            </AdminTextLink>
           </div>
         ))}
         {items.length === 0 ? (

@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
@@ -11,6 +9,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -93,12 +92,9 @@ export function PayoutWalletWithdrawalRequestSection({
           {requests.map((request) => (
             <tr key={request.id}>
               <td>
-                <Link
-                  className="text-link"
-                  href={`/partners/${request.providerProfileId}?section=full#finance`}
-                >
+                <AdminTextLink href={`/partners/${request.providerProfileId}?section=full#finance`}>
                   {partnerLabel(request)}
-                </Link>
+                </AdminTextLink>
                 {request.providerProfile?.user?.phone ? (
                   <p className="muted">{request.providerProfile.user.phone}</p>
                 ) : (

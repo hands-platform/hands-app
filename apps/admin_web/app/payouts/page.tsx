@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import {
@@ -14,6 +13,7 @@ import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -181,9 +181,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         title="Payout date range"
       >
         <div className="participant-list admin-mb-12">
-          <Link className="text-link" href="/finance-closeout">
+          <AdminTextLink href="/finance-closeout">
             Open finance closeout
-          </Link>
+          </AdminTextLink>
         </div>
         <AdminFilterChipGroup ariaLabel="Payout date range" className="admin-mt-12">
           {[
@@ -211,9 +211,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         title="Payout batch release policy desk"
       >
         <div className="participant-list admin-mb-12">
-          <Link className="text-link" href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
+          <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
             Batch policy
-          </Link>
+          </AdminTextLink>
         </div>
         <AdminSectionHeader
           className="admin-mt-14"
@@ -244,9 +244,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
         <AdminSectionHeader
           actions={
-            <Link className="text-link" href="/cash-settlements">
+            <AdminTextLink href="/cash-settlements">
               Cash settlements
-            </Link>
+            </AdminTextLink>
           }
           className="admin-mt-16"
           description="Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays out of payout release until cleared."
@@ -277,9 +277,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </AdminTableScroll>
         <AdminSectionHeader
           actions={
-            <Link className="text-link" href="/bookings?view=marketplace">
+            <AdminTextLink href="/bookings?view=marketplace">
               Marketplace monitor
-            </Link>
+            </AdminTextLink>
           }
           className="admin-mt-16"
           description="Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start, and payout release. Partners can see marketplace requests while the wallet is negative."

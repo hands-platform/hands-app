@@ -99,7 +99,9 @@ describe('PayoutStatusLanesSection', () => {
 
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');

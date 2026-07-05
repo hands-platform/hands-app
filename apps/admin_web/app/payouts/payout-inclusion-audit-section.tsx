@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 
 export type PayoutInclusionAuditCard = {
   readonly helper: ReactNode;
@@ -55,9 +56,9 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
               <p className="muted">{row.detail}</p>
               <p className="muted">{row.operatorRule}</p>
             </div>
-            <a className="text-link" href={row.href}>
+            <AdminTextLink href={row.href}>
               Open
-            </a>
+            </AdminTextLink>
           </div>
         ))}
         {audit.rows.length === 0 ? (

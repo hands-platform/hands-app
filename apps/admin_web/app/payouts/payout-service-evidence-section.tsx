@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -36,9 +37,9 @@ export function PayoutServiceEvidenceSection({
       title="Payout service evidence"
     >
       <div className="participant-list admin-mb-12">
-        <a className="text-link" href="/services">
+        <AdminTextLink href="/services">
           Review service pricing
-        </a>
+        </AdminTextLink>
       </div>
       <div className="service-trace-summary">
         <div>

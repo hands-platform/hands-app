@@ -2,6 +2,7 @@ import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortRecordId } from '../../lib/admin-format';
@@ -58,9 +59,9 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
                       </p>
                       <p className="muted">{batch.opsHint}</p>
                     </div>
-                    <a className="text-link" href={`#${batch.id}`}>
+                    <AdminTextLink href={`#${batch.id}`}>
                       Row
-                    </a>
+                    </AdminTextLink>
                   </div>
                 ))}
               </div>

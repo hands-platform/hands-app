@@ -1,8 +1,7 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type { PayoutPartnerFinanceQueueRow } from './payout-partner-finance-queue-model';
 
@@ -48,9 +47,9 @@ export function PayoutPartnerFinanceQueueSection({
                 <p className="muted">{row.evidenceLabel}</p>
               </td>
               <td>
-                <Link className="text-link" href={row.href}>
+                <AdminTextLink href={row.href}>
                   {row.actionLabel}
-                </Link>
+                </AdminTextLink>
               </td>
             </tr>
           ))}

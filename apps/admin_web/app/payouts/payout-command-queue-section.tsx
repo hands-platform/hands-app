@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PayoutCommandSignal = {
@@ -27,9 +28,9 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       title="Payout command queue"
     >
       <div className="participant-list admin-mb-12">
-        <a className="text-link" href="/earnings">
+        <AdminTextLink href="/earnings">
           Review earnings queue
-        </a>
+        </AdminTextLink>
       </div>
       {signals.length ? (
         <div className="ops-task-grid">
