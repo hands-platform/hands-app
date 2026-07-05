@@ -19,7 +19,7 @@ export type CustomerDetailOverviewHighlight = {
 };
 
 export type CustomerDetailPartnerAvatar = {
-  readonly helper: string;
+  readonly helper: ReactNode;
   readonly href: string | null;
   readonly id: string;
   readonly label: string;

@@ -106,6 +106,20 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('value: formatDate(latestSession?.lastSeenAt)');
   });
 
+  it('uses the shared DateTimeText atom for customer partner rail helper timestamps', () => {
+    const overviewSource = readFileSync(
+      new URL('./customer-detail-overview-shell.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(overviewSource).toContain('readonly helper: ReactNode;');
+    expect(customerDetailSource).toContain('Saved <DateTimeText value={favorite.createdAt} />');
+    expect(customerDetailSource).toContain('Last viewed <DateTimeText value={view.lastViewedAt} />');
+    expect(customerDetailSource).toContain('Latest completed <DateTimeText value={bookingLatestActivityAt(booking)} />');
+    expect(customerDetailSource).not.toContain('helper: `Saved ${formatDate(favorite.createdAt)}`');
+    expect(customerDetailSource).not.toContain('helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`');
+  });
+
   it('uses the shared table pagination footer for customer chat history', () => {
     expect(customerDetailSource).toContain('AdminTablePaginationFooter');
     expect(customerDetailSource).toContain('className="customer-chat-history-footer"');

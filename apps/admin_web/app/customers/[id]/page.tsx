@@ -2048,7 +2048,11 @@ function buildFavoritePartnerAvatars(
         label: displayMarketplaceText(
           partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'Favorite Partner',
         ),
-        helper: `Saved ${formatDate(favorite.createdAt)}`,
+        helper: (
+          <>
+            Saved <DateTimeText value={favorite.createdAt} />
+          </>
+        ),
         status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
       };
     })
@@ -2070,7 +2074,12 @@ function buildViewedPartnerAvatars(
         label: displayMarketplaceText(
           partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'Viewed Partner',
         ),
-        helper: `Last viewed ${formatDate(view.lastViewedAt)}${viewCountLabel}`,
+        helper: (
+          <>
+            Last viewed <DateTimeText value={view.lastViewedAt} />
+            {viewCountLabel}
+          </>
+        ),
         status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
       };
     })
@@ -2094,7 +2103,11 @@ function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerD
       id: `${partnerId}-${booking.id}`,
       href: `/partners/${partnerId}`,
       label,
-      helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`,
+      helper: (
+        <>
+          Latest completed <DateTimeText value={bookingLatestActivityAt(booking)} />
+        </>
+      ),
       status: partnerAvatarStatusFromBooking(booking),
     });
   }
