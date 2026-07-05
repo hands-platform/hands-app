@@ -1,5 +1,6 @@
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminActionFormCard } from '../../../components/admin-surface';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
@@ -72,7 +73,8 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
   }
 
   const settlementRef = `HANDS-CASH-${shortId(booking.id).toUpperCase()}`;
-  const debtAmount = formatMoney(Math.abs(earning.netAmount), earning.currency);
+  const debtAmountValue = Math.abs(earning.netAmount);
+  const debtAmountLabel = formatMoney(debtAmountValue, earning.currency);
 
   return (
     <AdminActionFormCard action={settleBookingCashDebt} className="ops-task-blocked">
@@ -85,6 +87,9 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
         <p className="muted">
           Partner cash collection created a negative wallet fee. Confirm deposit or admin offset evidence.
         </p>
+        <p className="muted">
+          Cash fee debt <MoneyText amount={debtAmountValue} currency={earning.currency} />
+        </p>
       </div>
       <AdminFormInput
         label="Cash debt settlement reference"
@@ -95,8 +100,8 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
       <AdminFormInput
         label="Cash debt settlement notes"
         name="settlementNotes"
-        defaultValue={`Partner deposited ${debtAmount} with ${settlementRef}`}
-        placeholder={`Partner deposited ${debtAmount}`}
+        defaultValue={`Partner deposited ${debtAmountLabel} with ${settlementRef}`}
+        placeholder={`Partner deposited ${debtAmountLabel}`}
       />
       <AdminFormControlButton type="submit">Settle cash debt</AdminFormControlButton>
     </AdminActionFormCard>
