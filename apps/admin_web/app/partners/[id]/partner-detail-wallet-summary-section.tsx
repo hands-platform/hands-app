@@ -1,8 +1,9 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
-import { formatCurrency, formatDate, walletLedgerLabel } from './partner-detail-format';
+import { formatCurrency, walletLedgerLabel } from './partner-detail-format';
 import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
 import {
   PartnerDetailVuexyTableFooter,
@@ -97,7 +98,9 @@ export function PartnerDetailWalletSummarySection({
                 </td>
                 <td>
                   <strong>{formatCurrency(row.amount, row.currency)}</strong>
-                  <p className="muted">{formatDate(row.createdAt)}</p>
+                  <p className="muted">
+                    <DateTimeText fallback="Missing" value={row.createdAt} />
+                  </p>
                 </td>
                 <td>
                   <div className="participant-list">

@@ -10,6 +10,14 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(source).not.toContain('<span className="pill pill-info">');
   });
 
+  it('uses the shared date time atom for visible ledger timestamps', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('formatDate,');
+    expect(source).not.toContain('{formatDate(row.createdAt)}');
+  });
+
   it('renders partner wallet cards and visible ledger rows as a Vuexy table', () => {
     const section = PartnerDetailWalletSummarySection({
       summary: {
