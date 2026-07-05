@@ -295,6 +295,16 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toContain('formatMoney(');
   });
 
+  it('uses the shared DateTimeText atom for visible referral detail timestamps', () => {
+    expect(detailSource).toContain('DateTimeText');
+    expect(detailSource).not.toContain(
+      "{props.row.referralCode.active ? 'Active' : 'Paused'} · {formatDateTime(props.row.referralCode.createdAt)}",
+    );
+    expect(detailSource).not.toContain('<span className="muted">{formatDateTime(referral.createdAt)}</span>');
+    expect(detailSource).not.toContain('Available {formatDateTime(reward.availableAt)}');
+    expect(detailSource).not.toContain('<span className="muted">{formatDateTime(reward.createdAt)}</span>');
+  });
+
   it('uses the shared Vuexy table panel wrapper for attribution and reward tables', () => {
     expect(detailSource).toContain('AdminTablePanel');
     expect(detailSource).not.toContain(

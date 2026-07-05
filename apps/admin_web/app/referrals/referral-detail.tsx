@@ -8,6 +8,7 @@ import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
@@ -163,7 +164,8 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             <strong>{props.row.referralCode?.code ?? 'No code'}</strong>
             {props.row.referralCode ? (
               <small className="muted">
-                {props.row.referralCode.active ? 'Active' : 'Paused'} · {formatDateTime(props.row.referralCode.createdAt)}
+                {props.row.referralCode.active ? 'Active' : 'Paused'} ·{' '}
+                <DateTimeText value={props.row.referralCode.createdAt} />
               </small>
             ) : null}
           </div>
@@ -234,7 +236,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                     <ReferralAttributionRewardCell rewardCount={referral.rewards.length} summary={rewardSummary} />
                   </td>
                   <td>
-                    <span className="muted">{formatDateTime(referral.createdAt)}</span>
+                    <span className="muted">
+                      <DateTimeText value={referral.createdAt} />
+                    </span>
                   </td>
                 </tr>
               );
@@ -273,7 +277,11 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   <strong>
                     <MoneyText amount={reward.amount} currency={reward.currency} fallback="0 VND" />
                   </strong>
-                  {reward.availableAt ? <p className="muted">Available {formatDateTime(reward.availableAt)}</p> : null}
+                  {reward.availableAt ? (
+                    <p className="muted">
+                      Available <DateTimeText value={reward.availableAt} />
+                    </p>
+                  ) : null}
                   <ReferralRewardCalculationSnapshot reward={reward} />
                 </td>
                 <td>
@@ -286,7 +294,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   <ReferralCreditStateCell reward={reward} />
                 </td>
                 <td>
-                  <span className="muted">{formatDateTime(reward.createdAt)}</span>
+                  <span className="muted">
+                    <DateTimeText value={reward.createdAt} />
+                  </span>
                 </td>
                 <td>
                   <ReferralRewardActions
