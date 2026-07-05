@@ -8,9 +8,11 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-finance-closeout-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTableScroll');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('MoneyText');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('statusBadgeToneFromPillClass(row.statusClass)');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="admin-table-scroll">');
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<span className={row.statusClass}>{row.status}</span>');

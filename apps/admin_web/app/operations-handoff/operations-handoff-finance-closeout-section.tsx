@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortDisplayId } from '../../lib/admin-format';
@@ -29,12 +29,12 @@ export function OperationsHandoffFinanceCloseoutSection({
     <AdminSection
       actions={
         <div className="actions">
-          <Link className="text-link" href="/cash-settlements">
+          <AdminTextLink href="/cash-settlements">
             Cash settlements
-          </Link>
-          <Link className="text-link" href="/payouts">
+          </AdminTextLink>
+          <AdminTextLink href="/payouts">
             Payouts
-          </Link>
+          </AdminTextLink>
         </div>
       }
       className="operations-handoff-finance-closeout-card"
@@ -50,14 +50,14 @@ export function OperationsHandoffFinanceCloseoutSection({
           {visibleRows.map((row) => (
             <tr key={row.id}>
               <td>
-                <Link className="text-link" href={`/partners/${row.providerId}`}>
+                <AdminTextLink href={`/partners/${row.providerId}`}>
                   {row.partnerName}
-                </Link>
+                </AdminTextLink>
               </td>
               <td>
-                <Link className="text-link" href={`/bookings/${row.bookingId}`}>
+                <AdminTextLink href={`/bookings/${row.bookingId}`}>
                   {shortDisplayId(row.bookingId)}
-                </Link>
+                </AdminTextLink>
               </td>
               <td>
                 <MoneyText amount={row.grossAmount} currency={row.currency} />
