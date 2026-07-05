@@ -39,4 +39,16 @@ describe('AdminFilterPanel', () => {
     expect(panel.props.children[1]).toBeNull();
     expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
   });
+
+  it('deduplicates Vuexy surface class tokens passed by legacy callers', () => {
+    const panel = AdminFilterPanel({
+      children: 'Filters',
+      className: 'card admin-filter-panel booking-monitor-filter-panel admin-section',
+      title: 'Booking operation filters',
+    });
+
+    expect(panel.props.className).toBe(
+      'card admin-filter-panel booking-monitor-filter-panel admin-section',
+    );
+  });
 });

@@ -46,6 +46,21 @@ describe('Admin surface components', () => {
     });
   });
 
+  it('deduplicates Vuexy surface class tokens passed by legacy callers', () => {
+    const card = AdminCard({
+      children: <p>Finance content</p>,
+      className: 'card admin-card finance-card',
+    });
+    const section = AdminSection({
+      children: <div>Rows</div>,
+      className: 'card admin-section finance-section',
+      title: 'Finance section',
+    });
+
+    expect(card.props.className).toBe('card admin-card finance-card');
+    expect(section.props.className).toBe('card admin-section finance-section');
+  });
+
   it('renders a Vuexy-aligned aside card shell for secondary panels', () => {
     const aside = AdminAsideCard({
       ariaLabel: 'Calendar filters',
