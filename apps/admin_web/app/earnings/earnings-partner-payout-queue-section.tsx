@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsPartnerPayoutQueueGroup = {
@@ -65,14 +65,14 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                   Partner
                 </Link>
                 {group.canBatch ? (
-                  <form action="/earnings">
+                  <AdminFormShell action="/earnings">
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={group.providerProfileId} />
                     <input type="hidden" name="transferRef" value={group.transferRef} />
                     <AdminFormControlButton className="button-primary" type="submit">
                       Review payout batch
                     </AdminFormControlButton>
-                  </form>
+                  </AdminFormShell>
                 ) : (
                   <span className="muted">No batch action</span>
                 )}

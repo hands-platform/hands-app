@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import {
   AdminSignal,
   StatusBadge,
@@ -158,7 +158,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
               </td>
               <td>
                 {row.canDirectlyPay ? (
-                  <form action="/earnings">
+                  <AdminFormShell action="/earnings">
                     <input type="hidden" name="confirm" value="mark-paid" />
                     <input type="hidden" name="earningId" value={row.id} />
                     <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
@@ -170,17 +170,17 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     <AdminFormControlButton className="button-primary" type="submit">
                       Review fee settlement
                     </AdminFormControlButton>
-                  </form>
+                  </AdminFormShell>
                 ) : null}
                 {row.canCreatePayout ? (
-                  <form action="/earnings" className="admin-mt-6">
+                  <AdminFormShell action="/earnings" className="admin-mt-6">
                     <input type="hidden" name="confirm" value="create-payout" />
                     <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
                     <input type="hidden" name="transferRef" value={row.transferRef} />
                     <AdminFormControlButton className="button-primary" type="submit">
                       Review payout batch
                     </AdminFormControlButton>
-                  </form>
+                  </AdminFormShell>
                 ) : null}
                 {!row.canDirectlyPay && !row.canCreatePayout ? (
                   <span className="muted">{row.statusLabel === 'PAID' ? 'Paid' : 'No action'}</span>

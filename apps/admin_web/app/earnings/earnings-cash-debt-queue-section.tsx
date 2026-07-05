@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsCashDebtTotals = {
@@ -103,7 +103,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                 <Link className="text-link" href={item.partnerHref}>
                   Partner
                 </Link>
-                <form action="/earnings">
+                <AdminFormShell action="/earnings">
                   <input type="hidden" name="confirm" value="mark-paid" />
                   <input type="hidden" name="earningId" value={item.earningId} />
                   <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
@@ -117,7 +117,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                   <AdminFormControlButton className="button-primary" type="submit">
                     Review fee settlement
                   </AdminFormControlButton>
-                </form>
+                </AdminFormShell>
               </div>
             </div>
           ))}
