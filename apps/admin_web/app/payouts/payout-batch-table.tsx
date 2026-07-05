@@ -4,6 +4,7 @@ import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -237,7 +238,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                 <StatusBadge tone="warning">Resolve blockers before paid</StatusBadge>
               ) : null}
               {row.statusLabel === 'Paid' || row.statusLabel === 'Cancelled' ? (
-                <span className="muted">No status action</span>
+                <AdminInlineFallback>No status action</AdminInlineFallback>
               ) : null}
             </div>
           </td>

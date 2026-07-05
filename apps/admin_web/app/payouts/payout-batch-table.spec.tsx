@@ -213,6 +213,7 @@ describe('PayoutBatchTable', () => {
   it('uses shared badge atoms for fixed payout table badges and links', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
+    expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('adminSignalToneFromClassName(row.opsSignalClassName)');
     expect(source).toContain('StatusBadge');
@@ -225,6 +226,7 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain("<span className={item.ok ? 'pill pill-success' : 'pill pill-warn'}");
     expect(source).not.toContain('<a className="pill pill-danger" href={row.partnerChecksHref}>');
     expect(source).not.toContain('<span className="pill pill-warn">Resolve blockers before paid</span>');
+    expect(source).not.toContain('<span className="muted">No status action</span>');
   });
 
   it('uses the shared money atom for payout batch amounts', () => {
