@@ -139,6 +139,16 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('<span className={`pill ${statusPillClass(room.booking.status)}`}>');
   });
 
+  it('uses the shared DateTimeText atom for visible chat archive table timestamps', () => {
+    expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).not.toContain(
+      '<p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>',
+    );
+    expect(pageSource).not.toContain(
+      "<td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>",
+    );
+  });
+
   it('passes raw retained chat timestamps to the shared date atom instead of formatting locally', () => {
     expect(pageSource).toContain('createdDateTime: message.createdAt');
     expect(pageSource).not.toContain('createdLabel: formatDate(message.createdAt)');

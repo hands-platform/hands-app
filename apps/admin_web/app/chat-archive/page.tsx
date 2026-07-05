@@ -33,6 +33,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -327,7 +328,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                 <tr key={`${row.booking.id}-${row.issue}`}>
                   <td>
                     <strong>{shortId(row.booking.id)}</strong>
-                    <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
+                    <p className="muted">
+                      <DateTimeText value={row.booking.updatedAt ?? row.booking.createdAt} />
+                    </p>
                   </td>
                   <td>
                     <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.issue}</StatusBadge>
@@ -440,7 +443,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                 </td>
                 <td>{room.serviceLabel}</td>
                 <td>{room.messageCount}</td>
-                <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
+                <td>
+                  <DateTimeText fallback="No message" value={room.latestMessageAt} />
+                </td>
                 <td>
                   <div className="actions">
                     <AdminFormControlLink
