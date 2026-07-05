@@ -58,6 +58,22 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(modelSource).not.toContain('${formatMoney(row.debtAmount');
   });
 
+  it('allows wallet deduction breakdown lines to render shared money atoms', () => {
+    const sectionSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-open-debt-table-section.tsx'),
+      'utf8',
+    );
+    const modelSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-page-rows.ts'),
+      'utf8',
+    );
+
+    expect(sectionSource).toContain('readonly walletDeductionBreakdown: readonly ReactNode[]');
+    expect(modelSource).not.toContain('Platform net wallet deduction ${formatMoney(');
+    expect(modelSource).not.toContain('Company VAT wallet deduction ${formatMoney(');
+    expect(modelSource).not.toContain('Partner tax wallet deduction ${formatMoney(');
+  });
+
   it('renders compact open cash debt rows without per-row operations evidence by default', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([buildRow()], { totalRows: 12 }),

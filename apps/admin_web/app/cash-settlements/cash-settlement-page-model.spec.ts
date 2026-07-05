@@ -162,12 +162,12 @@ describe('cash settlement page model', () => {
       debtAmount: 110_000,
       platformFee: 170_000,
       taxAmount: 42_000,
-      walletDeductionBreakdown: [
-        'Platform net wallet deduction 58.519 VND',
-        'Company VAT wallet deduction 9.481 VND',
-        'Partner tax wallet deduction 42.000 VND',
-      ],
     });
+    expect(row.walletDeductionBreakdown.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
+      'Platform net wallet deduction 58.519 VND',
+      'Company VAT wallet deduction 9.481 VND',
+      'Partner tax wallet deduction 42.000 VND',
+    ]);
     expect(providers[0]).toMatchObject({ companyCouponOffset: 60_000 });
     expect(summary).toMatchObject({
       companyCouponOffset: 60_000,
@@ -271,4 +271,34 @@ function cashCouponEarning(): AdminEarning {
       },
     ],
   });
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
 }

@@ -54,7 +54,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly settlementNotesDefault: string;
   readonly settlementReference: string;
   readonly taxAmount: number;
-  readonly walletDeductionBreakdown: readonly string[];
+  readonly walletDeductionBreakdown: readonly ReactNode[];
 };
 
 type CashSettlementOpenDebtTableSectionProps = {
@@ -142,8 +142,8 @@ export function CashSettlementOpenDebtTableSection({
               </div>
               {showOperationsEvidence && row.walletDeductionBreakdown.length ? (
                 <div className="service-matrix-cell admin-mt-8">
-                  {row.walletDeductionBreakdown.map((item) => (
-                    <small key={`${row.earningId}-${item}`}>{item}</small>
+                  {row.walletDeductionBreakdown.map((item, index) => (
+                    <small key={`${row.earningId}-wallet-deduction-${index}`}>{item}</small>
                   ))}
                 </div>
               ) : null}

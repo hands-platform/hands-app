@@ -247,9 +247,15 @@ function cashWalletDeductionLabels(breakdown: CashSettlementWalletDeductionBreak
   }
 
   return [
-    `Platform net wallet deduction ${formatMoney(breakdown.walletDeductionPlatformFeeNetRevenue, currency)}`,
-    `Company VAT wallet deduction ${formatMoney(breakdown.walletDeductionCompanyOutputVat, currency)}`,
-    `Partner tax wallet deduction ${formatMoney(breakdown.walletDeductionPartnerTaxPayable, currency)}`,
+    detailWithMoney(
+      'Platform net wallet deduction ',
+      moneyText(breakdown.walletDeductionPlatformFeeNetRevenue, currency),
+    ),
+    detailWithMoney('Company VAT wallet deduction ', moneyText(breakdown.walletDeductionCompanyOutputVat, currency)),
+    detailWithMoney(
+      'Partner tax wallet deduction ',
+      moneyText(breakdown.walletDeductionPartnerTaxPayable, currency),
+    ),
   ];
 }
 
