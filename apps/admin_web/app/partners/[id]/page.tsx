@@ -978,7 +978,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <PartnerDetailChatRetentionLedgerSection
           description="Customer final selection creates the Partner chat. Mobile apps can hide completed-service chats, while admin keeps the retained transcript for cancellation, no-show, payment, and service evidence review."
           emptyMessage="No Partner chat retention row matched this date filter."
-          formatLatestMessageAt={formatDate}
           id="partner-chat-retention-ledger"
           rows={partnerChatRetentionRows}
           statusPillClass={partnerBookingStatusPillClass}

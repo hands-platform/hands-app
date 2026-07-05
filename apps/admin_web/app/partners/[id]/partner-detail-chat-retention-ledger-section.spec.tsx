@@ -11,15 +11,16 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
+    expect(source).not.toContain('formatLatestMessageAt');
   });
 
   it('renders chat retention summary, row evidence, and archive links', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
       emptyMessage: 'No Partner chat retention row matched this date filter.',
-      formatLatestMessageAt: (value) => `formatted ${value}`,
       id: 'partner-chat-retention-ledger',
       rows: buildRows(),
       statusPillClass: (status) => (status === 'COMPLETED' ? 'pill-success' : 'pill-neutral'),
@@ -36,7 +37,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(rendered).toContain('BK-1001 / 9 Jun 2026');
     expect(rendered).toContain('Selected');
     expect(rendered).toContain('Customer');
-    expect(rendered).toContain('formatted 2026-06-09T03:00:00.000Z');
+    expect(rendered).toContain('9 Jun 2026, 10:00');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -56,7 +57,6 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
       emptyMessage: 'No Partner chat retention row matched this date filter.',
-      formatLatestMessageAt: (value) => value,
       id: 'partner-chat-retention-ledger',
       rows: [],
       statusPillClass: () => 'pill-neutral',

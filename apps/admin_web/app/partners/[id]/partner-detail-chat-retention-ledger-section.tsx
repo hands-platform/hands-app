@@ -4,6 +4,7 @@ import type {
   PartnerChatRetentionSummaryItem,
 } from './partner-detail-chat-retention-model';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { DateTimeText } from '../../../components/date-time-text';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -17,7 +18,6 @@ export type { PartnerChatRetentionRow, PartnerChatRetentionSummaryItem };
 type PartnerDetailChatRetentionLedgerSectionProps = {
   readonly description: string;
   readonly emptyMessage: string;
-  readonly formatLatestMessageAt: (value: string) => string;
   readonly id: string;
   readonly rows: readonly PartnerChatRetentionRow[];
   readonly statusPillClass: (status?: string) => string;
@@ -38,7 +38,6 @@ const PARTNER_CHAT_RETENTION_HEADERS = [
 export function PartnerDetailChatRetentionLedgerSection({
   description,
   emptyMessage,
-  formatLatestMessageAt,
   id,
   rows,
   statusPillClass,
@@ -90,7 +89,7 @@ export function PartnerDetailChatRetentionLedgerSection({
                 <strong>{row.latestSender}</strong>
                 <p className="muted">{row.latestMessage}</p>
                 <small>
-                  {row.latestMessageAt ? formatLatestMessageAt(row.latestMessageAt) : 'No message date'}
+                  <DateTimeText fallback="No message date" value={row.latestMessageAt} />
                 </small>
               </td>
               <td>
