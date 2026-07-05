@@ -1,5 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
@@ -26,8 +26,7 @@ type PaymentCallbackAttemptLedgerSectionProps = {
 
 export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAttemptLedgerSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Accepted, replayed, rejected, and conflicting gateway callbacks. Unknown gateway references remain visible here even when they cannot attach to a payment row."
       resultLabel={`${rows.length} attempt(s)`}
       resultTone={rows.length > 0 ? 'info' : 'warning'}
@@ -90,6 +89,6 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
           </tr>
         ))}
       </AdminDataTable>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

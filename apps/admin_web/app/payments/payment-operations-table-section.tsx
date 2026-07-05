@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminNotePanel } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
@@ -55,8 +55,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
   const rows = pagination.rows;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Payment rows with booking links, gateway evidence, callback state, refund paths, and cash debt settlement actions."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
@@ -144,6 +143,6 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
         totalPages={pagination.totalPages}
         totalRows={pagination.totalRows}
       />
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

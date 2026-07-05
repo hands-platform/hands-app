@@ -81,8 +81,10 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
       'utf8',
     );
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">Signature</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">Gateway</span>');

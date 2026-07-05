@@ -1,4 +1,4 @@
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 
@@ -40,8 +40,7 @@ export function PaymentFilterBoardSection({
   const isFiltered = Boolean(review || activeRange !== 'all');
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description={`Jump straight from the dashboard lane into the payment subset that needs operator review. Payment date range: ${rangeLabel}. Until the payment table stores its own timestamp, this uses the linked booking record date.`}
       resultLabel={`Showing ${filteredCount} of ${totalCount}`}
       resultTone={review ? 'warning' : 'success'}
@@ -81,6 +80,6 @@ export function PaymentFilterBoardSection({
           </StatusBadgeLink>
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
