@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminActionCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminActionCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
@@ -198,7 +198,7 @@ export function BookingOpsCommandCenter({
       id="booking-ops"
       title="Operations command center"
     >
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div id="booking-gate-reason">
           <AdminTaskCard
             className={finalGateReason.className}
@@ -213,8 +213,8 @@ export function BookingOpsCommandCenter({
             <small>{finalGateReason.operatorRule}</small>
           </AdminTaskCard>
         </div>
-      </div>
-      <div className="ops-task-note admin-mt-14">
+      </AdminNotePanel>
+      <AdminNotePanel className="admin-mt-14">
         <AdminSectionHeader
           actions={
             <StatusBadge tone={statusBadgeToneFromPillClass(actionEvidenceGate.tone)}>
@@ -239,7 +239,7 @@ export function BookingOpsCommandCenter({
             </AdminActionCard>
           ))}
         </div>
-      </div>
+      </AdminNotePanel>
       <div className="action-button-grid">
         {booking.payment?.id ? (
           <>

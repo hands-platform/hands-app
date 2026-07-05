@@ -15,10 +15,12 @@ describe('BookingOperatorQueueSections', () => {
   it('uses shared Vuexy badge atoms instead of raw operator pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
+    expect(source).not.toContain('<div className="ops-task-note admin-mt-14">');
     expect(source).not.toContain('actions={<span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>}');
     expect(source).not.toContain('<span className="pill pill-info">');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');
