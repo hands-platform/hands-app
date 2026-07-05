@@ -8,6 +8,7 @@ import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -506,7 +507,9 @@ function ChatEvidenceRow({ message }: { message: AdminChatMessage }) {
   const sender = message.sender?.fullName ?? message.sender?.phone ?? 'App user';
   return (
     <div className="setup-stage-item">
-      <StatusBadge tone="info">{formatDate(message.createdAt)}</StatusBadge>
+      <StatusBadge tone="info">
+        <DateTimeText value={message.createdAt} />
+      </StatusBadge>
       <div>
         <strong>{sender}</strong>
         <p className="muted">{message.body}</p>
@@ -518,7 +521,9 @@ function ChatEvidenceRow({ message }: { message: AdminChatMessage }) {
 function AuditRow({ row }: { row: AdminAuditLog }) {
   return (
     <tr>
-      <td>{formatDate(row.createdAt)}</td>
+      <td>
+        <DateTimeText value={row.createdAt} />
+      </td>
       <td>{row.action}</td>
       <td>{row.actor?.fullName ?? row.actor?.phone ?? 'Admin'}</td>
       <td>{row.target}</td>

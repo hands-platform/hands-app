@@ -73,6 +73,14 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<span className="pill pill-info">{formatDate(message.createdAt)}</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible payment evidence timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('<StatusBadge tone="info">{formatDate(message.createdAt)}</StatusBadge>');
+    expect(source).not.toContain('<td>{formatDate(row.createdAt)}</td>');
+  });
+
   it('uses the shared Vuexy form control link for button-style payment actions', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
 
