@@ -53,4 +53,12 @@ describe('CalendarEventDrawer', () => {
     expect(source).toContain('AdminDrawerFormGridFields');
     expect(source).not.toContain('<div className="calendar-form-grid">');
   });
+
+  it('uses the shared Vuexy button atom for visible drawer header actions', () => {
+    const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n                className="calendar-icon-button calendar-icon-button-danger"');
+    expect(source).not.toContain('<button\n              aria-label="Close event drawer"');
+  });
 });

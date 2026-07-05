@@ -94,23 +94,24 @@ export function CalendarEventDrawer({
           </div>
           <div className="calendar-drawer-header-actions">
             {mode === 'edit' && canEdit ? (
-              <button
-                className="calendar-icon-button calendar-icon-button-danger"
+              <AdminFormControlButton
+                className="button-danger calendar-icon-button calendar-icon-button-danger"
                 onClick={onDelete}
                 type="button"
               >
                 <Trash2 aria-hidden="true" size={16} />
                 Delete
-              </button>
+              </AdminFormControlButton>
             ) : null}
-            <button
+            <AdminFormControlButton
               aria-label="Close event drawer"
-              className="calendar-icon-button"
+              className="button-secondary calendar-icon-button"
               onClick={onClose}
+              title="Close event drawer"
               type="button"
             >
               <X aria-hidden="true" size={16} />
-            </button>
+            </AdminFormControlButton>
           </div>
         </div>
 

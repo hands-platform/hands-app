@@ -127,7 +127,7 @@ type AdminFormControlButtonProps = {
   readonly children: ReactNode;
   readonly className?: string;
   readonly type?: 'button' | 'submit';
-} & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled' | 'onClick'>;
+} & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'disabled' | 'onClick' | 'title'>;
 
 type AdminFormControlStackProps = {
   readonly children: ReactNode;
@@ -529,9 +529,11 @@ export function AdminFormControlButton({
   disabled,
   onClick,
   type = 'submit',
+  ...buttonProps
 }: AdminFormControlButtonProps) {
   return (
     <button
+      {...buttonProps}
       className={joinClassNames('admin-form-control-button', normalizeButtonClassNames(className, 'button button-primary'))}
       disabled={disabled}
       onClick={onClick}

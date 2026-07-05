@@ -410,6 +410,27 @@ describe('Admin form controls', () => {
     expect(button.props.className).toBe('admin-form-control-button button button-secondary setup-action');
   });
 
+  it('passes accessible button chrome props through the shared Vuexy button atom', () => {
+    const buttonProps = {
+      'aria-label': 'Close drawer',
+      children: 'Close',
+      className: 'button-secondary calendar-icon-button',
+      title: 'Close drawer',
+      type: 'button',
+    } as Parameters<typeof AdminFormControlButton>[0] & {
+      readonly 'aria-label': string;
+      readonly title: string;
+    };
+    const button = AdminFormControlButton(buttonProps);
+
+    expect(button.props['aria-label']).toBe('Close drawer');
+    expect(button.props.title).toBe('Close drawer');
+    expect(button.props.className).toBe(
+      'admin-form-control-button button button-secondary calendar-icon-button',
+    );
+    expect(button.props.type).toBe('button');
+  });
+
   it('preserves inline text links without adding the button shell', () => {
     const link = AdminFormControlLink({
       children: 'Open payment ledger',

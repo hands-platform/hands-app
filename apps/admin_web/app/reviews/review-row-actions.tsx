@@ -145,14 +145,15 @@ function ReviewEditDrawer({
             <span className="calendar-drawer-eyebrow">Review moderation</span>
             <h2 id={titleId}>Edit Review</h2>
           </div>
-          <button
+          <AdminFormControlButton
             aria-label="Close review editor"
-            className="button-secondary"
+            className="button-secondary calendar-icon-button"
             onClick={onClose}
+            title="Close review editor"
             type="button"
           >
             <X aria-hidden="true" size={16} />
-          </button>
+          </AdminFormControlButton>
         </div>
 
         <div className="calendar-drawer-body review-edit-drawer-body">

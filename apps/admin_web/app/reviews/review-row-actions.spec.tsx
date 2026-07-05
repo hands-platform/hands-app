@@ -10,4 +10,11 @@ describe('ReviewRowActions Vuexy action menu usage', () => {
     expect(source).not.toContain('admin-action-trigger vuexy-review-action-trigger');
     expect(source).not.toContain('admin-action-menu vuexy-review-action-menu');
   });
+
+  it('keeps review edit drawer visible close controls on shared Vuexy button atoms', () => {
+    const source = readFileSync(join(process.cwd(), 'app/reviews/review-row-actions.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n            aria-label="Close review editor"');
+  });
 });
