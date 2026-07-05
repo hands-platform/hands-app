@@ -7,6 +7,13 @@ const sectionSource = readFileSync(
 );
 
 describe('PartnerDetailDailyActivityDigestSection', () => {
+  it('uses the shared Vuexy date time atom for activity timestamps', () => {
+    expect(sectionSource).toContain('DateTimeText');
+    expect(sectionSource).not.toContain('readonly formatDate: (value: string) => string;');
+    expect(sectionSource).not.toContain('{formatDate(record.at)}');
+    expect(sectionSource).not.toContain("day.latestAt ? formatDate(day.latestAt) : 'No date'");
+  });
+
   it('renders date-grouped activity digest days with formatted highlight dates', () => {
     const section = PartnerDetailDailyActivityDigestSection({
       days: [
@@ -30,7 +37,6 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
           ],
         },
       ],
-      formatDate: (value) => `formatted ${value}`,
     });
 
     const rendered = normalizedText(section);
@@ -47,7 +53,7 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('BOOKING 1 / CHAT 1');
     expect(rendered).toContain('Marketplace joined');
     expect(rendered).toContain('Partner joined the open marketplace request.');
-    expect(rendered).toContain('BOOKING / formatted 2026-06-01T10:00:00.000Z');
+    expect(rendered).toContain('BOOKING / 1 Jun 2026, 17:00');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
@@ -63,7 +69,6 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
   it('renders an empty state when no daily digest rows match the filters', () => {
     const section = PartnerDetailDailyActivityDigestSection({
       days: [],
-      formatDate: (value) => value,
     });
 
     const rendered = normalizedText(section);

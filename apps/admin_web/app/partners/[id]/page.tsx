@@ -1005,7 +1005,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="App activity and readiness"
       >
         <PartnerDetailAppActivitySection rows={partnerAppActivityRows} summary={partnerActivitySummary} />
-        <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} formatDate={formatDate} />
+        <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} />
         <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
         <PartnerDetailBookingGateDecisionSection
           cardClassForTone={partnerOpsCardClass}

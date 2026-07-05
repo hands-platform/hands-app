@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -26,14 +27,12 @@ export type PartnerDetailDailyActivityDigestDay = {
 
 type PartnerDetailDailyActivityDigestSectionProps = {
   readonly days: readonly PartnerDetailDailyActivityDigestDay[];
-  readonly formatDate: (value: string) => string;
 };
 
 const dailyActivityDigestHeaders = ['Day', 'Events', 'Highlights', 'Latest'];
 
 export function PartnerDetailDailyActivityDigestSection({
   days,
-  formatDate,
 }: PartnerDetailDailyActivityDigestSectionProps) {
   return (
     <AdminFilterPanel
@@ -69,7 +68,7 @@ export function PartnerDetailDailyActivityDigestSection({
                       >
                         <strong>{record.title}</strong>
                         <small>
-                          {record.type} / {formatDate(record.at)}
+                          {record.type} / <DateTimeText fallback="Missing" value={record.at} />
                         </small>
                         <p className="muted admin-m-0">{record.detail}</p>
                       </div>
@@ -77,7 +76,9 @@ export function PartnerDetailDailyActivityDigestSection({
                   </div>
                 </td>
                 <td>
-                  <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
+                  <small>
+                    <DateTimeText fallback="No date" value={day.latestAt} />
+                  </small>
                 </td>
               </tr>
             ))}
