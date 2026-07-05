@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import {
   AdminSignal,
@@ -182,7 +183,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                   </AdminFormShell>
                 ) : null}
                 {!row.canDirectlyPay && !row.canCreatePayout ? (
-                  <span className="muted">{row.statusLabel === 'PAID' ? 'Paid' : 'No action'}</span>
+                  <AdminInlineFallback>{row.statusLabel === 'PAID' ? 'Paid' : 'No action'}</AdminInlineFallback>
                 ) : null}
               </td>
             </tr>

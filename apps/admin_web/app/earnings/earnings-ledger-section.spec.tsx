@@ -28,6 +28,15 @@ describe('EarningsLedgerSection', () => {
     expect(source).not.toContain('<span className="pill pill-warn">Not batched</span>');
   });
 
+  it('uses the shared inline fallback atom for unavailable ledger actions', () => {
+    const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain(
+      "<span className=\"muted\">{row.statusLabel === 'PAID' ? 'Paid' : 'No action'}</span>",
+    );
+  });
+
   it('renders recent earning ledger rows and available actions', () => {
     const section = EarningsLedgerSection({
       pagination: pagination(
