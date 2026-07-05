@@ -28,6 +28,8 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(source).not.toContain('formatCurrency(summary.negativeWalletReceivable');
     expect(source).not.toContain('<strong>{formatCurrency(summary.currentBalance, summary.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatCurrency(row.amount, row.currency)}</strong>');
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain("<p className=\"muted\">{row.reference ? `Reference ${row.reference}` : 'No reference saved'}</p>");
   });
 
   it('renders partner wallet cards and visible ledger rows as a Vuexy table', () => {

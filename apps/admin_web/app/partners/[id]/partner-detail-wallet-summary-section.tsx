@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
@@ -138,7 +139,11 @@ export function PartnerDetailWalletSummarySection({
                   </div>
                 </td>
                 <td>
-                  <p className="muted">{row.reference ? `Reference ${row.reference}` : 'No reference saved'}</p>
+                  {row.reference ? (
+                    <p className="muted">Reference {row.reference}</p>
+                  ) : (
+                    <AdminInlineFallback>No reference saved</AdminInlineFallback>
+                  )}
                   {row.notes ? <p className="muted">{row.notes}</p> : null}
                 </td>
               </tr>

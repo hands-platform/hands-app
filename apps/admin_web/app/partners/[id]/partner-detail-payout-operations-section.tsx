@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -119,7 +120,11 @@ export function PartnerDetailPayoutOperationsSection({
                   </p>
                 </td>
                 <td>
-                  <p className="muted">{operations.hold.reason ?? 'No hold reason recorded.'}</p>
+                  {operations.hold.reason ? (
+                    <p className="muted">{operations.hold.reason}</p>
+                  ) : (
+                    <AdminInlineFallback>No hold reason recorded.</AdminInlineFallback>
+                  )}
                 </td>
                 <td>
                   <span className="muted">
