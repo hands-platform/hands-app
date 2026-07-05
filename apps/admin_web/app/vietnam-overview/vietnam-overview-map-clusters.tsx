@@ -9,6 +9,7 @@ import {
   type VietnamOverviewMetricDotKey,
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
+import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -229,14 +230,15 @@ function ClusterDetailPanel({
             {formatRegionCode(latestPoint.regionCode)}
           </StatusBadge>
         </div>
-        <button
+        <AdminFormControlButton
           aria-label="Close selected map signals"
-          className="vietnam-map-cluster-panel-close"
+          className="button-secondary vietnam-map-cluster-panel-close"
           onClick={onClose}
+          title="Close selected map signals"
           type="button"
         >
           <X size={16} aria-hidden="true" />
-        </button>
+        </AdminFormControlButton>
       </div>
 
       <div className={`vietnam-map-cluster-operator-read is-${latestPoint.kind}`}>

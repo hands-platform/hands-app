@@ -38,6 +38,17 @@ describe('Vietnam overview map tooltip CSS', () => {
     expect(displayItemBlock).toContain('border-radius: 999px');
     expect(globalsCss).not.toContain('.vietnam-map-display-toggle span,\n.vietnam-map-display-toggle button');
   });
+
+  it('keeps shared cluster panel close button atoms compact and circular', () => {
+    const closeButtonIndex = globalsCss.indexOf('.admin-form-control-button.vietnam-map-cluster-panel-close {');
+    const closeButtonBlock = cssRuleBlockAt(closeButtonIndex);
+
+    expect(closeButtonIndex).toBeGreaterThan(-1);
+    expect(closeButtonBlock).toContain('height: 30px');
+    expect(closeButtonBlock).toContain('min-height: 30px');
+    expect(closeButtonBlock).toContain('padding: 0');
+    expect(closeButtonBlock).toContain('width: 30px');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

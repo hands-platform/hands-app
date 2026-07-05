@@ -8,4 +8,11 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain('<span className={!isDensityVisible ? \'is-active\' : \'\'}>Signals</span>');
     expect(source).not.toContain('<button\n        aria-pressed={isDensityVisible}');
   });
+
+  it('uses the shared Vuexy button atom for cluster panel close controls', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain('AdminFormControlButton');
+    expect(source).not.toContain('<button\n          aria-label="Close selected map signals"');
+  });
 });
