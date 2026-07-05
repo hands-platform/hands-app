@@ -2,7 +2,12 @@ import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminDetailGrid, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import {
+  AdminDetailGrid,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskCard,
+} from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
@@ -59,7 +64,7 @@ export function OperationsPolicyLiveSimulatorSection({
         ))}
       </div>
       <AdminDetailGrid className="admin-mt-14">
-        <div className="ops-task-note">
+        <AdminNotePanel>
           <h3>Simulated booking path</h3>
           <div className="timeline admin-mt-12">
             {simulation.timeline.map((step) => (
@@ -80,8 +85,8 @@ export function OperationsPolicyLiveSimulatorSection({
               </div>
             ))}
           </div>
-        </div>
-        <div className="ops-task-note">
+        </AdminNotePanel>
+        <AdminNotePanel>
           <AdminSectionHeader
             actions={<StatusBadge tone="info">{simulation.partnerRows.length} shown</StatusBadge>}
             description="Top nearby online Partners inside the current marketplace radius. Stale locations are excluded from the dispatch count."
@@ -114,7 +119,7 @@ export function OperationsPolicyLiveSimulatorSection({
               </p>
             ) : null}
           </div>
-        </div>
+        </AdminNotePanel>
       </AdminDetailGrid>
       <div className="ops-task-grid admin-mt-14">
         {simulation.checks.map((check) => (

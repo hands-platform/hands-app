@@ -21,6 +21,11 @@ type AdminDetailGridProps = {
   readonly className?: string;
 };
 
+type AdminNotePanelProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminNoticeCardProps = AdminCardProps & {
   readonly role?: 'alert' | 'status';
   readonly tone?: AdminNoticeTone;
@@ -166,6 +171,10 @@ export function AdminDetailGrid({ ariaLabel, ariaLabelledBy, children, className
       {children}
     </section>
   );
+}
+
+export function AdminNotePanel({ children, className }: AdminNotePanelProps) {
+  return <div className={joinClassNames('ops-task-note', className)}>{children}</div>;
 }
 
 export function AdminNoticeCard({

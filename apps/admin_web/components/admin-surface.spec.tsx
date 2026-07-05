@@ -15,6 +15,7 @@ import {
   AdminKpiCard,
   AdminLinkCard,
   AdminLoadingState,
+  AdminNotePanel,
   AdminNoticeCard,
   AdminSection,
   AdminTaskCard,
@@ -93,6 +94,18 @@ describe('Admin surface components', () => {
     expect(grid.props).toMatchObject({
       'aria-label': 'Session breakdown',
       className: 'detail-grid admin-mb-16',
+    });
+  });
+
+  it('renders a reusable Vuexy note panel surface with stable spacing classes', () => {
+    const panel = AdminNotePanel({
+      children: <p>Operational note</p>,
+      className: 'admin-mt-14',
+    });
+
+    expect(panel.type).toBe('div');
+    expect(panel.props).toMatchObject({
+      className: 'ops-task-note admin-mt-14',
     });
   });
 
