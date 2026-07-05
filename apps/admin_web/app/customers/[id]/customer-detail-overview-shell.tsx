@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminProfileOverviewCard } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
-import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -69,7 +69,7 @@ export function CustomerDetailOverviewShell({
   usageSummary,
 }: CustomerDetailOverviewShellProps) {
   return (
-    <AdminCard className="customer-detail-overview-card">
+    <AdminProfileOverviewCard className="customer-detail-overview-card">
       <div className="customer-detail-overview-main">
         <div className="customer-detail-identity">
           <AdminAvatar
@@ -195,7 +195,7 @@ export function CustomerDetailOverviewShell({
           })}
         </div>
       ) : null}
-    </AdminCard>
+    </AdminProfileOverviewCard>
   );
 }
 

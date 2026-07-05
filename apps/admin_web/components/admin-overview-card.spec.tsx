@@ -6,6 +6,7 @@ import {
   AdminOverviewCommandGrid,
   AdminOverviewGrid,
   AdminOverviewGroup,
+  AdminProfileOverviewCard,
 } from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
@@ -127,5 +128,16 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span>Customer behavior</span>');
     expect(markup).toContain('<strong>Who is active and who completed work</strong>');
     expect(markup).toContain('<span>Ranking slot</span>');
+  });
+
+  it('renders a shared profile overview card shell', () => {
+    const markup = renderToStaticMarkup(
+      <AdminProfileOverviewCard className="customer-detail-overview-card">
+        <span>Profile slot</span>
+      </AdminProfileOverviewCard>,
+    );
+
+    expect(markup).toContain('class="card admin-card admin-profile-overview-card customer-detail-overview-card"');
+    expect(markup).toContain('<span>Profile slot</span>');
   });
 });

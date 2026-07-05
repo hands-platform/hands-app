@@ -24,6 +24,11 @@ type AdminOverviewGroupProps = {
   readonly title: ReactNode;
 };
 
+type AdminProfileOverviewCardProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminOverviewCommandCardProps = {
   readonly ariaLabel?: string;
   readonly children?: ReactNode;
@@ -78,6 +83,10 @@ export function AdminOverviewGroup({ children, className, eyebrow, title }: Admi
       {children}
     </section>
   );
+}
+
+export function AdminProfileOverviewCard({ children, className }: AdminProfileOverviewCardProps) {
+  return <AdminCard className={joinClassNames('admin-profile-overview-card', className)}>{children}</AdminCard>;
 }
 
 export function AdminMiniMetricStrip({
