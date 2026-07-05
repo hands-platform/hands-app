@@ -323,6 +323,12 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain(
       '<p className="muted">{row.attachmentUrl ? \'Attachment saved\' : \'No attachment\'}</p>',
     );
+    expect(pageSource).not.toContain('{row.ownerType} / {row.ownerPhone}');
+    expect(pageSource).not.toContain('<strong>{row.approvalId ?? \'Missing approval\'}</strong>');
+    expect(pageSource).not.toContain(
+      "{row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}",
+    );
+    expect(pageSource).not.toContain("<td>{row.reason ?? 'No reason stored'}</td>");
     expect(pageSource).not.toContain('<td>{formatMoney(entry.amount, currency)}</td>');
     expect(pageSource).not.toContain('AdminTableScroll');
     expect(pageSource).not.toContain('className="vuexy-booking-table"');

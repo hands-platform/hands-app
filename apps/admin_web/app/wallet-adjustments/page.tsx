@@ -222,9 +222,12 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               </td>
               <td>
                 <strong>{row.ownerLabel}</strong>
-                <p className="muted">
-                  {row.ownerType} / {row.ownerPhone}
-                </p>
+                <p className="muted">{row.ownerType}</p>
+                {row.ownerPhone ? (
+                  <p className="muted">{row.ownerPhone}</p>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">No owner phone</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
@@ -241,10 +244,16 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 </p>
               </td>
               <td>
-                <strong>{row.approvalId ?? 'Missing approval'}</strong>
-                <p className="muted">
-                  {row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}
-                </p>
+                {row.approvalId ? (
+                  <strong>{row.approvalId}</strong>
+                ) : (
+                  <AdminInlineFallback>Missing approval</AdminInlineFallback>
+                )}
+                {row.approvalAdminId ? (
+                  <p className="muted">Approved by {row.approvalAdminId}</p>
+                ) : (
+                  <AdminInlineFallback className="admin-mt-6">Approving admin not stored</AdminInlineFallback>
+                )}
                 {row.attachmentUrl ? (
                   <p className="muted">Attachment saved</p>
                 ) : (
@@ -255,7 +264,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 <strong>{formatBalanceChange(row)}</strong>
                 <p className="muted">{walletImpactLabel(row)}</p>
               </td>
-              <td>{row.reason ?? 'No reason stored'}</td>
+              <td>{row.reason ? row.reason : <AdminInlineFallback>No reason stored</AdminInlineFallback>}</td>
             </tr>
           ))}
         </FinanceDataTable>
