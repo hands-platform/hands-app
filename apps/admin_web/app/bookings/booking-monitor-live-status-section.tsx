@@ -1,5 +1,5 @@
 import type { BookingMonitorSummaryRow } from './booking-monitor-summary';
-import { AdminKpiCard } from '../../components/admin-surface';
+import { AdminMetricGrid } from '../../components/admin-page-template';
 import {
   bookingMonitorRealtimeLabel,
   type BookingMonitorRealtimeState,
@@ -25,11 +25,13 @@ export function BookingMonitorLiveStatusSection({
 
   return (
     <>
-      <section className="grid">
-        {summary.map(([label, value]) => (
-          <AdminKpiCard helper="Booking monitor summary" key={label} label={label} value={value} />
-        ))}
-      </section>
+      <AdminMetricGrid
+        metrics={summary.map(([label, value]) => ({
+          helper: 'Booking monitor summary',
+          label,
+          value,
+        }))}
+      />
 
       <div className="monitor-meta">
         <span>{isPending ? 'Syncing...' : realtimeLabel}</span>
