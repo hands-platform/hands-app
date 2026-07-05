@@ -24,4 +24,16 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain('function formatNumber(value: number)');
     expect(source).not.toContain('function formatDateTime(value: string)');
   });
+
+  it('uses the shared DateTimeText atom for visible cluster timestamps', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).toContain('<DateTimeText value={latestPoint.occurredAt} />');
+    expect(source).toContain('<DateTimeText value={item.latestPoint.occurredAt} />');
+    expect(source).toContain('<DateTimeText value={point.occurredAt} />');
+    expect(source).not.toContain('{metricLabel(latestPoint.kind)} / {formatDateTime(latestPoint.occurredAt)}');
+    expect(source).not.toContain('Latest {item.latestPoint ? formatDateTime(item.latestPoint.occurredAt) : \'pending\'}');
+    expect(source).not.toContain('{formatDateTime(point.occurredAt)}');
+  });
 });

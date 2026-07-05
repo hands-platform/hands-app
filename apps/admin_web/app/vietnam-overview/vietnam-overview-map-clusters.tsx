@@ -12,6 +12,7 @@ import {
 import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard } from '../../components/admin-surface';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
   formatPendingDateTime as formatDateTime,
@@ -257,7 +258,7 @@ function ClusterDetailPanel({
           <small>Latest signal</small>
           <strong>{latestPoint.label}</strong>
           <span>
-            {metricLabel(latestPoint.kind)} / {formatDateTime(latestPoint.occurredAt)}
+            {metricLabel(latestPoint.kind)} / <DateTimeText value={latestPoint.occurredAt} />
           </span>
           <span>{latestSignalSource.label}</span>
         </div>
@@ -277,7 +278,7 @@ function ClusterDetailPanel({
             </span>
             <strong>{formatNumber(item.count)}</strong>
             <small>
-              Latest {item.latestPoint ? formatDateTime(item.latestPoint.occurredAt) : 'pending'}
+              Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}
             </small>
           </AdminCard>
         ))}
@@ -342,7 +343,7 @@ function ClusterEventRow({ point }: { readonly point: VietnamOverviewMapPoint })
         <span>{point.label}</span>
         <small>
           <Clock3 size={12} aria-hidden="true" />
-          {formatDateTime(point.occurredAt)}
+          <DateTimeText value={point.occurredAt} />
         </small>
         <div className="vietnam-map-cluster-event-meta">
           <span>{sourceCopy.label}</span>
