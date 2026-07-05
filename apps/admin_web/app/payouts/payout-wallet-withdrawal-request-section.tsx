@@ -11,6 +11,7 @@ import {
 import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
+import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import { formatDateTime, shortRecordId } from '../../lib/admin-format';
@@ -117,9 +118,13 @@ export function PayoutWalletWithdrawalRequestSection({
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
               </td>
               <td>
-                <span className="muted">{formatDateTime(request.createdAt)}</span>
+                <span className="muted">
+                  <DateTimeText value={request.createdAt} />
+                </span>
                 {request.reviewedAt ? (
-                  <p className="muted">Reviewed {formatDateTime(request.reviewedAt)}</p>
+                  <p className="muted">
+                    Reviewed <DateTimeText value={request.reviewedAt} />
+                  </p>
                 ) : null}
               </td>
               <td>
@@ -212,7 +217,11 @@ function WithdrawalRequestActions({
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
   if (request.status === 'PAID') {
-    return <span className="muted">Paid {formatDateTime(request.paidAt)}</span>;
+    return (
+      <span className="muted">
+        Paid <DateTimeText fallback="No paid date" value={request.paidAt} />
+      </span>
+    );
   }
   if (
     request.status === 'REJECTED' ||

@@ -9,6 +9,7 @@ import {
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminTablePanel } from './admin-table-panel';
+import { DateTimeText } from './date-time-text';
 import { StatusBadge } from './status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -255,7 +256,7 @@ function reviewRequestCell(review: AdminReview) {
       </div>
       <div className="muted">{reviewRequestTimeLabel(review)}</div>
       <div className="muted vuexy-review-submitted-line">
-        Review submitted {formatDateTime(review.createdAt, 'No reviewed date')}
+        Review submitted <DateTimeText fallback="No reviewed date" value={review.createdAt} />
       </div>
     </>
   );
@@ -277,7 +278,7 @@ function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
       </div>
       <div className="muted">{partnerEvaluationRequestTimeLabel(review)}</div>
       <div className="muted vuexy-review-submitted-line">
-        Evaluation submitted {formatDateTime(review.createdAt, 'No logged date')}
+        Evaluation submitted <DateTimeText fallback="No logged date" value={review.createdAt} />
       </div>
     </>
   );

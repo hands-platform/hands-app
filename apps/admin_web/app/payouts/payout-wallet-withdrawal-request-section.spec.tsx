@@ -281,6 +281,13 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<strong>{formatMoney(request.amount, request.currency)}</strong>');
     expect(sectionSource).not.toContain('formatMoney(statusChange.evidenceAmount');
   });
+
+  it('uses the shared DateTimeText atom for visible withdrawal timestamps', () => {
+    expect(sectionSource).toContain('DateTimeText');
+    expect(sectionSource).not.toContain('<span className="muted">{formatDateTime(request.createdAt)}</span>');
+    expect(sectionSource).not.toContain('<p className="muted">Reviewed {formatDateTime(request.reviewedAt)}</p>');
+    expect(sectionSource).not.toContain('<span className="muted">Paid {formatDateTime(request.paidAt)}</span>');
+  });
 });
 
 function textContent(value: unknown): string {

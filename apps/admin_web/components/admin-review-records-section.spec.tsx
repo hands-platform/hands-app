@@ -269,4 +269,12 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).not.toContain('<AdminTableFooter');
     expect(source).not.toContain('Showing {visibleFrom} to {visibleTo} of {totalRows} entries');
   });
+
+  it('uses the shared DateTimeText atom for visible review timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'components/admin-review-records-section.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain("Review submitted {formatDateTime(review.createdAt, 'No reviewed date')}");
+    expect(source).not.toContain("Evaluation submitted {formatDateTime(review.createdAt, 'No logged date')}");
+  });
 });
