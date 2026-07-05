@@ -18,8 +18,10 @@ describe('audit log page content', () => {
   });
 
   it('uses the shared table pagination footer for audit records', () => {
+    expect(source).toContain('AdminTableSection');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).toContain('ariaLabel="Audit log pagination"');
+    expect(source).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('import { AdminRoundedPagination }');
     expect(source).not.toContain('<AdminRoundedPagination');
   });

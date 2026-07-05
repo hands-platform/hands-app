@@ -4,6 +4,7 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -185,9 +186,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           </AdminFormGrid>
         </AdminSection>
 
-        <AdminSection
+        <AdminTableSection
           bodyClassName="admin-table-section-body"
-          className="vuexy-booking-table-card vuexy-booking-table-group"
           status={
             <div className="participant-list">
               <StatusBadge tone="success">Newest first</StatusBadge>
@@ -215,7 +215,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
             totalPages={totalPages}
             totalRows={totalEvents}
           />
-        </AdminSection>
+        </AdminTableSection>
       </div>
     </AdminPageTemplate>
   );
