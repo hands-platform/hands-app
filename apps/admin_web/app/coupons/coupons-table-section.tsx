@@ -12,6 +12,7 @@ import {
   AdminFormCheckbox,
   AdminFormControlButton,
   AdminFormDateTime,
+  AdminFormShell,
   AdminFormInput,
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
@@ -158,7 +159,7 @@ function CouponManagementCard({
 
       <AdminDisclosure className="coupon-section-disclosure">
         <summary>Edit coupon</summary>
-        <form action={updateAction} className="coupon-edit-form">
+        <AdminFormShell action={updateAction} className="coupon-edit-form">
           <input name="couponId" type="hidden" value={row.id} />
           <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
           <AdminFormDateTime
@@ -185,7 +186,7 @@ function CouponManagementCard({
           <AdminFormControlButton className="button-primary" type="submit">
             Save
           </AdminFormControlButton>
-        </form>
+        </AdminFormShell>
       </AdminDisclosure>
 
       <AdminDisclosure className="coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>

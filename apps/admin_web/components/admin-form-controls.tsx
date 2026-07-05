@@ -139,6 +139,11 @@ type AdminFormGridProps = {
   readonly className?: string;
 } & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
 
+type AdminFormShellProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<FormHTMLAttributes<HTMLFormElement>, 'children' | 'className'>;
+
 type AdminFormGridFieldsProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -153,6 +158,14 @@ type AdminDrawerFormGridFieldsProps = {
   readonly children: ReactNode;
   readonly className?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
+export function AdminFormShell({ children, className, ...formProps }: AdminFormShellProps) {
+  return (
+    <form {...formProps} className={joinClassNames(className)}>
+      {children}
+    </form>
+  );
+}
 
 export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
   return (
