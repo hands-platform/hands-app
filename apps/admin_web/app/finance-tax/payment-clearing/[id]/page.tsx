@@ -262,25 +262,33 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                       {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
                     </Link>
                   ) : (
-                    <span className="muted">-</span>
+                    <AdminInlineFallback>No bank transaction</AdminInlineFallback>
                   )}
-                  <div className="muted">{match.bankTransaction?.type ?? '-'}</div>
+                  {match.bankTransaction?.type ? (
+                    <div className="muted">{match.bankTransaction.type}</div>
+                  ) : (
+                    <AdminInlineFallback className="admin-mt-6">No bank type</AdminInlineFallback>
+                  )}
                 </td>
                 <td>
                   {match.accountingJournalEntry ? (
-                    <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
-                      {match.accountingJournalEntry.accountCode}
-                    </Link>
+                    <>
+                      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+                        {match.accountingJournalEntry.accountCode}
+                      </Link>
+                      <div className="muted">{match.accountingJournalEntry.accountName}</div>
+                    </>
                   ) : (
-                    <span className="muted">-</span>
+                    <AdminInlineFallback>No journal entry</AdminInlineFallback>
                   )}
-                  <div>
-                    <AdminInlineFallback>
-                      {match.accountingJournalEntry?.accountName ?? 'No journal link'}
-                    </AdminInlineFallback>
-                  </div>
                 </td>
-                <td>{match.bankTransaction?.counterpartyName ?? '-'}</td>
+                <td>
+                  {match.bankTransaction?.counterpartyName ? (
+                    match.bankTransaction.counterpartyName
+                  ) : (
+                    <AdminInlineFallback>No counterparty</AdminInlineFallback>
+                  )}
+                </td>
                 <td>
                   <strong>
                     <MoneyText amount={match.amount} currency={match.currency} />

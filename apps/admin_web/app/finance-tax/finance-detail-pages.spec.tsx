@@ -1083,7 +1083,10 @@ describe('finance detail pages', () => {
 
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain('<span className="muted">No payment record</span>');
+    expect(source).not.toContain('<span className="muted">-</span>');
+    expect(source).not.toContain("<div className=\"muted\">{match.bankTransaction?.type ?? '-'}</div>");
     expect(source).not.toContain("<div className=\"muted\">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>");
+    expect(source).not.toContain("<td>{match.bankTransaction?.counterpartyName ?? '-'}</td>");
   });
 
   it('uses shared inline fallback atoms for bank reconciliation detail missing match cells', () => {
