@@ -17,7 +17,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -1729,7 +1729,7 @@ function payoutChecklist(batch: AdminPayoutBatch) {
       label: batch.paidAt ? 'Paid date' : batch.status === 'PAID' ? 'No paid date' : 'Date later',
       ok: paidDateReady,
       detail: batch.paidAt
-        ? `Paid at ${formatDateTime(batch.paidAt)}.`
+        ? 'Paid timestamp is present.'
         : batch.status === 'PAID'
           ? 'Paid batches need a paid timestamp.'
           : 'Paid timestamp is expected only after settlement.',

@@ -241,6 +241,7 @@ describe('PayoutBatchTable', () => {
     expect(source).not.toContain('readonly paidAtLabel: string;');
     expect(source).not.toContain('<div>{row.paidAtLabel}</div>');
     expect(pageSource).not.toContain("paidAtLabel: formatDateTime(batch.paidAt, '-')");
+    expect(pageSource).not.toContain("`Paid at ${formatDateTime(batch.paidAt)}.`");
   });
 
   it('allows action execution reasons to render shared money atoms', () => {
