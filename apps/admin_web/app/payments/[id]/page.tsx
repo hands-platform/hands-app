@@ -3,11 +3,11 @@ import { notFound } from 'next/navigation';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
@@ -175,8 +175,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
 
       <AdminDetailGrid className="admin-mb-16">
-        <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        <AdminTablePanel
           description="Booking, customer, partner, address, service, and chat evidence attached to this payment."
           id="booking-evidence"
           resultLabel={booking ? 'Linked booking' : 'No booking'}
@@ -191,10 +190,9 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <EvidenceRow label="Service" value={serviceLabel} helper={bookingServicePriceLabel(payment)} />
             <EvidenceRow label="Chat" value={booking?.chatRoom ? `${messages.length} message(s)` : 'No room'} helper="Admin keeps chat evidence after service completion." />
           </div>
-        </AdminFilterPanel>
+        </AdminTablePanel>
 
-        <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        <AdminTablePanel
           description="Money movement facts for gross, HANDS fee, withholding, partner net, earning state, and refund rows."
           id="money-ledger"
           resultLabel={money(payment.amount, payment.currency)}
@@ -209,11 +207,10 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
-        </AdminFilterPanel>
+        </AdminTablePanel>
       </AdminDetailGrid>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         description="Matched bookings should have chat evidence. Operators use this before cancellation, no-show, refund, or payout decisions."
         id="chat-payment-evidence"
         resultLabel={messages.length ? 'Chat retained' : 'No chat messages'}
@@ -236,10 +233,9 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             </div>
           ) : null}
         </div>
-      </AdminFilterPanel>
+      </AdminTablePanel>
 
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         description="Admin actions tied to this payment or linked booking."
         id="payment-audit-log"
         resultLabel={`${auditRows.length} event(s)`}
@@ -256,7 +252,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <AuditRow row={row} key={row.id} />
           ))}
         </AdminDataTable>
-      </AdminFilterPanel>
+      </AdminTablePanel>
     </AdminPageTemplate>
   );
 }

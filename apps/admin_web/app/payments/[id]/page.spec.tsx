@@ -54,6 +54,15 @@ describe('PaymentDetailPage', () => {
     expect(markup).not.toContain('class="table"><thead><tr><th>Time</th>');
   });
 
+  it('uses the shared Vuexy table panel wrapper for payment evidence sections', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
+    );
+  });
+
   it('uses shared badge atoms for payment detail evidence labels', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
 
