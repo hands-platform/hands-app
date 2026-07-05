@@ -4,6 +4,7 @@ import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
@@ -32,7 +33,7 @@ export type PaymentOperationsTableRow = {
   readonly opsHint: string;
   readonly opsSignal: ReactNode;
   readonly providerRef: string;
-  readonly recordDateLabel: string;
+  readonly recordDate: string | null;
   readonly refundHref: string | null;
   readonly stateLabel: string;
   readonly status: string;
@@ -80,7 +81,9 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
               <td>
                 {row.bookingIdLabel}
                 <div className="muted">{row.bookingStatus}</div>
-                <div className="muted">{row.recordDateLabel}</div>
+                <div className="muted">
+                  Record date <DateTimeText fallback="No payment record date" value={row.recordDate} />
+                </div>
                 <div className="muted">{row.customerPhone}</div>
                 {row.cashDebtLabel ? <div className="muted">{row.cashDebtLabel}</div> : null}
                 <div className="actions admin-mt-8">

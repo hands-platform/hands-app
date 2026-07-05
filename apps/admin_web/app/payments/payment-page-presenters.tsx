@@ -15,7 +15,7 @@ import {
   paymentCallbackNeedsReview,
   paymentCashDebtNeedsSettlement,
   paymentOpsHint,
-  paymentRecordDateLabel,
+  paymentRecordDate,
   paymentStateLabel,
   paymentStatusIsTerminal,
 } from './payment-page-rules';
@@ -48,7 +48,7 @@ export function buildPaymentOperationsTableRows(payments: readonly AdminPayment[
       opsHint: paymentOpsHint(payment),
       opsSignal: paymentOpsSignal(payment),
       providerRef: payment.providerRef ?? 'NONE',
-      recordDateLabel: paymentRecordDateLabel(payment),
+      recordDate: paymentRecordDate(payment),
       refundHref: firstRefundId ? `/refunds#refund-${firstRefundId}` : null,
       stateLabel: paymentStateLabel(payment),
       status: payment.status,

@@ -17,6 +17,19 @@ describe('PaymentOperationsTableSection', () => {
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
+  it('uses the shared date time atom for payment record dates', () => {
+    const source = readFileSync('app/payments/payment-operations-table-section.tsx', 'utf8');
+    const presenterSource = readFileSync('app/payments/payment-page-presenters.tsx', 'utf8');
+    const rulesSource = readFileSync('app/payments/payment-page-rules.ts', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly recordDateLabel: string;');
+    expect(source).not.toContain('<div className="muted">{row.recordDateLabel}</div>');
+    expect(presenterSource).toContain('paymentRecordDate(payment)');
+    expect(presenterSource).not.toContain('recordDateLabel: paymentRecordDateLabel(payment)');
+    expect(rulesSource).not.toContain('paymentRecordDateLabel');
+  });
+
   it('renders payment rows with operation evidence and action links', () => {
     const section = PaymentOperationsTableSection({
       emptyMessage: 'No payments loaded.',
@@ -124,7 +137,7 @@ function buildRow(): PaymentOperationsTableRow {
     opsHint: 'Keep this on hold until the partner completes the service, then capture or refund.',
     opsSignal: <span>Capture after service</span>,
     providerRef: 'provider-ref-1',
-    recordDateLabel: 'Record date 2026-06-09 10:00',
+    recordDate: '2026-06-09T03:00:00.000Z',
     refundHref: '/refunds#refund-1',
     stateLabel: 'Hold placed, waiting for service completion.',
     status: 'AUTHORIZED',

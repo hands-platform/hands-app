@@ -1,5 +1,5 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
-import { formatDateTime, formatMoney as money } from '../../lib/admin-format';
+import { formatMoney as money } from '../../lib/admin-format';
 
 type PaymentCashDebtCandidate = {
   readonly method: string;
@@ -23,11 +23,6 @@ export type PaymentCallbackMeta = {
 
 export function paymentRecordDate(payment: AdminPayment): string | null {
   return payment.booking?.createdAt ?? null;
-}
-
-export function paymentRecordDateLabel(payment: AdminPayment): string {
-  const value = paymentRecordDate(payment);
-  return value ? `Record date ${formatDateTime(value)}` : 'No payment record date';
 }
 
 export function paymentStatusIsTerminal(status: string): boolean {
