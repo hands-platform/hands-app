@@ -45,7 +45,6 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
-  formatCurrencyAmount as formatCurrency,
   formatPercentLabel as formatPercent,
   formatWholeNumber as formatNumber,
 } from '../../lib/admin-format';
@@ -241,14 +240,14 @@ export default async function MarketingAnalyticsPage({
     },
     {
       label: 'Ad spend',
-      value: formatCurrency(overview.totals.adSpend),
+      value: <MoneyText amount={overview.totals.adSpend} />,
       detail: 'Manual daily spend rows',
       icon: BadgeDollarSign,
       tone: 'warning',
     },
     {
       label: 'CPA completed booking',
-      value: formatNullableCurrency(overview.totals.conversionRates.cpaBookingCompleted),
+      value: <MoneyText amount={overview.totals.conversionRates.cpaBookingCompleted} fallback="n/a" />,
       detail: 'Ad spend / completed bookings',
       icon: Target,
       tone: 'info',
@@ -262,8 +261,8 @@ export default async function MarketingAnalyticsPage({
     },
     {
       label: 'Platform fee revenue',
-      value: formatCurrency(overview.totals.platformFeeRevenue),
-      detail: `Gross ${formatCurrency(overview.totals.grossBookingValue)}`,
+      value: <MoneyText amount={overview.totals.platformFeeRevenue} />,
+      detail: <>Gross <MoneyText amount={overview.totals.grossBookingValue} /></>,
       icon: CircleDollarSign,
       tone: 'primary',
     },
@@ -776,10 +775,6 @@ function platformLabel(platform: AdminMarketingDimensionRow['platform']) {
 
 function formatDecimal(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
-}
-
-function formatNullableCurrency(value: number | null) {
-  return value === null ? 'n/a' : formatCurrency(value);
 }
 
 function formatNullableMultiplier(value: number | null) {

@@ -143,11 +143,21 @@ describe('MarketingAnalyticsPage', () => {
 
   it('uses the shared money atom for visible breakdown table amounts', () => {
     expect(pageSource).toContain('MoneyText');
+    expect(pageSource).toContain('value: <MoneyText amount={overview.totals.adSpend} />');
+    expect(pageSource).toContain(
+      'value: <MoneyText amount={overview.totals.conversionRates.cpaBookingCompleted} fallback="n/a" />',
+    );
+    expect(pageSource).toContain('value: <MoneyText amount={overview.totals.platformFeeRevenue} />');
+    expect(pageSource).toContain('Gross <MoneyText amount={overview.totals.grossBookingValue} />');
     expect(pageSource).toContain('<MoneyText amount={row.adSpend} />');
     expect(pageSource).toContain(
       '<MoneyText amount={row.conversionRates.cpaBookingCompleted} fallback="n/a" />',
     );
     expect(pageSource).toContain('<MoneyText amount={row.platformFeeRevenue} />');
+    expect(pageSource).not.toContain('value: formatCurrency(overview.totals.adSpend)');
+    expect(pageSource).not.toContain('value: formatNullableCurrency(overview.totals.conversionRates.cpaBookingCompleted)');
+    expect(pageSource).not.toContain('value: formatCurrency(overview.totals.platformFeeRevenue)');
+    expect(pageSource).not.toContain('detail: `Gross ${formatCurrency(overview.totals.grossBookingValue)}`');
     expect(pageSource).not.toContain('<td>{formatCurrency(row.adSpend)}</td>');
     expect(pageSource).not.toContain('<td>{formatNullableCurrency(row.conversionRates.cpaBookingCompleted)}</td>');
     expect(pageSource).not.toContain('<td>{formatCurrency(row.platformFeeRevenue)}</td>');
