@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '..
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import {
   AdminSignal,
   StatusBadge,
@@ -92,9 +93,9 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                 <div className="muted">{row.providerPhone}</div>
               </td>
               <td>
-                <a className="text-link" href={row.bookingHref}>
+                <AdminTextLink href={row.bookingHref}>
                   {row.bookingShortId}
-                </a>
+                </AdminTextLink>
                 <div className="muted">{row.createdAtLabel}</div>
                 <div className="muted">Payment {row.bookingPaymentMethod}</div>
                 {row.settlementRef ? <div className="muted">Settlement ref {row.settlementRef}</div> : null}

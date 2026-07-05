@@ -1,9 +1,8 @@
-import Link from 'next/link';
-
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsPartnerPayoutQueueGroup = {
@@ -61,9 +60,9 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                 <p className="muted">{group.activeBatchSummary ?? group.nextAction}</p>
               </div>
               <div className="actions">
-                <Link className="text-link" href={group.providerHref}>
+                <AdminTextLink href={group.providerHref}>
                   Partner
-                </Link>
+                </AdminTextLink>
                 {group.canBatch ? (
                   <AdminFormShell action="/earnings">
                     <input type="hidden" name="confirm" value="create-payout" />

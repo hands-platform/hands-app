@@ -180,6 +180,12 @@ describe('EarningsPage', () => {
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 
+  it('uses the shared Vuexy text link atom for closeout navigation', () => {
+    expect(pageSource).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(pageSource).toContain('<AdminTextLink');
+    expect(pageSource).not.toContain('className="text-link"');
+  });
+
   it('uses shared money atoms for summary KPI amounts', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).not.toContain('value: formatMoney(summary.grossAmount, summary.currency)');

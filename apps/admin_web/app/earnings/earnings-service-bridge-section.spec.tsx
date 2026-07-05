@@ -7,8 +7,10 @@ describe('EarningsServiceBridgeSection', () => {
     const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain(
       "<span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>",
     );

@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -35,9 +34,9 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
       title="Money flow command center"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/bookings">
+        <AdminTextLink href="/bookings">
           Trace bookings
-        </Link>
+        </AdminTextLink>
       </div>
       <div className="service-trace-summary">
         {cards.map((card) => (

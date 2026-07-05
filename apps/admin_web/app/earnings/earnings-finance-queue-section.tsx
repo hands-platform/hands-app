@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type EarningsFinanceSignal = {
@@ -26,9 +25,9 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
       title="Finance queue"
     >
       <div className="participant-list admin-mb-12">
-        <Link className="text-link" href="/payouts">
+        <AdminTextLink href="/payouts">
           Open payout batches
-        </Link>
+        </AdminTextLink>
       </div>
       <div className="ops-task-grid">
         {signals.map((signal) => (

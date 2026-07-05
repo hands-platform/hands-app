@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 
 export type EarningsCashDebtTotals = {
@@ -65,9 +65,9 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                 <strong>{item.providerName}</strong>
                 <p className="muted">
                   Owes <MoneyText amount={item.debtAmount} currency={item.currency} /> from booking{' '}
-                  <Link className="text-link" href={item.bookingHref}>
+                  <AdminTextLink href={item.bookingHref}>
                     {item.bookingShortId}
-                  </Link>
+                  </AdminTextLink>
                   {' / '}payment {item.paymentMethod}
                 </p>
                 <p className="muted">
@@ -99,9 +99,9 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                 </p>
               </div>
               <div className="actions">
-                <Link className="text-link" href={item.partnerHref}>
+                <AdminTextLink href={item.partnerHref}>
                   Partner
-                </Link>
+                </AdminTextLink>
                 <AdminFormShell action="/earnings">
                   <input type="hidden" name="confirm" value="mark-paid" />
                   <input type="hidden" name="earningId" value={item.earningId} />

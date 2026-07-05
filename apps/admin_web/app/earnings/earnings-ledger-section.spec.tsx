@@ -17,6 +17,7 @@ describe('EarningsLedgerSection', () => {
     const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
 
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('statusBadgeToneFromPillClass');
@@ -25,6 +26,7 @@ describe('EarningsLedgerSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.cancellationDecisionTone}`}>');
     expect(source).not.toContain('<span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>');
     expect(source).not.toContain('<a className="pill pill-info" href={row.payoutBatchHref}>');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className="pill pill-warn">Not batched</span>');
   });
 

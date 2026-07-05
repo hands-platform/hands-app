@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink } from '../../components/status-badge';
@@ -170,9 +170,9 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         title="Earnings date range"
       >
         <div className="participant-list admin-mb-12">
-          <Link className="text-link" href="/finance-closeout">
+          <AdminTextLink href="/finance-closeout">
             Open finance closeout
-          </Link>
+          </AdminTextLink>
         </div>
         <AdminFilterChipGroup ariaLabel="Earnings date range" className="admin-mt-12">
           {[

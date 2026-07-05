@@ -8,8 +8,10 @@ describe('EarningsPartnerPayoutQueueSection', () => {
 
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminInlineFallback');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<span className="muted">No batch action</span>');
   });
