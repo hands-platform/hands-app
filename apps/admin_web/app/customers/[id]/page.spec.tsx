@@ -158,6 +158,16 @@ describe('CustomerDetailPage', () => {
       '} / ${formatMoney(Number(paymentIssueBooking.payment?.amount ?? 0))}`',
     );
   });
+
+  it('uses shared atoms for customer action panel refund and stale session facts', () => {
+    expect(customerDetailSource).toContain('joinCustomerActivityFacts(activityFacts)');
+    expect(customerDetailSource).toContain('<MoneyText amount={wallet.refundAmount} />');
+    expect(customerDetailSource).toContain('Last seen <DateTimeText value={latestSession.lastSeenAt} />');
+    expect(customerDetailSource).not.toContain(
+      'wallet.refundAmount > 0 ? `${formatMoney(wallet.refundAmount)} refund record(s)`',
+    );
+    expect(customerDetailSource).not.toContain('`Last seen ${formatDate(latestSession.lastSeenAt)} on ${');
+  });
 });
 
 function customerDetail(): AdminCustomerDetail {

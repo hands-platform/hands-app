@@ -1510,10 +1510,14 @@ function buildCustomerOperatorCommandQueue({
       label: 'App session',
       title: latestSession ? 'Customer app session is older than 7 days' : 'No customer app session recorded',
       detail: latestSession
-        ? `Last seen ${formatDate(latestSession.lastSeenAt)} on ${
-            latestSession.platform ?? 'unknown platform'
-          }.`
+        ? 'Customer app session is older than 7 days.'
         : 'No mobile session row is loaded for this customer.',
+      detailNode: latestSession ? (
+        <>
+          Last seen <DateTimeText value={latestSession.lastSeenAt} /> on{' '}
+          {latestSession.platform ?? 'unknown platform'}.
+        </>
+      ) : undefined,
       owner: 'Customer desk',
       tone: 'info',
       action: {
@@ -1701,17 +1705,21 @@ function buildCustomerActivityPlan(
     bookingStats.active > 0 ? `${bookingStats.active} active booking(s)` : null,
     bookingStats.completed > 0 ? `${bookingStats.completed} completed work record(s)` : null,
     paymentIssueCount > 0 ? `${paymentIssueCount} payment status row(s)` : null,
-    wallet.refundAmount > 0 ? `${formatMoney(wallet.refundAmount)} refund record(s)` : null,
+    wallet.refundAmount > 0 ? (
+      <>
+        <MoneyText amount={wallet.refundAmount} /> refund record(s)
+      </>
+    ) : null,
     chatArchiveCount > 0 ? `${chatArchiveCount} archived chat room(s)` : null,
     missingAddress ? 'No saved address' : null,
-  ].filter(Boolean) as string[];
+  ].filter(Boolean) as ReactNode[];
   const tone: 'success' | 'info' = latestBooking ? 'info' : 'success';
   const primaryHref = latestBooking?.id ? `/bookings/${latestBooking.id}` : '/customers';
   const primaryAction = latestBooking?.id ? 'Open latest booking' : 'Back to customers';
   return {
     tone,
     status: latestBooking ? 'Activity recorded' : 'No bookings yet',
-    headline: activityFacts.length > 0 ? activityFacts.join(' / ') : 'No customer booking activity yet.',
+    headline: activityFacts.length > 0 ? joinCustomerActivityFacts(activityFacts) : 'No customer booking activity yet.',
     detail:
       activityFacts.length > 0
         ? 'Use this panel to leave factual notes for the next operator.'
@@ -1739,6 +1747,10 @@ function buildCustomerActivityPlan(
       'Customer asked to update saved address.',
     ],
   };
+}
+
+function joinCustomerActivityFacts(activityFacts: ReactNode[]): ReactNode {
+  return activityFacts.flatMap((fact, index) => (index === 0 ? [fact] : [' / ', fact]));
 }
 
 function buildAddressRows(customer: AdminCustomerDetail) {
