@@ -100,9 +100,9 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Available soon · Low rating reviews');
     expect(markup).toContain('Smoke Partner');
     expect(markup).toContain('+84900001111 · Ho Chi Minh City');
-    expect(markup).toContain('Online available · Last activity Jun 27, 03:39 AM');
+    expect(markup).toContain('Online available · Last activity 27 Jun 2026, 03:39');
     expect(markup).toContain(
-      'aria-label="Smoke Partner, +84900001111, Ho Chi Minh City, Online available, last activity Jun 27, 03:39 AM, Verification incomplete, Finish KYC approval"',
+      'aria-label="Smoke Partner, +84900001111, Ho Chi Minh City, Online available, last activity 27 Jun 2026, 03:39, Verification incomplete, Finish KYC approval"',
     );
     expect(markup).toContain('Finish KYC approval');
     expect(markup).toContain('Partner operating status');
@@ -142,13 +142,15 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('550.000 VND');
     expect(markup).toContain('3m');
     expect(markup).toContain('Available soon');
-    expect(markup).toContain('Jun 27, 01:30 PM');
+    expect(markup).toContain('27 Jun 2026, 13:30');
     expect(markup).toContain('No approved profile image');
     expect(markup).toContain('High partner price');
     expect(markup).toContain('Review profile pricing and photos');
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain("import { formatDateTime } from '../../../lib/admin-format';");
+    expect(pageSource).not.toContain('function formatDateTime(value?: string | null)');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Vietnam supply</span>');
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');

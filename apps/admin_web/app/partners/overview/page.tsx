@@ -34,6 +34,7 @@ import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admi
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { formatDateTime } from '../../../lib/admin-format';
 import {
   AdminPartnerOverview,
   AdminPartnerOverviewActionList,
@@ -986,18 +987,6 @@ function PartnerOverviewPriceRange({
       <MoneyText amount={maxValue} />
     </>
   );
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return 'not yet';
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return 'not yet';
-  return new Intl.DateTimeFormat('en-US', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 function formatPartnerStatus(status: string) {
