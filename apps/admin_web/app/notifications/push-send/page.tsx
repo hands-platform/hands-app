@@ -10,6 +10,7 @@ import {
   AdminTableScroll,
 } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -306,8 +307,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         ) : null}
       </AdminFilterPanel>
 
-      <AdminFilterPanel
-        className="vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTablePanel
         resultLabel={`${campaigns.length} loaded of ${totalCampaigns} total`}
         title={`Recent push campaigns / ${campaignRangeLabel}`}
       >
@@ -375,7 +375,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
           totalPages={campaignTotalPages}
           totalRows={totalCampaigns}
         />
-      </AdminFilterPanel>
+      </AdminTablePanel>
     </AdminPageTemplate>
   );
 }

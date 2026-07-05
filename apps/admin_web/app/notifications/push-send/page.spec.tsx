@@ -35,7 +35,7 @@ describe('PushSendPage', () => {
 
     expect(markup).toContain('Recent push campaigns / Today');
     expect(markup).toContain(
-      'card admin-filter-panel vuexy-booking-table-card vuexy-booking-table-group',
+      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group',
     );
     expect(markup).toContain('No manual push campaigns yet.');
   });
@@ -77,9 +77,11 @@ describe('PushSendPage', () => {
   });
 
   it('uses the shared table pagination footer for recent campaigns', () => {
+    expect(pageSource).toContain('AdminTablePanel');
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('ariaLabel="Push campaign pagination"');
     expect(pageSource).toContain('pageLinkClassName="vuexy-booking-page-link"');
+    expect(pageSource).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
     expect(pageSource).not.toContain('className="admin-table-pagination-footer"');
     expect(pageSource).not.toContain('pageLinkClassName="vuexy-booking-pagination-link"');
   });
