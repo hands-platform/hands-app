@@ -104,6 +104,13 @@ describe('PaymentDetailPage', () => {
     expect(source).toContain('AdminDetailGrid');
     expect(source).not.toContain('<section className="grid admin-mb-16">');
   });
+
+  it('uses the shared inline fallback atom for missing callback payloads', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<span className="muted">No payload saved.</span>');
+  });
 });
 
 function paymentDetail(): AdminPaymentDetail {

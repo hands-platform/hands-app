@@ -5,6 +5,7 @@ import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
@@ -454,7 +455,7 @@ function buildPaymentDetailCallbackTimelineRows(
 function PayloadDetails({ value }: { value: unknown }) {
   const record = readPlainRecord(value);
   if (!record) {
-    return <span className="muted">No payload saved.</span>;
+    return <AdminInlineFallback>No payload saved.</AdminInlineFallback>;
   }
   const keys = Object.keys(record).sort();
   return (
