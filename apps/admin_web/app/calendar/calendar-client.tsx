@@ -17,6 +17,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormCheckbox, AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminAsideCard, AdminCard, AdminKpiCard } from '../../components/admin-surface';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
@@ -43,6 +44,16 @@ type CalendarClientProps = {
   readonly currentOperator: CalendarOperator;
   readonly initialEvents: readonly CalendarEventRecord[];
 };
+
+const calendarViewOptions: ReadonlyArray<{
+  readonly label: string;
+  readonly value: CalendarViewName;
+}> = [
+  { label: 'Month', value: 'dayGridMonth' },
+  { label: 'Week', value: 'timeGridWeek' },
+  { label: 'Day', value: 'timeGridDay' },
+  { label: 'List', value: 'listMonth' },
+];
 
 export function CalendarClient({ currentOperator, initialEvents }: CalendarClientProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -339,25 +350,20 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
               <h2>{formatMonthLabel(currentDate)}</h2>
             </div>
             <div className="calendar-toolbar-actions">
-              <div className="calendar-segmented-control" role="tablist" aria-label="Calendar views">
-                {[
-                  ['dayGridMonth', 'Month'],
-                  ['timeGridWeek', 'Week'],
-                  ['timeGridDay', 'Day'],
-                  ['listMonth', 'List'],
-                ].map(([view, label]) => (
-                  <button
-                    aria-selected={currentView === view}
-                    className={currentView === view ? 'is-active' : undefined}
-                    key={view}
-                    onClick={() => changeView(view as CalendarViewName)}
-                    role="tab"
-                    type="button"
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <AdminSegmentedControl
+                activeValue={currentView}
+                ariaLabel="Calendar views"
+                className="calendar-segmented-control"
+                options={calendarViewOptions.map((option) => ({
+                  href: `#calendar-view-${option.value}`,
+                  label: option.label,
+                  onClick: (event) => {
+                    event.preventDefault();
+                    changeView(option.value);
+                  },
+                  value: option.value,
+                }))}
+              />
               <div className="calendar-nav-buttons">
                 <button
                   aria-label="Previous calendar period"

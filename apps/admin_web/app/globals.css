@@ -1782,7 +1782,7 @@ a {
   white-space: nowrap;
 }
 
-.calendar-segmented-control button,
+.calendar-segmented-control .booking-date-filter-button,
 .calendar-icon-button {
   align-items: center;
   background: transparent;
@@ -1804,7 +1804,7 @@ a {
     border-color var(--admin-transition);
 }
 
-.calendar-segmented-control button {
+.calendar-segmented-control .booking-date-filter-button {
   background: transparent;
   border-radius: var(--admin-radius);
   color: var(--admin-text);
@@ -1812,25 +1812,25 @@ a {
   padding: 0 22px;
 }
 
-.calendar-segmented-control button:first-child {
+.calendar-segmented-control .booking-date-filter-button:first-child {
   border-bottom-left-radius: var(--admin-radius);
   border-top-left-radius: var(--admin-radius);
 }
 
-.calendar-segmented-control button:last-child {
+.calendar-segmented-control .booking-date-filter-button:last-child {
   border-bottom-right-radius: var(--admin-radius);
   border-top-right-radius: var(--admin-radius);
 }
 
-.calendar-segmented-control button.is-active {
+.calendar-segmented-control .booking-date-filter-button.is-active {
   background: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
   color: var(--admin-inverse-text);
 }
 
-.calendar-segmented-control button:not(.is-active):hover,
-.calendar-segmented-control button:not(.is-active):focus,
-.calendar-segmented-control button:not(.is-active):active {
+.calendar-segmented-control .booking-date-filter-button:not(.is-active):hover,
+.calendar-segmented-control .booking-date-filter-button:not(.is-active):focus,
+.calendar-segmented-control .booking-date-filter-button:not(.is-active):active {
   background: var(--admin-primary-soft);
   box-shadow: none;
   color: var(--admin-accent-strong);

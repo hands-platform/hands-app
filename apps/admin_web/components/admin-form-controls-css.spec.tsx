@@ -55,9 +55,9 @@ describe('Admin form control CSS', () => {
   it('keeps calendar view tabs on the Vuexy pill TabList active treatment', () => {
     const segmentedIndex = globalsCss.indexOf('.calendar-segmented-control {');
     const segmentedBlock = cssRuleBlockAt(segmentedIndex);
-    const tabIndex = globalsCss.indexOf('.calendar-segmented-control button {');
+    const tabIndex = globalsCss.indexOf('.calendar-segmented-control .booking-date-filter-button {');
     const tabBlock = cssRuleBlockAt(tabIndex);
-    const activeIndex = globalsCss.indexOf('.calendar-segmented-control button.is-active {');
+    const activeIndex = globalsCss.indexOf('.calendar-segmented-control .booking-date-filter-button.is-active {');
     const activeBlock = cssRuleBlockAt(activeIndex);
 
     expect(segmentedBlock).toContain('gap: 8px');
@@ -80,8 +80,10 @@ describe('Admin form control CSS', () => {
   });
 
   it('limits calendar view tab hover treatment to inactive tabs', () => {
-    const inactiveHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:not(.is-active):hover,');
-    const legacyHoverIndex = globalsCss.indexOf('.calendar-segmented-control button:hover,');
+    const inactiveHoverIndex = globalsCss.indexOf(
+      '.calendar-segmented-control .booking-date-filter-button:not(.is-active):hover,',
+    );
+    const legacyHoverIndex = globalsCss.indexOf('.calendar-segmented-control .booking-date-filter-button:hover,');
 
     expect(inactiveHoverIndex).toBeGreaterThan(-1);
     expect(legacyHoverIndex).toBe(-1);
