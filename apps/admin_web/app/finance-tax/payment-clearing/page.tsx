@@ -179,10 +179,16 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
                   {shortId(entry.bookingId)}
                 </Link>
-                <div className="muted">{entry.booking?.status ?? 'Unknown booking'}</div>
+                <div>
+                  <AdminInlineFallback>{entry.booking?.status ?? 'Unknown booking'}</AdminInlineFallback>
+                </div>
               </td>
               <td>
-                <strong>{entry.payment?.method ?? '-'}</strong>
+                {entry.payment?.method ? (
+                  <strong>{entry.payment.method}</strong>
+                ) : (
+                  <AdminInlineFallback>No payment method</AdminInlineFallback>
+                )}
                 <div>
                   <AdminInlineFallback>{entry.payment?.status ?? 'No payment row'}</AdminInlineFallback>
                 </div>

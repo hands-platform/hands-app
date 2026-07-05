@@ -371,6 +371,14 @@ describe('finance list pages', () => {
     expect(source).not.toContain('formatDateTime(entry.clearedAt)');
   });
 
+  it('uses shared inline fallback atoms for payment clearing missing relationship cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<div className="muted">{entry.booking?.status ?? \'Unknown booking\'}</div>');
+    expect(source).not.toContain('<strong>{entry.payment?.method ?? \'-\'}</strong>');
+  });
+
   it.each([
     ['payment clearing', 'app/finance-tax/payment-clearing/page.tsx', "entry.payment?.status ?? 'No payment row'"],
     ['general ledger', 'app/finance-tax/general-ledger/page.tsx', "batch.booking?.status ?? 'No booking'"],
