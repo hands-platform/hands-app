@@ -16,6 +16,7 @@ import {
   AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormShell,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
@@ -474,7 +475,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
   const platformFeeVatRateValue = Number(policy.platformFeeVatRateBps ?? 800) / 100;
 
   return (
-    <form
+    <AdminFormShell
       action={updateReferralPolicy}
       aria-label={formLabel}
       className="vuexy-customer-form referral-policy-form admin-mt-16"
@@ -598,7 +599,7 @@ function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
           Save referral policy
         </AdminFormControlButton>
       </div>
-    </form>
+    </AdminFormShell>
   );
 }
 
