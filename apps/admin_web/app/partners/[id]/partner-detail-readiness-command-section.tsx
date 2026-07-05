@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -22,6 +23,7 @@ export type { PartnerOpsTone };
 
 export type PartnerReadinessSnapshotBadge = {
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly label: string;
   readonly tone: PartnerOpsTone;
 };
@@ -88,6 +90,7 @@ export function PartnerDetailReadinessSnapshotSection({
             tone={statusBadgeToneFromPillClass(partnerOpsPillClass(badge.tone))}
           >
             {badge.label}
+            {badge.detailNode ? <span className="sr-only">{badge.detailNode}</span> : null}
           </StatusBadge>
         ))}
       </div>

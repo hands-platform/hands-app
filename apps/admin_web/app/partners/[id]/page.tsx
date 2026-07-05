@@ -3279,6 +3279,13 @@ function buildPartnerDetailOpsBadges(
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement before final acceptance, service start, or payout release.`
           : 'No cash-settlement debt is open.',
+      detailNode:
+        cashDebt > 0 ? (
+          <>
+            Partner owes HANDS <MoneyText amount={cashDebt} /> from cash settlement before final acceptance, service
+            start, or payout release.
+          </>
+        ) : undefined,
     },
     {
       label: identityGate?.ok ? 'KYC and docs ok' : 'KYC/doc review',

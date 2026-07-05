@@ -29,6 +29,7 @@ describe('partner detail readiness command sections', () => {
         badges: [
           {
             detail: 'Negative wallet warns before final acceptance and service start.',
+            detailNode: <span>Shared cash debt atom marker</span>,
             label: 'Cash debt warning',
             tone: 'pending',
           },
@@ -54,6 +55,7 @@ describe('partner detail readiness command sections', () => {
     expect(rendered).toContain('Partner readiness snapshot');
     expect(rendered).toContain('Settlement warning');
     expect(rendered).toContain('Cash debt warning');
+    expect(rendered).toContain('Shared cash debt atom marker');
     expect(rendered).toContain('Location fresh');
     expect(rendered).toContain('Gate');
     expect(rendered).toContain('Readiness');
@@ -70,6 +72,19 @@ describe('partner detail readiness command sections', () => {
       ]),
     );
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
+  });
+
+  it('keeps readiness badge details open to shared React atoms', () => {
+    const source = readFileSync(
+      new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),
+      'utf8',
+    );
+    const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('readonly detailNode?: ReactNode;');
+    expect(source).toContain('{badge.detailNode ? <span className="sr-only">{badge.detailNode}</span> : null}');
+    expect(pageSource).toContain('Partner owes HANDS <MoneyText amount={cashDebt} />');
+    expect(pageSource).toContain('detailNode:');
   });
 
   it('renders dispatch repair steps as a Vuexy command table', () => {
