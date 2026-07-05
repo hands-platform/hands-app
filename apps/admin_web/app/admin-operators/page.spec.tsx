@@ -167,4 +167,12 @@ describe('AdminOperatorsPage', () => {
     expect(source).not.toContain('<span className="pill pill-info" key={`${user.id}:${label}`}>');
     expect(source).not.toContain('<span className={operatorRolePillClassName(role)} key={role}>');
   });
+
+  it('uses the shared DateTimeText atom for visible operator timestamps', () => {
+    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('<td>{formatDateTime(log.createdAt)}</td>');
+    expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
+  });
 });

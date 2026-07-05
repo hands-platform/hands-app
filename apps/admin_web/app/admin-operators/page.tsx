@@ -7,8 +7,8 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatDateTime } from '../../lib/admin-format';
 import {
   createAdminOperator,
   revokeAdminOperatorAccess,
@@ -146,7 +146,9 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                 <td>
                   <span className="muted">{log.target}</span>
                 </td>
-                <td>{formatDateTime(log.createdAt)}</td>
+                <td>
+                  <DateTimeText value={log.createdAt} />
+                </td>
               </tr>
             ))}
           </AdminDataTable>
@@ -186,7 +188,13 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                     </div>
                   </td>
                   <td>
-                    <strong>{latestSessionLabel(user)}</strong>
+                    <strong>
+                      {user.appSessions?.[0]?.lastSeenAt ? (
+                        <DateTimeText value={user.appSessions[0].lastSeenAt} />
+                      ) : (
+                        'No recent session'
+                      )}
+                    </strong>
                     <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
                   </td>
                   <td>
@@ -305,11 +313,6 @@ function CategoryCheckboxGrid({
       ))}
     </div>
   );
-}
-
-function latestSessionLabel(user: AdminUser) {
-  const latest = user.appSessions?.[0];
-  return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) : 'No recent session';
 }
 
 function operatorAccessLabels(user: AdminUser) {
