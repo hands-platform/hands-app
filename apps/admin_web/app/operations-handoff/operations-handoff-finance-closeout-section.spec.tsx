@@ -8,7 +8,9 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-finance-closeout-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTableScroll');
+    expect(source).toContain('MoneyText');
     expect(source).not.toContain('<div className="admin-table-scroll">');
+    expect(source).not.toContain('formatMoney(');
   });
 
   it('renders finance rows and closeout links', () => {

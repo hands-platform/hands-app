@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
-import { formatMoney, shortDisplayId } from '../../lib/admin-format';
+import { MoneyText } from '../../components/money-text';
+import { shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
 
 type OperationsHandoffFinanceCloseoutSectionProps = {
@@ -57,10 +58,18 @@ export function OperationsHandoffFinanceCloseoutSection({
                   {shortDisplayId(row.bookingId)}
                 </Link>
               </td>
-              <td>{formatMoney(row.grossAmount, row.currency)}</td>
-              <td>{formatMoney(row.platformFee, row.currency)}</td>
-              <td>{formatMoney(row.withholdingAmount, row.currency)}</td>
-              <td>{formatMoney(row.netAmount, row.currency)}</td>
+              <td>
+                <MoneyText amount={row.grossAmount} currency={row.currency} />
+              </td>
+              <td>
+                <MoneyText amount={row.platformFee} currency={row.currency} />
+              </td>
+              <td>
+                <MoneyText amount={row.withholdingAmount} currency={row.currency} />
+              </td>
+              <td>
+                <MoneyText amount={row.netAmount} currency={row.currency} />
+              </td>
               <td>
                 <span className={row.statusClass}>{row.status}</span>
               </td>
