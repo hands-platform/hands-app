@@ -1,6 +1,5 @@
 import { AdminChatMessageBubble } from '../../../components/admin-chat-window';
 import type { AdminChatMessage } from '../../../lib/admin-api';
-import { formatDateTime } from '../../../lib/admin-format';
 
 export function BookingChatBubble({ message }: BookingChatBubbleProps) {
   const role = chatSenderRole(message);
@@ -11,7 +10,6 @@ export function BookingChatBubble({ message }: BookingChatBubbleProps) {
       message={{
         body: message.body,
         createdDateTime: message.createdAt,
-        createdLabel: formatDateTime(message.createdAt, 'Not set'),
         id: message.id,
         role,
         senderLabel: senderName,

@@ -6,7 +6,6 @@ import {
 import { AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminChatMessage } from '../../../lib/admin-api';
-import { formatDateTime } from '../../../lib/admin-format';
 
 export type BookingDetailChatTranscriptSectionProps = {
   readonly messages: readonly AdminChatMessage[];
@@ -57,7 +56,7 @@ function bookingDetailChatWindowMessage(message: AdminChatMessage): AdminChatWin
   const role = bookingDetailChatRole(message);
   return {
     body: message.body,
-    createdLabel: formatDateTime(message.createdAt, 'Not set'),
+    createdDateTime: message.createdAt,
     id: message.id,
     role,
     senderLabel: message.sender?.fullName ?? message.sender?.phone ?? bookingDetailChatRoleLabel(role),

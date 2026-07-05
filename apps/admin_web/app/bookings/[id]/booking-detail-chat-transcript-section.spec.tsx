@@ -11,6 +11,13 @@ describe('BookingDetailChatTranscriptSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{countLabel(totalMessages, \'message\')}</span>');
   });
 
+  it('passes raw message timestamps to the shared date atom instead of formatting locally', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-chat-transcript-section.tsx', 'utf8');
+
+    expect(source).toContain('createdDateTime: message.createdAt');
+    expect(source).not.toContain("formatDateTime(message.createdAt, 'Not set')");
+  });
+
   it('renders booking chat messages in the visible booking detail flow', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailChatTranscriptSection
