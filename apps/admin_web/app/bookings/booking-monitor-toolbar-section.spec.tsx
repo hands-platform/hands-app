@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { normalizedText } from './booking-section-test-utils';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 
 describe('BookingMonitorToolbarSection', () => {
-  it('renders live update controls when realtime is enabled', () => {
+  it('renders only the live update action when realtime is enabled', () => {
     const section = BookingMonitorToolbarSection({
       liveUpdates: true,
       onToggleLiveUpdates: vi.fn(),
@@ -12,11 +13,10 @@ describe('BookingMonitorToolbarSection', () => {
     const rendered = normalizedText(section);
     const markup = renderToStaticMarkup(section);
 
-    expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('admin-form-control-button button button-secondary');
-    expect(rendered).toContain('Booking Monitor');
-    expect(rendered).toContain('Live operational view for matching');
     expect(rendered).toContain('Pause live');
+    expect(rendered).not.toContain('Booking Monitor');
+    expect(markup).not.toContain('toolbar admin-page-header');
     expect(rendered).not.toContain('Refresh now');
   });
 
@@ -29,16 +29,11 @@ describe('BookingMonitorToolbarSection', () => {
     expect(normalizedText(section)).toContain('Resume live');
   });
 
-  it('allows route-specific workspace copy', () => {
-    const section = BookingMonitorToolbarSection({
-      liveUpdates: true,
-      description: 'Completed booking workspace for closeout.',
-      onToggleLiveUpdates: vi.fn(),
-      title: 'Completed Bookings',
-    });
-    const rendered = normalizedText(section);
+  it('leaves route-specific workspace copy to the page shell', () => {
+    const source = readFileSync('app/bookings/booking-monitor-toolbar-section.tsx', 'utf8');
 
-    expect(rendered).toContain('Completed Bookings');
-    expect(rendered).toContain('Completed booking workspace for closeout.');
+    expect(source).not.toContain('pageTitle');
+    expect(source).not.toContain('pageDescription');
+    expect(source).not.toContain('AdminPageTemplate');
   });
 });

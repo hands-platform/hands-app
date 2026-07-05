@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Socket } from 'socket.io-client';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import type { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
@@ -355,14 +356,12 @@ export function BookingMonitor({
   }, [initialCustomDateFrom, initialCustomDateTo, initialDateRangeFilter]);
 
   return (
-    <div className="booking-monitor">
-      <BookingMonitorToolbarSection
-        description={pageDescription}
-        liveUpdates={liveUpdates}
-        onToggleLiveUpdates={toggleLiveUpdates}
-        title={pageTitle}
-      />
-
+    <AdminPageTemplate
+      actions={<BookingMonitorToolbarSection liveUpdates={liveUpdates} onToggleLiveUpdates={toggleLiveUpdates} />}
+      contentClassName="booking-monitor"
+      description={pageDescription ?? 'Live operational view for matching, Partner selection, chat, and payment readiness.'}
+      title={pageTitle ?? 'Booking Monitor'}
+    >
       <BookingMonitorLiveStatusSection
         hasMounted={hasMounted}
         isPending={isPending}
@@ -427,7 +426,7 @@ export function BookingMonitor({
           visibleBookingCreateRejections={visibleBookingCreateRejections}
         />
       )}
-    </div>
+    </AdminPageTemplate>
   );
 }
 
