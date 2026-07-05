@@ -15,6 +15,7 @@ import { partnerOpsStatusBadgeTone, type PartnerOpsTone } from './partner-detail
 export type PartnerBookingGateDecisionGate = {
   readonly action: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly label: string;
   readonly ok: boolean;
   readonly tone?: PartnerOpsTone;
@@ -108,7 +109,7 @@ export function PartnerDetailBookingGateDecisionSection({
                 </StatusBadge>
               </td>
               <td>
-                <p className="muted">{gate.detail}</p>
+                <p className="muted">{gate.detailNode ?? gate.detail}</p>
               </td>
               <td>
                 <span className="muted">{gate.action}</span>

@@ -1557,6 +1557,7 @@ type BookingAcceptanceGate = {
   label: string;
   ok: boolean;
   detail: string;
+  detailNode?: ReactNode;
   action: string;
   tone?: PartnerOpsTone;
 };
@@ -2790,6 +2791,12 @@ function buildProviderBookingAcceptance(
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash fee/tax settlement.`
           : 'No open negative wallet debt is visible.',
+      detailNode:
+        cashDebt > 0 ? (
+          <>
+            Partner owes HANDS <MoneyText amount={cashDebt} /> from cash fee/tax settlement.
+          </>
+        ) : undefined,
       action:
         cashDebt > 0
           ? 'Record Partner deposit or admin offset before final acceptance, service start, and payout release resume.'

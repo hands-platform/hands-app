@@ -122,6 +122,45 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
     );
     expect(rendered).toContain('Showing 0 entries');
   });
+
+  it('prefers shared gate detail nodes over fallback gate detail text', () => {
+    const gatesWithDetailNode = [
+      {
+        action: 'Settle cash debt',
+        detail: 'Fallback cash debt detail',
+        detailNode: <span>Shared cash debt marker</span>,
+        label: 'Wallet and cash debt',
+        ok: false,
+        tone: 'pending',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailBookingGateDecisionSection>[0]['decision']['gates'];
+    const section = PartnerDetailBookingGateDecisionSection({
+      cardClassForTone: (tone) => `card-${tone}`,
+      pillClassForTone: (tone) => `pill-${tone}`,
+      decision: {
+        backupRadiusLabel: '5 km',
+        bookableServices: '1 service(s)',
+        canDirectFirstPick: false,
+        canJoinMarketplace: true,
+        cashDebtLabel: '-40,000 VND',
+        directFirstPickReason: 'Cash debt requires settlement.',
+        gates: gatesWithDetailNode,
+        locationAge: '4m ago',
+        locationFreshnessLabel: '10m',
+        primaryReason: 'Cash debt needs settlement before final acceptance.',
+        responseWindowLabel: '90 seconds',
+        status: 'Settlement warning',
+        tone: 'pending',
+      },
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared cash debt marker');
+    expect(rendered).not.toContain('Fallback cash debt detail');
+    expect(source).toContain('readonly detailNode?: ReactNode;');
+    expect(source).toContain('{gate.detailNode ?? gate.detail}');
+  });
 });
 
 function textContent(value: unknown): string {
