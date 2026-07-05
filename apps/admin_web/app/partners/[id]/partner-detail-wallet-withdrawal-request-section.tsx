@@ -13,7 +13,7 @@ import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
-import { formatCurrency, shortRecordId } from './partner-detail-format';
+import { shortRecordId } from './partner-detail-format';
 import {
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
@@ -309,15 +309,15 @@ function WithdrawalStatusChangeEvidence({
     : statusChange.lockedAmountRetained
       ? 'Lock retained'
       : 'Status changed';
-  const amountLabel =
-    typeof statusChange.evidenceAmount === 'number'
-      ? ` ${formatCurrency(statusChange.evidenceAmount, request.currency)}`
-      : '';
-
   return (
     <p className="muted">
       {statusChange.transitionLabel} / {lockLabel}
-      {amountLabel}
+      {typeof statusChange.evidenceAmount === 'number' ? (
+        <>
+          {' '}
+          <MoneyText amount={statusChange.evidenceAmount} currency={request.currency} />
+        </>
+      ) : null}
     </p>
   );
 }

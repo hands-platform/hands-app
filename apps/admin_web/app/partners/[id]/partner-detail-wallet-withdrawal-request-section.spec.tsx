@@ -225,7 +225,9 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
   it('uses the shared money atom for visible withdrawal request amounts', () => {
     expect(sectionSource).toContain('MoneyText');
     expect(sectionSource).toContain('<MoneyText amount={request.amount} currency={request.currency} />');
+    expect(sectionSource).toContain('<MoneyText amount={statusChange.evidenceAmount} currency={request.currency} />');
     expect(sectionSource).not.toContain('<strong>{formatCurrency(request.amount, request.currency)}</strong>');
+    expect(sectionSource).not.toContain('formatCurrency(statusChange.evidenceAmount, request.currency)');
   });
 });
 
