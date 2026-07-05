@@ -31,6 +31,8 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(source).not.toContain(
       '<span className={`pill ${controlStatusPill(control.status)}`}>{control.status}</span>',
     );
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('<span className="muted">No booking linked</span>');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('readonly createdLabel: string;');
     expect(source).not.toContain('readonly timeline: string;');

@@ -4,6 +4,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import {
   AdminFormControlButton,
@@ -249,7 +250,7 @@ export function PartnerDetailReportsControlsSection({
                         Booking {report.bookingLabel}
                       </Link>
                     ) : (
-                      <span className="muted">No booking linked</span>
+                      <AdminInlineFallback>No booking linked</AdminInlineFallback>
                     )}
                     <p className="muted">{report.smallLabel}</p>
                   </td>
