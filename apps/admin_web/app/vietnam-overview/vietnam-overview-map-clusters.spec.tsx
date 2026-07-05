@@ -15,4 +15,11 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).toContain('AdminFormControlButton');
     expect(source).not.toContain('<button\n          aria-label="Close selected map signals"');
   });
+
+  it('uses the shared number formatter for cluster counters', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain('formatWholeNumber as formatNumber');
+    expect(source).not.toContain('function formatNumber(value: number)');
+  });
 });

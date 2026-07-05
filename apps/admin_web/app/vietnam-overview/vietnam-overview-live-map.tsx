@@ -4,6 +4,7 @@ import maplibregl, { type LngLatBoundsLike, type Map as MapLibreMap, type Marker
 import { useEffect, useRef, useState } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 import {
   type VietnamOverviewMapPoint,
   type VietnamOverviewMetricDotKey,
@@ -266,8 +267,4 @@ function metricLabel(kind: VietnamOverviewMetricDotKey) {
 
 function formatRegionCode(value: string) {
   return value.trim().toUpperCase() || 'VN';
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
