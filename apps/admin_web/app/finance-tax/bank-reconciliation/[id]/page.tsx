@@ -22,6 +22,7 @@ import {
   AdminFormShell,
   AdminFormTextarea,
 } from '../../../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
 import { DateTimeText } from '../../../../components/date-time-text';
@@ -469,7 +470,7 @@ function ReconciliationMatchedSourceCell({ match }: { readonly match: AdminBankR
 
 function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
   if (!match.accountingJournalEntry) {
-    return <span className="muted">-</span>;
+    return <AdminInlineFallback>No journal entry</AdminInlineFallback>;
   }
 
   return (
@@ -484,7 +485,7 @@ function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconci
 
 function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
   if (!match.paymentClearingEntry) {
-    return <span className="muted">-</span>;
+    return <AdminInlineFallback>No clearing entry</AdminInlineFallback>;
   }
 
   return (
@@ -499,7 +500,7 @@ function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBan
 
 function ReconciliationPayoutCell({ match }: { readonly match: AdminBankReconciliationMatch }) {
   if (!match.withdrawalRequest && !match.payoutBatch) {
-    return <span className="muted">-</span>;
+    return <AdminInlineFallback>No payout evidence</AdminInlineFallback>;
   }
 
   return (
@@ -620,7 +621,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
   const clearingAfter = readRecordString(record, 'paymentClearingStatusAfter');
 
   if (!bankBefore && !bankAfter && !clearingBefore && !clearingAfter) {
-    return <span className="muted">-</span>;
+    return <AdminInlineFallback>No audit trail</AdminInlineFallback>;
   }
 
   return (

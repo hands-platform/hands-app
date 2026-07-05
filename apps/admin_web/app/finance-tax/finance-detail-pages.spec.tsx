@@ -1086,6 +1086,16 @@ describe('finance detail pages', () => {
     expect(source).not.toContain("<div className=\"muted\">{match.accountingJournalEntry?.accountName ?? 'No journal link'}</div>");
   });
 
+  it('uses shared inline fallback atoms for bank reconciliation detail missing match cells', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/finance-tax/bank-reconciliation/[id]/page.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain('return <span className="muted">-</span>;');
+  });
+
   it.each([
     ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],
     ['general ledger detail', 'app/finance-tax/general-ledger/[id]/page.tsx'],
