@@ -76,6 +76,13 @@ describe('PushSendPage', () => {
     expect(pageSource).not.toContain('<section className="notification-push-preview-card">');
   });
 
+  it('uses the shared inline fallback atom for preview recipients without push devices', () => {
+    expect(pageSource).toContain('AdminInlineFallback');
+    expect(pageSource).not.toContain(
+      '<span className="muted">{recipient.pushDevices?.[0]?.platform ?? \'No device\'}</span>',
+    );
+  });
+
   it('uses the shared table pagination footer for recent campaigns', () => {
     expect(pageSource).toContain('AdminTablePanel');
     expect(pageSource).toContain('AdminTablePaginationFooter');

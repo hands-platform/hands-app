@@ -21,6 +21,7 @@ import {
   AdminFormStaticValue,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
@@ -289,7 +290,11 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
                     {recipient.fullName || recipient.providerProfile?.displayName || recipient.phone}
                   </strong>
                   <span className="muted">{recipient.phone}</span>
-                  <span className="muted">{recipient.pushDevices?.[0]?.platform ?? 'No device'}</span>
+                  {recipient.pushDevices?.[0]?.platform ? (
+                    <span className="muted">{recipient.pushDevices[0].platform}</span>
+                  ) : (
+                    <AdminInlineFallback>No device</AdminInlineFallback>
+                  )}
                 </div>
               ))}
             </div>
