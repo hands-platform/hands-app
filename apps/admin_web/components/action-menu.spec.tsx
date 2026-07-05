@@ -107,6 +107,35 @@ describe('ActionMenu', () => {
     );
   });
 
+  it('keeps duplicate action labels and hidden input names on unique React keys', () => {
+    expect(source).toContain('actions.map((item, itemIndex) => (');
+    expect(source).toContain('key={`${item.kind}:${item.label}:${itemIndex}`}');
+    expect(source).toContain('item.hiddenInputs?.map((input, inputIndex) => (');
+    expect(source).toContain('key={`${input.name}-${inputIndex}`}');
+    expect(source).not.toContain('actions.map((item) => (');
+    expect(source).not.toContain('key={`${item.kind}:${item.label}`}');
+    expect(source).not.toContain('item.hiddenInputs?.map((input) => (');
+    expect(source).not.toContain('key={input.name}');
+  });
+
+  it('dedupes repeated Vuexy dropdown class tokens from page hooks', () => {
+    const dropdown = ActionMenuDropdownSurface({
+      children: null,
+      className: 'admin-action-dropdown payout-actions',
+      label: 'Payout actions',
+      menuClassName: 'admin-action-menu payout-menu',
+      triggerClassName: 'admin-action-trigger payout-trigger',
+    });
+
+    expect(dropdown.props.className).toBe('admin-action-dropdown payout-actions');
+    expect(classNamesIn(dropdown)).toEqual(
+      expect.arrayContaining([
+        'admin-action-trigger payout-trigger',
+        'admin-action-menu payout-menu',
+      ]),
+    );
+  });
+
   it('exposes the shared Vuexy dropdown surface for custom action forms', () => {
     const dropdown = ActionMenuDropdownSurface({
       children: <form className="custom-action-form" role="none" />,

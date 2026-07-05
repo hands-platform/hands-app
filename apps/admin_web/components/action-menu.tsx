@@ -72,8 +72,12 @@ export function ActionMenu({
 }: ActionMenuProps) {
   if (variant === 'dropdown') {
     return ActionMenuDropdownSurface({
-      children: actions.map((item) => (
-        <ActionMenuDropdownControl item={item} itemClassName={itemClassName} key={`${item.kind}:${item.label}`} />
+      children: actions.map((item, itemIndex) => (
+        <ActionMenuDropdownControl
+          item={item}
+          itemClassName={itemClassName}
+          key={`${item.kind}:${item.label}:${itemIndex}`}
+        />
       )),
       className: className ?? 'action-menu-dropdown',
       label,
@@ -87,8 +91,8 @@ export function ActionMenu({
     <nav aria-label={label} className="action-menu">
       {title ? <strong>{title}</strong> : null}
       <div className="participant-list">
-        {actions.map((item) => (
-          <ActionMenuControl item={item} key={`${item.kind}:${item.label}`} />
+        {actions.map((item, itemIndex) => (
+          <ActionMenuControl item={item} key={`${item.kind}:${item.label}:${itemIndex}`} />
         ))}
       </div>
     </nav>
@@ -180,8 +184,8 @@ function ActionMenuDropdownControl({
 
   return (
     <ActionMenuDropdownForm action={item.action}>
-      {item.hiddenInputs?.map((input) => (
-        <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+      {item.hiddenInputs?.map((input, inputIndex) => (
+        <input key={`${input.name}-${inputIndex}`} name={input.name} type="hidden" value={String(input.value)} />
       ))}
       <AdminFormControlButton
         aria-label={item.ariaLabel}
@@ -220,8 +224,8 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
 
   return (
     <form action={item.action} className="action-menu-form">
-      {item.hiddenInputs?.map((input) => (
-        <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
+      {item.hiddenInputs?.map((input, inputIndex) => (
+        <input key={`${input.name}-${inputIndex}`} name={input.name} type="hidden" value={String(input.value)} />
       ))}
       <StatusBadgeButton
         disabled={item.disabled}
@@ -240,5 +244,8 @@ export function readActionMenuTitle(description: ReactNode) {
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  return classNames
+    .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
+    .filter((className, index, values) => values.indexOf(className) === index)
+    .join(' ');
 }

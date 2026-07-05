@@ -85,11 +85,11 @@ export function ClientActionDropdown({
       </button>
       {open ? (
         <div className={joinClassNames('admin-action-menu', menuClassName)} role="menu">
-          {actions.map((item) => (
+          {actions.map((item, itemIndex) => (
             <ClientActionDropdownControl
               item={item}
               itemClassName={readItemClassName(item, itemClassName)}
-              key={item.label}
+              key={`${item.label}:${itemIndex}`}
               onSelect={() => setOpen(false)}
             />
           ))}
@@ -159,5 +159,8 @@ function readItemClassName(
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  return classNames
+    .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
+    .filter((className, index, values) => values.indexOf(className) === index)
+    .join(' ');
 }
