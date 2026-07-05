@@ -126,8 +126,10 @@ describe('TaxPolicyPage', () => {
 
   it('uses shared Vuexy empty-state atoms for tax evidence fallbacks', () => {
     expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).toContain('AdminInlineFallback');
     expect(pageSource).not.toContain('<strong>No recent tax policy audit entries</strong>');
     expect(pageSource).not.toContain('<strong>No recent earning tax snapshots</strong>');
+    expect(pageSource).not.toContain('<span className="muted">No rules yet.</span>');
   });
 
   it('uses the shared DateTimeText atom for visible tax policy timestamps', () => {

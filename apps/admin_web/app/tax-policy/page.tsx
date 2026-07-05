@@ -9,6 +9,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
@@ -405,7 +406,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                   <small>{rule.id.slice(0, 8)}</small>
                 </div>
               ))}
-              {(policy.rules ?? []).length === 0 ? <span className="muted">No rules yet.</span> : null}
+              {(policy.rules ?? []).length === 0 ? <AdminInlineFallback>No rules yet.</AdminInlineFallback> : null}
             </div>
 
             <AdminFormGrid action={createTaxRule} className="compact-form">
