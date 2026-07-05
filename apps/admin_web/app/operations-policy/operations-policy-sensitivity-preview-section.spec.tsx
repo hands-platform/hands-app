@@ -10,9 +10,11 @@ const sectionSource = readFileSync(
 
 describe('OperationsPolicySensitivityPreviewSection', () => {
   it('uses shared Vuexy badge atoms for radius and freshness labels', () => {
+    expect(sectionSource).toContain('AdminDetailGrid');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="detail-grid admin-mt-14">');
   });
 
   it('renders radius and freshness sensitivity tables', () => {

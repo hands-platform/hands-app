@@ -1,5 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
 
@@ -41,7 +41,7 @@ export function OperationsPolicySensitivityPreviewSection({
           </div>
         ))}
       </div>
-      <div className="detail-grid admin-mt-14">
+      <AdminDetailGrid className="admin-mt-14">
         <div className="admin-scroll-x">
           <h3>Marketplace supply sensitivity</h3>
           <p className="muted">
@@ -95,7 +95,7 @@ export function OperationsPolicySensitivityPreviewSection({
             ))}
           </AdminDataTable>
         </div>
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }

@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminDetailGrid, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
@@ -58,7 +58,7 @@ export function OperationsPolicyLiveSimulatorSection({
           </div>
         ))}
       </div>
-      <div className="detail-grid admin-mt-14">
+      <AdminDetailGrid className="admin-mt-14">
         <div className="ops-task-note">
           <h3>Simulated booking path</h3>
           <div className="timeline admin-mt-12">
@@ -115,7 +115,7 @@ export function OperationsPolicyLiveSimulatorSection({
             ) : null}
           </div>
         </div>
-      </div>
+      </AdminDetailGrid>
       <div className="ops-task-grid admin-mt-14">
         {simulation.checks.map((check) => (
           <AdminTaskCard
