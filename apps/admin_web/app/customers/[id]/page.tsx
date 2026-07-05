@@ -938,7 +938,7 @@ function customerChatWindowMessage(message: AdminChatMessage): AdminChatWindowMe
   const role = customerChatMessageRole(message);
   return {
     body: message.body,
-    createdLabel: formatDate(message.createdAt),
+    createdDateTime: message.createdAt,
     id: message.id,
     role,
     senderLabel: message.sender?.fullName ?? message.sender?.phone ?? customerChatRoleLabel(role),

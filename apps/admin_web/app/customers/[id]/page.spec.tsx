@@ -83,6 +83,11 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('<div className="card customer-chat-history-room-card">');
   });
 
+  it('passes raw chat timestamps to the shared date atom instead of formatting locally', () => {
+    expect(customerDetailSource).toContain('createdDateTime: message.createdAt');
+    expect(customerDetailSource).not.toContain('createdLabel: formatDate(message.createdAt)');
+  });
+
   it('uses the shared table pagination footer for customer chat history', () => {
     expect(customerDetailSource).toContain('AdminTablePaginationFooter');
     expect(customerDetailSource).toContain('className="customer-chat-history-footer"');
