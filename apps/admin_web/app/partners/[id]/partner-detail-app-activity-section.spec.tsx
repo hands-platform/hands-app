@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { PartnerDetailAppActivitySection } from './partner-detail-app-activity-section';
 
+const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
 describe('PartnerDetailAppActivitySection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
@@ -13,7 +15,11 @@ describe('PartnerDetailAppActivitySection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('<span className="pill pill-info">{record.type}</span>');
+    expect(source).not.toContain('readonly atLabel: string;');
+    expect(source).not.toContain('{record.atLabel}');
+    expect(pageSource).not.toContain('atLabel: formatDate(record.at)');
   });
 
   it('renders recent app activity as a Vuexy table', () => {
@@ -27,7 +33,7 @@ describe('PartnerDetailAppActivitySection', () => {
       ],
       rows: [
         {
-          atLabel: '20 Jun 2026, 10:10',
+          at: '2026-06-20T10:10:00.000Z',
           detail: 'Partner refreshed working location before receiving new requests.',
           key: 'location-1',
           title: 'Location updated',
@@ -48,6 +54,7 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(rendered).toContain('LOCATION');
     expect(rendered).toContain('Location updated');
     expect(rendered).toContain('Partner refreshed working location before receiving new requests.');
+    expect(rendered).toContain('20 Jun 2026, 17:10');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',

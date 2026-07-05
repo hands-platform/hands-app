@@ -4205,7 +4205,7 @@ function buildPartnerBookingGateDecisionView(
 
 function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerAppActivityRow[] {
   return records.map((record, index) => ({
-    atLabel: formatDate(record.at),
+    at: record.at,
     detail: record.detail,
     key: `${record.type}-${record.id}-${record.at}-${index}`,
     title: record.title,

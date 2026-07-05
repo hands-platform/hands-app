@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -15,7 +16,7 @@ export type PartnerAppActivitySummaryItem = {
 };
 
 export type PartnerAppActivityRow = {
-  readonly atLabel: string;
+  readonly at: string;
   readonly detail: string;
   readonly key: string;
   readonly title: string;
@@ -67,7 +68,9 @@ export function PartnerDetailAppActivitySection({
                 <p className="muted">{record.detail}</p>
               </td>
               <td>
-                <span className="muted">{record.atLabel}</span>
+                <span className="muted">
+                  <DateTimeText fallback="Missing" value={record.at} />
+                </span>
               </td>
             </tr>
           ))}
