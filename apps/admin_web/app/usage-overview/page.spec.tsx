@@ -69,6 +69,10 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).toContain('AdminMiniMetricStrip');
     expect(pageSource).not.toContain('<div className="usage-overview-mini-metric');
+    expect(pageSource).not.toContain('<div className="usage-overview-discovery-metrics"');
+    expect(pageSource).not.toContain('<div className="usage-overview-service-metrics"');
+    expect(pageSource).not.toContain('<div className="usage-overview-hour-metrics"');
+    expect(pageSource).not.toContain('<div className="usage-overview-region-metrics"');
     expect(pageSource).not.toContain('<section className="usage-overview-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');

@@ -18,7 +18,7 @@ import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../compon
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
+import { AdminLinkCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
@@ -71,6 +71,51 @@ export default async function FinanceOverviewPage({
     settlementSummary.platformFeeNetRevenue -
     couponSummary.companyCouponExpense -
     settlementSummary.paymentProcessingFee;
+  const principleCards = [
+    {
+      detail: 'Customer paid amount is not company revenue.',
+      icon: <CircleDollarSign size={19} aria-hidden="true" />,
+      label: 'Gross customer payment',
+      tone: 'primary',
+      value: (
+        <MoneyText
+          amount={settlementSummary.customerPaymentAmount}
+          currency={settlementSummary.currency}
+        />
+      ),
+    },
+    {
+      detail: 'Platform fee net revenue is the revenue base.',
+      icon: <ReceiptText size={19} aria-hidden="true" />,
+      label: 'Actual company revenue',
+      tone: 'success',
+      value: (
+        <MoneyText
+          amount={settlementSummary.platformFeeNetRevenue}
+          currency={settlementSummary.currency}
+        />
+      ),
+    },
+    {
+      detail: 'Partner payout stays payable until payout or withdrawal closeout.',
+      icon: <WalletCards size={19} aria-hidden="true" />,
+      label: 'Partner payable',
+      tone: 'warning',
+      value: (
+        <MoneyText
+          amount={settlementSummary.partnerPayoutAmount}
+          currency={settlementSummary.currency}
+        />
+      ),
+    },
+    {
+      detail: 'Net revenue estimate excludes gross pass-through payment volume.',
+      icon: <ShieldCheck size={19} aria-hidden="true" />,
+      label: 'Net estimate',
+      tone: 'info',
+      value: <MoneyText amount={netRevenueEstimate} currency={settlementSummary.currency} />,
+    },
+  ];
 
   return (
     <AdminPageTemplate
@@ -130,63 +175,16 @@ export default async function FinanceOverviewPage({
       </AdminOverviewCommandGrid>
 
       <AdminOverviewCommandGrid className="finance-overview-principle-grid" ariaLabel="Finance accounting principles">
-        <AdminCard className="finance-overview-principle-card is-primary">
-          <span className="usage-overview-command-icon">
-            <CircleDollarSign size={19} aria-hidden="true" />
-          </span>
-          <div>
-            <span>Gross customer payment</span>
-            <strong>
-              <MoneyText
-                amount={settlementSummary.customerPaymentAmount}
-                currency={settlementSummary.currency}
-              />
-            </strong>
-            <small>Customer paid amount is not company revenue.</small>
-          </div>
-        </AdminCard>
-        <AdminCard className="finance-overview-principle-card is-success">
-          <span className="usage-overview-command-icon">
-            <ReceiptText size={19} aria-hidden="true" />
-          </span>
-          <div>
-            <span>Actual company revenue</span>
-            <strong>
-              <MoneyText
-                amount={settlementSummary.platformFeeNetRevenue}
-                currency={settlementSummary.currency}
-              />
-            </strong>
-            <small>Platform fee net revenue is the revenue base.</small>
-          </div>
-        </AdminCard>
-        <AdminCard className="finance-overview-principle-card is-warning">
-          <span className="usage-overview-command-icon">
-            <WalletCards size={19} aria-hidden="true" />
-          </span>
-          <div>
-            <span>Partner payable</span>
-            <strong>
-              <MoneyText
-                amount={settlementSummary.partnerPayoutAmount}
-                currency={settlementSummary.currency}
-              />
-            </strong>
-            <small>Partner payout stays payable until payout or withdrawal closeout.</small>
-          </div>
-        </AdminCard>
-        <AdminCard className="finance-overview-principle-card is-info">
-          <span className="usage-overview-command-icon">
-            <ShieldCheck size={19} aria-hidden="true" />
-          </span>
-          <div>
-            <span>Net estimate</span>
-            <strong>
-              <MoneyText amount={netRevenueEstimate} currency={settlementSummary.currency} />
-            </strong>
-            <small>Net revenue estimate excludes gross pass-through payment volume.</small>
-          </div>
-        </AdminCard>
+        {principleCards.map((card) => (
+          <AdminOverviewCommandCard
+            className={`finance-overview-principle-card is-${card.tone}`}
+            detail={card.detail}
+            icon={card.icon}
+            key={card.label}
+            label={card.label}
+            value={card.value}
+          />
+        ))}
       </AdminOverviewCommandGrid>
 
       <AdminSection

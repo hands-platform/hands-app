@@ -8367,7 +8367,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.usage-overview-discovery-metrics span,
+.usage-overview-discovery-metrics .admin-mini-metric,
 .usage-overview-discovery-rates span {
   background: rgb(var(--admin-surface-channel) / 0.7);
   border: 1px solid var(--admin-border);
@@ -9577,7 +9577,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.usage-overview-region-metrics span {
+.usage-overview-region-metrics .admin-mini-metric {
   background: rgb(var(--admin-surface-channel) / 0.7);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
@@ -9785,8 +9785,8 @@ a.action-button-card:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.usage-overview-service-metrics span,
-.usage-overview-hour-metrics span {
+.usage-overview-service-metrics .admin-mini-metric,
+.usage-overview-hour-metrics .admin-mini-metric {
   background: rgb(var(--admin-surface-channel) / 0.7);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);

@@ -530,20 +530,14 @@ function PartnerDiscoveryConversionCard({
                 {row.secondary ? <small>{row.secondary}</small> : null}
               </div>
             </div>
-            <div className="usage-overview-discovery-metrics">
-              <span>
-                <strong>{formatNumber(row.viewCount)}</strong>
-                Views
-              </span>
-              <span>
-                <strong>{formatNumber(row.requestCount)}</strong>
-                Requests
-              </span>
-              <span>
-                <strong>{formatNumber(row.completedCount)}</strong>
-                Done
-              </span>
-            </div>
+            <AdminMiniMetricStrip
+              className="usage-overview-discovery-metrics"
+              metrics={[
+                { label: 'Views', value: formatNumber(row.viewCount) },
+                { label: 'Requests', value: formatNumber(row.requestCount) },
+                { label: 'Done', value: formatNumber(row.completedCount) },
+              ]}
+            />
             <div className="usage-overview-discovery-rates">
               <span>{formatNumber(row.viewToRequestRate)}% view to request</span>
               <span>{formatNumber(row.requestToCompleteRate)}% request to done</span>
@@ -607,20 +601,14 @@ function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverv
                   {row.secondary ? <small>{row.secondary}</small> : null}
                 </div>
               </div>
-              <div className="usage-overview-service-metrics">
-                <span>
-                  <strong>{formatNumber(row.bookingCount)}</strong>
-                  bookings
-                </span>
-                <span>
-                  <strong>{formatNumber(row.quantity)}</strong>
-                  quantity
-                </span>
-                <span>
-                  <strong>{money(row.amount)}</strong>
-                  booked value
-                </span>
-              </div>
+              <AdminMiniMetricStrip
+                className="usage-overview-service-metrics"
+                metrics={[
+                  { label: 'bookings', value: formatNumber(row.bookingCount) },
+                  { label: 'quantity', value: formatNumber(row.quantity) },
+                  { label: 'booked value', value: money(row.amount) },
+                ]}
+              />
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
@@ -666,10 +654,13 @@ function HourlyActivityCard({ rows }: { readonly rows: readonly AdminUsageOvervi
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
-              <div className="usage-overview-hour-metrics">
-                <span>{formatNumber(row.customerSessionCount)} sessions</span>
-                <span>{formatNumber(row.bookingRequestCount)} requests</span>
-              </div>
+              <AdminMiniMetricStrip
+                className="usage-overview-hour-metrics"
+                metrics={[
+                  { label: 'sessions', value: formatNumber(row.customerSessionCount) },
+                  { label: 'requests', value: formatNumber(row.bookingRequestCount) },
+                ]}
+              />
             </AdminCard>
           );
         })
@@ -858,20 +849,14 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
                 <span>{row.shortName}</span>
                 <strong>{row.regionName}</strong>
               </div>
-              <div className="usage-overview-region-metrics">
-                <span>
-                  <strong>{formatNumber(row.customerSessionCount)}</strong>
-                  Sessions
-                </span>
-                <span>
-                  <strong>{formatNumber(row.bookingRequestCount)}</strong>
-                  Requests
-                </span>
-                <span>
-                  <strong>{formatNumber(row.completedBookingCount)}</strong>
-                  Completed
-                </span>
-              </div>
+              <AdminMiniMetricStrip
+                className="usage-overview-region-metrics"
+                metrics={[
+                  { label: 'Sessions', value: formatNumber(row.customerSessionCount) },
+                  { label: 'Requests', value: formatNumber(row.bookingRequestCount) },
+                  { label: 'Completed', value: formatNumber(row.completedBookingCount) },
+                ]}
+              />
               <div className="usage-overview-region-bar" aria-hidden="true">
                 <i style={{ width: `${widthPercent}%` }} />
               </div>
