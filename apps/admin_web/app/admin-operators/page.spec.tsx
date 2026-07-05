@@ -175,4 +175,12 @@ describe('AdminOperatorsPage', () => {
     expect(source).not.toContain('<td>{formatDateTime(log.createdAt)}</td>');
     expect(source).not.toContain('return latest?.lastSeenAt ? formatDateTime(latest.lastSeenAt) :');
   });
+
+  it('uses shared inline fallback atoms for missing operator session fields', () => {
+    const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminInlineFallback');
+    expect(source).not.toContain("'No recent session'");
+    expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
+  });
 });

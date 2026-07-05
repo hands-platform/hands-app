@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -192,10 +193,14 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                       {user.appSessions?.[0]?.lastSeenAt ? (
                         <DateTimeText value={user.appSessions[0].lastSeenAt} />
                       ) : (
-                        'No recent session'
+                        <AdminInlineFallback>No recent session</AdminInlineFallback>
                       )}
                     </strong>
-                    <div className="muted">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>
+                    {user.appSessions?.[0]?.platform ? (
+                      <div className="muted">{user.appSessions[0].platform}</div>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No platform</AdminInlineFallback>
+                    )}
                   </td>
                   <td>
                     {isMasterAdmin ? (
