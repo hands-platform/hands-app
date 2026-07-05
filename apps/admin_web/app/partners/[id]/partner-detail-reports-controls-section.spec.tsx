@@ -33,8 +33,17 @@ describe('PartnerDetailReportsControlsSection', () => {
     );
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('readonly createdLabel: string;');
+    expect(source).not.toContain('readonly timeline: string;');
     expect(source).not.toContain('{report.category} / {report.source} / {report.createdLabel}');
+    expect(source).not.toContain('{payoutHold.timeline}');
+    expect(source).not.toContain('{control.timeline}');
     expect(pageSource).not.toContain('createdLabel: formatDate(report.createdAt)');
+    expect(pageSource).not.toContain(
+      'timeline: `Started ${formatDate(payoutHold.startsAt)} / expires ${formatDate(payoutHold.expiresAt)}`',
+    );
+    expect(pageSource).not.toContain(
+      'timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`',
+    );
   });
 
   it('renders reports and account controls as Vuexy tables', () => {
@@ -46,15 +55,17 @@ describe('PartnerDetailReportsControlsSection', () => {
           reason: 'Payout review pending because a customer complaint is open.',
           reportLine: 'Report: payout / HIGH',
           smallLabel: 'ctrl-1',
+          expiresAt: null,
+          startsAt: '2026-06-20T03:00:00.000Z',
           status: 'ACTIVE',
-          timeline: 'Started 20 Jun 2026, 10:00 / expires Missing',
           type: 'PAYOUT_HOLD',
         },
       ],
       payoutHold: {
         idLabel: 'hold-1',
         reason: 'Payout review pending because a customer complaint is open.',
-        timeline: 'Started 20 Jun 2026, 10:00 / expires Missing',
+        expiresAt: null,
+        startsAt: '2026-06-20T03:00:00.000Z',
         type: 'PAYOUT_HOLD',
       },
       providerId: 'partner-1',

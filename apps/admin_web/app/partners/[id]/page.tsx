@@ -4231,9 +4231,10 @@ function buildPartnerReportControlPayoutHold(
   if (!payoutHold) return null;
 
   return {
+    expiresAt: payoutHold.expiresAt,
     idLabel: shortRecordId(payoutHold.id),
     reason: payoutHold.reason,
-    timeline: `Started ${formatDate(payoutHold.startsAt)} / expires ${formatDate(payoutHold.expiresAt)}`,
+    startsAt: payoutHold.startsAt,
     type: payoutHold.type,
   };
 }
@@ -4258,14 +4259,15 @@ function buildPartnerReportRows(provider: ProviderDetail): PartnerReportRow[] {
 
 function buildPartnerAccountControlRows(provider: ProviderDetail): PartnerAccountControlRow[] {
   return (provider.sanctions ?? []).map((sanction) => ({
+    expiresAt: sanction.expiresAt,
     id: sanction.id,
     liftControlHref:
       sanction.status === 'ACTIVE' ? partnerControlActionConfirmHref(provider.id, sanction.id) : undefined,
     reason: sanction.reason,
     reportLine: sanction.report ? `Report: ${sanction.report.category} / ${sanction.report.severity}` : null,
     smallLabel: shortRecordId(sanction.id),
+    startsAt: sanction.startsAt,
     status: sanction.status,
-    timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`,
     type: sanction.type,
   }));
 }

@@ -30,9 +30,10 @@ import {
 } from './partner-detail-vuexy-table';
 
 export type PartnerReportControlPayoutHold = {
+  readonly expiresAt?: string | null;
   readonly idLabel: string;
   readonly reason: string;
-  readonly timeline: string;
+  readonly startsAt?: string | null;
   readonly type: string;
 };
 
@@ -53,13 +54,14 @@ export type PartnerReportRow = {
 };
 
 export type PartnerAccountControlRow = {
+  readonly expiresAt?: string | null;
   readonly id: string;
   readonly liftControlHref?: string;
   readonly reason: string;
   readonly reportLine?: string | null;
   readonly smallLabel: string;
+  readonly startsAt?: string | null;
   readonly status: string;
-  readonly timeline: string;
   readonly type: string;
 };
 
@@ -164,7 +166,10 @@ export function PartnerDetailReportsControlsSection({
                     <p className="muted">{payoutHold.reason}</p>
                   </td>
                   <td>
-                    <span className="muted">{payoutHold.timeline}</span>
+                    <ControlTimeline
+                      expiresAt={payoutHold.expiresAt}
+                      startsAt={payoutHold.startsAt}
+                    />
                   </td>
                   <td>
                     <small>{payoutHold.idLabel}</small>
@@ -278,7 +283,7 @@ export function PartnerDetailReportsControlsSection({
                     </StatusBadge>
                   </td>
                   <td>
-                    <span className="muted">{control.timeline}</span>
+                    <ControlTimeline expiresAt={control.expiresAt} startsAt={control.startsAt} />
                     <p className="muted">{control.smallLabel}</p>
                   </td>
                   <td>
@@ -309,6 +314,21 @@ export function PartnerDetailReportsControlsSection({
       </AdminDetailGrid>
       <PartnerReportCommandPanel providerId={providerId} reports={reports} />
     </AdminFilterPanel>
+  );
+}
+
+function ControlTimeline({
+  expiresAt,
+  startsAt,
+}: {
+  readonly expiresAt?: string | null;
+  readonly startsAt?: string | null;
+}) {
+  return (
+    <span className="muted">
+      Started <DateTimeText fallback="Missing" value={startsAt} /> / expires{' '}
+      <DateTimeText fallback="Missing" value={expiresAt} />
+    </span>
   );
 }
 
