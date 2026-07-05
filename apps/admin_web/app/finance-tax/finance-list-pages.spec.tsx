@@ -378,6 +378,11 @@ describe('finance list pages', () => {
       ['formatDateTime(snapshot.postedAt)'],
     ],
     [
+      'coupon finance',
+      'app/finance-tax/coupon-finance/page.tsx',
+      ['formatDateTime(snapshot.closedAt', 'formatDateTime(snapshot.postedAt)'],
+    ],
+    [
       'general ledger',
       'app/finance-tax/general-ledger/page.tsx',
       ['formatDateTime(batch.postedAt)', 'formatDateTime(batch.reversedAt)'],

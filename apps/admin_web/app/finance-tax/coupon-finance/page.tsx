@@ -7,10 +7,11 @@ import type {
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
-import { formatDateTime, shortId } from '../../../lib/admin-format';
+import { shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
 import { financePersonName } from '../finance-participant-label';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
@@ -191,8 +192,12 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>
                   <td>
-                    <strong>{formatDateTime(snapshot.closedAt ?? snapshot.booking?.closedAt ?? snapshot.postedAt)}</strong>
-                    <div className="muted">Posted {formatDateTime(snapshot.postedAt)}</div>
+                    <strong>
+                      <DateTimeText value={snapshot.closedAt ?? snapshot.booking?.closedAt ?? snapshot.postedAt} />
+                    </strong>
+                    <div className="muted">
+                      Posted <DateTimeText value={snapshot.postedAt} />
+                    </div>
                   </td>
                   <td>
                     <strong>{financePersonName(snapshot.customerProfile?.user, 'Unknown customer')}</strong>
