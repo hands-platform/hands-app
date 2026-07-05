@@ -93,6 +93,7 @@ describe('BookingActionStatusSections', () => {
     expect(source).toContain('AdminFormControlStack');
     expect(source).not.toContain('<div className="admin-form-control-stack admin-form-control-fluid">');
     expect(source).toContain('admin-form-control-help');
+    expect(source).not.toContain('<small className="ops-task-note">Note: {task.note}</small>');
     expect(source).not.toContain('booking-action-note-field');
     expect(source).not.toContain('booking-action-note-label');
     expect(source).not.toContain('booking-action-note-help');

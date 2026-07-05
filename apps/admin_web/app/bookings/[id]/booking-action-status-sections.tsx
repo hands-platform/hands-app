@@ -350,7 +350,7 @@ function BookingStructuredOpsStatusSection({
               title={task.label}
             >
               <small>{task.updatedBy}</small>
-              {task.note && <small className="ops-task-note">Note: {task.note}</small>}
+              {task.note && <small className="muted">Note: {task.note}</small>}
               <div className="ops-task-actions">
                 <OpsTaskAction bookingId={bookingId} type={task.type} status="DONE" label="Mark done" />
                 <OpsTaskAction bookingId={bookingId} type={task.type} status="BLOCKED" label="Blocked" />
