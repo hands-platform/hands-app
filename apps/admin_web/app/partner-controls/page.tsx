@@ -36,6 +36,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
@@ -298,7 +299,11 @@ export default async function PartnerControlsPage({
                 <span>{item.status}</span>
                 <div>
                   <PartnerControlProviderCell
-                    helper={`Wallet ${formatMoney(item.walletBalance)} / ${item.reasons.join(', ')}`}
+                    helper={
+                      <>
+                        Wallet <MoneyText amount={item.walletBalance} /> / {item.reasons.join(', ')}
+                      </>
+                    }
                     provider={item.provider}
                   />
                   <p className="muted">{item.operatorAction}</p>
@@ -604,7 +609,9 @@ export default async function PartnerControlsPage({
                   <p className="muted">{item.detail}</p>
                 </td>
                 <td>
-                  <strong>{formatMoney(item.walletBalance)}</strong>
+                  <strong>
+                    <MoneyText amount={item.walletBalance} />
+                  </strong>
                   <p className="muted">
                     {item.walletBalance < 0
                       ? `Settlement ref ${cashDebtSettlementReference(item.provider.id)}`
@@ -961,7 +968,7 @@ function PartnerControlProviderCell({
   helper,
   provider,
 }: {
-  readonly helper?: string;
+  readonly helper?: ReactNode;
   readonly provider: AdminProvider;
 }) {
   return (

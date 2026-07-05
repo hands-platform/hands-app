@@ -67,6 +67,12 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('ops-task-card-action');
   });
 
+  it('uses the shared Vuexy money atom for visible wallet amounts', () => {
+    expect(partnerControlsSource).toContain('MoneyText');
+    expect(partnerControlsSource).not.toContain('helper={`Wallet ${formatMoney(item.walletBalance)}');
+    expect(partnerControlsSource).not.toContain('<strong>{formatMoney(item.walletBalance)}</strong>');
+  });
+
   it('uses shared labeled form atoms for partner control forms', async () => {
     const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
