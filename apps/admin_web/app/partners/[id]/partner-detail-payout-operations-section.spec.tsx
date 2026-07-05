@@ -20,6 +20,19 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(source).not.toContain('<span className={`pill ${payoutBatchPill(batch.status)}`}>{batch.status}</span>');
   });
 
+  it('uses the shared date time atom for payout hold timing', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('readonly expiresAtLabel: string;');
+    expect(source).not.toContain('readonly startsAtLabel: string;');
+    expect(source).not.toContain('Started {operations.hold.startsAtLabel}');
+    expect(source).not.toContain('Expires {operations.hold.expiresAtLabel}');
+    expect(pageSource).not.toContain('expiresAtLabel: formatDate(payoutOps.hold.expiresAt)');
+    expect(pageSource).not.toContain('startsAtLabel: formatDate(payoutOps.hold.startsAt)');
+  });
+
   it('renders payout holds, blockers, earnings, and payout batches as Vuexy tables', () => {
     const section = PartnerDetailPayoutOperationsSection({
       cardClassForTone: (tone) => `card-${tone}`,
@@ -49,9 +62,9 @@ describe('PartnerDetailPayoutOperationsSection', () => {
           },
         ],
         hold: {
-          expiresAtLabel: '21 Jun 2026, 09:00',
+          expiresAt: '2026-06-21T09:00:00.000Z',
           reason: 'Open customer report blocks payout release.',
-          startsAtLabel: '20 Jun 2026, 09:00',
+          startsAt: '2026-06-20T09:00:00.000Z',
         },
         status: 'Payout locked',
         tone: 'blocked',

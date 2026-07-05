@@ -4121,9 +4121,9 @@ function buildPartnerPayoutOperationsView(
     cards: payoutOps.cards,
     hold: payoutOps.hold
       ? {
-          expiresAtLabel: formatDate(payoutOps.hold.expiresAt),
+          expiresAt: payoutOps.hold.expiresAt ?? null,
           reason: payoutOps.hold.reason,
-          startsAtLabel: formatDate(payoutOps.hold.startsAt),
+          startsAt: payoutOps.hold.startsAt ?? null,
         }
       : null,
     status: payoutOps.status,

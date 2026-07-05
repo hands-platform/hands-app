@@ -5,6 +5,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -26,9 +27,9 @@ export type PartnerPayoutOperationsView = {
   readonly blockers: readonly string[];
   readonly cards: readonly PartnerPayoutOperationsCard[];
   readonly hold?: {
-    readonly expiresAtLabel: string;
+    readonly expiresAt?: string | null;
     readonly reason?: string | null;
-    readonly startsAtLabel: string;
+    readonly startsAt?: string | null;
   } | null;
   readonly status: string;
   readonly tone: PartnerPayoutOperationsTone;
@@ -119,8 +120,12 @@ export function PartnerDetailPayoutOperationsSection({
                   <p className="muted">{operations.hold.reason ?? 'No hold reason recorded.'}</p>
                 </td>
                 <td>
-                  <span className="muted">Started {operations.hold.startsAtLabel}</span>
-                  <p className="muted">Expires {operations.hold.expiresAtLabel}</p>
+                  <span className="muted">
+                    Started <DateTimeText fallback="Missing" value={operations.hold.startsAt} />
+                  </span>
+                  <p className="muted">
+                    Expires <DateTimeText fallback="Missing" value={operations.hold.expiresAt} />
+                  </p>
                 </td>
                 <td>
                   <Link className="text-link" href={partnerControlsHref}>
