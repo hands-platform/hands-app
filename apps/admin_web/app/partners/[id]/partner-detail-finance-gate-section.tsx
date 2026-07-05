@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminBasicTimeline, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
@@ -170,14 +171,19 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
 const financeEvidenceHeaders = ['Gate', 'Evidence', 'Status', 'Actions'] as const;
 
 function EvidenceLine({ label, value }: { readonly label: string; readonly value?: ReactNode }) {
-  const renderedValue =
-    typeof value === 'string' ? (value.trim() ? marketplaceDisplayText(value) : 'Missing') : (value ?? 'Missing');
-
   return (
     <p className="muted">
-      <strong>{label}:</strong> {renderedValue}
+      <strong>{label}:</strong> {renderEvidenceValue(value)}
     </p>
   );
+}
+
+function renderEvidenceValue(value?: ReactNode) {
+  if (typeof value === 'string') {
+    return value.trim() ? marketplaceDisplayText(value) : <AdminInlineFallback>Missing</AdminInlineFallback>;
+  }
+
+  return value ?? <AdminInlineFallback>Missing</AdminInlineFallback>;
 }
 
 function BankReviewTimeline({ items }: { readonly items: readonly PartnerBankReviewTimelineItem[] }) {
