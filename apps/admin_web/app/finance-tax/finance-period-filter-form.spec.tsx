@@ -1,8 +1,18 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { FinancePeriodFilterForm } from './finance-period-filter-form';
 
 describe('FinancePeriodFilterForm', () => {
+  it('delegates the form shell to the shared Vuexy form grid atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-period-filter-form.tsx'), 'utf8');
+
+    expect(source).toContain('AdminFormGrid');
+    expect(source).not.toContain('<form action={action}');
+  });
+
   it('renders finance period filters through the shared Vuexy form atoms', () => {
     const markup = renderToStaticMarkup(
       <FinancePeriodFilterForm

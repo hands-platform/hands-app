@@ -1,6 +1,7 @@
 import {
   AdminFormControlButton,
   AdminFormDate,
+  AdminFormGrid,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 
@@ -25,7 +26,7 @@ const DEFAULT_ROW_OPTIONS = [25, 50, 75, 100] as const;
 
 export function FinancePeriodFilterForm({
   action,
-  className = 'form-grid compact-form admin-mt-12',
+  className = 'compact-form admin-mt-12',
   hiddenFields = [],
   period,
   periodLabel = 'Month',
@@ -33,7 +34,7 @@ export function FinancePeriodFilterForm({
   submitLabel = 'Apply period',
 }: FinancePeriodFilterFormProps) {
   return (
-    <form action={action} className={className} method="get">
+    <AdminFormGrid action={action} className={className} method="get">
       {hiddenFields.map((field) => (
         <input key={field.name} name={field.name} type="hidden" value={field.value} />
       ))}
@@ -59,6 +60,6 @@ export function FinancePeriodFilterForm({
       <AdminFormControlButton className="button-primary" type="submit">
         {submitLabel}
       </AdminFormControlButton>
-    </form>
+    </AdminFormGrid>
   );
 }
