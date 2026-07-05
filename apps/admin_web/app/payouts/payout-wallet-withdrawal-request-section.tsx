@@ -14,7 +14,7 @@ import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdra
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
-import { formatDateTime, shortRecordId } from '../../lib/admin-format';
+import { shortRecordId } from '../../lib/admin-format';
 import type {
   AdminProviderWalletWithdrawalRequest,
   AdminProviderWalletWithdrawalRequestStatus,
