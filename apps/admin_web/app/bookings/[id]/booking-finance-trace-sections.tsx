@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminKpiCard, AdminSection } from '../../../components/admin-surface';
+import { AdminKpiCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import {
   AdminSignal,
   StatusBadge,
@@ -216,7 +216,7 @@ export function BookingOperationsAuditTraceSection({
           </div>
         ))}
       </div>
-      <div className="ops-task-note admin-mt-14">
+      <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
             <StatusBadge tone={statusBadgeToneFromPillClass(operationsTrace.statusTone)}>
@@ -229,7 +229,7 @@ export function BookingOperationsAuditTraceSection({
             Review policy
           </Link>
         </div>
-      </div>
+      </AdminNotePanel>
       {operationsTrace.rows.length > 0 ? (
         <div className="ops-check-list">
           {operationsTrace.rows.map((row) => (
