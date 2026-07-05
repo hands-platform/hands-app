@@ -17,6 +17,7 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
@@ -90,17 +91,16 @@ export default async function FinanceOverviewPage({
         statusLabel={`Period ${filters.period}`}
         title="Finance range"
       >
-        <div className="booking-date-filter-buttons usage-overview-range-buttons">
-          {financeOverviewRangeOptions.map((option) => (
-            <a
-              key={option.value}
-              className={`booking-date-filter-button${option.value === filters.range ? ' is-active' : ''}`}
-              href={financeOverviewHref(option.value)}
-            >
-              {option.label}
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={filters.range}
+          ariaLabel="Finance overview range"
+          className="usage-overview-range-buttons"
+          options={financeOverviewRangeOptions.map((option) => ({
+            href: financeOverviewHref(option.value),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
         <FinancePeriodFilterForm
           action="/finance-overview"
           className="finance-overview-period-form"

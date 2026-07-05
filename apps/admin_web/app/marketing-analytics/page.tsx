@@ -21,6 +21,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -545,17 +546,16 @@ function FilterButtons<T extends string>({
   return (
     <div className="marketing-analytics-filter-row">
       <span className="marketing-analytics-filter-label">{label}</span>
-      <div className="booking-date-filter-buttons usage-overview-range-buttons">
-        {options.map((option) => (
-          <a
-            key={option.value}
-            className={`booking-date-filter-button${option.value === activeValue ? ' is-active' : ''}`}
-            href={hrefFor(option.value)}
-          >
-            {option.label}
-          </a>
-        ))}
-      </div>
+      <AdminSegmentedControl
+        activeValue={activeValue}
+        ariaLabel={label}
+        className="usage-overview-range-buttons"
+        options={options.map((option) => ({
+          href: hrefFor(option.value),
+          label: option.label,
+          value: option.value,
+        }))}
+      />
     </div>
   );
 }

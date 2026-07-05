@@ -27,6 +27,7 @@ import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 
@@ -509,24 +510,20 @@ export default async function VietnamOverviewPage({
         description="Select the period used by numeric cards and regional tables. Realtime map dots stay current."
         title="Period metrics range"
       >
-          <div
-            className="booking-date-filter-buttons vietnam-overview-range-buttons"
-            aria-label="Period metric range"
-          >
-            {vietnamOverviewRangeOptions.map((option) => (
-              <a
-                key={option.value}
-                className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
-                href={vietnamOverviewHrefWithState({
-                  range: option.value,
-                  regionCode: activeRegionCode,
-                  signalKeys: activeSignalKeys,
-                })}
-              >
-                {option.label}
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={range}
+            ariaLabel="Period metric range"
+            className="vietnam-overview-range-buttons"
+            options={vietnamOverviewRangeOptions.map((option) => ({
+              href: vietnamOverviewHrefWithState({
+                range: option.value,
+                regionCode: activeRegionCode,
+                signalKeys: activeSignalKeys,
+              }),
+              label: option.label,
+              value: option.value,
+            }))}
+          />
           <div className="vietnam-overview-filter-summary-grid" aria-label="Selected Vietnam overview filters">
             {periodFilterSummary.map((item) => (
               <AdminCard key={item.label} className={`vietnam-overview-filter-summary-card is-${item.tone}`}>

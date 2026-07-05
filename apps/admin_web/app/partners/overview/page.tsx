@@ -28,6 +28,7 @@ import {
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminOverviewCommandCard } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { MoneyText } from '../../../components/money-text';
@@ -110,17 +111,16 @@ export default async function PartnerOverviewPage({
         statusLabel={overview.rangeLabel}
         title="Partner supply range"
       >
-        <div className="booking-date-filter-buttons usage-overview-range-buttons">
-          {partnerOverviewRangeOptions.map((option) => (
-            <a
-              key={option.value}
-              className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
-              href={partnerOverviewHref(option.value, filters)}
-            >
-              {option.label}
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={range}
+          ariaLabel="Partner overview range"
+          className="usage-overview-range-buttons"
+          options={partnerOverviewRangeOptions.map((option) => ({
+            href: partnerOverviewHref(option.value, filters),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
         <form className="partner-overview-filter-grid" action="/partners/overview">
           <input type="hidden" name="range" value={range} />
           {filters.selectionIssue ? <input type="hidden" name="selectionIssue" value={filters.selectionIssue} /> : null}
@@ -742,20 +742,19 @@ function SelectionFrictionCard({
       <div className="partner-overview-selection-toolbar">
         <div>
           <strong>Selection issue</strong>
-          <div className="booking-date-filter-buttons usage-overview-range-buttons">
-            {selectionIssueOptions.map((option) => (
-              <a
-                key={option.value || 'all'}
-                className={`booking-date-filter-button${option.value === activeIssue ? ' is-active' : ''}`}
-                href={partnerOverviewHref(range, {
-                  ...filters,
-                  selectionIssue: option.value || null,
-                })}
-              >
-                {option.label} ({issueCountMap.get(option.value || 'all') ?? 0})
-              </a>
-            ))}
-          </div>
+          <AdminSegmentedControl
+            activeValue={activeIssue}
+            ariaLabel="Partner selection issue"
+            className="usage-overview-range-buttons"
+            options={selectionIssueOptions.map((option) => ({
+              href: partnerOverviewHref(range, {
+                ...filters,
+                selectionIssue: option.value || null,
+              }),
+              label: `${option.label} (${issueCountMap.get(option.value || 'all') ?? 0})`,
+              value: option.value,
+            }))}
+          />
         </div>
         <form action="/partners/overview" className="partner-overview-selection-sort-form">
           <input type="hidden" name="range" value={range} />

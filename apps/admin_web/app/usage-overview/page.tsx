@@ -28,6 +28,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminOverviewCommandCard } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -143,17 +144,16 @@ export default async function UsageOverviewPage({
         statusLabel={overview.rangeLabel}
         title="Usage range"
       >
-        <div className="booking-date-filter-buttons usage-overview-range-buttons">
-          {usageOverviewRangeOptions.map((option) => (
-            <a
-              key={option.value}
-              className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
-              href={usageOverviewHref(option.value)}
-            >
-              {option.label}
-            </a>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={range}
+          ariaLabel="Usage overview range"
+          className="usage-overview-range-buttons"
+          options={usageOverviewRangeOptions.map((option) => ({
+            href: usageOverviewHref(option.value),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
       </AdminSection>
 
       <section className="usage-overview-command-grid" aria-label="Usage command summary">
