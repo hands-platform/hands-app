@@ -1,4 +1,5 @@
 import { DateTimeText } from './date-time-text';
+import { AdminEmptyState } from './admin-empty-state';
 
 export type AdminChatWindowMessageRole = 'ADMIN' | 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
 
@@ -48,7 +49,7 @@ export function AdminChatWindow({
             <AdminChatMessageBubble key={message.id} message={message} />
           ))
         ) : (
-          <p className="muted">{emptyMessage}</p>
+          <AdminEmptyState className="admin-chat-empty-state" message={emptyMessage} title={null} />
         )}
       </div>
     </div>

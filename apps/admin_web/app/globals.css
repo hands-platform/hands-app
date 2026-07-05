@@ -3835,6 +3835,16 @@ a.action-button-card:hover {
   text-align: center;
 }
 
+.admin-chat-empty-state {
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  padding: 18px;
+  text-align: center;
+}
+
 .booking-post-match-cancellations-card {
   display: grid;
   gap: 18px;

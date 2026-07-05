@@ -47,4 +47,19 @@ describe('AdminChatWindow', () => {
     expect(markup).toContain('admin-chat-message is-incoming');
     expect(markup).toContain('Can you confirm the address?');
   });
+
+  it('uses the shared Vuexy empty state atom when the retained chat has no messages', () => {
+    const markup = renderToStaticMarkup(
+      <AdminChatWindow
+        avatarLabel="Customer One"
+        emptyMessage="No retained chat yet."
+        messages={[]}
+        subtitle="Booking chat"
+        title="Customer One"
+      />,
+    );
+
+    expect(markup).toContain('admin-chat-empty-state');
+    expect(markup).toContain('<p class="muted">No retained chat yet.</p>');
+  });
 });
