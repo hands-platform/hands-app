@@ -9,10 +9,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { marketplaceDisplayText as partnerDisplayText } from '../../lib/admin-copy';
-import {
-  formatMoney,
-  shortDisplayId,
-} from '../../lib/admin-format';
+import { shortDisplayId } from '../../lib/admin-format';
 import {
   createProviderReport,
   createProviderSanction,
@@ -1049,7 +1046,7 @@ type PartnerControlNextAction = {
   priority: number;
   status: string;
   title: string;
-  detail: string;
+  detail: ReactNode;
   operatorAction: string;
   href: string;
   tags: Array<{ label: string; tone: string }>;
@@ -1063,7 +1060,7 @@ type PartnerOperatingBlock = {
   severity: string;
   tone: string;
   title: string;
-  reason: string;
+  reason: ReactNode;
   operatorAction: string;
   href: string;
   priority: number;
@@ -1322,7 +1319,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         severity: 'Wallet debt',
         tone: 'pill-danger',
         title: `${partner} cannot participate in marketplace bookings`,
-        reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
+        reason: <><MoneyText amount={Math.abs(item.walletBalance)} /> cash/company fee debt is still open.</>,
         operatorAction: `Confirm Partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
         href: '/cash-settlements',
         priority: 110 + Math.min(20, Math.abs(item.walletBalance) / 100000),
@@ -1801,7 +1798,7 @@ function buildPartnerControlNextActions(input: {
       priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       status: 'WALLET',
       title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance, service start, or payout release.`,
+      detail: <><MoneyText amount={Math.abs(item.walletBalance)} /> must be settled or offset before final acceptance, service start, or payout release.</>,
       operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
       href: '/cash-settlements',
       tags: [

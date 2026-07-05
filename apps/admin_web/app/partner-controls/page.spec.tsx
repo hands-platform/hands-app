@@ -72,6 +72,10 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('helper={`Wallet ${formatMoney(item.walletBalance)}');
     expect(partnerControlsSource).not.toContain('<strong>{formatMoney(item.walletBalance)}</strong>');
     expect(partnerControlsSource).not.toContain("metric(\n          'Debt',\n          formatMoney");
+    expect(partnerControlsSource).toContain('reason: <><MoneyText amount={Math.abs(item.walletBalance)} /> cash/company fee debt is still open.</>');
+    expect(partnerControlsSource).toContain('detail: <><MoneyText amount={Math.abs(item.walletBalance)} /> must be settled or offset before final acceptance, service start, or payout release.</>');
+    expect(partnerControlsSource).not.toContain('reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`');
+    expect(partnerControlsSource).not.toContain('detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance, service start, or payout release.`');
   });
 
   it('uses the shared Vuexy date atom for visible report and account-control timestamps', () => {
