@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, CircleDollarSign, Clock3 } from 'lucide-react';
 
 import type { AdminBookingPaymentClearingEntry, AdminBookingPaymentClearingSummary } from '../../../lib/admin-api';
@@ -7,6 +6,7 @@ import { ActionMenu } from '../../../components/action-menu';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -176,9 +176,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           {pagination.rows.map((entry) => (
             <tr key={entry.id}>
               <td>
-                <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
+                <AdminTextLink href={`/bookings/${entry.bookingId}`}>
                   {shortId(entry.bookingId)}
-                </Link>
+                </AdminTextLink>
                 <div>
                   <AdminInlineFallback>{entry.booking?.status ?? 'Unknown booking'}</AdminInlineFallback>
                 </div>
@@ -195,9 +195,9 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
                 {entry.paymentId ? <div className="muted">{shortId(entry.paymentId)}</div> : null}
               </td>
               <td>
-                <Link className="text-link" href={paymentClearingDetailHref(entry.id)}>
+                <AdminTextLink href={paymentClearingDetailHref(entry.id)}>
                   <strong>{entry.type}</strong>
-                </Link>
+                </AdminTextLink>
                 <div className="muted">{shortId(entry.sourceKey)}</div>
               </td>
               <td>

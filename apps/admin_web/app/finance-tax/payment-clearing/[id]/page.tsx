@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import type { AdminBookingPaymentClearingEntryDetail } from '../../../../lib/admin-api';
@@ -6,6 +5,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
@@ -83,9 +83,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem
             label="Booking"
             value={
-              <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
+              <AdminTextLink href={`/bookings/${entry.bookingId}`}>
                 {shortId(entry.bookingId)}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
@@ -122,9 +122,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             label="Payment record"
             value={
               entry.paymentId ? (
-                <Link className="text-link" href={`/payments/${entry.paymentId}`}>
+                <AdminTextLink href={`/payments/${entry.paymentId}`}>
                   {shortId(entry.paymentId)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -136,9 +136,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               settlementTraceLinks.length > 0 ? (
                 <div className="admin-table-substack">
                   {settlementTraceLinks.map((link) => (
-                    <Link className="text-link" href={link.href} key={link.label}>
+                    <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
-                    </Link>
+                    </AdminTextLink>
                   ))}
                 </div>
               ) : (
@@ -192,15 +192,15 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             value={
               <div className="admin-table-substack">
                 {entry.paymentId ? (
-                  <Link className="text-link" href={`/payments/${entry.paymentId}`}>
+                  <AdminTextLink href={`/payments/${entry.paymentId}`}>
                     Payment {shortId(entry.paymentId)}
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <AdminInlineFallback>No payment record</AdminInlineFallback>
                 )}
-                <Link className="text-link" href={`/bookings/${entry.bookingId}`}>
+                <AdminTextLink href={`/bookings/${entry.bookingId}`}>
                   Booking {shortId(entry.bookingId)}
-                </Link>
+                </AdminTextLink>
               </div>
             }
           />
@@ -210,9 +210,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               settlementTraceLinks.length > 0 ? (
                 <div className="admin-table-substack">
                   {settlementTraceLinks.map((link) => (
-                    <Link className="text-link" href={link.href} key={link.label}>
+                    <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
-                    </Link>
+                    </AdminTextLink>
                   ))}
                 </div>
               ) : (
@@ -258,9 +258,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
               <tr key={match.id}>
                 <td>
                   {match.bankTransactionId ? (
-                    <Link className="text-link" href={`/finance-tax/bank-reconciliation/${match.bankTransactionId}`}>
+                    <AdminTextLink href={`/finance-tax/bank-reconciliation/${match.bankTransactionId}`}>
                       {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
-                    </Link>
+                    </AdminTextLink>
                   ) : (
                     <AdminInlineFallback>No bank transaction</AdminInlineFallback>
                   )}
@@ -273,9 +273,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 <td>
                   {match.accountingJournalEntry ? (
                     <>
-                      <Link className="text-link" href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
+                      <AdminTextLink href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
                         {match.accountingJournalEntry.accountCode}
-                      </Link>
+                      </AdminTextLink>
                       <div className="muted">{match.accountingJournalEntry.accountName}</div>
                     </>
                   ) : (
