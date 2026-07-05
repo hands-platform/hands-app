@@ -7,8 +7,10 @@ describe('RefundsTableSection', () => {
     const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
 
     expect(source).toContain('AdminNotePanel');
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-10">');
     expect(source).not.toContain('AdminRoundedPagination');

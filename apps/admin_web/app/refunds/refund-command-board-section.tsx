@@ -1,5 +1,5 @@
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminActionCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 
 export type RefundCommandTone = 'warn' | 'info' | 'ok';
@@ -29,8 +29,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
   const hasOpenOperatorWork = items.some((item) => item.refunds.length > 0 && item.tone !== 'ok');
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one operational view before closing a shift."
       resultLabel={`${totalRefundCount} refund record(s)`}
       resultTone={hasOpenOperatorWork ? 'warning' : 'success'}
@@ -64,7 +63,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
           </AdminActionCard>
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
 

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminActionCard } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type RefundDecisionChecklistItem = {
@@ -20,8 +20,7 @@ type RefundDecisionChecklistSectionProps = {
 
 export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklistSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Evidence-first checklist for operators before a refund is released, rejected, or handed to finance closeout."
       resultLabel={`${items.length} check(s)`}
       resultTone={items.length > 0 ? 'warning' : 'success'}
@@ -50,6 +49,6 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
           />
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

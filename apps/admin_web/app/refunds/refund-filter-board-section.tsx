@@ -1,4 +1,4 @@
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 
@@ -40,8 +40,7 @@ export function RefundFilterBoardSection({
   const isFiltered = Boolean(review || activeRange !== 'all');
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description={`Use these shortcuts from the dashboard to focus on the refund queue state. Refund date range: ${rangeLabel}.`}
       resultLabel={`Showing ${filteredCount} of ${totalCount}`}
       resultTone={review ? 'warning' : 'success'}
@@ -81,6 +80,6 @@ export function RefundFilterBoardSection({
           </StatusBadgeLink>
         ))}
       </div>
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }

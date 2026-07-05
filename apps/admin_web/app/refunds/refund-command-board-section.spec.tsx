@@ -58,7 +58,9 @@ describe('RefundCommandBoardSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/refunds/refund-command-board-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className="pill">{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.refunds.length} case(s)</span>');
