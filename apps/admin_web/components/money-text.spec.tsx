@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { MoneyText, moneyTextClassName } from './money-text';
 
 describe('MoneyText', () => {
@@ -25,5 +28,15 @@ describe('MoneyText', () => {
       className: 'money-text money-text-muted',
       children: 'No ledger amount',
     });
+  });
+
+  it('keeps money values backed by the Vuexy numeric display token contract', () => {
+    const globals = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    expect(globals).toContain('.money-text {');
+    expect(globals).toContain('font-variant-numeric: tabular-nums;');
+    expect(globals).toContain('white-space: nowrap;');
+    expect(globals).toContain('.money-text-muted {');
+    expect(globals).toContain('color: var(--admin-muted);');
   });
 });

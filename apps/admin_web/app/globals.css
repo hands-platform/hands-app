@@ -2429,6 +2429,15 @@ a.action-button-card:hover {
   line-height: 1.5;
 }
 
+.money-text {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.money-text-muted {
+  color: var(--admin-muted);
+}
+
 .date-time-text {
   font-variant-numeric: tabular-nums;
 }
