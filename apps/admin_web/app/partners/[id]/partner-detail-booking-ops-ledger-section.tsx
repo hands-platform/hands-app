@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -13,6 +14,7 @@ export type PartnerBookingOpsLedgerRow = {
   id: string;
   relation: string;
   bookingLabel: string;
+  bookingLabelNode?: ReactNode;
   serviceLabel: string;
   status: string;
   noteStatus: string;
@@ -21,6 +23,7 @@ export type PartnerBookingOpsLedgerRow = {
   taskDetail: string;
   closeoutStatus: string;
   closeoutDetail: string;
+  closeoutDetailNode?: ReactNode;
   chatHref?: string;
 };
 
@@ -60,7 +63,7 @@ export function PartnerDetailBookingOpsLedgerSection({
           {rows.map((row) => (
             <tr key={`${row.id}-${row.relation}`}>
               <td>
-                <strong>{row.bookingLabel}</strong>
+                <strong>{row.bookingLabelNode ?? row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
                 <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
                   {row.status}
@@ -77,7 +80,7 @@ export function PartnerDetailBookingOpsLedgerSection({
               </td>
               <td>
                 <strong>{row.closeoutStatus}</strong>
-                <p className="muted">{row.closeoutDetail}</p>
+                <p className="muted">{row.closeoutDetailNode ?? row.closeoutDetail}</p>
               </td>
               <td>
                 <Link className="text-link" href={`/bookings/${row.id}`}>

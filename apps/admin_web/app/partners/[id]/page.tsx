@@ -2821,6 +2821,11 @@ function buildPartnerBookingOpsLedgerRows(
         id: booking.id,
         relation: record.relation,
         bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
+        bookingLabelNode: (
+          <>
+            {shortRecordId(booking.id)} / <DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />
+          </>
+        ),
         serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
         status: booking.status ?? 'UNKNOWN',
         noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
@@ -2835,6 +2840,11 @@ function buildPartnerBookingOpsLedgerRows(
         closeoutDetail: booking.closedAt
           ? `${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
           : 'No cancellation, no-show, refund, or closeout decision is saved.',
+        closeoutDetailNode: booking.closedAt ? (
+          <>
+            <DateTimeText fallback="Missing" value={booking.closedAt} /> / {bookingClosureLabel(booking)}
+          </>
+        ) : undefined,
         chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
       };
     });

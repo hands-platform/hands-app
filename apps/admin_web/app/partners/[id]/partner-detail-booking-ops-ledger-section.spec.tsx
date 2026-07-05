@@ -75,6 +75,44 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     );
     expect(rendered).toContain('Showing 0 entries');
   });
+
+  it('prefers shared date nodes over fallback booking ops date text', () => {
+    const section = PartnerDetailBookingOpsLedgerSection({
+      rows: [
+        {
+          bookingLabel: 'Fallback booking date',
+          bookingLabelNode: <span>Shared booking ops date marker</span>,
+          chatHref: '/chat-archive?q=BK-1002',
+          closeoutDetail: 'Fallback closeout date',
+          closeoutDetailNode: <span>Shared closeout date marker</span>,
+          closeoutStatus: 'Closeout reviewed',
+          id: 'BK-1002',
+          noteDetail: 'Partner reported customer unavailable.',
+          noteStatus: 'Manual note saved',
+          relation: 'Selected',
+          serviceLabel: 'Deep tissue',
+          status: 'COMPLETED',
+          taskDetail: 'Review retained chat transcript.',
+          taskStatus: 'Evidence task',
+        },
+      ],
+      statusPillClass: () => 'pill-success',
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-ops-ledger-section.tsx', 'utf8');
+    const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared booking ops date marker');
+    expect(rendered).toContain('Shared closeout date marker');
+    expect(rendered).not.toContain('Fallback booking date');
+    expect(rendered).not.toContain('Fallback closeout date');
+    expect(source).toContain('bookingLabelNode?: ReactNode;');
+    expect(source).toContain('closeoutDetailNode?: ReactNode;');
+    expect(source).toContain('{row.bookingLabelNode ?? row.bookingLabel}');
+    expect(source).toContain('{row.closeoutDetailNode ?? row.closeoutDetail}');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={bookingRecordCreatedAt(booking)} />');
+    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={booking.closedAt} /> / {bookingClosureLabel(booking)}');
+  });
 });
 
 function textContent(value: unknown): string {
