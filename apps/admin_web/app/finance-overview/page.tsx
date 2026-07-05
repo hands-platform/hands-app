@@ -129,7 +129,7 @@ export default async function FinanceOverviewPage({
         ))}
       </AdminOverviewCommandGrid>
 
-      <section className="finance-overview-principle-grid" aria-label="Finance accounting principles">
+      <AdminOverviewCommandGrid className="finance-overview-principle-grid" ariaLabel="Finance accounting principles">
         <AdminCard className="finance-overview-principle-card is-primary">
           <span className="usage-overview-command-icon">
             <CircleDollarSign size={19} aria-hidden="true" />
@@ -187,7 +187,7 @@ export default async function FinanceOverviewPage({
             <small>Net revenue estimate excludes gross pass-through payment volume.</small>
           </div>
         </AdminCard>
-      </section>
+      </AdminOverviewCommandGrid>
 
       <AdminSection
         bodyClassName="usage-overview-command-grid finance-overview-kpi-grid"
