@@ -211,6 +211,7 @@ describe('Admin form control CSS', () => {
   it('keeps visible-label form controls on the Vuexy label-outside field model', () => {
     const shellIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled,');
     const shellBlock = cssRuleBlockAt(shellIndex);
+    const textareaShellIndex = globalsCss.indexOf('.admin-form-textarea.admin-form-control-labeled');
     const fieldIndex = globalsCss.lastIndexOf(
       '.admin-form-date.admin-form-control-labeled input,\n' +
         '.admin-form-input.admin-form-control-labeled input,\n' +
@@ -224,9 +225,11 @@ describe('Admin form control CSS', () => {
     const selectArrowBlock = cssRuleBlockAt(selectArrowIndex);
 
     expect(shellIndex).toBeGreaterThan(-1);
+    expect(textareaShellIndex).toBeGreaterThan(shellIndex);
     expect(fieldIndex).toBeGreaterThan(shellIndex);
     expect(shellBlock).toContain('background: transparent');
     expect(shellBlock).toContain('border: 0');
+    expect(shellBlock).toContain('.admin-form-textarea.admin-form-control-labeled');
     expect(shellBlock).toContain('padding: 0');
     expect(fieldBlock).toContain('background: var(--admin-surface)');
     expect(fieldBlock).toContain('border: 1px solid var(--admin-input-border)');

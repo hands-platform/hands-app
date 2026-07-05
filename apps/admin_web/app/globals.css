@@ -16785,7 +16785,8 @@ textarea:focus-visible {
 .admin-form-date.admin-form-control-labeled,
 .admin-form-input.admin-form-control-labeled,
 .admin-form-select.admin-form-control-labeled,
-.admin-form-static-value.admin-form-control-labeled {
+.admin-form-static-value.admin-form-control-labeled,
+.admin-form-textarea.admin-form-control-labeled {
   align-items: stretch;
   background: transparent;
   border: 0;
@@ -16795,11 +16796,6 @@ textarea:focus-visible {
   gap: 6px;
   min-height: 0;
   padding: 0;
-}
-
-.admin-form-textarea.admin-form-control-labeled {
-  display: grid;
-  gap: 6px;
 }
 
 .admin-form-label {
@@ -16869,7 +16865,8 @@ textarea:focus-visible {
 
 .admin-form-input.admin-form-control-labeled:focus-within,
 .admin-form-select.admin-form-control-labeled:focus-within,
-.admin-form-static-value.admin-form-control-labeled:focus-within {
+.admin-form-static-value.admin-form-control-labeled:focus-within,
+.admin-form-textarea.admin-form-control-labeled:focus-within {
   border: 0;
   box-shadow: none;
   padding: 0;
