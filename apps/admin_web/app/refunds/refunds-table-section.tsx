@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
@@ -70,12 +71,12 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                 {row.bookingStatus}
                 <div className="muted">Booking {row.bookingIdLabel}</div>
                 <div className="actions admin-mt-8">
-                  <a className="text-link" href={row.bookingHref}>
+                  <AdminTextLink href={row.bookingHref}>
                     Open booking
-                  </a>
-                  <a className="text-link" href={row.paymentHref}>
+                  </AdminTextLink>
+                  <AdminTextLink href={row.paymentHref}>
                     Open payment
-                  </a>
+                  </AdminTextLink>
                 </div>
               </td>
               <td>{row.amountLabel}</td>
