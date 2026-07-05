@@ -11,8 +11,10 @@ describe('CashSettlementProviderGroupsSection', () => {
     );
     const section = CashSettlementProviderGroupsSection({ providers: [] });
 
+    expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('<p className="muted">No Partner has open cash settlement debt.</p>');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(textContent(section)).toContain('No Partner has open cash settlement debt.');

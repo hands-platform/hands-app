@@ -1,5 +1,4 @@
 import { ActionMenu } from '../../components/action-menu';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   type AdminCashSettlementSummary,
   type AdminEarning,
@@ -7,6 +6,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
 import { readSearchParam } from '../../lib/date-range';
@@ -185,8 +185,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <CashSettlementProviderGroupsSection providers={providers} />
         </>
       ) : (
-        <AdminFilterPanel
-          className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+        <AdminTablePanel
           description="The default queue keeps payload focused on today's action list. Open the full view only when policy, workflow, and Partner group evidence is needed."
           resultLabel="Compact default"
           resultTone="info"
@@ -209,7 +208,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             ]}
             label="Cash settlement optional operations actions"
           />
-        </AdminFilterPanel>
+        </AdminTablePanel>
       )}
       <CashSettlementOpenDebtTableSection
         filters={filters}

@@ -101,6 +101,8 @@ describe('CashSettlementsPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/cash-settlements/page.tsx'), 'utf8');
 
     expect(source).toContain('ActionMenu');
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('<Link');
     expect(source).not.toContain('className="pill pill-info"');
   });

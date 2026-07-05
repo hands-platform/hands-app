@@ -133,6 +133,8 @@ describe('CashSettlement board sections', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('AdminTablePanel');
+    expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('<span className="pill pill-info">Live policy default</span>');

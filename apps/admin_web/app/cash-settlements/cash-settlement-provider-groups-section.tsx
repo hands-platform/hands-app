@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminDetailGrid } from '../../components/admin-surface';
+import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { CashSettlementProviderGroup } from './cash-settlement-page-types';
@@ -14,8 +14,7 @@ type CashSettlementProviderGroupsSectionProps = {
 
 export function CashSettlementProviderGroupsSection({ providers }: CashSettlementProviderGroupsSectionProps) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+    <AdminTablePanel
       description="Partner-level view for deciding whether to collect a direct deposit or approve an offset against later positive earnings."
       resultLabel={`${providers.length} partner(s)`}
       resultTone={providers.length > 0 ? 'warning' : 'success'}
@@ -64,6 +63,6 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
       ) : (
         <AdminEmptyState framed message="No Partner has open cash settlement debt." title={null} />
       )}
-    </AdminFilterPanel>
+    </AdminTablePanel>
   );
 }
