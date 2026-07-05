@@ -14,12 +14,14 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     expect(sectionSource).toContain('AdminTableSection');
     expect(sectionSource).toContain('AdminSectionHeader');
     expect(sectionSource).toContain('AdminFormControlLink');
+    expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(sectionSource).not.toContain('<Link className="button button-secondary"');
+    expect(sectionSource).not.toContain('Recorded {formatDateTime(attempt.createdAt)}');
   });
 
   it('renders booking gate rows and recent blocked attempts', () => {

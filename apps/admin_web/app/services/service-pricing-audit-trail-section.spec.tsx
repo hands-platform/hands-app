@@ -8,6 +8,7 @@ describe('ServicePricingAuditTrailSection', () => {
   it('uses shared Vuexy badge atoms for pricing audit labels', () => {
     const source = readFileSync('app/services/service-pricing-audit-trail-section.tsx', 'utf8');
 
+    expect(source).toContain('DateTimeText');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableSection');
@@ -17,6 +18,7 @@ describe('ServicePricingAuditTrailSection', () => {
     expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain('<span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${field}`}>');
+    expect(source).not.toContain('<p className="muted">{formatDateTime(row.createdAt)}</p>');
   });
 
   it('renders audit rows with humanized action, changed fields, and pricing labels', () => {

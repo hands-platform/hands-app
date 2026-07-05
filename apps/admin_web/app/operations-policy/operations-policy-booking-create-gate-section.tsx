@@ -4,8 +4,9 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
-import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
+import { shortDisplayId } from '../../lib/admin-format';
 
 type BookingCreateGateReview = {
   readonly currentPolicyLabel: string;
@@ -115,7 +116,7 @@ export function OperationsPolicyBookingCreateGateSection({
               <h3>Blocked booking create attempt</h3>
               <p>{attempt.detail}</p>
               <small>
-                Attempt {shortDisplayId(attempt.id)} - Recorded {formatDateTime(attempt.createdAt)}
+                Attempt {shortDisplayId(attempt.id)} - Recorded <DateTimeText value={attempt.createdAt} />
               </small>
               <div className="actions admin-mt-10">
                 <AdminFormControlLink className="button-secondary" href={attempt.href}>

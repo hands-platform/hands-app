@@ -7,6 +7,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
   it('uses shared Vuexy badge atoms for audit enforced labels', () => {
     const source = readFileSync('app/operations-policy/operations-policy-audit-trail-section.tsx', 'utf8');
 
+    expect(source).toContain('DateTimeText');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableSection');
@@ -15,6 +16,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
     );
     expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain("<span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>");
+    expect(source).not.toContain('<p className="muted">{formatDateTime(row.createdAt)}</p>');
   });
 
   it('renders policy audit rows and audit link', () => {

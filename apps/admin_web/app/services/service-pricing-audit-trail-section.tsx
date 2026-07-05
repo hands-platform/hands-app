@@ -3,8 +3,9 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
-import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
+import { formatRelativeTime } from '../../lib/admin-format';
 import {
   humanizeAuditAction,
   type ServicePricingAuditRow,
@@ -49,7 +50,9 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
               <tr key={row.id}>
                 <td>
                   <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
-                  <p className="muted">{formatDateTime(row.createdAt)}</p>
+                  <p className="muted">
+                    <DateTimeText value={row.createdAt} />
+                  </p>
                 </td>
                 <td>
                   <StatusBadge tone="warning">{humanizeAuditAction(row.action)}</StatusBadge>
