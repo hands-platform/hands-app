@@ -118,6 +118,24 @@ describe('Admin form controls', () => {
     expect(textContent(search)).toContain('Search customer');
   });
 
+  it('keeps duplicate visible select option values on unique React keys', () => {
+    const select = AdminFormSelect({
+      label: 'Review queue',
+      name: 'review',
+      options: [
+        { label: 'Pending partners', value: 'pending' },
+        { label: 'Pending customers', value: 'pending' },
+      ],
+    });
+    const options = select.props.children[1].props.children;
+
+    expect(options.map((option: { key: string }) => option.key)).toEqual(['pending-0', 'pending-1']);
+    expect(options.map((option: { props: { value: string } }) => option.props.value)).toEqual([
+      'pending',
+      'pending',
+    ]);
+  });
+
   it('supports shell search controls without submitting a named query field', () => {
     const search = AdminFormSearch({
       autoFocus: true,
