@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import {
   AdminAvatarStatusDot,
   AdminPersonCell,
@@ -478,7 +479,7 @@ function BookingMonitorListTableRow({
         {participantRows.length > 0 ? (
           <BookingParticipantAvatarGroup participants={participantRows} />
         ) : (
-          <span className="muted">No Partner joined yet</span>
+          <AdminInlineFallback>No Partner joined yet</AdminInlineFallback>
         )}
       </td>
       {groupKey === 'post-match-in-progress' && (
