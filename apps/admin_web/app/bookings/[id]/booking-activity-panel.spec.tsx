@@ -21,6 +21,13 @@ describe('BookingActivityPanel', () => {
     expect(source).not.toContain('<span className="pill pill-neutral">NONE</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible booking activity timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-activity-panel.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('<small>{formatDate(record.at)}</small>');
+  });
+
   it('renders the full record index on the shared Vuexy section surface', () => {
     const markup = renderToStaticMarkup(
       <BookingFullRecordIndex

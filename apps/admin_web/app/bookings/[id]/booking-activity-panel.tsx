@@ -4,9 +4,10 @@ import { Download } from 'lucide-react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
-import { formatDate, shortId } from './booking-formatters';
+import { shortId } from './booking-formatters';
 
 export type BookingRecordIndexCard = {
   href: string;
@@ -103,7 +104,9 @@ export function BookingActivityPanel({
                 )}
                 <p className="muted">{record.detail}</p>
               </div>
-              <small>{formatDate(record.at)}</small>
+              <small>
+                <DateTimeText value={record.at} />
+              </small>
             </div>
           ))
         ) : (
