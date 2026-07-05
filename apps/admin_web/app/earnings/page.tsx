@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -173,7 +174,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
             Open finance closeout
           </Link>
         </div>
-        <div className="filter-row admin-mt-12">
+        <AdminFilterChipGroup ariaLabel="Earnings date range" className="admin-mt-12">
           {[
             { href: '/earnings?range=all', label: 'All dates', range: 'all' },
             { href: '/earnings?range=today', label: 'Today', range: 'today' },
@@ -189,7 +190,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
               {option.label}
             </StatusBadgeLink>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       </AdminFilterPanel>
 
       <EarningsMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />

@@ -186,6 +186,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps finance filter chip rows inside the shared Vuexy chip group atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-filter-chip-group.tsx')
+      .filter((filePath) => rawFinanceFilterChipRowPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -212,6 +221,8 @@ const rawNotificationSegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"[^"]*\bbooking-date-filter-buttons\b[^"]*\b(?:notification-date-filter-buttons|notification-push-campaign-range-row)\b[^"]*"|'[^']*\bbooking-date-filter-buttons\b[^']*\b(?:notification-date-filter-buttons|notification-push-campaign-range-row)\b[^']*')/s;
 const rawBookingMonitorSegmentedButtonsPattern =
   /<div\b[^>]*className=(?:"booking-date-filter-buttons"|'booking-date-filter-buttons')[^>]*aria-label=(?:"Booking list period"|'Booking list period')/s;
+const rawFinanceFilterChipRowPattern =
+  /<div\b[^>]*className=(?:"filter-row admin-mt-12"|'filter-row admin-mt-12')/s;
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;

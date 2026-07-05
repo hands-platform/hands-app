@@ -1,4 +1,5 @@
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
@@ -31,7 +32,7 @@ export function EarningsBatchStateFilterSection({
       resultTone={ledgerCount > 0 ? 'info' : 'warning'}
       title="Earning batch state filters"
     >
-      <div className="filter-row admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Earning batch state" className="admin-mt-12">
         {cards.map((card) => (
           <StatusBadgeLink
             ariaCurrent={card.state === activeState ? 'page' : undefined}
@@ -42,7 +43,7 @@ export function EarningsBatchStateFilterSection({
             {card.label} / {card.count}
           </StatusBadgeLink>
         ))}
-      </div>
+      </AdminFilterChipGroup>
       <div className="service-trace-summary admin-mt-16">
         {cards
           .filter((card) => card.state !== 'all')

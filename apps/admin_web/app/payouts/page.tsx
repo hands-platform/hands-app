@@ -10,6 +10,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
@@ -184,7 +185,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Open finance closeout
           </Link>
         </div>
-        <div className="filter-row admin-mt-12">
+        <AdminFilterChipGroup ariaLabel="Payout date range" className="admin-mt-12">
           {[
             { href: '/payouts?range=all', label: 'All dates', range: 'all' },
             { href: '/payouts?range=today', label: 'Today', range: 'today' },
@@ -200,7 +201,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               {option.label}
             </StatusBadgeLink>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       </AdminFilterPanel>
       <AdminFilterPanel
         className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"

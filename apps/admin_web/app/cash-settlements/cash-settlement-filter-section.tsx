@@ -4,6 +4,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { StatusBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel } from '../../lib/date-range';
@@ -45,7 +46,7 @@ export function CashSettlementFilterSection({
       resultTone="success"
       title="Cash settlement date range"
     >
-      <div className="filter-row admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Cash settlement date range" className="admin-mt-12">
         {([
           { label: 'All dates', range: 'all' },
           { label: 'Today', range: 'today' },
@@ -66,7 +67,7 @@ export function CashSettlementFilterSection({
             {option.label}
           </StatusBadgeLink>
         ))}
-      </div>
+      </AdminFilterChipGroup>
       <form className="inline-form admin-mt-12" action="/cash-settlements">
         <input type="hidden" name="range" value={filters.range} />
         <input type="hidden" name="pageSize" value={filters.pageSize} />
@@ -95,7 +96,7 @@ export function CashSettlementFilterSection({
           Clear
         </Link>
       </form>
-      <div className="filter-row admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Cash settlement queue" className="admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
           <StatusBadgeLink
             ariaCurrent={option.value === filters.queue ? 'page' : undefined}
@@ -106,7 +107,7 @@ export function CashSettlementFilterSection({
             {option.label}
           </StatusBadgeLink>
         ))}
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mt-10">
         Showing {visibleRowCount} of {totalRowCount} open cash debt row(s) for this filter.
         {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
