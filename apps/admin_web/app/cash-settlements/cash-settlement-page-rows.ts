@@ -1,3 +1,6 @@
+import { createElement, Fragment, type ReactNode } from 'react';
+
+import { MoneyText } from '../../components/money-text';
 import type { AdminEarning } from '../../lib/admin-api';
 import { buildCashBookingAccountingPreview } from '../../lib/cash-booking-accounting-preview';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
@@ -147,10 +150,11 @@ export function cashSettlementActionExecutionMap(
       pillClass: hasPaymentEvidence && row.paymentMethod === 'CASH' ? 'pill-success' : 'pill-warn',
       reason:
         hasPaymentEvidence && row.paymentMethod === 'CASH'
-          ? `Booking payment is marked CASH and customer cash amount is ${formatMoney(
-              row.bookingAmount,
-              row.earning.currency,
-            )}.`
+          ? detailWithMoney(
+              'Booking payment is marked CASH and customer cash amount is ',
+              moneyText(row.bookingAmount, row.earning.currency),
+              '.',
+            )
           : 'Payment evidence is missing or the booking payment method is not cash in the current payload.',
       status: hasPaymentEvidence && row.paymentMethod === 'CASH' ? 'Ready' : 'Check booking',
     },
@@ -170,7 +174,10 @@ export function cashSettlementActionExecutionMap(
       pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
       reason:
         row.debtAmount > 0
-          ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
+          ? detailWithMoney(
+              moneyText(row.debtAmount, row.earning.currency),
+              ' remains as HANDS fee/tax wallet debt.',
+            )
           : 'No open wallet debt remains on this earning row.',
       status: row.debtAmount > 0 ? 'Debt open' : 'Clear',
     },
@@ -255,6 +262,14 @@ function cashAccountingPreviewLabels(row: CashSettlementRow, currency: string) {
     taxAmount: row.taxAmount,
     walletLedgerMetadata: row.earning.walletLedgerEntries?.map((entry) => entry.metadata),
   });
+}
+
+function detailWithMoney(...children: ReactNode[]): ReactNode {
+  return createElement(Fragment, null, ...children);
+}
+
+function moneyText(amount: number, currency: string): ReactNode {
+  return createElement(MoneyText, { amount, currency });
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

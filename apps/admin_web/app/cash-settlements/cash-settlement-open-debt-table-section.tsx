@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
+
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
 import { ActionMenu } from '../../components/action-menu';
@@ -20,7 +22,7 @@ export type CashSettlementOpenDebtActionExecutionRow = {
   readonly action: string;
   readonly operatorRule: string;
   readonly pillClass: string;
-  readonly reason: string;
+  readonly reason: ReactNode;
   readonly status: string;
 };
 

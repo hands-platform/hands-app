@@ -42,6 +42,22 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).not.toContain('taxAmountLabel: string');
   });
 
+  it('allows action execution reasons to render shared money atoms', () => {
+    const sectionSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-open-debt-table-section.tsx'),
+      'utf8',
+    );
+    const modelSource = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-page-rows.ts'),
+      'utf8',
+    );
+
+    expect(sectionSource).toContain('readonly reason: ReactNode');
+    expect(modelSource).toContain('MoneyText');
+    expect(modelSource).not.toContain('customer cash amount is ${formatMoney(');
+    expect(modelSource).not.toContain('${formatMoney(row.debtAmount');
+  });
+
   it('renders compact open cash debt rows without per-row operations evidence by default', () => {
     const section = CashSettlementOpenDebtTableSection({
       pagination: pagination([buildRow()], { totalRows: 12 }),
