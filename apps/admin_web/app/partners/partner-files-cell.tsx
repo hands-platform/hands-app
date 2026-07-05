@@ -1,10 +1,10 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
-import { formatDateTime } from '../../lib/admin-format';
 import { formatBytes } from './partner-list-ops';
 import {
   providerPublicMedia,
@@ -43,7 +43,12 @@ export function PartnerFilesCell({
             <p className="muted">
               {file.contentType}
               {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-              {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
+              {file.uploadedAt ? (
+                <>
+                  {' / uploaded '}
+                  <DateTimeText value={file.uploadedAt} />
+                </>
+              ) : null}
             </p>
             <p className="muted">
               {marketplaceDisplayText(file.key)}
@@ -92,7 +97,12 @@ function PartnerPublicMediaQueue({
           <p className="muted admin-mb-6">
             {file.contentType}
             {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-            {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
+            {file.uploadedAt ? (
+              <>
+                {' / uploaded '}
+                <DateTimeText value={file.uploadedAt} />
+              </>
+            ) : null}
           </p>
           <p className="muted admin-mb-6">
             {file.url ? (

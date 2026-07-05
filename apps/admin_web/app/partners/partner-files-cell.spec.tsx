@@ -13,7 +13,9 @@ describe('PartnerFilesCell', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain("` / uploaded ${formatDateTime(file.uploadedAt)}`");
     expect(source).not.toContain('<span className="pill pill-info">{file.purpose ?? \'Partner verification\'}</span>');
     expect(source).not.toContain('<span className={`pill ${file.uploadStatus === \'UPLOADED\' ? \'pill-success\' : \'pill-warn\'}`}>');
     expect(source).not.toContain('<span className="pill pill-info">{file.purpose}</span>');

@@ -13,7 +13,9 @@ describe('PartnerOnboardingCell', () => {
     const source = readFileSync('app/partners/partner-onboarding-cell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain("` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}`");
     expect(source).not.toContain('<span className="pill pill-info">{provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');
     expect(source).not.toContain('<span className={`pill ${provider.kyc?.status === \'APPROVED\' ? \'pill-success\' : \'pill-warn\'}`}>');
     expect(source).not.toContain('<span className={`pill ${primaryBank?.status === \'APPROVED\' ? \'pill-success\' : \'pill-neutral\'}`}>');

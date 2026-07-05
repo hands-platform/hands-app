@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import {
@@ -7,7 +8,6 @@ import {
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
-import { formatDateTime } from '../../lib/admin-format';
 import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../lib/operations-policy';
 import { formatBytes } from './partner-list-ops';
 import {
@@ -135,9 +135,12 @@ export function PartnerOnboardingCell({
               <p className="muted admin-mb-6">
                 {document.fileAsset?.contentType ?? 'unknown file'}
                 {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
-                {document.fileAsset?.uploadedAt
-                  ? ` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}`
-                  : ''}
+                {document.fileAsset?.uploadedAt ? (
+                  <>
+                    {' / uploaded '}
+                    <DateTimeText value={document.fileAsset.uploadedAt} />
+                  </>
+                ) : null}
               </p>
               <p className="muted admin-mb-6">
                 {marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')}

@@ -1,6 +1,6 @@
 import { ActionMenu } from '../../components/action-menu';
+import { DateTimeText } from '../../components/date-time-text';
 import type { AdminProvider } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
 import {
   maskToken,
   readFailureCode,
@@ -22,37 +22,40 @@ export function PartnerPushDevicesCell({ provider }: PartnerPushDevicesCellProps
 
   return (
     <>
-      {pushDevices.map((device) => (
-        <div className="admin-mb-8" key={device.id}>
-          <p className="muted admin-mb-4">
-            {device.platform} / {device.enabled ? 'enabled' : 'disabled'} / Token hidden
-          </p>
-          {!device.enabled ? (
+      {pushDevices.map((device) => {
+        const lastAttempt = readLastAttempt(device);
+        return (
+          <div className="admin-mb-8" key={device.id}>
             <p className="muted admin-mb-4">
-              Last failure: {readFailureCode(device) ?? 'Unknown'} / {readFailureStatus(device) ?? 'FAILED'}
+              {device.platform} / {device.enabled ? 'enabled' : 'disabled'} / Token hidden
             </p>
-          ) : null}
-          {readLastAttempt(device) ? (
-            <p className="muted admin-mb-4">
-              Last attempt: {formatDateTime(readLastAttempt(device))}
-            </p>
-          ) : null}
-          {!device.enabled ? (
-            <ActionMenu
-              actions={[
-                {
-                  description: 'Review token health before re-enabling this Partner push device.',
-                  href: partnerPushDeviceActionConfirmHref(device.id),
-                  kind: 'link',
-                  label: 'Re-enable',
-                  tone: 'danger',
-                },
-              ]}
-              label={`Push device actions for ${maskToken(device.id)}`}
-            />
-          ) : null}
-        </div>
-      ))}
+            {!device.enabled ? (
+              <p className="muted admin-mb-4">
+                Last failure: {readFailureCode(device) ?? 'Unknown'} / {readFailureStatus(device) ?? 'FAILED'}
+              </p>
+            ) : null}
+            {lastAttempt ? (
+              <p className="muted admin-mb-4">
+                Last attempt: <DateTimeText value={lastAttempt} />
+              </p>
+            ) : null}
+            {!device.enabled ? (
+              <ActionMenu
+                actions={[
+                  {
+                    description: 'Review token health before re-enabling this Partner push device.',
+                    href: partnerPushDeviceActionConfirmHref(device.id),
+                    kind: 'link',
+                    label: 'Re-enable',
+                    tone: 'danger',
+                  },
+                ]}
+                label={`Push device actions for ${maskToken(device.id)}`}
+              />
+            ) : null}
+          </div>
+        );
+      })}
     </>
   );
 }

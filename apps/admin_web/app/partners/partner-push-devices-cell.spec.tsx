@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import type { AdminProvider } from '../../lib/admin-api';
 import { PartnerPushDevicesCell } from './partner-push-devices-cell';
 
 describe('PartnerPushDevicesCell', () => {
+  it('uses the shared DateTimeText atom for visible push delivery timestamps', () => {
+    const source = readFileSync('app/partners/partner-push-devices-cell.tsx', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('Last attempt: {formatDateTime(readLastAttempt(device))}');
+  });
+
   it('renders enabled and disabled Partner push device state', () => {
     const cell = PartnerPushDevicesCell({
       provider: {
