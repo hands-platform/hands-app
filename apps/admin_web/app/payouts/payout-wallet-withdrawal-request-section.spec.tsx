@@ -255,6 +255,7 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).toContain('AdminCard');
     expect(sectionSource).toContain('AdminLinkCard');
     expect(sectionSource).not.toContain('<div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">');
+    expect(sectionSource).not.toContain('<AdminCard className="payout-wallet-withdrawal-summary-card is-audit">');
     expect(sectionSource).not.toContain("'card admin-card payout-wallet-withdrawal-summary-card'");
   });
 

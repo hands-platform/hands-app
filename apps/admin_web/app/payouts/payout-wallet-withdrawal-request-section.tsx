@@ -51,31 +51,35 @@ export function PayoutWalletWithdrawalRequestSection({
     >
       <div className="payout-wallet-withdrawal-summary-grid" aria-label="Withdrawal request status summary">
         <span className="sr-only">Withdrawal request status summary</span>
-        <WithdrawalSummaryStatusCard
+        <WithdrawalSummaryCard
           active={activeStatus === 'REQUESTED'}
           count={summary.requested}
+          helper="Open filter"
           href={withdrawalStatusHref(range, 'REQUESTED')}
           label="Requested"
         />
-        <WithdrawalSummaryStatusCard
+        <WithdrawalSummaryCard
           active={activeStatus === 'REVIEW_REQUIRED'}
           count={summary.reviewRequired}
+          helper="Open filter"
           href={withdrawalStatusHref(range, 'REVIEW_REQUIRED')}
           label="Review required"
           tone="warning"
         />
-        <WithdrawalSummaryStatusCard
+        <WithdrawalSummaryCard
           active={activeStatus === 'BANK_TRANSFER_PENDING'}
           count={summary.bankTransferPending}
+          helper="Open filter"
           href={withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING')}
           label="Bank transfer pending"
           tone="info"
         />
-        <AdminCard className="payout-wallet-withdrawal-summary-card is-audit">
-          <span>Lock released</span>
-          <strong>{summary.lockReleased}</strong>
-          <small>Audit evidence</small>
-        </AdminCard>
+        <WithdrawalSummaryCard
+          count={summary.lockReleased}
+          helper="Audit evidence"
+          label="Lock released"
+          tone="audit"
+        />
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -132,32 +136,40 @@ export function PayoutWalletWithdrawalRequestSection({
   );
 }
 
-function WithdrawalSummaryStatusCard({
+function WithdrawalSummaryCard({
   active,
   count,
+  helper,
   href,
   label,
   tone = 'neutral',
 }: {
-  readonly active: boolean;
+  readonly active?: boolean;
   readonly count: number;
-  readonly href: string;
+  readonly helper: string;
+  readonly href?: string;
   readonly label: string;
-  readonly tone?: 'info' | 'neutral' | 'warning';
+  readonly tone?: 'audit' | 'info' | 'neutral' | 'warning';
 }) {
-  return (
-    <AdminLinkCard
-      className={joinClassNames(
-        'payout-wallet-withdrawal-summary-card',
-        `is-${tone}`,
-        active ? 'is-active' : undefined,
-      )}
-      href={href}
-    >
+  const className = joinClassNames(
+    'payout-wallet-withdrawal-summary-card',
+    `is-${tone}`,
+    active ? 'is-active' : undefined,
+  );
+  const content = (
+    <>
       <span>{label}</span>
       <strong>{count}</strong>
-      <small>{active ? 'Selected' : 'Open filter'}</small>
+      <small>{active ? 'Selected' : helper}</small>
+    </>
+  );
+
+  return href ? (
+    <AdminLinkCard className={className} href={href}>
+      {content}
     </AdminLinkCard>
+  ) : (
+    <AdminCard className={className}>{content}</AdminCard>
   );
 }
 
