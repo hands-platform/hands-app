@@ -16,6 +16,16 @@ describe('AdminPageTemplate', () => {
     });
   });
 
+  it('deduplicates content wrapper classes when page sections migrate to the shared shell', () => {
+    const template = AdminPageTemplate({
+      children: <section>Finance rows</section>,
+      contentClassName: 'finance-overview-grid admin-page-content finance-overview-grid',
+      title: 'Finance overview',
+    });
+
+    expect(template.props.children[2].props.className).toBe('finance-overview-grid admin-page-content');
+  });
+
   it('renders metric cards through the shared metric grid', () => {
     const grid = AdminMetricGrid({
       ariaLabel: 'Notification metrics',

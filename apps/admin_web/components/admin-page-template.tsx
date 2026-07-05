@@ -52,7 +52,7 @@ export function AdminPageTemplate({
         {actions ? <div className="participant-list">{actions}</div> : null}
       </div>
       {metrics.length ? <AdminMetricGrid metrics={metrics} /> : null}
-      {contentClassName ? <div className={contentClassName}>{children}</div> : children}
+      {contentClassName ? <div className={joinClassNames(contentClassName)}>{children}</div> : children}
     </>
   );
 }
