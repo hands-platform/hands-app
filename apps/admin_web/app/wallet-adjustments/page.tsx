@@ -4,6 +4,7 @@ import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
+  AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
@@ -118,7 +119,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         resultTone={preview ? 'success' : 'warning'}
         title="Manual adjustment request"
       >
-        <form className="filter-grid" method="get">
+        <AdminFormGrid method="get">
           <input name="intent" type="hidden" value="preview" />
           <AdminFormSelect
             defaultValue={formState.ownerType}
@@ -189,7 +190,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             rows={3}
           />
           <AdminFormControlButton>Preview accounting</AdminFormControlButton>
-        </form>
+        </AdminFormGrid>
         <AdjustmentPolicyChecklist />
       </AdminFilterPanel>
 

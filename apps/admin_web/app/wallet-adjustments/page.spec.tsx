@@ -319,6 +319,11 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
   });
 
+  it('uses the shared Vuexy form grid atom for the preview request form', () => {
+    expect(pageSource).toContain('AdminFormGrid');
+    expect(pageSource).not.toContain('<form className="filter-grid" method="get">');
+  });
+
   it('uses the shared table pagination footer for adjustment history', () => {
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).not.toContain('<AdminTableFooter>');
