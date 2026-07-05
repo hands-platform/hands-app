@@ -130,6 +130,17 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<span className={snapshotConsistency.warningCount ? \'pill pill-warn\' : \'pill pill-neutral\'}>');
     expect(pageSource).not.toContain('<span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>');
   });
+
+  it('uses the shared money atom for visible tax policy amounts', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).not.toContain('`${formatBps(preview.rule.rateBps)} plus ${formatMoney(');
+    expect(pageSource).not.toContain('<strong>{formatMoney(preview.withholdingAmount)} withholding</strong>');
+    expect(pageSource).not.toContain('Gross {formatMoney(preview.grossAmount)} / service type');
+    expect(pageSource).not.toContain('{rule.fixedAmount ? ` + ${formatMoney(rule.fixedAmount)}` : \'\'}');
+    expect(pageSource).not.toContain(
+      '? ` / ${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : \'no max\'}`',
+    );
+  });
 });
 
 function taxPolicyFixture(): AdminTaxPolicyVersion {

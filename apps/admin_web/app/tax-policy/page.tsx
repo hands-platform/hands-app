@@ -11,6 +11,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
@@ -155,10 +156,15 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div className="setup-stage-item">
             <span>{preview.rule ? 'RULE' : 'FALLBACK'}</span>
             <div>
-              <strong>{preview.rule ? taxRuleLabel(preview.rule) : 'No matching active rule'}</strong>
+              <strong>{preview.rule ? <TaxPolicyRuleLabel rule={preview.rule} /> : 'No matching active rule'}</strong>
               <p className="muted">
                 {preview.rule
-                  ? `${formatBps(preview.rule.rateBps)} plus ${formatMoney(preview.rule.fixedAmount, 'VND', '0 VND')} fixed amount.`
+                  ? (
+                      <>
+                        {formatBps(preview.rule.rateBps)} plus{' '}
+                        <MoneyText amount={preview.rule.fixedAmount} fallback="0 VND" /> fixed amount.
+                      </>
+                    )
                   : 'Withholding preview returns 0 until a matching default/service/amount-band rule exists.'}
               </p>
             </div>
@@ -167,9 +173,12 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div className="setup-stage-item">
             <span>TAX</span>
             <div>
-              <strong>{formatMoney(preview.withholdingAmount)} withholding</strong>
+              <strong>
+                <MoneyText amount={preview.withholdingAmount} /> withholding
+              </strong>
               <p className="muted">
-                Gross {formatMoney(preview.grossAmount)} / service type {preview.serviceType || 'not set'}.
+                Gross <MoneyText amount={preview.grossAmount} /> / service type{' '}
+                {preview.serviceType || 'not set'}.
               </p>
             </div>
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
@@ -304,10 +313,18 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     </strong>
                     <p className="muted">
                       {formatBps(rule.rateBps)}
-                      {rule.fixedAmount ? ` + ${formatMoney(rule.fixedAmount)}` : ''}
-                      {rule.scope === 'AMOUNT_BAND'
-                        ? ` / ${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : 'no max'}`
-                        : ''}
+                      {rule.fixedAmount ? (
+                        <>
+                          {' '}
+                          + <MoneyText amount={rule.fixedAmount} />
+                        </>
+                      ) : null}
+                      {rule.scope === 'AMOUNT_BAND' ? (
+                        <>
+                          {' '}
+                          / <TaxPolicyAmountBand rule={rule} />
+                        </>
+                      ) : null}
                     </p>
                     <AdminFormGrid action={updateTaxRule} className="compact-form">
                       <input type="hidden" name="ruleId" value={rule.id} />
@@ -755,14 +772,28 @@ function taxRulePriority(rule: AdminTaxRule, serviceTypes: Set<string>, grossAmo
   return 0;
 }
 
-function taxRuleLabel(rule: AdminTaxRule) {
+function TaxPolicyRuleLabel({ rule }: { readonly rule: AdminTaxRule }) {
   if (rule.scope === 'SERVICE_TYPE') {
-    return `Service type / ${rule.serviceType ?? 'missing service key'}`;
+    return <>Service type / {rule.serviceType ?? 'missing service key'}</>;
   }
   if (rule.scope === 'AMOUNT_BAND') {
-    return `Amount band / ${formatBand(rule)}`;
+    return (
+      <>
+        Amount band / <TaxPolicyAmountBand rule={rule} />
+      </>
+    );
   }
-  return 'Default withholding rule';
+  return <>Default withholding rule</>;
+}
+
+function TaxPolicyAmountBand({ rule }: { readonly rule: AdminTaxRule }) {
+  return (
+    <>
+      <MoneyText amount={rule.minGrossAmount ?? 0} />
+      {' - '}
+      {rule.maxGrossAmount ? <MoneyText amount={rule.maxGrossAmount} /> : 'no max'}
+    </>
+  );
 }
 
 function readSearchParam(params: Record<string, string | string[] | undefined>, key: string) {
