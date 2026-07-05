@@ -1,6 +1,16 @@
+import { readFileSync } from 'node:fs';
+
 import { FinanceCloseoutPayoutReleaseChecksSection } from './finance-closeout-payout-release-checks-section';
 
 describe('FinanceCloseoutPayoutReleaseChecksSection', () => {
+  it('uses the shared Vuexy text link atom for payout queue links', () => {
+    const source = readFileSync(new URL('./finance-closeout-payout-release-checks-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders handoff rows with queue links and release guidance', () => {
     const section = FinanceCloseoutPayoutReleaseChecksSection({
       rows: [

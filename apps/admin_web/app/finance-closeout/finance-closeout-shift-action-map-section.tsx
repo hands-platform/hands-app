@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { FinanceCloseoutShiftActionMapItem } from '../../lib/finance-closeout';
 
@@ -13,9 +14,9 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href="/operations-handoff">
+        <AdminTextLink href="/operations-handoff">
           Open handoff
-        </Link>
+        </AdminTextLink>
       }
       bodyClassName="setup-stage-list admin-mt-12"
       className="admin-mb-16"

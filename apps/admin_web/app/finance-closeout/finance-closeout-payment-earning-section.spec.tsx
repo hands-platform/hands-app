@@ -14,6 +14,17 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy text link atom for the earnings action', () => {
+    const source = readFileSync(
+      new URL('./finance-closeout-payment-earning-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders earning summary totals and the earnings link', () => {
     const section = FinanceCloseoutPaymentEarningSection({
       currency: 'VND',

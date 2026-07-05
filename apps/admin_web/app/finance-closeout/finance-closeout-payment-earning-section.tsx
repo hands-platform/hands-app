@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import type { AdminEarningSummary } from '../../lib/admin-api';
 
@@ -16,9 +15,9 @@ export function FinanceCloseoutPaymentEarningSection({
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href="/earnings">
+        <AdminTextLink href="/earnings">
           Open earnings
-        </Link>
+        </AdminTextLink>
       }
       bodyClassName="service-trace-summary"
       className="admin-mb-16"

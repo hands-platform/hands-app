@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { formatRelativeTime } from '../../lib/admin-format';
 
@@ -22,9 +21,9 @@ export function FinanceCloseoutCashDebtHandoffSection({
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href="/cash-settlements">
+        <AdminTextLink href="/cash-settlements">
           Open cash settlements
-        </Link>
+        </AdminTextLink>
       }
       bodyClassName="detail-grid admin-mt-16"
       className="admin-mb-16"

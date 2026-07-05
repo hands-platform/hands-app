@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   AdminCashSettlementSummary,
   AdminEarning,
@@ -12,6 +11,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink } from '../../components/status-badge';
 import {
@@ -105,9 +105,9 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
 
       <AdminSection
         actions={
-          <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
+          <AdminTextLink href="/audit-log?bucket=Finance%2FCloseout">
             Open finance audit
-          </Link>
+          </AdminTextLink>
         }
         bodyClassName="filter-row admin-mt-12"
         className="admin-mt-16 admin-mb-16"

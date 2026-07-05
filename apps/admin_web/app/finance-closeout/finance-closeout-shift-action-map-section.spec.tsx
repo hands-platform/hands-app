@@ -69,7 +69,10 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
     );
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
   });
 });
 

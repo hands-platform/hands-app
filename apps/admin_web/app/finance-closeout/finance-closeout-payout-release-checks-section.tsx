@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import type { FinanceCloseoutHandoffRow } from '../../lib/finance-closeout';
 
 type FinanceCloseoutPayoutReleaseChecksSectionProps = {
@@ -14,9 +13,9 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
   return (
     <AdminTableSection
       actions={
-        <Link className="text-link" href="/payouts">
+        <AdminTextLink href="/payouts">
           Open payouts
-        </Link>
+        </AdminTextLink>
       }
       bodyClassName="admin-table-section-body"
       className="admin-card-scroll"
@@ -35,9 +34,9 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
             <td>{row.amount}</td>
             <td>{row.nextAction}</td>
             <td>
-              <Link className="text-link" href={row.href}>
+              <AdminTextLink href={row.href}>
                 Open queue
-              </Link>
+              </AdminTextLink>
             </td>
           </tr>
         ))}

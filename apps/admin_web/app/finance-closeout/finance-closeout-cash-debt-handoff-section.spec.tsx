@@ -14,6 +14,17 @@ describe('FinanceCloseoutCashDebtHandoffSection', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy text link atom for the cash settlement action', () => {
+    const source = readFileSync(
+      new URL('./finance-closeout-cash-debt-handoff-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders wallet gate counts, debt amount, oldest open age, and settlement link', () => {
     const section = FinanceCloseoutCashDebtHandoffSection({
       cashDebtAmount: 450000,

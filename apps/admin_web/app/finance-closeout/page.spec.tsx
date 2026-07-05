@@ -205,6 +205,12 @@ describe('FinanceCloseoutPage', () => {
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 
+  it('uses the shared Vuexy text link atom for closeout audit links', () => {
+    expect(pageSource).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(pageSource).toContain('<AdminTextLink');
+    expect(pageSource).not.toContain('className="text-link"');
+  });
+
   it('uses shared money atoms for closeout page KPI amounts', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).not.toContain('formatMoney(');
