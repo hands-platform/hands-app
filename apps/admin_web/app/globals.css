@@ -1380,8 +1380,11 @@ a {
 }
 
 .calendar-vuexy-datepicker .react-datepicker__month-container {
+  box-sizing: border-box;
   float: none;
   inline-size: 270px;
+  max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .calendar-vuexy-datepicker:has(.react-datepicker__time-container) .react-datepicker__month-container {
@@ -1390,6 +1393,7 @@ a {
 
 .calendar-vuexy-datepicker-inline .react-datepicker__month-container {
   inline-size: 100%;
+  max-inline-size: 100%;
 }
 
 .react-datepicker.calendar-vuexy-datepicker-inline .react-datepicker__current-month {

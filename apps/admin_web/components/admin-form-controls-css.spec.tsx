@@ -111,6 +111,22 @@ describe('Admin form control CSS', () => {
     expect(headerTitleBlock).not.toContain('padding: 12px 16px;');
   });
 
+  it('keeps react-datepicker month containers constrained inside Vuexy form surfaces', () => {
+    const monthContainerIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-container {');
+    const monthContainerBlock = cssRuleBlockAt(monthContainerIndex);
+    const inlineMonthContainerIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker-inline .react-datepicker__month-container {',
+    );
+    const inlineMonthContainerBlock = cssRuleBlockAt(inlineMonthContainerIndex);
+
+    expect(monthContainerIndex).toBeGreaterThan(-1);
+    expect(inlineMonthContainerIndex).toBeGreaterThan(-1);
+    expect(monthContainerBlock).toContain('box-sizing: border-box');
+    expect(monthContainerBlock).toContain('max-inline-size: 100%');
+    expect(monthContainerBlock).toContain('min-inline-size: 0');
+    expect(inlineMonthContainerBlock).toContain('max-inline-size: 100%');
+  });
+
   it('keeps today dates on Vuexy normal font weight instead of local bold emphasis', () => {
     const todayIndex = globalsCss.indexOf(
       '.calendar-vuexy-datepicker .react-datepicker__day--today:not(.react-datepicker__day--selected)',
