@@ -19,6 +19,7 @@ import {
   AdminFormControlLink,
   AdminFormDate,
   AdminFormGrid,
+  AdminFormShell,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -1013,12 +1014,12 @@ function CustomerOperatorCommandAction({
   }
 
   return (
-    <form action={addCustomerOpsNote} className="compact-form">
+    <AdminFormShell action={addCustomerOpsNote} className="compact-form">
       <input type="hidden" name="customerId" value={customerId} />
       <input type="hidden" name="preset" value={command.action.preset} />
       <input type="hidden" name="bookingId" value={command.action.bookingId ?? ''} />
       <AdminFormControlButton type="submit">{command.action.label}</AdminFormControlButton>
-    </form>
+    </AdminFormShell>
   );
 }
 
