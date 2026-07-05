@@ -16,10 +16,10 @@ describe('FinanceCloseoutPayoutReleaseChecksSection', () => {
 
     const rendered = textContent(section);
 
-    expect(section.type.name).toBe('AdminSection');
+    expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll vuexy-booking-table-card vuexy-booking-table-group',
+      className: 'admin-card-scroll',
       title: 'Payout release checks',
     });
     expect(rendered).toContain('Payout release checks');

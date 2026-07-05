@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable } from '../../components/admin-data-table';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import type { FinanceCloseoutHandoffRow } from '../../lib/finance-closeout';
 
 type FinanceCloseoutPayoutReleaseChecksSectionProps = {
@@ -12,14 +12,14 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
   rows,
 }: FinanceCloseoutPayoutReleaseChecksSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       actions={
         <Link className="text-link" href="/payouts">
           Open payouts
         </Link>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll vuexy-booking-table-card vuexy-booking-table-group"
+      className="admin-card-scroll"
       description="Transfer refs, earnings, tax logs, and open holds should be checked before a batch moves to paid. Use this as the final finance handoff list."
       title="Payout release checks"
     >
@@ -42,6 +42,6 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
           </tr>
         ))}
       </AdminDataTable>
-    </AdminSection>
+    </AdminTableSection>
   );
 }
