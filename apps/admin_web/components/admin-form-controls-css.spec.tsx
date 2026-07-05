@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
 describe('Admin form control CSS', () => {
+  it('keeps every shared admin design token reference defined', () => {
+    const usedTokens = new Set(globalsCss.match(/var\((--admin-[\w-]+)/g)?.map((token) => token.slice(4)) ?? []);
+    const definedTokens = new Set(globalsCss.match(/--admin-[\w-]+(?=\s*:)/g) ?? []);
+    const missingTokens = [...usedTokens].filter((token) => !definedTokens.has(token)).sort();
+
+    expect(missingTokens).toEqual([]);
+  });
+
   it('lets Vuexy button tone classes override the base form action shell', () => {
     const baseIndex = globalsCss.indexOf('.admin-form-control-button,');
     const primaryIndex = globalsCss.indexOf('.admin-form-control-button.button-primary');
