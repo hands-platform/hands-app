@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '..
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { DateTimeText } from '../../components/date-time-text';
 import type { CustomerFilters } from './customer-filters';
 import { buildCustomerListHref } from './customer-filters';
 import type { CustomerPagination } from './customer-list-model';
@@ -57,7 +58,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
                 <strong>{row.joinedLabel}</strong>
               </td>
               <td>
-                <strong>{row.lastLoginDateLabel}</strong>
+                <DateTimeText fallback="Not captured" value={row.lastSeenAt} />
               </td>
               <td>
                 <strong>{row.lastLoginAddressLabel}</strong>

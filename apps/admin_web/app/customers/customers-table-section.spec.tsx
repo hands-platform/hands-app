@@ -29,6 +29,16 @@ describe('CustomersTableSection', () => {
     );
   });
 
+  it('uses the shared date time atom for last login timestamps', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+    const modelSource = readFileSync('app/customers/customer-management-view-model.ts', 'utf8');
+
+    expect(source).toContain('DateTimeText');
+    expect(modelSource).not.toContain('readonly lastLoginDateLabel: string;');
+    expect(source).not.toContain('<strong>{row.lastLoginDateLabel}</strong>');
+    expect(modelSource).not.toContain("lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured'");
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),
@@ -113,7 +123,7 @@ function buildRow(): CustomerManagementTableRow {
     genderLabel: 'Female',
     initials: 'CO',
     lastLoginAddressLabel: 'Not captured',
-    lastLoginDateLabel: '13 Jun 2026, 03:15',
+    lastSeenAt: '2026-06-12T20:15:00.000Z',
     joinedLabel: '2026-06-01',
     name: 'Customer One',
     paymentsHref: '/payments?customer=customer-1',
