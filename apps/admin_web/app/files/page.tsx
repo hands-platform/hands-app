@@ -11,7 +11,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
@@ -114,8 +114,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         resultLabel={`${rows.length} visible / ${summary.total} file(s)`}
       />
 
-      <AdminSection
-        className="vuexy-booking-table-card vuexy-booking-table-group"
+      <AdminTableSection
         description="Approve or reject public media here. Private verification files remain evidence for Partner review."
         statusLabel={`${rows.length} visible`}
         statusTone={rows.length ? 'info' : 'neutral'}
@@ -143,7 +142,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
           totalPages={totalPages}
           totalRows={summary.totalProviders}
         />
-      </AdminSection>
+      </AdminTableSection>
     </AdminPageTemplate>
   );
 }

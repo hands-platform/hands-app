@@ -40,6 +40,8 @@ describe('FilesPage', () => {
   });
 
   it('uses the shared table pagination footer for file review pages', () => {
+    expect(pageSource).toContain('AdminTableSection');
+    expect(pageSource).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('ariaLabel="File review provider pages"');
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
