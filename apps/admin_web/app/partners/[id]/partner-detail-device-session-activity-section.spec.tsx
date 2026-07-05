@@ -8,9 +8,11 @@ const sectionSource = readFileSync(
 
 describe('PartnerDetailDeviceSessionActivitySection', () => {
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
+    expect(sectionSource).toContain('AdminDetailGrid');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).toContain('AdminTaskCard');
+    expect(sectionSource).not.toContain('<div className="detail-grid admin-mt-16">');
     expect(sectionSource).not.toContain('className={`ops-task-card');
     expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>');
     expect(sectionSource).not.toContain('<span className="pill pill-info">{device.statusLabel}</span>');

@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminTaskCard } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -163,7 +163,7 @@ export function PartnerDetailPayoutOperationsSection({
           <PartnerDetailVuexyTableFooter rowCount={operations.blockers.length} />
         </>
       ) : null}
-      <div className="detail-grid admin-mt-16">
+      <AdminDetailGrid className="admin-mt-16">
         <div>
           <AdminSectionHeader
             actions={(
@@ -272,7 +272,7 @@ export function PartnerDetailPayoutOperationsSection({
           </AdminTableScroll>
           <PartnerDetailVuexyTableFooter rowCount={payoutBatchRows.length} />
         </div>
-      </div>
+      </AdminDetailGrid>
     </AdminFilterPanel>
   );
 }

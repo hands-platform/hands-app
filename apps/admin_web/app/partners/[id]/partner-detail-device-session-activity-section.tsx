@@ -2,7 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
-import { AdminTaskCard } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -95,7 +95,7 @@ export function PartnerDetailDeviceSessionActivitySection({
           />
         ))}
       </div>
-      <div className="detail-grid admin-mt-16">
+      <AdminDetailGrid className="admin-mt-16">
         <div>
           <h3>Partner app devices</h3>
           <AdminTableScroll>
@@ -161,7 +161,7 @@ export function PartnerDetailDeviceSessionActivitySection({
           </AdminTableScroll>
           <PartnerDetailVuexyTableFooter rowCount={sessionRows.length} />
         </div>
-      </div>
+      </AdminDetailGrid>
       {sharedDeviceRows.length ? (
         <div className="admin-mt-16">
           <AdminTableScroll>

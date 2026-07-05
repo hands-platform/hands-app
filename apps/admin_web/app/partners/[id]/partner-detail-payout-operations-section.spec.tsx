@@ -6,10 +6,12 @@ describe('PartnerDetailPayoutOperationsSection', () => {
   it('uses shared Vuexy badge atoms for payout operation statuses', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
+    expect(source).not.toContain('<div className="detail-grid admin-mt-16">');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(card.tone)}`}>{card.status}</span>');
