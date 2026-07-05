@@ -150,19 +150,19 @@ describe('cash settlement page model', () => {
 
     expect(row).toMatchObject({
       bookingAmount: 540_000,
-      cashAccountingPreview: [
-        'Dr Partner receivable 110.000 VND',
-        'Cr Platform fee net revenue 58.519 VND',
-        'Cr Company output VAT payable 9.481 VND',
-        'Cr Partner withholding tax payable 42.000 VND',
-        'Coupon offset already applied 60.000 VND',
-      ],
       cashCouponOffsetAmount: 60_000,
       currency: 'VND',
       debtAmount: 110_000,
       platformFee: 170_000,
       taxAmount: 42_000,
     });
+    expect(row.cashAccountingPreview.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
+      'Dr Partner receivable 110.000 VND',
+      'Cr Platform fee net revenue 58.519 VND',
+      'Cr Company output VAT payable 9.481 VND',
+      'Cr Partner withholding tax payable 42.000 VND',
+      'Coupon offset already applied 60.000 VND',
+    ]);
     expect(row.walletDeductionBreakdown.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
       'Platform net wallet deduction 58.519 VND',
       'Company VAT wallet deduction 9.481 VND',

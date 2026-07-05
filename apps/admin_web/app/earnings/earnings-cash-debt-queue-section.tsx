@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
@@ -16,7 +17,8 @@ export type EarningsCashDebtQueueItem = {
   readonly bookingAmount: number;
   readonly bookingHref: string;
   readonly bookingShortId: string;
-  readonly cashAccountingPreview: readonly string[];
+  readonly cashAccountingPreview: readonly ReactNode[];
+  readonly cashAccountingPreviewText: readonly string[];
   readonly currency: string;
   readonly debtAmount: number;
   readonly earningId: string;
@@ -87,8 +89,8 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                     aria-label={`Cash accounting preview for ${item.earningId}`}
                   >
                     <span>Accounting preview</span>
-                    {item.cashAccountingPreview.map((line) => (
-                      <small key={`${item.earningId}-${line}`}>{line}</small>
+                    {item.cashAccountingPreview.map((line, index) => (
+                      <small key={`${item.earningId}-cash-accounting-${index}`}>{line}</small>
                     ))}
                   </div>
                 ) : null}

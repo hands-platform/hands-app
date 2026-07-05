@@ -31,7 +31,7 @@ export type CashSettlementOpenDebtTableRow = {
   readonly bookingAmount: number;
   readonly bookingHref: string;
   readonly bookingLabel: string;
-  readonly cashAccountingPreview: readonly string[];
+  readonly cashAccountingPreview: readonly ReactNode[];
   readonly cashCouponOffsetAmount: number | null;
   readonly createdAtLabel: string;
   readonly currency: string;
@@ -127,8 +127,8 @@ export function CashSettlementOpenDebtTableSection({
                   aria-label={`Cash accounting preview for ${row.earningId}`}
                 >
                   <span>Accounting preview</span>
-                  {row.cashAccountingPreview.map((item) => (
-                    <small key={`${row.earningId}-${item}`}>{item}</small>
+                  {row.cashAccountingPreview.map((item, index) => (
+                    <small key={`${row.earningId}-cash-accounting-${index}`}>{item}</small>
                   ))}
                 </div>
               ) : null}

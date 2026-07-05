@@ -120,18 +120,18 @@ describe('earnings page model', () => {
     const payoutQueue = buildProviderPayoutQueue(rows, []);
 
     expect(cashDebtItems[0]).toMatchObject({
-      cashAccountingPreview: [
-        'Dr Partner receivable 30.000 VND',
-        'Cr Platform fee net revenue 20.000 VND',
-        'Cr Company output VAT payable 5.000 VND',
-        'Cr Partner withholding tax payable 5.000 VND',
-      ],
       debtAmount: 30000,
       paymentMethod: 'CASH',
       platformFee: 25000,
       settlementReference: 'HANDS-WALLET-PROFILE1',
       taxAmount: 5000,
     });
+    expect(cashDebtItems[0]?.cashAccountingPreview.map((item) => textContent(item).replace(/\s+/g, ' ').trim())).toEqual([
+      'Dr Partner receivable 30.000 VND',
+      'Cr Platform fee net revenue 20.000 VND',
+      'Cr Company output VAT payable 5.000 VND',
+      'Cr Partner withholding tax payable 5.000 VND',
+    ]);
     expect(cashDebtItems[0]?.settlementChecklist[0]).toContain('Confirm Partner deposit');
     expect(payoutQueue).toHaveLength(1);
     expect(payoutQueue[0]).toMatchObject({
@@ -222,10 +222,13 @@ describe('earnings page model', () => {
       providerName: 'Partner Mai',
       statusLabel: 'AVAILABLE',
     });
-    expect(ledgerRows.find((row) => row.id === 'cash-debt')).toMatchObject({
-      cashAccountingPreview: ['Dr Partner receivable 30.000 VND', 'Cr Platform fee net revenue 30.000 VND'],
+    const cashDebtLedgerRow = ledgerRows.find((row) => row.id === 'cash-debt');
+    expect(cashDebtLedgerRow).toMatchObject({
       statusHint: 'Cash fee debt blocks Partner wallet until settled',
     });
+    expect(
+      cashDebtLedgerRow?.cashAccountingPreview.map((item) => textContent(item).replace(/\s+/g, ' ').trim()),
+    ).toEqual(['Dr Partner receivable 30.000 VND', 'Cr Platform fee net revenue 30.000 VND']);
     expect(serviceBridge[0]).toMatchObject({
       bookingCount: 2,
       label: 'Massage 60 / 60 min',
@@ -282,4 +285,34 @@ function earning(input: Partial<AdminEarning> = {}): AdminEarning {
     ...input,
     booking,
   };
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
 }

@@ -1,4 +1,6 @@
-import { formatMoney } from './admin-format';
+import { createElement, Fragment, type ReactNode } from 'react';
+
+import { MoneyText } from '../components/money-text';
 
 type CashBookingAccountingPreviewInput = {
   readonly companyCouponOffset?: number;
@@ -19,22 +21,55 @@ export function buildCashBookingAccountingPreview(input: CashBookingAccountingPr
   const partnerTaxPayable =
     numberValue(metadata?.walletDeductionPartnerTaxPayable) || Math.max(0, input.taxAmount);
 
-  const lines = [`Dr Partner receivable ${formatMoney(input.debtAmount, input.currency)}`];
+  const lines = [previewLine('Dr Partner receivable ', input.debtAmount, input.currency)];
 
   if (platformNetRevenue > 0) {
-    lines.push(`Cr Platform fee net revenue ${formatMoney(platformNetRevenue, input.currency)}`);
+    lines.push(previewLine('Cr Platform fee net revenue ', platformNetRevenue, input.currency));
   }
   if (companyOutputVat > 0) {
-    lines.push(`Cr Company output VAT payable ${formatMoney(companyOutputVat, input.currency)}`);
+    lines.push(previewLine('Cr Company output VAT payable ', companyOutputVat, input.currency));
   }
   if (partnerTaxPayable > 0) {
-    lines.push(`Cr Partner withholding tax payable ${formatMoney(partnerTaxPayable, input.currency)}`);
+    lines.push(previewLine('Cr Partner withholding tax payable ', partnerTaxPayable, input.currency));
   }
   if (companyCouponOffset > 0) {
-    lines.push(`Coupon offset already applied ${formatMoney(companyCouponOffset, input.currency)}`);
+    lines.push(previewLine('Coupon offset already applied ', companyCouponOffset, input.currency));
   }
 
   return lines;
+}
+
+export function buildCashBookingAccountingPreviewText(input: CashBookingAccountingPreviewInput) {
+  return buildCashBookingAccountingPreview(input)
+    .map((line) => textContent(line).replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
+function previewLine(label: string, amount: number, currency: string): ReactNode {
+  return createElement(Fragment, null, label, createElement(MoneyText, { amount, currency }));
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function cashBookingWalletMetadata(metadataEntries: readonly unknown[] | undefined) {

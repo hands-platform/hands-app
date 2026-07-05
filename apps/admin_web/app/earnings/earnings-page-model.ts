@@ -1,5 +1,8 @@
 import type { AdminEarning, AdminEarningSummary, AdminPayoutBatch } from '../../lib/admin-api';
-import { buildCashBookingAccountingPreview } from '../../lib/cash-booking-accounting-preview';
+import {
+  buildCashBookingAccountingPreview,
+  buildCashBookingAccountingPreviewText,
+} from '../../lib/cash-booking-accounting-preview';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
@@ -467,30 +470,34 @@ export function buildCashDebtTotals(queue: CashDebtQueueItem[]) {
 }
 
 export function buildCashDebtQueueItems(queue: readonly CashDebtQueueItem[]): EarningsCashDebtQueueItem[] {
-  return queue.map((item) => ({
-    bookingAmount: item.bookingAmount,
-    bookingHref: `/bookings/${item.earning.bookingId}`,
-    bookingShortId: shortRecordId(item.earning.bookingId),
-    cashAccountingPreview: buildCashBookingAccountingPreview({
+  return queue.map((item) => {
+    const cashAccountingPreviewInput = {
       currency: item.earning.currency,
       debtAmount: item.debtAmount,
       platformFee: item.platformFee,
       taxAmount: item.taxAmount,
       walletLedgerMetadata: item.earning.walletLedgerEntries?.map((entry) => entry.metadata),
-    }),
-    currency: item.earning.currency,
-    debtAmount: item.debtAmount,
-    earningId: item.earning.id,
-    lastLedgerRef: item.lastLedgerRef ?? null,
-    partnerHref: `/partners/${item.earning.providerProfileId}`,
-    paymentMethod: item.paymentMethod,
-    platformFee: item.platformFee,
-    providerName: item.providerName,
-    settlementChecklist: item.settlementChecklist,
-    settlementNotes: `Cash fee debt settled from admin earnings queue with reference ${item.settlementReference}`,
-    settlementReference: item.settlementReference,
-    taxAmount: item.taxAmount,
-  }));
+    };
+    return {
+      bookingAmount: item.bookingAmount,
+      bookingHref: `/bookings/${item.earning.bookingId}`,
+      bookingShortId: shortRecordId(item.earning.bookingId),
+      cashAccountingPreview: buildCashBookingAccountingPreview(cashAccountingPreviewInput),
+      cashAccountingPreviewText: buildCashBookingAccountingPreviewText(cashAccountingPreviewInput),
+      currency: item.earning.currency,
+      debtAmount: item.debtAmount,
+      earningId: item.earning.id,
+      lastLedgerRef: item.lastLedgerRef ?? null,
+      partnerHref: `/partners/${item.earning.providerProfileId}`,
+      paymentMethod: item.paymentMethod,
+      platformFee: item.platformFee,
+      providerName: item.providerName,
+      settlementChecklist: item.settlementChecklist,
+      settlementNotes: `Cash fee debt settled from admin earnings queue with reference ${item.settlementReference}`,
+      settlementReference: item.settlementReference,
+      taxAmount: item.taxAmount,
+    };
+  });
 }
 
 export function buildEarningsMoneyFlowCards(

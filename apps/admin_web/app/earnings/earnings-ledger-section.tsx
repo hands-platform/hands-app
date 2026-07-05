@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
@@ -13,7 +15,7 @@ export type EarningsLedgerRow = {
   readonly bookingHref: string;
   readonly bookingPaymentMethod: string;
   readonly bookingShortId: string;
-  readonly cashAccountingPreview: readonly string[];
+  readonly cashAccountingPreview: readonly ReactNode[];
   readonly canCreatePayout: boolean;
   readonly canDirectlyPay: boolean;
   readonly cancellationDecisionLabel: string | null;
@@ -110,8 +112,8 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                     aria-label={`Cash accounting preview for earning ${row.id}`}
                   >
                     <span>Accounting preview</span>
-                    {row.cashAccountingPreview.map((line) => (
-                      <small key={`${row.id}-${line}`}>{line}</small>
+                    {row.cashAccountingPreview.map((line, index) => (
+                      <small key={`${row.id}-cash-accounting-${index}`}>{line}</small>
                     ))}
                   </div>
                 ) : null}

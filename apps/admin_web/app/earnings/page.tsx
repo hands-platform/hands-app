@@ -85,7 +85,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   );
   const confirmation = buildEarningActionConfirmation(
     cashDebtItems.map((item) => ({
-      accountingPreview: item.cashAccountingPreview,
+      accountingPreview: item.cashAccountingPreviewText,
       currency: item.currency,
       debtAmount: item.debtAmount,
       earningId: item.earningId,

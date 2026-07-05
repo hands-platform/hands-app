@@ -23,6 +23,11 @@ describe('EarningsCashDebtQueueSection', () => {
             'Cr Platform fee net revenue 60.000 VND',
             'Cr Partner withholding tax payable 20.000 VND',
           ],
+          cashAccountingPreviewText: [
+            'Dr Partner receivable 80.000 VND',
+            'Cr Platform fee net revenue 60.000 VND',
+            'Cr Partner withholding tax payable 20.000 VND',
+          ],
           currency: 'VND',
           debtAmount: 80000,
           earningId: 'earning-1',
