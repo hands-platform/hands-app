@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { MoneyText } from '../../components/money-text';
 import { shortId } from '../../lib/admin-format';
 import { bankReconciliationDetailHref, generalLedgerDetailHref, paymentClearingDetailHref } from './tax-settlement-page-model';
@@ -40,7 +41,7 @@ export function FinanceBankMatchEvidence({
   showPaymentClearingLink = true,
 }: FinanceBankMatchEvidenceProps) {
   if (matches.length === 0) {
-    return typeof emptyLabel === 'string' ? <span className="muted">{emptyLabel}</span> : <>{emptyLabel}</>;
+    return typeof emptyLabel === 'string' ? <AdminInlineFallback>{emptyLabel}</AdminInlineFallback> : <>{emptyLabel}</>;
   }
 
   return (
@@ -52,7 +53,7 @@ export function FinanceBankMatchEvidence({
               Bank {match.bankTransaction?.transferRef ?? shortId(match.bankTransactionId)}
             </Link>
           ) : (
-            <span className="muted">No bank transaction</span>
+            <AdminInlineFallback>No bank transaction</AdminInlineFallback>
           )}
           {showJournalLink ? (
             match.accountingJournalEntry ? (
@@ -60,7 +61,7 @@ export function FinanceBankMatchEvidence({
                 Journal {match.accountingJournalEntry.accountCode}
               </Link>
             ) : (
-              <span className="muted">No journal entry</span>
+              <AdminInlineFallback>No journal entry</AdminInlineFallback>
             )
           ) : null}
           {showAmount ? (

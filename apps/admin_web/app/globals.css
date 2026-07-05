@@ -2429,6 +2429,10 @@ a.action-button-card:hover {
   line-height: 1.5;
 }
 
+.admin-inline-fallback {
+  color: var(--admin-muted);
+}
+
 .money-text {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

@@ -69,7 +69,10 @@ describe('FinanceTaxPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-bank-match-evidence.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<span className="muted">No bank transaction</span>');
+    expect(source).not.toContain('<span className="muted">No journal entry</span>');
   });
 
   it('loads optional coupon and payout summaries only in full view', async () => {
