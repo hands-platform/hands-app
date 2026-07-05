@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
@@ -418,7 +419,11 @@ export function PartnerDetailReviewHistorySection({
                 <p className="muted">{row.actorLabel}</p>
               </td>
               <td>
-                <span className="muted">{row.preview ?? 'No preview'}</span>
+                {row.preview ? (
+                  <span className="muted">{row.preview}</span>
+                ) : (
+                  <AdminInlineFallback>No preview</AdminInlineFallback>
+                )}
               </td>
               <td>
                 <span className="muted">{row.action}</span>
