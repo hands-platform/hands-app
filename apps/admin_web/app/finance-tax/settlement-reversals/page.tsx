@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { BadgePercent, Banknote, CreditCard, RotateCcw } from 'lucide-react';
 
 import type {
@@ -9,6 +8,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -195,9 +195,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
               return (
                 <tr key={reversal.id}>
                   <td>
-                    <Link className="text-link" href={`/bookings/${reversal.bookingId}`}>
+                    <AdminTextLink href={`/bookings/${reversal.bookingId}`}>
                       {shortId(reversal.bookingId)}
-                    </Link>
+                    </AdminTextLink>
                     <div className="muted">
                       <DateTimeText value={reversal.occurredAt} />
                     </div>
@@ -217,10 +217,10 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     )}
                   </td>
                   <td>
-                    <Link className="text-link" href={`/partners/${reversal.providerProfileId}?section=full`}>
+                    <AdminTextLink href={`/partners/${reversal.providerProfileId}?section=full`}>
                       {reversal.originalSettlementSnapshot?.providerProfile?.displayName ??
                         financePersonName(reversal.originalSettlementSnapshot?.providerProfile?.user, 'Unknown partner')}
-                    </Link>
+                    </AdminTextLink>
                     {reversal.originalSettlementSnapshot?.providerProfile?.user?.phone ? (
                       <div className="muted">{reversal.originalSettlementSnapshot.providerProfile.user.phone}</div>
                     ) : (
@@ -261,13 +261,13 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                         {evidenceState.label}
                       </StatusBadge>
                       <div className="muted">{evidenceState.detail}</div>
-                      <Link className="text-link" href={bookingSettlementReversalDetailHref(reversal.id)}>
+                      <AdminTextLink href={bookingSettlementReversalDetailHref(reversal.id)}>
                         Open reversal <span className="muted">{shortId(reversal.id)}</span>
-                      </Link>
+                      </AdminTextLink>
                       {buildBookingSettlementReversalTraceLinks(reversal).map((link) => (
-                        <Link className="text-link" href={link.href} key={`${reversal.id}:${link.label}`}>
+                        <AdminTextLink href={link.href} key={`${reversal.id}:${link.label}`}>
                           {link.label} <span className="muted">{link.value}</span>
-                        </Link>
+                        </AdminTextLink>
                       ))}
                     </div>
                   </td>

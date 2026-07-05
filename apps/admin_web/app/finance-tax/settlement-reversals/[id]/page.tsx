@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import type { AdminBookingSettlementReversalEntry } from '../../../../lib/admin-api';
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
 import { readPlainRecord, shortId } from '../../../../lib/admin-format';
@@ -137,17 +137,17 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem
             label="Booking"
             value={
-              <Link className="text-link" href={`/bookings/${reversal.bookingId}`}>
+              <AdminTextLink href={`/bookings/${reversal.bookingId}`}>
                 {shortId(reversal.bookingId)}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem
             label="Original settlement"
             value={
-              <Link className="text-link" href={bookingSettlementAuditDetailHref(reversal.originalSettlementSnapshotId)}>
+              <AdminTextLink href={bookingSettlementAuditDetailHref(reversal.originalSettlementSnapshotId)}>
                 {shortId(reversal.originalSettlementSnapshotId)}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem label="Payment method" value={reversal.paymentMethod} />
@@ -155,9 +155,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             label="Payment"
             value={
               reversal.paymentId ? (
-                <Link className="text-link" href={`/payments/${reversal.paymentId}`}>
+                <AdminTextLink href={`/payments/${reversal.paymentId}`}>
                   {shortId(reversal.paymentId)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -170,10 +170,10 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem
             label="Partner"
             value={
-              <Link className="text-link" href={`/partners/${reversal.providerProfileId}?section=full`}>
+              <AdminTextLink href={`/partners/${reversal.providerProfileId}?section=full`}>
                 {originalSettlement?.providerProfile?.displayName ??
                   financePersonName(originalSettlement?.providerProfile?.user, 'Unknown partner')}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem label="Evidence state" value={evidenceState.detail} />
@@ -203,13 +203,13 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
                     Remaining <MoneyText amount={bankClearing.remainingAmount} currency={bankClearing.currency} />
                   </span>
                   {bankClearing.latestActiveMatch ? (
-                    <Link
-                      className="text-link admin-block"
+                    <AdminTextLink
+                      className="admin-block"
                       href={`/finance-tax/bank-reconciliation/${bankClearing.latestActiveMatch.bankTransactionId}`}
                     >
                       {bankClearing.latestActiveMatch.bankTransaction?.transferRef ??
                         shortId(bankClearing.latestActiveMatch.bankTransactionId)}
-                    </Link>
+                    </AdminTextLink>
                   ) : null}
                 </>
               ) : (
@@ -221,9 +221,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             label="Reversal journal record"
             value={
               reversalJournal ? (
-                <Link className="text-link" href={generalLedgerDetailHref(reversalJournal.id)}>
+                <AdminTextLink href={generalLedgerDetailHref(reversalJournal.id)}>
                   {shortId(reversalJournal.id)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -233,9 +233,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             label="Payment clearing record"
             value={
               reversalClearing ? (
-                <Link className="text-link" href={paymentClearingDetailHref(reversalClearing.id)}>
+                <AdminTextLink href={paymentClearingDetailHref(reversalClearing.id)}>
                   {shortId(reversalClearing.id)}
-                </Link>
+                </AdminTextLink>
               ) : (
                 '-'
               )
@@ -340,25 +340,25 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
           <FinanceDetailInfoItem
             label="Original period"
             value={
-              <Link className="text-link" href={originalMonthlyClosingHref}>
+              <AdminTextLink href={originalMonthlyClosingHref}>
                 {reversal.originalMonthlyPeriod}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem
             label="Reversal period"
             value={
-              <Link className="text-link" href={reversalMonthlyClosingHref}>
+              <AdminTextLink href={reversalMonthlyClosingHref}>
                 {reversal.monthlyPeriod}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem
             label="Original closing"
             value={
-              <Link className="text-link" href={originalMonthlyClosingHref}>
+              <AdminTextLink href={originalMonthlyClosingHref}>
                 {shortId(reversal.originalMonthlyClosingId)}
-              </Link>
+              </AdminTextLink>
             }
           />
           <FinanceDetailInfoItem
@@ -387,9 +387,9 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             {traceLinks.map((link) => (
               <tr key={link.label}>
                 <td>
-                  <Link className="text-link" href={link.href}>
+                  <AdminTextLink href={link.href}>
                     {link.label}
-                  </Link>
+                  </AdminTextLink>
                 </td>
                 <td>{link.value}</td>
                 <td>{evidenceStatusForLink(link.label, reversal)}</td>
