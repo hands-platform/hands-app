@@ -31,6 +31,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 
@@ -154,7 +155,10 @@ export default async function VietnamOverviewPage({
     { label: 'Partners', value: formatNumber(metricTotals.partnerCount) },
     { label: 'Completed', value: formatNumber(metricTotals.completedBookingCount) },
     { label: 'Canceled', value: formatNumber(metricTotals.cancellationCount) },
-    { label: 'Paid volume', value: formatCurrency(metricTotals.revenueAmount, metricTotals.currency) },
+    {
+      label: 'Paid volume',
+      value: <MoneyText amount={metricTotals.revenueAmount} currency={metricTotals.currency} />,
+    },
   ];
   const periodFilterSummary = [
     {
@@ -324,7 +328,7 @@ export default async function VietnamOverviewPage({
     },
     {
       label: 'Paid volume',
-      value: formatCurrency(metricTotals.revenueAmount, metricTotals.currency),
+      value: <MoneyText amount={metricTotals.revenueAmount} currency={metricTotals.currency} />,
       detail: 'Captured/released customer payment amount, not net platform revenue',
       icon: WalletCards,
       tone: 'primary',
@@ -770,7 +774,7 @@ export default async function VietnamOverviewPage({
                     </td>
                     <td className="vietnam-region-numeric-cell">
                       <VietnamRegionMetricCell
-                        value={formatCurrency(region.revenueAmount, region.currency)}
+                        value={<MoneyText amount={region.revenueAmount} currency={region.currency} />}
                         tone="primary"
                       />
                     </td>
@@ -790,7 +794,7 @@ function VietnamRegionMetricCell({
   value,
   tone = 'neutral',
 }: {
-  readonly value: string;
+  readonly value: ReactNode;
   readonly tone?: VietnamRegionMetricTone;
 }) {
   return (
@@ -953,9 +957,4 @@ function percentage(numerator: number, denominator: number) {
 
 function formatPercent(value: number) {
   return `${formatNumber(value)}%`;
-}
-
-function formatCurrency(value: number, currency: string) {
-  if (value <= 0) return `0 ${currency}`;
-  return `${formatNumber(value)} ${currency}`;
 }

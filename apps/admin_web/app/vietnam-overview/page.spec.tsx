@@ -110,6 +110,14 @@ describe('VietnamOverviewPage', () => {
     expect(mapClustersSource).not.toContain('<span className="vietnam-map-cluster-panel-badge">Live now</span>');
     expect(mapClustersSource).not.toContain('<span className="vietnam-map-cluster-panel-badge is-region">');
   });
+
+  it('uses the shared money atom for Vietnam paid volume values', () => {
+    expect(pageSource).toContain('MoneyText');
+    expect(pageSource).toContain('<MoneyText amount={metricTotals.revenueAmount} currency={metricTotals.currency} />');
+    expect(pageSource).toContain('<MoneyText amount={region.revenueAmount} currency={region.currency} />');
+    expect(pageSource).not.toContain('function formatCurrency(value: number, currency: string)');
+    expect(pageSource).not.toContain('value={formatCurrency(region.revenueAmount, region.currency)}');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
