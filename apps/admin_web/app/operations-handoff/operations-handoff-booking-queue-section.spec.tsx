@@ -10,11 +10,16 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(source).toContain('AdminTableSection');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableScroll');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass(booking.statusClass)');
+    expect(source).toContain('statusBadgeToneFromPillClass(booking.chatClass)');
     expect(source).not.toContain(
       'admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
     );
     expect(source).not.toContain('<Link className="button button-secondary"');
     expect(source).not.toContain('<div className="admin-table-scroll">');
+    expect(source).not.toContain('<span className={booking.statusClass}>{booking.status}</span>');
+    expect(source).not.toContain('<span className={booking.chatClass}>{booking.chatLabel}</span>');
   });
 
   it('renders booking handoff rows and monitor links', () => {

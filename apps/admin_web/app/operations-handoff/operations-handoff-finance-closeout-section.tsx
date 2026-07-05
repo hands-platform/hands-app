@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
+import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
 
@@ -71,7 +72,7 @@ export function OperationsHandoffFinanceCloseoutSection({
                 <MoneyText amount={row.netAmount} currency={row.currency} />
               </td>
               <td>
-                <span className={row.statusClass}>{row.status}</span>
+                <StatusBadge tone={statusBadgeToneFromPillClass(row.statusClass)}>{row.status}</StatusBadge>
               </td>
             </tr>
           ))}

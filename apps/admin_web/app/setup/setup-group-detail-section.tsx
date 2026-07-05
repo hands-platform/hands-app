@@ -34,7 +34,9 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
 
         return (
           <AdminSection
-            actions={<span className={group.statusClass}>{group.status}</span>}
+            actions={
+              <StatusBadge tone={statusBadgeToneFromPillClass(group.statusClass)}>{group.status}</StatusBadge>
+            }
             description={
               <>
                 <strong>{group.phase}:</strong> {group.operatorAction} {group.purpose}

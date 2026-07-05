@@ -20,6 +20,9 @@ describe('SetupGroupDetailSection', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="detail-grid admin-mt-12">');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('actions={');
+    expect(source).toContain('statusBadgeToneFromPillClass(group.statusClass)');
+    expect(source).not.toContain('actions={<span className={group.statusClass}>{group.status}</span>}');
     expect(source).not.toContain('<span className={env.className} key={env.name}>');
     expect(source).not.toContain('<span className={env.className} key={`attention-${env.name}`}>');
     expect(source).not.toContain('<span className="pill pill-success">No env blockers shown</span>');

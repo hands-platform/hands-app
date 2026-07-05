@@ -9,8 +9,11 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
 
     expect(source).toContain('AdminTableScroll');
     expect(source).toContain('MoneyText');
+    expect(source).toContain('StatusBadge');
+    expect(source).toContain('statusBadgeToneFromPillClass(row.statusClass)');
     expect(source).not.toContain('<div className="admin-table-scroll">');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<span className={row.statusClass}>{row.status}</span>');
   });
 
   it('renders finance rows and closeout links', () => {

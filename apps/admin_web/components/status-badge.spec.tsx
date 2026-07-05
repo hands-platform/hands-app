@@ -55,6 +55,7 @@ describe('StatusBadge', () => {
     expect(statusBadgeToneFromPillClass('pill-pending')).toBe('warning');
     expect(statusBadgeToneFromPillClass('pill-success')).toBe('success');
     expect(statusBadgeToneFromPillClass('pill-done')).toBe('success');
+    expect(statusBadgeToneFromPillClass('signal signal-ok')).toBe('success');
     expect(statusBadgeToneFromPillClass('pill-info')).toBe('info');
     expect(statusBadgeToneFromPillClass('pill-neutral')).toBe('neutral');
     expect(statusBadgeToneFromPillClass('pill-primary')).toBe('primary');

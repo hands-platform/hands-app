@@ -13,6 +13,13 @@ describe('ReviewsTableSection', () => {
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
   });
 
+  it('uses the shared StatusBadge atom for review row statuses', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('statusBadgeToneFromPillClass(row.statusClassName)');
+    expect(source).not.toContain('<span className={row.statusClassName}>{row.statusLabel}</span>');
+  });
+
   it('uses the shared table pagination footer while preserving review classes', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
