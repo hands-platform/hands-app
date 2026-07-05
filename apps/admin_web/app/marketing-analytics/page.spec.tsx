@@ -144,8 +144,12 @@ describe('MarketingAnalyticsPage', () => {
   it('uses the shared money atom for visible breakdown table amounts', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).toContain('<MoneyText amount={row.adSpend} />');
+    expect(pageSource).toContain(
+      '<MoneyText amount={row.conversionRates.cpaBookingCompleted} fallback="n/a" />',
+    );
     expect(pageSource).toContain('<MoneyText amount={row.platformFeeRevenue} />');
     expect(pageSource).not.toContain('<td>{formatCurrency(row.adSpend)}</td>');
+    expect(pageSource).not.toContain('<td>{formatNullableCurrency(row.conversionRates.cpaBookingCompleted)}</td>');
     expect(pageSource).not.toContain('<td>{formatCurrency(row.platformFeeRevenue)}</td>');
   });
 });

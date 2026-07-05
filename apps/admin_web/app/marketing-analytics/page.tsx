@@ -698,7 +698,9 @@ function MarketingTable({
                 <td>
                   <MoneyText amount={row.adSpend} />
                 </td>
-                <td>{formatNullableCurrency(row.conversionRates.cpaBookingCompleted)}</td>
+                <td>
+                  <MoneyText amount={row.conversionRates.cpaBookingCompleted} fallback="n/a" />
+                </td>
                 <td>
                   <MoneyText amount={row.platformFeeRevenue} />
                 </td>
