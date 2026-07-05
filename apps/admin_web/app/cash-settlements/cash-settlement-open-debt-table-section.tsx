@@ -10,6 +10,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -178,7 +179,7 @@ export function CashSettlementOpenDebtTableSection({
             <td>
               {showOperationsEvidence ? (
                 <>
-                  <form action={recordPartnerBankDeposit} className="inline-form">
+                  <AdminInlineForm action={recordPartnerBankDeposit}>
                     <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
                     <AdminFormInput
                       defaultValue={row.depositAmountDefault}
@@ -219,14 +220,14 @@ export function CashSettlementOpenDebtTableSection({
                     <AdminFormControlButton className="button-primary" type="submit">
                       Record bank deposit
                     </AdminFormControlButton>
-                  </form>
+                  </AdminInlineForm>
                   <p className="muted admin-mt-8">
                     Partner deposit is not platform revenue. It first settles negative wallet receivable,
                     then becomes partner wallet liability.
                   </p>
                 </>
               ) : null}
-              <form action="/cash-settlements" className="inline-form">
+              <AdminInlineForm action="/cash-settlements">
                 <input type="hidden" name="confirm" value="settle" />
                 <input type="hidden" name="earningId" value={row.earningId} />
                 <AdminFormSelect
@@ -253,7 +254,7 @@ export function CashSettlementOpenDebtTableSection({
                 <AdminFormControlButton className="button-outline" type="submit">
                   Review settlement
                 </AdminFormControlButton>
-              </form>
+              </AdminInlineForm>
             </td>
           </tr>
         ))}

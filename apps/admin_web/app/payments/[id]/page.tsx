@@ -5,6 +5,7 @@ import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
+import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDisclosure, AdminKpiCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -329,7 +330,7 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
   const debtAmount = Math.abs(earning.netAmount);
   const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
   return (
-    <form action={settleCashDebt} className="inline-form admin-mt-16">
+    <AdminInlineForm action={settleCashDebt} className="admin-mt-16">
       <input type="hidden" name="earningId" value={earning.id} />
       <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
       <AdminFormInput
@@ -347,7 +348,7 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
       <AdminFormControlButton className="button-primary" type="submit">
         Settle cash fee debt
       </AdminFormControlButton>
-    </form>
+    </AdminInlineForm>
   );
 }
 

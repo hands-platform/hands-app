@@ -222,6 +222,15 @@ describe('Admin form control usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps legacy inline form shells inside the shared Vuexy inline form atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-inline-action-form.tsx')
+      .filter((filePath) => hasRawInlineFormClassToken(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
 });
 
 const legacyToneButtonClassNamePattern =
@@ -259,6 +268,7 @@ const rawOpsNoteFormPattern =
 const legacyPageFieldClassPattern =
   /className=(["'])(?:(?:(?!\1).)*\s)?(?:calendar-drawer-field|calendar-field|field)(?:\s(?:(?!\1).)*)?\1/s;
 const rawClassNamePattern = /className=(["'])(?<className>.*?)\1/gs;
+const formTagPattern = /<form\b[^>]*className=(["'])(?<className>.*?)\1/gs;
 
 function productionTsxFiles() {
   return ['app', 'components']
@@ -296,6 +306,16 @@ function hasRawDrawerFormGridClassToken(source: string) {
   for (const match of source.matchAll(rawClassNamePattern)) {
     const className = match.groups?.className ?? '';
     if (className.split(/\s+/).includes('calendar-form-grid')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasRawInlineFormClassToken(source: string) {
+  for (const match of source.matchAll(formTagPattern)) {
+    const className = match.groups?.className ?? '';
+    if (className.split(/\s+/).includes('inline-form')) {
       return true;
     }
   }

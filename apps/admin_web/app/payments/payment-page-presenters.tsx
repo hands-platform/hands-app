@@ -1,5 +1,6 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
@@ -193,7 +194,7 @@ function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment })
   const debtAmount = Math.abs(earning.netAmount);
   const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
   return (
-    <form action={settleCashDebt} className="inline-form admin-mt-8">
+    <AdminInlineForm action={settleCashDebt} className="admin-mt-8">
       <input name="earningId" type="hidden" value={earning.id} />
       <input name="settlementMethod" type="hidden" value="PARTNER_DEPOSIT" />
       <AdminFormInput
@@ -211,6 +212,6 @@ function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment })
       <AdminFormControlButton className="button-primary" type="submit">
         Settle cash debt
       </AdminFormControlButton>
-    </form>
+    </AdminInlineForm>
   );
 }
