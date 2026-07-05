@@ -7,6 +7,7 @@ import { AdminFormInput } from '../../components/admin-form-controls';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   type AdminCustomerReferralParent,
@@ -14,7 +15,7 @@ import {
   type AdminReferralReward,
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
-import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { formatDateTime } from '../../lib/admin-format';
 import {
   isReferralRewardBlocked,
   isReferralRewardClosed,
@@ -99,21 +100,23 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     },
     {
       label: 'Available rewards',
-      value: formatMoney(numberOrZero(props.row.totals.availableRewardAmount), 'VND', '0 VND'),
+      value: <MoneyText amount={numberOrZero(props.row.totals.availableRewardAmount)} fallback="0 VND" />,
       helper: 'Reward candidates ready for credit, not necessarily wallet-ledgered.',
     },
     {
       label: 'Credited rewards',
-      value: formatMoney(numberOrZero(props.row.totals.rewardedRewardAmount), 'VND', '0 VND'),
+      value: <MoneyText amount={numberOrZero(props.row.totals.rewardedRewardAmount)} fallback="0 VND" />,
       helper: 'Rewards already posted to wallet ledger entries.',
     },
     {
       label: 'Pending / held',
-      value: `${formatMoney(numberOrZero(props.row.totals.pendingRewardAmount), 'VND', '0 VND')} / ${formatMoney(
-        numberOrZero(props.row.totals.heldRewardAmount),
-        'VND',
-        '0 VND',
-      )}`,
+      value: (
+        <>
+          <MoneyText amount={numberOrZero(props.row.totals.pendingRewardAmount)} fallback="0 VND" />
+          {' / '}
+          <MoneyText amount={numberOrZero(props.row.totals.heldRewardAmount)} fallback="0 VND" />
+        </>
+      ),
       helper: 'Amounts still blocked by policy, fraud, or completion checks.',
     },
   ];
@@ -179,7 +182,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           </div>
           <div>
             <span>Total rewards</span>
-            <strong>{formatMoney(numberOrZero(props.row.totals.totalRewardAmount), 'VND', '0 VND')}</strong>
+            <strong>
+              <MoneyText amount={numberOrZero(props.row.totals.totalRewardAmount)} fallback="0 VND" />
+            </strong>
             <small className="muted">{numberOrZero(props.row.totals.rewardCount)} reward record(s)</small>
           </div>
         </div>
@@ -266,7 +271,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   />
                 </td>
                 <td>
-                  <strong>{formatMoney(reward.amount, reward.currency, '0 VND')}</strong>
+                  <strong>
+                    <MoneyText amount={reward.amount} currency={reward.currency} fallback="0 VND" />
+                  </strong>
                   {reward.availableAt ? <p className="muted">Available {formatDateTime(reward.availableAt)}</p> : null}
                   <ReferralRewardCalculationSnapshot reward={reward} />
                 </td>
@@ -359,11 +366,13 @@ function referralRewardDecisionTimelineItems({
       value: `${qualifiedCount} qualified · ${reviewCount} review`,
     },
     {
-      detail: `${formatMoney(summary.ready.amount, 'VND', '0 VND')} ready · ${formatMoney(
-        summary.held.amount,
-        'VND',
-        '0 VND',
-      )} held · ${formatMoney(summary.pending.amount, 'VND', '0 VND')} pending`,
+      detail: (
+        <>
+          <MoneyText amount={summary.ready.amount} fallback="0 VND" /> ready ·{' '}
+          <MoneyText amount={summary.held.amount} fallback="0 VND" /> held ·{' '}
+          <MoneyText amount={summary.pending.amount} fallback="0 VND" /> pending
+        </>
+      ),
       id: 'reward-queue',
       meta: [
         { label: 'Ready', value: `${summary.ready.count}` },
@@ -414,7 +423,7 @@ function ReferralAttributionRewardCell({
       {summary.credited.count > 0 ? <StatusBadge tone="success">Credited {summary.credited.count}</StatusBadge> : null}
       {summary.closed.count > 0 ? <StatusBadge tone="neutral">Closed {summary.closed.count}</StatusBadge> : null}
       <p className="muted">
-        {rewardCount} reward(s) / {formatMoney(totalAmount, 'VND', '0 VND')}
+        {rewardCount} reward(s) / <MoneyText amount={totalAmount} fallback="0 VND" />
       </p>
     </div>
   );
@@ -468,7 +477,9 @@ function ReferralRewardReviewCard({
     <div>
       <span>{label}</span>
       <strong>{summary.count} reward(s)</strong>
-      <small className="muted">{formatMoney(summary.amount, 'VND', '0 VND')}</small>
+      <small className="muted">
+        <MoneyText amount={summary.amount} fallback="0 VND" />
+      </small>
     </div>
   );
 }
@@ -697,15 +708,25 @@ function ReferralRewardCalculationSnapshot({ reward }: { readonly reward: AdminR
     <div className="referral-reward-calculation-snapshot">
       <span className="muted">Calculation snapshot</span>
       <p className="muted">
-        {grossFee !== null ? `Gross fee ${formatMoney(grossFee, reward.currency, '0 VND')}` : null}
+        {grossFee !== null ? (
+          <>
+            Gross fee <MoneyText amount={grossFee} currency={reward.currency} fallback="0 VND" />
+          </>
+        ) : null}
         {vatRateBps !== null ? ` · VAT ${formatBpsPercent(vatRateBps)}` : null}
       </p>
       <p className="muted">
-        {netFee !== null ? `Net fee ${formatMoney(netFee, reward.currency, '0 VND')}` : null}
+        {netFee !== null ? (
+          <>
+            Net fee <MoneyText amount={netFee} currency={reward.currency} fallback="0 VND" />
+          </>
+        ) : null}
         {rewardRateBps !== null ? ` · Rate ${formatBpsPercent(rewardRateBps)}` : null}
       </p>
       {snapshotReward !== null ? (
-        <p className="muted">Snapshot reward {formatMoney(snapshotReward, reward.currency, '0 VND')}</p>
+        <p className="muted">
+          Snapshot reward <MoneyText amount={snapshotReward} currency={reward.currency} fallback="0 VND" />
+        </p>
       ) : null}
     </div>
   );

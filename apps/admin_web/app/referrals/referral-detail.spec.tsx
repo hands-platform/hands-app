@@ -14,6 +14,7 @@ const referralStoreEnvKeys = [
   'CUSTOMER_ANDROID_APP_URL',
   'CUSTOMER_IOS_APP_URL',
 ] as const;
+const detailSource = readFileSync('app/referrals/referral-detail.tsx', 'utf8');
 
 const customerReferralParent: AdminCustomerReferralParent = {
   referrer: {
@@ -136,7 +137,7 @@ describe('Referral detail presentation', () => {
     );
     expect(markup).toContain('Attribution attribution-1');
     expect(markup).toContain('Credited 1');
-    expect(markup).toContain('1 reward(s) / 25.000 VND');
+    expect(markup).toContain('1 reward(s) / <span class="money-text money-text-positive">25.000 VND</span>');
     expect(markup).toContain('wallet-ledger-1');
     expect(markup).toContain('class="admin-disclosure referral-reward-evidence-details"');
     expect(markup).toContain('<summary>Decision evidence</summary>');
@@ -180,11 +181,11 @@ describe('Referral detail presentation', () => {
     );
 
     expect(markup).toContain('Calculation snapshot');
-    expect(markup).toContain('Gross fee 128.000 VND');
+    expect(markup).toContain('Gross fee <span class="money-text money-text-positive">128.000 VND</span>');
     expect(markup).toContain('VAT 8%');
-    expect(markup).toContain('Net fee 118.519 VND');
+    expect(markup).toContain('Net fee <span class="money-text money-text-positive">118.519 VND</span>');
     expect(markup).toContain('Rate 30%');
-    expect(markup).toContain('Snapshot reward 35.556 VND');
+    expect(markup).toContain('Snapshot reward <span class="money-text money-text-positive">35.556 VND</span>');
   });
 
   it('shows referral public link and store URL readiness on the parent detail', () => {
@@ -263,10 +264,13 @@ describe('Referral detail presentation', () => {
   });
 
   it('uses the shared Vuexy action dropdown surface for reward decision forms', () => {
-    const source = readFileSync('app/referrals/referral-detail.tsx', 'utf8');
+    expect(detailSource).toContain('ActionMenuDropdownSurface');
+    expect(detailSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
+  });
 
-    expect(source).toContain('ActionMenuDropdownSurface');
-    expect(source).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
+  it('uses the shared MoneyText atom for visible referral detail money values', () => {
+    expect(detailSource).toContain('MoneyText');
+    expect(detailSource).not.toContain('formatMoney(');
   });
 
   it('renders a wallet credit action only for available uncredited reward candidates', () => {
@@ -402,7 +406,7 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Credit ready rewards or hold suspicious rows.');
     expect(markup).toContain('Ready 1');
     expect(markup).toContain('Held 1');
-    expect(markup).toContain('2 reward(s) / 35.000 VND');
+    expect(markup).toContain('2 reward(s) / <span class="money-text money-text-positive">35.000 VND</span>');
     expect(markup).toContain('Reward decision timeline');
     expect(markup).toContain('Attribution captured');
     expect(markup).toContain('Qualification and fraud check');
