@@ -1,3 +1,4 @@
+import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import {
@@ -30,7 +31,7 @@ type NotificationDeliveryCellProps = {
 
 export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: NotificationDeliveryCellProps) {
   if (deliveryRows.length === 0) {
-    return <span className="muted">No devices / not attempted</span>;
+    return <AdminInlineFallback>No devices / not attempted</AdminInlineFallback>;
   }
 
   if (deliveryRows.length === 1) {
