@@ -17192,7 +17192,6 @@ textarea:focus-visible {
 .admin-form-select select,
 .admin-directory-filter-select select {
   appearance: none;
-  padding-right: 22px;
 }
 
 .admin-form-textarea textarea,
@@ -17248,4 +17247,9 @@ textarea:focus-visible {
   min-height: 0;
   outline: 0;
   padding: 0;
+}
+
+.admin-form-select select,
+.admin-directory-filter-select select {
+  padding-inline-end: 32px;
 }

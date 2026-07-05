@@ -213,6 +213,19 @@ describe('Admin form control CSS', () => {
     expect(rootFocusBlock).toContain('padding: var(--admin-input-padding-focused-sm)');
   });
 
+  it('reserves Vuexy select end-adornment space after native field resets', () => {
+    const resetIndex = globalsCss.lastIndexOf('.admin-form-search input,\n.admin-form-date input,');
+    const resetBlock = cssRuleBlockAt(resetIndex);
+    const selectPaddingIndex = globalsCss.lastIndexOf('.admin-form-select select,\n.admin-directory-filter-select select {');
+    const selectPaddingBlock = cssRuleBlockAt(selectPaddingIndex);
+
+    expect(resetIndex).toBeGreaterThan(-1);
+    expect(resetBlock).toContain('padding: 0');
+    expect(selectPaddingIndex).toBeGreaterThan(resetIndex);
+    expect(selectPaddingBlock).toContain('padding-inline-end: 32px');
+    expect(selectPaddingBlock).not.toContain('padding-right: 22px');
+  });
+
   it('animates placeholders like Vuexy CustomTextField on shared inputs', () => {
     const placeholderIndex = globalsCss.indexOf('.admin-form-input input::placeholder,');
     const placeholderBlock = cssRuleBlockAt(placeholderIndex);
