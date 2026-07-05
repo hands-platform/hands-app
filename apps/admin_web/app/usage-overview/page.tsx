@@ -31,6 +31,7 @@ import {
   AdminOverviewCommandCard,
   AdminOverviewCommandGrid,
   AdminOverviewGrid,
+  AdminOverviewGroup,
 } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
@@ -270,11 +271,10 @@ export default async function UsageOverviewPage({
       <ActionPrioritiesBoard overview={overview} />
 
       <AdminOverviewGrid ariaLabel="Customer and Partner usage rankings" variant="content">
-        <section className="usage-overview-group">
-          <div className="usage-overview-group-heading">
-            <span>Customer behavior</span>
-            <strong>Who is active and who completed work</strong>
-          </div>
+        <AdminOverviewGroup
+          eyebrow="Customer behavior"
+          title="Who is active and who completed work"
+        >
           <UsageRankingCard
             title="Most active customers"
             description="Customers with the most app-session activity in the selected range."
@@ -303,12 +303,11 @@ export default async function UsageOverviewPage({
             rows={overview.customerUsage.lowReviewCustomers}
             valueHeading="Low reviews"
           />
-        </section>
-        <section className="usage-overview-group">
-          <div className="usage-overview-group-heading">
-            <span>Partner discovery</span>
-            <strong>Who customers look at, request, and complete with</strong>
-          </div>
+        </AdminOverviewGroup>
+        <AdminOverviewGroup
+          eyebrow="Partner discovery"
+          title="Who customers look at, request, and complete with"
+        >
           <UsageRankingCard
             title="Most viewed Partners"
             description="Partner profile views from stored customer interactions."
@@ -330,7 +329,7 @@ export default async function UsageOverviewPage({
             rows={overview.partnerUsage.completedPartners}
             valueHeading="Completed"
           />
-        </section>
+        </AdminOverviewGroup>
         <RegionUsageCard rows={overview.regionUsage} />
       </AdminOverviewGrid>
     </AdminPageTemplate>

@@ -17,6 +17,13 @@ type AdminOverviewGridProps = {
 
 type AdminOverviewGridVariant = 'behavior' | 'command' | 'content' | 'insight' | 'segment';
 
+type AdminOverviewGroupProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly eyebrow: ReactNode;
+  readonly title: ReactNode;
+};
+
 type AdminOverviewCommandCardProps = {
   readonly ariaLabel?: string;
   readonly children?: ReactNode;
@@ -56,6 +63,18 @@ export function AdminOverviewCommandGrid({ ariaLabel, children, className }: Adm
 export function AdminOverviewGrid({ ariaLabel, children, className, variant }: AdminOverviewGridProps) {
   return (
     <section className={joinClassNames(adminOverviewGridClassNames[variant], className)} aria-label={ariaLabel}>
+      {children}
+    </section>
+  );
+}
+
+export function AdminOverviewGroup({ children, className, eyebrow, title }: AdminOverviewGroupProps) {
+  return (
+    <section className={joinClassNames('usage-overview-group', className)}>
+      <div className="usage-overview-group-heading">
+        <span>{eyebrow}</span>
+        <strong>{title}</strong>
+      </div>
       {children}
     </section>
   );

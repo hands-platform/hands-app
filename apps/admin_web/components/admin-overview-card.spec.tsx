@@ -5,6 +5,7 @@ import {
   AdminOverviewCommandCard,
   AdminOverviewCommandGrid,
   AdminOverviewGrid,
+  AdminOverviewGroup,
 } from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
@@ -109,5 +110,22 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('class="admin-mini-metric usage-overview-mini-metric is-info"');
     expect(markup).toContain('<span>Coupon bookings</span>');
     expect(markup).toContain('<strong>12</strong>');
+  });
+
+  it('renders shared overview groups with Vuexy heading structure', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewGroup
+        eyebrow="Customer behavior"
+        title="Who is active and who completed work"
+      >
+        <span>Ranking slot</span>
+      </AdminOverviewGroup>,
+    );
+
+    expect(markup).toContain('class="usage-overview-group"');
+    expect(markup).toContain('class="usage-overview-group-heading"');
+    expect(markup).toContain('<span>Customer behavior</span>');
+    expect(markup).toContain('<strong>Who is active and who completed work</strong>');
+    expect(markup).toContain('<span>Ranking slot</span>');
   });
 });

@@ -78,6 +78,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-insight-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-behavior-grid"');
+    expect(pageSource).not.toContain('<section className="usage-overview-group"');
+    expect(pageSource).toContain('AdminOverviewGroup');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('formatDateTime,');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');
