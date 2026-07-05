@@ -43,6 +43,7 @@ import {
 } from '../../lib/admin-api';
 import {
   formatCurrencyAmount as formatCurrency,
+  formatDateTime,
   formatPercentLabel as formatPercent,
   formatWholeNumber as formatNumber,
 } from '../../lib/admin-format';
@@ -759,19 +760,6 @@ function platformLabel(platform: AdminMarketingDimensionRow['platform']) {
   if (platform === 'ios') return 'iOS';
   if (platform === 'web') return 'Web';
   return 'Unknown platform';
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return 'Unknown';
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 function formatDecimal(value: number) {
