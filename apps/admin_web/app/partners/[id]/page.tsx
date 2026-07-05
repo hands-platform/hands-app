@@ -617,6 +617,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerRecentTimelineRecords = filteredPartnerActivityRecords.map((record) => ({
     at: record.at,
     detail: record.detail,
+    detailNode: record.detailNode,
     href: partnerActivityRecordHref(record),
     id: record.id,
     title: record.title,
@@ -2217,6 +2218,12 @@ function buildPartnerActivityRecords(
       detail: `Gross ${formatCurrency(earning.grossAmount)} / platform fee ${formatCurrency(
         earning.platformFee,
       )} / net ${formatCurrency(earning.netAmount)}`,
+      detailNode: (
+        <>
+          Gross <MoneyText amount={earning.grossAmount} /> / platform fee{' '}
+          <MoneyText amount={earning.platformFee} /> / net <MoneyText amount={earning.netAmount} />
+        </>
+      ),
     });
   }
 
@@ -2227,6 +2234,12 @@ function buildPartnerActivityRecords(
       at: batch.createdAt ?? batch.paidAt ?? '',
       title: `${batch.status} payout batch ${shortRecordId(batch.id)}`,
       detail: `${formatCurrency(batch.totalNetAmount)}${batch.transferRef ? ` / ${batch.transferRef}` : ''}`,
+      detailNode: (
+        <>
+          <MoneyText amount={batch.totalNetAmount} />
+          {batch.transferRef ? ` / ${batch.transferRef}` : ''}
+        </>
+      ),
     });
   }
 
@@ -4231,6 +4244,7 @@ function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerA
   return records.map((record, index) => ({
     at: record.at,
     detail: record.detail,
+    detailNode: record.detailNode,
     key: `${record.type}-${record.id}-${record.at}-${index}`,
     title: record.title,
     type: record.type,

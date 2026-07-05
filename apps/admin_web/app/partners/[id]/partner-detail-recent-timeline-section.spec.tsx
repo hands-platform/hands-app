@@ -116,6 +116,27 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('Booking Matched First Pick Accepted');
     expect(rendered).not.toContain('booking.matched.first_pick_accepted');
   });
+
+  it('prefers shared detail nodes over fallback timeline detail text', () => {
+    const recordsWithDetailNode = [
+      {
+        at: '2026-06-01T10:00:00.000Z',
+        detail: 'Fallback money string',
+        detailNode: <span>Shared money atom marker</span>,
+        href: '#app-activity',
+        id: 'event-4',
+        title: 'Earning recorded',
+        type: 'EARNING',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailRecentTimelineSection>[0]['records'];
+    const section = PartnerDetailRecentTimelineSection({ records: recordsWithDetailNode });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Shared money atom marker');
+    expect(rendered).not.toContain('Fallback money string');
+    expect(sectionSource).toContain('detailNode?: ReactNode;');
+    expect(sectionSource).toContain('{record.detailNode ?? marketplaceDisplayText(record.detail)}');
+  });
 });
 
 function textContent(value: unknown): string {

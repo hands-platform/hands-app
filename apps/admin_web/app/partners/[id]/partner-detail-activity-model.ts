@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { DetailActivityOrder } from './partner-detail-filters';
 import { orderPartnerActivityRecords } from './partner-detail-filters';
 import { formatDate } from './partner-detail-format';
@@ -8,6 +9,7 @@ export type PartnerActivityRecord = {
   readonly at: string;
   readonly title: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
 };
 
 export type PartnerDailyActivityDigest = {

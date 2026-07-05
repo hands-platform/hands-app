@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -15,6 +16,7 @@ import {
 export type PartnerDetailRecentTimelineRecord = {
   readonly at: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly href: string;
   readonly id: string;
   readonly title: string;
@@ -64,7 +66,7 @@ export function PartnerDetailRecentTimelineSection({
                   </Link>
                 </td>
                 <td>
-                  <p className="muted">{marketplaceDisplayText(record.detail)}</p>
+                  <p className="muted">{record.detailNode ?? marketplaceDisplayText(record.detail)}</p>
                 </td>
                 <td>
                   <small>

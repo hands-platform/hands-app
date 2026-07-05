@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
@@ -18,6 +20,7 @@ export type PartnerAppActivitySummaryItem = {
 export type PartnerAppActivityRow = {
   readonly at: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly key: string;
   readonly title: string;
   readonly type: string;
@@ -65,7 +68,7 @@ export function PartnerDetailAppActivitySection({
               </td>
               <td>
                 <strong>{record.title}</strong>
-                <p className="muted">{record.detail}</p>
+                <p className="muted">{record.detailNode ?? record.detail}</p>
               </td>
               <td>
                 <span className="muted">

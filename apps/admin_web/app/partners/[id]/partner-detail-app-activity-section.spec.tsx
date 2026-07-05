@@ -87,6 +87,30 @@ describe('PartnerDetailAppActivitySection', () => {
     );
     expect(rendered).toContain('Showing 0 entries');
   });
+
+  it('prefers shared detail nodes over fallback activity detail text', () => {
+    const rowsWithDetailNode = [
+      {
+        at: '2026-06-20T10:10:00.000Z',
+        detail: 'Fallback money string',
+        detailNode: <span>Shared money atom marker</span>,
+        key: 'earning-1',
+        title: 'Earning recorded',
+        type: 'EARNING',
+      },
+    ] as unknown as Parameters<typeof PartnerDetailAppActivitySection>[0]['rows'];
+    const section = PartnerDetailAppActivitySection({
+      summary: [],
+      rows: rowsWithDetailNode,
+    });
+    const rendered = normalizeSpaces(textContent(section));
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(rendered).toContain('Shared money atom marker');
+    expect(rendered).not.toContain('Fallback money string');
+    expect(source).toContain('detailNode?: ReactNode;');
+    expect(source).toContain('{record.detailNode ?? record.detail}');
+  });
 });
 
 function textContent(value: unknown): string {
