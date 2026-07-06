@@ -28,6 +28,13 @@ describe('BookingActivityPanel', () => {
     expect(source).not.toContain('<small>{formatDate(record.at)}</small>');
   });
 
+  it('uses the shared Vuexy text link atom for activity record links', () => {
+    const source = readFileSync('app/bookings/[id]/booking-activity-panel.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders the full record index on the shared Vuexy section surface', () => {
     const markup = renderToStaticMarkup(
       <BookingFullRecordIndex

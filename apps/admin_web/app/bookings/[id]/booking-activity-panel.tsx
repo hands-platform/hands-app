@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { Download } from 'lucide-react';
 
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
@@ -96,9 +96,9 @@ export function BookingActivityPanel({
               <StatusBadge tone="neutral">{record.type}</StatusBadge>
               <div>
                 {record.href ? (
-                  <Link className="text-link" href={record.href}>
+                  <AdminTextLink href={record.href}>
                     <strong>{record.title}</strong>
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <strong>{record.title}</strong>
                 )}
