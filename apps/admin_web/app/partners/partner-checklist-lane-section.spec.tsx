@@ -16,8 +16,10 @@ describe('PartnerChecklistLaneSection', () => {
   it('uses the shared Vuexy badge atom for blocked count', () => {
     const source = readFileSync('app/partners/partner-checklist-lane-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className={`pill ${blockedCount === 0 ? \'pill-success\' : \'pill-danger\'}`}>');
   });
 

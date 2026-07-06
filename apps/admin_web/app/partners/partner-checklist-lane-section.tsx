@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
 type PartnerChecklistLaneTone = 'blocked' | 'done' | 'pending';
@@ -39,9 +38,9 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
             <span>{item.actionStatus}</span>
             <div>
               <strong>
-                <Link className="text-link" href={item.href}>
+                <AdminTextLink href={item.href}>
                   {item.partnerName}
-                </Link>
+                </AdminTextLink>
               </strong>
               <p className="muted">{item.actionDetail}</p>
               <p className="muted">{item.operatorAction}</p>
