@@ -42,6 +42,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const financeOverviewCommandCardClassName = 'finance-overview-command-card';
+const financeOverviewCommandIconClassName = 'finance-overview-command-icon';
+
 type FinanceOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function FinanceOverviewPage({
@@ -177,9 +180,11 @@ export default async function FinanceOverviewPage({
       <AdminOverviewCommandGrid className="finance-overview-principle-grid" ariaLabel="Finance accounting principles">
         {principleCards.map((card) => (
           <AdminOverviewCommandCard
+            baseClassName={financeOverviewCommandCardClassName}
             className={`finance-overview-principle-card is-${card.tone}`}
             detail={card.detail}
             icon={card.icon}
+            iconClassName={financeOverviewCommandIconClassName}
             key={card.label}
             label={card.label}
             value={card.value}
@@ -225,10 +230,12 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
 
   return (
     <AdminOverviewCommandCard
+      baseClassName={financeOverviewCommandCardClassName}
       className={`finance-overview-control-card is-${metric.tone}`}
       detail={metric.detail}
       href={metric.href}
       icon={<Icon size={18} aria-hidden="true" />}
+      iconClassName={financeOverviewCommandIconClassName}
       label={metric.label}
       value={<FinanceControlMetricValue metric={metric} />}
     />
@@ -248,10 +255,12 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
 
   return (
     <AdminOverviewCommandCard
+      baseClassName={financeOverviewCommandCardClassName}
       className={`is-${kpi.tone}`}
       detail={kpi.detail}
       href={kpi.href}
       icon={<Icon size={18} aria-hidden="true" />}
+      iconClassName={financeOverviewCommandIconClassName}
       label={kpi.label}
       value={<FinanceOverviewMetricValue metric={kpi} />}
     />
@@ -317,10 +326,12 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
 
   return (
     <AdminOverviewCommandCard
+      baseClassName={financeOverviewCommandCardClassName}
       className={`finance-overview-priority-card is-${item.tone}`}
       detail={item.detail}
       href={item.href}
       icon={<Icon size={18} aria-hidden="true" />}
+      iconClassName={financeOverviewCommandIconClassName}
       label={item.label}
       trailing={<FinanceActionAmount item={item} />}
       value={item.countLabel}
