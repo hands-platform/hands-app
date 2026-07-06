@@ -3,11 +3,20 @@
 The Vuexy Figma source is intentionally not committed to this repository because
 the local `.fig` file is a large binary asset.
 
-Current local source:
+Current source package:
 
 ```text
 C:\dev\themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template\vuexy-admin-v10.11.1\design-files\figma\vuexy-figma-dashboard-ui-kit-and-builder-v4\vuexy-figma-dashboard-ui-kit-and-builder-v4\vuexy-figma-dashboard-ui-kit-and-builder-v4.fig
 ```
+
+Current workspace mirror:
+
+```text
+C:\dev\massage-on-demand-vn\design\figma\vuexy-figma-dashboard-ui-kit-and-builder-v4.fig
+```
+
+The workspace mirror is useful for local Codex design checks, but it remains
+gitignored with other `.fig` binaries.
 
 Use that file as the Figma visual source of truth together with the Vuexy
 Next.js TypeScript full-version implementation:
