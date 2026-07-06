@@ -59,6 +59,11 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('<span className={`pill');
   });
 
+  it('uses the shared Vuexy text link atom for inline navigation', () => {
+    expect(partnerControlsSource).toContain('AdminTextLink');
+    expect(partnerControlsSource).not.toContain('className="text-link"');
+  });
+
   it('keeps Partner control command cards on shared Vuexy task surfaces', () => {
     expect(partnerControlsSource).toContain('AdminActionCard');
     expect(partnerControlsSource).toContain('AdminTaskCard');

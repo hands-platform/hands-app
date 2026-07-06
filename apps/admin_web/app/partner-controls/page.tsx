@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ExternalLink, Filter, X } from 'lucide-react';
 import {
@@ -33,6 +32,7 @@ import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -254,9 +254,9 @@ export default async function PartnerControlsPage({
                     ))}
                   </div>
                 </div>
-                <Link className="text-link" href={action.href}>
+                <AdminTextLink href={action.href}>
                   Open
-                </Link>
+                </AdminTextLink>
               </div>
             ))}
           </div>
@@ -318,9 +318,9 @@ export default async function PartnerControlsPage({
                   </div>
                 </div>
                 <div className="actions">
-                  <Link className="text-link" href={item.actionHref}>
+                  <AdminTextLink href={item.actionHref}>
                     {item.actionLabel}
-                  </Link>
+                  </AdminTextLink>
                 </div>
               </div>
             ))}
@@ -429,9 +429,9 @@ export default async function PartnerControlsPage({
                   ))}
                 </div>
               </div>
-              <Link className="text-link" href={step.href}>
+              <AdminTextLink href={step.href}>
                 {step.action}
-              </Link>
+              </AdminTextLink>
             </div>
           ))}
         </div>
@@ -463,9 +463,9 @@ export default async function PartnerControlsPage({
                   </div>
                 </div>
                 <div className="actions">
-                  <Link className="text-link" href={block.href}>
+                  <AdminTextLink href={block.href}>
                     Open
-                  </Link>
+                  </AdminTextLink>
                   <AdminFormControlLink
                     className="button-secondary partner-control-inline-action"
                     href={`/partners/${block.providerId}`}
@@ -624,9 +624,9 @@ export default async function PartnerControlsPage({
                 <td>
                   <div className="actions">
                     {item.walletBalance < 0 ? (
-                      <Link className="text-link" href="/cash-settlements">
+                      <AdminTextLink href="/cash-settlements">
                         Cash debt queue
-                      </Link>
+                      </AdminTextLink>
                     ) : null}
                     {item.openReportCount > 0 ? (
                       <AdminFormControlLink
