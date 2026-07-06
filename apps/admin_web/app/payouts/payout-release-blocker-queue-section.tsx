@@ -5,7 +5,7 @@ import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type PayoutReleaseBlockerReason = {
   readonly label: string;
@@ -50,9 +50,9 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
               <p className="muted">{item.action}</p>
               <div className="participant-list admin-mt-8">
                 {item.blockingReasons.map((reason) => (
-                  <StatusBadge key={reason.label} tone={statusBadgeToneFromPillClass(reason.pillClass)}>
+                  <StatusBadgeFromPillClass key={reason.label} pillClass={reason.pillClass}>
                     {reason.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 ))}
               </div>
             </div>

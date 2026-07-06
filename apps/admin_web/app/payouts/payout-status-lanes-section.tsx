@@ -5,7 +5,7 @@ import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { shortRecordId } from '../../lib/admin-format';
 
 export type PayoutStatusLaneBatch = {
@@ -42,9 +42,9 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
           <div key={lane.title}>
             <AdminSectionHeader
               status={
-                <StatusBadge tone={statusBadgeToneFromPillClass(lane.pillClass)}>
+                <StatusBadgeFromPillClass pillClass={lane.pillClass}>
                   {lane.batches.length}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               }
               title={lane.title}
             />

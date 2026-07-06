@@ -17,7 +17,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 import { formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
@@ -237,7 +237,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               className={signal.className}
               detail={signal.detail}
               key={signal.title}
-              leading={<StatusBadge tone={statusBadgeToneFromPillClass(signal.pillClass)}>{signal.status}</StatusBadge>}
+              leading={<StatusBadgeFromPillClass pillClass={signal.pillClass}>{signal.status}</StatusBadgeFromPillClass>}
               title={signal.title}
             />
           ))}
@@ -266,7 +266,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                   <div className="muted">{item.timing}</div>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>
+                  <StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>
                   <div className="muted">{item.queue}</div>
                 </td>
                 <td>{item.operatorCheck}</td>
@@ -293,7 +293,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               detail={item.detail}
               href={item.href}
               key={item.title}
-              leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>}
+              leading={<StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>}
               title={item.title}
               variant="ops-task"
             />

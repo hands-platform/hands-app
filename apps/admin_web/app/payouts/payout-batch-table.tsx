@@ -13,8 +13,8 @@ import {
   AdminSignal,
   adminSignalToneFromClassName,
   StatusBadge,
+  StatusBadgeFromPillClass,
   StatusBadgeLink,
-  statusBadgeToneFromPillClass,
 } from '../../components/status-badge';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
@@ -141,13 +141,13 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="participant-list">
               {row.blockingReasons.length ? (
                 row.blockingReasons.map((reason) => (
-                  <StatusBadge
+                  <StatusBadgeFromPillClass
                     key={reason.label}
                     title={reason.detail}
-                    tone={statusBadgeToneFromPillClass(reason.pillClass)}
+                    pillClass={reason.pillClass}
                   >
                     {reason.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 ))
               ) : (
                 <StatusBadge tone="success">Clear</StatusBadge>
@@ -203,9 +203,9 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
                   <AdminStageItem key={`${row.id}-${item.action}`}>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                    <StatusBadgeFromPillClass pillClass={item.pillClass}>
                       {item.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <div>
                       <strong>{item.action}</strong>
                       <p className="muted">{item.reason}</p>
