@@ -11,7 +11,9 @@ describe('CustomerDetailSectionShell', () => {
     const source = readFileSync('app/customers/[id]/customer-detail-section-shell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminRowLink');
     expect(source).not.toContain('<span className="pill pill-info">{items.length} lanes</span>');
+    expect(source).not.toContain('<a className="customer-detail-shortcut-link" href={item.href} key={item.label}>');
   });
 
   it('renders customer shortcut lanes with hrefs and values', () => {
@@ -44,6 +46,7 @@ describe('CustomerDetailSectionShell', () => {
       expect.arrayContaining([
         'customer-detail-shortcut-strip admin-mb-16',
         'customer-detail-shortcut-grid admin-mt-14',
+        'admin-row-link customer-detail-shortcut-link',
       ]),
     );
   });

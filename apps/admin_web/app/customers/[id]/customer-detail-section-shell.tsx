@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Grid2x2, MessageSquareText, ScrollText, UserRound, Wallet } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminRowLink } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 export type CustomerDetailShortcut = {
@@ -35,7 +36,7 @@ export function CustomerDetailShortcutStrip({ items }: CustomerDetailShortcutStr
       />
       <div className="customer-detail-shortcut-grid admin-mt-14">
         {items.map((item) => (
-          <a className="customer-detail-shortcut-link" href={item.href} key={item.label}>
+          <AdminRowLink className="customer-detail-shortcut-link" href={item.href} key={item.label}>
             <span className="customer-detail-shortcut-icon" aria-hidden="true">
               {shortcutIcon(item.label)}
             </span>
@@ -44,7 +45,7 @@ export function CustomerDetailShortcutStrip({ items }: CustomerDetailShortcutStr
               <small>{item.detail}</small>
             </div>
             <em>{item.value}</em>
-          </a>
+          </AdminRowLink>
         ))}
       </div>
     </section>
