@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminNotePanel, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
   readonly label: string;
@@ -59,9 +59,9 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
       className={`admin-min-h-0 ${list.className}`}
       detail={list.helper}
       leading={
-        <StatusBadge tone={statusBadgeToneFromPillClass(list.pillClass)}>
+        <StatusBadgeFromPillClass pillClass={list.pillClass}>
           {list.rows.length} item(s)
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       title={list.title}
     >
@@ -76,12 +76,12 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
               <p className="muted admin-my-6">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
-                  <StatusBadge
+                  <StatusBadgeFromPillClass
                     key={`${row.id}-${pill.label}`}
-                    tone={statusBadgeToneFromPillClass(pill.className)}
+                    pillClass={pill.className}
                   >
                     {pill.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 ))}
               </div>
               <small>{row.operatorAction}</small>
