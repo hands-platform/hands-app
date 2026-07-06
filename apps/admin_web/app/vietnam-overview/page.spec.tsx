@@ -72,10 +72,12 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).not.toContain('`${formatDateTime(overview.windowStartAt)} - ${formatDateTime(overview.windowEndAt)}`');
     expect(pageSource).not.toContain('function formatNumber(value: number)');
     expect(pageSource).not.toContain('function formatDateTime(value: string)');
-    expect(mapClustersSource).toContain('AdminCard');
+    expect(mapClustersSource).toContain('AdminSummaryCardGrid');
     expect(markup).toContain('empty-state vietnam-realtime-empty');
     expect(mapClustersSource).not.toContain('<article key={item.key} className={`vietnam-map-cluster-summary-card');
     expect(mapClustersSource).not.toContain('<article className="vietnam-map-cluster-context-card');
+    expect(mapClustersSource).not.toContain('<div className="vietnam-map-cluster-summary-grid">');
+    expect(mapClustersSource).not.toContain('<div className="vietnam-map-cluster-context-grid"');
     expect(pageSource).not.toContain('<div className="vietnam-realtime-empty">');
     expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');

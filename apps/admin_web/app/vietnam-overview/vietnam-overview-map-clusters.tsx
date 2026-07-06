@@ -11,8 +11,8 @@ import {
 } from './vietnam-overview-model';
 import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminIconButton } from '../../components/admin-icon-button';
+import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -270,41 +270,51 @@ function ClusterDetailPanel({
         ) : null}
       </div>
 
-      <div className="vietnam-map-cluster-summary-grid">
-        {signalSummary.map((item) => (
-          <AdminCard key={item.key} className={`vietnam-map-cluster-summary-card is-${item.key}`}>
-            <span>
+      <AdminSummaryCardGrid
+        className="vietnam-map-cluster-summary-grid"
+        itemClassName="vietnam-map-cluster-summary-card"
+        items={signalSummary.map((item) => ({
+          className: `is-${item.key}`,
+          detail: <>Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}</>,
+          key: item.key,
+          label: (
+            <>
               <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
               {item.label}
-            </span>
-            <strong>{formatNumber(item.count)}</strong>
-            <small>
-              Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}
-            </small>
-          </AdminCard>
-        ))}
-      </div>
+            </>
+          ),
+          value: formatNumber(item.count),
+        }))}
+      />
 
-      <div className="vietnam-map-cluster-context-grid" aria-label="Selected map signal context">
-        <AdminCard className="vietnam-map-cluster-context-card">
-          <span>Region</span>
-          <strong>{formatRegionCode(latestPoint.regionCode)}</strong>
-          <small>Vietnam service area</small>
-        </AdminCard>
-        <AdminCard className="vietnam-map-cluster-context-card">
-          <span>Source</span>
-          <strong>{latestSignalSource.label}</strong>
-          <small>{latestSignalSource.detail}</small>
-        </AdminCard>
-        <AdminCard className="vietnam-map-cluster-context-card is-wide">
-          <span>Latest area</span>
-          <strong>
-            <MapPin size={13} aria-hidden="true" />
-            {latestAddress}
-          </strong>
-          <small>Shown from stored operational coordinates only.</small>
-        </AdminCard>
-      </div>
+      <AdminSummaryCardGrid
+        ariaLabel="Selected map signal context"
+        className="vietnam-map-cluster-context-grid"
+        itemClassName="vietnam-map-cluster-context-card"
+        items={[
+          {
+            detail: 'Vietnam service area',
+            label: 'Region',
+            value: formatRegionCode(latestPoint.regionCode),
+          },
+          {
+            detail: latestSignalSource.detail,
+            label: 'Source',
+            value: latestSignalSource.label,
+          },
+          {
+            className: 'is-wide',
+            detail: 'Shown from stored operational coordinates only.',
+            label: 'Latest area',
+            value: (
+              <>
+                <MapPin size={13} aria-hidden="true" />
+                {latestAddress}
+              </>
+            ),
+          },
+        ]}
+      />
 
       {focusHref ? (
         <a className="vietnam-map-cluster-focus-link" href={focusHref}>
