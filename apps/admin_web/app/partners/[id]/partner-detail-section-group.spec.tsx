@@ -25,11 +25,21 @@ describe('PartnerDetailSectionGroup', () => {
     expect(rendered).toContain('Grouped partner content');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'partner-detail-section-band partner-detail-section-group',
-        'partner-detail-section-band-header',
-        'partner-detail-section-band-body partner-detail-section-group-body',
+        'card admin-section partner-detail-section-band partner-detail-section-group',
+        'ops-section-header admin-section-header partner-detail-section-band-header',
+        'admin-section-body partner-detail-section-band-body partner-detail-section-group-body',
       ]),
     );
+  });
+
+  it('builds partner section groups on the shared Vuexy AdminSection surface', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain("import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain('<AdminSection');
+    expect(source).toContain('bodyClassName="partner-detail-section-band-body partner-detail-section-group-body"');
+    expect(source).toContain('headerClassName="partner-detail-section-band-header"');
+    expect(source).not.toContain('<section className="partner-detail-section-band partner-detail-section-group"');
   });
 
   it('renders collapsible reference details for secondary summaries', () => {

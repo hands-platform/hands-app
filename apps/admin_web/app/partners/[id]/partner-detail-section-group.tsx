@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AdminDisclosure } from '../../../components/admin-surface';
+import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailSectionGroupProps = {
@@ -35,19 +35,18 @@ export function PartnerDetailSectionGroup({
   title,
 }: PartnerDetailSectionGroupProps) {
   return (
-    <section className="partner-detail-section-band partner-detail-section-group" id={id}>
-      <div className="partner-detail-section-band-header">
-        <div>
-          <span>{eyebrow}</span>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <StatusBadge tone="info">{status}</StatusBadge>
-      </div>
-      <div className="partner-detail-section-band-body partner-detail-section-group-body">
-        {children}
-      </div>
-    </section>
+    <AdminSection
+      bodyClassName="partner-detail-section-band-body partner-detail-section-group-body"
+      className="partner-detail-section-band partner-detail-section-group"
+      description={description}
+      eyebrow={eyebrow}
+      headerClassName="partner-detail-section-band-header"
+      id={id}
+      status={<StatusBadge tone="info">{status}</StatusBadge>}
+      title={title}
+    >
+      {children}
+    </AdminSection>
   );
 }
 
