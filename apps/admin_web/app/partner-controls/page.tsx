@@ -31,6 +31,7 @@ import {
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -240,7 +241,7 @@ export default async function PartnerControlsPage({
         {commandCenter.nextActions.length ? (
           <div className="setup-stage-list admin-mt-12">
             {commandCenter.nextActions.map((action) => (
-              <div className="setup-stage-item" key={action.id}>
+              <AdminStageItem key={action.id}>
                 <span>{action.status}</span>
                 <div>
                   <strong>{action.title}</strong>
@@ -257,7 +258,7 @@ export default async function PartnerControlsPage({
                 <AdminTextLink href={action.href}>
                   Open
                 </AdminTextLink>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         ) : (
@@ -294,7 +295,7 @@ export default async function PartnerControlsPage({
         {partnerControlBoard.items.length ? (
           <div className="setup-stage-list admin-mt-12">
             {partnerControlBoard.items.map((item) => (
-              <div className="setup-stage-item" key={item.provider.id}>
+              <AdminStageItem key={item.provider.id}>
                 <span>{item.status}</span>
                 <div>
                   <PartnerControlProviderCell
@@ -322,7 +323,7 @@ export default async function PartnerControlsPage({
                     {item.actionLabel}
                   </AdminTextLink>
                 </div>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         ) : (
@@ -405,7 +406,7 @@ export default async function PartnerControlsPage({
       >
         <div className="setup-stage-list admin-mt-12">
           {acceptanceUnblockPlaybook.map((step) => (
-            <div className="setup-stage-item" key={step.id}>
+            <AdminStageItem key={step.id}>
               <span>{step.step}</span>
               <div>
                 <strong>{step.title}</strong>
@@ -432,7 +433,7 @@ export default async function PartnerControlsPage({
               <AdminTextLink href={step.href}>
                 {step.action}
               </AdminTextLink>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       </AdminSection>
@@ -451,7 +452,7 @@ export default async function PartnerControlsPage({
         {operatingBlocks.length ? (
           <div className="setup-stage-list admin-mt-12">
             {operatingBlocks.map((block) => (
-              <div className="setup-stage-item" key={block.id}>
+              <AdminStageItem key={block.id}>
                 <span>{block.impact}</span>
                 <div>
                   <strong>{block.title}</strong>
@@ -473,7 +474,7 @@ export default async function PartnerControlsPage({
                     Profile
                   </AdminFormControlLink>
                 </div>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         ) : (

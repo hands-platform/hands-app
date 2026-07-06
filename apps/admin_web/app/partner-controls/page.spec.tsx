@@ -64,6 +64,11 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('className="text-link"');
   });
 
+  it('uses the shared Vuexy stage item atom for partner control row surfaces', () => {
+    expect(partnerControlsSource).toContain('AdminStageItem');
+    expect(partnerControlsSource).not.toContain('className="setup-stage-item"');
+  });
+
   it('keeps Partner control command cards on shared Vuexy task surfaces', () => {
     expect(partnerControlsSource).toContain('AdminActionCard');
     expect(partnerControlsSource).toContain('AdminTaskCard');
