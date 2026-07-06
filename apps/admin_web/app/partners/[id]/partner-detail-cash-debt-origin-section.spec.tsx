@@ -40,6 +40,14 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(source).not.toContain('className="text-link"');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the cash debt ledger surface', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('renders cash debt origins as a Vuexy table', () => {
     const section = PartnerDetailCashDebtOriginSection({
       hasCashFeeDebt: true,

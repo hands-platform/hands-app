@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
   partnerDetailReviewCardClassName,
   partnerDetailReviewFooterClassName,
@@ -24,6 +25,18 @@ describe('partner detail Vuexy table shell', () => {
     expect(partnerDetailShellSource).toContain('adminTablePanelChromeClassName');
     expect(partnerDetailShellSource).not.toContain(
       "'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card'",
+    );
+  });
+
+  it('renders partner detail table cards through the shared Admin table panel atom', () => {
+    const panel = PartnerDetailVuexyTablePanel({
+      children: 'Partner rows',
+      className: 'admin-mb-16',
+      title: 'Partner detail rows',
+    });
+
+    expect(panel.props.className).toBe(
+      'booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16',
     );
   });
 

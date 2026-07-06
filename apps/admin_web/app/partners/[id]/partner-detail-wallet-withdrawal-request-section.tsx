@@ -1,6 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import {
   AdminFormControlButton,
@@ -15,8 +14,8 @@ import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-ap
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
 import { shortRecordId } from './partner-detail-format';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -36,8 +35,8 @@ export function PartnerDetailWalletWithdrawalRequestSection({
   const needsActionCount = requests.filter((request) => !isTerminalStatus(request.status)).length;
 
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Partner wallet withdrawal history for this partner only. Finance can approve, request bank correction, reject, or mark paid after a manual transfer."
       id="wallet-withdrawal-requests"
       resultLabel={needsActionCount ? `${needsActionCount} needs action` : 'Clear'}
@@ -89,7 +88,7 @@ export function PartnerDetailWalletWithdrawalRequestSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={requests.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

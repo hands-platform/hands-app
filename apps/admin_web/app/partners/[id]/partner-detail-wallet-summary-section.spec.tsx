@@ -17,6 +17,14 @@ describe('PartnerDetailWalletSummarySection', () => {
     expect(source).not.toContain('<span className="pill pill-info">');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the wallet ledger surface', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared date time atom for visible ledger timestamps', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
 

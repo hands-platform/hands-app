@@ -49,6 +49,14 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(pageSource).not.toContain('startsAtLabel: formatDate(payoutOps.hold.startsAt)');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the payout operations surface', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-payout-operations-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('renders payout holds, blockers, earnings, and payout batches as Vuexy tables', () => {
     const section = PartnerDetailPayoutOperationsSection({
       cardClassForTone: (tone) => `card-${tone}`,

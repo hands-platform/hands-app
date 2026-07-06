@@ -1,6 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -9,8 +8,8 @@ import { StatusBadge, type StatusBadgeTone } from '../../../components/status-ba
 import { walletLedgerLabel } from './partner-detail-format';
 import type { PartnerWalletReviewTone, PartnerWalletSummary } from './partner-detail-wallet-model';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -24,8 +23,8 @@ export function PartnerDetailWalletSummarySection({
   summary,
 }: PartnerDetailWalletSummarySectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Partner wallet balance, manual bank deposits, negative-wallet recovery, and cash-service deductions. This is a bounded detail-page evidence window; full ledger/audit remains owned by finance APIs."
       id="partner-wallet-detail"
       resultLabel={
@@ -148,7 +147,7 @@ export function PartnerDetailWalletSummarySection({
         </AdminTableScroll>
       </div>
       <PartnerDetailVuexyTableFooter rowCount={summary.visibleLedgerRows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

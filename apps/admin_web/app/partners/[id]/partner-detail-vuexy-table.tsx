@@ -1,4 +1,7 @@
+import type { ComponentProps } from 'react';
+
 import { AdminBoundedTableFooter } from '../../../components/admin-data-table';
+import { AdminTablePanel } from '../../../components/admin-table-panel';
 import {
   adminTableGroupClassName,
   adminTablePanelChromeClassName,
@@ -16,6 +19,18 @@ export const partnerDetailReviewFooterClassName =
 type PartnerDetailVuexyTableFooterProps = {
   readonly rowCount: number;
 };
+
+type PartnerDetailVuexyTablePanelProps = ComponentProps<typeof AdminTablePanel>;
+
+export function PartnerDetailVuexyTablePanel({
+  className,
+  ...props
+}: PartnerDetailVuexyTablePanelProps) {
+  return AdminTablePanel({
+    className: ['vuexy-partner-detail-review-card', className].filter(Boolean).join(' '),
+    ...props,
+  });
+}
 
 export function PartnerDetailVuexyTableFooter({
   rowCount,

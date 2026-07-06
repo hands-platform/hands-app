@@ -2,14 +2,13 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -44,8 +43,8 @@ export function PartnerDetailCashDebtOriginSection({
   rows,
 }: PartnerDetailCashDebtOriginSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName}${hasCashFeeDebt ? ' card-danger' : ''} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className={`${hasCashFeeDebt ? 'card-danger ' : ''}admin-mb-16`}
       description="Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or approved offset has evidence. Marketplace visibility is not logged here; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt."
       id="cash-debt-origin"
       resultLabel={hasCashFeeDebt ? `${openRowCount} open row(s)` : 'No open cash debt'}
@@ -146,6 +145,6 @@ export function PartnerDetailCashDebtOriginSection({
         </AdminTableScroll>
       </div>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

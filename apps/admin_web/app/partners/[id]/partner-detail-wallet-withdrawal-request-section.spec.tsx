@@ -215,6 +215,12 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<span className="pill pill-info">Manual bank transfer pending</span>');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the withdrawal ledger surface', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared date time atom for visible withdrawal timestamps', () => {
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('formatDate,');

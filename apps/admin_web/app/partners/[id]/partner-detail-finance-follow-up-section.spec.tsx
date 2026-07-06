@@ -15,6 +15,12 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
     expect(sectionSource).not.toContain('className="text-link"');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the finance follow-up surface', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('renders finance follow-up rows with Vuexy table styling', () => {
     const section = PartnerDetailFinanceFollowUpSection({
       rows: [
