@@ -85,6 +85,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('AdminFormControlLink');
+    expect(pageSource).toContain('AdminRowLink');
     expect(pageSource).toContain('AdminOverviewCommandGrid');
     expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).toContain('AdminMiniMetricStrip');
@@ -105,6 +106,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('className="usage-overview-table-card"');
     expect(pageSource).not.toContain('className="usage-overview-table-wrap"');
     expect(pageSource).not.toContain('className="usage-overview-table"');
+    expect(pageSource).not.toContain('<a\n      aria-label={`${row.partnerName}');
     expect(pageSource).not.toContain('<a aria-label={`${row.recommendedAction} for ${row.partnerName}`}');
     expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');

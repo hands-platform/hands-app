@@ -35,7 +35,7 @@ import {
 } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminCardHeader, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminLinkCard, AdminRowLink, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -901,8 +901,8 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
   const partnerStatus = formatPartnerStatus(row.status);
 
   return (
-    <a
-      aria-label={`${row.partnerName}, ${row.phone ?? 'no phone'}, ${row.area}, ${partnerStatus}, last activity ${lastActivity}, ${row.mainReason}, ${row.recommendedAction}`}
+    <AdminRowLink
+      ariaLabel={`${row.partnerName}, ${row.phone ?? 'no phone'}, ${row.area}, ${partnerStatus}, last activity ${lastActivity}, ${row.mainReason}, ${row.recommendedAction}`}
       className="partner-overview-action-row"
       href={row.href}
     >
@@ -919,7 +919,7 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
         </StatusBadgeFromPillClass>
         <small>{row.recommendedAction}</small>
       </span>
-    </a>
+    </AdminRowLink>
   );
 }
 
