@@ -76,6 +76,7 @@ export function bookingDetailActionEvidenceGate({
     expireAvailable: canExpireBooking(booking.status),
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
     expiresAtLabel: formatDate(booking.expiresAt),
+    expiresAtValue: booking.expiresAt,
     noShowAvailable: canMarkNoShow(booking.status),
   });
 }

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
@@ -38,6 +39,10 @@ describe('BookingOperatorQueueSections', () => {
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('DateTimeText');
+    expect(source).toContain('ActionEvidenceGateDetail');
+    expect(source).toContain('fallback={row.evidence}');
+    expect(source).toContain('value={row.evidenceDateTimeValue}');
     expect(source).not.toContain('className={`ops-task-card ${finalGateReason.className}`');
     expect(source).not.toContain('<a className={`ops-task-card ${row.className}`');
     expect(source).not.toContain('<div className="action-button-card ops-task-blocked"');
@@ -113,7 +118,9 @@ describe('BookingOperatorQueueSections', () => {
           {
             action: 'Payment sync',
             className: 'ops-task-ready',
-            evidence: 'Payment record is linked.',
+            evidence: '14 Jun 2026, 08:45',
+            evidenceDateTimePrefix: 'Address snapshot missing / expires ',
+            evidenceDateTimeValue: '2026-06-14T01:45:00.000Z',
             href: '#payment',
             operatorRule: 'Sync before capture.',
             pillClass: 'pill-info',
@@ -143,6 +150,8 @@ describe('BookingOperatorQueueSections', () => {
 
     expect(normalizedText(section)).toContain('Operations command center');
     expect(normalizedText(section)).toContain('Action evidence gate');
+    expect(renderToStaticMarkup(section)).toContain('Address snapshot missing / expires');
+    expect(renderToStaticMarkup(section)).toContain('dateTime="2026-06-14T01:45:00.000Z"');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['card admin-section ops-command-center admin-mb-16']),
     );

@@ -3,6 +3,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminActionCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
@@ -39,6 +40,9 @@ type ActionEvidenceGateRow = {
   pillClass: string;
   status: string;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   operatorRule: string;
   href: string;
 };
@@ -228,7 +232,7 @@ export function BookingOpsCommandCenter({
           {actionEvidenceGate.rows.map((row) => (
             <AdminActionCard
               className={row.className}
-              detail={row.evidence}
+              detail={<ActionEvidenceGateDetail row={row} />}
               href={row.href}
               key={row.action}
               leading={<StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.status}</StatusBadge>}
@@ -306,5 +310,19 @@ export function BookingOpsCommandCenter({
         )}
       </div>
     </AdminSection>
+  );
+}
+
+function ActionEvidenceGateDetail({ row }: { row: ActionEvidenceGateRow }) {
+  if (!row.evidenceDateTimeValue) {
+    return row.evidence;
+  }
+
+  return (
+    <>
+      {row.evidenceDateTimePrefix}
+      <DateTimeText fallback={row.evidence} value={row.evidenceDateTimeValue} />
+      {row.evidenceDateTimeSuffix}
+    </>
   );
 }

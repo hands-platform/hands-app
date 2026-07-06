@@ -26,6 +26,7 @@ export type BookingActionEvidenceGateInput = {
   expireAvailable: boolean;
   hasAddressSnapshot: boolean;
   expiresAtLabel: string;
+  expiresAtValue?: string | null;
   noShowAvailable: boolean;
 };
 
@@ -33,6 +34,9 @@ export type BookingActionEvidenceGateRow = {
   action: string;
   status: string;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   operatorRule: string;
   href: string;
   className: BookingChecklistClassName;
@@ -150,10 +154,12 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
       action: 'Expire matching',
       status: input.expireAvailable ? (input.hasAddressSnapshot ? 'Ready' : 'Needs address') : 'Locked',
       evidence: input.expireAvailable
-        ? `${input.hasAddressSnapshot ? 'Address snapshot ready' : 'Address snapshot missing'} / expires ${
-            input.expiresAtLabel
-          }`
+        ? input.expiresAtLabel
         : `Expire unavailable for ${input.bookingStatus}.`,
+      evidenceDateTimePrefix: input.expireAvailable
+        ? `${input.hasAddressSnapshot ? 'Address snapshot ready' : 'Address snapshot missing'} / expires `
+        : undefined,
+      evidenceDateTimeValue: input.expireAvailable ? input.expiresAtValue : null,
       operatorRule:
         'Expire only when the customer should stop waiting and payment release/review path is understood.',
       href: '#matching-expiry',

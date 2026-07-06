@@ -25,6 +25,7 @@ const baseInput: BookingActionEvidenceGateInput = {
   expireAvailable: false,
   hasAddressSnapshot: true,
   expiresAtLabel: '07 Jun 2026 10:45',
+  expiresAtValue: '2026-06-07T03:45:00.000Z',
   noShowAvailable: false,
 };
 
@@ -113,6 +114,9 @@ describe('bookingActionEvidenceGate', () => {
 
     expect(result.rows[5]).toMatchObject({
       action: 'Expire matching',
+      evidence: '07 Jun 2026 10:45',
+      evidenceDateTimePrefix: 'Address snapshot missing / expires ',
+      evidenceDateTimeValue: '2026-06-07T03:45:00.000Z',
       status: 'Needs address',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',

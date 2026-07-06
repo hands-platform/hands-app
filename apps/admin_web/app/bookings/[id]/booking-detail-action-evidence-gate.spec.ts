@@ -122,4 +122,26 @@ describe('bookingDetailActionEvidenceGate', () => {
       status: 'Evidence required',
     });
   });
+
+  it('keeps matching expiry time available for shared date rendering', () => {
+    const input = booking({
+      addressSnapshot: null,
+      payment: null,
+      status: 'OPEN_MATCHING',
+    });
+
+    const gate = bookingDetailActionEvidenceGate({
+      ...baseInput(input),
+      latestLocation: null,
+      messages: [],
+      notificationTrace: notificationTrace(),
+      operatorNoteLines: [],
+    });
+
+    expect(gate.rows.find((row) => row.action === 'Expire matching')).toMatchObject({
+      evidence: '14 Jun 2026, 08:45',
+      evidenceDateTimePrefix: 'Address snapshot missing / expires ',
+      evidenceDateTimeValue: '2026-06-14T01:45:00.000Z',
+    });
+  });
 });
