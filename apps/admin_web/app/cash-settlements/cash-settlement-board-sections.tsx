@@ -1,5 +1,6 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -122,14 +123,14 @@ export function CashSettlementWorkflowSections({
         </div>
         <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
-            <div className="setup-stage-item" key={step.title}>
+            <AdminStageItem key={step.title}>
               <StatusBadge tone={statusBadgeToneFromPillClass(step.pillClass)}>{step.status}</StatusBadge>
               <div>
                 <strong>{step.title}</strong>
                 <p className="muted">{step.detail}</p>
                 <small>{step.operatorRule}</small>
               </div>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       </AdminTablePanel>

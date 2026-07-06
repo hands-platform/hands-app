@@ -1,6 +1,7 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -37,7 +38,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
       {groups.length ? (
         <div className="setup-stage-list">
           {groups.slice(0, 12).map((group) => (
-            <div className="setup-stage-item" key={group.providerProfileId}>
+            <AdminStageItem key={group.providerProfileId}>
               <span>{group.status}</span>
               <div>
                 <strong>{group.providerName}</strong>
@@ -76,7 +77,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
                   <AdminInlineFallback>No batch action</AdminInlineFallback>
                 )}
               </div>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       ) : (
