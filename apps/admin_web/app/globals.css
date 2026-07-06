@@ -3183,6 +3183,7 @@ a.action-button-card:hover {
   z-index: 2;
 }
 
+.admin-table-card,
 .vuexy-booking-table-card {
   background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
@@ -3192,6 +3193,7 @@ a.action-button-card:hover {
   overflow: hidden;
 }
 
+.booking-monitor .admin-table-card .admin-table-scroll,
 .booking-monitor .vuexy-booking-table-card .admin-table-scroll {
   border: 0;
   border-radius: 0;
@@ -3202,6 +3204,7 @@ a.action-button-card:hover {
   overflow-y: visible;
 }
 
+.admin-table-group,
 .vuexy-booking-table-group {
   background: var(--admin-surface-raised);
 }
