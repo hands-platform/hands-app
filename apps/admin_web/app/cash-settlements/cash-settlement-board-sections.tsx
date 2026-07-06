@@ -1,4 +1,5 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -79,15 +80,14 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
         status={<StatusBadge tone="info">Live policy default</StatusBadge>}
         title="Applied operations policy"
       />
-      <div className="service-trace-summary admin-mt-12">
-        {appliedPolicyCards.map((card) => (
-          <div key={card.label}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <small>{card.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={appliedPolicyCards.map((card) => ({
+          detail: card.helper,
+          label: card.label,
+          value: card.value,
+        }))}
+      />
       <CommandCardGrid cards={settlementRuleCards} />
     </AdminTablePanel>
   );

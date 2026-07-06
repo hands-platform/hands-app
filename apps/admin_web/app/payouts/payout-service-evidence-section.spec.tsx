@@ -4,6 +4,13 @@ import { join } from 'node:path';
 import { PayoutServiceEvidenceSection } from './payout-service-evidence-section';
 
 describe('PayoutServiceEvidenceSection', () => {
+  it('uses the shared Vuexy trace summary atom for service evidence totals', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/payout-service-evidence-section.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary">');
+  });
+
   it('renders service evidence totals and rows', () => {
     const section = PayoutServiceEvidenceSection({
       batchCount: 2,

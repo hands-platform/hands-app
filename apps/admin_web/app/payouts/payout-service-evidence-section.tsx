@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -41,40 +42,28 @@ export function PayoutServiceEvidenceSection({
           Review service pricing
         </AdminTextLink>
       </div>
-      <div className="service-trace-summary">
-        <div>
-          <span>Service options</span>
-          <strong>{items.length}</strong>
-        </div>
-        <div>
-          <span>Batches</span>
-          <strong>{batchCount}</strong>
-        </div>
-        <div>
-          <span>Gross</span>
-          <strong>
-            <MoneyText amount={sumEvidence(items, 'grossAmount')} currency={currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Partner net</span>
-          <strong>
-            <MoneyText amount={sumEvidence(items, 'netAmount')} currency={currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Platform fee</span>
-          <strong>
-            <MoneyText amount={sumEvidence(items, 'platformFee')} currency={currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Tax withheld</span>
-          <strong>
-            <MoneyText amount={sumEvidence(items, 'withholdingAmount')} currency={currency} />
-          </strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Service options', value: items.length },
+          { label: 'Batches', value: batchCount },
+          {
+            label: 'Gross',
+            value: <MoneyText amount={sumEvidence(items, 'grossAmount')} currency={currency} />,
+          },
+          {
+            label: 'Partner net',
+            value: <MoneyText amount={sumEvidence(items, 'netAmount')} currency={currency} />,
+          },
+          {
+            label: 'Platform fee',
+            value: <MoneyText amount={sumEvidence(items, 'platformFee')} currency={currency} />,
+          },
+          {
+            label: 'Tax withheld',
+            value: <MoneyText amount={sumEvidence(items, 'withholdingAmount')} currency={currency} />,
+          },
+        ]}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"

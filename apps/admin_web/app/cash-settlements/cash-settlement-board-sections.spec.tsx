@@ -8,6 +8,16 @@ import {
 } from './cash-settlement-board-sections';
 
 describe('CashSettlement board sections', () => {
+  it('uses the shared Vuexy trace summary atom for applied policy cards', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/cash-settlements/cash-settlement-board-sections.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('does not duplicate the base pill class for execution command cards', () => {
     const section = CashSettlementExecutionSection({
       executionDesk: [

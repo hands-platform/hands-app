@@ -10,6 +10,7 @@ import {
 } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -221,15 +222,14 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           status={<StatusBadge tone="info">Live policy default</StatusBadge>}
           title="Applied operations policy"
         />
-        <div className="service-trace-summary admin-mt-12">
-          {appliedPayoutPolicyCards.map((card) => (
-            <div key={card.label}>
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <small>{card.helper}</small>
-            </div>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={appliedPayoutPolicyCards.map((card) => ({
+            detail: card.helper,
+            label: card.label,
+            value: card.value,
+          }))}
+        />
         <div className="ops-task-grid">
           {releasePolicyDesk.map((signal) => (
             <AdminTaskCard

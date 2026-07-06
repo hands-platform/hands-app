@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 
@@ -38,15 +39,13 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
       resultTone={audit.blockedCount ? 'warning' : 'success'}
       title="Payout inclusion audit"
     >
-      <div className="service-trace-summary">
-        {audit.cards.map((card) => (
-          <div key={card.label}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <small>{card.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        metrics={audit.cards.map((card) => ({
+          detail: card.helper,
+          label: card.label,
+          value: card.value,
+        }))}
+      />
       <div className="setup-stage-list admin-mt-14">
         {audit.rows.map((row) => (
           <div className="setup-stage-item" key={row.id}>

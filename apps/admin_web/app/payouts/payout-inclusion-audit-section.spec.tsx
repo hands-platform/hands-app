@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { PayoutInclusionAuditSection } from './payout-inclusion-audit-section';
 
 describe('PayoutInclusionAuditSection', () => {
+  it('uses the shared Vuexy trace summary atom for payout inclusion metrics', () => {
+    const source = readFileSync('app/payouts/payout-inclusion-audit-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary">');
+  });
+
   it('uses the shared Vuexy empty-state atom for empty audit ranges', () => {
     const source = readFileSync('app/payouts/payout-inclusion-audit-section.tsx', 'utf8');
 

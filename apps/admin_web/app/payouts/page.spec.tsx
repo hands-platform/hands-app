@@ -163,6 +163,13 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
   });
 
+  it('uses the shared Vuexy trace summary atom for applied payout policy cards', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses shared money atoms for payout summary KPI amounts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
