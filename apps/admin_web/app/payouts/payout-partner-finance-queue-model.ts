@@ -6,8 +6,9 @@ type PayoutPartnerFinanceTone = 'danger' | 'success' | 'warning';
 
 export type PayoutPartnerFinanceQueueRow = {
   readonly actionLabel: string;
-  readonly amountLabel: string;
+  readonly amount: number;
   readonly batchId: string;
+  readonly currency: string;
   readonly detail: string;
   readonly evidenceLabel: string;
   readonly href: string;
@@ -26,7 +27,8 @@ export function buildPayoutPartnerFinanceQueueRows(
 function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinanceQueueRow[] {
   const rows: PayoutPartnerFinanceQueueRow[] = [];
   const partnerLabel = batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner';
-  const amountLabel = formatMoney(batch.totalNetAmount, batch.currency);
+  const amount = batch.totalNetAmount;
+  const currency = batch.currency;
   const activeHold = activePayoutHold(batch.providerProfile?.sanctions ?? []);
   const approvedBank = firstBankByStatus(batch, 'APPROVED');
   const rejectedBank = firstBankByStatus(batch, 'REJECTED');
@@ -37,8 +39,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   if (rejectedBank) {
     rows.push({
       actionLabel: 'Open partner bank correction',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail:
         rejectedBank.rejectionReason ??
         'Partner must correct bank details in the Partner app before finance can release payout.',
@@ -52,8 +55,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   } else if (pendingBank) {
     rows.push({
       actionLabel: 'Review bank details',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail: 'Corrected bank details are waiting for admin review. Approve them before manual payout release.',
       evidenceLabel: bankEvidenceLabel(pendingBank),
       href: `/partners/${batch.providerProfileId}#bank`,
@@ -65,8 +69,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   } else if (!approvedBank && !isTerminal) {
     rows.push({
       actionLabel: 'Ask Partner to add bank details',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail: 'No approved withdrawal bank details are loaded for this partner payout batch.',
       evidenceLabel: 'Missing approved bank',
       href: `/partners/${batch.providerProfileId}#bank`,
@@ -80,8 +85,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   if (activeHold) {
     rows.push({
       actionLabel: 'Open partner controls',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail: activeHold.reason ?? 'Partner has an active payout hold.',
       evidenceLabel: 'Active payout hold',
       href: `/partner-controls?q=${encodeURIComponent(batch.providerProfileId)}`,
@@ -95,8 +101,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   if (recentWalletMovement < 0) {
     rows.push({
       actionLabel: 'Open cash settlements',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail:
         'Recent partner wallet ledger evidence is negative. Confirm deposit or admin offset before payout release.',
       evidenceLabel: `Recent wallet movement ${formatMoney(recentWalletMovement, batch.currency)}`,
@@ -111,8 +118,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   if (!isTerminal && !batch.transferRef) {
     rows.push({
       actionLabel: 'Save transfer reference',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail: 'A bank transfer reference must be saved before this batch can be marked paid.',
       evidenceLabel: 'Missing transfer ref',
       href: `#${batch.id}`,
@@ -126,8 +134,9 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
   if (!rows.length && approvedBank && !isTerminal) {
     rows.push({
       actionLabel: 'Review manual payout',
-      amountLabel,
+      amount,
       batchId: batch.id,
+      currency,
       detail:
         'Approved bank details and transfer reference are available. Finance can complete the manual payout review.',
       evidenceLabel: 'Approved bank details',

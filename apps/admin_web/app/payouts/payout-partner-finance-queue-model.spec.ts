@@ -51,7 +51,8 @@ describe('buildPayoutPartnerFinanceQueueRows', () => {
     ]);
     expect(rows[0]).toMatchObject({
       actionLabel: 'Open partner bank correction',
-      amountLabel: '750.000 VND',
+      amount: 750_000,
+      currency: 'VND',
       partnerLabel: 'Blocked Partner',
       title: 'Partner correction pending',
       tone: 'danger',
@@ -120,7 +121,8 @@ describe('buildPayoutPartnerFinanceQueueRows', () => {
       expect.objectContaining({
         id: 'batch-2-withdrawal-ready',
         actionLabel: 'Review manual payout',
-        amountLabel: '750.000 VND',
+        amount: 750_000,
+        currency: 'VND',
         evidenceLabel: 'Approved bank details',
         title: 'Ready for manual payout',
         tone: 'success',

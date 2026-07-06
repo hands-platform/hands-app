@@ -9,8 +9,9 @@ describe('PayoutPartnerFinanceQueueSection', () => {
       rows: [
         {
           actionLabel: 'Request corrected bank details',
-          amountLabel: '750.000 VND',
+          amount: 750000,
           batchId: 'batch-1',
+          currency: 'VND',
           detail: 'Bank proof does not match.',
           evidenceLabel: 'VCB / Blocked Partner',
           href: '/partners/provider-1#bank',
@@ -53,6 +54,12 @@ describe('PayoutPartnerFinanceQueueSection', () => {
     expect(sectionSource).toContain('badgeToneForQueueTone');
     expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>');
     expect(sectionSource).not.toContain('function pillClassForTone');
+  });
+
+  it('uses the shared money atom for payout queue amounts', () => {
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).not.toContain('readonly amountLabel: string;');
+    expect(sectionSource).not.toContain('{row.amountLabel}');
   });
 });
 

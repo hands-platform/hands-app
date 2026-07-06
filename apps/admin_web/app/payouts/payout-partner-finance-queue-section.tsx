@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type { PayoutPartnerFinanceQueueRow } from './payout-partner-finance-queue-model';
 
@@ -37,7 +38,9 @@ export function PayoutPartnerFinanceQueueSection({
                 <p className="muted">Batch {row.batchId}</p>
               </td>
               <td>
-                <strong>{row.amountLabel}</strong>
+                <strong>
+                  <MoneyText amount={row.amount} currency={row.currency} />
+                </strong>
               </td>
               <td>
                 <StatusBadge tone={badgeToneForQueueTone(row.tone)}>{row.title}</StatusBadge>
