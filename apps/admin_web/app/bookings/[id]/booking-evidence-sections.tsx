@@ -20,6 +20,9 @@ type EvidencePacketRecord = {
   title: string;
   detail: string;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   href: string;
 };
 
@@ -155,7 +158,9 @@ export function BookingEvidenceSections({
                 <strong>{record.title}</strong>
                 <p className="muted">{record.detail}</p>
               </div>
-              <p>{record.evidence}</p>
+              <p>
+                <EvidenceRecordEvidence record={record} />
+              </p>
               <StatusBadge tone="neutral">Record</StatusBadge>
               <AdminTextLink href={record.href}>
                 Open
@@ -295,5 +300,19 @@ function EvidenceMetricSummary({ metrics }: { metrics: EvidenceMetric[] }) {
         ),
       }))}
     />
+  );
+}
+
+function EvidenceRecordEvidence({ record }: { record: EvidencePacketRecord }) {
+  if (!record.evidenceDateTimeValue) {
+    return record.evidence;
+  }
+
+  return (
+    <>
+      {record.evidenceDateTimePrefix}
+      <DateTimeText fallback={record.evidence} value={record.evidenceDateTimeValue} />
+      {record.evidenceDateTimeSuffix}
+    </>
   );
 }

@@ -132,6 +132,7 @@ describe('bookingDetailEvidencePacket', () => {
       value: '2 message(s)',
     });
     expect(packet.metrics.find((metric) => metric.label === 'Location evidence')).toMatchObject({
+      dateTimeValue: '2026-06-14T01:10:00.000Z',
       helper: 'Location recorded without readable address latest Partner location.',
     });
     expect(packet.metrics.find((metric) => metric.label === 'Refund evidence')).toMatchObject({
@@ -145,8 +146,20 @@ describe('bookingDetailEvidencePacket', () => {
       evidence: '450.000 VND customer price / 120.000 VND / 1 entry wallet impact.',
     });
     expect(packet.records.find((record) => record.id === 'audit-evidence')?.evidence).toContain(
-      'booking.matched',
+      '14 Jun 2026',
     );
+    expect(packet.records.find((record) => record.id === 'chat-evidence')).toMatchObject({
+      evidenceDateTimePrefix: 'Latest message: ',
+      evidenceDateTimeValue: '2026-06-14T01:05:00.000Z',
+    });
+    expect(packet.records.find((record) => record.id === 'location-evidence')).toMatchObject({
+      evidenceDateTimePrefix: 'Recorded ',
+      evidenceDateTimeValue: '2026-06-14T01:10:00.000Z',
+    });
+    expect(packet.records.find((record) => record.id === 'audit-evidence')).toMatchObject({
+      evidenceDateTimePrefix: 'Latest event: booking.matched / ',
+      evidenceDateTimeValue: '2026-06-14T01:20:00.000Z',
+    });
     expect(packet.records.find((record) => record.id === 'address-evidence')).toMatchObject({
       evidence: 'Address snapshot District 3 service address',
     });

@@ -49,8 +49,10 @@ export function bookingDetailEvidencePacket({
     chatReady: bookingChatReady(booking),
     messageCount: messages.length,
     latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
+    latestMessageAtValue: messages.length > 0 ? messages[messages.length - 1]?.createdAt : null,
     locationTrailCount: trail.length,
     latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+    latestLocationAtValue: latestLocation?.recordedAt ?? null,
     latestLocationCoordinateLabel: latestLocationLabel(latestLocation),
     paymentStatus: booking.payment?.status ?? 'NONE',
     paymentMethod: booking.payment?.method ?? 'No method',
@@ -75,6 +77,7 @@ export function bookingDetailEvidencePacket({
     activityRecordCount: bookingActivityRecords.length,
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
+    latestActivityAtValue: bookingActivityRecords[0]?.at ?? null,
   });
 }
 

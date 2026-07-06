@@ -16,6 +16,9 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('DateTimeText');
     expect(source).toContain('fallback={metric.value}');
     expect(source).toContain('value={metric.dateTimeValue}');
+    expect(source).toContain('EvidenceRecordEvidence');
+    expect(source).toContain('fallback={record.evidence}');
+    expect(source).toContain('value={record.evidenceDateTimeValue}');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
@@ -104,7 +107,9 @@ describe('Booking evidence sections', () => {
         records: [
           {
             detail: 'Booking address snapshot is loaded.',
-            evidence: 'Address retained at booking time.',
+            evidence: '14 Jun 2026 09:00',
+            evidenceDateTimePrefix: 'Latest message: ',
+            evidenceDateTimeValue: '2026-06-14T02:00:00.000Z',
             href: '#packet',
             id: 'packet-address',
             label: 'Address',
@@ -167,5 +172,6 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(5);
     expect(classNamesIn(section)).toContain('date-time-text');
     expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
+    expect(markup).toContain('Latest message:');
   });
 });

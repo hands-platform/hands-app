@@ -4,8 +4,10 @@ const baseInput = {
   chatReady: false,
   messageCount: 0,
   latestMessageAtLabel: null,
+  latestMessageAtValue: null,
   locationTrailCount: 0,
   latestLocationAtLabel: null,
+  latestLocationAtValue: null,
   latestLocationCoordinateLabel: null,
   paymentStatus: 'NONE',
   paymentMethod: 'No method',
@@ -27,6 +29,7 @@ const baseInput = {
   activityRecordCount: 0,
   latestActivityTitle: null,
   latestActivityAtLabel: null,
+  latestActivityAtValue: null,
 };
 
 describe('bookingEvidencePacket', () => {
@@ -107,7 +110,9 @@ describe('bookingEvidencePacket', () => {
       chatRoomShortId: 'abc123',
       messageCount: 2,
       latestMessageAtLabel: '07 Jun 2026 10:35',
+      latestMessageAtValue: '2026-06-07T03:35:00.000Z',
       latestLocationAtLabel: '07 Jun 2026 10:30',
+      latestLocationAtValue: '2026-06-07T03:30:00.000Z',
       latestLocationCoordinateLabel: 'District 1, Ho Chi Minh City',
       customerPriceLabel: '450.000 VND customer price',
       walletLedgerLabel: 'No wallet block',
@@ -119,6 +124,7 @@ describe('bookingEvidencePacket', () => {
       activityRecordCount: 4,
       latestActivityTitle: 'booking.matched',
       latestActivityAtLabel: '07 Jun 2026 10:40',
+      latestActivityAtValue: '2026-06-07T03:40:00.000Z',
     });
 
     expect(packet.records.map((record) => record.id)).toEqual([
@@ -141,9 +147,24 @@ describe('bookingEvidencePacket', () => {
     expect(packet.records[2].detail).toBe(
       'Latest Partner location is District 1, Ho Chi Minh City.',
     );
-    expect(packet.records[8].evidence).toBe(
-      'Latest event: booking.matched / 07 Jun 2026 10:40',
-    );
+    expect(packet.metrics[1]).toMatchObject({
+      dateTimeValue: '2026-06-07T03:30:00.000Z',
+    });
+    expect(packet.records[1]).toMatchObject({
+      evidence: '07 Jun 2026 10:35',
+      evidenceDateTimePrefix: 'Latest message: ',
+      evidenceDateTimeValue: '2026-06-07T03:35:00.000Z',
+    });
+    expect(packet.records[2]).toMatchObject({
+      evidence: '07 Jun 2026 10:30',
+      evidenceDateTimePrefix: 'Recorded ',
+      evidenceDateTimeValue: '2026-06-07T03:30:00.000Z',
+    });
+    expect(packet.records[8]).toMatchObject({
+      evidence: '07 Jun 2026 10:40',
+      evidenceDateTimePrefix: 'Latest event: booking.matched / ',
+      evidenceDateTimeValue: '2026-06-07T03:40:00.000Z',
+    });
     expect(JSON.stringify(packet)).not.toMatch(/\bpin\b/i);
   });
 

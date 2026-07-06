@@ -7,8 +7,10 @@ export type BookingEvidencePacketInput = {
   chatReady: boolean;
   messageCount: number;
   latestMessageAtLabel?: string | null;
+  latestMessageAtValue?: string | null;
   locationTrailCount: number;
   latestLocationAtLabel?: string | null;
+  latestLocationAtValue?: string | null;
   latestLocationCoordinateLabel?: string | null;
   paymentStatus: string;
   paymentMethod: string;
@@ -30,6 +32,7 @@ export type BookingEvidencePacketInput = {
   activityRecordCount: number;
   latestActivityTitle?: string | null;
   latestActivityAtLabel?: string | null;
+  latestActivityAtValue?: string | null;
 };
 
 type EvidenceTone = 'pill-success' | 'pill-warn';
@@ -60,13 +63,16 @@ export type BookingEvidencePacket = {
   status: string;
   tone: EvidenceTone;
   summary: string;
-  metrics: Array<{ label: string; value: string; helper: string }>;
+  metrics: Array<{ label: string; value: string; helper: string; dateTimeValue?: string | null }>;
   records: Array<{
     id: string;
     label: string;
     title: string;
     detail: string;
     evidence: string;
+    evidenceDateTimePrefix?: string;
+    evidenceDateTimeSuffix?: string;
+    evidenceDateTimeValue?: string | null;
     href: string;
   }>;
 };
@@ -112,6 +118,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
       {
         label: 'Location evidence',
         value: input.latestLocationAtLabel ?? `${input.locationTrailCount} row(s)`,
+        dateTimeValue: input.latestLocationAtValue,
         helper: partnerLocationMetricHelper(input.latestLocationCoordinateLabel),
       },
       {
@@ -157,9 +164,9 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         detail: input.chatReady
           ? `Room ${input.chatRoomShortId ?? 'missing'} keeps ${input.messageCount} retained message(s).`
           : 'No retained chat room is attached.',
-        evidence: input.latestMessageAtLabel
-          ? `Latest message: ${input.latestMessageAtLabel}`
-          : 'No chat message evidence.',
+        evidence: input.latestMessageAtLabel ?? 'No chat message evidence.',
+        evidenceDateTimePrefix: input.latestMessageAtLabel ? 'Latest message: ' : undefined,
+        evidenceDateTimeValue: input.latestMessageAtValue,
         href: '#chat',
       },
       {
@@ -171,9 +178,9 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
               input.latestLocationCoordinateLabel,
             )}.`
           : 'No Partner location has been retained.',
-        evidence: input.latestLocationAtLabel
-          ? `Recorded ${input.latestLocationAtLabel}`
-          : 'No location timestamp.',
+        evidence: input.latestLocationAtLabel ?? 'No location timestamp.',
+        evidenceDateTimePrefix: input.latestLocationAtLabel ? 'Recorded ' : undefined,
+        evidenceDateTimeValue: input.latestLocationAtValue,
         href: '#location',
       },
       {
@@ -231,10 +238,14 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Audit',
         title: 'Audit evidence',
         detail: `${input.auditLogCount} audit row(s), ${input.activityRecordCount} timeline event(s).`,
-        evidence:
+        evidence: input.latestActivityTitle && input.latestActivityAtLabel
+          ? input.latestActivityAtLabel
+          : 'No timeline event retained.',
+        evidenceDateTimePrefix:
           input.latestActivityTitle && input.latestActivityAtLabel
-            ? `Latest event: ${input.latestActivityTitle} / ${input.latestActivityAtLabel}`
-            : 'No timeline event retained.',
+            ? `Latest event: ${input.latestActivityTitle} / `
+            : undefined,
+        evidenceDateTimeValue: input.latestActivityAtValue,
         href: '#booking-activity',
       },
     ],
