@@ -40,6 +40,7 @@ describe('NotificationTemplatesPage', () => {
 
   it('uses the shared Vuexy notice card atom for template results', () => {
     expect(pageSource).toContain('AdminCard');
+    expect(pageSource).toContain('AdminCardHeader');
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('AdminSectionHeader');
     expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
@@ -47,5 +48,6 @@ describe('NotificationTemplatesPage', () => {
     expect(pageSource).not.toContain('className={`card admin-notice-card');
     expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
     expect(pageSource).not.toContain('<section\n              className="notification-template-card"');
+    expect(pageSource).not.toContain('<div className="notification-template-card-header">');
   });
 });

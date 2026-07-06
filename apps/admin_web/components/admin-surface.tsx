@@ -21,6 +21,13 @@ type AdminDetailGridProps = {
   readonly className?: string;
 };
 
+type AdminCardHeaderProps = {
+  readonly actions?: ReactNode;
+  readonly className?: string;
+  readonly description?: ReactNode;
+  readonly title: ReactNode;
+};
+
 type AdminNotePanelProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -184,6 +191,18 @@ export function AdminDetailGrid({ ariaLabel, ariaLabelledBy, children, className
     >
       {children}
     </section>
+  );
+}
+
+export function AdminCardHeader({ actions, className, description, title }: AdminCardHeaderProps) {
+  return (
+    <div className={joinClassNames('ops-section-header admin-section-header admin-card-header', className)}>
+      <div>
+        <h3>{title}</h3>
+        {description ? <p className="muted">{description}</p> : null}
+      </div>
+      {actions ? <div className="participant-list">{actions}</div> : null}
+    </div>
   );
 }
 

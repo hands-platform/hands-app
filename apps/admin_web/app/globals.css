@@ -9339,15 +9339,13 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
-.partner-overview-action-card-header {
+.partner-overview-action-card .admin-card-header {
   align-items: flex-start;
-  display: flex;
   gap: 12px;
-  justify-content: space-between;
   min-width: 0;
 }
 
-.partner-overview-action-card-header h3 {
+.partner-overview-action-card .admin-card-header h3 {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 650;
@@ -9355,7 +9353,7 @@ a.action-button-card:hover {
   margin: 0;
 }
 
-.partner-overview-action-card-header small,
+.partner-overview-action-card .admin-card-header .muted,
 .partner-overview-action-row small {
   color: var(--admin-muted);
   font-size: 12px;
@@ -11599,11 +11597,8 @@ a.action-button-card:hover {
   padding: 18px;
 }
 
-.service-menu-card-header {
+.service-menu-card > .admin-card-header {
   align-items: flex-start;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
   min-width: 0;
 }
 
@@ -17088,7 +17083,7 @@ textarea:focus-visible {
   padding: 16px;
 }
 
-.notification-template-card-header,
+.notification-template-card .admin-card-header,
 .notification-template-copy-form-header,
 .notification-push-preview-summary {
   align-items: center;
@@ -17097,7 +17092,7 @@ textarea:focus-visible {
   justify-content: space-between;
 }
 
-.notification-template-card-header h3,
+.notification-template-card .admin-card-header h3,
 .notification-template-copy-form-header h4 {
   margin: 0;
 }

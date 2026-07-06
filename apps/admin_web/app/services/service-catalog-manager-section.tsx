@@ -10,7 +10,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
@@ -87,11 +87,18 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
 
   return (
     <AdminCard className="service-menu-card">
-      <div className="service-menu-card-header">
-        <div className="service-menu-title-cell">
-          <span className="calendar-drawer-eyebrow">Service</span>
-          <h3>{group.label}</h3>
-          {translations.length ? (
+      <AdminCardHeader
+        actions={
+          <AdminFormControlLink
+            className="button-secondary service-table-action"
+            href={serviceDialogHref('edit', group.key)}
+          >
+            <Edit3 aria-hidden="true" size={15} />
+            Edit
+          </AdminFormControlLink>
+        }
+        description={
+          translations.length ? (
             <div className="service-menu-language-list">
               {translations.map((translation) => (
                 <span key={translation.key}>
@@ -100,16 +107,10 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
                 </span>
               ))}
             </div>
-          ) : null}
-        </div>
-        <AdminFormControlLink
-          className="button-secondary service-table-action"
-          href={serviceDialogHref('edit', group.key)}
-        >
-          <Edit3 aria-hidden="true" size={15} />
-          Edit
-        </AdminFormControlLink>
-      </div>
+          ) : null
+        }
+        title={group.label}
+      />
 
       <div className="service-menu-inline-pills">
         <StatusBadge tone="info">{group.items.length} option(s)</StatusBadge>

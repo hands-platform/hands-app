@@ -6,6 +6,7 @@ import {
   AdminAsideCard,
   AdminBasicTimeline,
   AdminCard,
+  AdminCardHeader,
   AdminDisclosure,
   AdminDialogCard,
   AdminDisclosureCard,
@@ -44,6 +45,21 @@ describe('Admin surface components', () => {
       className: 'card admin-card finance-card',
       id: 'finance-card',
     });
+  });
+
+  it('renders a reusable Vuexy card header with card-level heading semantics', () => {
+    const header = AdminCardHeader({
+      actions: <a href="/partners">Open</a>,
+      description: 'Bounded queue for operators.',
+      title: 'Partner action queue',
+    });
+
+    expect(header.type).toBe('div');
+    expect(header.props.className).toBe('ops-section-header admin-section-header admin-card-header');
+    expect(header.props.children[0].props.children[0].type).toBe('h3');
+    expect(header.props.children[0].props.children[0].props.children).toBe('Partner action queue');
+    expect(header.props.children[0].props.children[1].props.children).toBe('Bounded queue for operators.');
+    expect(header.props.children[1].props.className).toBe('participant-list');
   });
 
   it('deduplicates Vuexy surface class tokens passed by legacy callers', () => {

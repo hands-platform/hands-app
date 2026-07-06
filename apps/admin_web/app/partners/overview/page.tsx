@@ -35,7 +35,7 @@ import {
 } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -870,16 +870,16 @@ function SelectionFrictionCard({
 function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionList }) {
   return (
     <AdminCard className="partner-overview-action-card">
-      <div className="partner-overview-action-card-header">
-        <div>
-          <h3>{list.title}</h3>
-          <small>{formatNumber(list.totalCount)} Partners</small>
-        </div>
-        <AdminFormControlLink aria-label={`Open ${list.title}`} href={list.viewAllHref}>
-          Open
-          <ChevronRight size={14} aria-hidden="true" />
-        </AdminFormControlLink>
-      </div>
+      <AdminCardHeader
+        actions={
+          <AdminFormControlLink aria-label={`Open ${list.title}`} href={list.viewAllHref}>
+            Open
+            <ChevronRight size={14} aria-hidden="true" />
+          </AdminFormControlLink>
+        }
+        description={`${formatNumber(list.totalCount)} Partners`}
+        title={list.title}
+      />
       <div className="partner-overview-action-rows">
         {list.rows.length > 0 ? (
           list.rows.map((row) => <ActionRow key={`${list.key}-${row.partnerId}`} row={row} />)

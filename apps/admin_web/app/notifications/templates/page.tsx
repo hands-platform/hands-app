@@ -10,7 +10,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { compactValue } from '../../../lib/admin-format';
 import { updateNotificationTemplate } from './actions';
@@ -83,12 +83,9 @@ export default async function NotificationTemplatesPage({
               id={`template-${template.key}`}
               key={template.key}
             >
-              <div className="notification-template-card-header">
-                <div>
-                  <h3>{template.key}</h3>
-                  {template.description ? <p className="muted">{template.description}</p> : null}
-                </div>
-                <div className="participant-list">
+              <AdminCardHeader
+                actions={
+                  <>
                   <StatusBadge tone={template.enabled ? 'success' : 'neutral'}>
                     {template.enabled ? 'Enabled' : 'Paused'}
                   </StatusBadge>
@@ -96,8 +93,11 @@ export default async function NotificationTemplatesPage({
                     {template.audience === 'PROVIDER' ? 'Partner' : 'Customer'}
                   </StatusBadge>
                   <StatusBadge tone="neutral">{template.channel}</StatusBadge>
-                </div>
-              </div>
+                  </>
+                }
+                description={template.description}
+                title={template.key}
+              />
 
               <div className="notification-template-variable-row">
                 <span className="muted">Variables</span>
