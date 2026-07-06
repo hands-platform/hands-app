@@ -78,6 +78,8 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminOverviewCommandGrid');
     expect(pageSource).toContain('AdminOverviewGrid');
     expect(pageSource).toContain('AdminMiniMetricStrip');
+    expect(pageSource).toContain('AdminTextLink');
+    expect(pageSource).not.toContain('<a href={row.href}>{row.partnerName}</a>');
     expect(pageSource).not.toContain('<div className="partner-overview-mini-kpis"');
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');

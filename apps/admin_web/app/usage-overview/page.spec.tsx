@@ -82,6 +82,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('AdminOverviewGroup');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).toContain('AdminTextLink');
+    expect(pageSource).not.toContain('<a href={row.href}>{row.label}</a>');
     expect(pageSource).not.toContain('formatDateTime,');
     expect(pageSource).not.toContain('const generatedAt = formatDateTime(overview.generatedAt);');
     expect(pageSource).not.toContain('Last active ${formatDateTime(row.lastActivityAt)}');

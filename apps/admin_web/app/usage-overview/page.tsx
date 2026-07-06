@@ -36,6 +36,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -526,7 +527,7 @@ function PartnerDiscoveryConversionCard({
                 <Users size={15} aria-hidden="true" />
               </span>
               <div>
-                {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
+                {row.href ? <AdminTextLink href={row.href}>{row.label}</AdminTextLink> : <strong>{row.label}</strong>}
                 {row.secondary ? <small>{row.secondary}</small> : null}
               </div>
             </div>
@@ -904,7 +905,7 @@ function UsageRankingCard({
                 <Users size={15} aria-hidden="true" />
               </span>
               <div>
-                {row.href ? <a href={row.href}>{row.label}</a> : <strong>{row.label}</strong>}
+                {row.href ? <AdminTextLink href={row.href}>{row.label}</AdminTextLink> : <strong>{row.label}</strong>}
                 {row.secondary ? <small>{row.secondary}</small> : null}
               </div>
             </div>
