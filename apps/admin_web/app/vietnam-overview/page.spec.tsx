@@ -57,8 +57,9 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('class="metric-card"');
     expect(markup).not.toContain('<article class="card admin-kpi-card metric-card vietnam-overview-metric');
     expect(markup).toContain('card admin-section vietnam-overview-region-card');
-    expect(markup).toContain('card admin-card vietnam-overview-region-insight-card');
+    expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-region-insight-card');
     expect(markup).not.toContain('<article class="vietnam-overview-region-insight-card');
+    expect(pageSource).not.toContain('<div className="vietnam-overview-region-insight-grid"');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table vietnam-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');

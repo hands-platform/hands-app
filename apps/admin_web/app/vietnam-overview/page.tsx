@@ -641,15 +641,12 @@ export default async function VietnamOverviewPage({
         }
         title={activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}
       >
-        <div className="vietnam-overview-region-insight-grid" aria-label="Regional operations highlights">
-          {periodRegionalInsights.map((item) => (
-            <AdminCard key={item.label} className={`vietnam-overview-region-insight-card is-${item.tone}`}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </AdminCard>
-          ))}
-        </div>
+        <AdminSummaryCardGrid
+          ariaLabel="Regional operations highlights"
+          className="vietnam-overview-region-insight-grid"
+          itemClassName="vietnam-overview-region-insight-card"
+          items={periodRegionalInsights}
+        />
         <AdminTableScroll className="vietnam-overview-table-wrap">
           <AdminDataTable
             className="vietnam-overview-table"
