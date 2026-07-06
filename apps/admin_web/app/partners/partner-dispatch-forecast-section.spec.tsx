@@ -9,9 +9,11 @@ describe('PartnerDispatchForecastSection', () => {
   it('uses the shared Vuexy admin card surface for dispatch panels', () => {
     const source = readFileSync('app/partners/partner-dispatch-forecast-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminNoteCard');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<AdminCard className="ops-task-note partner-dispatch-panel">');
     expect(source).not.toContain('className="card admin-card ops-task-note partner-dispatch-panel"');

@@ -3,7 +3,12 @@ import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminStageItem } from '../../components/admin-stage-item';
-import { AdminActionCard, AdminNoteCard, AdminSection } from '../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminDetailGrid,
+  AdminNoteCard,
+  AdminSection,
+} from '../../components/admin-surface';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
 
@@ -59,7 +64,7 @@ export function PartnerDispatchForecastSection({
       description="Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply records for direct requests and marketplace matching."
       title="Dispatch capacity forecast"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {forecast.totals.map((item) => (
           <AdminActionCard
             detail={item.detail}
@@ -71,8 +76,8 @@ export function PartnerDispatchForecastSection({
             value={item.value}
           />
         ))}
-      </div>
-      <div className="grid admin-mt-12">
+      </AdminDetailGrid>
+      <AdminDetailGrid className="admin-mt-12">
         <AdminNoteCard className="partner-dispatch-panel">
           <h3>Dispatch blockers</h3>
           <div className="setup-stage-list admin-mt-12">
@@ -131,7 +136,7 @@ export function PartnerDispatchForecastSection({
             ) : null}
           </div>
         </AdminNoteCard>
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }
