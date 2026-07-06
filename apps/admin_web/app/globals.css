@@ -501,11 +501,40 @@ a {
 }
 
 .admin-inline-notice {
+  align-items: center;
   border: 1px solid transparent;
   border-radius: var(--admin-radius);
+  display: grid;
   font-size: 0.875rem;
+  gap: 16px;
+  grid-template-columns: 30px minmax(0, 1fr);
   line-height: 1.45;
-  padding: 10px 12px;
+  padding: 12px 16px;
+}
+
+.admin-inline-notice-icon {
+  align-items: center;
+  border-radius: var(--admin-radius);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.admin-notice-card-icon {
+  align-items: center;
+  border-radius: var(--admin-radius);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.admin-inline-notice-message,
+.admin-notice-card-message {
+  min-width: 0;
 }
 
 .admin-inline-notice-info {
@@ -514,10 +543,22 @@ a {
   color: var(--admin-info-text);
 }
 
+.admin-inline-notice-info .admin-inline-notice-icon,
+.admin-notice-info .admin-notice-card-icon {
+  background: rgb(var(--admin-info-channel) / 0.16);
+  color: var(--admin-info);
+}
+
 .admin-inline-notice-success {
   background: var(--admin-success-soft);
   border-color: rgb(var(--admin-success-channel) / 0.28);
   color: var(--admin-success-text);
+}
+
+.admin-inline-notice-success .admin-inline-notice-icon,
+.admin-notice-success .admin-notice-card-icon {
+  background: rgb(var(--admin-success-channel) / 0.16);
+  color: var(--admin-success);
 }
 
 .admin-inline-notice-warning {
@@ -526,10 +567,22 @@ a {
   color: var(--admin-warning-text);
 }
 
+.admin-inline-notice-warning .admin-inline-notice-icon,
+.admin-notice-warning .admin-notice-card-icon {
+  background: rgb(var(--admin-warning-channel) / 0.16);
+  color: var(--admin-warning);
+}
+
 .admin-inline-notice-danger {
   background: var(--admin-danger-soft);
   border-color: rgb(var(--admin-danger-channel) / 0.3);
   color: var(--admin-danger-text);
+}
+
+.admin-inline-notice-danger .admin-inline-notice-icon,
+.admin-notice-danger .admin-notice-card-icon {
+  background: rgb(var(--admin-danger-channel) / 0.16);
+  color: var(--admin-danger);
 }
 
 .topbar {
@@ -16584,12 +16637,30 @@ textarea:focus-visible {
 }
 
 .admin-notice-card {
+  align-items: center;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 30px minmax(0, 1fr);
   margin-bottom: 16px;
+}
+
+.admin-notice-card:not(:has(.admin-notice-card-icon)) {
+  display: block;
 }
 
 .admin-notice-success {
   background: var(--admin-success-soft);
   border-color: rgb(var(--admin-success-channel) / 0.24);
+}
+
+.admin-notice-info {
+  background: var(--admin-info-soft);
+  border-color: rgb(var(--admin-info-channel) / 0.24);
+}
+
+.admin-notice-warning {
+  background: var(--admin-warning-soft);
+  border-color: rgb(var(--admin-warning-channel) / 0.24);
 }
 
 .admin-notice-danger {

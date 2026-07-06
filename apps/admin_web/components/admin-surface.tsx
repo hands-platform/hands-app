@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
-import { AlertCircle, LoaderCircle } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { AlertCircle, CircleCheck, Info, LoaderCircle, TriangleAlert } from 'lucide-react';
 
 import { MetricCard, type MetricCardProps } from './metric-card';
 import { AdminSignal, StatusBadge, adminSignalToneFromClassName, type StatusBadgeTone } from './status-badge';
@@ -226,19 +227,28 @@ export function AdminNoticeCard({
   role,
   tone,
 }: AdminNoticeCardProps) {
+  const resolvedTone = resolveNoticeTone(tone, className);
+  const hasLegacyToneClass = resolvedTone ? className?.split(/\s+/).includes(`admin-notice-${resolvedTone}`) : false;
+  const Icon = resolvedTone ? noticeToneIcons[resolvedTone] : null;
+
   return (
     <section
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames(
         'card admin-card admin-notice-card',
-        tone ? `admin-notice-${tone}` : undefined,
+        resolvedTone && !hasLegacyToneClass ? `admin-notice-${resolvedTone}` : undefined,
         className,
       )}
       id={id}
       role={role}
     >
-      {children}
+      {Icon ? (
+        <span className="admin-notice-card-icon" aria-hidden={true}>
+          <Icon size={18} strokeWidth={2} />
+        </span>
+      ) : null}
+      <div className="admin-notice-card-message">{children}</div>
     </section>
   );
 }
@@ -625,6 +635,23 @@ function joinClassNames(...classNames: Array<string | undefined>) {
     .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
     .filter((className, index, values) => values.indexOf(className) === index)
     .join(' ');
+}
+
+const noticeToneIcons: Record<AdminNoticeTone, LucideIcon> = {
+  danger: AlertCircle,
+  info: Info,
+  success: CircleCheck,
+  warning: TriangleAlert,
+};
+
+function resolveNoticeTone(tone: AdminNoticeTone | undefined, className: string | undefined) {
+  if (tone) {
+    return tone;
+  }
+
+  return (Object.keys(noticeToneIcons) as AdminNoticeTone[]).find((candidate) =>
+    className?.split(/\s+/).includes(`admin-notice-${candidate}`),
+  );
 }
 
 function renderAdminSurfaceSignal(className: string | undefined, children: ReactNode) {

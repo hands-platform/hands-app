@@ -37,6 +37,26 @@ describe('Admin surface CSS', () => {
     expect(stateIconBlock).not.toContain('width: 40px');
   });
 
+  it('keeps shared notices on the Vuexy Alert icon and spacing rhythm', () => {
+    const inlineIndex = globalsCss.indexOf('.admin-inline-notice {');
+    const inlineBlock = cssRuleBlockAt(inlineIndex);
+    const inlineIconIndex = globalsCss.indexOf('.admin-inline-notice-icon {');
+    const inlineIconBlock = cssRuleBlockAt(inlineIconIndex);
+    const cardIndex = globalsCss.indexOf('.admin-notice-card {');
+    const cardBlock = cssRuleBlockAt(cardIndex);
+    const cardIconIndex = globalsCss.indexOf('.admin-notice-card-icon {');
+    const cardIconBlock = cssRuleBlockAt(cardIconIndex);
+
+    expect(inlineBlock).toContain('grid-template-columns: 30px minmax(0, 1fr)');
+    expect(inlineBlock).toContain('gap: 16px');
+    expect(inlineIconBlock).toContain('height: 30px');
+    expect(inlineIconBlock).toContain('width: 30px');
+    expect(cardBlock).toContain('grid-template-columns: 30px minmax(0, 1fr)');
+    expect(cardBlock).toContain('gap: 16px');
+    expect(cardIconBlock).toContain('height: 30px');
+    expect(cardIconBlock).toContain('width: 30px');
+  });
+
   it('keeps framed empty states on the Vuexy raised surface rhythm', () => {
     const emptyIndex = globalsCss.indexOf('.empty-state {');
     const emptyBlock = cssRuleBlockAt(emptyIndex);

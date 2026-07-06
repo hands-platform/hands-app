@@ -234,6 +234,23 @@ describe('Admin surface components', () => {
     });
   });
 
+  it('renders Vuexy alert slots for card notices, including legacy tone classNames', () => {
+    const notice = AdminNoticeCard({
+      children: <strong>Saved</strong>,
+      className: 'admin-mb-16 admin-notice-success',
+      role: 'status',
+    });
+
+    expect(notice.props.children[0].props).toMatchObject({
+      'aria-hidden': true,
+      className: 'admin-notice-card-icon',
+    });
+    expect(notice.props.children[1].props).toMatchObject({
+      className: 'admin-notice-card-message',
+    });
+    expect(notice.props.children[1].props.children.props.children).toBe('Saved');
+  });
+
   it('renders a reusable Vuexy disclosure card surface', () => {
     const disclosure = AdminDisclosureCard({
       children: <summary>Open record</summary>,
