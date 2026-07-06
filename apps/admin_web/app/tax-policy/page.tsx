@@ -15,7 +15,7 @@ import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../..
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
-import { AdminSignal, StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { AdminSignal, StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
@@ -71,11 +71,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         >
           <AdminSectionHeader
             actions={
-              <StatusBadge
-                tone={statusBadgeToneFromPillClass(notice.tone === 'success' ? 'pill-success' : 'pill-danger')}
-              >
+              <StatusBadgeFromPillClass pillClass={notice.tone === 'success' ? 'pill-success' : 'pill-danger'}>
                 {notice.badge}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             description={notice.detail}
             title={notice.title}
@@ -85,13 +83,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
       <AdminSection
         actions={
-          <StatusBadge
-            tone={statusBadgeToneFromPillClass(
-              healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn',
-            )}
-          >
+          <StatusBadgeFromPillClass pillClass={healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}>
             {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         }
         bodyClassName="setup-stage-list"
         className="admin-mb-16 tax-policy-checklist-card"
@@ -112,9 +106,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
       <AdminSection
         actions={
-          <StatusBadge tone={statusBadgeToneFromPillClass(preview.policy ? 'pill-success' : 'pill-warn')}>
+          <StatusBadgeFromPillClass pillClass={preview.policy ? 'pill-success' : 'pill-warn'}>
             {preview.policy ? preview.policy.name : 'No effective active policy'}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         }
         className="admin-mb-16 tax-policy-withholding-preview-card"
         description="Check the active rule result before changing partner payout or service pricing. This is only a calculation preview; completed earnings still store their own immutable rule snapshot."
@@ -261,13 +255,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 </>
               }
               status={
-                <StatusBadge
-                  tone={statusBadgeToneFromPillClass(
-                    policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral',
-                  )}
-                >
+                <StatusBadgeFromPillClass pillClass={policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}>
                   {policy.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               }
               title={policy.name}
             />
@@ -487,9 +477,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         {auditSummary.rows.map((row) => (
           <AdminStageItem key={row.id}>
-            <StatusBadge tone={statusBadgeToneFromPillClass(row.toneClassName)}>
+            <StatusBadgeFromPillClass pillClass={row.toneClassName}>
               {row.actionLabel.split(' ')[0].toUpperCase()}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
             <div>
               <strong>{row.actionLabel}</strong>
               <p className="muted">
@@ -519,13 +509,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <>
             <StatusBadge tone="info">{snapshotConsistency.sampleCount} sampled</StatusBadge>
             <StatusBadge tone="success">{snapshotConsistency.consistentCount} aligned</StatusBadge>
-            <StatusBadge
-              tone={statusBadgeToneFromPillClass(
-                snapshotConsistency.warningCount ? 'pill-warn' : 'pill-neutral',
-              )}
-            >
+            <StatusBadgeFromPillClass pillClass={snapshotConsistency.warningCount ? 'pill-warn' : 'pill-neutral'}>
               {snapshotConsistency.warningCount} check
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
           </>
         }
         bodyClassName="setup-stage-list"
@@ -535,7 +521,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       >
         {snapshotConsistency.rows.map((row) => (
           <AdminStageItem key={row.id}>
-            <StatusBadge tone={statusBadgeToneFromPillClass(row.toneClassName)}>{row.statusLabel}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={row.toneClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
             <div>
               <strong>
                 <AdminTextLink href={row.bookingHref}>

@@ -148,7 +148,8 @@ describe('TaxPolicyPage', () => {
   it('uses shared Vuexy badge atoms instead of raw tax policy pill spans', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('AdminSignal');
-    expect(pageSource).toContain('statusBadgeToneFromPillClass');
+    expect(pageSource).toContain('StatusBadgeFromPillClass');
+    expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className={`signal ${activePolicies.length === 1 ? \'signal-ok\' : \'signal-warn\'}`}>');
