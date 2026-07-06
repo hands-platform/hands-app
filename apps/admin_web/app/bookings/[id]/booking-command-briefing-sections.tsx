@@ -1,6 +1,7 @@
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
@@ -111,15 +112,16 @@ export function BookingCommandDecisionStripSection({
         <p>{commandDecisionStrip.primaryAction}</p>
         <small>{commandDecisionStrip.primaryDetail}</small>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {commandDecisionStrip.rows.map((row) => (
-          <a href={row.href} key={row.lane}>
-            <span>{row.lane}</span>
-            <strong>{row.state}</strong>
-            <small>{row.detail}</small>
-          </a>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={commandDecisionStrip.rows.map((row) => ({
+          detail: row.detail,
+          href: row.href,
+          key: row.lane,
+          label: row.lane,
+          value: row.state,
+        }))}
+      />
     </AdminSection>
   );
 }
@@ -398,28 +400,27 @@ export type BookingPriorityBriefingSectionProps = {
 
 function SummaryLinkGrid({ rows }: SummaryLinkGridProps) {
   return (
-    <div className="service-trace-summary admin-mt-12">
-      {rows.map((item) => (
-        <a href={item.href} key={item.label}>
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
-          <small>{item.detail}</small>
-        </a>
-      ))}
-    </div>
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={rows.map((item) => ({
+        detail: item.detail,
+        href: item.href,
+        label: item.label,
+        value: item.value,
+      }))}
+    />
   );
 }
 
 function SummaryMetricGrid({ rows }: SummaryMetricGridProps) {
   return (
-    <div className="service-trace-summary admin-mt-12">
-      {rows.map((row) => (
-        <div key={row.label}>
-          <span>{row.label}</span>
-          <strong>{row.value}</strong>
-          <small>{row.helper}</small>
-        </div>
-      ))}
-    </div>
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={rows.map((row) => ({
+        detail: row.helper,
+        label: row.label,
+        value: row.value,
+      }))}
+    />
   );
 }
