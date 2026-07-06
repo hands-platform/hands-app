@@ -74,6 +74,7 @@ describe('EarningsMoneyFlowSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/earnings/earnings-money-flow-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('AdminTraceSummary');
@@ -84,6 +85,7 @@ describe('EarningsMoneyFlowSection', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
+    expect(source).not.toContain('<div className="ops-task-grid');
   });
 
   it('uses shared money atoms for money flow card amounts', () => {

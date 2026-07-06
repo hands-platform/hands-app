@@ -1,4 +1,4 @@
-import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -29,7 +29,7 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
           Open payout batches
         </AdminTextLink>
       </div>
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {signals.map((signal) => (
           <AdminTaskCard
             actionLabel={signal.action}
@@ -44,7 +44,7 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
             title={signal.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminTablePanel>
   );
 }

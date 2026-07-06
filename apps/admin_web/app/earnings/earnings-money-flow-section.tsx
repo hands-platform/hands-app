@@ -1,4 +1,4 @@
-import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -47,7 +47,7 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
           value: <MoneyText amount={card.amount} currency={currency} />,
         }))}
       />
-      <div className="ops-task-grid admin-mt-16">
+      <AdminTaskGrid className="admin-mt-16">
         {checks.map((check) => (
           <AdminTaskCard
             actionLabel={check.action}
@@ -62,7 +62,7 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
             title={check.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminTablePanel>
   );
 }
