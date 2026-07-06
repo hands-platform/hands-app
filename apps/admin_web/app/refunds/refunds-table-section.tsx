@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '..
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
@@ -15,10 +16,11 @@ export type RefundActionExecutionRow = {
 };
 
 export type RefundTableRow = {
-  readonly amountLabel: string;
+  readonly amount: number;
   readonly bookingHref: string;
   readonly bookingIdLabel: string;
   readonly bookingStatus: string;
+  readonly currency: string;
   readonly customerLabel: string;
   readonly executionRows: readonly RefundActionExecutionRow[];
   readonly id: string;
@@ -79,7 +81,9 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                   </AdminTextLink>
                 </div>
               </td>
-              <td>{row.amountLabel}</td>
+              <td>
+                <MoneyText amount={row.amount} currency={row.currency} />
+              </td>
               <td>{row.status}</td>
               <td>
                 <div>{row.opsSignal}</div>

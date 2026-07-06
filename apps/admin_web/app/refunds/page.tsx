@@ -106,10 +106,11 @@ function sortRefunds(refunds: AdminRefund[]) {
 
 function buildRefundTableRows(refunds: readonly AdminRefund[]): RefundTableRow[] {
   return refunds.map((refund) => ({
-    amountLabel: `${refund.amount} ${refund.payment?.currency ?? 'VND'}`,
+    amount: refund.amount,
     bookingHref: `/bookings/${refund.bookingId}`,
     bookingIdLabel: shortId(refund.bookingId),
     bookingStatus: refund.booking?.status ?? refund.bookingId,
+    currency: refund.payment?.currency ?? 'VND',
     customerLabel:
       refund.booking?.customerProfile?.user?.fullName ??
       refund.booking?.customerProfile?.user?.phone ??

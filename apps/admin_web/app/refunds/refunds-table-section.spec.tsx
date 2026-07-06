@@ -19,6 +19,14 @@ describe('RefundsTableSection', () => {
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
   });
 
+  it('uses the shared money atom for refund operation amounts', () => {
+    const source = readFileSync('app/refunds/refunds-table-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('readonly amountLabel: string;');
+    expect(source).not.toContain('<td>{row.amountLabel}</td>');
+  });
+
   it('renders refund rows with links and action execution evidence', () => {
     const section = RefundsTableSection({
       emptyMessage: 'No refunds loaded.',
@@ -93,10 +101,11 @@ function pagination(
 
 function buildRow(): RefundTableRow {
   return {
-    amountLabel: '250000 VND',
+    amount: 250000,
     bookingHref: '/bookings/booking-1',
     bookingIdLabel: 'bookin',
     bookingStatus: 'REFUNDED',
+    currency: 'VND',
     customerLabel: 'Customer One',
     executionRows: [
       {
