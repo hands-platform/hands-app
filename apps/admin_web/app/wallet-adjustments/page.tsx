@@ -12,6 +12,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
@@ -410,14 +411,14 @@ function PreviewFact({
   readonly value: React.ReactNode;
 }) {
   return (
-    <div className="setup-stage-item">
+    <AdminStageItem>
       <span>{icon}</span>
       <div>
         <strong>{label}</strong>
         <p className="muted">{helper}</p>
       </div>
       <small>{value}</small>
-    </div>
+    </AdminStageItem>
   );
 }
 
