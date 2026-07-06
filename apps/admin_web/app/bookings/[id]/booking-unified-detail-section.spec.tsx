@@ -205,6 +205,74 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('dateTime="2026-06-19T07:20:00.000Z"');
   });
 
+  it('keeps raw Partner location checkpoint timestamps for shared DateTimeText rendering', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        matchedAt: '2026-06-19T07:20:00.000Z',
+        snapshots: [
+          {
+            id: 'snapshot-match',
+            bookingId: 'booking-1',
+            lat: 21.036,
+            lng: 105.782,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:18:00.000Z',
+          },
+        ],
+        statusChangedAt: '2026-06-19T07:20:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 3,
+    });
+
+    const matching = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Matching location');
+
+    expect(matching).toMatchObject({
+      detailDateTimePrefix: 'State ',
+      detailDateTimeSuffix: ' / Captured ',
+      detailDateTimeValue: '2026-06-19T07:20:00.000Z',
+      detailSecondDateTimeValue: '2026-06-19T07:18:00.000Z',
+    });
+  });
+
+  it('renders location checkpoint detail timestamps through shared DateTimeText atoms', () => {
+    const markup = renderToStaticMarkup(
+      <BookingUnifiedDetailSection
+        unifiedDetail={
+          {
+            customerRows: [],
+            financeRows: [],
+            matchedPartnerRows: [
+              {
+                detail: 'State Not set / Captured Not set',
+                detailDateTimePrefix: 'State ',
+                detailDateTimeSuffix: ' / Captured ',
+                detailDateTimeValue: '2026-06-19T07:20:00.000Z',
+                detailSecondDateTimeValue: '2026-06-19T07:18:00.000Z',
+                label: 'Matching location',
+                value: 'Cau Giay, Ha Noi',
+                variant: 'secondary',
+              },
+            ],
+            statusLabel: 'Realtime booking detail',
+            statusTone: 'pill-info',
+            summaryCards: [],
+          } as unknown as Parameters<typeof BookingUnifiedDetailSection>[0]['unifiedDetail']
+        }
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('State <time');
+    expect(markup).toContain('/ Captured <time');
+    expect(markup).toContain('dateTime="2026-06-19T07:20:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-19T07:18:00.000Z"');
+  });
+
   it('labels post-match cancellation review as one booking detail state', () => {
     const unifiedDetail = bookingUnifiedDetail({
       addressLine: 'District 1, Ho Chi Minh City',

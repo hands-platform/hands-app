@@ -203,6 +203,14 @@ function bookingUnifiedDetailText(row: BookingUnifiedDetailRow) {
           value={row.detailDateTimeValue}
         />
         {row.detailDateTimeSuffix}
+        {row.detailSecondDateTimePrefix}
+        {row.detailSecondDateTimeValue ? (
+          <DateTimeText
+            fallback={row.detailSecondDateTimeFallback ?? 'Not set'}
+            value={row.detailSecondDateTimeValue}
+          />
+        ) : null}
+        {row.detailSecondDateTimeSuffix}
       </>
     );
   }

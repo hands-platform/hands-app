@@ -45,10 +45,30 @@ export type BookingUnifiedDetailRow = {
   readonly detailDateTimePrefix?: string;
   readonly detailDateTimeSuffix?: string;
   readonly detailDateTimeValue?: string | null;
+  readonly detailSecondDateTimeFallback?: string;
+  readonly detailSecondDateTimePrefix?: string;
+  readonly detailSecondDateTimeSuffix?: string;
+  readonly detailSecondDateTimeValue?: string | null;
   readonly href?: string;
   readonly people?: readonly BookingUnifiedDetailPerson[];
   readonly person?: BookingUnifiedDetailPerson;
   readonly variant?: 'finance-highlight' | 'inactive' | 'secondary';
+};
+
+type BookingUnifiedDetailDateMeta = {
+  readonly detail: string;
+  readonly detailDateTimeFallback?: string;
+  readonly detailDateTimePrefix?: string;
+  readonly detailDateTimeSuffix?: string;
+  readonly detailDateTimeValue?: string | null;
+  readonly detailSecondDateTimeFallback?: string;
+  readonly detailSecondDateTimePrefix?: string;
+  readonly detailSecondDateTimeSuffix?: string;
+  readonly detailSecondDateTimeValue?: string | null;
+};
+
+type BookingUnifiedLocationDetail = BookingUnifiedDetailDateMeta & {
+  readonly value: string;
 };
 
 export type BookingUnifiedDetail = {
@@ -639,6 +659,14 @@ function bookingUnifiedPartnerLocationCheckpointRow({
 
   return {
     detail: location.detail,
+    detailDateTimeFallback: location.detailDateTimeFallback,
+    detailDateTimePrefix: location.detailDateTimePrefix,
+    detailDateTimeSuffix: location.detailDateTimeSuffix,
+    detailDateTimeValue: location.detailDateTimeValue,
+    detailSecondDateTimeFallback: location.detailSecondDateTimeFallback,
+    detailSecondDateTimePrefix: location.detailSecondDateTimePrefix,
+    detailSecondDateTimeSuffix: location.detailSecondDateTimeSuffix,
+    detailSecondDateTimeValue: location.detailSecondDateTimeValue,
     label,
     value: location.value,
     variant: 'secondary',
@@ -752,7 +780,7 @@ function providerLocationCheckpointDetail({
   readonly eventAt?: string | null;
   readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
   readonly snapshot?: AdminLocationSnapshot | null;
-}) {
+}): BookingUnifiedLocationDetail {
   const checkpointMeta = providerLocationCheckpointMeta({
     actionSnapshotLabel,
     bookingId: booking.id,
@@ -761,7 +789,7 @@ function providerLocationCheckpointDetail({
   });
   if (!snapshot) {
     return {
-      detail: checkpointMeta,
+      ...checkpointMeta,
       value: selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
     };
   }
@@ -770,7 +798,7 @@ function providerLocationCheckpointDetail({
 
   if (snapshotAddress) {
     return {
-      detail: checkpointMeta,
+      ...checkpointMeta,
       value: serviceAddressAreaLabel(snapshotAddress),
     };
   }
@@ -778,18 +806,22 @@ function providerLocationCheckpointDetail({
   const atReservationAddress = providerLocationAtReservationAddress({
     addressLine,
     booking,
+    includeRecordedAt: false,
     latestLocation: snapshot,
     selectedProvider,
   });
   if (atReservationAddress) {
     return {
-      detail: `${checkpointMeta} / ${atReservationAddress.detail}`,
+      ...providerLocationCheckpointDetailWithSuffix(checkpointMeta, atReservationAddress.detail),
       value: atReservationAddress.value,
     };
   }
 
   return {
-    detail: `${checkpointMeta} / Location coordinate recorded without readable address text`,
+    ...providerLocationCheckpointDetailWithSuffix(
+      checkpointMeta,
+      'Location coordinate recorded without readable address text',
+    ),
     value: snapshot || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };
 }
@@ -804,14 +836,64 @@ function providerLocationCheckpointMeta({
   readonly bookingId: string;
   readonly eventAt?: string | null;
   readonly snapshot?: AdminLocationSnapshot | null;
-}) {
+}): BookingUnifiedDetailDateMeta {
   const stateLabel = eventAt ? `State ${formatDate(eventAt)}` : 'State not recorded';
   if (!snapshot) {
-    return `${stateLabel} / No linked Partner location`;
+    return {
+      detail: `${stateLabel} / No linked Partner location`,
+      detailDateTimeFallback: eventAt ? formatDate(eventAt) : undefined,
+      detailDateTimePrefix: eventAt ? 'State ' : undefined,
+      detailDateTimeSuffix: eventAt ? ' / No linked Partner location' : undefined,
+      detailDateTimeValue: eventAt,
+    };
   }
 
   const snapshotLabel = actionSnapshotLabel && snapshot.bookingId === bookingId ? 'Action' : 'Captured';
-  return `${stateLabel} / ${snapshotLabel} ${formatDate(snapshot.recordedAt)}`;
+  if (!eventAt) {
+    return {
+      detail: `${stateLabel} / ${snapshotLabel} ${formatDate(snapshot.recordedAt)}`,
+      detailDateTimeFallback: formatDate(snapshot.recordedAt),
+      detailDateTimePrefix: `${stateLabel} / ${snapshotLabel} `,
+      detailDateTimeValue: snapshot.recordedAt,
+    };
+  }
+
+  return {
+    detail: `${stateLabel} / ${snapshotLabel} ${formatDate(snapshot.recordedAt)}`,
+    detailDateTimeFallback: formatDate(eventAt),
+    detailDateTimePrefix: 'State ',
+    detailDateTimeSuffix: ` / ${snapshotLabel} `,
+    detailDateTimeValue: eventAt,
+    detailSecondDateTimeFallback: formatDate(snapshot.recordedAt),
+    detailSecondDateTimeValue: snapshot.recordedAt,
+  };
+}
+
+function providerLocationCheckpointDetailWithSuffix(
+  checkpointMeta: BookingUnifiedDetailDateMeta,
+  suffix: string,
+): BookingUnifiedDetailDateMeta {
+  const detail = `${checkpointMeta.detail} / ${suffix}`;
+  if (checkpointMeta.detailSecondDateTimeValue) {
+    return {
+      ...checkpointMeta,
+      detail,
+      detailSecondDateTimeSuffix: `${checkpointMeta.detailSecondDateTimeSuffix ?? ''} / ${suffix}`,
+    };
+  }
+
+  if (checkpointMeta.detailDateTimeValue) {
+    return {
+      ...checkpointMeta,
+      detail,
+      detailDateTimeSuffix: `${checkpointMeta.detailDateTimeSuffix ?? ''} / ${suffix}`,
+    };
+  }
+
+  return {
+    ...checkpointMeta,
+    detail,
+  };
 }
 
 function providerLocationAddressDetail({
@@ -838,6 +920,7 @@ function providerLocationAddressDetail({
   const liveLocationAtReservationAddress = providerLocationAtReservationAddress({
     addressLine,
     booking,
+    includeRecordedAt: true,
     latestLocation,
     selectedProvider,
   });
@@ -867,11 +950,13 @@ function providerLocationAddressDetail({
 function providerLocationAtReservationAddress({
   addressLine,
   booking,
+  includeRecordedAt = true,
   latestLocation,
   selectedProvider,
 }: {
   readonly addressLine: string;
   readonly booking: AdminBookingDetail;
+  readonly includeRecordedAt?: boolean;
   readonly latestLocation?: AdminLocationSnapshot | null;
   readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
 }) {
@@ -891,7 +976,9 @@ function providerLocationAtReservationAddress({
 
   return {
     detail: latestLocation
-      ? `Latest Partner location is within ${distanceLabel(distance)} of the reservation address. Recorded ${formatDate(latestLocation.recordedAt)}`
+      ? includeRecordedAt
+        ? `Latest Partner location is within ${distanceLabel(distance)} of the reservation address. Recorded ${formatDate(latestLocation.recordedAt)}`
+        : `Latest Partner location is within ${distanceLabel(distance)} of the reservation address.`
       : `Partner profile location is within ${distanceLabel(distance)} of the reservation address.`,
     value: address,
   };
