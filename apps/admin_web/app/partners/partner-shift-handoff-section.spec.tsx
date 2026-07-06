@@ -11,8 +11,10 @@ describe('PartnerShiftHandoffSection', () => {
 
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).toContain('AdminActionCard');
     expect(source).not.toContain('actions={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}');
     expect(source).not.toContain('className={`ops-task-card');

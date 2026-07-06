@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminActionCard, AdminNotePanel, AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import {
   AdminSignal,
   StatusBadge,
@@ -35,9 +36,9 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             <strong>{handoff.headline}</strong>
             <p className="muted">{handoff.detail}</p>
           </div>
-          <Link className="text-link" href={handoff.primaryAction.href}>
+          <AdminTextLink href={handoff.primaryAction.href}>
             {handoff.primaryAction.label}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       <div className="service-trace-summary admin-mt-14">
