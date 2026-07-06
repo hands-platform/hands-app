@@ -7,6 +7,7 @@ describe('PartnerDetailOpsCommandCenterSection', () => {
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
@@ -14,6 +15,7 @@ describe('PartnerDetailOpsCommandCenterSection', () => {
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="ops-section-header">');
+    expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('className="card admin-mb-16"');
     expect(source).not.toContain("<span className={`pill ${summary.ready ? 'pill-success' : 'pill-warn'}`}>");

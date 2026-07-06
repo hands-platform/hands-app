@@ -2,7 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminTaskCard, AdminTaskGrid } from '../../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -84,7 +84,7 @@ export function PartnerDetailDeviceSessionActivitySection({
       resultTone={followUpNeeded ? 'danger' : 'success'}
       title="Device and session activity"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {securityCards.map((card) => (
           <AdminTaskCard
             actionLabel={card.action}
@@ -99,7 +99,7 @@ export function PartnerDetailDeviceSessionActivitySection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
       <AdminDetailGrid className="admin-mt-16">
         <div>
           <h3>Partner app devices</h3>

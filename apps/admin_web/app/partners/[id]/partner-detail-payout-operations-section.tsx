@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminTaskCard, AdminTaskGrid } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
@@ -91,7 +91,7 @@ export function PartnerDetailPayoutOperationsSection({
       resultTone={payoutOperationsStatusTone(operations.tone)}
       title="Payout operations"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {operations.cards.map((card) => (
           <AdminTaskCard
             actionLabel={card.actionNode ?? card.action}
@@ -106,7 +106,7 @@ export function PartnerDetailPayoutOperationsSection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
       {operations.hold ? (
         <>
           <AdminTableScroll>

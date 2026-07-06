@@ -1,5 +1,5 @@
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminCard, AdminTaskCard, AdminTaskGrid } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 
@@ -47,7 +47,7 @@ export function PartnerDetailOpsCommandCenterSection({
         description="One-page operating view for dispatch, payout, reports, and the next admin action."
         title="Partner ops command center"
       />
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {summary.cards.map((card) => (
           <AdminTaskCard
             actionLabel={card.action}
@@ -62,7 +62,7 @@ export function PartnerDetailOpsCommandCenterSection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminCard>
   );
 }
