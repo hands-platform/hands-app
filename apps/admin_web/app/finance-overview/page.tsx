@@ -344,7 +344,7 @@ function FinanceOverviewSectionRowValue({ row }: { readonly row: FinanceOverview
   return (
     <span>
       {row.amount === undefined ? (
-        row.value
+        row.value ?? 'Not set'
       ) : (
         <MoneyText amount={row.amount} currency={row.currency ?? 'VND'} />
       )}

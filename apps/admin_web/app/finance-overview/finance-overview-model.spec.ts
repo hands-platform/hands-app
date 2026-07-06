@@ -130,6 +130,9 @@ describe('finance-overview-model', () => {
       amount: 100_000_000,
       currency: 'VND',
     });
+    expect(revenueRows.find((row) => row.label === 'Gross booking amount')?.value).toBeUndefined();
+    expect(revenueRows.find((row) => row.label === 'Platform fee net revenue')?.value).toBeUndefined();
+    expect(revenueRows.find((row) => row.label === 'Company coupon cost')?.value).toBeUndefined();
   });
 
   it('selects six top-level KPI cards for the overview wall', () => {
