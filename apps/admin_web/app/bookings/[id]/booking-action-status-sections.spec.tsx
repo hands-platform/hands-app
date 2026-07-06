@@ -85,8 +85,10 @@ describe('BookingActionStatusSections', () => {
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<a className="ops-task-card"');
+    expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('<div className="ops-signal-card"');
     expect(source).not.toContain('className="ops-signal-card"');
     expect(source).toContain('variant="ops-signal"');

@@ -13,6 +13,7 @@ import {
   AdminDetailGrid,
   AdminSection,
   AdminTaskCard,
+  AdminTaskGrid,
 } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -181,7 +182,7 @@ function BookingOutcomeReviewSection({
       id="booking-outcome-review"
       title={outcomeReview.title}
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {outcomeReview.rows.map((row) => (
           <AdminActionCard
             detail={row.helper}
@@ -193,7 +194,7 @@ function BookingOutcomeReviewSection({
             variant="ops-task"
           />
         ))}
-      </div>
+      </AdminTaskGrid>
       {outcomeReview.postMatchDecision.visible ? (
         <BookingOutcomePostMatchDecision bookingId={bookingId} outcomeReview={outcomeReview} />
       ) : null}
@@ -347,7 +348,7 @@ function BookingStructuredOpsStatusSection({
       title="Structured ops status"
     >
       {visibleTasks.length > 0 ? (
-        <div className="ops-task-grid">
+        <AdminTaskGrid>
           {visibleTasks.map((task) => (
             <AdminTaskCard
               className={`ops-task-${task.status.toLowerCase()}`}
@@ -369,7 +370,7 @@ function BookingStructuredOpsStatusSection({
               </div>
             </AdminTaskCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       ) : (
         <p className="muted admin-mt-12">All structured handling checkpoints are complete.</p>
       )}
