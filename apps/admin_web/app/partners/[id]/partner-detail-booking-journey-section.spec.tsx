@@ -7,6 +7,12 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./partner-detail-booking-journey-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailBookingJourneySection', () => {
+  it('uses the partner detail Vuexy table panel atom for the booking journey shell', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy badge atom for journey steps', () => {
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('DateTimeText');

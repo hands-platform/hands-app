@@ -4,13 +4,12 @@ import type {
 } from './partner-detail-chat-retention-model';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -46,8 +45,8 @@ export function PartnerDetailChatRetentionLedgerSection({
   title,
 }: PartnerDetailChatRetentionLedgerSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description={description}
       id={id}
       resultLabel={`${rows.length} booking row(s)`}
@@ -120,6 +119,6 @@ export function PartnerDetailChatRetentionLedgerSection({
           {emptyMessage}
         </p>
       ) : null}
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

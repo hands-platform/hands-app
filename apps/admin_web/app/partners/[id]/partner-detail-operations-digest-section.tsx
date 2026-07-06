@@ -1,13 +1,12 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -29,8 +28,8 @@ export function PartnerDetailOperationsDigestSection({
   title,
 }: PartnerDetailOperationsDigestSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description={description}
       id={id}
       resultLabel={`${rows.length} lanes`}
@@ -79,6 +78,6 @@ export function PartnerDetailOperationsDigestSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

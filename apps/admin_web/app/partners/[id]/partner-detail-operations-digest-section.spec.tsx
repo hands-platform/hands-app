@@ -6,6 +6,14 @@ import {
 } from './partner-detail-operations-digest-section';
 
 describe('PartnerDetailOperationsDigestSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the operations digest shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy badge atom for digest evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
 
