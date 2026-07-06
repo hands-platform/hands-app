@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminActionCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -111,15 +112,14 @@ export function BookingOperatorQueueSections({
         id="operator-command-queue"
         title="Operator command queue"
       >
-        <div className="service-trace-summary admin-mt-12">
-          {operatorCommandQueue.labels.map((label) => (
-            <div key={label.label}>
-              <span>{label.label}</span>
-              <strong>{label.value}</strong>
-              <small>{label.helper}</small>
-            </div>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={operatorCommandQueue.labels.map((label) => ({
+            detail: label.helper,
+            label: label.label,
+            value: label.value,
+          }))}
+        />
         <div className="setup-stage-list admin-mt-12">
           {operatorCommandQueue.commands.map((command) => (
             <div className="setup-stage-item" key={command.id}>

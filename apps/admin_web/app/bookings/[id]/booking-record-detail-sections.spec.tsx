@@ -138,6 +138,8 @@ describe('BookingRecordDetailSections', () => {
   it('uses shared Vuexy admin card surfaces for participant rows', () => {
     const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminCard');
     expect(source).not.toContain('className="card admin-card booking-participant-row-card"');
   });

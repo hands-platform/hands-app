@@ -4,12 +4,12 @@ import {
   AdminPersonCell,
   adminPersonInitials,
 } from '../../../components/admin-person-cell';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type {
   BookingUnifiedDetail,
-  BookingUnifiedDetailCard,
   BookingUnifiedDetailPerson,
   BookingUnifiedDetailRow,
 } from './booking-unified-detail';
@@ -33,11 +33,15 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
         title="Unified booking detail"
       >
 
-        <div className="service-trace-summary admin-mt-12">
-          {unifiedDetail.summaryCards.map((card) => (
-            <BookingUnifiedSummaryCard card={card} key={card.label} />
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={unifiedDetail.summaryCards.map((card) => ({
+            detail: card.helper,
+            href: card.href,
+            label: card.label,
+            value: card.value,
+          }))}
+        />
       </AdminSection>
 
       <BookingUnifiedRows
@@ -63,26 +67,6 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
       />
     </>
   );
-}
-
-function BookingUnifiedSummaryCard({ card }: { readonly card: BookingUnifiedDetailCard }) {
-  const content = (
-    <>
-      <span>{card.label}</span>
-      <strong>{card.value}</strong>
-      <small>{card.helper}</small>
-    </>
-  );
-
-  if (card.href) {
-    return (
-      <Link href={card.href} title={`Open ${card.label}`}>
-        {content}
-      </Link>
-    );
-  }
-
-  return <div>{content}</div>;
 }
 
 function BookingUnifiedRows({

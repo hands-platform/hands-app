@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -469,15 +470,15 @@ function CashFeeSettlementPathSection({
 
 function SummaryCards({ cards }: SummaryCardsProps) {
   return (
-    <div className="service-trace-summary admin-mt-12">
-      {cards.map((card) => (
-        <a href={card.href} key={card.label}>
-          <span>{card.label}</span>
-          <strong>{card.value}</strong>
-          <small>{card.helper}</small>
-        </a>
-      ))}
-    </div>
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={cards.map((card) => ({
+        detail: card.helper,
+        href: card.href,
+        label: card.label,
+        value: card.value,
+      }))}
+    />
   );
 }
 
