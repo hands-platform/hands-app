@@ -218,8 +218,11 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Finance Action Lists');
     expect(markup).toContain('card admin-section usage-overview-action-card finance-overview-action-card');
     expect(markup).toContain('admin-section-body usage-overview-action-list finance-overview-action-list');
-    expect(markup).toContain('card admin-card usage-overview-action-item');
+    expect(markup).toContain('card admin-card finance-overview-action-item');
+    expect(markup).toContain('finance-overview-action-icon');
+    expect(markup).not.toContain('card admin-card usage-overview-action-item');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-action-item');
+    expect(pageSource).not.toContain('usage-overview-command-icon');
     expect(pageSource).not.toContain('className={`card admin-card usage-overview-command-card finance-overview-priority-card');
     expect(markup).toContain('/finance-tax/payment-clearing');
     expect(markup).toContain('/finance-tax/general-ledger');

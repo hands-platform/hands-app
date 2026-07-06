@@ -298,8 +298,8 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <AdminLinkCard className={`usage-overview-action-item is-${item.tone}`} href={item.href}>
-      <span className="usage-overview-command-icon">
+    <AdminLinkCard className={`finance-overview-action-item is-${item.tone}`} href={item.href}>
+      <span className="finance-overview-action-icon">
         <Icon size={17} aria-hidden="true" />
       </span>
       <div>

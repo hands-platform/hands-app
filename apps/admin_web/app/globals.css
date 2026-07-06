@@ -8349,7 +8349,8 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-action-item {
+.usage-overview-action-item,
+.finance-overview-action-item {
   background: rgb(var(--admin-main-channel) / 0.035);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
@@ -8360,34 +8361,39 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
-.usage-overview-action-item > div {
+.usage-overview-action-item > div,
+.finance-overview-action-item > div {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.usage-overview-action-item > div > span {
+.usage-overview-action-item > div > span,
+.finance-overview-action-item > div > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 750;
   line-height: 16px;
 }
 
-.usage-overview-action-item > div > strong {
+.usage-overview-action-item > div > strong,
+.finance-overview-action-item > div > strong {
   color: var(--admin-text);
   font-size: 24px;
   font-weight: 650;
   line-height: 30px;
 }
 
-.usage-overview-action-item > div > small {
+.usage-overview-action-item > div > small,
+.finance-overview-action-item > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
   line-height: 17px;
 }
 
-.usage-overview-action-item > em {
+.usage-overview-action-item > em,
+.finance-overview-action-item > em {
   border-radius: 999px;
   color: var(--admin-muted);
   font-size: 11px;
@@ -8400,22 +8406,30 @@ a.action-button-card:hover {
 }
 
 .usage-overview-action-item.is-info > em,
-.usage-overview-action-item.is-info > div > strong {
+.usage-overview-action-item.is-info > div > strong,
+.finance-overview-action-item.is-info > em,
+.finance-overview-action-item.is-info > div > strong {
   color: var(--admin-info-text);
 }
 
 .usage-overview-action-item.is-success > em,
-.usage-overview-action-item.is-success > div > strong {
+.usage-overview-action-item.is-success > div > strong,
+.finance-overview-action-item.is-success > em,
+.finance-overview-action-item.is-success > div > strong {
   color: var(--admin-success-text);
 }
 
 .usage-overview-action-item.is-warning > em,
-.usage-overview-action-item.is-warning > div > strong {
+.usage-overview-action-item.is-warning > div > strong,
+.finance-overview-action-item.is-warning > em,
+.finance-overview-action-item.is-warning > div > strong {
   color: var(--admin-warning-text);
 }
 
 .usage-overview-action-item.is-danger > em,
-.usage-overview-action-item.is-danger > div > strong {
+.usage-overview-action-item.is-danger > div > strong,
+.finance-overview-action-item.is-danger > em,
+.finance-overview-action-item.is-danger > div > strong {
   color: var(--admin-danger-text);
 }
 
@@ -8638,7 +8652,8 @@ a.action-button-card:hover {
   line-height: 17px;
 }
 
-.usage-overview-command-icon {
+.usage-overview-command-icon,
+.finance-overview-action-icon {
   align-items: center;
   background: rgb(var(--admin-main-channel) / 0.07);
   border-radius: var(--admin-radius);
@@ -8670,6 +8685,26 @@ a.action-button-card:hover {
 }
 
 .usage-overview-command-card.is-danger .usage-overview-command-icon {
+  background: rgb(var(--admin-danger-channel) / 0.14);
+  color: var(--admin-danger-text);
+}
+
+.finance-overview-action-item.is-info .finance-overview-action-icon {
+  background: rgb(var(--admin-info-channel) / 0.14);
+  color: var(--admin-info-text);
+}
+
+.finance-overview-action-item.is-success .finance-overview-action-icon {
+  background: rgb(var(--admin-success-channel) / 0.14);
+  color: var(--admin-success-text);
+}
+
+.finance-overview-action-item.is-warning .finance-overview-action-icon {
+  background: rgb(var(--admin-warning-channel) / 0.16);
+  color: var(--admin-warning-text);
+}
+
+.finance-overview-action-item.is-danger .finance-overview-action-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9014,7 +9049,7 @@ a.action-button-card:hover {
   padding: 18px;
 }
 
-.finance-overview-action-list .usage-overview-action-item {
+.finance-overview-action-list .finance-overview-action-item {
   color: inherit;
   text-decoration: none;
 }
