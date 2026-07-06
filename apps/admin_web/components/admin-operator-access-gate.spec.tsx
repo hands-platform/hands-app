@@ -25,7 +25,7 @@ describe('AdminOperatorAccessGate', () => {
     mockedGetAccess.mockReset();
   });
 
-  it('renders denied access on a shared Vuexy section surface', async () => {
+  it('renders denied access on a shared Vuexy error state surface', async () => {
     mockedHeaders.mockResolvedValue(new Headers({ 'x-admin-pathname': '/finance-tax' }));
     mockedGetAccess.mockResolvedValue({
       allowed: false,
@@ -36,7 +36,8 @@ describe('AdminOperatorAccessGate', () => {
     const gate = await AdminOperatorAccessGate({ children: <div>Hidden finance page</div> });
     const markup = renderToStaticMarkup(gate);
 
-    expect(markup).toContain('card admin-section admin-operator-access-denied-card');
+    expect(markup).toContain('admin-state admin-error-state admin-state-danger admin-operator-access-denied-card');
+    expect(markup).not.toContain('card admin-section admin-operator-access-denied-card');
     expect(markup).not.toContain('card admin-filter-panel admin-operator-access-denied-card');
     expect(markup).toContain('Access restricted');
     expect(markup).toContain('Page content is hidden.');
@@ -56,6 +57,7 @@ describe('AdminOperatorAccessGate', () => {
 
   it('uses the shared Vuexy form control link for denied-page actions', () => {
     expect(gateSource).toContain('AdminFormControlLink');
+    expect(gateSource).toContain('AdminErrorState');
     expect(gateSource).not.toContain('<Link className="button button-secondary"');
   });
 });

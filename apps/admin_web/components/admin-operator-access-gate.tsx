@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 
 import { AdminFormControlLink } from './admin-form-controls';
-import { AdminSection } from './admin-surface';
+import { AdminErrorState } from './admin-surface';
 import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';
 
 const PUBLIC_PATH_PREFIXES = ['/api/', '/files/', '/login', '/r/'];
@@ -21,23 +21,20 @@ export async function AdminOperatorAccessGate({ children }: { readonly children:
   const description = access.category
     ? `This operator does not have ${access.category.toLowerCase()} category access. Ask a Master Admin to grant the matching category before opening this page.`
     : 'This page is not mapped to an operator category yet. Ask a Master Admin to review the route policy before opening this page.';
+  const categoryLabel = access.category ?? 'UNMAPPED_PAGE';
 
   return (
     <main className="admin-content admin-operator-access-denied-shell">
-      <AdminSection
-        bodyClassName="admin-empty-state"
+      <AdminErrorState
+        action={
+          <AdminFormControlLink href="/">
+            Back to command center
+          </AdminFormControlLink>
+        }
         className="admin-operator-access-denied-card"
-        description={description}
-        statusLabel={access.category ?? 'UNMAPPED_PAGE'}
-        statusTone="danger"
+        message={`${categoryLabel}: ${description} Page content is hidden. The denied page visit was recorded in the operator audit log.`}
         title="Access restricted"
-      >
-        <strong>Page content is hidden.</strong>
-        <p className="muted">The denied page visit was recorded in the operator audit log.</p>
-        <AdminFormControlLink href="/">
-          Back to command center
-        </AdminFormControlLink>
-      </AdminSection>
+      />
     </main>
   );
 }
