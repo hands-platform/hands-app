@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
@@ -66,7 +66,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
           <StatusBadge tone="neutral">Participant evidence</StatusBadge>
         )}
       </div>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {visibleMarketplaceOperationsCards.map((card) => (
           <AdminActionCard
             detail={card.detail}
@@ -86,7 +86,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
             value="0"
           />
         )}
-      </div>
+      </AdminTaskGrid>
       {marketplaceLedgerRows.length === 0 ? (
         <AdminEmptyState
           className="admin-mt-14"

@@ -8,9 +8,11 @@ describe('BookingMonitorCustomerProtectionSection', () => {
     const source = readFileSync('app/bookings/booking-monitor-customer-protection-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="ops-task-card"');
+    expect(source).not.toContain('<div className="ops-task-grid admin-mt-14">');
     expect(source).not.toContain('<span className={`pill ${hasOpenCloseout ?');
     expect(source).not.toContain('<span className="pill">{lane.status}</span>');
     expect(source).not.toContain('<span className="pill">{lane.bookings.length} booking(s)</span>');

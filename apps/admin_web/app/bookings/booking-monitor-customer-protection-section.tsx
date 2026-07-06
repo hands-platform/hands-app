@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -42,7 +42,7 @@ export function BookingMonitorCustomerProtectionSection({
       description="Only unresolved customer money or evidence lanes are shown here."
       title="Customer protection closeout board"
     >
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {visibleLanes.map((lane) => (
           <AdminActionCard
             actionLabel={lane.operatorAction}
@@ -70,7 +70,7 @@ export function BookingMonitorCustomerProtectionSection({
             ) : null}
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }
