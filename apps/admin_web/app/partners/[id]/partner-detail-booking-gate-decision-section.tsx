@@ -2,13 +2,12 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 import { partnerOpsStatusBadgeTone, type PartnerOpsTone } from './partner-detail-tone';
@@ -49,8 +48,8 @@ export function PartnerDetailBookingGateDecisionSection({
   decision,
 }: PartnerDetailBookingGateDecisionSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} ${cardClassForTone(decision.tone)} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className={`${cardClassForTone(decision.tone)} admin-mb-16`}
       description="Operator-facing decision for whether this partner can join marketplace bookings or continue marketplace/payout operations right now."
       id="partner-booking-gate-decision"
       resultLabel={decision.status}
@@ -123,7 +122,7 @@ export function PartnerDetailBookingGateDecisionSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={decision.gates.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

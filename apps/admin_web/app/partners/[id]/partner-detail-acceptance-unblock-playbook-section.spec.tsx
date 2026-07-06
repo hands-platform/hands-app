@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailAcceptanceUnblockPlaybookSection } from './partner-detail-acceptance-unblock-playbook-section';
 
 describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the unblock playbook shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-acceptance-unblock-playbook-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses shared Vuexy badge atoms instead of raw unblock playbook pill spans', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-acceptance-unblock-playbook-section.tsx', 'utf8');
 

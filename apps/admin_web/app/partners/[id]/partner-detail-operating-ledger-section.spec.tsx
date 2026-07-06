@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailOperatingLedgerSection } from './partner-detail-operating-ledger-section';
 
 describe('PartnerDetailOperatingLedgerSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the operating ledger shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operating-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operating-ledger-section.tsx', 'utf8');
 

@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailOperatingChecklistSection } from './partner-detail-operating-checklist-section';
 
 describe('PartnerDetailOperatingChecklistSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the operating checklist shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy badge atom for checklist status pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
 

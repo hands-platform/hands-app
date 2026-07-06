@@ -1,11 +1,10 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -40,8 +39,8 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
   const bookingBlockerCount = steps.filter((step) => step.bookingBlocked).length;
 
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Only the Partner items that still need operator repair. Completed checks stay out of this list so finance, location, and approval evidence remain in their dedicated sections."
       id="payout"
       resultLabel={`${bookingBlockerCount} booking blocker(s)`}
@@ -95,6 +94,6 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={steps.length} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

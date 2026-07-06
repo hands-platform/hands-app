@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingGateDecisionSection } from './partner-detail-booking-gate-decision-section';
 
 describe('PartnerDetailBookingGateDecisionSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the booking gate shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy trace summary atom for gate decision metrics', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
 

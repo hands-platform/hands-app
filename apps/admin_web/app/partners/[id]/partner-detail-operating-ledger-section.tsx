@@ -1,10 +1,9 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import type { PartnerOperatingLedgerRow } from './partner-detail-operating-ledger-model';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -16,8 +15,8 @@ const PARTNER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] 
 
 export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOperatingLedgerSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Compact factual ledger for identity, booking work, chat archive, service pricing, wallet, payout, location, device, and audit evidence."
       id="partner-operating-ledger"
       resultLabel={`${rows.length} record areas`}
@@ -45,6 +44,6 @@ export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOpera
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

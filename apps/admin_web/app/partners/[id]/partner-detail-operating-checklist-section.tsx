@@ -1,11 +1,10 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -32,8 +31,8 @@ export function PartnerDetailOperatingChecklistSection({
   rows,
 }: PartnerDetailOperatingChecklistSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Compact active-work checklist for account hold, Level 2 approval, booking participation, service setup, and app connection. Finance and withdrawal evidence stays in the dedicated wallet sections."
       id="partner-operating-checklist"
       resultLabel={`${rows.length} check(s)`}
@@ -78,6 +77,6 @@ export function PartnerDetailOperatingChecklistSection({
         </AdminTableScroll>
       </div>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
