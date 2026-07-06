@@ -48,6 +48,9 @@ describe('CustomerBookingOperationBoard', () => {
 
   it('uses shared Vuexy status badge atoms instead of raw operation board pill markup', () => {
     expect(boardSource).toContain("from '../../../components/status-badge'");
+    expect(boardSource).toContain("from '../../../components/admin-text-link'");
+    expect(boardSource).toContain('AdminTextLink');
+    expect(boardSource).not.toContain('className="text-link"');
     expect(boardSource).toContain('StatusBadge');
     expect(boardSource).not.toContain('PillClassBadge');
     expect(boardSource).not.toContain('<span className="pill');

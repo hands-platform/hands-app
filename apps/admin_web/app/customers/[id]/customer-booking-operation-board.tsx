@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
@@ -6,6 +5,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -148,10 +148,10 @@ function CustomerBookingOperationSection({
             </td>
             <td>
               <div className="vuexy-booking-id-line">
-                <Link className="text-link" href={row.bookingHref} title="Open booking detail">
+                <AdminTextLink href={row.bookingHref} title="Open booking detail">
                   <Eye aria-hidden="true" size={14} />
                   <strong>{row.bookingLabel}</strong>
-                </Link>
+                </AdminTextLink>
               </div>
               <p className="muted">{row.bookingHelper}</p>
             </td>
