@@ -49,12 +49,13 @@ describe('Admin Vuexy source documentation', () => {
     expect(comparisonDoc).toContain('thumbnail.png');
   });
 
-  it('documents why the large Figma binary is not committed as a repo-local mirror', () => {
-    expect(existsSync(repoFigmaMirrorPath)).toBe(false);
+  it('documents the gitignored repo-local Figma mirror for local design checks', () => {
+    expect(existsSync(repoFigmaMirrorPath)).toBe(true);
     expect(gitignore).toContain('design/figma/*.fig');
     expect(figmaReadme).toContain('large binary asset');
+    expect(figmaReadme).toContain('Current workspace mirror');
     expect(comparisonDoc).toContain('design/figma/README.md');
-    expect(comparisonDoc).toContain('about 167 MB');
+    expect(comparisonDoc).toContain('167 MB');
     expect(comparisonDoc).toContain('Do not commit copied `.fig` files');
   });
 
