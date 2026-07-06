@@ -22,13 +22,22 @@ describe('PaymentDetailCallbackTimelineSection', () => {
     expect(pageSource).not.toContain('createdAtLabel: formatDate(attempt.createdAt)');
   });
 
+  it('uses the shared money atom for callback gateway amounts', () => {
+    const source = readFileSync('app/payments/[id]/payment-detail-callback-timeline-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('readonly amountLabel: string;');
+    expect(source).not.toContain('Amount: {row.amountLabel}');
+  });
+
   it('renders callback rows with gateway and payload evidence', () => {
     const section = PaymentDetailCallbackTimelineSection({
       reviewCount: 1,
       rows: [
         {
-          amountLabel: '1.000.000 VND',
+          amount: 1000000,
           createdAt: '2026-06-09T03:00:00.000Z',
+          currency: 'VND',
           errorCodeLabel: 'SIG_MISMATCH',
           errorMessage: 'Signature did not match.',
           id: 'attempt-1',
@@ -70,8 +79,9 @@ describe('PaymentDetailCallbackTimelineSection', () => {
       reviewCount: 1,
       rows: [
         {
-          amountLabel: '1.000.000 VND',
+          amount: 1000000,
           createdAt: '2026-06-09T03:00:00.000Z',
+          currency: 'VND',
           errorCodeLabel: 'SIG_MISMATCH',
           errorMessage: 'Signature did not match.',
           id: 'attempt-1',

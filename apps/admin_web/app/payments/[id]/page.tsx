@@ -440,11 +440,9 @@ function buildPaymentDetailCallbackTimelineRows(
   currency: string,
 ): PaymentDetailCallbackTimelineRow[] {
   return callbacks.map((attempt) => ({
-    amountLabel:
-      attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
-        ? money(attempt.callbackAmount, currency)
-        : 'unknown',
+    amount: attempt.callbackAmount ?? null,
     createdAt: attempt.createdAt ?? null,
+    currency,
     errorCodeLabel: attempt.errorCode ?? 'No error',
     errorMessage: attempt.errorMessage ?? 'Callback did not record a processing error.',
     id: attempt.id,

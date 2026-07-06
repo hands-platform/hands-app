@@ -3,11 +3,13 @@ import type { ReactNode } from 'react';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { DateTimeText } from '../../../components/date-time-text';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 export type PaymentDetailCallbackTimelineRow = {
-  readonly amountLabel: string;
+  readonly amount: number | null;
   readonly createdAt: string | null;
+  readonly currency: string;
   readonly errorCodeLabel: string;
   readonly errorMessage: string;
   readonly id: string;
@@ -53,7 +55,9 @@ export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: Paym
               <strong>{row.providerRef}</strong>
               <div className="muted">Mode: {row.verificationMode}</div>
               <div className="muted">Gateway status: {row.providerStatus}</div>
-              <div className="muted">Amount: {row.amountLabel}</div>
+              <div className="muted">
+                Amount: <MoneyText amount={row.amount} currency={row.currency} fallback="unknown" />
+              </div>
             </td>
             <td>
               {row.errorCodeLabel}
