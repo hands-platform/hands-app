@@ -3,7 +3,7 @@ import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
   readonly blockingCount: number;
@@ -49,7 +49,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
             className={card.className}
             detail={card.detail}
             key={card.title}
-            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
+            leading={<StatusBadgeFromPillClass pillClass={card.pillClass}>{card.status}</StatusBadgeFromPillClass>}
             title={card.title}
           />
         ))}

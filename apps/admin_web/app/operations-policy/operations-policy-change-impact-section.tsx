@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminMetricGrid } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
 
@@ -71,7 +71,7 @@ export function OperationsPolicyChangeImpactSection({
             className={card.className}
             detail={card.detail}
             key={card.title}
-            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.scope}</StatusBadge>}
+            leading={<StatusBadgeFromPillClass pillClass={card.pillClass}>{card.scope}</StatusBadgeFromPillClass>}
             title={card.title}
           />
         ))}

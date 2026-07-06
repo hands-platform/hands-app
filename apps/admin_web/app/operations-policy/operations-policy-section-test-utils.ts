@@ -77,6 +77,8 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminTaskCard',
       'AdminTraceSummary',
       'StatusBadge',
+      'StatusBadgeFromPillClass',
+      'StatusBadgeLinkFromPillClass',
     ].includes(component.name)
   ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});

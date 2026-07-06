@@ -1,6 +1,6 @@
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
@@ -17,11 +17,9 @@ export function OperationsPolicyRecommendedValueReviewSection({
       className="admin-mb-16"
       description="Compares current policy values with the HANDS recommended baseline. Differences are allowed, but operators should know the likely tradeoff before keeping them."
       status={
-        <StatusBadge
-          tone={statusBadgeToneFromPillClass(review.warningCount ? 'pill-warn' : 'pill-success')}
-        >
+        <StatusBadgeFromPillClass pillClass={review.warningCount ? 'pill-warn' : 'pill-success'}>
           {review.warningCount ? `${review.warningCount} owner choice(s)` : 'Aligned'}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       title="Recommended value review"
     >
@@ -40,7 +38,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
             className={card.className}
             detail={card.detail}
             key={card.key}
-            leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
+            leading={<StatusBadgeFromPillClass pillClass={card.pillClass}>{card.status}</StatusBadgeFromPillClass>}
             title={card.label}
           />
         ))}
