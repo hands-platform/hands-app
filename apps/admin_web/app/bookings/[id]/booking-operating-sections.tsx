@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import {
   AdminBasicTimeline,
@@ -142,15 +143,7 @@ export function BookingMarketplaceWalletEvidenceSection({
       id="marketplace-wallet-evidence"
       title="Marketplace participation and wallet evidence"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {marketplaceWalletEvidence.cards.map((card) => (
-          <a href={card.href} key={card.label}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <small>{card.helper}</small>
-          </a>
-        ))}
-      </div>
+      <SummaryCardTrace cards={marketplaceWalletEvidence.cards} />
       <div className="booking-settlement-ledger admin-mt-14" aria-label="Marketplace wallet command rows">
         {marketplaceWalletEvidence.commandStrip.map((command) => (
           <div className="booking-settlement-ledger-row is-command" key={command.label}>
@@ -300,15 +293,7 @@ export function BookingOperatingSnapshotSection({
       id="operating-snapshot"
       title="Booking operating snapshot"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {operatingSnapshot.facts.map((fact) => (
-          <div key={fact.label}>
-            <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
-            <small>{fact.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardTrace cards={operatingSnapshot.facts} />
       <AdminNotePanel className={`${operatingSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
@@ -469,15 +454,7 @@ export function BookingCommunicationMovementHandoffSection({
       id="communication-movement-handoff"
       title="Communication and movement handoff"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {communicationMovementHandoff.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardTrace cards={communicationMovementHandoff.metrics} />
       <AdminNotePanel className={`${communicationMovementHandoff.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
@@ -633,4 +610,18 @@ function chatLifecycleTone(state: string): OperatingTimelineTone {
   }
 
   return 'info';
+}
+
+function SummaryCardTrace({ cards }: { cards: SummaryCard[] }) {
+  return (
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={cards.map((card) => ({
+        detail: card.helper,
+        href: card.href,
+        label: card.label,
+        value: card.value,
+      }))}
+    />
+  );
 }

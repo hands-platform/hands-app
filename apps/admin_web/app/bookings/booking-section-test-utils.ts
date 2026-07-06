@@ -23,6 +23,7 @@ export function normalizedText(value: unknown): string {
 }
 
 export function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -132,6 +133,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminSection',
       'AdminSectionHeader',
       'AdminTaskCard',
+      'AdminTraceSummary',
       'MetricCard',
     ].includes(component.name)
   ) {

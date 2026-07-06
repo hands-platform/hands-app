@@ -17,6 +17,8 @@ describe('Booking operating sections', () => {
   it('uses shared Vuexy badge atoms instead of raw operating pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-operating-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminTextLink');
