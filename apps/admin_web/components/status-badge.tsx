@@ -21,6 +21,10 @@ type StatusBadgeProps = {
   readonly title?: string;
 };
 
+type StatusBadgeFromPillClassProps = Omit<StatusBadgeProps, 'tone'> & {
+  readonly pillClass: string;
+};
+
 type AdminAttentionBadgeProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -39,6 +43,10 @@ type StatusBadgeLinkProps = StatusBadgeProps & {
   readonly ariaLabel?: string;
   readonly download?: string;
   readonly href: string;
+};
+
+type StatusBadgeLinkFromPillClassProps = Omit<StatusBadgeLinkProps, 'tone'> & {
+  readonly pillClass: string;
 };
 
 type StatusBadgeButtonProps = StatusBadgeProps & {
@@ -105,6 +113,14 @@ const legacyPillToneTokens = new Set([
   'pill-warn',
 ]);
 
+function mergeLegacyPillClassName(pillClass: string, className?: string) {
+  const tokens = [pillClass, className]
+    .flatMap((value) => (value ? value.split(/\s+/).filter(Boolean) : []));
+  const needsPillBase = !tokens.includes('pill') && tokens.some((token) => legacyPillToneTokens.has(token));
+
+  return Array.from(new Set(needsPillBase ? ['pill', ...tokens] : tokens)).join(' ');
+}
+
 export function StatusBadge({ ariaDisabled, children, className, tone, title }: StatusBadgeProps) {
   return (
     <span
@@ -114,6 +130,25 @@ export function StatusBadge({ ariaDisabled, children, className, tone, title }: 
     >
       {children}
     </span>
+  );
+}
+
+export function StatusBadgeFromPillClass({
+  ariaDisabled,
+  children,
+  className,
+  pillClass,
+  title,
+}: StatusBadgeFromPillClassProps) {
+  return (
+    <StatusBadge
+      ariaDisabled={ariaDisabled}
+      className={mergeLegacyPillClassName(pillClass, className)}
+      title={title}
+      tone={statusBadgeToneFromPillClass(pillClass)}
+    >
+      {children}
+    </StatusBadge>
   );
 }
 
@@ -154,6 +189,31 @@ export function StatusBadgeLink({
     >
       {children}
     </Link>
+  );
+}
+
+export function StatusBadgeLinkFromPillClass({
+  ariaCurrent,
+  ariaLabel,
+  children,
+  className,
+  download,
+  href,
+  pillClass,
+  title,
+}: StatusBadgeLinkFromPillClassProps) {
+  return (
+    <StatusBadgeLink
+      ariaCurrent={ariaCurrent}
+      ariaLabel={ariaLabel}
+      className={mergeLegacyPillClassName(pillClass, className)}
+      download={download}
+      href={href}
+      title={title}
+      tone={statusBadgeToneFromPillClass(pillClass)}
+    >
+      {children}
+    </StatusBadgeLink>
   );
 }
 

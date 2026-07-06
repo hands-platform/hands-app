@@ -5,7 +5,9 @@ import {
   AdminSignal,
   StatusBadge,
   StatusBadgeButton,
+  StatusBadgeFromPillClass,
   StatusBadgeLink,
+  StatusBadgeLinkFromPillClass,
   statusBadgeClassName,
   statusBadgeToneFromPillClass,
 } from './status-badge';
@@ -91,6 +93,29 @@ describe('StatusBadge', () => {
       className: 'pill pill-info',
       href: '/partners/partner-1',
       title: 'Open partner record',
+      children: 'Open',
+    });
+  });
+
+  it('renders shared adapter badges from legacy pill class tones while preserving extra classes', () => {
+    const badge = StatusBadgeFromPillClass({
+      children: 'Blocked',
+      className: 'dashboard-chip',
+      pillClass: 'pill pill-danger admin-ml-6',
+    });
+    const link = StatusBadgeLinkFromPillClass({
+      children: 'Open',
+      href: '/bookings',
+      pillClass: 'pill-warn dashboard-link',
+    });
+
+    expect(badge.props).toMatchObject({
+      className: 'pill pill-danger admin-ml-6 dashboard-chip',
+      children: 'Blocked',
+    });
+    expect(link.props).toMatchObject({
+      className: 'pill pill-warn dashboard-link',
+      href: '/bookings',
       children: 'Open',
     });
   });
