@@ -10,6 +10,11 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
     expect(sectionSource).not.toContain('<span className={`pill ${pillClassForTone(row.tone)}`}>{row.title}</span>');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    expect(sectionSource).toContain('AdminTextLink');
+    expect(sectionSource).not.toContain('className="text-link"');
+  });
+
   it('renders finance follow-up rows with Vuexy table styling', () => {
     const section = PartnerDetailFinanceFollowUpSection({
       rows: [
