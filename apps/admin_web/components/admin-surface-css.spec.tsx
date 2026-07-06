@@ -42,6 +42,10 @@ describe('Admin surface CSS', () => {
     const stateBlock = cssRuleBlockAt(stateIndex);
     const stateIconIndex = globalsCss.indexOf('.admin-state-icon {');
     const stateIconBlock = cssRuleBlockAt(stateIconIndex);
+    const infoIndex = globalsCss.indexOf('.admin-state-info {');
+    const infoBlock = cssRuleBlockAt(infoIndex);
+    const dangerIndex = globalsCss.indexOf('.admin-state-danger {');
+    const dangerBlock = cssRuleBlockAt(dangerIndex);
 
     expect(stateIndex).toBeGreaterThan(-1);
     expect(stateBlock).toContain('gap: 16px');
@@ -54,6 +58,14 @@ describe('Admin surface CSS', () => {
     expect(stateIconBlock).toContain('width: 30px');
     expect(stateIconBlock).not.toContain('height: 40px');
     expect(stateIconBlock).not.toContain('width: 40px');
+    expect(infoIndex).toBeGreaterThan(stateIconIndex);
+    expect(infoBlock).toContain('background: var(--admin-info-soft)');
+    expect(infoBlock).toContain('border-color: rgb(var(--admin-info-channel) / 0.24)');
+    expect(infoBlock).toContain('color: var(--admin-info-text)');
+    expect(dangerIndex).toBeGreaterThan(infoIndex);
+    expect(dangerBlock).toContain('background: var(--admin-danger-soft)');
+    expect(dangerBlock).toContain('border-color: rgb(var(--admin-danger-channel) / 0.24)');
+    expect(dangerBlock).toContain('color: var(--admin-danger-text)');
   });
 
   it('keeps shared notices on the Vuexy Alert icon and spacing rhythm', () => {

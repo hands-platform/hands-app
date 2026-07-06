@@ -2440,14 +2440,26 @@ a {
   width: 30px;
 }
 
+.admin-state-info {
+  background: var(--admin-info-soft);
+  border-color: rgb(var(--admin-info-channel) / 0.24);
+  color: var(--admin-info-text);
+}
+
+.admin-state-danger {
+  background: var(--admin-danger-soft);
+  border-color: rgb(var(--admin-danger-channel) / 0.24);
+  color: var(--admin-danger-text);
+}
+
 .admin-loading-state .admin-state-icon {
-  background: var(--admin-primary-soft);
-  color: var(--admin-accent-strong);
+  background: rgb(var(--admin-info-channel) / 0.16);
+  color: var(--admin-info);
 }
 
 .admin-error-state .admin-state-icon {
-  background: rgb(var(--admin-danger-channel) / 0.14);
-  color: var(--admin-danger-text);
+  background: rgb(var(--admin-danger-channel) / 0.16);
+  color: var(--admin-danger);
 }
 
 .admin-state-copy {

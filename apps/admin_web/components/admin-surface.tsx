@@ -594,7 +594,7 @@ export function AdminLoadingState({
 }: AdminStateProps) {
   return (
     <div
-      className={joinClassNames('admin-state admin-loading-state', className)}
+      className={joinClassNames('admin-state admin-loading-state admin-state-info', className)}
       role="status"
       aria-live="polite"
     >
@@ -617,7 +617,7 @@ export function AdminErrorState({
   title = 'Unable to load records',
 }: AdminStateProps) {
   return (
-    <div className={joinClassNames('admin-state admin-error-state', className)} role="alert">
+    <div className={joinClassNames('admin-state admin-error-state admin-state-danger', className)} role="alert">
       <span className="admin-state-icon" aria-hidden="true">
         <AlertCircle size={20} />
       </span>

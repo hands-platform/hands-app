@@ -493,11 +493,11 @@ describe('Admin surface components', () => {
 
     expect(loading.props).toMatchObject({
       'aria-live': 'polite',
-      className: 'admin-state admin-loading-state',
+      className: 'admin-state admin-loading-state admin-state-info',
       role: 'status',
     });
     expect(error.props).toMatchObject({
-      className: 'admin-state admin-error-state',
+      className: 'admin-state admin-error-state admin-state-danger',
       role: 'alert',
     });
     expect(error.props.children[1].props.children[2].props.className).toBe('admin-state-action');
