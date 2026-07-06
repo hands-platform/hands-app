@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -62,7 +63,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
       {items.length ? (
         <div className="setup-stage-list">
           {items.slice(0, 12).map((item) => (
-            <div className="setup-stage-item" key={item.earningId}>
+            <AdminStageItem key={item.earningId}>
               <span>DEBT</span>
               <div>
                 <strong>{item.providerName}</strong>
@@ -121,7 +122,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                   </AdminFormControlButton>
                 </AdminFormShell>
               </div>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       ) : (

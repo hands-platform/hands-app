@@ -29,7 +29,10 @@ describe('FinanceStageList', () => {
     const source = readFileSync('app/finance-tax/finance-stage-list.tsx', 'utf8');
 
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageItemLink');
     expect(source).not.toContain('<span>{item.signal}</span>');
+    expect(source).not.toContain('className="setup-stage-item"');
   });
 
   it('renders finance stage markers with Vuexy signal classes while preserving links', () => {

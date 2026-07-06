@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminStageItemLink } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -25,7 +24,7 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
     >
       {items.length ? (
         items.map((item) => (
-          <Link className="setup-stage-item" href={item.href} key={item.action}>
+          <AdminStageItemLink href={item.href} key={item.action}>
             <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
               {item.status}
             </StatusBadge>
@@ -34,7 +33,7 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
               <p className="muted">{item.reason}</p>
               <small>{item.operatorRule}</small>
             </div>
-          </Link>
+          </AdminStageItemLink>
         ))
       ) : (
         <AdminEmptyState framed message="No shift close action is visible for this range." />

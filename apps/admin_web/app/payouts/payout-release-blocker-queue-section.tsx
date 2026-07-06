@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -37,7 +38,7 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
     >
       <div className="setup-stage-list">
         {items.map((item) => (
-          <div className="setup-stage-item" key={`${item.id}-${item.label}`}>
+          <AdminStageItem key={`${item.id}-${item.label}`}>
             <span>{item.severity}</span>
             <div>
               <strong>
@@ -58,10 +59,10 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
             <AdminTextLink href={`#${item.id}`}>
               Row
             </AdminTextLink>
-          </div>
+          </AdminStageItem>
         ))}
         {items.length === 0 ? (
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>OK</span>
             <div>
               <AdminEmptyState
@@ -70,7 +71,7 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
               />
             </div>
             <small>Clear</small>
-          </div>
+          </AdminStageItem>
         ) : null}
       </div>
     </AdminTablePanel>

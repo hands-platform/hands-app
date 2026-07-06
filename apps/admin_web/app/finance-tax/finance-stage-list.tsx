@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { AdminStageItem, AdminStageItemLink } from '../../components/admin-stage-item';
 import { AdminSignal } from '../../components/status-badge';
 
 export type FinanceStageListItem = {
@@ -28,13 +28,13 @@ export function FinanceStageList({ items }: { readonly items: readonly FinanceSt
         );
 
         return item.href ? (
-          <Link className="setup-stage-item" href={item.href} key={item.key}>
+          <AdminStageItemLink href={item.href} key={item.key}>
             {content}
-          </Link>
+          </AdminStageItemLink>
         ) : (
-          <div className="setup-stage-item" key={item.key}>
+          <AdminStageItem key={item.key}>
             {content}
-          </div>
+          </AdminStageItem>
         );
       })}
     </div>
