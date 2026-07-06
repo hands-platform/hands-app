@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -182,14 +182,14 @@ export function BookingDetailToolbar({
         </AdminFormControlLink>
       )}
       {paymentId && (
-        <Link className="text-link" href={`/payments#payment-${paymentId}`}>
+        <AdminTextLink href={`/payments#payment-${paymentId}`}>
           Open payment
-        </Link>
+        </AdminTextLink>
       )}
       {refundId && (
-        <Link className="text-link" href={`/refunds#refund-${refundId}`}>
+        <AdminTextLink href={`/refunds#refund-${refundId}`}>
           Open refund
-        </Link>
+        </AdminTextLink>
       )}
     </>
   );

@@ -56,7 +56,9 @@ describe('BookingCommandBriefingSections', () => {
     const source = readFileSync('app/bookings/[id]/booking-command-briefing-sections.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('actions={<span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>}');
     expect(source).not.toContain('actions={<span className="pill pill-info">Above-fold summary</span>}');
     expect(source).not.toContain('actions={<span className="pill pill-info">{rows.length} shortcuts</span>}');
