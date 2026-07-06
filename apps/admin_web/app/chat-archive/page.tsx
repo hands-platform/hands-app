@@ -202,7 +202,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         },
         {
           label: 'Latest message',
-          value: <DateTimeText fallback="None" value={summary.latestMessageAt} />,
+          value: 'None',
+          valueDateTimeFallback: 'None',
+          valueDateTimeValue: summary.latestMessageAt,
           helper: 'Newest loaded message',
         },
       ]}

@@ -1,12 +1,15 @@
 import type { ComponentProps, ReactNode } from 'react';
 
 import { AdminKpiCard } from './admin-surface';
+import { DateTimeText } from './date-time-text';
 
 export type AdminPageMetric = Pick<
   ComponentProps<typeof AdminKpiCard>,
   'className' | 'href' | 'icon' | 'iconSize' | 'label' | 'value'
 > & {
   readonly helper?: ComponentProps<typeof AdminKpiCard>['helper'];
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 type AdminPageTemplateProps = {
@@ -69,10 +72,21 @@ export function AdminMetricGrid({ ariaLabel, className, metrics }: AdminMetricGr
           iconSize={metric.iconSize}
           key={`${metric.label}-${index}`}
           label={metric.label}
-          value={metric.value}
+          value={adminMetricValue(metric)}
         />
       ))}
     </section>
+  );
+}
+
+function adminMetricValue(metric: AdminPageMetric) {
+  return metric.valueDateTimeValue ? (
+    <DateTimeText
+      fallback={metric.valueDateTimeFallback ?? (typeof metric.value === 'string' ? metric.value : 'Not set')}
+      value={metric.valueDateTimeValue}
+    />
+  ) : (
+    metric.value
   );
 }
 
