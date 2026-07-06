@@ -12,6 +12,13 @@ describe('PartnerDetailOperatingChecklistSection', () => {
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(item.tone)}`}>{item.nextAction}</span>');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders active-work checks as a Vuexy table', () => {
     const section = PartnerDetailOperatingChecklistSection({
       pillClassForTone: (tone) => `pill-${tone}`,
