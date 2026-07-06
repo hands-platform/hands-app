@@ -99,6 +99,13 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy text link atom for payment detail record links', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('uses shared grid wrappers for payment metrics and evidence panels', async () => {
     mockedAdminGet.mockResolvedValue(paymentDetail());
 

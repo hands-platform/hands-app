@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
@@ -10,6 +9,7 @@ import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
@@ -91,24 +91,24 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             Back to payments
           </AdminFormControlLink>
           {booking?.id ? (
-            <Link className="text-link" href={`/bookings/${booking.id}`}>
+            <AdminTextLink href={`/bookings/${booking.id}`}>
               Open booking
-            </Link>
+            </AdminTextLink>
           ) : null}
           {booking?.customerProfile?.id ? (
-            <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
+            <AdminTextLink href={`/customers/${booking.customerProfile.id}`}>
               Open customer
-            </Link>
+            </AdminTextLink>
           ) : null}
           {booking?.selectedProvider?.id ? (
-            <Link className="text-link" href={`/partners/${booking.selectedProvider.id}`}>
+            <AdminTextLink href={`/partners/${booking.selectedProvider.id}`}>
               Open partner
-            </Link>
+            </AdminTextLink>
           ) : null}
           {booking?.chatRoom?.id ? (
-            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+            <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
               Open chat archive
-            </Link>
+            </AdminTextLink>
           ) : null}
         </>
       }
