@@ -8190,7 +8190,8 @@ a.action-button-card:hover {
 }
 
 .usage-overview-page,
-.partner-overview-page {
+.partner-overview-page,
+.finance-overview-page {
   display: grid;
   gap: 18px;
   min-width: 0;
@@ -8199,13 +8200,16 @@ a.action-button-card:hover {
 .usage-overview-page > .toolbar,
 .usage-overview-page > .card,
 .partner-overview-page > .toolbar,
-.partner-overview-page > .card {
+.partner-overview-page > .card,
+.finance-overview-page > .toolbar,
+.finance-overview-page > .card {
   margin-bottom: 0;
   margin-top: 0;
 }
 
 .usage-overview-page > .toolbar,
-.partner-overview-page > .toolbar {
+.partner-overview-page > .toolbar,
+.finance-overview-page > .toolbar {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
@@ -8214,21 +8218,24 @@ a.action-button-card:hover {
 }
 
 .usage-overview-page > .toolbar h1,
-.partner-overview-page > .toolbar h1 {
+.partner-overview-page > .toolbar h1,
+.finance-overview-page > .toolbar h1 {
   font-size: 26px;
   line-height: 1.18;
   margin-bottom: 8px;
 }
 
 .usage-overview-filter-panel,
-.partner-overview-filter-panel {
+.partner-overview-filter-panel,
+.finance-overview-filter-panel {
   display: grid;
   gap: 14px;
   padding: 18px;
 }
 
 .usage-overview-range-buttons,
-.partner-overview-range-buttons {
+.partner-overview-range-buttons,
+.finance-overview-range-buttons {
   justify-content: flex-start;
 }
 

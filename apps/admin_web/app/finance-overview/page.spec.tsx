@@ -172,8 +172,13 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
     expect(markup).toContain('Top finance queues');
-    expect(markup).toContain('card admin-section usage-overview-filter-panel finance-overview-filter-panel');
-    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel finance-overview-filter-panel');
+    expect(markup).toContain('class="finance-overview-page"');
+    expect(markup).not.toContain('usage-overview-page');
+    expect(markup).toContain('card admin-section finance-overview-filter-panel');
+    expect(markup).toContain('booking-date-filter-buttons finance-overview-range-buttons');
+    expect(markup).not.toContain('usage-overview-filter-panel');
+    expect(markup).not.toContain('usage-overview-range-buttons');
+    expect(markup).not.toContain('card admin-filter-panel finance-overview-filter-panel');
     expect(markup).toContain('card admin-section finance-overview-priority-board');
     expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card finance-overview-priority-card');
@@ -185,7 +190,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Core Finance KPI');
     expect(markup).toContain('6 signals');
     expect(markup).toContain('card admin-section finance-overview-kpi-section');
-    expect(markup).toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
+    expect(markup).toContain('admin-section-body finance-overview-kpi-grid');
+    expect(markup).not.toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card');
     expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(pageSource).not.toContain(
@@ -225,6 +231,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).not.toContain('card admin-card usage-overview-action-item');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-action-item');
     expect(pageSource).not.toContain('usage-overview-command-icon');
+    expect(pageSource).not.toContain('contentClassName="usage-overview-page finance-overview-page"');
+    expect(pageSource).not.toContain('className="usage-overview-filter-panel finance-overview-filter-panel"');
+    expect(pageSource).not.toContain('className="usage-overview-range-buttons"');
+    expect(pageSource).not.toContain('bodyClassName="usage-overview-command-grid finance-overview-kpi-grid"');
     expect(pageSource).not.toContain('className={`card admin-card usage-overview-command-card finance-overview-priority-card');
     expect(markup).toContain('/finance-tax/payment-clearing');
     expect(markup).toContain('/finance-tax/general-ledger');

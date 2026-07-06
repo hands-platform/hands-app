@@ -125,13 +125,13 @@ export default async function FinanceOverviewPage({
           <StatusBadge tone="info">{buildFinanceOverviewRangeLabel(filters.range)}</StatusBadge>
         </>
       }
-      contentClassName="usage-overview-page finance-overview-page"
+      contentClassName="finance-overview-page"
       description="Money-flow command view for gross payments, platform-fee revenue, Partner payable, wallet liability, refunds, tax, and reconciliation risk."
       title="Finance Overview"
     >
 
       <AdminSection
-        className="usage-overview-filter-panel finance-overview-filter-panel"
+        className="finance-overview-filter-panel"
         description="This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists."
         statusLabel={`Period ${filters.period}`}
         title="Finance range"
@@ -139,7 +139,7 @@ export default async function FinanceOverviewPage({
         <AdminSegmentedControl
           activeValue={filters.range}
           ariaLabel="Finance overview range"
-          className="usage-overview-range-buttons"
+          className="finance-overview-range-buttons"
           options={financeOverviewRangeOptions.map((option) => ({
             href: financeOverviewHref(option.value),
             label: option.label,
@@ -188,7 +188,7 @@ export default async function FinanceOverviewPage({
       </AdminOverviewCommandGrid>
 
       <AdminSection
-        bodyClassName="usage-overview-command-grid finance-overview-kpi-grid"
+        bodyClassName="finance-overview-kpi-grid"
         className="finance-overview-kpi-section"
         description="Six top-level signals. Detailed wallet, refund, tax, and settlement evidence remains below."
         statusLabel={`${primaryKpis.length} signals`}
