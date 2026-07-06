@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
@@ -17,6 +15,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -86,9 +85,9 @@ export function PartnerDetailReportsControlsSection({
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
       description="Keep customer complaints, staff findings, payout holds, and account blocks visible on the partner profile."
       footer={
-        <Link className="text-link" href={reportsDeskHref}>
+        <AdminTextLink href={reportsDeskHref}>
           Open reports desk
-        </Link>
+        </AdminTextLink>
       }
       id="partner-reports-controls"
       resultLabel={`${reports.length} report(s)`}
@@ -246,9 +245,9 @@ export function PartnerDetailReportsControlsSection({
                   </td>
                   <td>
                     {report.bookingHref && report.bookingLabel ? (
-                      <Link className="text-link" href={report.bookingHref}>
+                      <AdminTextLink href={report.bookingHref}>
                         Booking {report.bookingLabel}
-                      </Link>
+                      </AdminTextLink>
                     ) : (
                       <AdminInlineFallback>No booking linked</AdminInlineFallback>
                     )}
