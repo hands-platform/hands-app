@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import {
   AdminBasicTimeline,
   AdminNotePanel,
@@ -249,7 +250,7 @@ export function BookingCloseoutReadinessSection({
         {closeoutReadiness.openItems.length > 0 ? (
           <div className="setup-stage-list admin-mt-12">
             {closeoutReadiness.openItems.map((item) => (
-              <div className="setup-stage-item" key={`exception-${item.id}`}>
+              <AdminStageItem key={`exception-${item.id}`}>
                 <span>{item.owner}</span>
                 <div>
                   <strong>{`${item.label}: ${item.status}`}</strong>
@@ -263,7 +264,7 @@ export function BookingCloseoutReadinessSection({
                 <AdminTextLink href={item.href}>
                   Resolve
                 </AdminTextLink>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         ) : (
@@ -418,7 +419,7 @@ export function BookingHandoffChecklistSection({
     >
       <div className="setup-stage-list admin-mt-12">
         {handoffChecklist.map((item) => (
-          <div className="setup-stage-item" key={item.id}>
+          <AdminStageItem key={item.id}>
             <span>{item.label}</span>
             <div>
               <strong>{item.title}</strong>
@@ -431,7 +432,7 @@ export function BookingHandoffChecklistSection({
             ) : (
               <small>{item.status}</small>
             )}
-          </div>
+          </AdminStageItem>
         ))}
       </div>
     </AdminSection>

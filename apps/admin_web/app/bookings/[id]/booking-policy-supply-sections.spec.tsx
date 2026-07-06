@@ -36,6 +36,13 @@ describe('booking policy supply sections', () => {
     expect(source).not.toContain('className={`ops-task-card ${card.className}`');
   });
 
+  it('uses the shared Vuexy stage item atom for policy supply row surfaces', () => {
+    const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
+  });
+
   it('uses shared Vuexy badge atoms instead of raw policy supply pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 

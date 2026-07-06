@@ -3,6 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -339,7 +340,7 @@ export function BookingRecentOperationsTimelineSection({
     >
       <div className="setup-stage-list admin-mt-12">
         {operatingTimeline.slice(0, 8).map((item) => (
-          <div className="setup-stage-item" key={`recent-${item.id}`}>
+          <AdminStageItem key={`recent-${item.id}`}>
             <span>{item.type}</span>
             <div>
               <strong>{item.title}</strong>
@@ -348,7 +349,7 @@ export function BookingRecentOperationsTimelineSection({
             <small>
               <DateTimeText fallback={item.status} value={item.at} />
             </small>
-          </div>
+          </AdminStageItem>
         ))}
       </div>
     </AdminSection>
@@ -377,7 +378,7 @@ export function BookingPriorityBriefingSection({
       <SummaryMetricGrid rows={operatorPriorityBriefing.rows} />
       <div className="setup-stage-list admin-mt-12">
         {operatorPriorityBriefing.steps.map((step) => (
-          <div className="setup-stage-item" key={step.id}>
+          <AdminStageItem key={step.id}>
             <span>{step.label}</span>
             <div>
               <strong>{step.title}</strong>
@@ -387,7 +388,7 @@ export function BookingPriorityBriefingSection({
               <ExternalLink aria-hidden="true" size={14} />
               {step.linkLabel}
             </AdminFormControlLink>
-          </div>
+          </AdminStageItem>
         ))}
       </div>
     </AdminSection>

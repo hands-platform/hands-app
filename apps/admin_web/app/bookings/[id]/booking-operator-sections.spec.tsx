@@ -48,6 +48,13 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).not.toContain('<div className="action-button-card ops-task-blocked"');
   });
 
+  it('uses the shared Vuexy stage item atom for operator row surfaces', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
+  });
+
   it('renders command queue and action availability table with shared table styling', () => {
     const section = BookingOperatorQueueSections({
       bookingId: 'booking-1',

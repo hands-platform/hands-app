@@ -44,6 +44,13 @@ describe('Booking operating sections', () => {
     expect(source).not.toContain('time: item.at ? formatDate(item.at) : item.status');
   });
 
+  it('uses the shared Vuexy stage item atom for operating row surfaces', () => {
+    const source = readFileSync('app/bookings/[id]/booking-operating-sections.tsx', 'utf8');
+
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
+  });
+
   it('renders marketplace wallet evidence rows as compact ledgers', () => {
     const section = BookingMarketplaceWalletEvidenceSection({
       marketplaceWalletEvidence: {

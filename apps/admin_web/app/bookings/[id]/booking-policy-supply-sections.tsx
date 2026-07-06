@@ -1,6 +1,7 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminNoteCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -323,7 +324,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           </p>
           <div className="setup-stage-list admin-mt-12">
             {marketplaceSupply.topCandidates.map((row) => (
-              <div className="setup-stage-item" key={`candidate-${row.id}`}>
+              <AdminStageItem key={`candidate-${row.id}`}>
                 <span>GO</span>
                 <div>
                   <AdminPersonCell
@@ -336,10 +337,10 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                     linkClassName="table-link"
                   />
                 </div>
-              </div>
+              </AdminStageItem>
             ))}
             {marketplaceSupply.topCandidates.length === 0 ? (
-              <div className="setup-stage-item">
+              <AdminStageItem>
                 <span>NONE</span>
                 <div>
                   <AdminEmptyState
@@ -350,7 +351,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                 <AdminTextLink href="/partners?review=marketplace-ready">
                   Open marketplace queue
                 </AdminTextLink>
-              </div>
+              </AdminStageItem>
             ) : null}
           </div>
         </AdminNoteCard>
@@ -362,7 +363,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           </p>
           <div className="setup-stage-list admin-mt-12">
             {marketplaceSupply.excludedGroups.map((group) => (
-              <div className="setup-stage-item" key={group.label}>
+              <AdminStageItem key={group.label}>
                 <span>{group.count ? 'FIX' : 'OK'}</span>
                 <div>
                   <strong>{group.label}</strong>
@@ -372,7 +373,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                 <AdminTextLink href={group.href}>
                   {group.count}
                 </AdminTextLink>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         </AdminNoteCard>
