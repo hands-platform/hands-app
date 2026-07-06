@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -42,17 +43,14 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
           Trace bookings
         </AdminTextLink>
       </div>
-      <div className="service-trace-summary">
-        {cards.map((card) => (
-          <div key={card.label}>
-            <span>{card.label}</span>
-            <strong>
-              <MoneyText amount={card.amount} currency={currency} />
-            </strong>
-            <small>{card.detail}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        metrics={cards.map((card) => ({
+          detail: card.detail,
+          key: card.label,
+          label: card.label,
+          value: <MoneyText amount={card.amount} currency={currency} />,
+        }))}
+      />
       {checks.length ? (
         <div className="ops-task-grid admin-mt-16">
           {checks.map((check) => (

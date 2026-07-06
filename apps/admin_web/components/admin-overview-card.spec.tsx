@@ -7,6 +7,7 @@ import {
   AdminOverviewGrid,
   AdminOverviewGroup,
   AdminProfileOverviewCard,
+  AdminTraceSummary,
 } from './admin-overview-card';
 
 describe('AdminOverviewCommandCard', () => {
@@ -111,6 +112,24 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('class="admin-mini-metric usage-overview-mini-metric is-info"');
     expect(markup).toContain('<span>Coupon bookings</span>');
     expect(markup).toContain('<strong>12</strong>');
+  });
+
+  it('renders shared trace summary metrics for finance and operations strips', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          { label: 'Gross', value: '1.200.000 VND', detail: 'Customer charge represented.' },
+          { label: 'Cash debt', value: '80.000 VND' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('class="service-trace-summary admin-mt-12"');
+    expect(markup).toContain('<span>Gross</span>');
+    expect(markup).toContain('<strong>1.200.000 VND</strong>');
+    expect(markup).toContain('<small>Customer charge represented.</small>');
+    expect(markup).toContain('<span>Cash debt</span>');
   });
 
   it('renders shared overview groups with Vuexy heading structure', () => {

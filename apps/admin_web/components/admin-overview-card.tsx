@@ -57,6 +57,20 @@ type AdminMiniMetricStripProps = {
   readonly metrics: readonly AdminMiniMetric[];
 };
 
+type AdminTraceSummaryMetric = {
+  readonly detail?: ReactNode;
+  readonly key?: string;
+  readonly label: ReactNode;
+  readonly value: ReactNode;
+};
+
+type AdminTraceSummaryProps = {
+  readonly ariaLabel?: string;
+  readonly className?: string;
+  readonly itemClassName?: string;
+  readonly metrics: readonly AdminTraceSummaryMetric[];
+};
+
 export function AdminOverviewCommandGrid({ ariaLabel, children, className }: AdminOverviewCommandGridProps) {
   return (
     <AdminOverviewGrid ariaLabel={ariaLabel} className={className} variant="command">
@@ -113,6 +127,20 @@ export function AdminMiniMetricStrip({
   );
 }
 
+export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics }: AdminTraceSummaryProps) {
+  return (
+    <div aria-label={ariaLabel} className={joinClassNames('service-trace-summary', className)}>
+      {metrics.map((metric, index) => (
+        <div className={itemClassName} key={traceSummaryKey(metric, index)}>
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+          {metric.detail ? <small>{metric.detail}</small> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AdminOverviewCommandCard({
   ariaLabel,
   children,
@@ -162,6 +190,12 @@ function miniMetricKey(metric: AdminMiniMetric, index: number) {
   if (metric.key) return metric.key;
   if (typeof metric.label === 'string' || typeof metric.label === 'number') return String(metric.label);
   return `metric-${index}`;
+}
+
+function traceSummaryKey(metric: AdminTraceSummaryMetric, index: number) {
+  if (metric.key) return metric.key;
+  if (typeof metric.label === 'string' || typeof metric.label === 'number') return String(metric.label);
+  return `trace-metric-${index}`;
 }
 
 const adminOverviewGridClassNames: Record<AdminOverviewGridVariant, string> = {
