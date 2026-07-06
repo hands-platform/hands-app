@@ -9,6 +9,8 @@ describe('PartnerDetailPayoutOperationsSection', () => {
 
     expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
     expect(source).toContain("import type { ReactNode } from 'react';");
     expect(source).toContain('readonly amountLine: ReactNode;');
     expect(source).toContain('readonly title: ReactNode;');

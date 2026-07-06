@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
@@ -7,6 +6,7 @@ import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import {
@@ -140,9 +140,9 @@ export function PartnerDetailPayoutOperationsSection({
                   </p>
                 </td>
                 <td>
-                  <Link className="text-link" href={partnerControlsHref}>
+                  <AdminTextLink href={partnerControlsHref}>
                     Reports desk
-                  </Link>
+                  </AdminTextLink>
                 </td>
               </tr>
             </AdminDataTable>
@@ -186,13 +186,13 @@ export function PartnerDetailPayoutOperationsSection({
             actions={(
               <div className="actions">
               {hasCashFeeDebt ? (
-                <Link className="text-link" href="/cash-settlements">
+                <AdminTextLink href="/cash-settlements">
                   Cash debt queue
-                </Link>
+                </AdminTextLink>
               ) : null}
-              <Link className="text-link" href="/earnings">
+              <AdminTextLink href="/earnings">
                 Open earnings
-              </Link>
+              </AdminTextLink>
               </div>
             )}
             title="Recent earnings"
@@ -249,9 +249,9 @@ export function PartnerDetailPayoutOperationsSection({
         <div>
           <AdminSectionHeader
             actions={(
-              <Link className="text-link" href="/payouts">
+              <AdminTextLink href="/payouts">
                 Open payouts
-              </Link>
+              </AdminTextLink>
             )}
             title="Recent payout batches"
           />
@@ -281,9 +281,9 @@ export function PartnerDetailPayoutOperationsSection({
                     ) : null}
                   </td>
                   <td>
-                    <Link className="text-link" href={batch.href}>
+                    <AdminTextLink href={batch.href}>
                       View
-                    </Link>
+                    </AdminTextLink>
                   </td>
                 </tr>
               ))}
