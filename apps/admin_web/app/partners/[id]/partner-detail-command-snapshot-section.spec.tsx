@@ -9,6 +9,17 @@ describe('PartnerDetailCommandSnapshotSection', () => {
     expect(source).not.toContain('<div className="service-trace-summary partner-detail-summary-rail-grid">');
   });
 
+  it('builds the command snapshot on the shared Vuexy AdminSection surface', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-command-snapshot-section.tsx', 'utf8');
+
+    expect(source).toContain("import { AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain('<AdminSection');
+    expect(source).toContain('className="partner-detail-section-band admin-mb-16"');
+    expect(source).toContain('bodyClassName="partner-detail-section-band-body"');
+    expect(source).toContain('headerClassName="partner-detail-section-band-header"');
+    expect(source).not.toContain('<section className="partner-detail-section-band admin-mb-16"');
+  });
+
   it('renders command snapshot fact groups with links', () => {
     const section = PartnerDetailCommandSnapshotSection({
       items: [
