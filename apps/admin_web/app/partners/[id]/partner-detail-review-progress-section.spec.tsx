@@ -17,6 +17,8 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<strong>No records found</strong>');
     expect(source).not.toContain("<span className=\"muted\">{row.preview ?? 'No preview'}</span>");

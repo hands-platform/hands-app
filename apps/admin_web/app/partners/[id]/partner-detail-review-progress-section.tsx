@@ -1,10 +1,9 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminCard } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
 import {
@@ -151,9 +150,9 @@ export function PartnerDetailApprovalEvidenceSummarySection({
               <td>
                 <span className="muted">{row.label}</span>
                 <p>
-                  <Link className="text-link" href={row.href}>
+                  <AdminTextLink href={row.href}>
                     <strong>{row.title}</strong>
-                  </Link>
+                  </AdminTextLink>
                 </p>
               </td>
               <td>
@@ -163,9 +162,9 @@ export function PartnerDetailApprovalEvidenceSummarySection({
                 <p className="muted">{row.detail}</p>
               </td>
               <td>
-                <Link className="text-link" href={row.href}>
+                <AdminTextLink href={row.href}>
                   Open
-                </Link>
+                </AdminTextLink>
               </td>
             </tr>
           ))}
@@ -244,9 +243,9 @@ export function PartnerDetailReviewControlPanelSection({
             ) : null}
             <p className="muted">{item?.detail ?? fallback}</p>
             {item?.href ? (
-              <Link className="text-link" href={item.href}>
+              <AdminTextLink href={item.href}>
                 Open related section
-              </Link>
+              </AdminTextLink>
             ) : null}
           </AdminCard>
         ))}
@@ -274,9 +273,9 @@ export function PartnerDetailReviewControlPanelSection({
               </td>
               <td>
                 {item.href ? (
-                  <Link className="text-link" href={item.href}>
+                  <AdminTextLink href={item.href}>
                     Open
-                  </Link>
+                  </AdminTextLink>
                 ) : (
                   <span className="muted">Review</span>
                 )}
