@@ -62,5 +62,15 @@ export function AdminTablePanel({ className, grouped = true, ...props }: AdminTa
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  const tokens = new Set<string>();
+
+  for (const className of classNames) {
+    for (const token of className?.split(/\s+/) ?? []) {
+      if (token) {
+        tokens.add(token);
+      }
+    }
+  }
+
+  return Array.from(tokens).join(' ');
 }
