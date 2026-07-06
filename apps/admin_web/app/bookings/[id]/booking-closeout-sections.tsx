@@ -1,3 +1,4 @@
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminActionCard, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import {
@@ -78,18 +79,19 @@ export function BookingCloseoutSections({
         id="connected-operations-records"
         title="Connected operations records"
       >
-        <div className="service-trace-summary admin-mt-12">
-          {connectedRecordLinks.map((record) => (
-            <div key={record.label}>
-              <span>{record.label}</span>
-              <strong>{record.value}</strong>
-              <small>{record.detail}</small>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={connectedRecordLinks.map((record) => ({
+            action: (
               <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
                 Open
               </StatusBadgeLink>
-            </div>
-          ))}
-        </div>
+            ),
+            detail: record.detail,
+            label: record.label,
+            value: record.value,
+          }))}
+        />
       </AdminSection>
     </>
   );

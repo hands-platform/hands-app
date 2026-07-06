@@ -153,6 +153,25 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Jump to retained evidence.</small>');
   });
 
+  it('renders trace summary metric actions when provided', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        metrics={[
+          {
+            action: <a href="#record">Open</a>,
+            detail: 'Connected record evidence.',
+            label: 'Activity',
+            value: '12',
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('class="service-trace-summary"');
+    expect(markup).toContain('<small>Connected record evidence.</small>');
+    expect(markup).toContain('<a href="#record">Open</a>');
+  });
+
   it('renders shared overview groups with Vuexy heading structure', () => {
     const markup = renderToStaticMarkup(
       <AdminOverviewGroup
