@@ -7,7 +7,13 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
-import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminCard,
+  AdminDetailGrid,
+  AdminSection,
+  AdminTaskCard,
+} from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
@@ -554,7 +560,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
       description="Last-known location monitoring for the live service."
       title="Live service board"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {liveSignals.map((signal) => (
           <AdminTaskCard
             className="ops-signal-card"
@@ -568,7 +574,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
             value={signal.value}
           />
         ))}
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }

@@ -1,6 +1,7 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
-import { AdminKpiCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import { AdminMetricGrid } from '../../../components/admin-page-template';
+import { AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
@@ -314,11 +315,7 @@ export function BookingFinanceCommandCenterSection({
       id="finance"
       title="Finance command center"
     >
-      <div className="grid admin-mt-12">
-        {financeSummaryCards.map((card) => (
-          <AdminKpiCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
-        ))}
-      </div>
+      <AdminMetricGrid className="admin-mt-12" metrics={financeSummaryCards} />
       {financeFlags.length > 0 ? (
         <div className="ops-check-list">
           {financeFlags.map((flag) => (

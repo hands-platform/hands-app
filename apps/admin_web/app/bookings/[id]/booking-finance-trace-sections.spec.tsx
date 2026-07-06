@@ -14,8 +14,10 @@ describe('BookingPayoutBatchEligibilitySection', () => {
   it('uses shared Vuexy badge atoms instead of raw finance trace pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-finance-trace-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminMetricGrid');
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminTextLink');

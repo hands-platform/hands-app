@@ -83,10 +83,12 @@ describe('BookingActionStatusSections', () => {
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminTaskCard');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('<a className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-signal-card"');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).not.toContain('<div className={`dispatch-step-card');
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
     expect(source).not.toContain('className="card admin-card booking-action-note-panel"');
