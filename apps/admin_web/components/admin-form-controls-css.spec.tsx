@@ -180,6 +180,52 @@ describe('Admin form control CSS', () => {
     expect(todayBlock).not.toContain('font-weight: 500');
   });
 
+  it('keeps month, year, and quarter picker tiles on the Vuexy template rhythm', () => {
+    const tileIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-text,');
+    const tileBlock = cssRuleBlockAt(tileIndex);
+    const todayIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-text--today,');
+    const todayBlock = cssRuleBlockAt(todayIndex);
+
+    expect(tileIndex).toBeGreaterThan(-1);
+    expect(todayIndex).toBeGreaterThan(tileIndex);
+    expect(tileBlock).toContain('align-items: center');
+    expect(tileBlock).toContain('border-radius: var(--admin-radius)');
+    expect(tileBlock).toContain('display: inline-flex');
+    expect(tileBlock).toContain('font-size: 0.9375rem');
+    expect(tileBlock).toContain('justify-content: center');
+    expect(tileBlock).toContain('line-height: 2rem');
+    expect(todayBlock).toContain('border: 1px solid var(--admin-accent)');
+    expect(todayBlock).toContain('color: var(--admin-accent)');
+    expect(todayBlock).toContain('font-weight: 400');
+  });
+
+  it('keeps react-datepicker month and year dropdown menus on the Vuexy popover surface', () => {
+    const dropdownIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__header__dropdown {');
+    const dropdownBlock = cssRuleBlockAt(dropdownIndex);
+    const menuIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-dropdown,');
+    const menuBlock = cssRuleBlockAt(menuIndex);
+    const optionIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__month-option,');
+    const optionBlock = cssRuleBlockAt(optionIndex);
+    const selectedOptionIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__month-option.react-datepicker__month-option--selected_month,',
+    );
+    const selectedOptionBlock = cssRuleBlockAt(selectedOptionIndex);
+
+    expect(dropdownIndex).toBeGreaterThan(-1);
+    expect(menuIndex).toBeGreaterThan(dropdownIndex);
+    expect(optionIndex).toBeGreaterThan(menuIndex);
+    expect(selectedOptionIndex).toBeGreaterThan(optionIndex);
+    expect(dropdownBlock).toContain('gap: 32px');
+    expect(dropdownBlock).toContain('padding: 0 16px 16px');
+    expect(menuBlock).toContain('background: var(--admin-surface)');
+    expect(menuBlock).toContain('box-shadow: var(--admin-shadow-lg)');
+    expect(menuBlock).toContain('border-radius: var(--admin-radius)');
+    expect(optionBlock).toContain('border-radius: var(--admin-radius)');
+    expect(optionBlock).toContain('padding: 6px 16px');
+    expect(selectedOptionBlock).toContain('background: var(--admin-primary-soft)');
+    expect(selectedOptionBlock).toContain('color: var(--admin-accent)');
+  });
+
   it('keeps selected react-datepicker dates on the Vuexy primary-dark hover treatment', () => {
     const selectedHoverIndex = globalsCss.indexOf(
       '.calendar-vuexy-datepicker .react-datepicker__day--selected:hover,',

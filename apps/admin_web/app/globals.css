@@ -1595,6 +1595,101 @@ a {
   color: var(--admin-accent);
 }
 
+.calendar-vuexy-datepicker .react-datepicker__month-text,
+.calendar-vuexy-datepicker .react-datepicker__year-text,
+.calendar-vuexy-datepicker .react-datepicker__quarter-text {
+  align-items: center;
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  display: inline-flex;
+  font-size: 0.9375rem;
+  justify-content: center;
+  line-height: 2rem;
+  margin: 0;
+  outline: 0;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-text--today,
+.calendar-vuexy-datepicker .react-datepicker__year-text--today {
+  border: 1px solid var(--admin-accent);
+  color: var(--admin-accent);
+  font-weight: 400;
+  line-height: 2.125rem;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-text--keyboard-selected,
+.calendar-vuexy-datepicker .react-datepicker__year-text--keyboard-selected,
+.calendar-vuexy-datepicker .react-datepicker__quarter-text--keyboard-selected {
+  background: rgb(var(--admin-primary-channel) / 0.16);
+  color: var(--admin-accent);
+}
+
+.calendar-vuexy-datepicker .react-datepicker__year-wrapper {
+  justify-content: center;
+  max-width: 205px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__header__dropdown {
+  align-items: flex-start;
+  display: flex;
+  gap: 32px;
+  justify-content: flex-start;
+  padding: 0 16px 16px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-read-view--selected-month,
+.calendar-vuexy-datepicker .react-datepicker__year-read-view--selected-year {
+  color: var(--admin-text);
+  font-size: 0.875rem;
+  margin-right: 4px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-read-view--down-arrow,
+.calendar-vuexy-datepicker .react-datepicker__year-read-view--down-arrow {
+  border-color: var(--admin-muted);
+  top: 4px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-read-view:hover .react-datepicker__month-read-view--down-arrow,
+.calendar-vuexy-datepicker .react-datepicker__year-read-view:hover .react-datepicker__year-read-view--down-arrow {
+  border-color: var(--admin-text);
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-dropdown,
+.calendar-vuexy-datepicker .react-datepicker__year-dropdown {
+  background: var(--admin-surface);
+  border: 0;
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-lg);
+  padding: 8px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-option,
+.calendar-vuexy-datepicker .react-datepicker__year-option {
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  margin-bottom: 2px;
+  padding: 6px 16px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-option:hover,
+.calendar-vuexy-datepicker .react-datepicker__year-option:hover {
+  background: var(--admin-action-hover);
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-option.react-datepicker__month-option--selected_month,
+.calendar-vuexy-datepicker .react-datepicker__year-option.react-datepicker__year-option--selected_year {
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent);
+}
+
+.calendar-vuexy-datepicker .react-datepicker__month-option--selected,
+.calendar-vuexy-datepicker .react-datepicker__year-option--selected {
+  display: none;
+}
+
 .calendar-vuexy-datepicker > .react-datepicker__navigation {
   background-color: var(--admin-action-selected) !important;
   background-position: center;
