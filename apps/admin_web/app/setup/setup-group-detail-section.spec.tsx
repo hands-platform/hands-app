@@ -28,6 +28,7 @@ describe('SetupGroupDetailSection', () => {
     expect(source).not.toContain('<span className={env.className} key={`attention-${env.name}`}>');
     expect(source).not.toContain('<span className="pill pill-success">No env blockers shown</span>');
     expect(source).not.toContain('<a className="pill pill-neutral"');
+    expect(source).not.toContain('<section className="stack admin-mt-16">');
   });
 
   it('renders setup group details with environment pills and commands', () => {
@@ -54,7 +55,7 @@ describe('SetupGroupDetailSection', () => {
 
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
-    expect(section.type).toBe('section');
+    expect(section.type).toBe('div');
     expect(rendered).toContain('FCM push');
     expect(rendered).toContain('Notification setup : Fill push credentials outside Git.');
     expect(rendered).toContain('PUSH_PROVIDER');

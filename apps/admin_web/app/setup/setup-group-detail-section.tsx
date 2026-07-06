@@ -27,7 +27,7 @@ type SetupGroupDetailSectionProps = {
 
 export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupGroupDetailSectionProps) {
   return (
-    <section className="stack admin-mt-16">
+    <div className="stack admin-mt-16">
       {groups.map((group) => {
         const attentionEnvPills = group.envPills.filter(isAttentionEnvPill);
         const nextCommand = nextSetupCommand(group.id, group.commands);
@@ -113,7 +113,7 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
           </AdminSection>
         );
       })}
-    </section>
+    </div>
   );
 }
 
