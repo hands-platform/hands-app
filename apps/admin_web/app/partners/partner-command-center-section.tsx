@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type PartnerCommandCenterSectionTone = 'danger' | 'info' | 'ok' | 'warn';
@@ -24,7 +24,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
       description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
       title="Partner command center"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {lanes.map((lane) => (
           <AdminActionCard
             detail={lane.detail}
@@ -44,7 +44,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }

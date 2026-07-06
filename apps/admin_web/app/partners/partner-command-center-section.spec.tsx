@@ -9,7 +9,9 @@ describe('PartnerCommandCenterSection', () => {
   it('uses shared Vuexy badge atoms instead of raw command center pill spans', () => {
     const source = readFileSync('app/partners/partner-command-center-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).not.toContain('actions={<span className="pill pill-info">Daily control view</span>}');
     expect(source).not.toContain('<span className="pill" key={item.label}>');
   });

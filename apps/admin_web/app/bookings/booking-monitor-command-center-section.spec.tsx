@@ -47,8 +47,10 @@ describe('BookingMonitorCommandCenterSection', () => {
   it('uses shared badge atoms for command center action and metric chips', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).not.toContain('actions={<span className="pill pill-info">Operator first view</span>}');
     expect(source).not.toContain('<span className="pill" key={item.label}>');
   });

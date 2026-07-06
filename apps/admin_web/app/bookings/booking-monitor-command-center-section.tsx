@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
 
@@ -23,7 +23,7 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
       description="One-glance control for dispatch pressure, customer protection, payment closeout, and handoff quality."
       title="Booking command center"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {lanes.map((lane) => (
           <AdminActionCard
             detail={lane.detail}
@@ -44,7 +44,7 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }
