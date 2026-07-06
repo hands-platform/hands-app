@@ -14,7 +14,8 @@ describe('FinanceListFilterLinks', () => {
   it('renders through shared StatusBadgeLink atoms instead of direct link class assembly', () => {
     const source = readFileSync('app/finance-tax/finance-list-filter-links.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('StatusBadgeLinkFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain("import Link from 'next/link'");
     expect(source).not.toContain('pillClassBadgeClassName');
     expect(source).not.toContain('className={financeListFilterLinkClassName(link)}');

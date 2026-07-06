@@ -1,7 +1,7 @@
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminActionFormCard } from '../../../components/admin-surface';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
 import { settleBookingCashDebt } from './actions';
@@ -40,11 +40,9 @@ export function BookingPaymentAction({
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="paymentId" value={paymentId} />
       <div>
-        <StatusBadge
-          tone={statusBadgeToneFromPillClass(readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info'))}
-        >
+        <StatusBadgeFromPillClass pillClass={readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info')}>
           {readout?.status ?? (disabled ? 'Locked' : 'Available')}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
         <strong>{label}</strong>
         <p className="muted">
           {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}

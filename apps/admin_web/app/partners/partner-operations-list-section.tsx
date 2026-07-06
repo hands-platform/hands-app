@@ -6,7 +6,7 @@ import { DateTimeText } from '../../components/date-time-text';
 import {
   AdminSignal,
   StatusBadge,
-  statusBadgeToneFromPillClass,
+  StatusBadgeFromPillClass,
   type AdminSignalTone,
 } from '../../components/status-badge';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
@@ -81,12 +81,12 @@ export function PartnerOperationsListSection({
               <td>
                 <div className="participant-list">
                   {row.checklist.map((item) => (
-                    <StatusBadge
+                    <StatusBadgeFromPillClass
                       key={item.label}
-                      tone={statusBadgeToneFromPillClass(partnerOperationPillClass(item.tone))}
+                      pillClass={partnerOperationPillClass(item.tone)}
                     >
                       {item.label}: {item.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   ))}
                 </div>
               </td>
@@ -104,12 +104,12 @@ export function PartnerOperationsListSection({
                 ) : null}
                 <div className="participant-list admin-mt-8">
                   {row.matchingFlow.map((item) => (
-                    <StatusBadge
+                    <StatusBadgeFromPillClass
                       key={item.label}
-                      tone={statusBadgeToneFromPillClass(partnerOperationPillClass(item.tone))}
+                      pillClass={partnerOperationPillClass(item.tone)}
                     >
                       {item.label}: {item.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   ))}
                 </div>
                 <p className="muted admin-mt-8">{row.matchingFlowDetail}</p>

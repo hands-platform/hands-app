@@ -16,7 +16,9 @@ describe('PartnerOperationsListSection', () => {
     const source = readFileSync('app/partners/partner-operations-list-section.tsx', 'utf8');
 
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`signal ${partnerOperationSignalClass(row.acceptanceTone)}`}>');

@@ -6,7 +6,8 @@ describe('Booking payment actions', () => {
 
     expect(source).toContain('AdminActionFormCard');
     expect(source).toContain('MoneyText');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('const debtAmount = formatMoney(Math.abs(earning.netAmount), earning.currency);');
     expect(source).not.toContain('<form action={action} className={`action-button-card');

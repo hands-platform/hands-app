@@ -1,8 +1,5 @@
 import {
-  StatusBadgeLink,
-  statusBadgeClassName,
-  statusBadgeToneFromPillClass,
-  type StatusBadgeTone,
+  StatusBadgeLinkFromPillClass,
 } from '../../components/status-badge';
 
 export const FINANCE_LIST_DATE_RANGE_LINKS = [
@@ -30,14 +27,14 @@ export function financeListFilterLinkClassName({
   active,
   activePillClassName,
 }: Pick<FinanceListFilterLink, 'active' | 'activePillClassName'>) {
-  return statusBadgeClassName(financeListFilterLinkTone({ active, activePillClassName }));
+  return financeListFilterLinkPillClassName({ active, activePillClassName });
 }
 
-function financeListFilterLinkTone({
+function financeListFilterLinkPillClassName({
   active,
   activePillClassName,
-}: Pick<FinanceListFilterLink, 'active' | 'activePillClassName'>): StatusBadgeTone {
-  return active ? statusBadgeToneFromPillClass(activePillClassName) : 'neutral';
+}: Pick<FinanceListFilterLink, 'active' | 'activePillClassName'>) {
+  return active ? `pill ${activePillClassName}` : 'pill pill-neutral';
 }
 
 export function FinanceListFilterLinks({ groups }: { readonly groups: readonly FinanceListFilterLinkGroup[] }) {
@@ -46,13 +43,13 @@ export function FinanceListFilterLinks({ groups }: { readonly groups: readonly F
       {groups.map((group, index) => (
         <div className={group.className ?? `participant-list${index > 0 ? ' admin-mt-10' : ''}`} key={group.id}>
           {group.links.map((link) => (
-            <StatusBadgeLink
+            <StatusBadgeLinkFromPillClass
               href={link.href}
               key={link.id}
-              tone={financeListFilterLinkTone(link)}
+              pillClass={financeListFilterLinkPillClassName(link)}
             >
               {link.label}
-            </StatusBadgeLink>
+            </StatusBadgeLinkFromPillClass>
           ))}
         </div>
       ))}
