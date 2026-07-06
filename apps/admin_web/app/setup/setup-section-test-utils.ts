@@ -11,7 +11,9 @@ const DEFAULT_RENDERABLE_COMPONENTS = new Set([
   'MetricCard',
   'PathCopyRow',
   'StatusBadge',
+  'StatusBadgeFromPillClass',
   'StatusBadgeLink',
+  'StatusBadgeLinkFromPillClass',
   'ReadinessRow',
   'SetupCommandList',
 ]);

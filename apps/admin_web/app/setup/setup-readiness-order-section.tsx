@@ -1,7 +1,7 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
 
@@ -105,7 +105,7 @@ function ReadinessRow({
           </div>
         )}
       </div>
-      <StatusBadge tone={statusBadgeToneFromPillClass(readinessStatusPillClass(check.status))}>{check.status}</StatusBadge>
+      <StatusBadgeFromPillClass pillClass={readinessStatusPillClass(check.status)}>{check.status}</StatusBadgeFromPillClass>
     </div>
   );
 }

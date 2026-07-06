@@ -1,6 +1,6 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
 
 export type SetupGroupDetail = {
@@ -35,7 +35,7 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
         return (
           <AdminSection
             actions={
-              <StatusBadge tone={statusBadgeToneFromPillClass(group.statusClass)}>{group.status}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={group.statusClass}>{group.status}</StatusBadgeFromPillClass>
             }
             description={
               <>
@@ -51,9 +51,9 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                 <h3>Environment values</h3>
                 <div className="participant-list">
                   {group.envPills.map((env) => (
-                    <StatusBadge key={env.name} tone={statusBadgeToneFromPillClass(env.className)}>
+                    <StatusBadgeFromPillClass key={env.name} pillClass={env.className}>
                       {env.name}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   ))}
                 </div>
               </div>
@@ -82,9 +82,9 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                   <div className="participant-list">
                     {attentionEnvPills.length ? (
                       attentionEnvPills.map((env) => (
-                        <StatusBadge key={`attention-${env.name}`} tone={statusBadgeToneFromPillClass(env.className)}>
+                        <StatusBadgeFromPillClass key={`attention-${env.name}`} pillClass={env.className}>
                           {env.name}
-                        </StatusBadge>
+                        </StatusBadgeFromPillClass>
                       ))
                     ) : (
                       <StatusBadge tone="success">No env blockers shown</StatusBadge>

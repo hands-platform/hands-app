@@ -1,5 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 
 type SetupRegistrationHandoffItem = {
   readonly id: string;
@@ -35,7 +35,7 @@ export function SetupRegistrationHandoffSection({
           <strong>{item.title}</strong>
           <p className="muted">{item.detail}</p>
           <div className="participant-list">
-            <StatusBadge tone={statusBadgeToneFromPillClass(item.statusClass)}>{item.status}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
             <StatusBadge tone="neutral">{item.owner}</StatusBadge>
           </div>
           <div className="participant-list admin-mt-8">
