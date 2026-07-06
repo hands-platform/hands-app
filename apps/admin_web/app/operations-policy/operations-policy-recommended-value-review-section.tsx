@@ -1,3 +1,4 @@
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
@@ -24,15 +25,14 @@ export function OperationsPolicyRecommendedValueReviewSection({
       }
       title="Recommended value review"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {review.summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={review.summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((card) => (
           <AdminTaskCard

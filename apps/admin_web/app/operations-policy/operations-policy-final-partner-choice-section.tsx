@@ -1,5 +1,6 @@
 import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -33,15 +34,14 @@ export function OperationsPolicyFinalPartnerChoiceSection({
       statusTone={matrix.blockingCount ? 'warning' : 'success'}
       title="Final partner choice control matrix"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {matrix.summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={matrix.summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <div className="ops-task-grid admin-mt-14">
         {matrix.cards.map((card) => (
           <AdminTaskCard
@@ -65,15 +65,14 @@ export function OperationsPolicyFinalPartnerChoiceSection({
         description="Applies the policy posture to the current Partner snapshot so operators can see who can pass marketplace and payout gates, who needs account or identity follow-up, and who only needs readiness follow-up."
         title="Current partner acceptance impact"
       />
-      <div className="service-trace-summary admin-mt-12">
-        {matrix.impact.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={matrix.impact.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
     </AdminSection>
   );
 }

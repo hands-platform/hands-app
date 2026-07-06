@@ -1,4 +1,5 @@
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
@@ -32,15 +33,14 @@ export function OperationsPolicySensitivityPreviewSection({
       statusTone="info"
       title="Policy sensitivity preview"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {sensitivity.summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={sensitivity.summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <AdminDetailGrid className="admin-mt-14">
         <div className="admin-scroll-x">
           <h3>Marketplace supply sensitivity</h3>

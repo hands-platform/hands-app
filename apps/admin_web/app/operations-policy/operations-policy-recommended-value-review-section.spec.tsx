@@ -11,8 +11,10 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
     );
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTraceSummary');
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).not.toContain('<span className="pill pill-success">Aligned</span>');
   });
 
