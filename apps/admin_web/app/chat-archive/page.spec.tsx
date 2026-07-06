@@ -23,6 +23,11 @@ describe('ChatArchivePage', () => {
     mockedAdminGet.mockReset();
   });
 
+  it('uses the shared Vuexy trace summary atom for repair queue metrics', () => {
+    expect(pageSource).toContain('AdminTraceSummary');
+    expect(pageSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('renders retained chat totals separately from bounded preview messages', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/chat-archive/summary')) {

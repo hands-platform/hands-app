@@ -20,6 +20,7 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import {
@@ -299,28 +300,35 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         description="Matched and completed bookings should have retained chat evidence. Use this audit queue to find missing rooms or rooms where no message has been stored yet."
         title="Chat integrity repair queue"
       >
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Repair rows</span>
-            <strong>{repairRows.length}</strong>
-            <small>{dateFilters.label}</small>
-          </div>
-          <div>
-            <span>Missing room</span>
-            <strong>{repairSummary.missingRooms}</strong>
-            <small>Matched booking has no room.</small>
-          </div>
-          <div>
-            <span>Empty room</span>
-            <strong>{repairSummary.emptyRooms}</strong>
-            <small>Room exists with no retained message.</small>
-          </div>
-          <div>
-            <span>Completed affected</span>
-            <strong>{repairSummary.completedRows}</strong>
-            <small>Completed work needing archive confirmation.</small>
-          </div>
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={[
+            {
+              key: 'repair-rows',
+              label: 'Repair rows',
+              value: repairRows.length,
+              detail: dateFilters.label,
+            },
+            {
+              key: 'missing-room',
+              label: 'Missing room',
+              value: repairSummary.missingRooms,
+              detail: 'Matched booking has no room.',
+            },
+            {
+              key: 'empty-room',
+              label: 'Empty room',
+              value: repairSummary.emptyRooms,
+              detail: 'Room exists with no retained message.',
+            },
+            {
+              key: 'completed-affected',
+              label: 'Completed affected',
+              value: repairSummary.completedRows,
+              detail: 'Completed work needing archive confirmation.',
+            },
+          ]}
+        />
         {repairRows.length ? (
           <AdminTableScroll>
             <AdminDataTable emptyMessage={null} headers={CHAT_REPAIR_HEADERS} rowCount={visibleRepairRows.length}>
