@@ -1,4 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
 import { AdminSignal } from '../../components/status-badge';
@@ -28,12 +29,12 @@ export function SetupProgressControlSection({
       >
         <div className="setup-stage-list">
           {sequence.map((item) => (
-            <div className="setup-stage-item" key={item.phase}>
+            <AdminStageItem key={item.phase}>
               <span>{item.phase}</span>
               <strong>{item.title}</strong>
               <p>{item.detail}</p>
               <small>{item.status}</small>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       </AdminSection>

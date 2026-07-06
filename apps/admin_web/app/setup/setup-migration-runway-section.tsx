@@ -1,4 +1,5 @@
 import { PathCopyRow } from '../../components/path-copy-row';
+import { AdminStageItemLink } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 
 type SetupMigrationRunwayStatus = {
@@ -20,12 +21,12 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
     >
       <div className="setup-stage-list">
         {groupStatuses.map((item, index) => (
-          <a className="setup-stage-item" href={`#${item.id}`} key={item.id}>
+          <AdminStageItemLink href={`#${item.id}`} key={item.id}>
             <span>Stage {index + 1}</span>
             <strong>{item.phase}</strong>
             <p>{item.title}</p>
             <small>{item.status}</small>
-          </a>
+          </AdminStageItemLink>
         ))}
       </div>
       <div className="setup-command-block admin-mt-16">

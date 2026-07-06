@@ -9,6 +9,8 @@ describe('SetupProgressControlSection', () => {
 
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<span className="signal signal-info">');
     expect(source).not.toContain('<span className="signal signal-ok">');
     expect(source).not.toContain('<section className="detail-grid admin-mb-16"');

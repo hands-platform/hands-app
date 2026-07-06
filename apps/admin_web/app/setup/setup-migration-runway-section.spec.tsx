@@ -1,7 +1,17 @@
+import { readFileSync } from 'node:fs';
+
 import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
 
 describe('SetupMigrationRunwaySection', () => {
+  it('uses the shared Vuexy stage item link atom for migration stage anchors', () => {
+    const source = readFileSync(new URL('./setup-migration-runway-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminStageItemLink');
+    expect(source).not.toContain('className="setup-stage-item"');
+    expect(source).not.toContain('<a className="setup-stage-item"');
+  });
+
   it('renders migration stages and operator handoff files', () => {
     const section = SetupMigrationRunwaySection({
       groupStatuses: [
