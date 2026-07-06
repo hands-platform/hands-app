@@ -13,11 +13,13 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
   it('uses the shared AdminFormControlLink atom for evidence actions', () => {
     expect(sectionSource).toContain('AdminTableSection');
     expect(sectionSource).toContain('AdminSectionHeader');
+    expect(sectionSource).toContain('AdminTraceSummary');
     expect(sectionSource).toContain('AdminFormControlLink');
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(sectionSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(sectionSource).not.toContain('<div className="ops-section-header admin-mt-18">');
     expect(sectionSource).not.toContain('<Link className="button button-secondary"');

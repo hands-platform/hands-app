@@ -1,3 +1,4 @@
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
@@ -24,15 +25,14 @@ export function OperationsPolicyActionGateChecklistSection({
       }
       title="Action gate policy checklist"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {checklist.summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={checklist.summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <div className="ops-task-grid admin-mt-14">
         {visibleCards.map((item) => (
           <AdminActionCard

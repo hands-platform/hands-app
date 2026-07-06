@@ -2,6 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
@@ -54,15 +55,14 @@ export function OperationsPolicyBookingCreateGateSection({
       statusTone="info"
       title="Booking create gate controls"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {review.summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={review.summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="service-trace"
