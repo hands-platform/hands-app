@@ -115,6 +115,16 @@ describe('BookingMonitorBlockedCreateSection', () => {
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy text link atom for blocked-create evidence links', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('uses shared Vuexy badge atoms for attempt and distance evidence chips', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/bookings/booking-monitor-blocked-create-section.tsx'),

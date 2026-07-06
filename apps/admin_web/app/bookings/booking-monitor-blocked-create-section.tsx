@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Filter, ScrollText, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import {
@@ -7,6 +6,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminAuditLog } from '../../lib/admin-api';
@@ -163,9 +163,9 @@ export function BookingMonitorBlockedCreateSection({
                 return (
                   <tr key={log.id}>
                     <td>
-                      <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
+                      <AdminTextLink href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
                         {shortId(log.id)}
-                      </Link>
+                      </AdminTextLink>
                       <div className="muted">
                         Created <DateTimeText value={log.createdAt} />
                       </div>
@@ -178,9 +178,9 @@ export function BookingMonitorBlockedCreateSection({
                     </td>
                     <td>
                       {evidence.customerHref ? (
-                        <Link className="text-link" href={evidence.customerHref}>
+                        <AdminTextLink href={evidence.customerHref}>
                           Customer detail
-                        </Link>
+                        </AdminTextLink>
                       ) : (
                         <span className="muted">Customer not linked</span>
                       )}
@@ -205,9 +205,9 @@ export function BookingMonitorBlockedCreateSection({
                     </td>
                     <td>
                       <div className="actions">
-                        <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
+                        <AdminTextLink href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
                           Audit evidence
-                        </Link>
+                        </AdminTextLink>
                       </div>
                     </td>
                   </tr>
