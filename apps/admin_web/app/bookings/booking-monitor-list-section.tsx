@@ -19,7 +19,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -704,13 +704,13 @@ function BookingStateChangedCell({
       {closureState && (
         <div className="vuexy-booking-closure-evidence">
           <div className="vuexy-booking-closure-pills">
-            <StatusBadge tone={statusBadgeToneFromPillClass(closureState.tone)}>
+            <StatusBadgeFromPillClass pillClass={closureState.tone}>
               {closureState.label}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
             {cancellationReviewSignal && (
-              <StatusBadge tone={statusBadgeToneFromPillClass(cancellationReviewSignal.tone)}>
+              <StatusBadgeFromPillClass pillClass={cancellationReviewSignal.tone}>
                 {cancellationReviewSignal.label}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             )}
           </div>
           <div className="muted">{closureState.detail}</div>
@@ -719,13 +719,13 @@ function BookingStateChangedCell({
       {reviewReasonPills.length > 0 && (
         <div className="vuexy-booking-review-reasons" aria-label="Cancellation review reasons">
           {reviewReasonPills.map((reason) => (
-            <StatusBadge
+            <StatusBadgeFromPillClass
               key={reason.label}
-              tone={statusBadgeToneFromPillClass(reason.tone)}
+              pillClass={reason.tone}
               title={reason.title}
             >
               {reason.label}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
           ))}
         </div>
       )}
