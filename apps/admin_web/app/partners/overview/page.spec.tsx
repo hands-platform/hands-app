@@ -68,9 +68,12 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('<div className="partner-overview-action-card-header">');
     expect(markup).toContain('admin-section-body partner-overview-funnel-steps');
     expect(markup).toContain('admin-section-body partner-overview-action-grid');
-    expect(markup).toContain('card admin-section usage-overview-table-card');
-    expect(markup).toContain('admin-table-scroll usage-overview-table-wrap');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table');
+    expect(markup).toContain('card admin-section partner-overview-table-card');
+    expect(markup).toContain('admin-table-scroll partner-overview-table-wrap');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table partner-overview-table');
+    expect(markup).not.toContain('usage-overview-table-card');
+    expect(markup).not.toContain('usage-overview-table-wrap');
+    expect(markup).not.toContain('usage-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).not.toContain('PillClassBadge');
@@ -88,6 +91,9 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );
+    expect(pageSource).not.toContain('className="usage-overview-table-card"');
+    expect(pageSource).not.toContain('className="usage-overview-table-wrap"');
+    expect(pageSource).not.toContain('className="usage-overview-table"');
     expect(pageSource).not.toContain('<a aria-label={`${row.recommendedAction} for ${row.partnerName}`}');
     expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');
     expect(markup).toContain('admin-section-body partner-overview-risk-card-body');

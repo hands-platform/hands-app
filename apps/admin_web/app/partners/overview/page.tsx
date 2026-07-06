@@ -512,13 +512,13 @@ function SupplyAreaCard({
 }) {
   return (
     <AdminSection
-      className="usage-overview-table-card"
+      className="partner-overview-table-card"
       description={`Partner coverage and open demand by area · ${rangeLabel}`}
       title="Area supply health"
     >
-      <AdminTableScroll className="usage-overview-table-wrap">
+      <AdminTableScroll className="partner-overview-table-wrap">
         <AdminDataTable
-          className="usage-overview-table"
+          className="partner-overview-table"
           emptyMessage="No area supply rows for this range."
           headers={[
             'Area',
@@ -569,13 +569,13 @@ function SupplyServiceCard({
 }) {
   return (
     <AdminSection
-      className="usage-overview-table-card"
+      className="partner-overview-table-card"
       description={`Supply by service duration and open work · ${rangeLabel}`}
       title="Service supply health"
     >
-      <AdminTableScroll className="usage-overview-table-wrap">
+      <AdminTableScroll className="partner-overview-table-wrap">
         <AdminDataTable
-          className="usage-overview-table"
+          className="partner-overview-table"
           emptyMessage="No service supply rows for this range."
           headers={['Service', 'Offering', 'Online', 'Eligible', 'Open', 'Done', 'Completion', 'Avg rating', 'Status']}
           rowCount={rows.length}
@@ -632,7 +632,7 @@ function QualityRiskCard({
   return (
     <AdminSection
       bodyClassName="partner-overview-risk-card-body"
-      className="usage-overview-table-card"
+      className="partner-overview-table-card"
       description="Cancellation, no-show, low review, and rating risk."
       title="Booking quality risk"
     >
@@ -654,7 +654,7 @@ function WalletRiskCard({
   return (
     <AdminSection
       bodyClassName="partner-overview-risk-card-body"
-      className="usage-overview-table-card"
+      className="partner-overview-table-card"
       description={policyNote || 'Ledger-backed Partner wallet exposure.'}
       title="Finance and wallet risk"
     >
@@ -690,9 +690,9 @@ function PartnerRiskTable({
     : ['Partner', 'Area', 'Rating', 'Done', 'Cancel', 'No-show', 'Action'];
 
   return (
-    <AdminTableScroll className="usage-overview-table-wrap">
+    <AdminTableScroll className="partner-overview-table-wrap">
       <AdminDataTable
-        className="usage-overview-table"
+        className="partner-overview-table"
         emptyMessage="No risk rows in this range."
         headers={headers}
         rowCount={rows.length}
@@ -749,7 +749,7 @@ function SelectionFrictionCard({
   return (
     <AdminSection
       bodyClassName="partner-overview-selection-body"
-      className="usage-overview-table-card"
+      className="partner-overview-table-card"
       description="Partners customers look at or favorite, but do not select or complete with."
       title="Selection friction"
     >
@@ -793,9 +793,9 @@ function SelectionFrictionCard({
           </AdminFormControlButton>
         </AdminFormGrid>
       </div>
-      <AdminTableScroll className="usage-overview-table-wrap">
+      <AdminTableScroll className="partner-overview-table-wrap">
         <AdminDataTable
-          className="usage-overview-table"
+          className="partner-overview-table"
           emptyMessage="No viewed or favorited Partners need selection follow-up in this range."
           headers={[
             'Partner',

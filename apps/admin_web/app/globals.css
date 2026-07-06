@@ -9468,9 +9468,9 @@ a.action-button-card:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.partner-overview-supply-grid > .usage-overview-table-card,
-.partner-overview-quality-grid > .usage-overview-table-card,
-.partner-overview-page .usage-overview-table-card {
+.partner-overview-supply-grid > .partner-overview-table-card,
+.partner-overview-quality-grid > .partner-overview-table-card,
+.partner-overview-page .partner-overview-table-card {
   min-width: 0;
   overflow: hidden;
 }
@@ -9627,7 +9627,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.partner-overview-page .usage-overview-table td small {
+.partner-overview-page .partner-overview-table td small {
   color: var(--admin-muted);
   display: block;
   font-size: 12px;
@@ -10082,17 +10082,20 @@ a.action-button-card:hover {
 }
 
 .usage-overview-table-wrap,
+.partner-overview-table-wrap,
 .marketing-analytics-table-wrap {
   border-radius: var(--admin-radius-lg);
   margin-top: 0;
 }
 
 .usage-overview-table,
+.partner-overview-table,
 .marketing-analytics-table {
   min-width: 720px;
 }
 
 .usage-overview-table th,
+.partner-overview-table th,
 .marketing-analytics-table th {
   background: var(--admin-surface);
   font-size: 0.75rem;
