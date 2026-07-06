@@ -32,7 +32,13 @@ import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminStageItem } from '../../components/admin-stage-item';
-import { AdminActionCard, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminSection,
+  AdminTaskBreakdown,
+  AdminTaskCard,
+  AdminTaskGrid,
+} from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { DateTimeText } from '../../components/date-time-text';
@@ -192,14 +198,13 @@ export default async function PartnerControlsPage({
               title={lane.title}
               variant="ops-task"
             >
-              <div className="ops-task-breakdown">
-                {lane.metrics.map((metric) => (
-                  <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </span>
-                ))}
-              </div>
+              <AdminTaskBreakdown
+                items={lane.metrics.map((metric) => ({
+                  className: metric.tone,
+                  label: metric.label,
+                  value: metric.value,
+                }))}
+              />
             </AdminActionCard>
           ))}
         </AdminTaskGrid>
@@ -258,12 +263,15 @@ export default async function PartnerControlsPage({
               leading={<small>{controlMetric.label}</small>}
               title={controlMetric.value}
             >
-              <div className="ops-task-breakdown">
-                <span className={`ops-task-breakdown-item ${controlMetric.tone}`}>
-                  <span>Control type</span>
-                  <strong>{controlMetric.label}</strong>
-                </span>
-              </div>
+              <AdminTaskBreakdown
+                items={[
+                  {
+                    className: controlMetric.tone,
+                    label: 'Control type',
+                    value: controlMetric.label,
+                  },
+                ]}
+              />
             </AdminTaskCard>
           ))}
         </AdminTaskGrid>
@@ -342,14 +350,13 @@ export default async function PartnerControlsPage({
               <p className="muted">
                 <strong>Customer impact:</strong> {item.customerImpact}
               </p>
-              <div className="ops-task-breakdown">
-                {item.metrics.map((metric) => (
-                  <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.value}</strong>
-                  </span>
-                ))}
-              </div>
+              <AdminTaskBreakdown
+                items={item.metrics.map((metric) => ({
+                  className: metric.tone,
+                  label: metric.label,
+                  value: metric.value,
+                }))}
+              />
               {item.partnerSamples.length ? (
                 <div className="participant-list admin-mt-10">
                   {item.partnerSamples.map((partner) => (

@@ -74,10 +74,13 @@ describe('PartnerControlsPage', () => {
 
   it('keeps Partner control command cards on shared Vuexy task surfaces', () => {
     expect(partnerControlsSource).toContain('AdminActionCard');
+    expect(partnerControlsSource).toContain('AdminTaskBreakdown');
     expect(partnerControlsSource).toContain('AdminTaskCard');
     expect(partnerControlsSource).toContain('AdminTaskGrid');
+    expect(partnerControlsSource).not.toContain('<div className="ops-task-breakdown">');
     expect(partnerControlsSource).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(partnerControlsSource).not.toContain('className={`ops-task-card');
+    expect(partnerControlsSource).not.toContain('className={`ops-task-breakdown-item');
     expect(partnerControlsSource).not.toContain('className="ops-task-card"');
     expect(partnerControlsSource).not.toContain('ops-task-card-action');
   });
