@@ -113,7 +113,7 @@ export default async function PartnerOverviewPage({
           </StatusBadge>
         </>
       }
-      contentClassName="usage-overview-page partner-overview-page"
+      contentClassName="partner-overview-page"
       description="Supply health, Partner readiness, booking quality, wallet risk, and action queues from stored operational records."
       title="Partner Overview"
     >

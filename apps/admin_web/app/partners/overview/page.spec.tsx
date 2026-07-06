@@ -42,6 +42,8 @@ describe('PartnerOverviewPage', () => {
     );
     expect(markup).toContain('Risk and action queues');
     expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('class="partner-overview-page"');
+    expect(markup).not.toContain('usage-overview-page');
     expect(markup).toContain('card admin-section partner-overview-filter-panel');
     expect(markup).toContain('booking-date-filter-buttons partner-overview-range-buttons');
     expect(markup).not.toContain('usage-overview-filter-panel');
@@ -93,6 +95,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-insight-grid');
+    expect(pageSource).not.toContain('contentClassName="usage-overview-page partner-overview-page"');
     expect(pageSource).not.toContain('className="usage-overview-filter-panel partner-overview-filter-panel"');
     expect(pageSource).not.toContain('className="usage-overview-range-buttons"');
     expect(pageSource).not.toContain('className="usage-overview-funnel-card"');

@@ -8189,19 +8189,23 @@ a.action-button-card:hover {
   background: var(--admin-info);
 }
 
-.usage-overview-page {
+.usage-overview-page,
+.partner-overview-page {
   display: grid;
   gap: 18px;
   min-width: 0;
 }
 
 .usage-overview-page > .toolbar,
-.usage-overview-page > .card {
+.usage-overview-page > .card,
+.partner-overview-page > .toolbar,
+.partner-overview-page > .card {
   margin-bottom: 0;
   margin-top: 0;
 }
 
-.usage-overview-page > .toolbar {
+.usage-overview-page > .toolbar,
+.partner-overview-page > .toolbar {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
@@ -8209,7 +8213,8 @@ a.action-button-card:hover {
   padding: 24px;
 }
 
-.usage-overview-page > .toolbar h1 {
+.usage-overview-page > .toolbar h1,
+.partner-overview-page > .toolbar h1 {
   font-size: 26px;
   line-height: 1.18;
   margin-bottom: 8px;
