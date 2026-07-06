@@ -295,7 +295,7 @@ describe('finance list pages', () => {
     expect(markup).toContain('finance-list-command-icon');
     expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
     expect(markup).not.toContain('usage-overview-command-icon');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
     expect(markup).toContain('vuexy-booking-table-footer');
 
     if (_name === 'payment clearing') {

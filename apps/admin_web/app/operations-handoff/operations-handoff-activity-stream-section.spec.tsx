@@ -50,7 +50,7 @@ describe('OperationsHandoffActivityStreamSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section admin-mb-16 operations-handoff-activity-stream-card',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
       ]),
     );
   });

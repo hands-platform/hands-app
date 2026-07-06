@@ -77,7 +77,7 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-action-grid');
     expect(markup).toContain('card admin-section partner-overview-table-card');
     expect(markup).toContain('admin-table-scroll partner-overview-table-wrap');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table partner-overview-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table partner-overview-table');
     expect(markup).not.toContain('usage-overview-table-card');
     expect(markup).not.toContain('usage-overview-table-wrap');
     expect(markup).not.toContain('usage-overview-table');
@@ -100,7 +100,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('className="usage-overview-range-buttons"');
     expect(pageSource).not.toContain('className="usage-overview-funnel-card"');
     expect(pageSource).not.toContain(
-      '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
+      '<table className="table vuexy-data-table vuexy-booking-table admin-data-table usage-overview-table">',
     );
     expect(pageSource).not.toContain('className="usage-overview-table-card"');
     expect(pageSource).not.toContain('className="usage-overview-table-wrap"');

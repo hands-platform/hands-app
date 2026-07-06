@@ -48,7 +48,7 @@ describe('PartnerLegacyOperationsTableSection', () => {
         'admin-avatar-status-dot is-online',
         'admin-table-scroll',
         'table-link',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-table partner-legacy-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-table partner-legacy-table',
         'vuexy-booking-table-footer vuexy-partner-table-footer',
         'vuexy-booking-person',
       ]),

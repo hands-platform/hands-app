@@ -55,7 +55,7 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-section operations-handoff-finance-closeout-card',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
       ]),
     );
   });

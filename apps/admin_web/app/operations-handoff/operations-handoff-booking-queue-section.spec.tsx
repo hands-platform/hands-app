@@ -68,7 +68,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
         'admin-avatar-status-dot is-working',
         'card admin-section vuexy-booking-table-card vuexy-booking-table-group operations-handoff-booking-queue-card admin-mb-16',
         'table-link',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'vuexy-booking-person',
       ]),
     );

@@ -93,7 +93,7 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
         'card admin-section vuexy-booking-table-card vuexy-booking-table-group admin-card-scroll admin-mt-14',
         'ops-section-header admin-section-header',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'text-link',
       ]),
     );

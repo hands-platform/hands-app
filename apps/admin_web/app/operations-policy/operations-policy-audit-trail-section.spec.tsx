@@ -53,7 +53,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(rendered).toContain('Live behavior');
     expect(rendered).toContain('New bookings use the latest enforced setting.');
     expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary');
-    expect(classNamesIn(section)).toContain('table vuexy-data-table vuexy-booking-table service-trace');
+    expect(classNamesIn(section)).toContain('table vuexy-data-table vuexy-booking-table admin-data-table service-trace');
     expect(hrefsIn(section)).toContain('/audit-log?bucket=Operations%2FPolicy');
   });
 

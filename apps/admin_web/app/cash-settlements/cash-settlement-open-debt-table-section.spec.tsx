@@ -141,7 +141,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     );
     const markup = renderToStaticMarkup(section);
     expect(markup).toContain('vuexy-booking-table-card');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
     expect(markup).not.toContain('admin-card-scroll');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');

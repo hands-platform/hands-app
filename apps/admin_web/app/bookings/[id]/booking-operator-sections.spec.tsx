@@ -115,7 +115,7 @@ describe('BookingOperatorQueueSections', () => {
       expect.arrayContaining([
         'card admin-section admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'pill pill-success',
       ]),
     );

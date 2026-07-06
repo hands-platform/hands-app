@@ -62,7 +62,7 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-region-insight-card');
     expect(markup).not.toContain('<article class="vietnam-overview-region-insight-card');
     expect(pageSource).not.toContain('<div className="vietnam-overview-region-insight-grid"');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table vietnam-overview-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table vietnam-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');

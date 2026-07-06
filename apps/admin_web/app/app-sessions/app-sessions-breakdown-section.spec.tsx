@@ -46,7 +46,7 @@ describe('AppSessionsBreakdownSection', () => {
         'card admin-section vuexy-booking-table-card vuexy-booking-table-group',
         'ops-section-header admin-section-header',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
       ]),
     );
   });

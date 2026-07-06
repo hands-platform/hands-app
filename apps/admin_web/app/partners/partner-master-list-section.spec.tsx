@@ -93,9 +93,9 @@ describe('PartnerMasterListSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-table',
         'vuexy-booking-table-footer vuexy-partner-table-footer',
-        'vuexy-booking-pagination',
+        'admin-rounded-pagination vuexy-booking-pagination',
         'pill pill-success',
         'vuexy-booking-person-link',
         'vuexy-booking-person vuexy-partner-person',

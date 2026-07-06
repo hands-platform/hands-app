@@ -102,7 +102,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'partner-review-correction-loop',
         'card admin-card partner-review-correction-card',
@@ -142,7 +142,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
@@ -188,7 +188,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-success',
         'pill pill-danger',
@@ -226,7 +226,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
       ]),
@@ -266,7 +266,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
       ]),

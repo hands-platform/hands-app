@@ -106,7 +106,7 @@ describe('PartnerCustomerEvaluationsSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
-        'table vuexy-data-table vuexy-booking-table vuexy-review-table vuexy-partner-evaluation-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-review-table vuexy-partner-evaluation-table',
       ]),
     );
   });

@@ -70,7 +70,7 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'text-link admin-ml-10',
         'pill pill-success',
@@ -91,7 +91,7 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );

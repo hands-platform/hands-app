@@ -82,7 +82,7 @@ describe('PartnerOperationsListSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-table service-trace',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-table service-trace',
         'vuexy-booking-table-footer vuexy-partner-table-footer',
         'admin-avatar-status-dot is-online',
         'pill pill-success',

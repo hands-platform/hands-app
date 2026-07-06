@@ -134,7 +134,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'admin-form-select admin-form-control-labeled',
         'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
@@ -142,7 +142,7 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-form-control-button button button-primary',
         'admin-form-control-link button button-secondary',
         'ops-task-card partner-report-command-grid admin-mt-16',
-        'form-grid compact-form partner-report-command-form',
+        'admin-form-grid form-grid compact-form partner-report-command-form',
         'pill pill-danger',
         'admin-action-dropdown action-menu-dropdown',
       ]),
@@ -178,7 +178,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       expect.arrayContaining([
         'empty-state',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );

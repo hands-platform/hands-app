@@ -17,7 +17,7 @@ describe('NotificationCommandHeaderSection', () => {
     expect(hrefsIn(section)).toContain('/setup#notifications');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'ops-section-header',
+        'ops-section-header admin-section-header',
         'pill pill-success',
         'pill pill-info',
         'pill pill-warn',

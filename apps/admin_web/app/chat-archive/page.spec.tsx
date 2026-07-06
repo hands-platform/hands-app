@@ -69,7 +69,7 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('Chat evidence index');
     expect(markup).toContain('class="card admin-card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
     expect(markup).toContain('vuexy-booking-table-card vuexy-booking-table-group admin-mb-16');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
   });
 
   it('trusts server sender filtering when the bounded preview does not include that sender', async () => {

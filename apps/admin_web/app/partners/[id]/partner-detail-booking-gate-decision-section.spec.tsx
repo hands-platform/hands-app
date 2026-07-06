@@ -102,7 +102,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-pending admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
@@ -140,7 +140,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card card-done admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );

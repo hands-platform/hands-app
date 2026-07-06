@@ -69,7 +69,7 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll admin-mt-12',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'pill pill-danger',
       ]),
     );

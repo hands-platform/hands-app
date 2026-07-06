@@ -14,8 +14,8 @@ describe('FinanceDataTable', () => {
     );
 
     expect(markup).toContain('admin-table-scroll');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
-    expect(markup).toContain('<th>Source</th>');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
+    expect(markup).toContain('<th scope="col">Source</th>');
     expect(markup).toContain('Journal batch');
     expect(markup).not.toContain('No finance rows');
   });

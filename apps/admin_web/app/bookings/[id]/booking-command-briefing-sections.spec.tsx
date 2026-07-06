@@ -43,7 +43,7 @@ describe('BookingMvpAuthorityContractSection', () => {
       expect.arrayContaining([
         'card admin-section admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'admin-form-control-link button button-secondary admin-inline-action',
         'pill pill-success',
       ]),

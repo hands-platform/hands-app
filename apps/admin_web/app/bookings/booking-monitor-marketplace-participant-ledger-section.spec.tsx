@@ -121,7 +121,7 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
       expect.arrayContaining([
         'admin-avatar-status-dot is-matching',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'text-link',
         'vuexy-booking-person',
       ]),

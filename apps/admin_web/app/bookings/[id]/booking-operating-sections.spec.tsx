@@ -129,7 +129,7 @@ describe('Booking operating sections', () => {
       expect.arrayContaining([
         'card admin-section admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'text-link',
       ]),
     );

@@ -138,7 +138,7 @@ describe('MarketingAnalyticsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table marketing-analytics-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table marketing-analytics-table');
     expect(markup).toContain('admin-table-scroll marketing-analytics-table-wrap');
     expect(markup).not.toContain('usage-overview-table marketing-analytics-table');
     expect(markup).not.toContain('usage-overview-table-wrap');
@@ -150,7 +150,7 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).toContain('marketing-analytics-name-cell');
     expect(pageSource).toContain('marketing-analytics-avatar');
     expect(pageSource).not.toContain('<div className="empty-state">');
-    expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">');
+    expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table admin-data-table usage-overview-table marketing-analytics-table">');
     expect(pageSource).not.toContain('usage-overview-table-wrap');
     expect(pageSource).not.toContain('usage-overview-name-cell');
     expect(pageSource).not.toContain('usage-overview-avatar');

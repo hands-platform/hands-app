@@ -99,7 +99,7 @@ describe('PayoutBatchTable', () => {
     expect(hrefsIn(table)).toContain('/partners/partner-1');
     expect(classNamesIn(table)).toEqual(
       expect.arrayContaining([
-        'table vuexy-data-table vuexy-booking-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
         'admin-form-input',
         'admin-form-control-button button button-primary',
       ]),

@@ -36,8 +36,8 @@ describe('CustomerBookingOperationBoard', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group booking-monitor customer-booking-operation-section admin-section',
         'card admin-section admin-mb-16 customer-booking-operation-summary-card',
-        'table vuexy-data-table vuexy-booking-table',
-        'vuexy-booking-pagination',
+        'table vuexy-data-table vuexy-booking-table admin-data-table',
+        'admin-rounded-pagination vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-person',
         'admin-avatar-status-dot is-working',

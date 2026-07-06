@@ -78,7 +78,7 @@ describe('PayoutsPage', () => {
     expect(markup).toContain(
       'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card',
     );
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table payout-release-cycle-table');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table payout-release-cycle-table');
   });
 
   it('uses the payout summary endpoint for top-level payout metrics', async () => {
