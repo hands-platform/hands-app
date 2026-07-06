@@ -16,6 +16,11 @@ describe('PartnerDetailBookingJourneySection', () => {
     expect(sectionSource).not.toContain('formatLatestAt');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    expect(sectionSource).toContain('AdminTextLink');
+    expect(sectionSource).not.toContain('className="text-link"');
+  });
+
   it('keeps response timestamps on the shared DateTimeText atom from the detail page', () => {
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 

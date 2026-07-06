@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -71,9 +71,9 @@ export function PartnerDetailBookingJourneySection({
                   <strong>{row.relation}</strong>
                 </td>
                 <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                  <AdminTextLink href={`/bookings/${row.id}`}>
                     {row.heading}
-                  </Link>
+                  </AdminTextLink>
                 </td>
                 <td>
                   <p className="muted">{row.detailNode ?? row.detail}</p>
@@ -95,9 +95,9 @@ export function PartnerDetailBookingJourneySection({
                 <td>
                   <div className="participant-list">
                     {row.links.map((link) => (
-                      <Link className="text-link" href={link.href} key={link.label}>
+                      <AdminTextLink href={link.href} key={link.label}>
                         {link.label}
-                      </Link>
+                      </AdminTextLink>
                     ))}
                   </div>
                 </td>
