@@ -57,6 +57,13 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('Showing {pageFrom} to {pageTo} of {group.rows.length} entries');
   });
 
+  it('uses the shared Vuexy text link atom for booking row drill-down links', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
       id: 'booking_123456789',

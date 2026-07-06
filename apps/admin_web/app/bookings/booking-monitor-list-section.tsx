@@ -16,6 +16,7 @@ import {
 } from '../../components/admin-person-cell';
 import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -450,10 +451,10 @@ function BookingMonitorListTableRow({
     <tr id={`booking-${booking.id}`}>
       <td>
         <div className="vuexy-booking-id-line">
-          <Link className="text-link" href={`/bookings/${booking.id}`} title="Open booking detail">
+          <AdminTextLink href={`/bookings/${booking.id}`} title="Open booking detail">
             <Eye aria-hidden="true" size={14} />
             {shortId(booking.id)}
-          </Link>
+          </AdminTextLink>
         </div>
         <div className="muted">{row.openedDateLabel}</div>
       </td>
