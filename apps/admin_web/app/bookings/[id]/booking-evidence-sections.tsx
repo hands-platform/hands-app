@@ -1,4 +1,5 @@
 import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
@@ -143,15 +144,7 @@ export function BookingEvidenceSections({
         <p className="muted admin-mt-8">
           {evidencePacket.summary}
         </p>
-        <div className="service-trace-summary admin-mt-12">
-          {evidencePacket.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
+        <EvidenceMetricSummary metrics={evidencePacket.metrics} />
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Evidence packet records">
           {evidencePacket.records.map((record) => (
             <div className="booking-settlement-ledger-row is-evidence-record" id={record.id} key={record.id}>
@@ -184,15 +177,7 @@ export function BookingEvidenceSections({
         <p className="muted admin-mt-8">
           {chatEvidenceDecisionBoard.summary}
         </p>
-        <div className="service-trace-summary admin-mt-12">
-          {chatEvidenceDecisionBoard.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
+        <EvidenceMetricSummary metrics={chatEvidenceDecisionBoard.metrics} />
         <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Chat evidence decision rows">
           {chatEvidenceDecisionBoard.rows.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
@@ -291,5 +276,18 @@ export function BookingEvidenceSections({
         </div>
       </AdminSection>
     </>
+  );
+}
+
+function EvidenceMetricSummary({ metrics }: { metrics: EvidenceMetric[] }) {
+  return (
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={metrics.map((metric) => ({
+        detail: metric.helper,
+        label: metric.label,
+        value: metric.value,
+      }))}
+    />
   );
 }

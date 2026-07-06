@@ -9,6 +9,8 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
