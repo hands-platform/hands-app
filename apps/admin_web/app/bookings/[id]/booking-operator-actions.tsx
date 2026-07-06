@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { addBookingOpsNote, updateBookingOpsTask } from './actions';
 
 export type OperatorCommand = {
@@ -75,17 +74,5 @@ export function OperatorCommandAction({ bookingId, command }: OperatorCommandAct
 }
 
 export function ActionLink({ href, label }: ActionLinkProps) {
-  if (href.startsWith('/')) {
-    return (
-      <Link className="text-link" href={href}>
-        {label}
-      </Link>
-    );
-  }
-
-  return (
-    <a className="text-link" href={href}>
-      {label}
-    </a>
-  );
+  return <AdminTextLink href={href}>{label}</AdminTextLink>;
 }
