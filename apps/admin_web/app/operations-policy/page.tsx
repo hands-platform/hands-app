@@ -2,7 +2,12 @@ import { Settings } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminNotePanel, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import {
+  AdminDetailGrid,
+  AdminNotePanel,
+  AdminNoticeCard,
+  AdminSection,
+} from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import {
   AdminAuditLog,
@@ -176,7 +181,7 @@ export default async function OperationsPolicyPage({
         statusTone="success"
         title="Live matching policy"
       >
-        <div className="grid">
+        <AdminDetailGrid>
           {matchingSettings.map((setting) => (
             <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
@@ -192,7 +197,7 @@ export default async function OperationsPolicyPage({
               </AdminFormControlLink>
             </AdminNotePanel>
           ) : null}
-        </div>
+        </AdminDetailGrid>
       </AdminSection>
 
       {shouldRenderFullDiagnostics ? (
@@ -236,11 +241,11 @@ export default async function OperationsPolicyPage({
         statusTone="warning"
         title="Operator decisions"
       >
-        <div className="grid">
+        <AdminDetailGrid>
           {decisionSettings.map((setting) => (
             <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
-        </div>
+        </AdminDetailGrid>
       </AdminSection>
 
       {shouldRenderFullDiagnostics && ownerDecisionBacklog && ownerDecisionPressure ? (

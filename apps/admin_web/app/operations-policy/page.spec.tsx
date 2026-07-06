@@ -57,6 +57,11 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy detail grid for policy form groups', () => {
+    expect(pageSource).toContain('AdminDetailGrid');
+    expect(pageSource).not.toContain('<div className="grid">');
+  });
+
   it('uses the shared empty-state atom for missing policy setup copy', () => {
     expect(pageSource).toContain('AdminNotePanel');
     expect(pageSource).toContain('AdminEmptyState');
