@@ -142,7 +142,8 @@ describe('CashSettlement board sections', () => {
     );
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminStageItem');
     expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
     expect(source).toContain('<AdminTextLink');

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 
 export type CashSettlementPriorityBoardRow = {
@@ -55,7 +55,7 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
       {rows.map((row) => (
         <tr key={`${row.bookingHref}-${row.priority}`}>
           <td>
-            <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.priority}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.priority}</StatusBadgeFromPillClass>
             <div className="muted">{row.ageLabel}</div>
           </td>
           <td>

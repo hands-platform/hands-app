@@ -31,7 +31,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).not.toContain('className="vuexy-booking-table"');
     expect(source).not.toContain('Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-10">');
     expect(source).not.toContain('className="setup-stage-item"');

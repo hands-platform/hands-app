@@ -63,8 +63,8 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(rendered).toContain('500.000 VND');
     expect(rendered).toContain('Confirm bank deposit reference');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([

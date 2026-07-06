@@ -4,7 +4,7 @@ import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { CashSettlementPriorityBoardRow } from './cash-settlement-priority-board-section';
 import { CashSettlementPriorityBoardSection } from './cash-settlement-priority-board-section';
 import type {
@@ -124,7 +124,7 @@ export function CashSettlementWorkflowSections({
         <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
             <AdminStageItem key={step.title}>
-              <StatusBadge tone={statusBadgeToneFromPillClass(step.pillClass)}>{step.status}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={step.pillClass}>{step.status}</StatusBadgeFromPillClass>
               <div>
                 <strong>{step.title}</strong>
                 <p className="muted">{step.detail}</p>
@@ -198,7 +198,7 @@ function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) 
           className={card.className}
           detail={card.detail}
           key={card.title}
-          leading={<StatusBadge tone={statusBadgeToneFromPillClass(card.pillClass)}>{card.status}</StatusBadge>}
+          leading={<StatusBadgeFromPillClass pillClass={card.pillClass}>{card.status}</StatusBadgeFromPillClass>}
           title={card.title}
         />
       ))}
@@ -239,7 +239,7 @@ function LinkedCardSection({
             detail={item.detail}
             href={item.href}
             key={item.title}
-            leading={<StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>}
+            leading={<StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>}
             title={item.title}
             variant="ops-task"
           />

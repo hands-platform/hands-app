@@ -15,7 +15,7 @@ import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { FinanceDataTable } from '../finance-tax/finance-data-table';
 import { recordPartnerBankDeposit } from './actions';
 import { cashSettlementHref } from './cash-settlement-page-filters';
@@ -165,7 +165,7 @@ export function CashSettlementOpenDebtTableSection({
                   <div className="setup-stage-list admin-mt-8">
                     {row.actionRows.map((item) => (
                       <AdminStageItem key={`${row.earningId}-${item.action}`}>
-                        <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>{item.status}</StatusBadge>
+                        <StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>
                         <div>
                           <strong>{item.action}</strong>
                           <p className="muted">{item.reason}</p>
