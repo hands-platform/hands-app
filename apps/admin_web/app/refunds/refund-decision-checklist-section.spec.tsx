@@ -49,6 +49,7 @@ describe('RefundDecisionChecklistSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadgeFromPillClass');
@@ -57,6 +58,7 @@ describe('RefundDecisionChecklistSection', () => {
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className={`ops-task-card');
+    expect(source).not.toContain('<div className="ops-task-grid"');
   });
 });
 

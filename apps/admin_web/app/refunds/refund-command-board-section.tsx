@@ -1,4 +1,4 @@
-import { AdminActionCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -37,7 +37,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
       resultTone={hasOpenOperatorWork ? 'warning' : 'success'}
       title="Refund command board"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorAction}
@@ -65,7 +65,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
             ) : null}
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminTablePanel>
   );
 }

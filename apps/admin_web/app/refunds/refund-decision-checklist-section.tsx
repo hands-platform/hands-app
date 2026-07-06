@@ -1,4 +1,4 @@
-import { AdminActionCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -30,7 +30,7 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
           Manual decision queue
         </AdminTextLink>
       </div>
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorRule}
@@ -47,7 +47,7 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
             variant="ops-task"
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminTablePanel>
   );
 }
