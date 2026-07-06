@@ -11,9 +11,11 @@ describe('BookingUnifiedDetailSection', () => {
     const source = readFileSync('app/bookings/[id]/booking-unified-detail-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('actions={<span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>}');
     expect(source).not.toContain('<span className="pill pill-neutral">{countLabel(rows.length, \'field\')}</span>');
+    expect(source).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
   });
 
   it('renders one booking detail around customer, matched Partner, finance, and updates', () => {

@@ -25,6 +25,7 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -173,9 +174,9 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       description={description}
       metrics={metrics}
       actions={
-        <Link className="text-link" href="/operations-policy">
+        <AdminTextLink href="/operations-policy">
           Open operations policy
-        </Link>
+        </AdminTextLink>
       }
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />
@@ -1024,9 +1025,9 @@ function ReferralEmptyState({
           ))}
         </div>
         {clearHref ? (
-          <Link className="text-link admin-mt-8" href={clearHref}>
+          <AdminTextLink className="admin-mt-8" href={clearHref}>
             Clear referral filters
-          </Link>
+          </AdminTextLink>
         ) : null}
       </>
     );

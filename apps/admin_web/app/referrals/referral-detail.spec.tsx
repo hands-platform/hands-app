@@ -116,6 +116,11 @@ describe('Referral detail presentation', () => {
     originalReferralStoreEnv.clear();
   });
 
+  it('uses the shared Vuexy text link atom for inline referral detail navigation', () => {
+    expect(detailSource).toContain('AdminTextLink');
+    expect(detailSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
+  });
+
   it('builds stable referral parent detail routes', () => {
     expect(referralParentDetailHref('customer', 'parent customer')).toBe('/referrals/customers/parent%20customer');
     expect(referralParentDetailHref('partner', 'parent-partner')).toBe('/referrals/partners/parent-partner');

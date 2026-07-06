@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 import { referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
 
@@ -24,9 +23,9 @@ export function ReferralStoreSetupStatus({ audience }: { readonly audience: Refe
       {hasMissingSetup ? (
         <>
           <p className="muted admin-mt-8">Missing setup: {missingEnvKeys.join(', ')}</p>
-          <Link className="text-link admin-mt-8" href="/setup#referrals">
+          <AdminTextLink className="admin-mt-8" href="/setup#referrals">
             Configure store URLs
-          </Link>
+          </AdminTextLink>
         </>
       ) : null}
     </>

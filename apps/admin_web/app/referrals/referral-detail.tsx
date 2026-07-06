@@ -10,6 +10,7 @@ import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -133,12 +134,12 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     <AdminPageTemplate
       actions={
         <>
-          <Link className="text-link" href={isPartner ? '/referrals/partners' : '/referrals/customers'}>
+          <AdminTextLink href={isPartner ? '/referrals/partners' : '/referrals/customers'}>
             Back to referrals
-          </Link>
-          <Link className="text-link" href={profileHref}>
+          </AdminTextLink>
+          <AdminTextLink href={profileHref}>
             Open profile
-          </Link>
+          </AdminTextLink>
         </>
       }
       description="Single referral parent account. This page does not list unrelated customers or Partners."
@@ -179,9 +180,9 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             <span>Share link</span>
             {props.row.referralCode ? (
               <>
-                <Link className="text-link" href={referralShareUrl(props.audience, props.row.referralCode.code)}>
+                <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
                   Open referral link
-                </Link>
+                </AdminTextLink>
                 <ReferralStoreSetupStatus audience={props.audience} />
               </>
             ) : (
@@ -843,9 +844,9 @@ function ReferralQualifyingBookingCell({ bookingId }: { readonly bookingId?: str
   }
 
   return (
-    <Link className="text-link" href={`/bookings/${bookingId}`}>
+    <AdminTextLink href={`/bookings/${bookingId}`}>
       {bookingId}
-    </Link>
+    </AdminTextLink>
   );
 }
 

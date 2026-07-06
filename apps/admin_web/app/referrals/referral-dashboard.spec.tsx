@@ -128,6 +128,7 @@ const referralStoreEnvKeys = [
   'CUSTOMER_IOS_APP_URL',
 ] as const;
 const dashboardSource = readFileSync('app/referrals/referral-dashboard.tsx', 'utf8');
+const storeSetupSource = readFileSync('app/referrals/referral-store-setup-status.tsx', 'utf8');
 
 function defaultReferralDashboardFiltersForTest() {
   return { q: '', reward: 'all' as const, status: 'all' as const };
@@ -155,6 +156,13 @@ describe('ReferralDashboard', () => {
       }
     }
     originalReferralStoreEnv.clear();
+  });
+
+  it('uses the shared Vuexy text link atom for inline referral dashboard navigation', () => {
+    expect(dashboardSource).toContain('AdminTextLink');
+    expect(dashboardSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
+    expect(storeSetupSource).toContain('AdminTextLink');
+    expect(storeSetupSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
   });
 
   it('renders policy controls and the hold-window release action', () => {

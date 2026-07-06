@@ -20,6 +20,7 @@ import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
   AdminReferralAudience,
@@ -117,9 +118,9 @@ export function ReferralCashoutQueuePage({
       description="Finance queue for referral wallet cashout requests, tax-review holds, and manual paid closeout."
       metrics={metrics}
       actions={
-        <Link className="text-link" href="/referrals/customers">
+        <AdminTextLink href="/referrals/customers">
           Customer referrals
-        </Link>
+        </AdminTextLink>
       }
     >
       <AdminFilterPanel
@@ -216,16 +217,16 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
   return (
     <tr>
       <td>
-        <Link className="text-link" href={row.detailHref}>
+        <AdminTextLink href={row.detailHref}>
           {shortRewardId(row.id)}
-        </Link>
+        </AdminTextLink>
         <div className="muted">
           <DateTimeText value={row.createdAt} />
         </div>
         {row.qualifyingBookingId ? (
-          <Link className="text-link" href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
+          <AdminTextLink href={`/bookings/${encodeURIComponent(row.qualifyingBookingId)}`}>
             Booking {shortRewardId(row.qualifyingBookingId)}
-          </Link>
+          </AdminTextLink>
         ) : null}
       </td>
       <td>{referralCashoutAudienceLabel(row.audience)}</td>

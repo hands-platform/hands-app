@@ -86,6 +86,11 @@ const row: AdminReferralCashoutQueueRow = {
 const cashoutQueueSource = readFileSync('app/referrals/referral-cashout-queue.tsx', 'utf8');
 
 describe('Referral cashout queue', () => {
+  it('uses the shared Vuexy text link atom for inline cashout navigation', () => {
+    expect(cashoutQueueSource).toContain('AdminTextLink');
+    expect(cashoutQueueSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
+  });
+
   it('uses the shared StatusBadge atom for the queue count chip', () => {
     expect(cashoutQueueSource).toContain('StatusBadge');
     expect(cashoutQueueSource).not.toContain('actions={<span className="pill">{rows.length} shown</span>}');

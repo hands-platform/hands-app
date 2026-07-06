@@ -5,6 +5,7 @@ import {
   adminPersonInitials,
 } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type {
   BookingUnifiedDetail,
@@ -179,9 +180,9 @@ function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow
       {detail ? <p className="muted">{detail}</p> : null}
       {row.people?.length ? <BookingUnifiedPeople people={row.people} /> : null}
       {row.href ? (
-        <Link className="text-link booking-unified-open-link" href={row.href}>
+        <AdminTextLink className="booking-unified-open-link" href={row.href}>
           {openRecordLabel}
-        </Link>
+        </AdminTextLink>
       ) : null}
     </div>
   );
