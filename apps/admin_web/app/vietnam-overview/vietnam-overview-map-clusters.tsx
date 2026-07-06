@@ -13,6 +13,7 @@ import { AdminFormControlButton } from '../../components/admin-form-controls';
 import { AdminIconButton } from '../../components/admin-icon-button';
 import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminDrawerSurface } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -219,7 +220,7 @@ function ClusterDetailPanel({
   const hiddenCount = cluster.points.length - visibleEvents.length;
 
   return (
-    <aside className="vietnam-map-cluster-panel" aria-label="Map cluster signal detail">
+    <AdminDrawerSurface ariaLabel="Map cluster signal detail" className="vietnam-map-cluster-panel">
       <div className="vietnam-map-cluster-panel-header">
         <div>
           <p className="muted">Realtime operating signal</p>
@@ -340,7 +341,7 @@ function ClusterDetailPanel({
           <div className="vietnam-map-cluster-more">+ {formatNumber(hiddenCount)} more signals in this point</div>
         ) : null}
       </div>
-    </aside>
+    </AdminDrawerSurface>
   );
 }
 

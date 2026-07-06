@@ -16,6 +16,13 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain('<button\n          aria-label="Close selected map signals"');
   });
 
+  it('uses the shared Vuexy drawer surface atom for cluster detail panels', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain('AdminDrawerSurface');
+    expect(source).not.toContain('<aside className="vietnam-map-cluster-panel"');
+  });
+
   it('keeps clickable map dots inside the shared Vuexy icon button atom', () => {
     const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
 
