@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 import {
@@ -139,9 +140,9 @@ export function PartnerDetailOperatorCommandQueueSection({
                   </StatusBadge>
                 </td>
                 <td>
-                  <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>
+                  <AdminTextLink href={partnerOperatorCommandActionHref(providerId, command.action)}>
                     {command.action.label}
-                  </Link>
+                  </AdminTextLink>
                 </td>
               </tr>
             ))}

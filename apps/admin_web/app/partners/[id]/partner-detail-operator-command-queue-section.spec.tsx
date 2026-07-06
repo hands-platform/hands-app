@@ -8,8 +8,10 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('className={`pill ${pillClassForTone(command.tone)}`}');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>');
   });
