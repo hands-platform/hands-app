@@ -11,7 +11,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -257,9 +257,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   </td>
                   <td>
                     <div className="admin-table-substack">
-                      <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(evidenceState.tone))}>
+                      <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(evidenceState.tone)}>
                         {evidenceState.label}
-                      </StatusBadge>
+                      </StatusBadgeFromPillClass>
                       <div className="muted">{evidenceState.detail}</div>
                       <AdminTextLink href={bookingSettlementReversalDetailHref(reversal.id)}>
                         Open reversal <span className="muted">{shortId(reversal.id)}</span>
@@ -272,9 +272,9 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     </div>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(financeSettlementReversalTaxStatusPill(reversal.taxStatus))}>
+                    <StatusBadgeFromPillClass pillClass={financeSettlementReversalTaxStatusPill(reversal.taxStatus)}>
                       {reversal.taxStatus}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <div className="muted admin-mt-8">{reversal.settlementStatus}</div>
                     <div className="muted">{reversal.reason ?? 'Payment refund'}</div>
                   </td>

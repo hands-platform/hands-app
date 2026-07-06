@@ -955,12 +955,12 @@ describe('finance detail pages', () => {
     );
 
     expect(paymentClearingSource).toContain('StatusBadge');
-    expect(paymentClearingSource).toContain('statusBadgeToneFromPillClass');
+    expect(paymentClearingSource).toContain('StatusBadgeFromPillClass');
     expect(paymentClearingSource).not.toContain('PillClassBadge');
     expect(paymentClearingSource).not.toContain('className={`pill ${bankStatusPill(match.status)}`}');
 
     expect(bankReconciliationSource).toContain('StatusBadge');
-    expect(bankReconciliationSource).toContain('statusBadgeToneFromPillClass');
+    expect(bankReconciliationSource).toContain('StatusBadgeFromPillClass');
     expect(bankReconciliationSource).not.toContain('PillClassBadge');
     expect(bankReconciliationSource).not.toContain('className={`pill ${statusPill(match.status)}`}');
     expect(bankReconciliationSource).not.toContain(

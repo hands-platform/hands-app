@@ -9,7 +9,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -265,9 +265,9 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
                 </div>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(financeJournalBatchStatusPill(batch.status))}>
+                <StatusBadgeFromPillClass pillClass={financeJournalBatchStatusPill(batch.status)}>
                   {batch.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
                 {batch.reversedAt ? (
                   <div className="muted admin-mt-8">
                     <DateTimeText value={batch.reversedAt} />

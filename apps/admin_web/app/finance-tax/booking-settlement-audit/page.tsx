@@ -12,7 +12,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -270,9 +270,9 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     </div>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(financeTaxCloseoutStatusPill(snapshot.taxStatus))}>
+                    <StatusBadgeFromPillClass pillClass={financeTaxCloseoutStatusPill(snapshot.taxStatus)}>
                       {snapshot.taxStatus}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.monthlyPeriod}</div>
                   </td>

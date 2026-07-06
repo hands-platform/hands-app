@@ -17,7 +17,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
 import { hasFinancePriorityWork, renderFinancePriorityValue } from '../finance-priority-value';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
@@ -370,9 +370,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <div className="muted">{closing.currency}</div>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(financeMonthlyTaxClosingStatusPill(closing.status))}>
+                    <StatusBadgeFromPillClass pillClass={financeMonthlyTaxClosingStatusPill(closing.status)}>
                       {closing.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   </td>
                   <td>{closing.settlementCount}</td>
                   <td>
@@ -398,9 +398,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
                     <MoneyText amount={closing.paymentProcessingFeeTotal} currency={closing.currency} />
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(financeEvidenceTonePill(closingRemittanceState.tone))}>
+                    <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(closingRemittanceState.tone)}>
                       {closingRemittanceState.label}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <div className="muted admin-mt-8">
                       Declared <DateTimeText value={closing.declaredAt} />
                     </div>

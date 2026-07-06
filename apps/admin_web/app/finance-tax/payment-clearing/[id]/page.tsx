@@ -8,7 +8,7 @@ import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../../components/status-badge';
 import { shortId } from '../../../../lib/admin-format';
 import { FinanceBankMatchEvidence } from '../../finance-bank-match-evidence';
 import { FinanceDataTable } from '../../finance-data-table';
@@ -307,9 +307,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                   <DateTimeText value={match.matchedAt} />
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(financeBankReconciliationStatusPill(match.status))}>
+                  <StatusBadgeFromPillClass pillClass={financeBankReconciliationStatusPill(match.status)}>
                     {match.status}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
               </tr>
             ))}

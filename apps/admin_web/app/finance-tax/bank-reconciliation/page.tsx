@@ -25,7 +25,7 @@ import { AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { shortId } from '../../../lib/admin-format';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { FinanceDataTable } from '../finance-data-table';
@@ -327,9 +327,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
                 <div className="muted">{shortId(transaction.sourceKey)}</div>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(financeBankReconciliationStatusPill(transaction.status))}>
+                <StatusBadgeFromPillClass pillClass={financeBankReconciliationStatusPill(transaction.status)}>
                   {transaction.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <ActionMenu

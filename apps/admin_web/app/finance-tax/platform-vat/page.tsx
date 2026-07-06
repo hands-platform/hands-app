@@ -5,7 +5,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -146,9 +146,9 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
             {summary.rateBreakdown.map((row) => (
               <tr key={`${row.category}-${row.platformVatRateBps}`}>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(platformVatCategoryPill(row.category))}>
+                  <StatusBadgeFromPillClass pillClass={platformVatCategoryPill(row.category)}>
                     {row.category}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>{formatBps(row.platformVatRateBps)}</td>
                 <td>{row.settlementCount}</td>

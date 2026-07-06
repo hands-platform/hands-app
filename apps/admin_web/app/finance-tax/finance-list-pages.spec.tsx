@@ -347,7 +347,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/payment-clearing/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(entry.status)}`}');
   });
@@ -451,7 +451,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(transaction.status)}`}');
   });
@@ -480,7 +480,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/general-ledger/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(batch.status)}`}');
   });
@@ -508,7 +508,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/booking-settlement-audit/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(snapshot.taxStatus)}`}');
   });
@@ -560,7 +560,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${statusPill(reversal.taxStatus)}`}');
     expect(source).not.toContain('className={`pill ${evidencePill(evidenceState.tone)}`}');
@@ -607,7 +607,7 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/platform-vat/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${platformVatCategoryPill(row.category)}`}');
   });
@@ -695,7 +695,6 @@ describe('finance list pages', () => {
 
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('PillClassBadgeLink');
-    expect(source).not.toContain('pillClass=');
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toMatch(/<a\s+className="pill [^"]+"\s+download/s);
     expect(source).not.toMatch(/className="pill pill-success"/);

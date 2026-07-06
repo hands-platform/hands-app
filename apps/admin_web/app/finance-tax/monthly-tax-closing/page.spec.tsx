@@ -27,7 +27,7 @@ describe('MonthlyTaxClosingPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`pill ${closingStatusPill(closing.status)}`}');
     expect(source).not.toContain('className={`pill ${remittanceEvidencePill(closingRemittanceState.tone)}`}');
@@ -38,7 +38,6 @@ describe('MonthlyTaxClosingPage', () => {
 
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('PillClassBadgeLink');
-    expect(source).not.toContain('pillClass=');
     expect(source).not.toContain('<AdminFormControlLink');
     expect(source).not.toContain('className="pill pill-info"');
     expect(source).not.toContain('className="pill pill-success"');
