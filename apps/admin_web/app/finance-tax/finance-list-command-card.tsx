@@ -5,6 +5,10 @@ import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../compon
 
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
+const financeListCommandBoardClassName = 'finance-list-command-board';
+const financeListCommandCardClassName = 'finance-list-command-card';
+const financeListCommandIconClassName = 'finance-list-command-icon';
+
 export function FinanceListCommandBoard({
   ariaLabel,
   children,
@@ -13,7 +17,11 @@ export function FinanceListCommandBoard({
   readonly children: ReactNode;
 }) {
   return (
-    <AdminOverviewCommandGrid className="finance-list-command-board admin-mb-16" ariaLabel={ariaLabel}>
+    <AdminOverviewCommandGrid
+      ariaLabel={ariaLabel}
+      baseClassName={financeListCommandBoardClassName}
+      className="admin-mb-16"
+    >
       {children}
     </AdminOverviewCommandGrid>
   );
@@ -36,10 +44,12 @@ export function FinanceListCommandCard({
 }) {
   return (
     <AdminOverviewCommandCard
-      className={`finance-list-command-card is-${tone}`}
+      baseClassName={financeListCommandCardClassName}
+      className={`is-${tone}`}
       detail={detail}
       href={href}
       icon={<Icon size={18} aria-hidden="true" />}
+      iconClassName={financeListCommandIconClassName}
       label={label}
       value={value}
     />

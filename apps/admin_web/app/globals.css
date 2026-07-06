@@ -1013,27 +1013,27 @@ a {
   line-height: 17px;
 }
 
-.finance-list-command-card.is-primary .usage-overview-command-icon {
+.finance-list-command-card.is-primary .finance-list-command-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
-.finance-list-command-card.is-info .usage-overview-command-icon {
+.finance-list-command-card.is-info .finance-list-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.finance-list-command-card.is-success .usage-overview-command-icon {
+.finance-list-command-card.is-success .finance-list-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.finance-list-command-card.is-warning .usage-overview-command-icon {
+.finance-list-command-card.is-warning .finance-list-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.finance-list-command-card.is-danger .usage-overview-command-icon {
+.finance-list-command-card.is-danger .finance-list-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -8687,6 +8687,7 @@ a.action-button-card:hover {
 .usage-overview-command-icon,
 .partner-overview-command-icon,
 .finance-overview-command-icon,
+.finance-list-command-icon,
 .finance-overview-action-icon {
   align-items: center;
   background: rgb(var(--admin-main-channel) / 0.07);

@@ -289,7 +289,12 @@ describe('finance list pages', () => {
       expect(markup).toContain('Open detail');
     }
     expect(markup).toContain(detailHref);
-    expect(markup).toContain('card admin-card usage-overview-command-card finance-list-command-card is-');
+    expect(markup).toContain('finance-list-command-board admin-mb-16');
+    expect(markup).not.toContain('usage-overview-command-grid finance-list-command-board');
+    expect(markup).toContain('card admin-card finance-list-command-card is-');
+    expect(markup).toContain('finance-list-command-icon');
+    expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
+    expect(markup).not.toContain('usage-overview-command-icon');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table');
     expect(markup).toContain('vuexy-booking-table-footer');
 
@@ -442,6 +447,9 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
 
     expect(source).toContain('AdminOverviewCommandCard');
+    expect(source).toContain('baseClassName={financeListCommandCardClassName}');
+    expect(source).toContain('iconClassName={financeListCommandIconClassName}');
+    expect(source).toContain('baseClassName={financeListCommandBoardClassName}');
     expect(source).not.toContain('AdminLinkCard');
     expect(source).not.toContain('usage-overview-command-icon');
     expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
