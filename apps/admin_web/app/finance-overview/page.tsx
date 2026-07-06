@@ -334,7 +334,7 @@ function FinanceActionAmount({ item }: { readonly item: FinanceOverviewActionIte
 
 function FinanceOverviewMetricValue({ metric }: { readonly metric: FinanceOverviewKpi }) {
   return metric.amount === undefined ? (
-    metric.value
+    metric.value ?? 'Not set'
   ) : (
     <MoneyText amount={metric.amount} currency={metric.currency ?? 'VND'} />
   );

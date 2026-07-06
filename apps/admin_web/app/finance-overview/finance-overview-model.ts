@@ -78,7 +78,7 @@ export type FinanceOverviewKpi = {
   readonly href?: string;
   readonly label: string;
   readonly tone: FinanceOverviewTone;
-  readonly value: string;
+  readonly value?: string;
 };
 
 export type FinanceOverviewSectionRow = {
@@ -333,7 +333,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: bookingSettlementAuditHref(financeSettlementFilters('today')),
       label: 'Gross Booking Amount',
       tone: 'primary',
-      value: formatMoney(input.settlementSummary.customerPaymentAmount, currency),
     },
     {
       ...financeOverviewMoneyValue(input.settlementSummary.platformFeeNetRevenue, currency),
@@ -344,7 +343,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/finance-tax/platform-vat',
       label: 'Platform Fee',
       tone: 'success',
-      value: formatMoney(input.settlementSummary.platformFeeNetRevenue, currency),
     },
     {
       ...financeOverviewMoneyValue(netRevenueEstimate, currency),
@@ -352,7 +350,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/finance-tax/payment-fees',
       label: 'Net Platform Revenue Estimate',
       tone: netRevenueEstimate < 0 ? 'danger' : 'info',
-      value: formatMoney(netRevenueEstimate, currency),
     },
     {
       ...financeOverviewMoneyValue(
@@ -365,10 +362,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       tone: (input.earningsSummary?.pendingNetAmount ?? input.settlementSummary.partnerPayoutAmount) > 0
         ? 'warning'
         : 'neutral',
-      value: formatMoney(
-        input.earningsSummary?.pendingNetAmount ?? input.settlementSummary.partnerPayoutAmount,
-        currency,
-      ),
     },
     {
       ...financeOverviewMoneyValue(input.earningsSummary?.paidNetAmount ?? 0, currency),
@@ -376,7 +369,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/payouts',
       label: 'Partner Payout Completed',
       tone: 'success',
-      value: formatMoney(input.earningsSummary?.paidNetAmount ?? 0, currency),
     },
     {
       ...financeOverviewMoneyValue(
@@ -387,7 +379,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/payouts?withdrawalStatus=REVIEW_REQUIRED',
       label: 'Withdrawal Payable',
       tone: input.withdrawalSummary.pendingWithdrawalPayableAmount > 0 ? 'warning' : 'neutral',
-      value: formatMoney(input.withdrawalSummary.pendingWithdrawalPayableAmount, input.withdrawalSummary.currency),
     },
     {
       ...financeOverviewMoneyValue(
@@ -398,10 +389,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/wallet-adjustments?ownerType=CUSTOMER',
       label: 'Customer Wallet Liability',
       tone: input.walletSummary.customerWalletLiabilityAmount > 0 ? 'warning' : 'neutral',
-      value: formatMoney(
-        input.walletSummary.customerWalletLiabilityAmount,
-        input.walletSummary.currency,
-      ),
     },
     {
       ...financeOverviewMoneyValue(partnerWalletLiability, input.walletSummary.currency),
@@ -409,7 +396,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/wallet-adjustments?ownerType=PARTNER',
       label: 'Partner Wallet Liability',
       tone: partnerWalletLiability > 0 ? 'warning' : 'neutral',
-      value: formatMoney(partnerWalletLiability, input.walletSummary.currency),
     },
     {
       ...financeOverviewMoneyValue(negativePartnerWallet, input.walletSummary.currency),
@@ -417,7 +403,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/cash-settlements',
       label: 'Negative Partner Wallet',
       tone: negativePartnerWallet > 0 ? 'danger' : 'success',
-      value: formatMoney(negativePartnerWallet, input.walletSummary.currency),
     },
     {
       ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
@@ -425,7 +410,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/cash-settlements',
       label: 'Cash Pending Amount',
       tone: (input.cashSummary?.totalDebtAmount ?? 0) > 0 ? 'warning' : 'neutral',
-      value: input.cashSummary ? formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency) : '—',
+      value: input.cashSummary ? undefined : '—',
     },
     {
       ...financeOverviewMoneyValue(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
@@ -433,7 +418,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/refunds?review=open',
       label: 'Refund Pending Amount',
       tone: (input.refundSummary?.openCount ?? 0) > 0 ? 'warning' : 'neutral',
-      value: formatMoney(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
     },
     {
       ...financeOverviewMoneyValue(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
@@ -441,7 +425,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/refunds?review=completed',
       label: 'Refund Completed Amount',
       tone: 'neutral',
-      value: formatMoney(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
     },
     {
       ...financeOverviewMoneyValue(input.amountSummary.paymentFailedAmount, input.amountSummary.currency),
@@ -449,7 +432,6 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
       href: '/payments?review=needs-action',
       label: 'Payment Failed Amount',
       tone: (input.paymentSummary?.needsAction ?? 0) > 0 ? 'warning' : 'neutral',
-      value: formatMoney(input.amountSummary.paymentFailedAmount, input.amountSummary.currency),
     },
     {
       detail: 'Open tax rows are used until missing-partner tax profile count is exposed.',

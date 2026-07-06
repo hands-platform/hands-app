@@ -71,15 +71,21 @@ describe('finance-overview-model', () => {
       withdrawalSummary: emptyProviderWalletWithdrawalRequestSummary(),
     });
 
-    expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')?.value).toContain('100.000.000');
     expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')).toMatchObject({
       amount: 100_000_000,
       currency: 'VND',
     });
-    expect(kpis.find((kpi) => kpi.label === 'Platform Fee')?.value).toContain('22.000.000');
-    expect(kpis.find((kpi) => kpi.label === 'Net Platform Revenue Estimate')?.value).toContain(
-      '19.000.000',
-    );
+    expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')?.value).toBeUndefined();
+    expect(kpis.find((kpi) => kpi.label === 'Platform Fee')?.value).toBeUndefined();
+    expect(kpis.find((kpi) => kpi.label === 'Net Platform Revenue Estimate')?.value).toBeUndefined();
+    expect(kpis.find((kpi) => kpi.label === 'Platform Fee')).toMatchObject({
+      amount: 22_000_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Net Platform Revenue Estimate')).toMatchObject({
+      amount: 19_000_000,
+      currency: 'VND',
+    });
     expect(kpis.find((kpi) => kpi.label === 'Reconciliation Issues')?.amount).toBeUndefined();
     expect(kpis.find((kpi) => kpi.label === 'Gross Booking Amount')?.detail).toContain(
       'not company revenue',
@@ -106,12 +112,30 @@ describe('finance-overview-model', () => {
       },
     });
 
-    expect(kpis.find((kpi) => kpi.label === 'Customer Wallet Liability')?.value).toContain('130.000');
-    expect(kpis.find((kpi) => kpi.label === 'Partner Wallet Liability')?.value).toContain('200.000');
-    expect(kpis.find((kpi) => kpi.label === 'Negative Partner Wallet')?.value).toContain('70.000');
-    expect(kpis.find((kpi) => kpi.label === 'Refund Pending Amount')?.value).toContain('40.000');
-    expect(kpis.find((kpi) => kpi.label === 'Refund Completed Amount')?.value).toContain('60.000');
-    expect(kpis.find((kpi) => kpi.label === 'Payment Failed Amount')?.value).toContain('75.000');
+    expect(kpis.find((kpi) => kpi.label === 'Customer Wallet Liability')).toMatchObject({
+      amount: 130_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Partner Wallet Liability')).toMatchObject({
+      amount: 200_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Negative Partner Wallet')).toMatchObject({
+      amount: 70_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Refund Pending Amount')).toMatchObject({
+      amount: 40_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Refund Completed Amount')).toMatchObject({
+      amount: 60_000,
+      currency: 'VND',
+    });
+    expect(kpis.find((kpi) => kpi.label === 'Payment Failed Amount')).toMatchObject({
+      amount: 75_000,
+      currency: 'VND',
+    });
   });
 
   it('keeps money metadata on finance section rows for shared MoneyText rendering', () => {
