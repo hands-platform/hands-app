@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminProfileOverviewCard } from '../../../components/admin-overview-card';
+import { AdminProfileOverviewCard, AdminSummaryCardGrid } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -93,15 +93,14 @@ export function CustomerDetailOverviewShell({
         </div>
       </div>
 
-      <div className="customer-detail-highlight-grid">
-        {highlights.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminSummaryCardGrid
+        className="customer-detail-highlight-grid"
+        items={highlights.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
 
       <div className="customer-detail-fact-list">
         {facts.map((fact) => (
@@ -122,15 +121,14 @@ export function CustomerDetailOverviewShell({
             </div>
             <strong>{usageSummary.regionRows.length} region(s)</strong>
           </div>
-          <div className="customer-detail-usage-summary-grid">
-            {usageSummary.items.map((item) => (
-              <div key={item.label}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <small>{item.helper}</small>
-              </div>
-            ))}
-          </div>
+          <AdminSummaryCardGrid
+            className="customer-detail-usage-summary-grid"
+            items={usageSummary.items.map((item) => ({
+              detail: item.helper,
+              label: item.label,
+              value: item.value,
+            }))}
+          />
           <div className="customer-detail-usage-region-list">
             {usageSummary.regionRows.map((row) => (
               <div key={row.label}>
