@@ -1,4 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -32,7 +33,7 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
     >
       <div className="setup-stage-list">
         {queue.items.map((item) => (
-          <div className="setup-stage-item" key={item.label}>
+          <AdminStageItem key={item.label}>
             <span>{item.count ? 'CHECK' : 'OK'}</span>
             <div>
               <strong>{item.label}</strong>
@@ -41,7 +42,7 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
             <AdminTextLink href={item.href}>
               {item.count}
             </AdminTextLink>
-          </div>
+          </AdminStageItem>
         ))}
       </div>
     </AdminSection>

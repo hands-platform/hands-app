@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
@@ -34,7 +35,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
     >
       <div className="setup-stage-list">
         {items.map((item) => (
-          <div className="setup-stage-item" key={item.partnerId}>
+          <AdminStageItem key={item.partnerId}>
             <span>{item.actionStatus}</span>
             <div>
               <strong>
@@ -46,10 +47,10 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
               <p className="muted">{item.operatorAction}</p>
             </div>
             <small>{partnerChecklistLaneActionLabel(item.actionTone)}</small>
-          </div>
+          </AdminStageItem>
         ))}
         {items.length === 0 ? (
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>OK</span>
             <div>
               <AdminEmptyState
@@ -58,7 +59,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
               />
             </div>
             <small>Clear</small>
-          </div>
+          </AdminStageItem>
         ) : null}
       </div>
     </AdminSection>

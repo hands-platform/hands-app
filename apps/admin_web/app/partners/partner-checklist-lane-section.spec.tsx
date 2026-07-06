@@ -10,6 +10,8 @@ describe('PartnerChecklistLaneSection', () => {
     const source = readFileSync('app/partners/partner-checklist-lane-section.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<strong>No partners need immediate attention</strong>');
   });
 
