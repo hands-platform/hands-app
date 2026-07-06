@@ -15,7 +15,9 @@ describe('PartnerDetailSummaryRailSection', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('AdminSummaryCardGrid');
     expect(source).not.toContain('<div className="service-trace-summary partner-detail-summary-rail-grid">');
+    expect(source).not.toContain('<div className="partner-detail-usage-summary-grid">');
   });
 
   it('renders summary rail items with links and status label', () => {
@@ -44,6 +46,8 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#partner-master-facts', '#payout']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining([
       'partner-detail-usage-summary admin-mt-12',
+      'admin-summary-card-grid partner-detail-usage-summary-grid',
+      'card admin-card admin-summary-card',
       'partner-detail-usage-region-list',
     ]));
   });

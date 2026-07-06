@@ -1,4 +1,4 @@
-import { AdminTraceSummary } from '../../../components/admin-overview-card';
+import { AdminSummaryCardGrid, AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 import type {
   PartnerDetailSummaryRailItem,
@@ -51,15 +51,14 @@ export function PartnerDetailSummaryRailSection({
               </div>
               <strong>{usageSummary.regionRows.length} region(s)</strong>
             </div>
-            <div className="partner-detail-usage-summary-grid">
-              {usageSummary.items.map((item) => (
-                <div key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small>{item.detail}</small>
-                </div>
-              ))}
-            </div>
+            <AdminSummaryCardGrid
+              className="partner-detail-usage-summary-grid"
+              items={usageSummary.items.map((item) => ({
+                detail: item.detail,
+                label: item.label,
+                value: item.value,
+              }))}
+            />
             <div className="partner-detail-usage-region-list">
               {usageSummary.regionRows.map((region) => (
                 <div key={region.label}>
