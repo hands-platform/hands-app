@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type {
   PartnerChatRetentionRow,
   PartnerChatRetentionSummaryItem,
@@ -6,6 +5,7 @@ import type {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -101,13 +101,13 @@ export function PartnerDetailChatRetentionLedgerSection({
                 <p className="muted">{row.adminRetentionDetail}</p>
               </td>
               <td>
-                <Link className="text-link" href={row.bookingHref}>
+                <AdminTextLink href={row.bookingHref}>
                   Booking
-                </Link>
+                </AdminTextLink>
                 {row.chatHref ? (
-                  <Link className="text-link admin-ml-10" href={row.chatHref}>
+                  <AdminTextLink className="admin-ml-10" href={row.chatHref}>
                     Archive
-                  </Link>
+                  </AdminTextLink>
                 ) : null}
               </td>
             </tr>

@@ -17,6 +17,13 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(source).not.toContain('formatLatestMessageAt');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders chat retention summary, row evidence, and archive links', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
