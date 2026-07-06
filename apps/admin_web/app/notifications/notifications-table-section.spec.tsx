@@ -131,8 +131,9 @@ describe('NotificationsTableSection', () => {
     const source = readFileSync('app/notifications/notification-delivery-cell.tsx', 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('AdminFormControlLink');

@@ -2,9 +2,8 @@ import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminDisclosure } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import {
-  StatusBadge,
+  StatusBadgeFromPillClass,
   StatusBadgeLink,
-  statusBadgeToneFromPillClass,
 } from '../../components/status-badge';
 
 export type NotificationDeliveryRow = {
@@ -46,9 +45,9 @@ export function NotificationDeliveryCell({ deliveryRows, totalAttemptCount }: No
   return (
     <AdminDisclosure className="notification-delivery-disclosure">
       <summary className="notification-delivery-summary">
-        <StatusBadge tone={statusBadgeToneFromPillClass(latest.statusClassName)}>
+        <StatusBadgeFromPillClass pillClass={latest.statusClassName}>
           {latest.status}
-        </StatusBadge>{' '}
+        </StatusBadgeFromPillClass>{' '}
         <strong>{attempts} attempts</strong>{' '}
         <span className="muted">
           / latest {latest.provider} / {latest.platformLabel} / <DateTimeText value={latest.attemptedAt} />
@@ -86,9 +85,9 @@ function NotificationDeliveryAttempt({
       <div>
         {sequenceLabel ? <strong>{sequenceLabel} / </strong> : null}
         <strong>{delivery.provider}</strong>{' '}
-        <StatusBadge tone={statusBadgeToneFromPillClass(delivery.statusClassName)}>
+        <StatusBadgeFromPillClass pillClass={delivery.statusClassName}>
           {delivery.status}
-        </StatusBadge>{' '}
+        </StatusBadgeFromPillClass>{' '}
         <span className="muted">/ {delivery.platformLabel}</span>
       </div>
       <div className="muted admin-mt-4">
