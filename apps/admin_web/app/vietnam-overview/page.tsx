@@ -30,7 +30,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminKpiCard, AdminRowLink, AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
@@ -452,7 +452,7 @@ export default async function VietnamOverviewPage({
               const loadPercent = Math.max(6, Math.round((load / maxRealtimeRegionLoad) * 100));
 
               return (
-                <a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>
+                <AdminRowLink key={region.regionCode} className="vietnam-realtime-region-row" href={href}>
                   <span>{region.shortName}</span>
                   <div>
                     <strong>{region.regionName}</strong>
@@ -467,7 +467,7 @@ export default async function VietnamOverviewPage({
                     </i>
                   </div>
                   <em>{formatNumber(load)}</em>
-                </a>
+                </AdminRowLink>
               );
             })}
             {topRealtimeRegionRows.length === 0 ? (

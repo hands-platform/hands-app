@@ -202,7 +202,11 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
     expect(pageSource).toContain('AdminOverviewCommandGrid className="finance-overview-section-grid"');
+    expect(pageSource).toContain('AdminRowLink');
+    expect(pageSource).toContain('AdminRowItem');
     expect(pageSource).not.toContain('<section className="finance-overview-section-grid"');
+    expect(pageSource).not.toContain('<a className="finance-overview-row" href={row.href} key={row.label}>');
+    expect(pageSource).not.toContain('<div className="finance-overview-row" key={row.label}>');
     expect(markup).toContain('Gross Booking Amount');
     expect(markup).toContain('Platform Fee');
     expect(markup).toContain('Customer paid amount is not company revenue');

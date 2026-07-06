@@ -52,6 +52,8 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).not.toContain('<div className="vietnam-region-focus-summary-items is-period">');
     expect(markup).not.toContain('card admin-filter-panel vietnam-overview-filter-panel');
     expect(markup).toContain('card admin-section vietnam-realtime-chart-card');
+    expect(pageSource).toContain('AdminRowLink');
+    expect(pageSource).not.toContain('<a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>');
     expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
     expect(markup).toContain('card admin-kpi-card vietnam-overview-metric');
     expect(markup).toContain('class="metric-card"');

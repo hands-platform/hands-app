@@ -18,7 +18,7 @@ import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../compon
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminLinkCard, AdminSection } from '../../components/admin-surface';
+import { AdminLinkCard, AdminRowItem, AdminRowLink, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
@@ -281,13 +281,13 @@ function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOver
         );
 
         return row.href ? (
-          <a className="finance-overview-row" href={row.href} key={row.label}>
+          <AdminRowLink className="finance-overview-row" href={row.href} key={row.label}>
             {body}
-          </a>
+          </AdminRowLink>
         ) : (
-          <div className="finance-overview-row" key={row.label}>
+          <AdminRowItem className="finance-overview-row" key={row.label}>
             {body}
-          </div>
+          </AdminRowItem>
         );
       })}
     </AdminSection>

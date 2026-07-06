@@ -72,6 +72,21 @@ type AdminLinkCardProps = AdminCardProps & {
   readonly htmlTitle?: string;
 };
 
+type AdminRowSurfaceProps = {
+  readonly ariaLabel?: string;
+  readonly ariaLabelledBy?: string;
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly htmlTitle?: string;
+  readonly id?: string;
+};
+
+type AdminRowLinkProps = AdminRowSurfaceProps & {
+  readonly href: string;
+};
+
+type AdminRowItemProps = AdminRowSurfaceProps;
+
 type AdminInsightCardProps = AdminCardProps;
 type AdminInsightLinkCardProps = AdminLinkCardProps;
 
@@ -378,6 +393,50 @@ export function AdminLinkCard({
     >
       {children}
     </Link>
+  );
+}
+
+export function AdminRowLink({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  href,
+  htmlTitle,
+  id,
+}: AdminRowLinkProps) {
+  return (
+    <Link
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('admin-row-link', className)}
+      href={href}
+      id={id}
+      title={htmlTitle}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export function AdminRowItem({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  htmlTitle,
+  id,
+}: AdminRowItemProps) {
+  return (
+    <div
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      className={joinClassNames('admin-row-link', className)}
+      id={id}
+      title={htmlTitle}
+    >
+      {children}
+    </div>
   );
 }
 

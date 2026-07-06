@@ -21,6 +21,8 @@ import {
   AdminNoteCard,
   AdminNotePanel,
   AdminNoticeCard,
+  AdminRowItem,
+  AdminRowLink,
   AdminSection,
   AdminTaskCard,
   AdminTaskGrid,
@@ -187,6 +189,27 @@ describe('Admin surface components', () => {
       className: 'card admin-card finance-overview-control-card',
       href: '/finance-tax/payment-clearing',
     });
+  });
+
+  it('renders reusable Vuexy row link and row item surfaces without losing page row classes', () => {
+    const link = AdminRowLink({
+      ariaLabel: 'Open Vietnam region',
+      children: <span>Ho Chi Minh</span>,
+      className: 'vietnam-realtime-region-row',
+      href: '/vietnam-overview?region=hcm',
+    });
+    const item = AdminRowItem({
+      children: <span>Unlinked finance row</span>,
+      className: 'finance-overview-row',
+    });
+
+    expect(link.props).toMatchObject({
+      'aria-label': 'Open Vietnam region',
+      className: 'admin-row-link vietnam-realtime-region-row',
+      href: '/vietnam-overview?region=hcm',
+    });
+    expect(item.type).toBe('div');
+    expect(item.props.className).toBe('admin-row-link finance-overview-row');
   });
 
   it('renders reusable Vuexy insight cards for dense policy decision blocks', () => {
