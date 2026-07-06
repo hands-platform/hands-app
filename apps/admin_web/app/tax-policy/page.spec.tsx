@@ -172,6 +172,10 @@ describe('TaxPolicyPage', () => {
 
   it('uses the shared money atom for visible tax policy amounts', () => {
     expect(pageSource).toContain('MoneyText');
+    expect(pageSource).toContain('function TaxPolicyAmountBandLabel');
+    expect(pageSource).toContain('<TaxPolicyAmountBandLabel rule={rule} />');
+    expect(pageSource).toContain('<TaxPolicyAmountBandLabel rule={overlap.left} />');
+    expect(pageSource).toContain('<TaxPolicyAmountBandLabel rule={overlap.right} />');
     expect(pageSource).not.toContain('`${formatBps(preview.rule.rateBps)} plus ${formatMoney(');
     expect(pageSource).not.toContain('<strong>{formatMoney(preview.withholdingAmount)} withholding</strong>');
     expect(pageSource).not.toContain('Gross {formatMoney(preview.grossAmount)} / service type');
@@ -179,6 +183,7 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain(
       '? ` / ${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : \'no max\'}`',
     );
+    expect(pageSource).not.toContain('formatMoney(rule.minGrossAmount ?? 0)');
   });
 });
 

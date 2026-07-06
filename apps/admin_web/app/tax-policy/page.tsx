@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import {
   AdminFormCheckbox,
@@ -16,7 +18,6 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
-import { formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
@@ -31,6 +32,17 @@ const TAX_POLICY_AUDIT_LOG_PAGE_SIZE = 8;
 const TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE = 8;
 
 type TaxPolicyPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type TaxPolicyHealthItem = {
+  readonly label: string;
+  readonly ok: boolean;
+  readonly value: string;
+  readonly detail: ReactNode;
+};
+type TaxPolicyAmountBandOverlap = {
+  readonly policyName: string;
+  readonly left: AdminTaxRule;
+  readonly right: AdminTaxRule;
+};
 
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
@@ -573,7 +585,7 @@ function toDateTimeLocal(value?: string | null) {
   return date.toISOString().slice(0, 16);
 }
 
-function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]) {
+function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]): TaxPolicyHealthItem[] {
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const activeDefaultRuleCount = activePolicies.reduce(
     (sum, policy) =>
@@ -659,7 +671,19 @@ function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]) {
       detail:
         overlappingAmountBands.length === 0
           ? 'Active amount-band rules do not overlap inside the active policy.'
-          : `Review overlapping amount bands: ${overlappingAmountBands.slice(0, 3).join(', ')}.`,
+          : (
+              <>
+                Review overlapping amount bands:{' '}
+                {overlappingAmountBands.slice(0, 3).map((overlap, index) => (
+                  <span key={`${overlap.policyName}-${overlap.left.id}-${overlap.right.id}`}>
+                    {index > 0 ? ', ' : ''}
+                    {overlap.policyName}/<TaxPolicyAmountBandLabel rule={overlap.left} /> vs{' '}
+                    <TaxPolicyAmountBandLabel rule={overlap.right} />
+                  </span>
+                ))}
+                .
+              </>
+            ),
     },
   ];
 }
@@ -680,7 +704,7 @@ function duplicateActiveServiceTypeRules(policies: AdminTaxPolicyVersion[]) {
   });
 }
 
-function overlappingActiveAmountBands(policies: AdminTaxPolicyVersion[]) {
+function overlappingActiveAmountBands(policies: AdminTaxPolicyVersion[]): TaxPolicyAmountBandOverlap[] {
   return policies.flatMap((policy) => {
     if (policy.status !== 'ACTIVE') {
       return [];
@@ -688,11 +712,15 @@ function overlappingActiveAmountBands(policies: AdminTaxPolicyVersion[]) {
     const bands = (policy.rules ?? [])
       .filter((rule) => rule.active && rule.scope === 'AMOUNT_BAND')
       .sort((left, right) => (left.minGrossAmount ?? 0) - (right.minGrossAmount ?? 0));
-    const overlaps: string[] = [];
+    const overlaps: TaxPolicyAmountBandOverlap[] = [];
     for (let index = 0; index < bands.length; index += 1) {
       for (let nextIndex = index + 1; nextIndex < bands.length; nextIndex += 1) {
         if (amountBandsOverlap(bands[index], bands[nextIndex])) {
-          overlaps.push(`${policy.name}/${formatBand(bands[index])} vs ${formatBand(bands[nextIndex])}`);
+          overlaps.push({
+            left: bands[index],
+            policyName: policy.name,
+            right: bands[nextIndex],
+          });
         }
       }
     }
@@ -786,6 +814,10 @@ function TaxPolicyRuleLabel({ rule }: { readonly rule: AdminTaxRule }) {
 }
 
 function TaxPolicyAmountBand({ rule }: { readonly rule: AdminTaxRule }) {
+  return <TaxPolicyAmountBandLabel rule={rule} />;
+}
+
+function TaxPolicyAmountBandLabel({ rule }: { readonly rule: AdminTaxRule }) {
   return (
     <>
       <MoneyText amount={rule.minGrossAmount ?? 0} />
@@ -814,10 +846,6 @@ function amountBandsOverlap(left: AdminTaxRule, right: AdminTaxRule) {
   const rightMin = right.minGrossAmount ?? Number.NEGATIVE_INFINITY;
   const rightMax = right.maxGrossAmount ?? Number.POSITIVE_INFINITY;
   return leftMin <= rightMax && rightMin <= leftMax;
-}
-
-function formatBand(rule: AdminTaxRule) {
-  return `${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : 'no max'}`;
 }
 
 function formatBps(value: number) {
