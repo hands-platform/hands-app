@@ -21,7 +21,9 @@ describe('ServiceBookingFinanceTraceSection', () => {
     const source = readFileSync('app/services/service-booking-finance-trace-section.tsx', 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<div className="service-trace-summary">');
   });
 
   it('uses the shared Vuexy text link atom for booking drill-down links', () => {

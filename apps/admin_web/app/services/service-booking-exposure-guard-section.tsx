@@ -1,6 +1,7 @@
 import { CalendarClock, FileClock } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -37,24 +38,14 @@ export function ServiceBookingExposureGuardSection({
       }
       title="Customer booking exposure guard"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Active duration options</span>
-          <strong>{activeServiceCount}</strong>
-        </div>
-        <div>
-          <span>Rules configured</span>
-          <strong>{payoutRuleCount}</strong>
-        </div>
-        <div>
-          <span>Trace gaps</span>
-          <strong>{traceGapCount}</strong>
-        </div>
-        <div>
-          <span>Projected policy checks</span>
-          <strong>{policyCheckCount}</strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Active duration options', value: activeServiceCount },
+          { label: 'Rules configured', value: payoutRuleCount },
+          { label: 'Trace gaps', value: traceGapCount },
+          { label: 'Projected policy checks', value: policyCheckCount },
+        ]}
+      />
       <div className="actions admin-mt-12">
         <AdminFormControlLink className="button-secondary" href="/bookings?view=pricing">
           <CalendarClock aria-hidden="true" size={16} />

@@ -22,7 +22,9 @@ describe('ServicePricePolicyPreviewSection', () => {
     const source = readFileSync('app/services/service-price-policy-preview-section.tsx', 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<div className="service-trace-summary">');
   });
 
   it('renders policy summary, visible preview rows, and hidden row copy', () => {

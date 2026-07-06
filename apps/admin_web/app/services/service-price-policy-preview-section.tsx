@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -48,40 +49,28 @@ export function ServicePricePolicyPreviewSection({
       statusTone={summary.policyCheckCount ? 'warning' : 'success'}
       title="Price policy change preview"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Previewed options</span>
-          <strong>{rows.length}</strong>
-        </div>
-        <div>
-          <span>Current commission</span>
-          <strong>
-            <MoneyText amount={summary.currentCommission} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Customer + step</span>
-          <strong>
-            <MoneyText amount={summary.customerStepCommission} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Partner + step</span>
-          <strong>
-            <MoneyText amount={summary.providerStepCommission} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Both + step</span>
-          <strong>
-            <MoneyText amount={summary.balancedStepCommission} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Missing base rule</span>
-          <strong>{summary.missingBaseRuleCount}</strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Previewed options', value: rows.length },
+          {
+            label: 'Current commission',
+            value: <MoneyText amount={summary.currentCommission} currency={summary.currency} />,
+          },
+          {
+            label: 'Customer + step',
+            value: <MoneyText amount={summary.customerStepCommission} currency={summary.currency} />,
+          },
+          {
+            label: 'Partner + step',
+            value: <MoneyText amount={summary.providerStepCommission} currency={summary.currency} />,
+          },
+          {
+            label: 'Both + step',
+            value: <MoneyText amount={summary.balancedStepCommission} currency={summary.currency} />,
+          },
+          { label: 'Missing base rule', value: summary.missingBaseRuleCount },
+        ]}
+      />
       {rows.length ? (
         <AdminTableScroll>
           <AdminDataTable

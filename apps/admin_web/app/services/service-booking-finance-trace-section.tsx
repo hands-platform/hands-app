@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -43,42 +44,31 @@ export function ServiceBookingFinanceTraceSection({
       statusTone="info"
       title="Recent booking finance trace"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Payment total</span>
-          <strong>
-            <MoneyText amount={summary.paymentAmount} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Partner net</span>
-          <strong>
-            <MoneyText amount={summary.providerNetAmount} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Platform fee</span>
-          <strong>
-            <MoneyText amount={summary.platformFeeAmount} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Withholding</span>
-          <strong>
-            <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Wallet movement</span>
-          <strong>
-            <MoneyText amount={summary.walletAmount} currency={summary.currency} />
-          </strong>
-        </div>
-        <div>
-          <span>Missing trace</span>
-          <strong>{summary.missingTraceCount} row(s)</strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            label: 'Payment total',
+            value: <MoneyText amount={summary.paymentAmount} currency={summary.currency} />,
+          },
+          {
+            label: 'Partner net',
+            value: <MoneyText amount={summary.providerNetAmount} currency={summary.currency} />,
+          },
+          {
+            label: 'Platform fee',
+            value: <MoneyText amount={summary.platformFeeAmount} currency={summary.currency} />,
+          },
+          {
+            label: 'Withholding',
+            value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
+          },
+          {
+            label: 'Wallet movement',
+            value: <MoneyText amount={summary.walletAmount} currency={summary.currency} />,
+          },
+          { label: 'Missing trace', value: `${summary.missingTraceCount} row(s)` },
+        ]}
+      />
       {rows.length ? (
         <AdminTableScroll>
           <AdminDataTable

@@ -6,6 +6,8 @@ describe('ServiceBookingExposureGuardSection source', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminFormControlLink');
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary">');
     expect(source).not.toContain('<Link className="button button-secondary"');
     expect(source).not.toContain('<a className="button button-secondary"');
     expect(source).not.toContain("className={blockedCount ? 'pill pill-danger' : 'pill pill-success'}");
