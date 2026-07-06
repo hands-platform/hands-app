@@ -24,7 +24,9 @@ describe('ServiceTypeCoverageBoardSection', () => {
     const source = readFileSync('app/services/service-type-coverage-board-section.tsx', 'utf8');
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
   it('renders coverage summary, visible rows, and hidden row copy', () => {

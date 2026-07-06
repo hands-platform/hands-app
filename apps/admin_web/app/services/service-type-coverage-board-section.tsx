@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -55,30 +56,19 @@ export function ServiceTypeCoverageBoardSection({
       }
       title="Service type coverage board"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Service types checked</span>
-          <strong>{rows.length}</strong>
-        </div>
-        <div>
-          <span>Missing duration options</span>
-          <strong>{summary.missingDurationCount}</strong>
-        </div>
-        <div>
-          <span>Missing base payout</span>
-          <strong>{summary.missingBasePayoutCount}</strong>
-        </div>
-        <div>
-          <span>Hidden Partner prices</span>
-          <strong>{summary.hiddenPartnerPriceCount}</strong>
-        </div>
-        <div>
-          <span>Net company fee</span>
-          <strong>
-            <MoneyText amount={summary.netCompanyFee} currency={summary.currency} />
-          </strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          { label: 'Service types checked', value: rows.length },
+          { label: 'Missing duration options', value: summary.missingDurationCount },
+          { label: 'Missing base payout', value: summary.missingBasePayoutCount },
+          { label: 'Hidden Partner prices', value: summary.hiddenPartnerPriceCount },
+          {
+            label: 'Net company fee',
+            value: <MoneyText amount={summary.netCompanyFee} currency={summary.currency} />,
+          },
+        ]}
+      />
       {visibleRows.length ? (
         <AdminTableScroll>
           <AdminDataTable
