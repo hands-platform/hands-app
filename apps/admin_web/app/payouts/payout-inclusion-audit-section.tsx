@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 
@@ -48,7 +49,7 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
       />
       <div className="setup-stage-list admin-mt-14">
         {audit.rows.map((row) => (
-          <div className="setup-stage-item" key={row.id}>
+          <AdminStageItem key={row.id}>
             <span>{row.status}</span>
             <div>
               <strong>{row.title}</strong>
@@ -58,10 +59,10 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
             <AdminTextLink href={row.href}>
               Open
             </AdminTextLink>
-          </div>
+          </AdminStageItem>
         ))}
         {audit.rows.length === 0 ? (
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>OK</span>
             <div>
               <AdminEmptyState
@@ -70,7 +71,7 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
               />
             </div>
             <small>Clear</small>
-          </div>
+          </AdminStageItem>
         ) : null}
       </div>
     </AdminTablePanel>

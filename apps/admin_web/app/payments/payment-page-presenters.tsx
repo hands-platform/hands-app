@@ -1,6 +1,7 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminDisclosure, AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
@@ -159,7 +160,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
     <AdminNotePanel className="admin-mt-8">
       <StatusBadge tone={callback.verified ? 'success' : 'warning'}>{callbackLabel}</StatusBadge>
       <div className="setup-stage-list admin-mt-8">
-        <div className="setup-stage-item">
+        <AdminStageItem>
           <StatusBadge tone="info">Received</StatusBadge>
           <div>
             <strong>
@@ -167,8 +168,8 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
             </strong>
             <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
           </div>
-        </div>
-        <div className="setup-stage-item">
+        </AdminStageItem>
+        <AdminStageItem>
           <StatusBadge tone="neutral">Gateway</StatusBadge>
           <div>
             <strong>{callback.providerStatus ?? 'No status code'}</strong>
@@ -177,7 +178,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
               {callback.callbackAmount !== null ? money(callback.callbackAmount, payment.currency) : 'unknown'}
             </p>
           </div>
-        </div>
+        </AdminStageItem>
       </div>
       {callback.rawKeys.length ? (
         <AdminDisclosure className="admin-mt-8">

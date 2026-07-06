@@ -7,8 +7,10 @@ describe('PaymentDetailActionMapSection', () => {
     const source = readFileSync('app/payments/[id]/payment-detail-action-map-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
+    expect(source).toContain('AdminStageItem');
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('PillClassBadge');
   });
 

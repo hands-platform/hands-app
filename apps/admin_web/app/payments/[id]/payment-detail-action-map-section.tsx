@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
@@ -40,14 +41,14 @@ export function PaymentDetailActionMapSection({
       {confirmation}
       <div className="setup-stage-list">
         {rows.map((row) => (
-          <div className="setup-stage-item" key={row.action}>
+          <AdminStageItem key={row.action}>
             <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.status}</StatusBadge>
             <div>
               <strong>{row.action}</strong>
               <p className="muted">{row.reason}</p>
               <small>{row.operatorRule}</small>
             </div>
-          </div>
+          </AdminStageItem>
         ))}
       </div>
       <div className="actions admin-mt-16">
