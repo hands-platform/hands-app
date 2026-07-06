@@ -7,7 +7,7 @@ import {
   AdminFormDateTime,
   AdminFormInput,
 } from '../../components/admin-form-controls';
-import { AdminCard, AdminLinkCard } from '../../components/admin-surface';
+import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminWithdrawalAccountingPreview } from '../../components/admin-withdrawal-accounting-preview';
@@ -50,38 +50,45 @@ export function PayoutWalletWithdrawalRequestSection({
       resultTone={needsActionCount ? 'warning' : 'success'}
       title="Partner wallet withdrawal requests"
     >
-      <div className="payout-wallet-withdrawal-summary-grid" aria-label="Withdrawal request status summary">
+      <AdminSummaryCardGrid
+        ariaLabel="Withdrawal request status summary"
+        className="payout-wallet-withdrawal-summary-grid"
+        itemClassName="payout-wallet-withdrawal-summary-card"
+        items={[
+          {
+            className: activeStatus === 'REQUESTED' ? 'is-active' : undefined,
+            detail: activeStatus === 'REQUESTED' ? 'Selected' : 'Open filter',
+            href: withdrawalStatusHref(range, 'REQUESTED'),
+            label: 'Requested',
+            tone: 'neutral',
+            value: summary.requested,
+          },
+          {
+            className: activeStatus === 'REVIEW_REQUIRED' ? 'is-active' : undefined,
+            detail: activeStatus === 'REVIEW_REQUIRED' ? 'Selected' : 'Open filter',
+            href: withdrawalStatusHref(range, 'REVIEW_REQUIRED'),
+            label: 'Review required',
+            tone: 'warning',
+            value: summary.reviewRequired,
+          },
+          {
+            className: activeStatus === 'BANK_TRANSFER_PENDING' ? 'is-active' : undefined,
+            detail: activeStatus === 'BANK_TRANSFER_PENDING' ? 'Selected' : 'Open filter',
+            href: withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
+            label: 'Bank transfer pending',
+            tone: 'info',
+            value: summary.bankTransferPending,
+          },
+          {
+            detail: 'Audit evidence',
+            label: 'Lock released',
+            tone: 'audit',
+            value: summary.lockReleased,
+          },
+        ]}
+      >
         <span className="sr-only">Withdrawal request status summary</span>
-        <WithdrawalSummaryCard
-          active={activeStatus === 'REQUESTED'}
-          count={summary.requested}
-          helper="Open filter"
-          href={withdrawalStatusHref(range, 'REQUESTED')}
-          label="Requested"
-        />
-        <WithdrawalSummaryCard
-          active={activeStatus === 'REVIEW_REQUIRED'}
-          count={summary.reviewRequired}
-          helper="Open filter"
-          href={withdrawalStatusHref(range, 'REVIEW_REQUIRED')}
-          label="Review required"
-          tone="warning"
-        />
-        <WithdrawalSummaryCard
-          active={activeStatus === 'BANK_TRANSFER_PENDING'}
-          count={summary.bankTransferPending}
-          helper="Open filter"
-          href={withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING')}
-          label="Bank transfer pending"
-          tone="info"
-        />
-        <WithdrawalSummaryCard
-          count={summary.lockReleased}
-          helper="Audit evidence"
-          label="Lock released"
-          tone="audit"
-        />
-      </div>
+      </AdminSummaryCardGrid>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
@@ -139,43 +146,6 @@ export function PayoutWalletWithdrawalRequestSection({
         </AdminDataTable>
       </AdminTableScroll>
     </AdminTablePanel>
-  );
-}
-
-function WithdrawalSummaryCard({
-  active,
-  count,
-  helper,
-  href,
-  label,
-  tone = 'neutral',
-}: {
-  readonly active?: boolean;
-  readonly count: number;
-  readonly helper: string;
-  readonly href?: string;
-  readonly label: string;
-  readonly tone?: 'audit' | 'info' | 'neutral' | 'warning';
-}) {
-  const className = joinClassNames(
-    'payout-wallet-withdrawal-summary-card',
-    `is-${tone}`,
-    active ? 'is-active' : undefined,
-  );
-  const content = (
-    <>
-      <span>{label}</span>
-      <strong>{count}</strong>
-      <small>{active ? 'Selected' : helper}</small>
-    </>
-  );
-
-  return href ? (
-    <AdminLinkCard className={className} href={href}>
-      {content}
-    </AdminLinkCard>
-  ) : (
-    <AdminCard className={className}>{content}</AdminCard>
   );
 }
 
@@ -460,8 +430,4 @@ function isTerminalStatus(status: AdminProviderWalletWithdrawalRequest['status']
     status === 'FAILED' ||
     status === 'REVERSED'
   );
-}
-
-function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
 }

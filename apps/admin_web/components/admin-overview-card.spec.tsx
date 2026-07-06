@@ -123,7 +123,14 @@ describe('AdminOverviewCommandCard', () => {
         itemClassName="vietnam-overview-filter-summary-card"
         items={[
           { detail: 'Realtime dots stay current.', label: 'Range', tone: 'info', value: 'Today' },
-          { key: 'ready', label: 'Ready partners', overline: 'Realtime', tone: 'success', value: '42' },
+          {
+            href: '/vietnam-overview?signals=online',
+            key: 'ready',
+            label: 'Ready partners',
+            overline: 'Realtime',
+            tone: 'success',
+            value: '42',
+          },
         ]}
       />,
     );
@@ -136,6 +143,7 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain(
       'class="card admin-card admin-summary-card vietnam-overview-filter-summary-card is-success"',
     );
+    expect(markup).toContain('href="/vietnam-overview?signals=online"');
     expect(markup).toContain('<small>Realtime</small><strong>42</strong><span>Ready partners</span>');
   });
 

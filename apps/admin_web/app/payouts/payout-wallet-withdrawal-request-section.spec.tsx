@@ -247,13 +247,13 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(hrefs).toContain('/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'payout-wallet-withdrawal-summary-grid',
-        'card admin-card payout-wallet-withdrawal-summary-card is-info is-active',
-        'card admin-card payout-wallet-withdrawal-summary-card is-audit',
+        'admin-summary-card-grid payout-wallet-withdrawal-summary-grid',
+        'card admin-card admin-summary-card payout-wallet-withdrawal-summary-card is-info is-active',
+        'card admin-card admin-summary-card payout-wallet-withdrawal-summary-card is-audit',
       ]),
     );
-    expect(sectionSource).toContain('AdminCard');
-    expect(sectionSource).toContain('AdminLinkCard');
+    expect(sectionSource).toContain('AdminSummaryCardGrid');
+    expect(sectionSource).not.toContain('function WithdrawalSummaryCard');
     expect(sectionSource).not.toContain('<div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">');
     expect(sectionSource).not.toContain('<AdminCard className="payout-wallet-withdrawal-summary-card is-audit">');
     expect(sectionSource).not.toContain("'card admin-card payout-wallet-withdrawal-summary-card'");

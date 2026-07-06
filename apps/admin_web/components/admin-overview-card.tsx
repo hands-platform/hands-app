@@ -60,6 +60,8 @@ type AdminMiniMetricStripProps = {
 type AdminSummaryCardItem = {
   readonly className?: string;
   readonly detail?: ReactNode;
+  readonly href?: string;
+  readonly htmlTitle?: string;
   readonly key?: string;
   readonly label: ReactNode;
   readonly overline?: ReactNode;
@@ -69,6 +71,7 @@ type AdminSummaryCardItem = {
 
 type AdminSummaryCardGridProps = {
   readonly ariaLabel?: string;
+  readonly children?: ReactNode;
   readonly className?: string;
   readonly itemClassName?: string;
   readonly items: readonly AdminSummaryCardItem[];
@@ -149,28 +152,49 @@ export function AdminMiniMetricStrip({
 
 export function AdminSummaryCardGrid({
   ariaLabel,
+  children,
   className,
   itemClassName,
   items,
 }: AdminSummaryCardGridProps) {
   return (
     <div aria-label={ariaLabel} className={joinClassNames('admin-summary-card-grid', className)}>
-      {items.map((item, index) => (
-        <AdminCard
-          className={joinClassNames(
-            'admin-summary-card',
-            itemClassName,
-            item.className,
-            item.tone ? `is-${item.tone}` : undefined,
-          )}
-          key={summaryCardKey(item, index)}
-        >
-          {item.overline ? <small>{item.overline}</small> : <span>{item.label}</span>}
-          <strong>{item.value}</strong>
-          {item.overline ? <span>{item.label}</span> : null}
-          {item.detail ? <small>{item.detail}</small> : null}
-        </AdminCard>
-      ))}
+      {children}
+      {items.map((item, index) => {
+        const itemClass = joinClassNames(
+          'admin-summary-card',
+          itemClassName,
+          item.tone ? `is-${item.tone}` : undefined,
+          item.className,
+        );
+        const content = (
+          <>
+            {item.overline ? <small>{item.overline}</small> : <span>{item.label}</span>}
+            <strong>{item.value}</strong>
+            {item.overline ? <span>{item.label}</span> : null}
+            {item.detail ? <small>{item.detail}</small> : null}
+          </>
+        );
+
+        if (item.href) {
+          return (
+            <AdminLinkCard
+              className={itemClass}
+              href={item.href}
+              htmlTitle={item.htmlTitle}
+              key={summaryCardKey(item, index)}
+            >
+              {content}
+            </AdminLinkCard>
+          );
+        }
+
+        return (
+          <AdminCard className={itemClass} key={summaryCardKey(item, index)}>
+            {content}
+          </AdminCard>
+        );
+      })}
     </div>
   );
 }
