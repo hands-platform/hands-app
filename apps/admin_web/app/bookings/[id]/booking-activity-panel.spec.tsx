@@ -8,6 +8,8 @@ describe('BookingActivityPanel', () => {
     const source = readFileSync('app/bookings/[id]/booking-activity-panel.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).not.toContain('<strong>No booking activity has been recorded yet</strong>');
   });
 

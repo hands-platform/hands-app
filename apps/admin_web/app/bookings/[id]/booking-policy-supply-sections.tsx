@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminNoteCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
@@ -462,15 +463,14 @@ function marketplaceSupplyRowAvatarStatus(status: string): AdminAvatarStatus {
 
 function SummaryCardGrid({ cards }: SummaryCardGridProps) {
   return (
-    <div className="service-trace-summary admin-mt-12">
-      {cards.map((item) => (
-        <div key={item.label}>
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
-          <small title={item.helper}>{compactSummaryCardHelper(item.helper)}</small>
-        </div>
-      ))}
-    </div>
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={cards.map((item) => ({
+        detail: <span title={item.helper}>{compactSummaryCardHelper(item.helper)}</span>,
+        label: item.label,
+        value: item.value,
+      }))}
+    />
   );
 }
 

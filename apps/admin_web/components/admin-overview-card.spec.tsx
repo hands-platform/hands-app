@@ -132,6 +132,27 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span>Cash debt</span>');
   });
 
+  it('renders trace summary metrics as links when href is provided', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        metrics={[
+          {
+            detail: 'Jump to retained evidence.',
+            href: '#booking-activity',
+            label: 'Activity',
+            value: '12',
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('class="service-trace-summary"');
+    expect(markup).toContain('<a href="#booking-activity">');
+    expect(markup).toContain('<span>Activity</span>');
+    expect(markup).toContain('<strong>12</strong>');
+    expect(markup).toContain('<small>Jump to retained evidence.</small>');
+  });
+
   it('renders shared overview groups with Vuexy heading structure', () => {
     const markup = renderToStaticMarkup(
       <AdminOverviewGroup

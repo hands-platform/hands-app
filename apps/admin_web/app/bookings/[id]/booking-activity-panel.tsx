@@ -2,6 +2,7 @@ import { Download } from 'lucide-react';
 
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -49,15 +50,16 @@ export function BookingFullRecordIndex({
       id="payment-actions"
       title="Booking full record index"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {cards.map((card) => (
-          <a href={card.href} key={`${card.href}-${card.label}`}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <small>{card.helper}</small>
-          </a>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={cards.map((card) => ({
+          detail: card.helper,
+          href: card.href,
+          key: `${card.href}-${card.label}`,
+          label: card.label,
+          value: card.value,
+        }))}
+      />
     </AdminSection>
   );
 }
@@ -77,15 +79,14 @@ export function BookingActivityPanel({
       id="booking-activity"
       title="Booking chronological activity"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <div className="booking-activity-record-list admin-mt-12">
         {records.length ? (
           records.map((record) => (

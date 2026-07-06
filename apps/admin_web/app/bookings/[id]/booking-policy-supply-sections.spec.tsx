@@ -16,6 +16,8 @@ describe('booking policy supply sections', () => {
   it('uses shared Vuexy admin card surfaces for supply panels', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminNoteCard');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminEmptyState');
