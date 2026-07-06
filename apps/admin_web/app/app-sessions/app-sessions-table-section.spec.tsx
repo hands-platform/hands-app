@@ -47,8 +47,8 @@ describe('AppSessionsTableSection', () => {
   it('uses the shared StatusBadge atom for session state chips', () => {
     const source = readFileSync(join(process.cwd(), 'app/app-sessions/app-sessions-table-section.tsx'), 'utf8');
 
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>');
   });

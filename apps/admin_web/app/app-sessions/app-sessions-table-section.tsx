@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '..
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { DateTimeText } from '../../components/date-time-text';
 import { RoleBadge } from '../../components/role-badge';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 
 export type AppSessionTableRow = {
@@ -64,9 +64,9 @@ export function AppSessionsTableSection({ emptyMessage, pagination }: AppSession
                 <RoleBadge role={row.roleLabel} />
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(row.statePillClassName)}>
+                <StatusBadgeFromPillClass pillClass={row.statePillClassName}>
                   {row.stateLabel}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>{row.platformLabel}</td>
               <td>{row.appVersionLabel}</td>
