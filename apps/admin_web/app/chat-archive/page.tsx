@@ -38,7 +38,7 @@ import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
-import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
+import { shortId } from '../../lib/admin-format';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { bookingChatMessageCount } from '../bookings/booking-chat-message-count';
@@ -200,7 +200,11 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           value: repairSummary.missingRooms.toString(),
           helper: 'Matched booking needs a chat room',
         },
-        { label: 'Latest message', value: summary.latestMessageAt, helper: 'Newest loaded message' },
+        {
+          label: 'Latest message',
+          value: <DateTimeText fallback="None" value={summary.latestMessageAt} />,
+          helper: 'Newest loaded message',
+        },
       ]}
       title="Chat Evidence Search"
     >
@@ -567,7 +571,7 @@ function buildChatArchiveSummaryView(
     completedRooms: readChatArchiveSummaryNumber(summary.completedRooms) ?? fallback.completedRooms,
     customerMessages: readChatArchiveSummaryNumber(summary.customerMessages) ?? fallback.customerMessages,
     emptyRooms: readChatArchiveSummaryNumber(summary.emptyRooms) ?? fallback.emptyRooms,
-    latestMessageAt: summary.latestMessageAt ? formatDate(summary.latestMessageAt) : fallback.latestMessageAt,
+    latestMessageAt: summary.latestMessageAt ?? fallback.latestMessageAt,
     messageCount: readChatArchiveSummaryNumber(summary.messageCount) ?? fallback.messageCount,
     partnerMessages: readChatArchiveSummaryNumber(summary.partnerMessages) ?? fallback.partnerMessages,
     totalCount: readChatArchiveSummaryNumber(summary.totalCount) ?? fallbackTotalCount,
@@ -796,7 +800,7 @@ function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {
     completedRooms: rooms.filter((room) => room.booking.status === 'COMPLETED').length,
     activeRooms: rooms.filter((room) => isActiveStatus(room.booking.status)).length,
     emptyRooms: rooms.filter((room) => room.messageCount === 0).length,
-    latestMessageAt: latestMessageAt ? formatDate(latestMessageAt) : 'None',
+    latestMessageAt: latestMessageAt ?? null,
   };
 }
 

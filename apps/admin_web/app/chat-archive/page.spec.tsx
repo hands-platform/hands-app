@@ -146,12 +146,15 @@ describe('ChatArchivePage', () => {
 
   it('uses the shared DateTimeText atom for visible chat archive table timestamps', () => {
     expect(pageSource).toContain('DateTimeText');
+    expect(pageSource).toContain('<DateTimeText fallback="None" value={summary.latestMessageAt} />');
     expect(pageSource).not.toContain(
       '<p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>',
     );
     expect(pageSource).not.toContain(
       "<td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>",
     );
+    expect(pageSource).not.toContain('formatDateTime as formatDate');
+    expect(pageSource).not.toContain('latestMessageAt: latestMessageAt ? formatDate(latestMessageAt)');
   });
 
   it('passes raw retained chat timestamps to the shared date atom instead of formatting locally', () => {
