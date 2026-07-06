@@ -8,8 +8,10 @@ describe('OperationsHandoffShiftBriefSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-shift-brief-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<Link className="ops-task-card"');
+    expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('actions={<span className="pill pill-info">Factual queue</span>}');
   });
 

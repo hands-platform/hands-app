@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { buildShiftBriefItems } from './operations-handoff-shift-brief';
 
@@ -34,7 +34,7 @@ export function OperationsHandoffShiftBriefSection({
       description="Recommended opening order for the next operator."
       title="Shift brief"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard
             actionLabel={item.action}
@@ -47,7 +47,7 @@ export function OperationsHandoffShiftBriefSection({
             variant="ops-task"
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

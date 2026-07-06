@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { FinanceHandoffActionRow } from './operations-handoff-finance-actions';
@@ -21,7 +21,7 @@ export function OperationsHandoffFinanceActionSection({
       description="Money-flow lanes the next operator should verify before continuing the shift: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
       title="Finance handoff action map"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {actions.map((item) => (
           <AdminActionCard
             actionLabel={item.nextAction}
@@ -39,7 +39,7 @@ export function OperationsHandoffFinanceActionSection({
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

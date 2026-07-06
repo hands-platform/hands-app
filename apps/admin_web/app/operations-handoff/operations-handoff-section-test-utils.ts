@@ -72,6 +72,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminPersonCell',
       'AdminSection',
       'AdminTableSection',
+      'AdminTaskGrid',
       'MoneyText',
       'MetricCard',
     ].includes(component.name)

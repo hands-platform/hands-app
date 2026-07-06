@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ImmediateActionQueueRow } from './operations-handoff-immediate-actions';
 
@@ -24,7 +24,7 @@ export function OperationsHandoffImmediateActionSection({
       description="Ordered by operational state only: live booking stage, chat availability, cash settlement, notification delivery, and written handoff notes."
       title="Immediate action queue"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {visibleActions.map((item) => (
           <AdminActionCard
             actionLabel={item.nextAction}
@@ -42,7 +42,7 @@ export function OperationsHandoffImmediateActionSection({
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }
