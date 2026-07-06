@@ -2356,6 +2356,22 @@ a {
   margin-bottom: 0;
 }
 
+.admin-section-actions,
+.admin-card-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 0;
+  min-width: 0;
+}
+
+.admin-section-actions > .pill,
+.admin-card-header-actions > .pill {
+  flex-shrink: 0;
+}
+
 .admin-section-body {
   display: grid;
   gap: 14px;

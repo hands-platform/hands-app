@@ -18,6 +18,25 @@ describe('Admin surface CSS', () => {
     expect(footerBlock).not.toContain('display: grid');
   });
 
+  it('keeps AdminSection and AdminCardHeader actions on the Vuexy CardHeader action slot rhythm', () => {
+    const actionIndex = globalsCss.indexOf('.admin-section-actions,');
+    const actionBlock = cssRuleBlockAt(actionIndex);
+    const pillIndex = globalsCss.indexOf('.admin-section-actions > .pill,');
+    const pillBlock = cssRuleBlockAt(pillIndex);
+
+    expect(actionIndex).toBeGreaterThan(-1);
+    expect(actionBlock).toContain('.admin-card-header-actions');
+    expect(actionBlock).toContain('align-items: center');
+    expect(actionBlock).toContain('display: flex');
+    expect(actionBlock).toContain('flex-wrap: wrap');
+    expect(actionBlock).toContain('gap: 8px');
+    expect(actionBlock).toContain('justify-content: flex-end');
+    expect(actionBlock).toContain('margin-top: 0');
+    expect(actionBlock).toContain('min-width: 0');
+    expect(pillIndex).toBeGreaterThan(actionIndex);
+    expect(pillBlock).toContain('flex-shrink: 0');
+  });
+
   it('keeps AdminState panels on the Vuexy Alert rhythm', () => {
     const stateIndex = globalsCss.indexOf('.admin-state {');
     const stateBlock = cssRuleBlockAt(stateIndex);

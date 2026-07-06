@@ -205,7 +205,7 @@ export function AdminCardHeader({ actions, className, description, title }: Admi
         <h3>{title}</h3>
         {description ? <p className="muted">{description}</p> : null}
       </div>
-      {actions ? <div className="participant-list">{actions}</div> : null}
+      {actions ? <div className="participant-list admin-card-header-actions">{actions}</div> : null}
     </div>
   );
 }
@@ -445,7 +445,7 @@ export function AdminSection({
           {description ? <p className="muted">{description}</p> : null}
         </div>
         {actions || sectionStatus ? (
-          <div className="participant-list">
+          <div className="participant-list admin-section-actions">
             {sectionStatus}
             {actions}
           </div>

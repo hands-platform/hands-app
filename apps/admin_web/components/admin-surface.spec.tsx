@@ -61,7 +61,7 @@ describe('Admin surface components', () => {
     expect(header.props.children[0].props.children[0].type).toBe('h3');
     expect(header.props.children[0].props.children[0].props.children).toBe('Partner action queue');
     expect(header.props.children[0].props.children[1].props.children).toBe('Bounded queue for operators.');
-    expect(header.props.children[1].props.className).toBe('participant-list');
+    expect(header.props.children[1].props.className).toBe('participant-list admin-card-header-actions');
   });
 
   it('deduplicates Vuexy surface class tokens passed by legacy callers', () => {
@@ -112,6 +112,7 @@ describe('Admin surface components', () => {
     });
     expect(section.props.children).toHaveLength(3);
     expect(section.props.children[0].props.className).toBe('ops-section-header admin-section-header');
+    expect(section.props.children[0].props.children[1].props.className).toBe('participant-list admin-section-actions');
     expect(section.props.children[0].props.children[1].props.children[0].props.tone).toBe('success');
     expect(section.props.children[1].props.className).toBe('admin-section-body');
     expect(section.props.children[2].props.className).toBe('admin-section-footer');
