@@ -520,7 +520,7 @@ function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof norm
     <AdminSection
       actions={<BarChart3 size={18} aria-hidden="true" />}
       bodyClassName="marketing-breakdown-loader-body"
-      className="usage-overview-ranking-card marketing-table-card"
+      className="marketing-table-card"
       description="The default view loads summary counts only. Open breakdowns when you need source, region, campaign, and platform rows."
       title="Breakdown tables"
     >
@@ -571,7 +571,7 @@ function FunnelCard({ overview }: { overview: AdminMarketingOverview }) {
     <AdminSection
       actions={<MousePointerClick size={18} aria-hidden="true" />}
       bodyClassName="marketing-funnel-list"
-      className="usage-overview-ranking-card marketing-funnel-card"
+      className="marketing-funnel-card"
       description="Canonical HANDS funnel events from first open through repeat completion."
       title="Acquisition funnel"
     >
@@ -595,7 +595,7 @@ function InsightCard({ overview }: { overview: AdminMarketingOverview }) {
     <AdminSection
       actions={<Send size={18} aria-hidden="true" />}
       bodyClassName="marketing-insight-list"
-      className="usage-overview-ranking-card marketing-insight-card"
+      className="marketing-insight-card"
       description="Operator-readable findings and current data gaps before paid scaling."
       footer={
         overview.dataGaps.length > 0 ? (
@@ -660,13 +660,13 @@ function MarketingTable({
           {icon}
         </div>
       }
-      className="usage-overview-ranking-card marketing-table-card"
+      className="marketing-table-card"
       description={description}
       title={title}
     >
-      <AdminTableScroll className="usage-overview-table-wrap">
+      <AdminTableScroll className="marketing-analytics-table-wrap">
         <AdminDataTable
-          className="usage-overview-table marketing-analytics-table"
+          className="marketing-analytics-table"
           emptyMessage={
             <AdminEmptyState
               message="Try a different range or remove the dimension filter."
@@ -679,8 +679,8 @@ function MarketingTable({
             {rows.map((row) => (
               <tr key={row.key}>
                 <td>
-                  <div className="usage-overview-name-cell">
-                    <span className="usage-overview-avatar">
+                  <div className="marketing-analytics-name-cell">
+                    <span className="marketing-analytics-avatar">
                       <BadgeDollarSign size={15} aria-hidden="true" />
                     </span>
                     <div>

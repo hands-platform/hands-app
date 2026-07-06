@@ -89,11 +89,14 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).not.toContain('<section className="vietnam-overview-metric-grid"');
     expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel marketing-analytics-filter-panel');
     expect(markup).not.toContain('card admin-filter-panel marketing-spend-panel');
-    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-funnel-card');
+    expect(markup).toContain('card admin-section marketing-funnel-card');
     expect(markup).toContain('admin-section-body marketing-funnel-list');
-    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-insight-card');
+    expect(markup).toContain('card admin-section marketing-insight-card');
     expect(markup).toContain('admin-section-body marketing-insight-list');
-    expect(markup).toContain('card admin-section usage-overview-ranking-card marketing-table-card');
+    expect(markup).toContain('card admin-section marketing-table-card');
+    expect(markup).not.toContain('usage-overview-ranking-card marketing-funnel-card');
+    expect(markup).not.toContain('usage-overview-ranking-card marketing-insight-card');
+    expect(markup).not.toContain('usage-overview-ranking-card marketing-table-card');
     expect(markup).toContain('admin-section-body marketing-breakdown-loader-body');
     expect(markup).toContain('empty-state marketing-breakdown-loader-empty');
     expect(markup).toContain('admin-form-control-link button button-primary');
@@ -125,13 +128,22 @@ describe('MarketingAnalyticsPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table');
-    expect(markup).toContain('admin-table-scroll usage-overview-table-wrap');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table marketing-analytics-table');
+    expect(markup).toContain('admin-table-scroll marketing-analytics-table-wrap');
+    expect(markup).not.toContain('usage-overview-table marketing-analytics-table');
+    expect(markup).not.toContain('usage-overview-table-wrap');
+    expect(markup).not.toContain('usage-overview-name-cell');
+    expect(markup).not.toContain('usage-overview-avatar');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');
+    expect(pageSource).toContain('marketing-analytics-name-cell');
+    expect(pageSource).toContain('marketing-analytics-avatar');
     expect(pageSource).not.toContain('<div className="empty-state">');
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vuexy-booking-table usage-overview-table marketing-analytics-table">');
+    expect(pageSource).not.toContain('usage-overview-table-wrap');
+    expect(pageSource).not.toContain('usage-overview-name-cell');
+    expect(pageSource).not.toContain('usage-overview-avatar');
   });
 
   it('uses the shared table pagination footer for breakdown tables', () => {

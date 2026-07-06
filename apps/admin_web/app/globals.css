@@ -9746,7 +9746,10 @@ a.action-button-card:hover {
   line-height: 24px;
 }
 
-.usage-overview-ranking-card {
+.usage-overview-ranking-card,
+.marketing-table-card,
+.marketing-funnel-card,
+.marketing-insight-card {
   display: grid;
   gap: 16px;
   min-width: 0;
@@ -10078,16 +10081,19 @@ a.action-button-card:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.usage-overview-table-wrap {
+.usage-overview-table-wrap,
+.marketing-analytics-table-wrap {
   border-radius: var(--admin-radius-lg);
   margin-top: 0;
 }
 
-.usage-overview-table {
+.usage-overview-table,
+.marketing-analytics-table {
   min-width: 720px;
 }
 
-.usage-overview-table th {
+.usage-overview-table th,
+.marketing-analytics-table th {
   background: var(--admin-surface);
   font-size: 0.75rem;
   letter-spacing: 0;
@@ -10107,21 +10113,25 @@ a.action-button-card:hover {
   min-width: 42px;
 }
 
-.usage-overview-name-cell {
+.usage-overview-name-cell,
+.marketing-analytics-name-cell {
   align-items: center;
   display: flex;
   gap: 10px;
   min-width: 0;
 }
 
-.usage-overview-name-cell > div {
+.usage-overview-name-cell > div,
+.marketing-analytics-name-cell > div {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
 .usage-overview-name-cell a,
-.usage-overview-name-cell strong {
+.usage-overview-name-cell strong,
+.marketing-analytics-name-cell a,
+.marketing-analytics-name-cell strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 700;
@@ -10130,11 +10140,13 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-name-cell small {
+.usage-overview-name-cell small,
+.marketing-analytics-name-cell small {
   color: var(--admin-muted);
 }
 
-.usage-overview-avatar {
+.usage-overview-avatar,
+.marketing-analytics-avatar {
   align-items: center;
   background: rgb(var(--admin-info-channel) / 0.14);
   border-radius: 50%;
