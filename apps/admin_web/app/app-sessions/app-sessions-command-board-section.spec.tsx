@@ -54,6 +54,8 @@ describe('AppSessionsCommandBoardSection', () => {
     );
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
+    expect(source).not.toContain('bodyClassName="ops-task-grid admin-mt-12"');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('ops-task-card-action');
   });

@@ -1,5 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCheckQueueItem = {
@@ -28,7 +28,7 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
       title="Session check queue"
     >
       {items.length ? (
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {items.slice(0, 12).map((item) => (
             <AdminTaskCard
               actionLabel={item.action}
@@ -39,7 +39,7 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
               title={item.title}
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       ) : (
         <AdminEmptyState framed message="No visible session issue in the latest heartbeat snapshot." />
       )}

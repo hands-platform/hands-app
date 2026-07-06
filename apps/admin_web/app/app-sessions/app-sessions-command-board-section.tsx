@@ -1,4 +1,4 @@
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export type SessionCommandCard = {
@@ -21,7 +21,6 @@ export function AppSessionsCommandBoardSection({
 }: AppSessionsCommandBoardSectionProps) {
   return (
     <AdminSection
-      bodyClassName="ops-task-grid admin-mt-12"
       className="admin-mb-16"
       description="Live demand, Partner supply, push reachability, and shared-device checks for the current shift."
       status={
@@ -31,18 +30,20 @@ export function AppSessionsCommandBoardSection({
       }
       title="Session command board"
     >
-      {cards.map((card) => (
-        <AdminTaskCard
-          actionLabel={card.action}
-          className={card.tone}
-          key={card.title}
-          leading={<small>{card.status}</small>}
-          title={card.title}
-        >
-          <strong>{card.value}</strong>
-          <p>{card.detail}</p>
-        </AdminTaskCard>
-      ))}
+      <AdminTaskGrid className="admin-mt-12">
+        {cards.map((card) => (
+          <AdminTaskCard
+            actionLabel={card.action}
+            className={card.tone}
+            key={card.title}
+            leading={<small>{card.status}</small>}
+            title={card.title}
+          >
+            <strong>{card.value}</strong>
+            <p>{card.detail}</p>
+          </AdminTaskCard>
+        ))}
+      </AdminTaskGrid>
     </AdminSection>
   );
 }
