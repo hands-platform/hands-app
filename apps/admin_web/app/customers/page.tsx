@@ -1,6 +1,7 @@
 import { CalendarClock, Star } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { adminGet } from '../../lib/admin-api';
 import type { AdminCustomer, AdminCustomerSummary } from '../../lib/admin-api';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -153,9 +154,9 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
             <CalendarClock aria-hidden="true" size={16} />
             Open bookings
           </AdminFormControlLink>
-          <AdminFormControlLink className="text-link" href="/payments">
+          <AdminTextLink href="/payments">
             Open payments
-          </AdminFormControlLink>
+          </AdminTextLink>
           <AdminFormControlLink className="button-secondary" href="/reviews">
             <Star aria-hidden="true" size={16} />
             Open reviews

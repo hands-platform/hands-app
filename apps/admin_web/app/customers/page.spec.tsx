@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -15,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const customerPageSource = readFileSync('app/customers/page.tsx', 'utf8');
 
 describe('CustomersPage', () => {
   beforeEach(() => {
@@ -66,5 +69,10 @@ describe('CustomersPage', () => {
     expect(markup).toContain('Female 4 / Male 2 / Other 0 / Not captured 1');
     expect(markup).toContain('Female 8 / Male 4 / Other 1 / Not captured 0');
     expect(markup).toContain('Female 25 / Male 12 / Other 3 / Not captured 4');
+  });
+
+  it('uses the shared Vuexy text link atom for inline page actions', () => {
+    expect(customerPageSource).toContain('AdminTextLink');
+    expect(customerPageSource).not.toContain('className="text-link"');
   });
 });
