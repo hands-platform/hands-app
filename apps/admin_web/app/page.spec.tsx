@@ -40,6 +40,14 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toMatch(/<div className="service-trace-summary(?: [^"]*)?">/);
   });
 
+  it('uses the shared DateTimeText atom for dashboard booking evidence sample dates', () => {
+    expect(dashboardSource).toContain('DateTimeText');
+    expect(dashboardSource).toContain('<DateTimeText fallback="unknown" value={bookingRequestOpenedAt(booking)} />');
+    expect(dashboardSource).not.toContain('function dashboardDateLabel');
+    expect(dashboardSource).not.toContain('return formatDateTime(value, \'unknown\');');
+    expect(dashboardSource).not.toContain('opened ${dashboardDateLabel(');
+  });
+
   it('renders server-scoped dashboard finance rows without applying a second local date filter', async () => {
     const earningSummary: AdminEarningSummary = {
       availableNetAmount: 120000,

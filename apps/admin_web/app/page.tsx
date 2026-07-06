@@ -17,6 +17,7 @@ import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminTraceSummary } from '../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
 import { AdminTextLink } from '../components/admin-text-link';
+import { DateTimeText } from '../components/date-time-text';
 import {
   AdminActionCard,
   AdminDetailGrid,
@@ -63,7 +64,6 @@ import {
   bookingRequestOpenedAt,
 } from '../lib/admin-booking-time';
 import {
-  formatDateTime,
   formatDistanceMeters,
   formatMoneyOrZero as money,
   formatRelativeAge as relativeTimeLabel,
@@ -328,7 +328,7 @@ type BookingEvidenceCommandQueueItem = {
   operatorAction: string;
   sample?: {
     label: string;
-    detail: string;
+    detail: ReactNode;
     href: string;
   };
 };
@@ -3370,9 +3370,12 @@ function bookingEvidenceSample(
   }
   return {
     label: `${label}: ${shortId(booking.id)}`,
-    detail: `${booking.status} / ${bookingServiceLabel(booking)} / opened ${dashboardDateLabel(
-      bookingRequestOpenedAt(booking),
-    )}`,
+    detail: (
+      <>
+        {booking.status} / {bookingServiceLabel(booking)} / opened{' '}
+        <DateTimeText fallback="unknown" value={bookingRequestOpenedAt(booking)} />
+      </>
+    ),
     href: `/bookings/${booking.id}`,
   };
 }
@@ -3395,10 +3398,6 @@ function bookingEvidenceStatusRank(status?: string | null) {
   if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(status ?? '')) return 2;
   if (status === 'COMPLETED') return 1;
   return 0;
-}
-
-function dashboardDateLabel(value?: string | null) {
-  return formatDateTime(value, 'unknown');
 }
 
 function dashboardDateValue(value?: string | null) {
