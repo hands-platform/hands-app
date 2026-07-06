@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -86,9 +86,9 @@ export function BookingMonitorMatchingEscalationSection({
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href="/operations-policy">
+        <AdminTextLink href="/operations-policy">
           Change matching rules
-        </Link>
+        </AdminTextLink>
       }
       className="admin-mt-16"
       description="Only lanes with current dispatch work are shown here."
@@ -131,9 +131,9 @@ export function BookingMonitorMatchingEscalationSection({
             {visibleEscalationLanes.map((lane) => (
               <tr key={lane.title}>
                 <td>
-                  <Link className="text-link" href={lane.href}>
+                  <AdminTextLink href={lane.href}>
                     {lane.title}
-                  </Link>
+                  </AdminTextLink>
                   <div className="muted">{lane.detail}</div>
                 </td>
                 <td>
@@ -184,9 +184,9 @@ export function BookingMonitorMatchingEscalationSection({
             {visibleFlowTimeline.map((step) => (
               <tr key={step.stage}>
                 <td>
-                  <Link className="text-link" href={step.href}>
+                  <AdminTextLink href={step.href}>
                     {step.stage}
-                  </Link>
+                  </AdminTextLink>
                 </td>
                 <td>
                   <strong>{step.title}</strong>
@@ -241,9 +241,9 @@ export function BookingMonitorMatchingEscalationSection({
               {visibleDispatchPartnerShortcuts.map((item) => (
                 <tr key={item.title}>
                   <td>
-                    <Link className="text-link" href={item.href}>
+                    <AdminTextLink href={item.href}>
                       {item.title}
-                    </Link>
+                    </AdminTextLink>
                   </td>
                   <td>
                     <strong>{item.value}</strong>
@@ -252,9 +252,9 @@ export function BookingMonitorMatchingEscalationSection({
                     <span className="muted">{item.detail}</span>
                   </td>
                   <td>
-                    <Link className="text-link" href={item.href}>
+                    <AdminTextLink href={item.href}>
                       Open queue
-                    </Link>
+                    </AdminTextLink>
                   </td>
                 </tr>
               ))}
@@ -276,9 +276,9 @@ export function BookingMonitorMatchingEscalationSection({
               {visibleMatchingEscalationRows.map((item) => (
                 <tr key={`matching-${item.booking.id}`}>
                   <td>
-                    <Link className="text-link" href={`/bookings/${item.booking.id}`}>
+                    <AdminTextLink href={`/bookings/${item.booking.id}`}>
                       {shortId(item.booking.id)}
-                    </Link>
+                    </AdminTextLink>
                     <div className="muted">{getCustomerLabel(item.booking)}</div>
                     <div className="muted">{bookingServiceOptionLabel(item.booking)}</div>
                   </td>
