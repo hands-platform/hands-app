@@ -60,6 +60,25 @@ describe('Admin form control CSS', () => {
     expect(globalsCss.slice(checkedIndex, checkedIndex + 240)).toContain('background: var(--admin-accent)');
   });
 
+  it('keeps calendar hashtag filters on the shared checkbox mark layer', () => {
+    const rawInputIndex = globalsCss.indexOf('.calendar-filter-row input {');
+    const markIndex = globalsCss.indexOf('.calendar-filter-row .admin-form-checkbox-mark {');
+    const checkedIndex = globalsCss.indexOf(
+      '.calendar-filter-row .admin-form-checkbox-input:checked + .admin-form-checkbox-mark {',
+    );
+    const labelIndex = globalsCss.indexOf('.calendar-filter-row .admin-form-checkbox-label {');
+    const markBlock = cssRuleBlockAt(markIndex);
+    const labelBlock = cssRuleBlockAt(labelIndex);
+
+    expect(rawInputIndex).toBe(-1);
+    expect(markIndex).toBeGreaterThan(-1);
+    expect(checkedIndex).toBeGreaterThan(markIndex);
+    expect(markBlock).toContain('border: 2px solid var(--admin-disabled)');
+    expect(markBlock).toContain('margin: 0 9px');
+    expect(labelBlock).toContain('display: flex');
+    expect(labelBlock).toContain('flex: 1 1 auto');
+  });
+
   it('keeps inline react-datepicker navigation aligned with the Vuexy 30px control position', () => {
     const inlineNavigationIndex = globalsCss.indexOf(
       '.react-datepicker.calendar-vuexy-datepicker-inline > .react-datepicker__navigation',

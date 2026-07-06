@@ -1771,12 +1771,8 @@ a {
   box-shadow: none;
 }
 
-.calendar-filter-row input {
-  appearance: none;
-  background-color: transparent;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 12px 12px;
+.calendar-filter-row .admin-form-checkbox-mark {
+  background: transparent;
   border: 2px solid var(--admin-disabled);
   border-radius: 4px;
   flex: 0 0 auto;
@@ -1784,7 +1780,6 @@ a {
   margin: 0 9px;
   min-height: 18px;
   min-width: 18px;
-  padding: 0;
   transition:
     background-color var(--admin-transition),
     border-color var(--admin-transition),
@@ -1792,16 +1787,22 @@ a {
   width: 18px;
 }
 
-.calendar-filter-row input:checked {
-  background-color: var(--admin-accent);
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m8.5 12 2.5 2.5 5-5' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+.calendar-filter-row .admin-form-checkbox-input:checked + .admin-form-checkbox-mark {
+  background: var(--admin-accent);
   border-color: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
 }
 
-.calendar-filter-row input:focus-visible {
-  outline: 2px solid rgb(var(--admin-primary-channel) / 0.3);
-  outline-offset: 2px;
+.calendar-filter-row .admin-form-checkbox-input:focus-visible + .admin-form-checkbox-mark {
+  box-shadow: var(--admin-primary-shadow-sm);
+}
+
+.calendar-filter-row .admin-form-checkbox-label {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
 }
 
 .calendar-filter-row span:not(.pill) {
