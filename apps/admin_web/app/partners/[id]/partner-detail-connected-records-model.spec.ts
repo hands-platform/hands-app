@@ -34,6 +34,8 @@ describe('partner detail connected records model', () => {
       value: 'booking-...',
     });
     expect(linkByLabel(links, 'First-pick gate attempts')).toMatchObject({
+      detailDateTimePrefix: 'Cash fee debt / latest ',
+      detailDateTimeValue: '2026-06-10T07:05:00.000Z',
       detail: 'Cash fee debt / latest 10 Jun 2026, 14:05',
       href: '/bookings?view=blocked-create&reason=wallet',
       tone: 'pill-warn',
@@ -54,6 +56,7 @@ describe('partner detail connected records model', () => {
       detail: 'Latest Partner location saved for dispatch checks.',
       tone: 'pill-info',
       value: '10 Jun 2026, 14:00',
+      valueDateTimeValue: '2026-06-10T07:00:00.000Z',
     });
     expect(JSON.stringify(linkByLabel(links, 'Location'))).not.toMatch(
       /\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/,

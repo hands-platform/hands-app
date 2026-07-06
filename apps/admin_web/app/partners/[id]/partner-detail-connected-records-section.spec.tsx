@@ -55,6 +55,14 @@ describe('PartnerDetailConnectedRecordsSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{links.length} links</span>');
     expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
   });
+
+  it('passes raw connected-record timestamps into the shared Vuexy trace summary date atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
+
+    expect(source).toContain('valueDateTimeValue: record.valueDateTimeValue');
+    expect(source).toContain('detailDateTimePrefix: record.detailDateTimePrefix');
+    expect(source).toContain('detailDateTimeValue: record.detailDateTimeValue');
+  });
 });
 
 function buildLinks(): PartnerDetailConnectedRecordLink[] {
@@ -67,6 +75,8 @@ function buildLinks(): PartnerDetailConnectedRecordLink[] {
       value: 'BK-1001',
     },
     {
+      detailDateTimePrefix: 'Wallet threshold / latest ',
+      detailDateTimeValue: '2026-06-09T00:00:00.000Z',
       detail: 'Wallet threshold / latest 9 Jun 2026',
       href: '/bookings?view=blocked-create',
       label: 'First-pick gate attempts',

@@ -8,10 +8,13 @@ const PARTNER_OPS_NOTE_ACTION = 'provider.ops_note.add';
 
 export type PartnerDetailConnectedRecordLink = {
   readonly detail: string;
+  readonly detailDateTimePrefix?: string;
+  readonly detailDateTimeValue?: string | null;
   readonly href: string;
   readonly label: string;
   readonly tone: string;
   readonly value: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 type PartnerConnectedRecordProvider = {
@@ -85,6 +88,8 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       detail: bookingGateAttempts[0]
         ? `${bookingGateAttempts[0].reasonLabel} / latest ${formatDate(bookingGateAttempts[0].at)}`
         : 'No booking create gate attempt is linked to this partner.',
+      detailDateTimePrefix: bookingGateAttempts[0] ? `${bookingGateAttempts[0].reasonLabel} / latest ` : undefined,
+      detailDateTimeValue: bookingGateAttempts[0]?.at,
       href: bookingGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
       tone: bookingGateAttempts.length ? 'pill-warn' : 'pill-neutral',
     },
@@ -105,6 +110,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
     {
       label: 'Location',
       value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
+      valueDateTimeValue: provider.currentLocationUpdatedAt,
       detail: latestLocationSaved
         ? 'Latest Partner location saved for dispatch checks.'
         : 'No latest location loaded.',

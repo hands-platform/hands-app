@@ -37,8 +37,11 @@ export function PartnerDetailConnectedRecordsSection({
             </StatusBadgeLink>
           ),
           detail: record.detail,
+          detailDateTimePrefix: record.detailDateTimePrefix,
+          detailDateTimeValue: record.detailDateTimeValue,
           label: record.label,
           value: record.value,
+          valueDateTimeValue: record.valueDateTimeValue,
         }))}
       />
     </AdminCard>
