@@ -32,7 +32,7 @@ import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminStageItem } from '../../components/admin-stage-item';
-import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { DateTimeText } from '../../components/date-time-text';
@@ -205,7 +205,7 @@ export default async function PartnerControlsPage({
         id="partner-control-command-center"
         title="Partner control command center"
       >
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {commandCenter.lanes.map((lane) => (
             <AdminActionCard
               actionLabel={lane.action}
@@ -227,7 +227,7 @@ export default async function PartnerControlsPage({
               </div>
             </AdminActionCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminSection>
 
       <AdminSection
@@ -276,7 +276,7 @@ export default async function PartnerControlsPage({
         statusTone="info"
         title="Partner control board"
       >
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {partnerControlBoard.metrics.map((controlMetric) => (
             <AdminTaskCard
               key={controlMetric.label}
@@ -291,7 +291,7 @@ export default async function PartnerControlsPage({
               </div>
             </AdminTaskCard>
           ))}
-        </div>
+        </AdminTaskGrid>
         {partnerControlBoard.items.length ? (
           <div className="setup-stage-list admin-mt-12">
             {partnerControlBoard.items.map((item) => (
@@ -349,7 +349,7 @@ export default async function PartnerControlsPage({
         }
         title="Marketplace and payout unblock board"
       >
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {acceptanceUnblockBoard.map((item) => (
             <AdminActionCard
               actionLabel={item.action}
@@ -386,7 +386,7 @@ export default async function PartnerControlsPage({
               ) : null}
             </AdminActionCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminSection>
 
       <AdminSection

@@ -12,7 +12,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -285,7 +285,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           description="Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start, and payout release. Partners can see marketplace requests while the wallet is negative."
           title="Marketplace and payout unblock bridge"
         />
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {marketplaceUnblockBridge.map((item) => (
             <AdminActionCard
               actionLabel={item.action}
@@ -298,7 +298,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               variant="ops-task"
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminTablePanel>
 
       <PayoutMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
