@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { EarningsCashDebtQueueSection } from './earnings-cash-debt-queue-section';
 
 describe('EarningsCashDebtQueueSection', () => {
+  it('uses the shared Vuexy trace summary atom for cash debt totals', () => {
+    const source = readFileSync('app/earnings/earnings-cash-debt-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary">');
+    expect(source).not.toContain('function CashDebtMetric');
+  });
+
   it('uses the shared Vuexy money atom for visible amounts', () => {
     const source = readFileSync('app/earnings/earnings-cash-debt-queue-section.tsx', 'utf8');
 

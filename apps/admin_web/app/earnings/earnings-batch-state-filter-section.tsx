@@ -1,4 +1,5 @@
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -43,19 +44,17 @@ export function EarningsBatchStateFilterSection({
           </StatusBadgeLink>
         ))}
       </AdminFilterChipGroup>
-      <div className="service-trace-summary admin-mt-16">
-        {cards
+      <AdminTraceSummary
+        className="admin-mt-16"
+        metrics={cards
           .filter((card) => card.state !== 'all')
-          .map((card) => (
-            <div key={card.state}>
-              <span>{card.label}</span>
-              <strong>{card.count}</strong>
-              <small>
-                <MoneyText amount={card.amount} currency={currency} />
-              </small>
-            </div>
-          ))}
-      </div>
+          .map((card) => ({
+            detail: <MoneyText amount={card.amount} currency={currency} />,
+            key: card.state,
+            label: card.label,
+            value: card.count,
+          }))}
+      />
     </AdminTablePanel>
   );
 }

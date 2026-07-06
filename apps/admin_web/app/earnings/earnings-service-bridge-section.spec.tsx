@@ -3,6 +3,14 @@ import { readFileSync } from 'node:fs';
 import { EarningsServiceBridgeSection } from './earnings-service-bridge-section';
 
 describe('EarningsServiceBridgeSection', () => {
+  it('uses the shared Vuexy trace summary atom for service bridge totals', () => {
+    const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary">');
+    expect(source).not.toContain('function ServiceBridgeMetric');
+  });
+
   it('uses the shared StatusBadge atom for cash debt chips', () => {
     const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
 

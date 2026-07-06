@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -48,13 +49,15 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
       title="Cash fee debt queue"
     >
       {items.length ? (
-        <div className="service-trace-summary">
-          <CashDebtMetric label="Blocked wallets" value={String(items.length)} />
-          <CashDebtMetric amount={totals.debtAmount} currency={currency} label="Wallet debt" />
-          <CashDebtMetric amount={totals.bookingAmount} currency={currency} label="Booking cash" />
-          <CashDebtMetric amount={totals.platformFee} currency={currency} label="HANDS fee" />
-          <CashDebtMetric amount={totals.taxAmount} currency={currency} label="Tax" />
-        </div>
+        <AdminTraceSummary
+          metrics={[
+            { label: 'Blocked wallets', value: String(items.length) },
+            { label: 'Wallet debt', value: <MoneyText amount={totals.debtAmount} currency={currency} /> },
+            { label: 'Booking cash', value: <MoneyText amount={totals.bookingAmount} currency={currency} /> },
+            { label: 'HANDS fee', value: <MoneyText amount={totals.platformFee} currency={currency} /> },
+            { label: 'Tax', value: <MoneyText amount={totals.taxAmount} currency={currency} /> },
+          ]}
+        />
       ) : null}
       {items.length ? (
         <div className="setup-stage-list">
@@ -125,24 +128,5 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
         <AdminEmptyState framed message="No Partner has unsettled cash fee debt in the current admin result window." />
       )}
     </AdminTablePanel>
-  );
-}
-
-function CashDebtMetric({
-  amount,
-  currency,
-  label,
-  value,
-}: {
-  readonly amount?: number;
-  readonly currency?: string;
-  readonly label: string;
-  readonly value?: string;
-}) {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{value ?? <MoneyText amount={amount ?? 0} currency={currency ?? 'VND'} />}</strong>
-    </div>
   );
 }

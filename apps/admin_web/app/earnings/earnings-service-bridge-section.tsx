@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -44,20 +45,44 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
           Review service pricing
         </AdminTextLink>
       </div>
-      <div className="service-trace-summary">
-        <ServiceBridgeMetric label="Service options" value={String(items.length)} />
-        <ServiceBridgeMetric amount={sumBridge(items, 'grossAmount')} currency={currency} label="Gross" />
-        <ServiceBridgeMetric amount={sumBridge(items, 'netAmount')} currency={currency} label="Partner net" />
-        <ServiceBridgeMetric amount={sumBridge(items, 'providerPayoutAmount')} currency={currency} label="Partner payout" />
-        <ServiceBridgeMetric amount={sumBridge(items, 'platformFee')} currency={currency} label="Platform fee" />
-        <ServiceBridgeMetric
-          amount={sumBridge(items, 'vatAmount') + sumBridge(items, 'otherCostAmount')}
-          currency={currency}
-          label="VAT / cost"
-        />
-        <ServiceBridgeMetric amount={sumBridge(items, 'withholdingAmount')} currency={currency} label="Tax withheld" />
-        <ServiceBridgeMetric amount={sumBridge(items, 'cashDebtAmount')} currency={currency} label="Cash debt" />
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Service options', value: String(items.length) },
+          {
+            label: 'Gross',
+            value: <MoneyText amount={sumBridge(items, 'grossAmount')} currency={currency} />,
+          },
+          {
+            label: 'Partner net',
+            value: <MoneyText amount={sumBridge(items, 'netAmount')} currency={currency} />,
+          },
+          {
+            label: 'Partner payout',
+            value: <MoneyText amount={sumBridge(items, 'providerPayoutAmount')} currency={currency} />,
+          },
+          {
+            label: 'Platform fee',
+            value: <MoneyText amount={sumBridge(items, 'platformFee')} currency={currency} />,
+          },
+          {
+            label: 'VAT / cost',
+            value: (
+              <MoneyText
+                amount={sumBridge(items, 'vatAmount') + sumBridge(items, 'otherCostAmount')}
+                currency={currency}
+              />
+            ),
+          },
+          {
+            label: 'Tax withheld',
+            value: <MoneyText amount={sumBridge(items, 'withholdingAmount')} currency={currency} />,
+          },
+          {
+            label: 'Cash debt',
+            value: <MoneyText amount={sumBridge(items, 'cashDebtAmount')} currency={currency} />,
+          },
+        ]}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
@@ -137,25 +162,6 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
         </AdminDataTable>
       </AdminTableScroll>
     </AdminTablePanel>
-  );
-}
-
-function ServiceBridgeMetric({
-  amount,
-  currency,
-  label,
-  value,
-}: {
-  readonly amount?: number;
-  readonly currency?: string;
-  readonly label: string;
-  readonly value?: string;
-}) {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{value ?? <MoneyText amount={amount ?? 0} currency={currency ?? 'VND'} />}</strong>
-    </div>
   );
 }
 

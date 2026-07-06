@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { EarningsBatchStateFilterSection } from './earnings-batch-state-filter-section';
 
 describe('EarningsBatchStateFilterSection', () => {
+  it('uses the shared Vuexy trace summary atom for batch state totals', () => {
+    const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-16">');
+  });
+
   it('uses the shared Vuexy pill link surface for active filter tone', () => {
     const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
 
