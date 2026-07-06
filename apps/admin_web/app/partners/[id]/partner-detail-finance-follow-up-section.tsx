@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type { PartnerFinanceFollowUpRow } from './partner-detail-finance-follow-up-model';
 import {
@@ -41,7 +42,7 @@ export function PartnerDetailFinanceFollowUpSection({
                 <p className="muted">{row.detail}</p>
               </td>
               <td>
-                <strong>{row.amountLabel}</strong>
+                <MoneyText amount={row.amount} currency={row.currency} fallback={row.amountLabel} />
               </td>
               <td>
                 <p className="muted">{row.evidenceLabel}</p>

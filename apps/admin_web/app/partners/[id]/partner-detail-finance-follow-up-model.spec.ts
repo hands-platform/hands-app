@@ -37,12 +37,16 @@ describe('buildPartnerFinanceFollowUpRows', () => {
     ]);
     expect(rows[0]).toMatchObject({
       actionLabel: 'Collect deposit or approved offset',
+      amount: 250_000,
       amountLabel: '250.000 VND',
+      currency: 'VND',
       tone: 'danger',
     });
     expect(rows[1].detail).toContain('Account number does not match');
     expect(rows[2]).toMatchObject({
+      amount: 1_000_000,
       amountLabel: '1.000.000 VND',
+      currency: 'VND',
       evidenceLabel: '1 deposit row(s)',
       href: '#partner-wallet-detail',
       tone: 'success',
@@ -69,7 +73,9 @@ describe('buildPartnerFinanceFollowUpRows', () => {
     expect(rows).toEqual([
       expect.objectContaining({
         id: 'withdrawal-ready',
+        amount: 830_000,
         amountLabel: '830.000 VND',
+        currency: 'VND',
         evidenceLabel: 'Approved bank details',
         tone: 'success',
       }),
@@ -89,7 +95,9 @@ describe('buildPartnerFinanceFollowUpRows', () => {
       expect.objectContaining({
         id: 'withdrawal-details-missing',
         actionLabel: 'Ask Partner to add bank details',
+        amount: 500_000,
         amountLabel: '500.000 VND',
+        currency: 'VND',
         tone: 'warning',
       }),
     ]);

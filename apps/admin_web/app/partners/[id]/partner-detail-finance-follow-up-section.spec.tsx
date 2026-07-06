@@ -15,6 +15,11 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
     expect(sectionSource).not.toContain('className="text-link"');
   });
 
+  it('uses the shared MoneyText atom for finance follow-up amounts', () => {
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).not.toContain('<strong>{row.amountLabel}</strong>');
+  });
+
   it('uses the partner detail Vuexy table panel atom for the finance follow-up surface', () => {
     expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
     expect(sectionSource).not.toContain('AdminFilterPanel');
@@ -26,7 +31,9 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
       rows: [
         {
           actionLabel: 'Collect deposit or approved offset',
+          amount: 250000,
           amountLabel: '250.000 VND',
+          currency: 'VND',
           detail: 'Partner still owes HANDS from cash-service fee/tax settlement.',
           evidenceLabel: 'Negative wallet receivable',
           href: '/cash-settlements',
@@ -36,7 +43,9 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
         },
         {
           actionLabel: 'Ready for withdrawal review',
+          amount: 830000,
           amountLabel: '830.000 VND',
+          currency: 'VND',
           detail: 'Positive wallet balance is available for admin-reviewed manual withdrawal.',
           evidenceLabel: 'Approved bank details',
           href: '#bank',
@@ -59,7 +68,7 @@ describe('PartnerDetailFinanceFollowUpSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );

@@ -14,7 +14,9 @@ export type PartnerFinanceFollowUpTone = 'danger' | 'success' | 'warning';
 
 export type PartnerFinanceFollowUpRow = {
   readonly actionLabel: string;
+  readonly amount: number | null;
   readonly amountLabel: string;
+  readonly currency: string;
   readonly detail: string;
   readonly evidenceLabel: string;
   readonly href: string;
@@ -46,7 +48,9 @@ export function buildPartnerFinanceFollowUpRows({
   if (walletSummary.negativeWalletReceivable > 0) {
     rows.push({
       actionLabel: 'Collect deposit or approved offset',
+      amount: walletSummary.negativeWalletReceivable,
       amountLabel: formatCurrency(walletSummary.negativeWalletReceivable, walletSummary.currency),
+      currency: walletSummary.currency,
       detail:
         'Partner still owes HANDS from cash-service fee/tax settlement. Keep payout release, final acceptance, and service start blocked until evidence clears this receivable.',
       evidenceLabel: 'Negative wallet receivable',
@@ -60,7 +64,9 @@ export function buildPartnerFinanceFollowUpRows({
   if (rejectedBank) {
     rows.push({
       actionLabel: 'Wait for corrected bank details',
+      amount: null,
       amountLabel: '-',
+      currency: walletSummary.currency,
       detail:
         rejectedBank.rejectionReason ??
         'Bank details were rejected. Partner app should ask for corrected withdrawal information.',
@@ -73,7 +79,9 @@ export function buildPartnerFinanceFollowUpRows({
   } else if (pendingBank) {
     rows.push({
       actionLabel: 'Approve or reject details',
+      amount: null,
       amountLabel: '-',
+      currency: walletSummary.currency,
       detail:
         'Partner submitted withdrawal details. Operator should review account holder, bank name, and proof before manual withdrawal.',
       evidenceLabel: bankAccountLabel(pendingBank),
@@ -87,7 +95,9 @@ export function buildPartnerFinanceFollowUpRows({
   if (depositRowCount > 0) {
     rows.push({
       actionLabel: 'Verify allocation',
+      amount: walletSummary.manualBankDeposits,
       amountLabel: formatCurrency(walletSummary.manualBankDeposits, walletSummary.currency),
+      currency: walletSummary.currency,
       detail:
         'Manual partner bank deposit evidence is visible in the wallet ledger. Check bank reference, allocation to negative wallet, and prepaid balance.',
       evidenceLabel: `${depositRowCount} deposit row(s)`,
@@ -103,7 +113,9 @@ export function buildPartnerFinanceFollowUpRows({
       approvedBank
         ? {
             actionLabel: 'Ready for withdrawal review',
+            amount: walletSummary.partnerWalletLiability,
             amountLabel: formatCurrency(walletSummary.partnerWalletLiability, walletSummary.currency),
+            currency: walletSummary.currency,
             detail:
               'Positive wallet balance is available for admin-reviewed manual withdrawal or future prepaid deduction.',
             evidenceLabel: 'Approved bank details',
@@ -114,7 +126,9 @@ export function buildPartnerFinanceFollowUpRows({
           }
         : {
             actionLabel: 'Ask Partner to add bank details',
+            amount: walletSummary.partnerWalletLiability,
             amountLabel: formatCurrency(walletSummary.partnerWalletLiability, walletSummary.currency),
+            currency: walletSummary.currency,
             detail:
               'Partner has positive wallet value, but no approved withdrawal bank details are available for manual payout.',
             evidenceLabel: 'Missing approved bank',
@@ -129,7 +143,9 @@ export function buildPartnerFinanceFollowUpRows({
   if (walletSummary.manualAdjustmentCount > 0) {
     rows.push({
       actionLabel: 'Review or create adjustment',
+      amount: null,
       amountLabel: '-',
+      currency: walletSummary.currency,
       detail:
         'Manual wallet adjustments are visible. Review operator notes and audit log before payout release.',
       evidenceLabel: `${walletSummary.manualAdjustmentCount} adjustment row(s)`,
