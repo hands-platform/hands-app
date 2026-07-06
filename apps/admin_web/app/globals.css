@@ -2473,6 +2473,11 @@ a {
   color: var(--admin-info);
 }
 
+.admin-loading-state .admin-state-icon svg {
+  animation: admin-state-spin 0.8s linear infinite;
+  transform-origin: center;
+}
+
 .admin-error-state .admin-state-icon {
   background: rgb(var(--admin-danger-channel) / 0.16);
   color: var(--admin-danger);
@@ -2494,6 +2499,18 @@ a {
 
 .admin-state-action {
   margin-top: 12px;
+}
+
+@keyframes admin-state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-loading-state .admin-state-icon svg {
+    animation: none;
+  }
 }
 
 .admin-card-scroll {

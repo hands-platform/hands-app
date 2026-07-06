@@ -68,6 +68,17 @@ describe('Admin surface CSS', () => {
     expect(dangerBlock).toContain('color: var(--admin-danger-text)');
   });
 
+  it('keeps loading state icons visibly animated for Vuexy async feedback', () => {
+    const loadingIconIndex = globalsCss.indexOf('.admin-loading-state .admin-state-icon svg {');
+    const loadingIconBlock = cssRuleBlockAt(loadingIconIndex);
+    const keyframesIndex = globalsCss.indexOf('@keyframes admin-state-spin {');
+
+    expect(loadingIconIndex).toBeGreaterThan(-1);
+    expect(loadingIconBlock).toContain('animation: admin-state-spin 0.8s linear infinite');
+    expect(loadingIconBlock).toContain('transform-origin: center');
+    expect(keyframesIndex).toBeGreaterThan(loadingIconIndex);
+  });
+
   it('keeps shared notices on the Vuexy Alert icon and spacing rhythm', () => {
     const inlineIndex = globalsCss.indexOf('.admin-inline-notice {');
     const inlineBlock = cssRuleBlockAt(inlineIndex);
