@@ -78,6 +78,10 @@ type ParticipantRow = {
   distancePolicyHelper: string;
   facts: ParticipantFact[];
   timing: string;
+  timingJoinedAtLabel?: string;
+  timingJoinedAtValue?: string | null;
+  timingRespondedAtLabel?: string;
+  timingRespondedAtValue?: string | null;
   operatorUse: string;
 };
 
@@ -422,7 +426,7 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
               </StatusBadge>
             </div>
             <p className="muted">{row.distancePolicyHelper}</p>
-            <p className="muted">{row.timing}</p>
+            <p className="muted">{participantTiming(row)}</p>
           </div>
           <div>
             <div className="filter-row">
@@ -438,6 +442,20 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
       ))}
     </div>
   );
+}
+
+function participantTiming(row: ParticipantRow) {
+  if (row.timingJoinedAtValue || row.timingRespondedAtValue) {
+    return (
+      <>
+        Participated{' '}
+        <DateTimeText fallback={row.timingJoinedAtLabel ?? 'Not set'} value={row.timingJoinedAtValue} /> / responded{' '}
+        <DateTimeText fallback={row.timingRespondedAtLabel ?? 'Not set'} value={row.timingRespondedAtValue} />
+      </>
+    );
+  }
+
+  return row.timing;
 }
 
 function CashFeeSettlementPathSection({

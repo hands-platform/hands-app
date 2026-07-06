@@ -295,6 +295,8 @@ export function bookingParticipantLedger(
         customerSelectable,
       });
       const distancePolicy = participantDistancePolicy(participant.distanceMeters, marketplaceSupply.radiusMeters);
+      const joinedAtLabel = formatDate(participant.joinedAt);
+      const respondedAtLabel = formatDate(participant.respondedAt);
 
       return {
         id: participant.id,
@@ -330,7 +332,11 @@ export function bookingParticipantLedger(
           { label: 'Distance', value: distancePolicy.label, tone: distancePolicy.tone },
           { label: 'Chat handoff', value: chatHandoff.label, tone: chatHandoff.tone },
         ],
-        timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
+        timing: `Participated ${joinedAtLabel} / responded ${respondedAtLabel}`,
+        timingJoinedAtLabel: joinedAtLabel,
+        timingJoinedAtValue: participant.joinedAt,
+        timingRespondedAtLabel: respondedAtLabel,
+        timingRespondedAtValue: participant.respondedAt,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
           readableDecision.nextStep
         }`,

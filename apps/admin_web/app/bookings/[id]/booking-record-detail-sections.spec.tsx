@@ -251,6 +251,30 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
   });
 
+  it('renders participant timing through shared date atoms', () => {
+    const markup = renderSections({
+      participantLedger: {
+        ...participantLedger,
+        rows: [
+          {
+            ...participantRow,
+            timing: 'Participated Not set / responded Not set',
+            timingJoinedAtLabel: 'Not set',
+            timingJoinedAtValue: '2026-06-14T02:05:00.000Z',
+            timingRespondedAtLabel: 'Not set',
+            timingRespondedAtValue: '2026-06-14T02:08:00.000Z',
+          },
+        ],
+      },
+    });
+
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('Participated <time');
+    expect(markup).toContain('dateTime="2026-06-14T02:05:00.000Z"');
+    expect(markup).toContain('responded <time');
+    expect(markup).toContain('dateTime="2026-06-14T02:08:00.000Z"');
+  });
+
   it('renders post-match cancellation chat evidence inside the booking transcript', () => {
     const markup = renderSections({
       chatEvidenceRows: [

@@ -93,6 +93,8 @@ describe('booking participant ledger', () => {
       role: 'Final Partner',
       choiceState: 'Customer final choice',
       eligibilityLabel: 'Final selected by customer',
+      timingJoinedAtValue: '2026-06-07T01:04:00.000Z',
+      timingRespondedAtValue: '2026-06-07T01:05:00.000Z',
     });
     expect(ledger.lifecycleRows.find((row) => row.stage === '3. Customer final choice')).toMatchObject({
       evidence: 'Selected Partner is saved as the selected Partner.',
