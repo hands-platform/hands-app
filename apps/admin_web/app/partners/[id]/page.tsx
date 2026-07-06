@@ -1444,7 +1444,9 @@ function PartnerDetailFastOverview({
     },
     {
       label: 'App access',
-      value: latestAccessAt ? <DateTimeText fallback="No access" value={latestAccessAt} /> : 'No access',
+      value: 'No access',
+      valueDateTimeFallback: 'No access',
+      valueDateTimeValue: latestAccessAt,
       detail: `${provider.sessions?.length ?? 0} session(s), ${enabledPushDevices} enabled device(s).`,
       href: fullSectionHref('#app-activity'),
       tone: latestAccessAt ? 'pill-info' : 'pill-neutral',

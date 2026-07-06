@@ -14,6 +14,8 @@ export type PartnerDetailFastOverviewCard = {
   readonly label: string;
   readonly tone: string;
   readonly value: ReactNode;
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 export type PartnerDetailFastOverviewInfoLine = {
@@ -77,6 +79,8 @@ export function PartnerDetailFastOverviewSection({
           href: card.href,
           label: card.label,
           value: card.value,
+          valueDateTimeFallback: card.valueDateTimeFallback,
+          valueDateTimeValue: card.valueDateTimeValue,
         }))}
       />
 

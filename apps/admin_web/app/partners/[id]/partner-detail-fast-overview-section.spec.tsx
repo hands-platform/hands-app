@@ -110,8 +110,16 @@ describe('PartnerDetailFastOverviewSection', () => {
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(sectionSource).toContain('valueNode');
+    expect(sectionSource).toContain('readonly valueDateTimeFallback?: string;');
+    expect(sectionSource).toContain('readonly valueDateTimeValue?: string | null;');
+    expect(sectionSource).toContain('valueDateTimeFallback: card.valueDateTimeFallback');
+    expect(sectionSource).toContain('valueDateTimeValue: card.valueDateTimeValue');
     expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain(
+      "valueDateTimeFallback: 'No access'",
+    );
+    expect(pageSource).toContain('valueDateTimeValue: latestAccessAt');
+    expect(pageSource).not.toContain(
       "value: latestAccessAt ? <DateTimeText fallback=\"No access\" value={latestAccessAt} /> : 'No access'",
     );
     expect(pageSource).toContain('valueNode: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
