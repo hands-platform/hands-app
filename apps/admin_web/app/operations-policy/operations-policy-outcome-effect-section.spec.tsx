@@ -10,9 +10,11 @@ const sectionSource = readFileSync(
 
 describe('OperationsPolicyOutcomeEffectSection', () => {
   it('uses shared Vuexy badge atoms for outcome labels', () => {
+    expect(sectionSource).toContain('AdminTraceSummary');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
   it('renders policy outcome rows and cards', () => {

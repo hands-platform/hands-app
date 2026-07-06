@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import {
   AdminActionCard,
@@ -42,15 +43,14 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
           description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."
           title="Current decision pressure"
         />
-        <div className="service-trace-summary admin-mt-12">
-          {pressure.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={pressure.summary.map((item) => ({
+            detail: item.helper,
+            label: item.label,
+            value: item.value,
+          }))}
+        />
         <div className="ops-task-grid admin-mt-14">
           {pressure.cards.map((item) => (
             <AdminActionCard

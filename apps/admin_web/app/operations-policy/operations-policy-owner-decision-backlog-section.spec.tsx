@@ -12,9 +12,11 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
   it('uses the shared Vuexy section header atom for decision pressure', () => {
     expect(sectionSource).toContain('AdminNotePanel');
     expect(sectionSource).toContain('AdminSectionHeader');
+    expect(sectionSource).toContain('AdminTraceSummary');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(sectionSource).not.toContain('<div className="ops-task-note admin-mt-14">');
     expect(sectionSource).not.toContain('<div className="ops-task-note admin-mt-12">');
     expect(sectionSource).not.toContain('<div className="ops-section-header">');

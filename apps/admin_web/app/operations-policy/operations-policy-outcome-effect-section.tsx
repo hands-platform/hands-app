@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -28,15 +29,14 @@ export function OperationsPolicyOutcomeEffectSection({
       statusTone={analysis.sampleCount ? 'info' : 'warning'}
       title="Policy outcome effect"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {analysis.metrics.map((metric) => (
-          <div key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <small>{metric.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={analysis.metrics.map((metric) => ({
+          detail: metric.helper,
+          label: metric.label,
+          value: metric.value,
+        }))}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className="service-trace"

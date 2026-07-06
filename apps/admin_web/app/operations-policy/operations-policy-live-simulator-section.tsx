@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import {
   AdminDetailGrid,
@@ -54,15 +55,14 @@ export function OperationsPolicyLiveSimulatorSection({
       statusTone={simulation.ready ? 'success' : 'warning'}
       title="Live policy simulator"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {simulation.metrics.map((metric) => (
-          <div key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <small>{metric.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={simulation.metrics.map((metric) => ({
+          detail: metric.helper,
+          label: metric.label,
+          value: metric.value,
+        }))}
+      />
       <AdminDetailGrid className="admin-mt-14">
         <AdminNotePanel>
           <h3>Simulated booking path</h3>
