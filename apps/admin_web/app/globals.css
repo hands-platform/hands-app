@@ -2719,7 +2719,7 @@ a.action-button-card:hover {
 }
 
 .money-text-negative {
-  color: rgb(var(--admin-danger-rgb));
+  color: rgb(var(--admin-danger-channel));
 }
 
 .money-text-zero {
@@ -17024,7 +17024,7 @@ textarea:focus-visible {
 
 .service-trace-summary > a:hover,
 .service-trace-summary > a:focus-visible {
-  border-color: rgb(var(--admin-primary-rgb) / 0.45);
+  border-color: rgb(var(--admin-primary-channel) / 0.45);
   box-shadow: var(--admin-shadow-md);
   outline: none;
   transform: translateY(-1px);

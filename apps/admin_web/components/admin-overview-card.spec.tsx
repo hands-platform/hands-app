@@ -267,7 +267,7 @@ describe('AdminOverviewCommandCard', () => {
 
     expect(itemBlock).toContain('min-width: 0;');
     expect(itemBlock).toContain('transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;');
-    expect(hoverBlock).toContain('border-color: rgb(var(--admin-primary-rgb) / 0.45);');
+    expect(hoverBlock).toContain('border-color: rgb(var(--admin-primary-channel) / 0.45);');
     expect(hoverBlock).toContain('box-shadow: var(--admin-shadow-md);');
     expect(hoverBlock).toContain('transform: translateY(-1px);');
     expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
