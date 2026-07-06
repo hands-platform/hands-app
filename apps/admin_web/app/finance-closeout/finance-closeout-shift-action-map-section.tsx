@@ -2,7 +2,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminStageItemLink } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { FinanceCloseoutShiftActionMapItem } from '../../lib/finance-closeout';
 
 type FinanceCloseoutShiftActionMapSectionProps = {
@@ -25,9 +25,9 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
       {items.length ? (
         items.map((item) => (
           <AdminStageItemLink href={item.href} key={item.action}>
-            <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+            <StatusBadgeFromPillClass pillClass={item.pillClass}>
               {item.status}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
             <div>
               <strong>{item.action}</strong>
               <p className="muted">{item.reason}</p>

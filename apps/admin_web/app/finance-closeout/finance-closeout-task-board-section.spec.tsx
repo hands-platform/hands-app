@@ -71,7 +71,8 @@ describe('FinanceCloseoutTaskBoardSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
     expect(source).toContain('<AdminTextLink');
     expect(source).not.toContain('PillClassBadge');

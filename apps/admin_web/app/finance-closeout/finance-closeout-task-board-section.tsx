@@ -1,7 +1,7 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { FinanceCloseoutTask } from '../../lib/finance-closeout';
 
 type FinanceCloseoutTaskBoardSectionProps = {
@@ -30,9 +30,9 @@ export function FinanceCloseoutTaskBoardSection({ tasks }: FinanceCloseoutTaskBo
             href={task.href}
             key={task.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(task.pillClass)}>
+              <StatusBadgeFromPillClass pillClass={task.pillClass}>
                 {task.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={task.title}
             variant="ops-task"
