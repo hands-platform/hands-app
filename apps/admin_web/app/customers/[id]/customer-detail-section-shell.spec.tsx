@@ -12,8 +12,19 @@ describe('CustomerDetailSectionShell', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminRowLink');
+    expect(source).toContain("import { AdminRowLink, AdminSection } from '../../../components/admin-surface';");
     expect(source).not.toContain('<span className="pill pill-info">{items.length} lanes</span>');
     expect(source).not.toContain('<a className="customer-detail-shortcut-link" href={item.href} key={item.label}>');
+  });
+
+  it('builds customer shortcut strips on the shared Vuexy AdminSection surface', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-section-shell.tsx', 'utf8');
+
+    expect(source).toContain('<AdminSection');
+    expect(source).toContain('className="customer-detail-shortcut-strip admin-mb-16"');
+    expect(source).toContain('bodyClassName="customer-detail-shortcut-grid admin-mt-14"');
+    expect(source).not.toContain('<section className="customer-detail-shortcut-strip admin-mb-16"');
+    expect(source).not.toContain('<AdminSectionHeader');
   });
 
   it('renders customer shortcut lanes with hrefs and values', () => {
@@ -44,8 +55,8 @@ describe('CustomerDetailSectionShell', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'customer-detail-shortcut-strip admin-mb-16',
-        'customer-detail-shortcut-grid admin-mt-14',
+        'card admin-section customer-detail-shortcut-strip admin-mb-16',
+        'admin-section-body customer-detail-shortcut-grid admin-mt-14',
         'admin-row-link customer-detail-shortcut-link',
       ]),
     );

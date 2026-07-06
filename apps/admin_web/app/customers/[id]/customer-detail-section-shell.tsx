@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 
 import { Grid2x2, MessageSquareText, ScrollText, UserRound, Wallet } from 'lucide-react';
 
-import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminRowLink, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
@@ -28,27 +27,26 @@ type CustomerDetailSectionBandProps = {
 
 export function CustomerDetailShortcutStrip({ items }: CustomerDetailShortcutStripProps) {
   return (
-    <section className="customer-detail-shortcut-strip admin-mb-16">
-      <AdminSectionHeader
-        title="Customer workspace"
-        description="Jump between the same factual areas without scrolling through the full record from the top each time."
-        status={<StatusBadge tone="info">{items.length} lanes</StatusBadge>}
-      />
-      <div className="customer-detail-shortcut-grid admin-mt-14">
-        {items.map((item) => (
-          <AdminRowLink className="customer-detail-shortcut-link" href={item.href} key={item.label}>
-            <span className="customer-detail-shortcut-icon" aria-hidden="true">
-              {shortcutIcon(item.label)}
-            </span>
-            <div>
-              <strong>{item.label}</strong>
-              <small>{item.detail}</small>
-            </div>
-            <em>{item.value}</em>
-          </AdminRowLink>
-        ))}
-      </div>
-    </section>
+    <AdminSection
+      bodyClassName="customer-detail-shortcut-grid admin-mt-14"
+      className="customer-detail-shortcut-strip admin-mb-16"
+      description="Jump between the same factual areas without scrolling through the full record from the top each time."
+      status={<StatusBadge tone="info">{items.length} lanes</StatusBadge>}
+      title="Customer workspace"
+    >
+      {items.map((item) => (
+        <AdminRowLink className="customer-detail-shortcut-link" href={item.href} key={item.label}>
+          <span className="customer-detail-shortcut-icon" aria-hidden="true">
+            {shortcutIcon(item.label)}
+          </span>
+          <div>
+            <strong>{item.label}</strong>
+            <small>{item.detail}</small>
+          </div>
+          <em>{item.value}</em>
+        </AdminRowLink>
+      ))}
+    </AdminSection>
   );
 }
 
