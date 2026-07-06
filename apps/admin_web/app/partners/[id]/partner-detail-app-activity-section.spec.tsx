@@ -36,6 +36,7 @@ describe('PartnerDetailAppActivitySection', () => {
           helper: 'Latest app session.',
           label: 'Last login',
           value: '20 Jun 2026, 10:00',
+          valueDateTimeValue: '2026-06-20T10:00:00.000Z',
         },
       ],
       rows: [
@@ -54,7 +55,7 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(rendered).toContain('Recent app and operations activity');
     expect(rendered).toContain('1 event(s)');
     expect(rendered).toContain('Last login');
-    expect(rendered).toContain('20 Jun 2026, 10:00');
+    expect(rendered).toContain('20 Jun 2026, 17:00');
     expect(rendered).toContain('Type');
     expect(rendered).toContain('Activity');
     expect(rendered).toContain('Timeline');
@@ -72,6 +73,14 @@ describe('PartnerDetailAppActivitySection', () => {
       ]),
     );
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
+  });
+
+  it('passes raw summary timestamps into the shared Vuexy trace summary date atom', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(source).toContain('valueDateTimeValue: item.valueDateTimeValue');
+    expect(source).toContain('detailDateTimeValue: item.detailDateTimeValue');
+    expect(source).toContain('detailDateTimePrefix: item.detailDateTimePrefix');
   });
 
   it('renders the empty activity state inside the table', () => {

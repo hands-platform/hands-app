@@ -13,9 +13,12 @@ import {
 } from './partner-detail-vuexy-table';
 
 export type PartnerAppActivitySummaryItem = {
+  readonly detailDateTimePrefix?: ReactNode;
+  readonly detailDateTimeValue?: string | null;
   readonly helper: string;
   readonly label: string;
   readonly value: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 export type PartnerAppActivityRow = {
@@ -48,8 +51,11 @@ export function PartnerDetailAppActivitySection({
         className="admin-mt-14"
         metrics={summary.map((item) => ({
           detail: item.helper,
+          detailDateTimePrefix: item.detailDateTimePrefix,
+          detailDateTimeValue: item.detailDateTimeValue,
           label: item.label,
           value: item.value,
+          valueDateTimeValue: item.valueDateTimeValue,
         }))}
       />
       <AdminTableScroll>

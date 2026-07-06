@@ -56,6 +56,9 @@ export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       label: 'Range',
       value: latestAt ? formatDate(latestAt) : 'None',
       helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No partner records loaded.',
+      valueDateTimeValue: latestAt,
+      detailDateTimePrefix: oldestAt ? 'Oldest loaded: ' : undefined,
+      detailDateTimeValue: oldestAt,
     },
     {
       label: 'Bookings',

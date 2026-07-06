@@ -28,6 +28,11 @@ describe('partner detail activity model', () => {
     expect(verificationSummary?.helper).toContain('withdrawal details');
     expect(verificationSummary?.helper).toContain('optional finance records');
     expect(verificationSummary?.helper).not.toContain('bank, tax');
+    expect(summary[0]).toMatchObject({
+      detailDateTimePrefix: 'Oldest loaded: ',
+      detailDateTimeValue: '2026-06-10T09:00:00.000Z',
+      valueDateTimeValue: '2026-06-10T09:40:00.000Z',
+    });
   });
 
   it('builds date-grouped daily digests and stable record hrefs', () => {
