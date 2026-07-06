@@ -2,14 +2,13 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 import {
@@ -76,8 +75,8 @@ export function PartnerDetailReadinessSnapshotSection({
   snapshot,
 }: PartnerDetailReadinessSnapshotSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Fast active-work checks for direct first-pick, marketplace matching, KYC, service pricing, location, and app reachability. Wallet evidence stays in finance sections."
       resultLabel={snapshot.status}
       resultTone={partnerOpsStatusBadgeTone(snapshot.tone)}
@@ -121,7 +120,7 @@ export function PartnerDetailReadinessSnapshotSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={1} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -129,8 +128,8 @@ export function PartnerAcceptanceRepairCommandSection({
   command,
 }: PartnerAcceptanceRepairCommandSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} ${partnerOpsCardClass(command.tone)} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className={`${partnerOpsCardClass(command.tone)} admin-mb-16`}
       description="Exact operator diagnosis for dispatch participation, customer handoff, app message, and finance repair."
       resultLabel={command.status}
       resultTone={partnerOpsStatusBadgeTone(command.tone)}
@@ -201,6 +200,6 @@ export function PartnerAcceptanceRepairCommandSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={command.steps.length} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

@@ -3,12 +3,11 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -54,8 +53,7 @@ type PartnerDetailPublicProfileMediaCardProps = {
 
 export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocumentsCardProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Required Partner onboarding files with review status, asset evidence, and approval actions."
       id="documents"
       resultLabel={`${rows.length} document(s)`}
@@ -104,14 +102,13 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
 export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPublicProfileMediaCardProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Marketplace-visible Partner media with upload state, review outcome, and moderation actions."
       id="media"
       resultLabel={`${rows.length} asset(s)`}
@@ -157,7 +154,7 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

@@ -6,6 +6,17 @@ import {
 } from './partner-detail-readiness-command-section';
 
 describe('partner detail readiness command sections', () => {
+  it('uses the partner detail Vuexy table panel atom for readiness command shells', () => {
+    const source = readFileSync(
+      new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy trace summary atom for dispatch repair metrics', () => {
     const source = readFileSync(
       new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),

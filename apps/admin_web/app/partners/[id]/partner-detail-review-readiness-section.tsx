@@ -2,11 +2,10 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -46,8 +45,7 @@ export function PartnerDetailApprovalChecklistSection({
   checklist,
 }: PartnerDetailApprovalChecklistSectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Review these gates before approving the partner or relying on this partner for dispatch."
       id="partner-approval-checklist"
       resultLabel={checklist.ready ? 'Ready for approval' : `${checklist.blockers} blocker(s)`}
@@ -82,7 +80,7 @@ export function PartnerDetailApprovalChecklistSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={checklist.items.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -90,8 +88,7 @@ export function PartnerDetailRegistrationDossierSection({
   dossier,
 }: PartnerDetailRegistrationDossierSectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Structured view of the signup profile, public working profile, service area, identity evidence, and account activity. Finance-only rows stay in the wallet and payout sections."
       id="partner-registration-dossier"
       resultLabel={dossier.ready ? 'Dossier complete' : `${dossier.blockers} gap(s)`}
@@ -129,7 +126,7 @@ export function PartnerDetailRegistrationDossierSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={dossier.items.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

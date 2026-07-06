@@ -5,6 +5,14 @@ import {
 } from './partner-detail-review-readiness-section';
 
 describe('Partner detail review readiness sections', () => {
+  it('uses the partner detail Vuexy table panel atom for review readiness shells', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-review-readiness-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-review-readiness-section.tsx', 'utf8');
 

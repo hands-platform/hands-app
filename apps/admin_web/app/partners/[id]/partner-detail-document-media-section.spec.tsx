@@ -5,6 +5,14 @@ import {
 } from './partner-detail-document-media-section';
 
 describe('partner detail document and media sections', () => {
+  it('uses the partner detail Vuexy table panel atom for document and media shells', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-document-media-section.tsx', 'utf8');
 
