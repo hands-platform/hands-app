@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 
@@ -47,7 +47,7 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
           value: card.value,
         }))}
       />
-      <div className="setup-stage-list admin-mt-14">
+      <AdminStageList className="admin-mt-14">
         {audit.rows.map((row) => (
           <AdminStageItem key={row.id}>
             <span>{row.status}</span>
@@ -73,7 +73,7 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
             <small>Clear</small>
           </AdminStageItem>
         ) : null}
-      </div>
+      </AdminStageList>
     </AdminTablePanel>
   );
 }

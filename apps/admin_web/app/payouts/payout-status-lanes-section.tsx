@@ -1,6 +1,6 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -49,7 +49,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
               title={lane.title}
             />
             {lane.batches.length ? (
-              <div className="setup-stage-list">
+              <AdminStageList>
                 {lane.batches.slice(0, 4).map((batch) => (
                   <AdminStageItem key={`${lane.title}-${batch.id}`}>
                     <span>{shortRecordId(batch.id)}</span>
@@ -65,7 +65,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
                     </AdminTextLink>
                   </AdminStageItem>
                 ))}
-              </div>
+              </AdminStageList>
             ) : (
               <AdminEmptyState className="admin-mt-8" message={lane.emptyText} title={null} />
             )}
