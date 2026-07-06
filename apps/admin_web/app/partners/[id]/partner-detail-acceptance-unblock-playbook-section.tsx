@@ -1,8 +1,7 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -86,9 +85,9 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
                   </div>
                 </td>
                 <td>
-                  <Link className="text-link" href={step.href}>
+                  <AdminTextLink href={step.href}>
                     {step.action}
-                  </Link>
+                  </AdminTextLink>
                 </td>
               </tr>
             ))}

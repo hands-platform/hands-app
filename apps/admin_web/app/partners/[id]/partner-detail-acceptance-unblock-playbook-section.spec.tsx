@@ -12,6 +12,13 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{step.owner}</span>');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-acceptance-unblock-playbook-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders active-work repair steps as a Vuexy table', () => {
     const section = PartnerDetailAcceptanceUnblockPlaybookSection({
       pillClassForTone: (tone) => `pill-${tone}`,
