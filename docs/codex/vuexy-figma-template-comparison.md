@@ -19,7 +19,7 @@ API contracts, auth/session behavior, or route ownership.
 | --- | --- | --- | --- | --- | --- |
 | Layout | `AdminPageTemplate`, global shell, compact admin pages | `src/configs/themeConfig.ts`, vertical layout components | Layout and navigation nodes | Mostly aligned after shell work, but page-by-page density varies | Keep `AdminPageTemplate`; avoid page-local shell markup. |
 | Sidebar | `admin-navigation.ts` + custom shell | `verticalMenuData.tsx`, `VerticalMenu.tsx` | Navigation | Category IA mostly HANDS-specific; count chips must be operational counts only | Continue route/menu inventory tests and keep Vuexy vertical rhythm. |
-| Topbar | Custom admin topbar | Vuexy navbar/floating header | Layout/navigation | Needs consistent icon button sizing and logout/action placement | Apply shared icon button tokens only. |
+| Topbar | HANDS admin topbar with shared atoms | Vuexy navbar/floating header | Layout/navigation | Shared topbar search, icon button, icon link, badge, theme, and logout atoms are guarded | Continue visual QA only; do not change auth/session behavior. |
 | Page header | Shared header in `AdminPageTemplate` | Vuexy page title/breadcrumb composition | Layout/breadcrumbs | Some legacy pages still have page-local headings | Prefer `AdminPageTemplate` header and compact breadcrumbs. |
 | Breadcrumb | Available where needed | Vuexy breadcrumbs | Breadcrumbs | Not every detail page uses it consistently | Add only where it helps detail-page context. |
 | Cards | `AdminSection`, `AdminCard`, page CSS cards | Vuexy card examples | Card | Some page-local cards still have custom borders/backgrounds | Replace repeated page-local card shells with `AdminSection`/shared card classes. |
@@ -40,8 +40,8 @@ API contracts, auth/session behavior, or route ownership.
 | Loading state | Mostly route/server rendered | Progress/loading examples | Progress | Not consistently explicit on client-heavy pages | Add shared loading state where actual async UI exists. |
 | Error state | Page forms have uneven feedback | Alert/snackbar | Alert/snackbar | Form failures still vary | Use shared form error/notice styles. |
 | Login page | Custom Vuexy-inspired login | Auth pages | Layout/forms/buttons | Broad marketing copy removed, but visual QA should continue | Compare with Vuexy auth page at 1440px. |
-| Unauthorized page | Protected middleware redirects | Error/auth examples | Alert/error | Needs consistent no-permission state | Add when category permissions are enforced page-wide. |
-| 404 page | Next fallback/custom routes | Error pages | Error/misc | Needs review if custom not found exists | Align only if visible in Admin flow. |
+| Unauthorized page | Operator access gate | Error/auth examples | Alert/error | No-permission state uses shared `AdminErrorState` | Keep route/category tests in place. |
+| 404 page | Custom Admin not-found page | Error pages | Error/misc | Not-found state uses shared page/error/action atoms | Keep route inventory guard before broad page work. |
 | Dashboard widgets | Dashboard/overview pages use widgets | CRM dashboards/card statistics | Widgets/cards | Usage/Partner/Finance overview are improving but still mixed | Continue page-by-page widget alignment. |
 | Finance tables | Finance pages have heavy custom tables | React table + invoice/payment examples | Data display/cards | Meaning is strong, visual consistency still ongoing | Use common table, money, status, pagination components. |
 | Booking tables | Booking list/detail mostly table-first | React table + user/detail/timeline | Data display/timeline | Detail sections still have some bespoke panels | Keep aligning detail sublists with `AdminDataTable`. |
