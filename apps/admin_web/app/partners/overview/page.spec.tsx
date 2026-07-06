@@ -128,8 +128,12 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Auto-offline follow-up queue for approved partners');
     expect(markup).toContain('Partner operations priority');
     expect(markup).toContain('Ready supply');
-    expect(markup).toContain('card admin-card usage-overview-funnel-step');
-    expect(markup).not.toContain('<article class="usage-overview-funnel-step');
+    expect(markup).toContain('card admin-card partner-overview-funnel-step');
+    expect(markup).toContain('partner-overview-funnel-bar');
+    expect(markup).not.toContain('usage-overview-funnel-step');
+    expect(markup).not.toContain('usage-overview-funnel-bar');
+    expect(pageSource).not.toContain('usage-overview-funnel-step');
+    expect(pageSource).not.toContain('usage-overview-funnel-bar');
     expect(markup).toContain('Selection drop-off');
     expect(markup).toContain('2 issues');
     expect(markup).toContain('Wallet risk');

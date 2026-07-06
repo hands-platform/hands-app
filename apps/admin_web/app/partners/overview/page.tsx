@@ -605,12 +605,12 @@ function SupplyServiceCard({
 
 function PartnerFunnelStep({ step }: { readonly step: AdminPartnerOverviewFunnelStep }) {
   return (
-    <AdminCard className={`usage-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}>
-      <div className="usage-overview-funnel-step-header">
+    <AdminCard className={`partner-overview-funnel-step ${step.dataStatus === 'available' ? 'is-primary' : 'is-neutral'}`}>
+      <div className="partner-overview-funnel-step-header">
         <span>{step.label}</span>
         <strong>{step.count === null ? 'Needs event' : formatNumber(step.count)}</strong>
       </div>
-      <div className="usage-overview-funnel-bar" aria-hidden="true">
+      <div className="partner-overview-funnel-bar" aria-hidden="true">
         <i style={{ width: `${Math.max(4, step.conversionRate ?? 4)}%` }} />
       </div>
       <small>

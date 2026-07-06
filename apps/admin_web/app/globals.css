@@ -8692,7 +8692,8 @@ a.action-button-card:hover {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.usage-overview-funnel-step {
+.usage-overview-funnel-step,
+.partner-overview-funnel-step {
   background: rgb(var(--admin-main-channel) / 0.035);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
@@ -8703,7 +8704,8 @@ a.action-button-card:hover {
   position: relative;
 }
 
-.usage-overview-funnel-step-header {
+.usage-overview-funnel-step-header,
+.partner-overview-funnel-step-header {
   align-items: flex-start;
   display: flex;
   gap: 10px;
@@ -8711,14 +8713,16 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-funnel-step-header span {
+.usage-overview-funnel-step-header span,
+.partner-overview-funnel-step-header span {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
 }
 
-.usage-overview-funnel-step-header strong {
+.usage-overview-funnel-step-header strong,
+.partner-overview-funnel-step-header strong {
   color: var(--admin-text);
   font-size: 22px;
   font-weight: 600;
@@ -9158,21 +9162,24 @@ a.action-button-card:hover {
   }
 }
 
-.usage-overview-funnel-step small {
+.usage-overview-funnel-step small,
+.partner-overview-funnel-step small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
   line-height: 17px;
 }
 
-.usage-overview-funnel-bar {
+.usage-overview-funnel-bar,
+.partner-overview-funnel-bar {
   background: rgb(var(--admin-main-channel) / 0.08);
   border-radius: 999px;
   height: 8px;
   overflow: hidden;
 }
 
-.usage-overview-funnel-bar i {
+.usage-overview-funnel-bar i,
+.partner-overview-funnel-bar i {
   background: var(--admin-accent);
   border-radius: inherit;
   display: block;
@@ -9180,15 +9187,18 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-funnel-step.is-info .usage-overview-funnel-bar i {
+.usage-overview-funnel-step.is-info .usage-overview-funnel-bar i,
+.partner-overview-funnel-step.is-info .partner-overview-funnel-bar i {
   background: var(--admin-info);
 }
 
-.usage-overview-funnel-step.is-success .usage-overview-funnel-bar i {
+.usage-overview-funnel-step.is-success .usage-overview-funnel-bar i,
+.partner-overview-funnel-step.is-success .partner-overview-funnel-bar i {
   background: var(--admin-success);
 }
 
-.usage-overview-funnel-step.is-warning .usage-overview-funnel-bar i {
+.usage-overview-funnel-step.is-warning .usage-overview-funnel-bar i,
+.partner-overview-funnel-step.is-warning .partner-overview-funnel-bar i {
   background: var(--admin-warning);
 }
 
