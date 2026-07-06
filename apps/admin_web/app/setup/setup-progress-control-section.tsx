@@ -1,5 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
 import { AdminSignal } from '../../components/status-badge';
@@ -27,7 +27,7 @@ export function SetupProgressControlSection({
         description="This is the single operating order for HANDS MVP work. Keep new requests inside this sequence unless an urgent production blocker appears."
         title="Master progress control"
       >
-        <div className="setup-stage-list">
+        <AdminStageList>
           {sequence.map((item) => (
             <AdminStageItem key={item.phase}>
               <span>{item.phase}</span>
@@ -36,7 +36,7 @@ export function SetupProgressControlSection({
               <small>{item.status}</small>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection

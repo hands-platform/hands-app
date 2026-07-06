@@ -1,4 +1,4 @@
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { ServiceBookingReadinessItem } from '../../lib/service-booking-readiness-queue';
@@ -33,7 +33,7 @@ export function ServiceBookingReadinessQueueSection({
       title="Booking readiness queue"
     >
       {items.length ? (
-        <div className="setup-stage-list">
+        <AdminStageList>
           {items.slice(0, VISIBLE_READINESS_ITEM_LIMIT).map((item) => (
             <AdminStageItem key={`${item.serviceId}-${item.title}-${item.detail}`}>
               <span>{item.status}</span>
@@ -45,7 +45,7 @@ export function ServiceBookingReadinessQueueSection({
               <small>{item.serviceId.slice(0, 8)}</small>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       ) : (
         <p className="muted">
           All active service rows have a base payout rule and a positive projected company commission.

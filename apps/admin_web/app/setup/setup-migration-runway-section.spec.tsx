@@ -7,7 +7,9 @@ describe('SetupMigrationRunwaySection', () => {
   it('uses the shared Vuexy stage item link atom for migration stage anchors', () => {
     const source = readFileSync(new URL('./setup-migration-runway-section.tsx', import.meta.url), 'utf8');
 
+    expect(source).toContain('AdminStageList');
     expect(source).toContain('AdminStageItemLink');
+    expect(source).not.toContain('<div className="setup-stage-list">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<a className="setup-stage-item"');
   });

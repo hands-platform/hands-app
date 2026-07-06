@@ -1,5 +1,5 @@
 import { PathCopyRow } from '../../components/path-copy-row';
-import { AdminStageItemLink } from '../../components/admin-stage-item';
+import { AdminStageItemLink, AdminStageList } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 
 type SetupMigrationRunwayStatus = {
@@ -19,7 +19,7 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
       description="HANDS is moving from local MVP stability to Supabase-backed staging without breaking the mobile booking flow. Current local auth remains Nest/dev OTP until production Phone Auth is deliberately tested."
       title="Migration runway"
     >
-      <div className="setup-stage-list">
+      <AdminStageList>
         {groupStatuses.map((item, index) => (
           <AdminStageItemLink href={`#${item.id}`} key={item.id}>
             <span>Stage {index + 1}</span>
@@ -28,7 +28,7 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
             <small>{item.status}</small>
           </AdminStageItemLink>
         ))}
-      </div>
+      </AdminStageList>
       <div className="setup-command-block admin-mt-16">
         <h3>Operator handoff files</h3>
         <p className="muted">
