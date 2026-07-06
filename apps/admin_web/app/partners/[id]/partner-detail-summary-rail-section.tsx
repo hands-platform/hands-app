@@ -1,4 +1,5 @@
 import { AdminSummaryCardGrid, AdminTraceSummary } from '../../../components/admin-overview-card';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type {
   PartnerDetailSummaryRailItem,
@@ -55,6 +56,10 @@ export function PartnerDetailSummaryRailSection({
               className="partner-detail-usage-summary-grid"
               items={usageSummary.items.map((item) => ({
                 detail: item.detail,
+                detailDateTimeFallback: item.detailDateTimeFallback,
+                detailDateTimePrefix: item.detailDateTimePrefix,
+                detailDateTimeSuffix: item.detailDateTimeSuffix,
+                detailDateTimeValue: item.detailDateTimeValue,
                 label: item.label,
                 value: item.value,
               }))}
@@ -64,7 +69,7 @@ export function PartnerDetailSummaryRailSection({
                 <div key={region.label}>
                   <span>{region.label}</span>
                   <strong>{region.value}</strong>
-                  <small>{region.detail}</small>
+                  {usageSummaryDetail(region)}
                 </div>
               ))}
             </div>
@@ -73,4 +78,18 @@ export function PartnerDetailSummaryRailSection({
       </div>
     </section>
   );
+}
+
+function usageSummaryDetail(region: PartnerDetailUsageRegionSummary['regionRows'][number]) {
+  if (region.detailDateTimeValue) {
+    return (
+      <small>
+        {region.detailDateTimePrefix}
+        <DateTimeText fallback={region.detailDateTimeFallback ?? region.detail} value={region.detailDateTimeValue} />
+        {region.detailDateTimeSuffix}
+      </small>
+    );
+  }
+
+  return <small>{region.detail}</small>;
 }

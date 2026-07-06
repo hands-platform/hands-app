@@ -61,6 +61,10 @@ type AdminMiniMetricStripProps = {
 type AdminSummaryCardItem = {
   readonly className?: string;
   readonly detail?: ReactNode;
+  readonly detailDateTimeFallback?: string;
+  readonly detailDateTimePrefix?: ReactNode;
+  readonly detailDateTimeSuffix?: ReactNode;
+  readonly detailDateTimeValue?: string | null;
   readonly href?: string;
   readonly htmlTitle?: string;
   readonly key?: string;
@@ -68,6 +72,8 @@ type AdminSummaryCardItem = {
   readonly overline?: ReactNode;
   readonly tone?: string;
   readonly value: ReactNode;
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 type AdminSummaryCardGridProps = {
@@ -177,9 +183,9 @@ export function AdminSummaryCardGrid({
         const content = (
           <>
             {item.overline ? <small>{item.overline}</small> : <span>{item.label}</span>}
-            <strong>{item.value}</strong>
+            <strong>{summaryCardValue(item)}</strong>
             {item.overline ? <span>{item.label}</span> : null}
-            {item.detail ? <small>{item.detail}</small> : null}
+            {summaryCardDetail(item)}
           </>
         );
 
@@ -204,6 +210,34 @@ export function AdminSummaryCardGrid({
       })}
     </div>
   );
+}
+
+function summaryCardValue(item: AdminSummaryCardItem) {
+  return item.valueDateTimeValue ? (
+    <DateTimeText
+      fallback={item.valueDateTimeFallback ?? (typeof item.value === 'string' ? item.value : 'Not set')}
+      value={item.valueDateTimeValue}
+    />
+  ) : (
+    item.value
+  );
+}
+
+function summaryCardDetail(item: AdminSummaryCardItem) {
+  if (item.detailDateTimeValue) {
+    return (
+      <small>
+        {item.detailDateTimePrefix}
+        <DateTimeText
+          fallback={item.detailDateTimeFallback ?? (typeof item.detail === 'string' ? item.detail : 'Not set')}
+          value={item.detailDateTimeValue}
+        />
+        {item.detailDateTimeSuffix}
+      </small>
+    );
+  }
+
+  return item.detail ? <small>{item.detail}</small> : null;
 }
 
 export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics }: AdminTraceSummaryProps) {

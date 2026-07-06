@@ -78,6 +78,14 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(pageSource).not.toContain('joinedAtLabel: formatDate(provider.user?.createdAt)');
     expect(pageSource).not.toContain('locationRecordedAtLabel: provider.currentLocationUpdatedAt\\n      ? formatDate(provider.currentLocationUpdatedAt)');
   });
+
+  it('passes usage summary timestamps into shared DateTimeText atoms', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('detailDateTimeValue: item.detailDateTimeValue');
+    expect(source).toContain('usageSummaryDetail(region)');
+    expect(source).toContain('<DateTimeText');
+  });
 });
 
 function buildItems(): PartnerDetailSummaryRailItem[] {
@@ -102,6 +110,9 @@ function buildUsageSummary(): PartnerDetailUsageRegionSummary {
     helper: 'Built from stored app sessions and booking address snapshots. No live GPS polling.',
     items: [
       {
+        detailDateTimePrefix: 'Latest ',
+        detailDateTimeSuffix: '.',
+        detailDateTimeValue: '2026-06-13T03:02:00.000Z',
         detail: 'Latest 13 Jun 2026, 03:02.',
         label: 'App sessions',
         value: '1',
@@ -114,6 +125,9 @@ function buildUsageSummary(): PartnerDetailUsageRegionSummary {
     ],
     regionRows: [
       {
+        detailDateTimePrefix: 'Latest booking ',
+        detailDateTimeSuffix: '.',
+        detailDateTimeValue: '2026-06-13T03:02:00.000Z',
         detail: 'Latest booking 13 Jun 2026, 03:02.',
         label: 'District 1, Ho Chi Minh City',
         value: '2',

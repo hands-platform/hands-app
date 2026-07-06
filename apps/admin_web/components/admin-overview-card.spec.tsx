@@ -148,6 +148,29 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Realtime</small><strong>42</strong><span>Ready partners</span>');
   });
 
+  it('renders summary card detail dates through the shared DateTimeText atom', () => {
+    const source = readFileSync('components/admin-overview-card.tsx', 'utf8');
+    const markup = renderToStaticMarkup(
+      <AdminSummaryCardGrid
+        items={[
+          {
+            detail: 'Latest not set.',
+            detailDateTimePrefix: 'Latest ',
+            detailDateTimeSuffix: '.',
+            detailDateTimeValue: '2026-06-19T03:00:00.000Z',
+            label: 'App sessions',
+            value: '3',
+          },
+        ]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(source).toContain('summaryCardDetail(item)');
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(1);
+    expect(markup).toContain('<small>Latest <time');
+    expect(markup).toContain('dateTime="2026-06-19T03:00:00.000Z"');
+  });
+
   it('renders shared trace summary metrics for finance and operations strips', () => {
     const markup = renderToStaticMarkup(
       <AdminTraceSummary

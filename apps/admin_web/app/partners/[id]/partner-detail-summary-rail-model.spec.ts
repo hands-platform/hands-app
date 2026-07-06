@@ -241,13 +241,37 @@ describe('partner detail summary rail model', () => {
     expect(summary.title).toBe('Usage and region summary');
     expect(summary.helper).toContain('No live GPS polling');
     expect(summary.items).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'App sessions', value: '1' }),
+      expect.objectContaining({
+        detailDateTimePrefix: 'Latest ',
+        detailDateTimeSuffix: ' / 1.0.0.',
+        detailDateTimeValue: '2026-06-14T01:00:00.000Z',
+        label: 'App sessions',
+        value: '1',
+      }),
       expect.objectContaining({ label: 'Primary booking region', value: 'District 1, Ho Chi Minh City' }),
-      expect.objectContaining({ label: 'Location evidence', value: '2 snapshot(s)' }),
-      expect.objectContaining({ label: 'Push/device reach', value: '1 enabled' }),
+      expect.objectContaining({
+        detailDateTimePrefix: 'Latest Partner location timestamp ',
+        detailDateTimeSuffix: '.',
+        detailDateTimeValue: '2026-06-14T01:45:00.000Z',
+        label: 'Location evidence',
+        value: '2 snapshot(s)',
+      }),
+      expect.objectContaining({
+        detailDateTimePrefix: '1 device row(s) / latest ',
+        detailDateTimeSuffix: '.',
+        detailDateTimeValue: '2026-06-14T01:30:00.000Z',
+        label: 'Push/device reach',
+        value: '1 enabled',
+      }),
     ]));
     expect(summary.regionRows).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: 'District 1, Ho Chi Minh City', value: '2' }),
+      expect.objectContaining({
+        detailDateTimePrefix: 'Latest booking ',
+        detailDateTimeSuffix: '.',
+        detailDateTimeValue: '2026-06-13T04:02:00.000Z',
+        label: 'District 1, Ho Chi Minh City',
+        value: '2',
+      }),
       expect.objectContaining({ label: 'Thạnh Mỹ Tây, Hồ Chí Minh', value: '1' }),
     ]));
     expect(JSON.stringify(summary)).not.toContain('10.77');

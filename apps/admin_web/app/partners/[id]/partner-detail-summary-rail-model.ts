@@ -13,6 +13,10 @@ export type PartnerDetailSummaryRailItem = {
 
 export type PartnerDetailUsageSummaryItem = {
   readonly detail: string;
+  readonly detailDateTimeFallback?: string;
+  readonly detailDateTimePrefix?: ReactNode;
+  readonly detailDateTimeSuffix?: ReactNode;
+  readonly detailDateTimeValue?: string | null;
   readonly label: string;
   readonly value: string;
 };
@@ -172,6 +176,11 @@ export function buildPartnerUsageRegionSummary({
         detail: latestSessionAt
           ? `Latest ${formatDate(latestSessionAt)}${appVersions.length ? ` / ${appVersions.slice(0, 2).join(', ')}` : ''}.`
           : 'No Partner app session loaded.',
+        detailDateTimePrefix: latestSessionAt ? 'Latest ' : undefined,
+        detailDateTimeSuffix: latestSessionAt
+          ? `${appVersions.length ? ` / ${appVersions.slice(0, 2).join(', ')}` : ''}.`
+          : undefined,
+        detailDateTimeValue: latestSessionAt,
         label: 'App sessions',
         value: `${sessions.length}`,
       },
@@ -186,6 +195,9 @@ export function buildPartnerUsageRegionSummary({
         detail: latestLocationRecordedAt
           ? `Latest Partner location timestamp ${formatDate(latestLocationRecordedAt)}.`
           : 'No Partner location snapshot loaded.',
+        detailDateTimePrefix: latestLocationRecordedAt ? 'Latest Partner location timestamp ' : undefined,
+        detailDateTimeSuffix: latestLocationRecordedAt ? '.' : undefined,
+        detailDateTimeValue: latestLocationRecordedAt,
         label: 'Location evidence',
         value: `${normalizedLocationCount} snapshot(s)`,
       },
@@ -193,6 +205,9 @@ export function buildPartnerUsageRegionSummary({
         detail: latestDeviceAt
           ? `${devices.length} device row(s) / latest ${formatDate(latestDeviceAt)}.`
           : `${devices.length} device row(s) / no latest device timestamp.`,
+        detailDateTimePrefix: latestDeviceAt ? `${devices.length} device row(s) / latest ` : undefined,
+        detailDateTimeSuffix: latestDeviceAt ? '.' : undefined,
+        detailDateTimeValue: latestDeviceAt,
         label: 'Push/device reach',
         value: `${enabledDeviceCount} enabled`,
       },
@@ -342,6 +357,9 @@ function buildPartnerBookingRegionRows(
     .slice(0, 3)
     .map(([label, stat]) => ({
       detail: stat.latestAt ? `Latest booking ${formatDate(stat.latestAt)}.` : 'No booking timestamp loaded.',
+      detailDateTimePrefix: stat.latestAt ? 'Latest booking ' : undefined,
+      detailDateTimeSuffix: stat.latestAt ? '.' : undefined,
+      detailDateTimeValue: stat.latestAt,
       label,
       value: `${stat.count}`,
     }));
