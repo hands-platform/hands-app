@@ -7,7 +7,7 @@ import { DateTimeText } from '../../../components/date-time-text';
 import {
   AdminSignal,
   StatusBadge,
-  statusBadgeToneFromPillClass,
+  StatusBadgeFromPillClass,
   type AdminSignalTone,
 } from '../../../components/status-badge';
 import { ActionLink } from './booking-operator-actions';
@@ -107,9 +107,9 @@ function BookingAttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
     <div className={`ops-check-item ops-check-${flag.severity}`}>
       <div>
-        <StatusBadge tone={statusBadgeToneFromPillClass(attentionToneClass(flag.severity))}>
+        <StatusBadgeFromPillClass pillClass={attentionToneClass(flag.severity)}>
           {checkSeverityLabel(flag.severity)}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -224,9 +224,9 @@ export function BookingOperationsAuditTraceSection({
       <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
-            <StatusBadge tone={statusBadgeToneFromPillClass(operationsTrace.statusTone)}>
+            <StatusBadgeFromPillClass pillClass={operationsTrace.statusTone}>
               {operationsTrace.status}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
             <strong>{operationsTrace.title}</strong>
             <p className="muted">{operationsTrace.detail}</p>
           </div>
@@ -269,9 +269,9 @@ export function BookingAttentionChecksSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(attentionSummary.tone)}>
+        <StatusBadgeFromPillClass pillClass={attentionSummary.tone}>
           {attentionSummary.label}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="ops-watch admin-mb-16"
       description="Automatic operational checks for bookings that need operator attention."
@@ -342,9 +342,9 @@ export function BookingPayoutBatchEligibilitySection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(payoutBatchEligibility.tone)}>
+        <StatusBadgeFromPillClass pillClass={payoutBatchEligibility.tone}>
           {payoutBatchEligibility.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Booking readiness for Partner settlement batches."
@@ -361,7 +361,7 @@ export function BookingPayoutBatchEligibilitySection({
               <span className="booking-settlement-ledger-label">{row.label}</span>
               <p className="muted">{row.operatorRule}</p>
             </div>
-            <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.status}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.status}</StatusBadgeFromPillClass>
             <p>{row.detail}</p>
             <ActionLink href={row.href} label="Open" />
           </div>
