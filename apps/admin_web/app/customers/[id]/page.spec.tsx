@@ -132,6 +132,13 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`');
   });
 
+  it('uses the shared DateTimeText atom for selected location address labels', () => {
+    expect(customerDetailSource).toContain('labelNode?: ReactNode;');
+    expect(customerDetailSource).toContain('{address.labelNode ?? address.label}');
+    expect(customerDetailSource).toContain('Selected service address <DateTimeText value={location.createdAt} />');
+    expect(customerDetailSource).not.toContain('label: `Selected service address ${formatDate(location.createdAt)}`');
+  });
+
   it('uses the shared table pagination footer for customer chat history', () => {
     expect(customerDetailSource).toContain('AdminTablePaginationFooter');
     expect(customerDetailSource).toContain('className="customer-chat-history-footer"');

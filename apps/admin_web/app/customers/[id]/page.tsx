@@ -774,7 +774,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             {addresses.length > 0 ? (
               addresses.slice(0, 6).map((address) => (
                 <div className="ops-row" key={address.key}>
-                  <strong>{address.label}</strong>
+                  <strong>{address.labelNode ?? address.label}</strong>
                   <span>{address.value}</span>
                 </div>
               ))
@@ -1001,6 +1001,13 @@ type CustomerOperatorCommand = {
 };
 
 type CustomerPushDevice = NonNullable<NonNullable<AdminCustomerDetail['user']>['pushDevices']>[number];
+type CustomerAddressRow = {
+  key: string;
+  label: string;
+  labelNode?: ReactNode;
+  value: string;
+};
+
 type CustomerActivityRecord = {
   id: string;
   type: string;
@@ -1365,7 +1372,7 @@ function buildCustomerOperatorCommandQueue({
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  addresses: Array<{ key: string; label: string; value: string }>;
+  addresses: CustomerAddressRow[];
   latestSession?: AdminAppSession;
   pushDevices: CustomerPushDevice[];
   notifications: AdminNotification[];
@@ -1579,7 +1586,7 @@ function buildCustomerAccountFacts({
   notificationCount,
   pushDevices,
 }: {
-  addresses: Array<{ key: string; label: string; value: string }>;
+  addresses: CustomerAddressRow[];
   bookings: AdminBookingDetail[];
   customer: AdminCustomerDetail;
   notificationCount: number;
@@ -1697,7 +1704,7 @@ function buildCustomerActivityPlan(
   bookings: AdminBookingDetail[],
   wallet: ReturnType<typeof customerWalletSummary>,
   bookingStats: ReturnType<typeof buildBookingStats>,
-  addresses: Array<{ key: string; label: string; value: string }>,
+  addresses: CustomerAddressRow[],
 ) {
   const latestBooking = bookings[0];
   const paymentIssueCount = bookings.filter((booking) => {
@@ -1758,7 +1765,7 @@ function joinCustomerActivityFacts(activityFacts: ReactNode[]): ReactNode {
 }
 
 function buildAddressRows(customer: AdminCustomerDetail) {
-  const rows: Array<{ key: string; label: string; value: string }> = [];
+  const rows: CustomerAddressRow[] = [];
   if (Array.isArray(customer.addresses)) {
     customer.addresses.forEach((address, index) => {
       rows.push({
@@ -1777,7 +1784,8 @@ function buildAddressRows(customer: AdminCustomerDetail) {
   for (const location of customer.selectedLocations ?? []) {
     rows.push({
       key: location.id,
-      label: `Selected service address ${formatDate(location.createdAt)}`,
+      label: 'Selected service address',
+      labelNode: <>Selected service address <DateTimeText value={location.createdAt} /></>,
       value: customerSelectedLocationDetail(location),
     });
   }
@@ -1877,7 +1885,7 @@ function normalizeCustomerGenderLabel(value: string) {
   return value.trim();
 }
 
-function buildSavedAddressListValue(addresses: Array<{ key: string; label: string; value: string }>) {
+function buildSavedAddressListValue(addresses: CustomerAddressRow[]) {
   if (addresses.length === 0) {
     return 'No saved address';
   }
@@ -2188,7 +2196,7 @@ function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
 function buildCustomerActivityRecords(
   customer: AdminCustomerDetail,
   bookings: AdminBookingDetail[],
-  addresses: Array<{ key: string; label: string; value: string }>,
+  addresses: CustomerAddressRow[],
 ) {
   const records: CustomerActivityRecord[] = [];
 
