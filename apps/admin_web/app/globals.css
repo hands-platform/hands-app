@@ -13689,6 +13689,15 @@ a.ops-task-card {
   margin-top: 6px;
 }
 
+.admin-filter-chip-group {
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-filter-chip-group .pill {
+  flex-shrink: 0;
+}
+
 .role-badge,
 .role-customer,
 .role-partner,
