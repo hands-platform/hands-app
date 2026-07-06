@@ -6,6 +6,17 @@ import {
 } from './partner-detail-readiness-command-section';
 
 describe('partner detail readiness command sections', () => {
+  it('uses the shared Vuexy trace summary atom for dispatch repair metrics', () => {
+    const source = readFileSync(
+      new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+    expect(source).not.toContain('function TraceSummaryItem');
+  });
+
   it('uses the shared Vuexy badge atom for readiness status pills', () => {
     const source = readFileSync(
       new URL('./partner-detail-readiness-command-section.tsx', import.meta.url),

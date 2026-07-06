@@ -2,6 +2,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailWalletSummarySection } from './partner-detail-wallet-summary-section';
 
 describe('PartnerDetailWalletSummarySection', () => {
+  it('uses the shared Vuexy trace summary atom for wallet metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12 partner-wallet-summary-grid">');
+  });
+
   it('uses shared Vuexy status badges for wallet allocation chips', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
 

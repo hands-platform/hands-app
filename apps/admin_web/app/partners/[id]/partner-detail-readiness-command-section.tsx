@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
@@ -135,28 +136,31 @@ export function PartnerAcceptanceRepairCommandSection({
       resultTone={partnerOpsStatusBadgeTone(command.tone)}
       title="Dispatch repair command"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <TraceSummaryItem
-          helper="What support should expect the partner to see."
-          label="Partner app message"
-          value={command.partnerAppMessage}
-        />
-        <TraceSummaryItem
-          helper="How this affects customer choice and matching."
-          label="Customer impact"
-          value={command.customerImpact}
-        />
-        <TraceSummaryItem
-          helper="Use this before manual override or dispatch."
-          label="Operator decision"
-          value={command.operatorDecision}
-        />
-        <TraceSummaryItem
-          helper="Where live demand should go while blocked."
-          label="Marketplace routing"
-          value={command.marketplaceRouting}
-        />
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: 'What support should expect the partner to see.',
+            label: 'Partner app message',
+            value: command.partnerAppMessage,
+          },
+          {
+            detail: 'How this affects customer choice and matching.',
+            label: 'Customer impact',
+            value: command.customerImpact,
+          },
+          {
+            detail: 'Use this before manual override or dispatch.',
+            label: 'Operator decision',
+            value: command.operatorDecision,
+          },
+          {
+            detail: 'Where live demand should go while blocked.',
+            label: 'Marketplace routing',
+            value: command.marketplaceRouting,
+          },
+        ]}
+      />
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
@@ -198,23 +202,5 @@ export function PartnerAcceptanceRepairCommandSection({
         <PartnerDetailVuexyTableFooter rowCount={command.steps.length} />
       </div>
     </AdminFilterPanel>
-  );
-}
-
-function TraceSummaryItem({
-  helper,
-  label,
-  value,
-}: {
-  readonly helper: string;
-  readonly label: string;
-  readonly value: string;
-}) {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{helper}</small>
-    </div>
   );
 }

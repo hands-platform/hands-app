@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -56,33 +57,36 @@ export function PartnerDetailBookingGateDecisionSection({
       resultTone={partnerOpsStatusBadgeTone(decision.tone)}
       title="Marketplace booking gate decision"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Decision</span>
-          <strong>{decision.canJoinMarketplace ? 'Join clear' : 'Join held'}</strong>
-          <small>{decision.primaryReason}</small>
-        </div>
-        <div>
-          <span>Direct first-pick</span>
-          <strong>{decision.canDirectFirstPick ? 'Not wallet-blocked' : 'Needs repair'}</strong>
-          <small>{decision.directFirstPickReason}</small>
-        </div>
-        <div>
-          <span>Cash debt</span>
-          <strong>{decision.cashDebtLabel}</strong>
-          <small>Negative wallet is a settlement warning before final acceptance and service start</small>
-        </div>
-        <div>
-          <span>Location</span>
-          <strong>{decision.locationAge}</strong>
-          <small>Must be fresh within {decision.locationFreshnessLabel}</small>
-        </div>
-        <div>
-          <span>Services</span>
-          <strong>{decision.bookableServices}</strong>
-          <small>Bookable price options</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: decision.primaryReason,
+            label: 'Decision',
+            value: decision.canJoinMarketplace ? 'Join clear' : 'Join held',
+          },
+          {
+            detail: decision.directFirstPickReason,
+            label: 'Direct first-pick',
+            value: decision.canDirectFirstPick ? 'Not wallet-blocked' : 'Needs repair',
+          },
+          {
+            detail: 'Negative wallet is a settlement warning before final acceptance and service start',
+            label: 'Cash debt',
+            value: decision.cashDebtLabel,
+          },
+          {
+            detail: <>Must be fresh within {decision.locationFreshnessLabel}</>,
+            label: 'Location',
+            value: decision.locationAge,
+          },
+          {
+            detail: 'Bookable price options',
+            label: 'Services',
+            value: decision.bookableServices,
+          },
+        ]}
+      />
       <div className="participant-list admin-mt-12">
         <StatusBadge tone="info">First response window: {decision.responseWindowLabel}</StatusBadge>
         <StatusBadge tone="info">Marketplace radius: {decision.backupRadiusLabel}</StatusBadge>

@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailOperatorCommandQueueSection } from './partner-detail-operator-command-queue-section';
 
 describe('PartnerDetailOperatorCommandQueueSection', () => {
+  it('uses the shared Vuexy trace summary atom for command queue metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operator-command-queue-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses shared Vuexy badge atoms for command shortcuts and owners', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-command-queue-section.tsx', 'utf8');
 

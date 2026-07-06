@@ -5,6 +5,7 @@ import type {
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -52,15 +53,14 @@ export function PartnerDetailChatRetentionLedgerSection({
       resultLabel={`${rows.length} booking row(s)`}
       title={title}
     >
-      <div className="service-trace-summary admin-mt-12">
-        {summary.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={summary.map((item) => ({
+          detail: item.helper,
+          label: item.label,
+          value: item.value,
+        }))}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}

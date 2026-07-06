@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
@@ -51,23 +52,27 @@ export function PartnerDetailServicePricingSection({
       resultTone={readyCount ? 'success' : 'warning'}
       title="Service price readiness"
     >
-      <div className="service-trace-summary admin-mt-12" aria-label="Service pricing approval gate">
-        <div>
-          <span>Customer visibility</span>
-          <strong>{customerVisibility}</strong>
-          <small>{hiddenCount} hidden option(s).</small>
-        </div>
-        <div>
-          <span>Approval gate</span>
-          <strong>{approvalGate}</strong>
-          <small>Approval requires at least one customer-visible service option.</small>
-        </div>
-        <div>
-          <span>Next fix</span>
-          <strong>{nextFix}</strong>
-          <small>Use the row issue before approving this Partner.</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        ariaLabel="Service pricing approval gate"
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: `${hiddenCount} hidden option(s).`,
+            label: 'Customer visibility',
+            value: customerVisibility,
+          },
+          {
+            detail: 'Approval requires at least one customer-visible service option.',
+            label: 'Approval gate',
+            value: approvalGate,
+          },
+          {
+            detail: 'Use the row issue before approving this Partner.',
+            label: 'Next fix',
+            value: nextFix,
+          },
+        ]}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}

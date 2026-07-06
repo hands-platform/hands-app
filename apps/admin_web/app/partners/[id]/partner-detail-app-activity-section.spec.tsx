@@ -4,6 +4,13 @@ import { PartnerDetailAppActivitySection } from './partner-detail-app-activity-s
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('PartnerDetailAppActivitySection', () => {
+  it('uses the shared Vuexy trace summary atom for activity metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
 

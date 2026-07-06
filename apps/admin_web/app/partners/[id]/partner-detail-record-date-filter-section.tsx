@@ -9,6 +9,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
@@ -113,28 +114,31 @@ export function PartnerDetailRecordDateFilterSection({
           </AdminFormControlLink>
         </div>
       </AdminFormGrid>
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Filtered booking archive</span>
-          <strong>{filteredBookingArchiveCount}</strong>
-          <small>Preferred, selected, and marketplace participation records.</small>
-        </div>
-        <div>
-          <span>Filtered activity</span>
-          <strong>{filteredActivityCount}</strong>
-          <small>{activityTypeLabel} in this period.</small>
-        </div>
-        <div>
-          <span>Loaded bookings</span>
-          <strong>{totalBookingArchiveCount}</strong>
-          <small>Total visible archive before this filter.</small>
-        </div>
-        <div>
-          <span>Loaded events</span>
-          <strong>{totalActivityCount}</strong>
-          <small>Total factual activity before this filter.</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: 'Preferred, selected, and marketplace participation records.',
+            label: 'Filtered booking archive',
+            value: filteredBookingArchiveCount,
+          },
+          {
+            detail: `${activityTypeLabel} in this period.`,
+            label: 'Filtered activity',
+            value: filteredActivityCount,
+          },
+          {
+            detail: 'Total visible archive before this filter.',
+            label: 'Loaded bookings',
+            value: totalBookingArchiveCount,
+          },
+          {
+            detail: 'Total factual activity before this filter.',
+            label: 'Loaded events',
+            value: totalActivityCount,
+          },
+        ]}
+      />
     </AdminCard>
   );
 }

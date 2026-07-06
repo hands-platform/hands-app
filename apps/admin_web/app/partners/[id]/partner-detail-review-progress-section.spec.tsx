@@ -10,6 +10,13 @@ import {
 } from './partner-detail-review-progress-section';
 
 describe('PartnerDetailReviewControlPanelSection', () => {
+  it('uses the shared Vuexy trace summary atom for review progress metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
 

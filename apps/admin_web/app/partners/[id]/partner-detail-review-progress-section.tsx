@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminCard } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -121,23 +122,26 @@ export function PartnerDetailApprovalEvidenceSummarySection({
       resultTone={openRows ? 'warning' : 'success'}
       title="Partner review evidence summary"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Remaining</span>
-          <strong>{openRows} item(s)</strong>
-          <small>Evidence still needing review.</small>
-        </div>
-        <div>
-          <span>Clear</span>
-          <strong>{clearRows} item(s)</strong>
-          <small>Rows already clear or not required.</small>
-        </div>
-        <div>
-          <span>Next step</span>
-          <strong>{firstOpenRow?.title ?? 'Approve Partner'}</strong>
-          <small>Use the linked row before account or finance follow-up.</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: 'Evidence still needing review.',
+            label: 'Remaining',
+            value: `${openRows} item(s)`,
+          },
+          {
+            detail: 'Rows already clear or not required.',
+            label: 'Clear',
+            value: `${clearRows} item(s)`,
+          },
+          {
+            detail: 'Use the linked row before account or finance follow-up.',
+            label: 'Next step',
+            value: firstOpenRow?.title ?? 'Approve Partner',
+          },
+        ]}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
@@ -208,15 +212,14 @@ export function PartnerDetailReviewControlPanelSection({
       resultTone={reviewPanelResultTone(panel.tone)}
       title="Partner review control panel"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {panel.metrics.map((metric) => (
-          <div key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <small>{metric.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={panel.metrics.map((metric) => ({
+          detail: metric.helper,
+          label: metric.label,
+          value: metric.value,
+        }))}
+      />
       <div className="participant-list admin-mt-12" aria-label="Current approval issues">
         <span className="muted">Current approval issues</span>
         <StatusBadge tone={panel.reviewIssues.length ? 'warning' : 'success'}>

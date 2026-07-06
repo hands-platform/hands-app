@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../../components/status-badge';
@@ -39,61 +40,56 @@ export function PartnerDetailWalletSummarySection({
       resultTone={resultTone(summary.reviewTone)}
       title="Partner wallet detail"
     >
-      <div className="service-trace-summary admin-mt-12 partner-wallet-summary-grid">
-        <div>
-          <span>Current balance</span>
-          <strong>
-            <MoneyText amount={summary.currentBalance} currency={summary.currency} />
-          </strong>
-          <small>Positive balance is HANDS liability/prepaid value held for the partner.</small>
-        </div>
-        <div>
-          <span>Available / liability</span>
-          <strong>
-            <MoneyText amount={summary.partnerWalletLiability} currency={summary.currency} />
-          </strong>
-          <small>Used for withdrawal review or future prepaid deduction, depending on policy.</small>
-        </div>
-        <div>
-          <span>Negative receivable</span>
-          <strong>
-            <MoneyText amount={summary.negativeWalletReceivable} currency={summary.currency} />
-          </strong>
-          <small>Finance follow-up amount still owed by the partner.</small>
-        </div>
-        <div>
-          <span>Bank deposits</span>
-          <strong>
-            <MoneyText amount={summary.manualBankDeposits} currency={summary.currency} />
-          </strong>
-          <small>Visible manually recorded partner bank deposits.</small>
-        </div>
-        <div>
-          <span>Negative wallet cleared</span>
-          <strong>
-            <MoneyText amount={summary.appliedToNegativeWallet} currency={summary.currency} />
-          </strong>
-          <small>Deposit allocation applied to existing negative wallet balance.</small>
-        </div>
-        <div>
-          <span>Cash-service deductions</span>
-          <strong>
-            <MoneyText
-              amount={
-                summary.cashPlatformFeeDeductions +
-                summary.cashCompanyVatDeductions +
-                summary.cashPartnerTaxDeductions
-              }
-              currency={summary.currency}
-            />
-          </strong>
-          <small>
-            Fee <MoneyText amount={summary.cashPlatformFeeDeductions} currency={summary.currency} /> / VAT{' '}
-            <MoneyText amount={summary.cashCompanyVatDeductions} currency={summary.currency} /> / tax{' '}
-            <MoneyText amount={summary.cashPartnerTaxDeductions} currency={summary.currency} />
-          </small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12 partner-wallet-summary-grid"
+        metrics={[
+          {
+            detail: 'Positive balance is HANDS liability/prepaid value held for the partner.',
+            label: 'Current balance',
+            value: <MoneyText amount={summary.currentBalance} currency={summary.currency} />,
+          },
+          {
+            detail: 'Used for withdrawal review or future prepaid deduction, depending on policy.',
+            label: 'Available / liability',
+            value: <MoneyText amount={summary.partnerWalletLiability} currency={summary.currency} />,
+          },
+          {
+            detail: 'Finance follow-up amount still owed by the partner.',
+            label: 'Negative receivable',
+            value: <MoneyText amount={summary.negativeWalletReceivable} currency={summary.currency} />,
+          },
+          {
+            detail: 'Visible manually recorded partner bank deposits.',
+            label: 'Bank deposits',
+            value: <MoneyText amount={summary.manualBankDeposits} currency={summary.currency} />,
+          },
+          {
+            detail: 'Deposit allocation applied to existing negative wallet balance.',
+            label: 'Negative wallet cleared',
+            value: <MoneyText amount={summary.appliedToNegativeWallet} currency={summary.currency} />,
+          },
+          {
+            detail: (
+              <>
+                Fee <MoneyText amount={summary.cashPlatformFeeDeductions} currency={summary.currency} /> / VAT{' '}
+                <MoneyText amount={summary.cashCompanyVatDeductions} currency={summary.currency} /> / tax{' '}
+                <MoneyText amount={summary.cashPartnerTaxDeductions} currency={summary.currency} />
+              </>
+            ),
+            label: 'Cash-service deductions',
+            value: (
+              <MoneyText
+                amount={
+                  summary.cashPlatformFeeDeductions +
+                  summary.cashCompanyVatDeductions +
+                  summary.cashPartnerTaxDeductions
+                }
+                currency={summary.currency}
+              />
+            ),
+          },
+        ]}
+      />
 
       <div className="admin-mt-16">
         <AdminTableScroll>

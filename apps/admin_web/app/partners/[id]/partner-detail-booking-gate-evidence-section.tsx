@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -52,25 +53,26 @@ export function PartnerDetailBookingGateEvidenceSection({
       resultLabel={`${visibleAttempts.length} attempt(s)`}
       title="Partner booking create gate evidence"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Loaded attempts</span>
-          <strong>{loadedAttempts.length}</strong>
-          <small>All recent partner-linked gate attempts.</small>
-        </div>
-        <div>
-          <span>Filtered attempts</span>
-          <strong>{filteredAttempts.length}</strong>
-          <small>Matches current date filter.</small>
-        </div>
-        <div>
-          <span>Latest gate</span>
-          <strong>{latestAttempt?.reasonLabel ?? 'None'}</strong>
-          <small>
-            <DateTimeText fallback="No gate row" value={latestAttempt?.at} />
-          </small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: 'All recent partner-linked gate attempts.',
+            label: 'Loaded attempts',
+            value: loadedAttempts.length,
+          },
+          {
+            detail: 'Matches current date filter.',
+            label: 'Filtered attempts',
+            value: filteredAttempts.length,
+          },
+          {
+            detail: <DateTimeText fallback="No gate row" value={latestAttempt?.at} />,
+            label: 'Latest gate',
+            value: latestAttempt?.reasonLabel ?? 'None',
+          },
+        ]}
+      />
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}

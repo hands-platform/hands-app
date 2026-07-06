@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
@@ -51,42 +52,41 @@ export function PartnerDetailCashDebtOriginSection({
       resultTone={hasCashFeeDebt ? 'danger' : 'success'}
       title="Cash debt origin and settlement"
     >
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Total open debt</span>
-          <strong>{openDebtLabel}</strong>
-          <small>From cash-service fee/tax settlement rows.</small>
-        </div>
-        <div>
-          <span>Evidence</span>
-          <strong>{hasSettlementRef ? 'Some refs' : 'Needs ref'}</strong>
-          <small>Deposit reference or admin offset is required to clear debt.</small>
-        </div>
-        <div>
-          <span>Marketplace</span>
-          <strong>{hasCashFeeDebt ? 'Warning state' : 'Participation open'}</strong>
-          <small>
-            Partner visibility and participation stay open; final acceptance and service start wait.
-          </small>
-        </div>
-        <div>
-          <span>Direct first-pick</span>
-          <strong>Not wallet-blocked</strong>
-          <small>Use account, KYC, location, push, pricing, and wallet settlement gates for direct flow.</small>
-        </div>
-        <div>
-          <span>Payout release</span>
-          <strong>{hasCashFeeDebt ? 'Held' : 'Open'}</strong>
-          <small>Finance should not release payout while HANDS fee/tax debt is open.</small>
-        </div>
-        <div>
-          <span>Next action</span>
-          <strong>{hasCashFeeDebt ? 'Collect/offset' : 'Monitor'}</strong>
-          <small>
-            {hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.'}
-          </small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail: 'From cash-service fee/tax settlement rows.',
+            label: 'Total open debt',
+            value: openDebtLabel,
+          },
+          {
+            detail: 'Deposit reference or admin offset is required to clear debt.',
+            label: 'Evidence',
+            value: hasSettlementRef ? 'Some refs' : 'Needs ref',
+          },
+          {
+            detail: 'Partner visibility and participation stay open; final acceptance and service start wait.',
+            label: 'Marketplace',
+            value: hasCashFeeDebt ? 'Warning state' : 'Participation open',
+          },
+          {
+            detail: 'Use account, KYC, location, push, pricing, and wallet settlement gates for direct flow.',
+            label: 'Direct first-pick',
+            value: 'Not wallet-blocked',
+          },
+          {
+            detail: 'Finance should not release payout while HANDS fee/tax debt is open.',
+            label: 'Payout release',
+            value: hasCashFeeDebt ? 'Held' : 'Open',
+          },
+          {
+            detail: hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.',
+            label: 'Next action',
+            value: hasCashFeeDebt ? 'Collect/offset' : 'Monitor',
+          },
+        ]}
+      />
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable

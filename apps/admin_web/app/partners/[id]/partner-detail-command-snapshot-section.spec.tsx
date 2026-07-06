@@ -2,6 +2,13 @@ import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-sn
 import { readFileSync } from 'node:fs';
 
 describe('PartnerDetailCommandSnapshotSection', () => {
+  it('uses the shared Vuexy trace summary atom for command snapshot links', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-command-snapshot-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary partner-detail-summary-rail-grid">');
+  });
+
   it('renders command snapshot fact groups with links', () => {
     const section = PartnerDetailCommandSnapshotSection({
       items: [

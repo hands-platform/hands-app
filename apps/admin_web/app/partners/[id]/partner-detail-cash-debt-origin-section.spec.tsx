@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailCashDebtOriginSection } from './partner-detail-cash-debt-origin-section';
 
 describe('PartnerDetailCashDebtOriginSection', () => {
+  it('uses the shared Vuexy trace summary atom for cash debt metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses the shared Vuexy badge atoms for cash debt pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');

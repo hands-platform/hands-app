@@ -11,6 +11,13 @@ const modelSource = readFileSync('app/partners/[id]/partner-detail-summary-rail-
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('PartnerDetailSummaryRailSection', () => {
+  it('uses the shared Vuexy trace summary atom for summary rail links', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary partner-detail-summary-rail-grid">');
+  });
+
   it('renders summary rail items with links and status label', () => {
     const section = PartnerDetailSummaryRailSection({
       description: 'Fast facts for operators before opening the full partner record.',

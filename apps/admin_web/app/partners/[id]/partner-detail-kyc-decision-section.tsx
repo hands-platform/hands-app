@@ -4,6 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
@@ -78,16 +79,17 @@ export function PartnerDetailKycDecisionSection({
       <div className="actions admin-mt-12">
         <ActionMenu actions={reviewActions} label="KYC review actions" variant="dropdown" />
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Partner app correction guidance</span>
-          <strong>{canApprove ? 'Ready for approval' : 'Correction required'}</strong>
-          <small>
-            Reject KYC only when the Partner must resubmit. The reason appears in the Partner app correction
-            checklist.
-          </small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={[
+          {
+            detail:
+              'Reject KYC only when the Partner must resubmit. The reason appears in the Partner app correction checklist.',
+            label: 'Partner app correction guidance',
+            value: canApprove ? 'Ready for approval' : 'Correction required',
+          },
+        ]}
+      />
       {!canApprove ? (
         <p className="muted admin-mt-10">
           Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.

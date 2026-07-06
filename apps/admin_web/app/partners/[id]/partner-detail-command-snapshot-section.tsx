@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 
 export type PartnerDetailCommandSnapshotItem = {
@@ -30,15 +31,15 @@ export function PartnerDetailCommandSnapshotSection({
         <StatusBadge tone="info">{items.length} fact groups</StatusBadge>
       </div>
       <div className="partner-detail-section-band-body">
-        <div className="service-trace-summary partner-detail-summary-rail-grid">
-          {items.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helperNode ?? item.helper}</small>
-            </a>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="partner-detail-summary-rail-grid"
+          metrics={items.map((item) => ({
+            detail: item.helperNode ?? item.helper,
+            href: item.href,
+            label: item.label,
+            value: item.value,
+          }))}
+        />
       </div>
     </section>
   );

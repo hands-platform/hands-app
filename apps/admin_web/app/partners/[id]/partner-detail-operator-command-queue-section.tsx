@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
@@ -66,15 +67,14 @@ export function PartnerDetailOperatorCommandQueueSection({
       resultTone={partnerOpsStatusBadgeTone(queue.tone)}
       title="Partner operator command queue"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {queue.metrics.map((metric) => (
-          <div key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <small>{metric.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={queue.metrics.map((metric) => ({
+          detail: metric.helper,
+          label: metric.label,
+          value: metric.value,
+        }))}
+      />
       {nextCommand ? (
         <div className={`partner-command-decision-bar is-${nextCommand.tone}`}>
           <div className="partner-command-decision-copy">

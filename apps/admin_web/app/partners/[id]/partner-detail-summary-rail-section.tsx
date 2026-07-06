@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 import type {
   PartnerDetailSummaryRailItem,
@@ -33,15 +33,15 @@ export function PartnerDetailSummaryRailSection({
         <StatusBadge tone="info">{statusLabel}</StatusBadge>
       </div>
       <div className="partner-detail-section-band-body">
-        <div className="service-trace-summary partner-detail-summary-rail-grid">
-          {items.map((item) => (
-            <Link href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </Link>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="partner-detail-summary-rail-grid"
+          metrics={items.map((item) => ({
+            detail: item.detail,
+            href: item.href,
+            label: item.label,
+            value: item.value,
+          }))}
+        />
         {usageSummary ? (
           <section className="partner-detail-usage-summary admin-mt-12">
             <div className="partner-detail-usage-summary-header">

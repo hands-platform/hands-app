@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingGateEvidenceSection } from './partner-detail-booking-gate-evidence-section';
 
 describe('PartnerDetailBookingGateEvidenceSection', () => {
+  it('uses the shared Vuexy trace summary atom for gate evidence metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses the shared Vuexy badge atoms for gate evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
 

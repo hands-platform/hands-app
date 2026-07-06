@@ -7,6 +7,13 @@ import {
 } from './partner-detail-chat-retention-ledger-section';
 
 describe('PartnerDetailChatRetentionLedgerSection', () => {
+  it('uses the shared Vuexy trace summary atom for chat retention metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses the shared Vuexy badge atom for booking status', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-chat-retention-ledger-section.tsx', 'utf8');
 

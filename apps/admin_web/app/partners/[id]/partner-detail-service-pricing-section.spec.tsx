@@ -2,6 +2,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailServicePricingSection } from './partner-detail-service-pricing-section';
 
 describe('PartnerDetailServicePricingSection', () => {
+  it('uses the shared Vuexy trace summary atom for service pricing metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12" aria-label="Service pricing approval gate">');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
 

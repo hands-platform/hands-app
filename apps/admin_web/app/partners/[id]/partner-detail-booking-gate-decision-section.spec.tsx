@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailBookingGateDecisionSection } from './partner-detail-booking-gate-decision-section';
 
 describe('PartnerDetailBookingGateDecisionSection', () => {
+  it('uses the shared Vuexy trace summary atom for gate decision metrics', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  });
+
   it('uses the shared Vuexy badge atoms for decision policy pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
