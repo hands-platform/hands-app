@@ -126,6 +126,85 @@ describe('BookingUnifiedDetailSection', () => {
     });
   });
 
+  it('keeps raw timestamps for shared DateTimeText rendering in unified detail rows', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        closedAt: '2026-06-19T08:40:00.000Z',
+        closedNote: null,
+        matchedAt: '2026-06-19T07:10:00.000Z',
+        statusChangedAt: '2026-06-19T07:20:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 3,
+    });
+
+    expect(unifiedDetail.customerRows.find((row) => row.label === 'Request time')).toMatchObject({
+      valueDateTimeValue: '2026-06-19T07:00:00.000Z',
+    });
+    expect(unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Match source')).toMatchObject({
+      detailDateTimeValue: '2026-06-19T07:10:00.000Z',
+    });
+    expect(unifiedDetail.financeRows.find((row) => row.label === 'Service state')).toMatchObject({
+      detailDateTimePrefix: 'Changed ',
+      detailDateTimeValue: '2026-06-19T07:20:00.000Z',
+    });
+    expect(unifiedDetail.financeRows.find((row) => row.label === 'Closeout decision')).toMatchObject({
+      detailDateTimePrefix: 'Closeout time ',
+      detailDateTimeValue: '2026-06-19T08:40:00.000Z',
+    });
+  });
+
+  it('renders unified detail row timestamps through shared DateTimeText atoms', () => {
+    const source = readFileSync('app/bookings/[id]/booking-unified-detail-section.tsx', 'utf8');
+    const markup = renderToStaticMarkup(
+      <BookingUnifiedDetailSection
+        unifiedDetail={{
+          customerRows: [
+            {
+              detail: 'Customer booking request opened.',
+              label: 'Request time',
+              value: 'Not set',
+              valueDateTimeValue: '2026-06-19T07:00:00.000Z',
+            },
+          ],
+          financeRows: [
+            {
+              detail: 'Changed Not set',
+              detailDateTimePrefix: 'Changed ',
+              detailDateTimeValue: '2026-06-19T07:20:00.000Z',
+              label: 'Service state',
+              value: 'IN_SERVICE',
+              variant: 'secondary',
+            },
+          ],
+          matchedPartnerRows: [
+            {
+              detail: 'Not set',
+              detailDateTimeValue: '2026-06-19T07:10:00.000Z',
+              label: 'Match source',
+              value: 'CUSTOMER_SELECTED_PARTNER',
+              variant: 'secondary',
+            },
+          ],
+          statusLabel: 'Realtime booking detail',
+          statusTone: 'pill-info',
+          summaryCards: [],
+        }}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(3);
+    expect(markup).toContain('dateTime="2026-06-19T07:00:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-19T07:10:00.000Z"');
+    expect(markup).toContain('Changed <time');
+    expect(markup).toContain('dateTime="2026-06-19T07:20:00.000Z"');
+  });
+
   it('labels post-match cancellation review as one booking detail state', () => {
     const unifiedDetail = bookingUnifiedDetail({
       addressLine: 'District 1, Ho Chi Minh City',

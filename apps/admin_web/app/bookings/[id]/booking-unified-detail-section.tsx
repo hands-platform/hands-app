@@ -7,6 +7,7 @@ import {
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type {
   BookingUnifiedDetail,
@@ -128,19 +129,21 @@ function BookingUnifiedFinanceRows({ rows }: { readonly rows: readonly BookingUn
 }
 
 function BookingUnifiedFinanceLedgerRow({ row }: { readonly row: BookingUnifiedDetailRow }) {
+  const detail = bookingUnifiedDetailText(row);
+
   return (
     <div className="booking-unified-finance-ledger-row">
       <span className="booking-unified-info-label">{row.label}</span>
       <div className="booking-unified-finance-ledger-value">
         <BookingUnifiedValue row={row} />
       </div>
-      {row.detail ? <p className="muted">{row.detail}</p> : null}
+      {detail ? <p className="muted">{detail}</p> : null}
     </div>
   );
 }
 
 function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow }) {
-  const detail = row.person && row.detail === row.person.helper ? null : row.detail;
+  const detail = row.person && row.detail === row.person.helper ? null : bookingUnifiedDetailText(row);
   const openRecordLabel =
     row.label === 'Customer'
       ? 'Open customer record'
@@ -173,15 +176,38 @@ function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow
 }
 
 function BookingUnifiedValue({ row }: { readonly row: BookingUnifiedDetailRow }) {
+  const value = row.valueDateTimeValue ? (
+    <DateTimeText fallback={row.value} value={row.valueDateTimeValue} />
+  ) : (
+    row.value
+  );
+
   if (row.href) {
     return (
       <Link className="booking-unified-value-link" href={row.href}>
-        {row.value}
+        {value}
       </Link>
     );
   }
 
-  return <strong className="booking-unified-value">{row.value}</strong>;
+  return <strong className="booking-unified-value">{value}</strong>;
+}
+
+function bookingUnifiedDetailText(row: BookingUnifiedDetailRow) {
+  if (row.detailDateTimeValue) {
+    return (
+      <>
+        {row.detailDateTimePrefix}
+        <DateTimeText
+          fallback={row.detailDateTimeFallback ?? row.detail ?? 'Not set'}
+          value={row.detailDateTimeValue}
+        />
+        {row.detailDateTimeSuffix}
+      </>
+    );
+  }
+
+  return row.detail;
 }
 
 function BookingUnifiedPerson({ person }: { readonly person: BookingUnifiedDetailPerson }) {

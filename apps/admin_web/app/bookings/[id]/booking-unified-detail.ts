@@ -39,7 +39,12 @@ export type BookingUnifiedDetailPerson = {
 export type BookingUnifiedDetailRow = {
   readonly label: string;
   readonly value: string;
+  readonly valueDateTimeValue?: string | null;
   readonly detail?: string;
+  readonly detailDateTimeFallback?: string;
+  readonly detailDateTimePrefix?: string;
+  readonly detailDateTimeSuffix?: string;
+  readonly detailDateTimeValue?: string | null;
   readonly href?: string;
   readonly people?: readonly BookingUnifiedDetailPerson[];
   readonly person?: BookingUnifiedDetailPerson;
@@ -142,6 +147,7 @@ function bookingUnifiedCustomerRows({
     {
       label: 'Request time',
       value: formatDate(bookingRequestOpenedAt(booking)),
+      valueDateTimeValue: bookingRequestOpenedAt(booking),
       detail: 'Customer booking request opened.',
       variant: 'secondary',
     },
@@ -240,6 +246,8 @@ function bookingUnifiedMatchedPartnerRows({
       label: 'Match source',
       value: booking.matchSource ?? booking.matchingEvidence?.finalSelection ?? 'Not recorded',
       detail: formatDate(booking.matchedAt),
+      detailDateTimeFallback: formatDate(booking.matchedAt),
+      detailDateTimeValue: booking.matchedAt,
       variant: 'secondary',
     },
     ...partnerLocationRows,
@@ -326,12 +334,18 @@ function bookingUnifiedFinanceRows({
       label: 'Service state',
       value: booking.status,
       detail: `Changed ${formatDate(booking.statusChangedAt ?? booking.updatedAt ?? null)}`,
+      detailDateTimeFallback: formatDate(booking.statusChangedAt ?? booking.updatedAt ?? null),
+      detailDateTimePrefix: 'Changed ',
+      detailDateTimeValue: booking.statusChangedAt ?? booking.updatedAt ?? null,
       variant: 'secondary',
     },
     {
       label: 'Closeout decision',
       value: booking.closedReason ?? (booking.closedAt ? 'Closed' : 'Open'),
       detail: booking.closedNote ?? `Closeout time ${formatDate(booking.closedAt ?? null)}`,
+      detailDateTimeFallback: booking.closedNote ? undefined : formatDate(booking.closedAt ?? null),
+      detailDateTimePrefix: booking.closedNote ? undefined : 'Closeout time ',
+      detailDateTimeValue: booking.closedNote ? null : booking.closedAt ?? null,
       variant: 'secondary',
     },
     {
