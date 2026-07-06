@@ -11,6 +11,8 @@ describe('PartnerDispatchForecastSection', () => {
 
     expect(source).toContain('AdminNoteCard');
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<AdminCard className="ops-task-note partner-dispatch-panel">');
     expect(source).not.toContain('className="card admin-card ops-task-note partner-dispatch-panel"');
     expect(source).not.toContain('<strong>No city data yet</strong>');

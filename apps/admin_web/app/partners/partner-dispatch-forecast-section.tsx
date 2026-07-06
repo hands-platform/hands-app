@@ -2,6 +2,7 @@ import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminNoteCard, AdminSection } from '../../components/admin-surface';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
@@ -76,7 +77,7 @@ export function PartnerDispatchForecastSection({
           <h3>Dispatch blockers</h3>
           <div className="setup-stage-list admin-mt-12">
             {forecast.blockers.map((item) => (
-              <div className="setup-stage-item" key={item.label}>
+              <AdminStageItem key={item.label}>
                 <span>{item.count ? 'FIX' : 'OK'}</span>
                 <div>
                   <strong>{item.label}</strong>
@@ -86,7 +87,7 @@ export function PartnerDispatchForecastSection({
                   <ArrowRight aria-hidden="true" size={14} />
                   {item.count}
                 </AdminFormControlLink>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         </AdminNoteCard>
@@ -98,7 +99,7 @@ export function PartnerDispatchForecastSection({
           </p>
           <div className="setup-stage-list admin-mt-12">
             {forecast.supplyLanes.map((lane) => (
-              <div className="setup-stage-item" key={lane.city}>
+              <AdminStageItem key={lane.city}>
                 <span>{lane.ready ? 'LIVE' : 'CHECK'}</span>
                 <div>
                   <strong>{lane.city}</strong>
@@ -114,10 +115,10 @@ export function PartnerDispatchForecastSection({
                   <ArrowRight aria-hidden="true" size={14} />
                   Open
                 </AdminFormControlLink>
-              </div>
+              </AdminStageItem>
             ))}
             {forecast.supplyLanes.length === 0 ? (
-              <div className="setup-stage-item">
+              <AdminStageItem>
                 <span>EMPTY</span>
                 <div>
                   <AdminEmptyState
@@ -126,7 +127,7 @@ export function PartnerDispatchForecastSection({
                   />
                 </div>
                 <small>0</small>
-              </div>
+              </AdminStageItem>
             ) : null}
           </div>
         </AdminNoteCard>
