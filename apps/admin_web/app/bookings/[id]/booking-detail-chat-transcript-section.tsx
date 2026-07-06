@@ -4,6 +4,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminChatMessage } from '../../../lib/admin-api';
 
@@ -40,9 +41,9 @@ export function BookingDetailChatTranscriptSection({
         <p className="muted admin-mt-10">
           Showing latest {messages.length} of {totalMessages} messages.{' '}
           {archiveHref ? (
-            <a className="text-link" href={archiveHref}>
+            <AdminTextLink href={archiveHref}>
               Open full chat window
-            </a>
+            </AdminTextLink>
           ) : (
             'Open chat evidence search for the full transcript.'
           )}

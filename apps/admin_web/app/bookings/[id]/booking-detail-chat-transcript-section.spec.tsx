@@ -8,7 +8,9 @@ describe('BookingDetailChatTranscriptSection', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-chat-transcript-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('<span className="pill pill-info">{countLabel(totalMessages, \'message\')}</span>');
+    expect(source).not.toContain('className="text-link"');
   });
 
   it('passes raw message timestamps to the shared date atom instead of formatting locally', () => {
