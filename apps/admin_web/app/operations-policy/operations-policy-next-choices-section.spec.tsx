@@ -14,7 +14,8 @@ describe('OperationsPolicyNextChoicesSection', () => {
     expect(classNamesIn(section)).toContain('card admin-section');
     expect(rendered).toContain('Recommended next choices');
     expect(rendered.match(/class="card admin-card insight-card"/g)).toHaveLength(7);
-    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminInsightCard');
+    expect(sectionSource).not.toContain('<AdminCard className="insight-card"');
     expect(sectionSource).not.toContain('<div className="card admin-card insight-card">');
     expect(rendered).toContain('First-pick Partner acceptance');
     expect(rendered).toContain('Partner response window');

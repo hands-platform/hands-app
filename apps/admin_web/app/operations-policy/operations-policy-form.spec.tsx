@@ -90,9 +90,11 @@ describe('OperationsPolicyForm', () => {
     expect(classNames).not.toContain('field');
     expect(classNames).not.toContain('operations-policy-form-field');
     expect(classNames).not.toContain('calendar-field');
-    expect(sectionSource).toContain('AdminCard');
+    expect(sectionSource).toContain('AdminInsightCard');
+    expect(sectionSource).toContain('AdminInsightLinkCard');
     expect(sectionSource).toContain('AdminEmptyState');
-    expect(sectionSource).toContain('AdminLinkCard');
+    expect(sectionSource).not.toContain('<AdminCard className="insight-card"');
+    expect(sectionSource).not.toContain('<AdminLinkCard className="insight-card"');
     expect(sectionSource).not.toContain('<div className="calendar-field">');
     expect(sectionSource).not.toContain('operations-policy-form-field');
     expect(sectionSource).not.toContain('<strong>No sampled record</strong>');

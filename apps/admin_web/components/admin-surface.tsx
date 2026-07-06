@@ -71,6 +71,9 @@ type AdminLinkCardProps = AdminCardProps & {
   readonly htmlTitle?: string;
 };
 
+type AdminInsightCardProps = AdminCardProps;
+type AdminInsightLinkCardProps = AdminLinkCardProps;
+
 type AdminSectionProps = {
   readonly actions?: ReactNode;
   readonly bodyClassName?: string;
@@ -360,6 +363,48 @@ export function AdminLinkCard({
     >
       {children}
     </Link>
+  );
+}
+
+export function AdminInsightCard({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+}: AdminInsightCardProps) {
+  return (
+    <AdminCard
+      ariaLabel={ariaLabel}
+      ariaLabelledBy={ariaLabelledBy}
+      className={joinClassNames('insight-card', className)}
+      id={id}
+    >
+      {children}
+    </AdminCard>
+  );
+}
+
+export function AdminInsightLinkCard({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  href,
+  htmlTitle,
+  id,
+}: AdminInsightLinkCardProps) {
+  return (
+    <AdminLinkCard
+      ariaLabel={ariaLabel}
+      ariaLabelledBy={ariaLabelledBy}
+      className={joinClassNames('insight-card', className)}
+      href={href}
+      htmlTitle={htmlTitle}
+      id={id}
+    >
+      {children}
+    </AdminLinkCard>
   );
 }
 

@@ -4,7 +4,7 @@ import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import {
   AdminActionCard,
-  AdminCard,
+  AdminInsightCard,
   AdminNotePanel,
   AdminSection,
   AdminTaskCard,
@@ -78,10 +78,10 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
           >
             <div className="booking-radar admin-mt-12">
               {item.options.map((option) => (
-                <AdminCard className="insight-card" key={option.label}>
+                <AdminInsightCard key={option.label}>
                   <strong>{displayOperationalWording(option.label)}</strong>
                   <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-                </AdminCard>
+                </AdminInsightCard>
               ))}
             </div>
             <AdminNotePanel className="admin-mt-12">

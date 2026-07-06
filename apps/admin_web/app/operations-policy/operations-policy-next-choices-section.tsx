@@ -1,4 +1,4 @@
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminInsightCard, AdminSection } from '../../components/admin-surface';
 
 type DecisionHintProps = {
   readonly title: string;
@@ -52,11 +52,11 @@ const decisionHints: readonly DecisionHintProps[] = [
 
 function DecisionHint({ title, recommendation, detail }: DecisionHintProps) {
   return (
-    <AdminCard className="insight-card">
+    <AdminInsightCard>
       <strong>{title}</strong>
       <p>{recommendation}</p>
       <p className="muted">{detail}</p>
-    </AdminCard>
+    </AdminInsightCard>
   );
 }
 

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { OperationsPolicyOwnerDecisionBacklogSection } from './operations-policy-owner-decision-backlog-section';
 import { classNamesIn, hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
@@ -61,10 +62,12 @@ describe('OperationsPolicyOwnerDecisionBacklogSection', () => {
     });
 
     const rendered = normalizedTextContent(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mt-16');
-    expect(classNamesIn(section)).toContain('card admin-card insight-card');
-    expect(sectionSource).toContain('AdminCard');
+    expect(markup).toContain('class="card admin-card insight-card"');
+    expect(sectionSource).toContain('AdminInsightCard');
+    expect(sectionSource).not.toContain('<AdminCard className="insight-card"');
     expect(sectionSource).not.toContain('className="card admin-card insight-card"');
     expect(rendered).toContain('Owner decision backlog');
     expect(rendered).toContain('Current decision pressure');

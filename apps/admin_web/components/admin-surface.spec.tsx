@@ -13,6 +13,8 @@ import {
   AdminDetailGrid,
   AdminErrorState,
   AdminFormCard,
+  AdminInsightCard,
+  AdminInsightLinkCard,
   AdminKpiCard,
   AdminLinkCard,
   AdminLoadingState,
@@ -182,6 +184,25 @@ describe('Admin surface components', () => {
       'aria-label': 'Open payment clearing',
       className: 'card admin-card finance-overview-control-card',
       href: '/finance-tax/payment-clearing',
+    });
+  });
+
+  it('renders reusable Vuexy insight cards for dense policy decision blocks', () => {
+    const card = AdminInsightCard({
+      children: <strong>Keep launch policy</strong>,
+      className: 'is-highlighted',
+    });
+    const linkCard = AdminInsightLinkCard({
+      children: <strong>Open matching records</strong>,
+      href: '/bookings?view=matching',
+    });
+
+    expect(card.type.name).toBe('AdminCard');
+    expect(card.props.className).toBe('insight-card is-highlighted');
+    expect(linkCard.type.name).toBe('AdminLinkCard');
+    expect(linkCard.props).toMatchObject({
+      className: 'insight-card',
+      href: '/bookings?view=matching',
     });
   });
 

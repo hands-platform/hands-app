@@ -9,7 +9,12 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminCard, AdminFormCard, AdminLinkCard, AdminNotePanel } from '../../components/admin-surface';
+import {
+  AdminFormCard,
+  AdminInsightCard,
+  AdminInsightLinkCard,
+  AdminNotePanel,
+} from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
@@ -81,7 +86,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         </div>
         <div className="booking-radar admin-mt-12">
           {relatedBookings.rows.map((row) => (
-            <AdminLinkCard className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
+            <AdminInsightLinkCard href={row.href} key={`${setting.key}-${row.id}`}>
               <strong>{row.title}</strong>
               <p className="muted">{row.subtitle}</p>
               <div className="participant-list">
@@ -94,12 +99,12 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
                   </StatusBadge>
                 ))}
               </div>
-            </AdminLinkCard>
+            </AdminInsightLinkCard>
           ))}
           {relatedBookings.rows.length === 0 ? (
-            <AdminCard className="insight-card">
+            <AdminInsightCard>
               <AdminEmptyState message={relatedBookings.emptyText} title="No sampled record" />
-            </AdminCard>
+            </AdminInsightCard>
           ) : null}
         </div>
       </AdminNotePanel>
@@ -111,10 +116,10 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         </p>
         <div className="booking-radar admin-mt-12">
           {impact.saveChecks.map((check) => (
-            <AdminLinkCard className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
+            <AdminInsightLinkCard href={check.href} key={`${setting.key}-${check.label}`}>
               <strong>{check.label}</strong>
               <p className="muted">{check.detail}</p>
-            </AdminLinkCard>
+            </AdminInsightLinkCard>
           ))}
         </div>
       </AdminNotePanel>
@@ -133,10 +138,10 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           />
           <div className="booking-radar admin-mt-12">
             {setting.options.map((option) => (
-              <AdminCard key={option.value} className="insight-card">
+              <AdminInsightCard key={option.value}>
                 <strong>{displayOperationalWording(option.label)}</strong>
                 <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-              </AdminCard>
+              </AdminInsightCard>
             ))}
           </div>
         </>
