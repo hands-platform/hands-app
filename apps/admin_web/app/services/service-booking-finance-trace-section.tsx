@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
@@ -96,9 +97,9 @@ export function ServiceBookingFinanceTraceSection({
                   </p>
                   <p className="muted">{row.booking?.status ?? 'UNKNOWN'}</p>
                   {row.booking ? (
-                    <a className="text-link" href={`/bookings/${row.booking.id}`}>
+                    <AdminTextLink href={`/bookings/${row.booking.id}`}>
                       Open booking
-                    </a>
+                    </AdminTextLink>
                   ) : null}
                 </td>
                 <td>

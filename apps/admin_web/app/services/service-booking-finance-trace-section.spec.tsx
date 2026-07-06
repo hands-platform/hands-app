@@ -24,6 +24,13 @@ describe('ServiceBookingFinanceTraceSection', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('uses the shared Vuexy text link atom for booking drill-down links', () => {
+    const source = readFileSync('app/services/service-booking-finance-trace-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders finance trace summary and booking rows', () => {
     const section = ServiceBookingFinanceTraceSection({
       rows: [traceRowFixture()],
