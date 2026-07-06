@@ -1,16 +1,16 @@
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 export function OperationsPolicyAuthorityBaselineSection() {
   return (
     <AdminSection
-      bodyClassName="ops-task-grid admin-mt-14"
       className="admin-mb-16"
       description="These rules are not CRM preferences. They are the operating authority for Vietnam booking, marketplace, and finance actions until a later product decision changes them."
       statusLabel="Command center rules"
       statusTone="success"
       title="MVP authority baseline"
     >
+      <AdminTaskGrid className="admin-mt-14">
         <AdminTaskCard
           actionLabel="Customers may browse globally; booking requires a confirmed Vietnam service address."
           className="ops-task-done"
@@ -55,6 +55,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
             start, and payout release wait until the unpaid platform fee is settled or cleared by finance.
           </p>
         </AdminTaskCard>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

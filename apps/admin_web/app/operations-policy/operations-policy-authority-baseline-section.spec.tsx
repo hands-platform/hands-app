@@ -7,6 +7,8 @@ describe('OperationsPolicyAuthorityBaselineSection', () => {
   it('uses shared Vuexy badge atoms for authority labels', () => {
     const source = readFileSync('app/operations-policy/operations-policy-authority-baseline-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTaskGrid');
+    expect(source).not.toContain('bodyClassName="ops-task-grid admin-mt-14"');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-success">BookingAddressSnapshot</span>');
     expect(source).not.toContain('<span className="pill pill-success">No auto assignment</span>');
@@ -20,7 +22,6 @@ describe('OperationsPolicyAuthorityBaselineSection', () => {
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
-      bodyClassName: 'ops-task-grid admin-mt-14',
       className: 'admin-mb-16',
       statusLabel: 'Command center rules',
       statusTone: 'success',
