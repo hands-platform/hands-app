@@ -3063,14 +3063,14 @@ a.action-button-card:hover {
 
 .booking-date-filter-buttons :is(a, button) {
   align-items: center;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border-strong);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--admin-radius);
   color: rgb(var(--admin-main-channel) / 0.78);
   cursor: pointer;
   display: inline-flex;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   justify-content: center;
   min-height: 38px;
   min-width: 98px;
@@ -3078,10 +3078,12 @@ a.action-button-card:hover {
   text-decoration: none;
 }
 
-.booking-date-filter-buttons :is(a, button):hover {
+.booking-date-filter-buttons :is(a, button):not(.is-active):hover,
+.booking-date-filter-buttons :is(a, button):not(.is-active):focus-visible {
   background: var(--admin-primary-soft);
   border-color: rgb(var(--admin-primary-channel) / 0.28);
   color: var(--admin-accent-strong);
+  outline: 0;
 }
 
 .booking-date-filter-buttons :is(a, button).is-active {

@@ -117,6 +117,21 @@ describe('Admin form control CSS', () => {
     expect(filterButtonBlock).not.toContain('border-radius: 999px');
   });
 
+  it('keeps shared segmented controls on the Vuexy pill TabList inactive treatment', () => {
+    const filterButtonIndex = globalsCss.indexOf('.booking-date-filter-buttons :is(a, button) {');
+    const filterButtonBlock = cssRuleBlockAt(filterButtonIndex);
+    const inactiveHoverIndex = globalsCss.indexOf('.booking-date-filter-buttons :is(a, button):not(.is-active):hover,');
+    const legacyHoverIndex = globalsCss.indexOf('.booking-date-filter-buttons :is(a, button):hover {');
+
+    expect(filterButtonBlock).toContain('background: transparent');
+    expect(filterButtonBlock).toContain('border: 1px solid transparent');
+    expect(filterButtonBlock).toContain('font-weight: 500');
+    expect(filterButtonBlock).not.toContain('background: var(--admin-surface)');
+    expect(filterButtonBlock).not.toContain('border: 1px solid var(--admin-border-strong)');
+    expect(inactiveHoverIndex).toBeGreaterThan(-1);
+    expect(legacyHoverIndex).toBe(-1);
+  });
+
   it('limits calendar view tab hover treatment to inactive tabs', () => {
     const inactiveHoverIndex = globalsCss.indexOf(
       '.calendar-segmented-control .booking-date-filter-button:not(.is-active):hover,',
