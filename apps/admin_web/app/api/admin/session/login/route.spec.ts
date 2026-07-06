@@ -146,6 +146,56 @@ describe('Admin web session login route', () => {
     expect(sessionPayload.secret).toBeUndefined();
   });
 
+  it('falls back to configured master credentials when the stored operator API does not authenticate them', async () => {
+    const salt = 'test-admin-login-salt';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_API_BASE_URL: 'http://localhost:3000/api',
+      ADMIN_WEB_LOGIN_EMAIL: 'admin@hands.vn',
+      ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('correct horse battery staple', salt),
+      ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
+      ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
+      ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
+      NODE_ENV: 'production',
+    };
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        authenticated: false,
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { POST } = await import('./route');
+
+    const response = await POST(
+      new Request('http://localhost/api/admin/session/login', {
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'admin@hands.vn',
+          password: 'correct horse battery staple',
+        }),
+      }),
+    );
+    const body = (await response.json()) as {
+      authenticated?: boolean;
+      role?: string;
+      sub?: string;
+      token?: string;
+    };
+    const setCookie = response.headers.get('set-cookie') ?? '';
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(body).toMatchObject({ authenticated: true, role: 'ADMIN', sub: 'admin@hands.vn' });
+    expect(body.token).toBeUndefined();
+    expect(setCookie).toContain('hands_admin_session=');
+    expect(setCookie).toContain('HttpOnly');
+  });
+
   it('rejects an invalid password without leaking credential details', async () => {
     const salt = 'test-admin-login-salt';
     process.env = {

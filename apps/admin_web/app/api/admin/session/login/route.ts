@@ -19,7 +19,8 @@ const NO_STORE_HEADERS = {
 
 export async function POST(request: Request) {
   const credentials = await readCredentials(request);
-  const login = (await authenticateStoredAdminOperatorLogin(credentials)) ?? authenticateAdminWebLogin(credentials);
+  const storedOperatorLogin = await authenticateStoredAdminOperatorLogin(credentials);
+  const login = storedOperatorLogin?.ok ? storedOperatorLogin : authenticateAdminWebLogin(credentials);
   const wantsHtml = request.headers.get('accept')?.includes('text/html') ?? false;
 
   if (!login.ok) {
