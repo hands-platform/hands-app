@@ -38,7 +38,8 @@ describe('ServicePricingAuditTrailSection', () => {
     expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       title: 'Recent pricing audit trail',
     });
     expect(rendered).toContain('Recent pricing audit trail');

@@ -36,7 +36,8 @@ describe('ServicePayoutLedgerSection', () => {
     expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       statusLabel: '3 active option(s)',
       statusTone: 'info',
       title: 'Service payout ledger',

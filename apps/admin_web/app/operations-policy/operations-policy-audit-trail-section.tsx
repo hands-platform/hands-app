@@ -33,8 +33,9 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
         </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-mb-16"
       description="Shows who changed a policy, the previous value, the new value, and whether the setting is already enforced by live booking logic."
+      scrollable
       title="Recent policy audit trail"
     >
       {rows.length ? (

@@ -16,6 +16,7 @@ type AdminTableCardProps = Omit<ComponentProps<typeof AdminCard>, 'className'> &
 type AdminTableSectionProps = Omit<ComponentProps<typeof AdminSection>, 'className'> & {
   readonly className?: string;
   readonly grouped?: boolean;
+  readonly scrollable?: boolean;
 };
 
 export const adminTableCardChromeClassName = 'vuexy-booking-table-card';
@@ -35,12 +36,13 @@ export function AdminTableCard({ className, grouped = true, ...props }: AdminTab
   );
 }
 
-export function AdminTableSection({ className, grouped = true, ...props }: AdminTableSectionProps) {
+export function AdminTableSection({ className, grouped = true, scrollable = false, ...props }: AdminTableSectionProps) {
   return (
     <AdminSection
       className={joinClassNames(
         adminTableCardChromeClassName,
         grouped ? adminTableGroupClassName : undefined,
+        scrollable ? 'admin-card-scroll' : undefined,
         className,
       )}
       {...props}

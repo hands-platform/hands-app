@@ -42,7 +42,8 @@ describe('ServiceDurationPricingMatrixSection', () => {
     expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       statusLabel: '60 / 90 / 120 min',
       statusTone: 'info',
       title: 'Duration pricing matrix',

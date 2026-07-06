@@ -35,8 +35,9 @@ export function ServiceDurationPricingMatrixSection({
   return (
     <AdminTableSection
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-mb-16"
       description="One row is one service name. Each duration cell shows customer minimum, Partner payout, and projected company commission after VAT, withholding, and other configured costs."
+      scrollable
       statusLabel={`${SERVICE_MATRIX_DURATIONS.join(' / ')} min`}
       statusTone="info"
       title="Duration pricing matrix"

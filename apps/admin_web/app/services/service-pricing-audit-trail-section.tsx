@@ -34,8 +34,9 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
         </AdminFormControlLink>
       }
       bodyClassName="admin-table-section-body"
-      className="admin-card-scroll admin-mb-16"
+      className="admin-mb-16"
       description="Tracks who changed service prices, Partner payout amounts, VAT, other costs, and duration settings. Use this before investigating unexpected commission or payout changes."
+      scrollable
       title="Recent pricing audit trail"
     >
       {rows.length ? (

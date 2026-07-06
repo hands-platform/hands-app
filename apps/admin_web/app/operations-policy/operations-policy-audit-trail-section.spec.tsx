@@ -43,7 +43,8 @@ describe('OperationsPolicyAuditTrailSection', () => {
     expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       title: 'Recent policy audit trail',
     });
     expect(rendered).toContain('Recent policy audit trail');

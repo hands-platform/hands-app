@@ -29,7 +29,7 @@ describe('FinanceCloseoutPayoutReleaseChecksSection', () => {
     expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
       bodyClassName: 'admin-table-section-body',
-      className: 'admin-card-scroll',
+      scrollable: true,
       title: 'Payout release checks',
     });
     expect(rendered).toContain('Payout release checks');

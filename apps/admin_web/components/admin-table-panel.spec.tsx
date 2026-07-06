@@ -33,4 +33,17 @@ describe('Admin table panel surfaces', () => {
 
     expect(panel.props.className).toBe('booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card');
   });
+
+  it('keeps scrollable table section overflow on the shared Vuexy surface option', () => {
+    const section = AdminTableSection({
+      children: <p>Rows</p>,
+      className: 'finance-section vuexy-booking-table-card',
+      scrollable: true,
+      title: 'Scrollable settlement table',
+    });
+
+    expect(section.props.className).toBe(
+      'vuexy-booking-table-card vuexy-booking-table-group admin-card-scroll finance-section',
+    );
+  });
 });
