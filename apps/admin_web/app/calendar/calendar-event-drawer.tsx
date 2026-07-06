@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import {
+  AdminDrawerActionFooter,
   AdminDrawerFormGridFields,
   AdminFormCheckbox,
   AdminFormControlButton,
@@ -237,7 +238,7 @@ export function CalendarEventDrawer({
         </div>
 
         {canEdit ? (
-          <div className="calendar-drawer-footer">
+          <AdminDrawerActionFooter>
             <AdminFormControlButton className="button-primary" onClick={onSubmit} type="button">
               <Save aria-hidden="true" size={16} />
               {mode === 'create' ? 'Add Event' : 'Update Event'}
@@ -246,7 +247,7 @@ export function CalendarEventDrawer({
               <RotateCcw aria-hidden="true" size={16} />
               Reset
             </AdminFormControlButton>
-          </div>
+          </AdminDrawerActionFooter>
         ) : null}
       </aside>
     </>

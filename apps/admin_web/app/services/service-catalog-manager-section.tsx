@@ -2,6 +2,7 @@ import { Edit3, Plus, Save, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import {
+  AdminDrawerActionFooter,
   AdminDrawerFormGrid,
   AdminFormCheckbox,
   AdminFormControlButton,
@@ -191,7 +192,7 @@ function NewServiceDialog() {
         <input name="displayOrder" type="hidden" value="100" />
         <input name="vatBps" type="hidden" value="0" />
         <input name="otherCostAmount" type="hidden" value="0" />
-        <div className="calendar-drawer-footer service-menu-dialog-footer">
+        <AdminDrawerActionFooter className="service-menu-dialog-footer">
           <AdminFormControlButton className="button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save service
@@ -199,7 +200,7 @@ function NewServiceDialog() {
           <AdminFormControlLink className="button-secondary" href={servicesReturnHref()}>
             Cancel
           </AdminFormControlLink>
-        </div>
+        </AdminDrawerActionFooter>
       </AdminDrawerFormGrid>
     </ServiceDialogFrame>
   );
@@ -218,7 +219,7 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
           const service = group.items.find((item) => item.durationMin === duration);
           return <DurationInputRow duration={duration} key={duration} service={service} />;
         })}
-        <div className="calendar-drawer-footer service-menu-dialog-footer">
+        <AdminDrawerActionFooter className="service-menu-dialog-footer">
           <AdminFormControlButton className="button-primary" type="submit">
             <Save aria-hidden="true" size={16} />
             Save changes
@@ -226,7 +227,7 @@ function EditServiceDialog({ group }: { readonly group: ServiceCatalogGroup }) {
           <AdminFormControlLink className="button-secondary" href={servicesReturnHref()}>
             Cancel
           </AdminFormControlLink>
-        </div>
+        </AdminDrawerActionFooter>
       </AdminDrawerFormGrid>
     </ServiceDialogFrame>
   );

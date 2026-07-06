@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
+  AdminDrawerActionFooter,
   AdminDrawerFormGrid,
   AdminDrawerFormGridFields,
   AdminFormCheckbox,
@@ -88,6 +89,17 @@ describe('Admin form controls', () => {
     expect(row.type).toBe('div');
     expect(row.props.className).toBe('admin-form-action-row form-grid-wide finance-reconciliation-form-actions');
     expect(textContent(row)).toBe('Save changes');
+  });
+
+  it('renders drawer action footers through the shared Vuexy drawer action surface', () => {
+    const footer = AdminDrawerActionFooter({
+      children: 'Save service',
+      className: 'service-menu-dialog-footer',
+    });
+
+    expect(footer.type).toBe('div');
+    expect(footer.props.className).toBe('calendar-drawer-footer service-menu-dialog-footer');
+    expect(textContent(footer)).toBe('Save service');
   });
 
   it('renders Vuexy-style select and search controls with stable labels', () => {

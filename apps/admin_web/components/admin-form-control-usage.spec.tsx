@@ -163,6 +163,15 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps drawer footers on the shared Vuexy drawer action atom', () => {
+    const offenders = productionTsxFiles()
+      .filter((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/') !== 'components/admin-form-controls.tsx')
+      .filter((filePath) => rawCalendarDrawerFooterPattern.test(readFileSync(filePath, 'utf8')))
+      .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
+
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps date filter width tweaks on the shared Vuexy form control token', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => readFileSync(filePath, 'utf8').includes('admin-date-filter-field'))
@@ -475,6 +484,8 @@ const rawFinanceFilterChipRowPattern =
   /<div\b[^>]*className=(?:"filter-row admin-mt-12"|'filter-row admin-mt-12')/s;
 const rawFormActionRowPattern =
   /<div\b[^>]*className=(?:"[^"]*\b(?:form-actions|finance-reconciliation-form-actions|actions full-span)\b[^"]*"|'[^']*\b(?:form-actions|finance-reconciliation-form-actions|actions full-span)\b[^']*')/s;
+const rawCalendarDrawerFooterPattern =
+  /<div\b[^>]*className=(?:"[^"]*\bcalendar-drawer-footer\b[^"]*"|'[^']*\bcalendar-drawer-footer\b[^']*')/s;
 const rawGetFilterFormShellPattern =
   /<form\b[^>]*className=(?:"(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)"|'(?:inline-form admin-mt-12|admin-filter-form|notification-push-preview-form|vuexy-review-controls)')/s;
 const rawAdminInlineActionFormPattern =

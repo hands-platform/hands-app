@@ -139,6 +139,11 @@ type AdminFormActionRowProps = {
   readonly wide?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
 
+type AdminDrawerActionFooterProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className'>;
+
 type AdminFormGridProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -215,6 +220,14 @@ export function AdminFormControlStack({ children, className, ...divProps }: Admi
 export function AdminFormActionRow({ children, className, wide = true, ...divProps }: AdminFormActionRowProps) {
   return (
     <div {...divProps} className={joinClassNames('admin-form-action-row', wide ? 'form-grid-wide' : undefined, className)}>
+      {children}
+    </div>
+  );
+}
+
+export function AdminDrawerActionFooter({ children, className, ...divProps }: AdminDrawerActionFooterProps) {
+  return (
+    <div {...divProps} className={joinClassNames('calendar-drawer-footer', className)}>
       {children}
     </div>
   );

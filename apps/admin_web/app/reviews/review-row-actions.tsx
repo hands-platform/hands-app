@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { ClientActionDropdown, type ClientActionDropdownItem } from '../../components/client-action-dropdown';
 import {
+  AdminDrawerActionFooter,
   AdminDrawerFormGrid,
   AdminFormControlButton,
   AdminFormSelect,
@@ -205,7 +206,7 @@ function ReviewEditDrawer({
                 rows={7}
               />
             </AdminCard>
-            <div className="calendar-drawer-footer review-edit-drawer-footer">
+            <AdminDrawerActionFooter className="review-edit-drawer-footer">
               <AdminFormControlButton className="button-primary" type="submit">
                 <Save aria-hidden="true" size={16} />
                 Save review
@@ -213,7 +214,7 @@ function ReviewEditDrawer({
               <AdminFormControlButton className="button-secondary" onClick={onClose} type="button">
                 Cancel
               </AdminFormControlButton>
-            </div>
+            </AdminDrawerActionFooter>
           </AdminDrawerFormGrid>
         </div>
       </aside>
