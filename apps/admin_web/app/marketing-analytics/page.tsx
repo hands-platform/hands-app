@@ -345,9 +345,9 @@ export default async function MarketingAnalyticsPage({
 
       <AdminMetricGrid
         ariaLabel="Marketing summary metrics"
-        className="vietnam-overview-metric-grid"
+        className="marketing-analytics-metric-grid"
         metrics={cards.map(({ label, value, detail, icon, tone }) => ({
-          className: `vietnam-overview-metric is-${tone}`,
+          className: `marketing-analytics-metric is-${tone}`,
           helper: detail,
           icon,
           iconSize: 18,
