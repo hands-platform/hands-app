@@ -158,7 +158,8 @@ describe('AdminOperatorsPage', () => {
     expect(source).toContain('AdminFormCard');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<form action={createAdminOperator} className="admin-operator-control-card"');

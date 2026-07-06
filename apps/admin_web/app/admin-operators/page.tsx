@@ -9,7 +9,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import {
   createAdminOperator,
   revokeAdminOperatorAccess,
@@ -182,9 +182,9 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                   <td>
                     <div className="participant-list">
                       {user.roles.map((role) => (
-                        <StatusBadge tone={statusBadgeToneFromPillClass(operatorRolePillClassName(role))} key={role}>
+                        <StatusBadgeFromPillClass key={role} pillClass={operatorRolePillClassName(role)}>
                           {role}
-                        </StatusBadge>
+                        </StatusBadgeFromPillClass>
                       ))}
                     </div>
                   </td>

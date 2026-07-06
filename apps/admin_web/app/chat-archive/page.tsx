@@ -35,7 +35,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -347,7 +347,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     </p>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.issue}</StatusBadge>
+                    <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.issue}</StatusBadgeFromPillClass>
                     <p className="muted">{row.detail}</p>
                   </td>
                   <td>
@@ -434,9 +434,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <p className="muted">Room {shortId(room.roomId)}</p>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(room.booking.status))}>
+                  <StatusBadgeFromPillClass pillClass={statusPillClass(room.booking.status)}>
                     {room.booking.status}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
                   <ChatArchivePersonCell

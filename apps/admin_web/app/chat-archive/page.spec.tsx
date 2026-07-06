@@ -137,7 +137,8 @@ describe('ChatArchivePage', () => {
   it('keeps visible chat status chips on shared badge atoms', () => {
     expect(pageSource).toContain('AdminEmptyState');
     expect(pageSource).toContain('StatusBadge');
-    expect(pageSource).toContain('statusBadgeToneFromPillClass');
+    expect(pageSource).toContain('StatusBadgeFromPillClass');
+    expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
     expect(pageSource).not.toContain('PillClassBadge');
     expect(pageSource).not.toContain('<strong>No chat rooms found</strong>');
     expect(pageSource).not.toContain('<span className={`pill ${row.pillClass}`}>{row.issue}</span>');
