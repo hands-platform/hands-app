@@ -6,7 +6,7 @@ describe('Admin date-time form usage', () => {
     const appDir = join(process.cwd(), 'app');
     const offenders = listTsxFiles(appDir)
       .filter((filePath) => !filePath.endsWith('.spec.tsx'))
-      .filter((filePath) => readFileSync(filePath, 'utf8').includes('type="datetime-local"'))
+      .filter((filePath) => containsNativeDateTimeField(readFileSync(filePath, 'utf8')))
       .map((filePath) => relative(process.cwd(), filePath).replaceAll('\\', '/'));
 
     expect(offenders).toEqual([]);
@@ -49,7 +49,11 @@ function listTsxFiles(directory: string): string[] {
 }
 
 function containsNativeCalendarField(source: string) {
-  return ['type="date"', 'type="month"', 'type="time"'].some((needle) => source.includes(needle));
+  return /\btype=\{?['"`](date|month|time)['"`]\}?/.test(source);
+}
+
+function containsNativeDateTimeField(source: string) {
+  return /\btype=\{?['"`]datetime-local['"`]\}?/.test(source);
 }
 
 function containsRawAdminFormShell(source: string) {
