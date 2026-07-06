@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
@@ -53,7 +53,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
       description="Tracks identity records, CCCD front/back, and selfie evidence before a partner can become dispatch-ready."
       title="KYC review board"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {board.cards.map((card) => (
           <AdminActionCard
             detail={card.detail}
@@ -80,7 +80,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminDetailGrid>
       <div className="setup-stage-list admin-mt-14">
         {board.playbook.map((step) => (
           <AdminStageItem key={step.title}>

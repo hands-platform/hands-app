@@ -1,5 +1,10 @@
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminActionCard, AdminNotePanel, AdminSection } from '../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskGrid,
+} from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import {
   AdminSignal,
@@ -51,7 +56,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
           value: stat.value,
         }))}
       />
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {handoff.actions.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorAction}
@@ -80,7 +85,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

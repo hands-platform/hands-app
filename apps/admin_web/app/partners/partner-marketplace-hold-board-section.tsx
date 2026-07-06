@@ -1,4 +1,4 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 type PartnerMarketplaceHoldBoardTone = 'danger' | 'info' | 'ok' | 'warn';
@@ -43,7 +43,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
       description="Shows why partners need dispatch repair before operators rely on booking participation. Viewing marketplace requests is not treated as a partner action."
       title="Partner dispatch repair board"
     >
-      <div className="grid admin-mt-12">
+      <AdminDetailGrid className="admin-mt-12">
         {board.cards.map((card) => (
           <AdminActionCard
             detail={card.detail}
@@ -70,7 +70,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
             </div>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminDetailGrid>
     </AdminSection>
   );
 }

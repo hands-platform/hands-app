@@ -9,9 +9,11 @@ describe('PartnerKycReviewBoardSection', () => {
   it('uses shared Vuexy badge atoms instead of raw KYC board pill spans', () => {
     const source = readFileSync('app/partners/partner-kyc-review-board-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('AdminStageItem');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="grid admin-mt-12">');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('className="text-link"');
