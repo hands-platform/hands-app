@@ -7,8 +7,8 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
   it('uses shared Vuexy badge atoms for coverage summary and row chips', () => {
     const source = readFileSync('app/bookings/booking-monitor-marketplace-coverage-section.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${pill.tone}`} key={pill.label}>');
     expect(source).not.toContain('<span className="pill">Final Partner selected');

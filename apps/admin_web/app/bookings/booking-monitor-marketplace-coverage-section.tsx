@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -42,9 +42,9 @@ export function BookingMonitorMarketplaceCoverageSection({
       actions={
         <>
           {marketplaceBookingCoveragePills.map((pill) => (
-            <StatusBadge tone={statusBadgeToneFromPillClass(pill.tone)} key={pill.label}>
+            <StatusBadgeFromPillClass pillClass={pill.tone} key={pill.label}>
               {pill.label}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
           ))}
         </>
       }
@@ -84,9 +84,9 @@ export function BookingMonitorMarketplaceCoverageSection({
                   <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.firstPickTone)}>
+                  <StatusBadgeFromPillClass pillClass={row.firstPickTone}>
                     {row.firstPickLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                   <div className="muted">{getMatchingWindowLabel(row.booking)}</div>
                 </td>
                 <td>
@@ -96,24 +96,24 @@ export function BookingMonitorMarketplaceCoverageSection({
                   </div>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.selectedPartnerTone)}>
+                  <StatusBadgeFromPillClass pillClass={row.selectedPartnerTone}>
                     {row.selectedPartnerLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.alertTone)} title={row.alertDetail}>
+                  <StatusBadgeFromPillClass pillClass={row.alertTone} title={row.alertDetail}>
                     {row.alertLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.walletTone)}>
+                  <StatusBadgeFromPillClass pillClass={row.walletTone}>
                     {row.walletLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.nextActionTone)} title={row.nextAction}>
+                  <StatusBadgeFromPillClass pillClass={row.nextActionTone} title={row.nextAction}>
                     {compactCoverageNextActionLabel(row.nextAction)}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
               </tr>
             ))}
