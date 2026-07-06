@@ -10,8 +10,8 @@ const sectionSource = readFileSync(
 
 describe('OperationsPolicyMatchingPlaybookSection', () => {
   it('uses shared Vuexy badge atoms for playbook tag labels', () => {
-    expect(sectionSource).toContain('StatusBadge');
-    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).toContain('StatusBadgeFromPillClass');
+    expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
   });
 

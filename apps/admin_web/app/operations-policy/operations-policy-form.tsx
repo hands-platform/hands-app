@@ -16,7 +16,7 @@ import {
   AdminNotePanel,
 } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { operationalPolicyAnchor } from '../../lib/operations-policy';
@@ -91,12 +91,9 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
               <p className="muted">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
-                  <StatusBadge
-                    tone={statusBadgeToneFromPillClass(pill.className)}
-                    key={`${row.id}-${pill.label}`}
-                  >
+                  <StatusBadgeFromPillClass pillClass={pill.className} key={`${row.id}-${pill.label}`}>
                     {pill.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 ))}
               </div>
             </AdminInsightLinkCard>

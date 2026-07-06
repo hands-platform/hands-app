@@ -11,8 +11,8 @@ describe('OperationsPolicyForm', () => {
     expect(sectionSource).toContain('AdminNotePanel');
     expect(sectionSource).toContain('AdminSectionHeader');
     expect(sectionSource).toContain('AdminTraceSummary');
-    expect(sectionSource).toContain('StatusBadge');
-    expect(sectionSource).toContain('statusBadgeToneFromPillClass');
+    expect(sectionSource).toContain('StatusBadgeFromPillClass');
+    expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<div className="service-trace-summary">');
     expect(sectionSource).not.toContain('<div className="ops-task-note admin-mt-12">');
