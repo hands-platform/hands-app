@@ -451,31 +451,27 @@ function BookingCompletedCloseoutSection({
       id="completed-closeout"
       title="Completed closeout"
     >
-      {closeout.canSubmit ? (
-        <AdminOpsNoteForm action={closeoutCompletedBooking} className="booking-action-note-form">
-          <input type="hidden" name="bookingId" value={bookingId} />
-          <AdminCard className="booking-action-note-panel">
-            <AdminFormControlStack className="admin-form-control-fluid">
-              <AdminFormTextarea
-                className="admin-form-control-fluid"
-                label="Closeout note"
-                labelVisibility="visible"
-                name="note"
-                placeholder="Add a short reconciliation note."
-                rows={3}
-              />
-              <small className="admin-form-control-help">Use retained chat, payment, and Partner evidence.</small>
-            </AdminFormControlStack>
-            <div className="booking-action-note-actions">
-              <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
-                Reconcile booking
-              </AdminFormControlButton>
-            </div>
-          </AdminCard>
-        </AdminOpsNoteForm>
-      ) : (
-        <p className="muted admin-mt-12">No manual closeout action is available for this booking.</p>
-      )}
+      <AdminOpsNoteForm action={closeoutCompletedBooking} className="booking-action-note-form">
+        <input type="hidden" name="bookingId" value={bookingId} />
+        <AdminCard className="booking-action-note-panel">
+          <AdminFormControlStack className="admin-form-control-fluid">
+            <AdminFormTextarea
+              className="admin-form-control-fluid"
+              label="Closeout note"
+              labelVisibility="visible"
+              name="note"
+              placeholder="Add a short reconciliation note."
+              rows={3}
+            />
+            <small className="admin-form-control-help">Use retained chat, payment, and Partner evidence.</small>
+          </AdminFormControlStack>
+          <div className="booking-action-note-actions">
+            <AdminFormControlButton className="button-primary admin-inline-action" type="submit">
+              Reconcile booking
+            </AdminFormControlButton>
+          </div>
+        </AdminCard>
+      </AdminOpsNoteForm>
     </AdminSection>
   );
 }

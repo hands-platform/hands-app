@@ -344,6 +344,13 @@ describe('BookingActionStatusSections', () => {
     expect(markup.indexOf('Completed closeout')).toBeLessThan(markup.indexOf('Operator notes'));
   });
 
+  it('does not keep unreachable raw empty copy inside the completed closeout form', () => {
+    const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
+
+    expect(source).toContain('{closeout.canSubmit && <BookingCompletedCloseoutSection');
+    expect(source).not.toContain('No manual closeout action is available for this booking.');
+  });
+
   it('renders operator notes with a simple text area', () => {
     const markup = render();
 
