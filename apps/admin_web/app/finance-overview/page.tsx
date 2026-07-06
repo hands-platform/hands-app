@@ -207,8 +207,8 @@ export default async function FinanceOverviewPage({
 
       <AdminSection
         actions={<AlertTriangle size={18} aria-hidden="true" />}
-        bodyClassName="usage-overview-action-list finance-overview-action-list"
-        className="usage-overview-action-card finance-overview-action-card"
+        bodyClassName="finance-overview-action-list"
+        className="finance-overview-action-card"
         description="Today-first finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
         title="Finance Action Lists"
       >

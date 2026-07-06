@@ -8349,6 +8349,13 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.finance-overview-action-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+}
+
 .usage-overview-action-item,
 .finance-overview-action-item {
   background: rgb(var(--admin-main-channel) / 0.035);

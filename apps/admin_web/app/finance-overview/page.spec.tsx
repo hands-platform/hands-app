@@ -216,8 +216,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('200.000');
     expect(markup).toContain('75.000');
     expect(markup).toContain('Finance Action Lists');
-    expect(markup).toContain('card admin-section usage-overview-action-card finance-overview-action-card');
-    expect(markup).toContain('admin-section-body usage-overview-action-list finance-overview-action-list');
+    expect(markup).toContain('card admin-section finance-overview-action-card');
+    expect(markup).toContain('admin-section-body finance-overview-action-list');
+    expect(markup).not.toContain('usage-overview-action-card finance-overview-action-card');
+    expect(markup).not.toContain('usage-overview-action-list finance-overview-action-list');
     expect(markup).toContain('card admin-card finance-overview-action-item');
     expect(markup).toContain('finance-overview-action-icon');
     expect(markup).not.toContain('card admin-card usage-overview-action-item');
