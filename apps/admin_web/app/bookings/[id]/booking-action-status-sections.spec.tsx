@@ -105,6 +105,8 @@ describe('BookingActionStatusSections', () => {
     const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>');
     expect(source).not.toContain('<span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>');
