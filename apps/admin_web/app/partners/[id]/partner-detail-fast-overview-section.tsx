@@ -1,10 +1,10 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeLink } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
@@ -59,12 +59,12 @@ export function PartnerDetailFastOverviewSection({
           <AdminFormControlLink href="/partners">
             Back to partners
           </AdminFormControlLink>
-          <Link className="text-link" href={fullHref}>
+          <AdminTextLink href={fullHref}>
             Open full dossier
-          </Link>
-          <Link className="text-link" href={accountControlsHref}>
+          </AdminTextLink>
+          <AdminTextLink href={accountControlsHref}>
             Account controls
-          </Link>
+          </AdminTextLink>
         </>
       }
       description={marketplaceDisplayText(subtitle)}

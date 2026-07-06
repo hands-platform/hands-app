@@ -98,6 +98,13 @@ describe('PartnerDetailFastOverviewSection', () => {
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy text-link atom for text overview actions', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('keeps date values renderable through shared DateTimeText nodes from the detail page', () => {
     const sectionSource = readFileSync('app/partners/[id]/partner-detail-fast-overview-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
