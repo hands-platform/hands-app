@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import type { PartnerPrimaryListMode } from './partner-review-mode';
 
 type PartnerPrimaryListTabsProps = {
@@ -18,17 +17,15 @@ const PARTNER_PRIMARY_LIST_TABS: Array<{
 
 export function PartnerPrimaryListTabs({ activeMode }: PartnerPrimaryListTabsProps) {
   return (
-    <nav aria-label="Partner list pages" className="partner-primary-list-tabs">
-      {PARTNER_PRIMARY_LIST_TABS.map((tab) => (
-        <Link
-          aria-current={tab.mode === activeMode ? 'page' : undefined}
-          className={`partner-primary-list-tab${tab.mode === activeMode ? ' is-active' : ''}`}
-          href={tab.href}
-          key={tab.mode}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
+    <AdminSegmentedControl
+      activeValue={activeMode}
+      ariaLabel="Partner list pages"
+      className="partner-primary-list-tabs"
+      options={PARTNER_PRIMARY_LIST_TABS.map((tab) => ({
+        href: tab.href,
+        label: tab.label,
+        value: tab.mode,
+      }))}
+    />
   );
 }

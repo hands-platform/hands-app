@@ -4751,34 +4751,6 @@ a.action-button-card:hover {
   padding: 6px;
 }
 
-.partner-primary-list-tab {
-  border-radius: var(--admin-radius-md);
-  color: var(--admin-muted);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 11px 14px;
-  text-decoration: none;
-  transition:
-    background-color 160ms ease,
-    color 160ms ease,
-    box-shadow 160ms ease;
-  white-space: nowrap;
-}
-
-.partner-primary-list-tab:hover,
-.partner-primary-list-tab:focus-visible {
-  background: var(--admin-action-hover);
-  color: var(--admin-text);
-  outline: none;
-}
-
-.partner-primary-list-tab.is-active {
-  background: rgb(var(--admin-primary-channel) / 0.14);
-  box-shadow: inset 0 0 0 1px rgb(var(--admin-primary-channel) / 0.18);
-  color: var(--admin-primary);
-}
-
 .partners-page > .grid,
 .partners-page > .detail-grid {
   margin-bottom: 0;

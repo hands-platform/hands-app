@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
+
+const source = readFileSync(new URL('./partner-primary-list-tabs.tsx', import.meta.url), 'utf8');
+const globalsCss = readFileSync(new URL('../globals.css', import.meta.url), 'utf8');
 
 describe('PartnerPrimaryListTabs', () => {
   it('renders the three primary partner pages with one active tab', () => {
@@ -12,11 +17,16 @@ describe('PartnerPrimaryListTabs', () => {
     expect(hrefsIn(tabs)).toEqual(['/partners', '/partners?review=unapproved', '/partners?review=unsettled']);
     expect(classNamesIn(tabs)).toEqual(
       expect.arrayContaining([
-        'partner-primary-list-tabs',
-        'partner-primary-list-tab is-active',
-        'partner-primary-list-tab',
+        'booking-date-filter-buttons partner-primary-list-tabs',
+        'booking-date-filter-button is-active',
+        'booking-date-filter-button',
       ]),
     );
+    expect(source).toContain('AdminSegmentedControl');
+    expect(source).not.toContain("import Link from 'next/link';");
+    expect(source).not.toContain('<Link');
+    expect(globalsCss).toContain('.partner-primary-list-tabs {');
+    expect(globalsCss).not.toMatch(/\.partner-primary-list-tab(?:[\s:{.,]|$)/);
   });
 });
 
