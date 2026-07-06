@@ -15,6 +15,7 @@ import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { MoneyText } from '../../components/money-text';
 import { readSearchParam } from '../../lib/date-range';
+import { renderFinancePriorityValue } from './finance-priority-value';
 import { FinanceListCommandBoard, FinanceListCommandCard } from './finance-list-command-card';
 import { FinanceStageList } from './finance-stage-list';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
@@ -282,7 +283,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             key: link.key,
             label: link.label,
             signal: link.signal,
-            value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+            value: renderFinancePriorityValue(link),
           }))}
         />
       </AdminFilterPanel>
@@ -376,7 +377,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 key: link.key,
                 label: link.label,
                 signal: link.signal,
-                value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+                value: renderFinancePriorityValue(link),
               }))}
             />
           </AdminFilterPanel>

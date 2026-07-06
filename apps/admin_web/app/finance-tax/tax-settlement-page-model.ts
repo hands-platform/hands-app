@@ -122,7 +122,9 @@ export type FinanceSettlementTraceLink = BookingSettlementReversalTraceLink;
 export type FinancePayoutPriorityLink = {
   readonly key: string;
   readonly count: number | null;
-  readonly amountLabel: string | null;
+  readonly amount: number | null;
+  readonly currency: string | null;
+  readonly amountSuffix: string | null;
   readonly label: string;
   readonly helper: string;
   readonly href: string;
@@ -775,9 +777,9 @@ export function buildFinancePayoutPriorityLinks(
   return [
     {
       key: 'withdrawal-requested',
-      amountLabel: withdrawalSummary
-        ? formatMoney(withdrawalSummary.requestedAmount, withdrawalSummary.currency)
-        : null,
+      amount: withdrawalSummary?.requestedAmount ?? null,
+      currency: withdrawalSummary?.currency ?? null,
+      amountSuffix: null,
       count: withdrawalSummary?.requested ?? null,
       label: 'Withdrawal requested',
       helper: 'Partner withdrawal requests waiting for first finance review.',
@@ -786,9 +788,9 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'review-required',
-      amountLabel: withdrawalSummary
-        ? `${formatMoney(withdrawalSummary.pendingWithdrawalPayableAmount, withdrawalSummary.currency)} locked`
-        : null,
+      amount: withdrawalSummary?.pendingWithdrawalPayableAmount ?? null,
+      currency: withdrawalSummary?.currency ?? null,
+      amountSuffix: withdrawalSummary ? 'locked' : null,
       count: withdrawalSummary?.reviewRequired ?? null,
       label: 'Review required',
       helper: 'Withdrawal requests blocked by an explicit review flag before bank payout.',
@@ -797,9 +799,9 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'bank-transfer-pending',
-      amountLabel: withdrawalSummary
-        ? formatMoney(withdrawalSummary.bankTransferPendingAmount, withdrawalSummary.currency)
-        : null,
+      amount: withdrawalSummary?.bankTransferPendingAmount ?? null,
+      currency: withdrawalSummary?.currency ?? null,
+      amountSuffix: null,
       count: withdrawalSummary?.bankTransferPending ?? null,
       label: 'Bank transfer pending',
       helper: 'Approved requests already moved into the manual bank transfer lane.',
@@ -808,7 +810,9 @@ export function buildFinancePayoutPriorityLinks(
     },
     {
       key: 'cash-debt-gate',
-      amountLabel: null,
+      amount: null,
+      currency: null,
+      amountSuffix: null,
       count: null,
       label: 'Cash debt gate',
       helper:
@@ -847,15 +851,12 @@ export function buildFinanceOperationsPriorityLinks({
     review: 'unmatched',
   };
   const closeoutRiskCount = monthlyClosingSummary.openTaxCount + monthlyClosingSummary.couponReviewFlagCount;
-  const cashDebtLabel =
-    monthlyClosingSummary.cashDebtTotal > 0
-      ? `${formatMoney(monthlyClosingSummary.cashDebtTotal, monthlyClosingSummary.currency)} cash debt`
-      : null;
-
   return [
     {
       key: 'today-needs-action',
-      amountLabel: null,
+      amount: null,
+      currency: null,
+      amountSuffix: null,
       count: settlementSummary.openTaxCount,
       label: 'Today needs action',
       helper: 'Settlement snapshots waiting for declaration, payment, or closeout review in the active range.',
@@ -864,7 +865,9 @@ export function buildFinanceOperationsPriorityLinks({
     },
     {
       key: 'payment-clearing-open',
-      amountLabel: formatMoney(clearingSummary.amount, clearingSummary.currency),
+      amount: clearingSummary.amount,
+      currency: clearingSummary.currency,
+      amountSuffix: null,
       count: clearingSummary.openCount,
       label: 'Payment clearing open',
       helper: 'Customer payment, settlement posting, refund, payment fee, or coupon clearing rows still open.',
@@ -873,7 +876,9 @@ export function buildFinanceOperationsPriorityLinks({
     },
     {
       key: 'bank-unmatched',
-      amountLabel: formatMoney(bankSummary.amount, bankSummary.currency),
+      amount: bankSummary.amount,
+      currency: bankSummary.currency,
+      amountSuffix: null,
       count: bankSummary.unmatchedCount,
       label: 'Bank unmatched',
       helper: 'Company bank transactions still missing explicit reconciliation evidence.',
@@ -882,7 +887,9 @@ export function buildFinanceOperationsPriorityLinks({
     },
     {
       key: 'monthly-close-risk',
-      amountLabel: cashDebtLabel,
+      amount: monthlyClosingSummary.cashDebtTotal > 0 ? monthlyClosingSummary.cashDebtTotal : null,
+      currency: monthlyClosingSummary.cashDebtTotal > 0 ? monthlyClosingSummary.currency : null,
+      amountSuffix: monthlyClosingSummary.cashDebtTotal > 0 ? 'cash debt' : null,
       count: closeoutRiskCount,
       label: 'Monthly close risk',
       helper: 'Open tax rows and coupon review flags that should be reviewed before monthly closing.',
@@ -1183,7 +1190,9 @@ export function buildMonthlyTaxClosingRiskLinks(
   return [
     {
       key: 'open-tax-rows',
-      amountLabel: null,
+      amount: null,
+      currency: null,
+      amountSuffix: null,
       count: summary.openTaxCount,
       label: 'Open tax rows',
       helper: 'Settlement rows still waiting for declaration, payment, or tax closeout review.',
@@ -1192,7 +1201,9 @@ export function buildMonthlyTaxClosingRiskLinks(
     },
     {
       key: 'coupon-review-flags',
-      amountLabel: null,
+      amount: null,
+      currency: null,
+      amountSuffix: null,
       count: summary.couponReviewFlagCount,
       label: 'Coupon review flags',
       helper: 'Coupon settlement rows that should be checked before the monthly period is closed.',
@@ -1201,7 +1212,9 @@ export function buildMonthlyTaxClosingRiskLinks(
     },
     {
       key: 'cash-debt-gate',
-      amountLabel: formatMoney(summary.cashDebtTotal, summary.currency),
+      amount: summary.cashDebtTotal,
+      currency: summary.currency,
+      amountSuffix: null,
       count: null,
       label: 'Cash debt gate',
       helper: 'Partner cash booking debt that can block payout and monthly settlement closeout.',
@@ -1210,7 +1223,9 @@ export function buildMonthlyTaxClosingRiskLinks(
     },
     {
       key: 'reconciliation-deltas',
-      amountLabel: formatMoney(deltaAmount, summary.currency),
+      amount: deltaAmount,
+      currency: summary.currency,
+      amountSuffix: null,
       count: deltaCount,
       label: 'Reconciliation deltas',
       helper: 'Formula and net revenue deltas must be 0 before declaration or final closeout.',

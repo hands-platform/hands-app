@@ -421,11 +421,11 @@ describe('tax settlement page model', () => {
       totalAmount: 2_400_000,
     });
 
-    expect(links.map((link) => [link.label, link.href, link.amountLabel])).toEqual([
-      ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED', '700.000 VND'],
-      ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED', '1.600.000 VND locked'],
-      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING', '900.000 VND'],
-      ['Cash debt gate', '/cash-settlements?range=7d', null],
+    expect(links.map((link) => [link.label, link.href, link.amount, link.currency, link.amountSuffix])).toEqual([
+      ['Withdrawal requested', '/payouts?range=7d&withdrawalStatus=REQUESTED', 700_000, 'VND', null],
+      ['Review required', '/payouts?range=7d&withdrawalStatus=REVIEW_REQUIRED', 1_600_000, 'VND', 'locked'],
+      ['Bank transfer pending', '/payouts?range=7d&withdrawalStatus=BANK_TRANSFER_PENDING', 900_000, 'VND', null],
+      ['Cash debt gate', '/cash-settlements?range=7d', null, null, null],
     ]);
   });
 
@@ -474,11 +474,11 @@ describe('tax settlement page model', () => {
       },
     });
 
-    expect(links.map((link) => [link.label, link.href, link.count, link.amountLabel, link.signal])).toEqual([
-      ['Today needs action', '/finance-tax/booking-settlement-audit?range=today&review=open', 4, null, 'Needs action'],
-      ['Payment clearing open', '/finance-tax/payment-clearing?range=today&review=open', 2, '1.200.000 VND', 'Unsettled'],
-      ['Bank unmatched', '/finance-tax/bank-reconciliation?range=today&review=unmatched', 3, '800.000 VND', 'Unmatched'],
-      ['Monthly close risk', '/finance-tax/monthly-tax-closing?period=2026-06', 3, '170.000 VND cash debt', 'Closeout risk'],
+    expect(links.map((link) => [link.label, link.href, link.count, link.amount, link.currency, link.amountSuffix, link.signal])).toEqual([
+      ['Today needs action', '/finance-tax/booking-settlement-audit?range=today&review=open', 4, null, null, null, 'Needs action'],
+      ['Payment clearing open', '/finance-tax/payment-clearing?range=today&review=open', 2, 1_200_000, 'VND', null, 'Unsettled'],
+      ['Bank unmatched', '/finance-tax/bank-reconciliation?range=today&review=unmatched', 3, 800_000, 'VND', null, 'Unmatched'],
+      ['Monthly close risk', '/finance-tax/monthly-tax-closing?period=2026-06', 3, 170_000, 'VND', 'cash debt', 'Closeout risk'],
     ]);
   });
 
@@ -651,11 +651,11 @@ describe('tax settlement page model', () => {
 
     const links = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, closingFilters);
 
-    expect(links.map((link) => [link.label, link.href, link.count, link.amountLabel, link.signal])).toEqual([
-      ['Open tax rows', '/finance-tax/booking-settlement-audit?range=30d&review=open', 3, null, 'Tax review'],
-      ['Coupon review flags', '/finance-tax/coupon-finance?range=30d&review=open', 2, null, 'Coupon review'],
-      ['Cash debt gate', '/cash-settlements?range=30d', null, '170.000 VND', 'Cash debt'],
-      ['Reconciliation deltas', '/finance-tax/monthly-tax-closing?period=2026-06', 2, '60.000 VND', 'Formula check'],
+    expect(links.map((link) => [link.label, link.href, link.count, link.amount, link.currency, link.amountSuffix, link.signal])).toEqual([
+      ['Open tax rows', '/finance-tax/booking-settlement-audit?range=30d&review=open', 3, null, null, null, 'Tax review'],
+      ['Coupon review flags', '/finance-tax/coupon-finance?range=30d&review=open', 2, null, null, null, 'Coupon review'],
+      ['Cash debt gate', '/cash-settlements?range=30d', null, 170_000, 'VND', null, 'Cash debt'],
+      ['Reconciliation deltas', '/finance-tax/monthly-tax-closing?period=2026-06', 2, 60_000, 'VND', null, 'Formula check'],
     ]);
   });
 

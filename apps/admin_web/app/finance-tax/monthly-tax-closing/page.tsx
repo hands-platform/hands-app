@@ -18,6 +18,7 @@ import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { hasFinancePriorityWork, renderFinancePriorityValue } from '../finance-priority-value';
 import { FinanceDataTable } from '../finance-data-table';
 import { FinanceListCommandBoard, FinanceListCommandCard } from '../finance-list-command-card';
 import { FinancePeriodFilterForm } from '../finance-period-filter-form';
@@ -182,7 +183,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
         />
         <FinanceListCommandCard
           detail="Open tax rows, coupon review flags, cash debt, or formula mismatch still blocking closeout."
-          href={closeoutRiskLinks.find((link) => link.count || link.amountLabel !== '0 VND')?.href ?? monthlyTaxClosingHref(filters)}
+          href={closeoutRiskLinks.find(hasFinancePriorityWork)?.href ?? monthlyTaxClosingHref(filters)}
           icon={AlertTriangle}
           label="Closeout gates"
           tone={openCloseoutRiskCount > 0 ? 'warning' : 'success'}
@@ -293,7 +294,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
             key: link.key,
             label: link.label,
             signal: link.signal,
-            value: link.amountLabel ?? (typeof link.count === 'number' ? `${link.count} open` : 'Open queue'),
+            value: renderFinancePriorityValue(link),
           }))}
         />
       </AdminFilterPanel>
