@@ -9,8 +9,10 @@ describe('PartnerReviewQueueSection', () => {
   it('uses the shared Vuexy badge atom for queue status', () => {
     const source = readFileSync('app/partners/partner-review-queue-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className={`pill ${queue.totalOpen === 0 ? \'pill-success\' : \'pill-warn\'}`}>');
   });
 

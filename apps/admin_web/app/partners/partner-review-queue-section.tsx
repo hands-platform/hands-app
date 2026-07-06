@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
 type PartnerReviewQueueSectionItem = {
@@ -39,9 +38,9 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
               <strong>{item.label}</strong>
               <p className="muted">{item.detail}</p>
             </div>
-            <Link className="text-link" href={item.href}>
+            <AdminTextLink href={item.href}>
               {item.count}
-            </Link>
+            </AdminTextLink>
           </div>
         ))}
       </div>
