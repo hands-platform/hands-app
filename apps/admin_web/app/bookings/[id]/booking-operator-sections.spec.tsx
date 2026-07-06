@@ -50,6 +50,8 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('<a className={`ops-task-card ${row.className}`');
     expect(source).not.toContain('<div className="action-button-card ops-task-blocked"');
+    expect(source).not.toContain('className="action-button-card ops-task-blocked"');
+    expect(source).toContain('variant="ops-blocked"');
   });
 
   it('uses the shared Vuexy stage item atom for operator row surfaces', () => {

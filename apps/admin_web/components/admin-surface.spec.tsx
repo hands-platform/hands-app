@@ -472,6 +472,15 @@ describe('Admin surface components', () => {
     expect(card.props.className).toBe('ops-task-card ops-signal-card');
   });
 
+  it('renders static blocked action cards through the shared task variant', () => {
+    const card = AdminTaskCard({
+      actionLabel: 'Payment buttons appear after a payment row exists.',
+      variant: 'ops-blocked',
+    });
+
+    expect(card.props.className).toBe('ops-task-card action-button-card ops-task-blocked');
+  });
+
   it('renders a reusable Vuexy ops task grid wrapper with stable spacing classes', () => {
     const grid = AdminTaskGrid({
       children: <AdminTaskCard title="Wallet guard" detail="Partner balance is checked." />,

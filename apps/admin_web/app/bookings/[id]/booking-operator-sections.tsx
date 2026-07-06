@@ -306,8 +306,8 @@ export function BookingOpsCommandCenter({
         ) : (
           <AdminTaskCard
             actionLabel="Payment buttons appear after a booking payment row exists."
-            className="action-button-card ops-task-blocked"
             leading={<StatusBadge tone="neutral">Locked</StatusBadge>}
+            variant="ops-blocked"
           >
             <AdminEmptyState
               message="No payment record is linked to this booking yet."

@@ -137,7 +137,7 @@ type AdminActionCardProps = {
 
 type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'variant'> & {
   readonly leading?: ReactNode;
-  readonly variant?: 'default' | 'ops-signal';
+  readonly variant?: 'default' | 'ops-blocked' | 'ops-signal';
 };
 
 type AdminTaskGridProps = {
@@ -635,6 +635,7 @@ export function AdminTaskCard({
       className={joinClassNames(
         'ops-task-card',
         variant === 'ops-signal' ? 'ops-signal-card' : undefined,
+        variant === 'ops-blocked' ? 'action-button-card ops-task-blocked' : undefined,
         className,
       )}
     >
