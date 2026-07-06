@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -92,7 +93,7 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                   <strong>Refund action execution map</strong>
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((item) => (
-                      <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
+                      <AdminStageItem key={`${row.id}-${item.action}`}>
                         <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
                           {item.status}
                         </StatusBadge>
@@ -101,7 +102,7 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                           <p className="muted">{item.reason}</p>
                           <small>{item.operatorRule}</small>
                         </div>
-                      </div>
+                      </AdminStageItem>
                     ))}
                   </div>
                 </AdminNotePanel>

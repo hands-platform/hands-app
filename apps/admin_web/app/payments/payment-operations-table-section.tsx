@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -116,7 +117,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                   <strong>Payment action execution map</strong>
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((executionRow) => (
-                      <div className="setup-stage-item" key={`${row.id}-${executionRow.action}`}>
+                      <AdminStageItem key={`${row.id}-${executionRow.action}`}>
                         <StatusBadge tone={statusBadgeToneFromPillClass(executionRow.pillClass)}>
                           {executionRow.status}
                         </StatusBadge>
@@ -125,7 +126,7 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                           <p className="muted">{executionRow.reason}</p>
                           <small>{executionRow.operatorRule}</small>
                         </div>
-                      </div>
+                      </AdminStageItem>
                     ))}
                   </div>
                 </AdminNotePanel>

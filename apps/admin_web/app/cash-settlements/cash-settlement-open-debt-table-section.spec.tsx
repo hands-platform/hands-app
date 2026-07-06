@@ -24,6 +24,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).toContain('FinanceDataTable');
     expect(source).toContain('ActionMenu');
     expect(source).toContain('AdminNotePanel');
+    expect(source).toContain('AdminStageItem');
     expect(source).toContain('AdminTablePaginationFooter');
     expect(source).not.toContain('AdminTableScroll');
     expect(source).not.toContain('AdminRoundedPagination');
@@ -33,6 +34,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-10">');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<span className="pill pill-danger">Final acceptance blocked</span>');
     expect(source).not.toContain('<Link className="pill" href={row.partnerHref}>');
   });
