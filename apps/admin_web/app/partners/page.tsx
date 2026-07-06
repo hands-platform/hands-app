@@ -5,8 +5,8 @@ import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
+import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
@@ -333,11 +333,14 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               }))}
             />
           </AdminSection>
-          <div className="grid admin-mb-16 partner-deep-summary-grid">
-            {deepPartnerOps.summary.map(([label, value]) => (
-              <AdminKpiCard helper="Current filtered partner set" key={label} label={label} value={value} />
-            ))}
-          </div>
+          <AdminMetricGrid
+            className="admin-mb-16 partner-deep-summary-grid"
+            metrics={deepPartnerOps.summary.map(([label, value]) => ({
+              helper: 'Current filtered partner set',
+              label,
+              value,
+            }))}
+          />
         </>
       ) : null}
       <PartnerMasterListSection

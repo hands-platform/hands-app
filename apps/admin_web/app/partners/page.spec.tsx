@@ -32,8 +32,11 @@ describe('ProvidersPage', () => {
   it('uses the shared Vuexy trace summary atom for the current filter summary', () => {
     const source = readFileSync('app/partners/page.tsx', 'utf8');
 
+    expect(source).toContain('AdminMetricGrid');
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
+    expect(source).not.toContain('<div className="grid admin-mb-16 partner-deep-summary-grid">');
+    expect(source).not.toContain('<AdminKpiCard helper="Current filtered partner set"');
   });
 
   it('renders bounded server partner rows without applying a second local search filter', async () => {
@@ -108,7 +111,7 @@ describe('ProvidersPage', () => {
 
     expect(markup).toContain('Current filter summary');
     expect(markup).toContain('card admin-section admin-mb-16 partner-current-filter-summary-card');
-    expect(markup).toContain('partner-deep-summary-grid');
+    expect(markup).toContain('admin-metric-grid admin-mb-16 partner-deep-summary-grid');
     expect(markup).toContain('metric-card');
     expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
   });
