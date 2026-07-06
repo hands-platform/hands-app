@@ -20,7 +20,8 @@ describe('BookingDetailPostMatchDecisionSection', () => {
   it('uses shared Vuexy badge atoms instead of raw post-match decision pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.label}</span>');
