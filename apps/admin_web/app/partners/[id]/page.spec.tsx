@@ -69,7 +69,9 @@ describe('ProviderDetailPage data loading', () => {
 
   it('uses the shared Vuexy form control link for button-style partner actions', () => {
     expect(providerDetailSource).toContain('AdminFormControlLink');
+    expect(providerDetailSource).toContain('AdminTextLink');
     expect(providerDetailSource).not.toContain('<Link className="button button-secondary"');
+    expect(providerDetailSource).not.toContain('className="text-link"');
   });
 
   it('uses the shared Vuexy detail grid for partner dossier groups', () => {

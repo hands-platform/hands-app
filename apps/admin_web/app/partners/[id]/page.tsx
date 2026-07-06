@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type {
@@ -23,6 +22,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminDetailGrid } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import { MoneyText } from '../../../components/money-text';
 import {
@@ -807,9 +807,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <AdminFormControlLink href="/partners">
             Back to partners
           </AdminFormControlLink>
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
+          <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
             All Partner chats
-          </Link>
+          </AdminTextLink>
           <ActionMenu
             actions={partnerDetailAccountActionMenuItems(provider)}
             label={`Partner detail account actions for ${partnerDisplayLabel}`}
