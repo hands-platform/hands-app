@@ -6,6 +6,7 @@ import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
@@ -19,13 +20,14 @@ export type PaymentActionExecutionRow = {
 export type PaymentOperationsTableRow = {
   readonly actionLabel: string;
   readonly actions: readonly ActionMenuItem[];
-  readonly amountLabel: string;
+  readonly amount: number;
   readonly bookingHref: string;
   readonly bookingIdLabel: string;
   readonly bookingStatus: string;
   readonly callbackEvidence: ReactNode;
   readonly cashDebtLabel: string | null;
   readonly cashDebtSettlementForm: ReactNode;
+  readonly currency: string;
   readonly customerPhone: string;
   readonly earningHref: string | null;
   readonly executionRows: readonly PaymentActionExecutionRow[];
@@ -78,7 +80,9 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                 {row.status}
                 <div className="muted">{row.stateLabel}</div>
               </td>
-              <td>{row.amountLabel}</td>
+              <td>
+                <MoneyText amount={row.amount} currency={row.currency} />
+              </td>
               <td>
                 {row.bookingIdLabel}
                 <div className="muted">{row.bookingStatus}</div>

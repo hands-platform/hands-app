@@ -30,7 +30,7 @@ export function buildPaymentOperationsTableRows(payments: readonly AdminPayment[
     return {
       actionLabel: `Payment actions for ${shortId(payment.id)}`,
       actions: paymentActionMenuItems(payment),
-      amountLabel: `${payment.amount} ${payment.currency}`,
+      amount: payment.amount,
       bookingHref: `/bookings/${payment.bookingId}`,
       bookingIdLabel: shortId(payment.bookingId),
       bookingStatus: payment.booking?.status ?? 'UNKNOWN',
@@ -40,6 +40,7 @@ export function buildPaymentOperationsTableRows(payments: readonly AdminPayment[
         paymentCashDebtNeedsSettlement(payment) && payment.booking?.earning?.id ? (
           <CashDebtSettlementForm payment={payment} />
         ) : null,
+      currency: payment.currency,
       customerPhone: payment.booking?.customerProfile?.user?.phone ?? 'No customer phone',
       earningHref: payment.booking?.earning?.id ? `/earnings#earning-${payment.booking.earning.id}` : null,
       executionRows: paymentActionExecutionMap(payment),

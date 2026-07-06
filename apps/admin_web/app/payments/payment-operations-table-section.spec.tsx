@@ -32,6 +32,14 @@ describe('PaymentOperationsTableSection', () => {
     expect(rulesSource).not.toContain('paymentRecordDateLabel');
   });
 
+  it('uses the shared money atom for payment operation amounts', () => {
+    const source = readFileSync('app/payments/payment-operations-table-section.tsx', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('readonly amountLabel: string;');
+    expect(source).not.toContain('<td>{row.amountLabel}</td>');
+  });
+
   it('renders payment rows with operation evidence and action links', () => {
     const section = PaymentOperationsTableSection({
       emptyMessage: 'No payments loaded.',
@@ -116,13 +124,14 @@ function buildRow(): PaymentOperationsTableRow {
         tone: 'info',
       },
     ],
-    amountLabel: '100000 VND',
+    amount: 100000,
     bookingHref: '/bookings/booking-1',
     bookingIdLabel: 'bookin',
     bookingStatus: 'COMPLETED',
     callbackEvidence: <div>Gateway callback evidence</div>,
     cashDebtLabel: 'Cash fee debt 10.000 VND',
     cashDebtSettlementForm: <form aria-label="Cash debt settlement form" />,
+    currency: 'VND',
     customerPhone: '+84900000000',
     earningHref: '/earnings#earning-1',
     executionRows: [
