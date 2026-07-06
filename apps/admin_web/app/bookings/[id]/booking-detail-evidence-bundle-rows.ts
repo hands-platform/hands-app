@@ -75,6 +75,7 @@ export function bookingDetailEvidenceBundleRows({
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     chatMessageCount: messages.length,
     latestChatMessageAtLabel: latestMessage?.createdAt ? formatDate(latestMessage.createdAt) : null,
+    latestChatMessageAtValue: latestMessage?.createdAt ?? null,
     chatRepairNeeded: bookingChatRepairNeedsOps(booking),
     hasMoneyTrace: Boolean(booking.payment || booking.earning || refundLedgerCount),
     paymentShortId: booking.payment?.id ? shortId(booking.payment.id) : null,
@@ -87,6 +88,7 @@ export function bookingDetailEvidenceBundleRows({
     latestLocationShortId: latestLocation ? shortId(latestLocation.id) : null,
     locationStatusLabel: bookingDetailProviderLocationMetricValue(booking),
     latestLocationEvidenceLabel: latestLocationEvidenceLabel(latestLocation),
+    latestLocationEvidenceDateTimeValue: latestLocation?.recordedAt ?? null,
     serviceAddressPinLabel: addressSnapshotLabel,
     notificationCount: notificationTrace.rows.length,
     failedAlertCount,
@@ -96,6 +98,7 @@ export function bookingDetailEvidenceBundleRows({
     latestActivityEvidenceLabel: latestActivity
       ? `${latestActivity.title} / ${formatDate(latestActivity.at)}`
       : null,
+    latestActivityEvidenceDateTimeValue: latestActivity?.at ?? null,
     latestOperatorNote: operatorNoteLines[operatorNoteLines.length - 1] ?? null,
   });
 }

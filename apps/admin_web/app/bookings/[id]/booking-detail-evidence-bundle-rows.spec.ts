@@ -141,7 +141,18 @@ describe('bookingDetailEvidenceBundleRows', () => {
       tone: 'pill-warn',
     });
     expect(rows.find((row) => row.lane === 'Location')).toMatchObject({
-      evidence: 'Location recorded without readable address / 14 Jun 2026, 08:10',
+      evidence: '14 Jun 2026, 08:10',
+      evidenceDateTimePrefix: 'Location recorded without readable address / ',
+      evidenceDateTimeValue: '2026-06-14T01:10:00.000Z',
+    });
+    expect(rows.find((row) => row.lane === 'Chat')).toMatchObject({
+      evidenceDateTimePrefix: '2 retained message(s), latest ',
+      evidenceDateTimeValue: '2026-06-14T01:05:00.000Z',
+    });
+    expect(rows.find((row) => row.lane === 'Operator trail')).toMatchObject({
+      evidence: '14 Jun 2026, 08:20',
+      evidenceDateTimePrefix: 'booking.matched / ',
+      evidenceDateTimeValue: '2026-06-14T01:20:00.000Z',
     });
     expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });

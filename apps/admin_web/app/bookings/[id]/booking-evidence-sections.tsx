@@ -85,6 +85,9 @@ type EvidenceBundleRow = {
   status: string;
   tone: string;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   operatorUse: string;
   href: string;
 };
@@ -273,7 +276,9 @@ export function BookingEvidenceSections({
                 <p className="muted">{row.recordLabel}</p>
               </div>
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
-              <p>{row.evidence}</p>
+              <p>
+                <EvidenceBundleRowEvidence row={row} />
+              </p>
               <p>{row.operatorUse}</p>
               <AdminTextLink href={row.href}>
                 Open
@@ -313,6 +318,20 @@ function EvidenceRecordEvidence({ record }: { record: EvidencePacketRecord }) {
       {record.evidenceDateTimePrefix}
       <DateTimeText fallback={record.evidence} value={record.evidenceDateTimeValue} />
       {record.evidenceDateTimeSuffix}
+    </>
+  );
+}
+
+function EvidenceBundleRowEvidence({ row }: { row: EvidenceBundleRow }) {
+  if (!row.evidenceDateTimeValue) {
+    return row.evidence;
+  }
+
+  return (
+    <>
+      {row.evidenceDateTimePrefix}
+      <DateTimeText fallback={row.evidence} value={row.evidenceDateTimeValue} />
+      {row.evidenceDateTimeSuffix}
     </>
   );
 }

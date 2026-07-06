@@ -19,6 +19,8 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('EvidenceRecordEvidence');
     expect(source).toContain('fallback={record.evidence}');
     expect(source).toContain('value={record.evidenceDateTimeValue}');
+    expect(source).toContain('EvidenceBundleRowEvidence');
+    expect(source).toContain('value={row.evidenceDateTimeValue}');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
@@ -43,6 +45,8 @@ describe('Booking evidence sections', () => {
       bookingEvidenceBundleRows: [
         {
           evidence: 'Address, payment, wallet, chat, and notes are retained.',
+          evidenceDateTimePrefix: 'Latest bundle event: ',
+          evidenceDateTimeValue: '2026-06-14T02:10:00.000Z',
           href: '#bundle',
           lane: 'Full bundle',
           operatorUse: 'Use before final decision.',
@@ -144,7 +148,6 @@ describe('Booking evidence sections', () => {
     expect(rendered).toContain('Finance guardrail');
     expect(rendered).toContain('Partner left a cancellation reason.');
     expect(rendered).toContain('No-show evidence and chat context are loaded.');
-    expect(rendered).toContain('Address, payment, wallet, chat, and notes are retained.');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#bundle',
@@ -172,6 +175,8 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(5);
     expect(classNamesIn(section)).toContain('date-time-text');
     expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-14T02:10:00.000Z"');
     expect(markup).toContain('Latest message:');
+    expect(markup).toContain('Latest bundle event:');
   });
 });

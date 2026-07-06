@@ -37,6 +37,7 @@ export type BookingEvidenceBundleRowsInput = {
   chatRoomShortId?: string | null;
   chatMessageCount: number;
   latestChatMessageAtLabel?: string | null;
+  latestChatMessageAtValue?: string | null;
   chatRepairNeeded: boolean;
   hasMoneyTrace: boolean;
   paymentShortId?: string | null;
@@ -49,6 +50,7 @@ export type BookingEvidenceBundleRowsInput = {
   latestLocationShortId?: string | null;
   locationStatusLabel: string;
   latestLocationEvidenceLabel?: string | null;
+  latestLocationEvidenceDateTimeValue?: string | null;
   serviceAddressPinLabel: string;
   notificationCount: number;
   failedAlertCount: number;
@@ -56,6 +58,7 @@ export type BookingEvidenceBundleRowsInput = {
   marketplaceBatchCount: number;
   activityRecordCount: number;
   latestActivityEvidenceLabel?: string | null;
+  latestActivityEvidenceDateTimeValue?: string | null;
   latestOperatorNote?: string | null;
 };
 
@@ -65,6 +68,9 @@ export type BookingEvidenceBundleRow = {
   status: string;
   tone: EvidenceBundleTone;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   operatorUse: string;
   href: string;
 };
@@ -72,6 +78,15 @@ export type BookingEvidenceBundleRow = {
 export function bookingEvidenceBundleRows(
   input: BookingEvidenceBundleRowsInput,
 ): BookingEvidenceBundleRow[] {
+  const locationEvidence = dateTimeEvidenceFields(
+    safeLatestLocationEvidenceLabel(input.latestLocationEvidenceLabel),
+    input.latestLocationEvidenceDateTimeValue,
+  );
+  const operatorTrailEvidence = dateTimeEvidenceFields(
+    input.latestActivityEvidenceLabel,
+    input.latestActivityEvidenceDateTimeValue,
+  );
+
   return [
     {
       lane: 'Customer',
@@ -112,13 +127,19 @@ export function bookingEvidenceBundleRows(
       recordLabel: input.chatReady ? input.chatRoomShortId ?? 'missing' : 'No room',
       status: input.chatReady ? 'Archived' : 'Missing',
       tone: input.chatReady ? 'pill-success' : 'pill-warn',
-      evidence: input.chatReady
-        ? `${input.chatMessageCount} retained message(s), latest ${
-            input.latestChatMessageAtLabel ?? 'none'
-          }`
+      evidence: input.chatReady && input.latestChatMessageAtLabel && input.latestChatMessageAtValue
+        ? input.latestChatMessageAtLabel
+        : input.chatReady
+          ? `${input.chatMessageCount} retained message(s), latest ${
+              input.latestChatMessageAtLabel ?? 'none'
+            }`
         : input.chatRepairNeeded
           ? 'Matched booking should have a retained chat archive.'
           : bookingChatOpensAfterMatchOrSelectionCopy,
+      evidenceDateTimePrefix: input.chatReady && input.latestChatMessageAtLabel && input.latestChatMessageAtValue
+        ? `${input.chatMessageCount} retained message(s), latest `
+        : undefined,
+      evidenceDateTimeValue: input.latestChatMessageAtValue,
       operatorUse: 'Use the transcript for service handoff, cancellation, no-show, and refund context.',
       href: input.chatReady ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}` : '#chat',
     },
@@ -137,8 +158,11 @@ export function bookingEvidenceBundleRows(
       status: input.hasLocationTrace ? input.locationStatusLabel : 'Missing',
       tone: input.hasLocationTrace ? 'pill-info' : 'pill-neutral',
       evidence:
+        locationEvidence?.evidence ??
         safeLatestLocationEvidenceLabel(input.latestLocationEvidenceLabel) ??
         safeServiceAddressPinEvidence(input.serviceAddressPinLabel),
+      evidenceDateTimePrefix: locationEvidence?.evidenceDateTimePrefix,
+      evidenceDateTimeValue: locationEvidence?.evidenceDateTimeValue,
       operatorUse:
         'Use location rows only as operational history; routing and live tracking are not required for MVP.',
       href: '#location',
@@ -163,9 +187,35 @@ export function bookingEvidenceBundleRows(
       status: input.latestOperatorNote || input.latestActivityEvidenceLabel ? 'Retained' : 'Empty',
       tone: input.latestOperatorNote || input.latestActivityEvidenceLabel ? 'pill-success' : 'pill-neutral',
       evidence:
-        input.latestActivityEvidenceLabel ?? input.latestOperatorNote ?? 'No operator trail loaded',
+        operatorTrailEvidence?.evidence ??
+        input.latestActivityEvidenceLabel ??
+        input.latestOperatorNote ??
+        'No operator trail loaded',
+      evidenceDateTimePrefix: operatorTrailEvidence?.evidenceDateTimePrefix,
+      evidenceDateTimeValue: operatorTrailEvidence?.evidenceDateTimeValue,
       operatorUse: 'Use notes and audit rows before manual closeout, no-show, refund, or settlement actions.',
       href: '#booking-activity',
     },
   ];
+}
+
+function dateTimeEvidenceFields(label?: string | null, dateTimeValue?: string | null) {
+  if (!label || !dateTimeValue) {
+    return null;
+  }
+
+  const separatorIndex = label.lastIndexOf(' / ');
+
+  if (separatorIndex < 0) {
+    return {
+      evidence: label,
+      evidenceDateTimeValue: dateTimeValue,
+    };
+  }
+
+  return {
+    evidence: label.slice(separatorIndex + 3),
+    evidenceDateTimePrefix: `${label.slice(0, separatorIndex)} / `,
+    evidenceDateTimeValue: dateTimeValue,
+  };
 }

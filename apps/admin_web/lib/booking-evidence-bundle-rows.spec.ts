@@ -17,6 +17,7 @@ const baseInput = {
   chatRoomShortId: 'room_123',
   chatMessageCount: 3,
   latestChatMessageAtLabel: '07 Jun 2026 10:30',
+  latestChatMessageAtValue: '2026-06-07T03:30:00.000Z',
   chatRepairNeeded: false,
   hasMoneyTrace: true,
   paymentShortId: 'pay_123',
@@ -29,6 +30,7 @@ const baseInput = {
   latestLocationShortId: 'loc_123',
   locationStatusLabel: '0 m',
   latestLocationEvidenceLabel: '10.7769, 106.7009 / 07 Jun 2026 10:31',
+  latestLocationEvidenceDateTimeValue: '2026-06-07T03:31:00.000Z',
   serviceAddressPinLabel: '10.7769, 106.7009',
   notificationCount: 2,
   failedAlertCount: 0,
@@ -36,6 +38,7 @@ const baseInput = {
   marketplaceBatchCount: 1,
   activityRecordCount: 4,
   latestActivityEvidenceLabel: 'booking.matched / 07 Jun 2026 10:40',
+  latestActivityEvidenceDateTimeValue: '2026-06-07T03:40:00.000Z',
   latestOperatorNote: null,
 };
 
@@ -53,6 +56,21 @@ describe('bookingEvidenceBundleRows', () => {
       'Alerts',
       'Operator trail',
     ]);
+    expect(rows[3]).toMatchObject({
+      evidence: '07 Jun 2026 10:30',
+      evidenceDateTimePrefix: '3 retained message(s), latest ',
+      evidenceDateTimeValue: '2026-06-07T03:30:00.000Z',
+    });
+    expect(rows[5]).toMatchObject({
+      evidence: '07 Jun 2026 10:31',
+      evidenceDateTimePrefix: 'Latest Partner location saved / ',
+      evidenceDateTimeValue: '2026-06-07T03:31:00.000Z',
+    });
+    expect(rows[7]).toMatchObject({
+      evidence: '07 Jun 2026 10:40',
+      evidenceDateTimePrefix: 'booking.matched / ',
+      evidenceDateTimeValue: '2026-06-07T03:40:00.000Z',
+    });
   });
 
   it('links missing address and pending Partner selection to the right operation anchors', () => {
@@ -89,6 +107,7 @@ describe('bookingEvidenceBundleRows', () => {
       chatRoomShortId: null,
       chatMessageCount: 0,
       latestChatMessageAtLabel: null,
+      latestChatMessageAtValue: null,
       chatRepairNeeded: true,
     });
 
@@ -108,6 +127,7 @@ describe('bookingEvidenceBundleRows', () => {
       chatRoomShortId: null,
       chatMessageCount: 0,
       latestChatMessageAtLabel: null,
+      latestChatMessageAtValue: null,
       chatRepairNeeded: false,
     });
 
@@ -169,7 +189,9 @@ describe('bookingEvidenceBundleRows', () => {
 
     expect(rows[5]).toMatchObject({
       lane: 'Location',
-      evidence: 'Latest Partner location saved / 07 Jun 2026 10:31',
+      evidence: '07 Jun 2026 10:31',
+      evidenceDateTimePrefix: 'Latest Partner location saved / ',
+      evidenceDateTimeValue: '2026-06-07T03:31:00.000Z',
     });
     expect(JSON.stringify(rows[5])).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
   });
