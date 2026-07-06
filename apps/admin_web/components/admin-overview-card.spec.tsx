@@ -153,6 +153,27 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Jump to retained evidence.</small>');
   });
 
+  it('merges per-metric class names onto trace summary link items', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        itemClassName="ops-task-breakdown-item"
+        metrics={[
+          {
+            className: 'ops-task-breakdown-danger',
+            detail: 'Cash debt needs action.',
+            href: '/partners?review=cash-debt',
+            label: 'Cash debt',
+            value: '2',
+          },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain(
+      'class="ops-task-breakdown-item ops-task-breakdown-danger" href="/partners?review=cash-debt"',
+    );
+  });
+
   it('renders trace summary metric actions when provided', () => {
     const markup = renderToStaticMarkup(
       <AdminTraceSummary

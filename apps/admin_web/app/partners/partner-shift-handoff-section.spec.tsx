@@ -9,6 +9,7 @@ describe('PartnerShiftHandoffSection', () => {
   it('uses shared Vuexy badge atoms instead of raw shift handoff pill spans', () => {
     const source = readFileSync('app/partners/partner-shift-handoff-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTraceSummary');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminTextLink');
@@ -23,6 +24,7 @@ describe('PartnerShiftHandoffSection', () => {
     expect(source).not.toContain('<span className={`pill ${partnerShiftPillClass(item.tone)}`}>{item.scope}</span>');
     expect(source).not.toContain('<span className="pill" key={`${item.title}-${sample}`}>');
     expect(source).not.toContain('<span className="pill pill-success">No immediate partner sample</span>');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
   });
 
   it('renders the partner shift handoff summary, stats, and action cards', () => {

@@ -1,5 +1,4 @@
-import Link from 'next/link';
-
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminActionCard, AdminNotePanel, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import {
@@ -41,19 +40,17 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
           </AdminTextLink>
         </div>
       </AdminNotePanel>
-      <div className="service-trace-summary admin-mt-14">
-        {handoff.stats.map((stat) => (
-          <Link
-            className={`ops-task-breakdown-item ops-task-breakdown-${partnerDashboardTone(stat.tone)}`}
-            href={stat.href}
-            key={stat.label}
-          >
-            <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
-            <small>{stat.detail}</small>
-          </Link>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-14"
+        itemClassName="ops-task-breakdown-item"
+        metrics={handoff.stats.map((stat) => ({
+          className: `ops-task-breakdown-${partnerDashboardTone(stat.tone)}`,
+          detail: stat.detail,
+          href: stat.href,
+          label: stat.label,
+          value: stat.value,
+        }))}
+      />
       <div className="ops-task-grid admin-mt-14">
         {handoff.actions.map((item) => (
           <AdminActionCard

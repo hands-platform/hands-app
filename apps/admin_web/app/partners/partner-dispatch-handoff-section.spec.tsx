@@ -1,9 +1,18 @@
+import { readFileSync } from 'node:fs';
+
 import {
   PartnerDispatchHandoffSection,
   type PartnerDispatchHandoffSectionModel,
 } from './partner-dispatch-handoff-section';
 
 describe('PartnerDispatchHandoffSection', () => {
+  it('uses the shared Vuexy trace summary atom for dispatch lane links', () => {
+    const source = readFileSync('app/partners/partner-dispatch-handoff-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
+  });
+
   it('renders dispatch handoff copy, policy link, and lane links', () => {
     const section = PartnerDispatchHandoffSection({
       handoff: buildHandoff(),

@@ -4,6 +4,7 @@ import type { AdminOperationalPolicySetting, AdminProvider, AdminProviderSummary
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
@@ -317,21 +318,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             description="A factual snapshot of the partner rows currently loaded on this page before export, review, dispatch checks, or account follow-up."
             title="Current filter summary"
           >
-            <div className="service-trace-summary admin-mt-14">
-              {deepPartnerOps.filterSummary.map((item) => (
-                <div key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small className="muted">{item.detail}</small>
-                  {item.href ? (
-                    <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
-                      <ArrowRight aria-hidden="true" size={14} />
-                      Open subset
-                    </AdminFormControlLink>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <AdminTraceSummary
+              className="admin-mt-14"
+              metrics={deepPartnerOps.filterSummary.map((item) => ({
+                action: item.href ? (
+                  <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
+                    <ArrowRight aria-hidden="true" size={14} />
+                    Open subset
+                  </AdminFormControlLink>
+                ) : null,
+                detail: item.detail,
+                label: item.label,
+                value: item.value,
+              }))}
+            />
           </AdminSection>
           <div className="grid admin-mb-16 partner-deep-summary-grid">
             {deepPartnerOps.summary.map(([label, value]) => (

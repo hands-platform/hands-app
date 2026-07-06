@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import type { PartnerCommandLane } from './partner-command-center';
 import type { PartnerDispatchHandoff } from './partner-dispatch-handoff';
@@ -31,19 +31,17 @@ export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandof
       }
       title="Dispatch handoff links"
     >
-      <div className="service-trace-summary admin-mt-14">
-        {handoff.links.map((item) => (
-          <Link
-            className={`ops-task-breakdown-item ops-task-breakdown-${partnerDashboardTone(item.tone)}`}
-            href={item.href}
-            key={item.title}
-          >
-            <span>{item.title}</span>
-            <strong>{item.value}</strong>
-            <small>{item.detail}</small>
-          </Link>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-14"
+        itemClassName="ops-task-breakdown-item"
+        metrics={handoff.links.map((item) => ({
+          className: `ops-task-breakdown-${partnerDashboardTone(item.tone)}`,
+          detail: item.detail,
+          href: item.href,
+          label: item.title,
+          value: item.value,
+        }))}
+      />
     </AdminSection>
   );
 }

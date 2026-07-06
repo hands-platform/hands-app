@@ -29,6 +29,13 @@ describe('ProvidersPage', () => {
     expect(source).not.toContain('actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}');
   });
 
+  it('uses the shared Vuexy trace summary atom for the current filter summary', () => {
+    const source = readFileSync('app/partners/page.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
+  });
+
   it('renders bounded server partner rows without applying a second local search filter', async () => {
     const serverRow = {
       displayName: 'Server Trusted Partner',

@@ -59,6 +59,7 @@ type AdminMiniMetricStripProps = {
 
 type AdminTraceSummaryMetric = {
   readonly action?: ReactNode;
+  readonly className?: string;
   readonly detail?: ReactNode;
   readonly href?: string;
   readonly key?: string;
@@ -133,6 +134,7 @@ export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics
   return (
     <div aria-label={ariaLabel} className={joinClassNames('service-trace-summary', className)}>
       {metrics.map((metric, index) => {
+        const metricClassName = joinClassNames(itemClassName, metric.className) || undefined;
         const content = (
           <>
             <span>{metric.label}</span>
@@ -144,14 +146,18 @@ export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics
 
         if (metric.href) {
           return (
-            <a className={itemClassName} href={metric.href} key={traceSummaryKey(metric, index)}>
+            <a
+              className={metricClassName}
+              href={metric.href}
+              key={traceSummaryKey(metric, index)}
+            >
               {content}
             </a>
           );
         }
 
         return (
-          <div className={itemClassName} key={traceSummaryKey(metric, index)}>
+          <div className={metricClassName} key={traceSummaryKey(metric, index)}>
             {content}
           </div>
         );
