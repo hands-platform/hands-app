@@ -7,6 +7,17 @@ import {
 } from './partner-detail-profile-finance-summary-section';
 
 describe('partner detail profile and location sections', () => {
+  it('uses the partner detail Vuexy table panel atom for profile and finance shells', () => {
+    const source = readFileSync(
+      'app/partners/[id]/partner-detail-profile-finance-summary-section.tsx',
+      'utf8',
+    );
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync(
       'app/partners/[id]/partner-detail-profile-finance-summary-section.tsx',

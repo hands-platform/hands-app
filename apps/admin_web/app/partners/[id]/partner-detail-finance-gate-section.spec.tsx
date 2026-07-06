@@ -6,6 +6,14 @@ import {
 } from './partner-detail-finance-gate-section';
 
 describe('partner detail finance gate sections', () => {
+  it('uses the partner detail Vuexy table panel atom for finance gate shells', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-finance-gate-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy badge atom for finance evidence status pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-finance-gate-section.tsx', 'utf8');
 

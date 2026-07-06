@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminBasicTimeline, type AdminBasicTimelineItem } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -10,7 +9,7 @@ import { StatusBadge, type StatusBadgeTone } from '../../../components/status-ba
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -59,8 +58,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
   const rowCount = bank ? 1 : 0;
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Manual wallet withdrawal/deposit evidence for operator checks. This does not gate Level 2 matching."
       id="bank"
       resultLabel={bank?.status ?? 'ON_REQUEST'}
@@ -114,7 +112,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
       {bank?.reviewTimeline?.length ? <BankReviewTimeline items={bank.reviewTimeline} /> : null}
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -122,8 +120,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
   const rowCount = taxProfile ? 1 : 0;
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Optional tax profile evidence does not gate Vietnam MVP approval, matching, work, payout, or wallet withdrawal."
       id="tax"
       resultLabel={taxProfile?.status ?? 'DEFERRED'}
@@ -164,7 +161,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

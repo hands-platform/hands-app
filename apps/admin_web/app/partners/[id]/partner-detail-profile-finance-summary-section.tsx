@@ -3,13 +3,12 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -60,8 +59,7 @@ type PartnerDetailLocationActivityCardProps = {
 
 export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasicProfileCardProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Partner identity, service area, profile review, and user account fields."
       id="basic-profile"
       resultLabel={`${rows.length} field(s)`}
@@ -91,14 +89,13 @@ export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasic
         <p className="muted">{marketplaceDisplayText(note)}</p>
       </div>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
 export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreementsCardProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Legal agreement acceptance records connected to this Partner account."
       id="agreements"
       resultLabel={`${agreements.length} accepted`}
@@ -125,7 +122,7 @@ export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreeme
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={agreements.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -137,8 +134,7 @@ export function PartnerDetailRecentPayoutRecordsCard({
   const rowCount = 2 + earnings.length;
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Latest earning and payout batch evidence for finance handoff."
       id="recent-payout-records"
       resultLabel={`${earningCount} earning(s)`}
@@ -180,7 +176,7 @@ export function PartnerDetailRecentPayoutRecordsCard({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -193,8 +189,7 @@ export function PartnerDetailLocationActivityCard({
   const locationEvidenceLabel = safeLocationEvidenceLabel(coordinatesLabel);
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Latest Partner app location evidence and recent recorded snapshots."
       id="location"
       resultLabel={`${snapshots.length} snapshot(s)`}
@@ -248,7 +243,7 @@ export function PartnerDetailLocationActivityCard({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
