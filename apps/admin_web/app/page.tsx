@@ -23,6 +23,7 @@ import {
   AdminNotePanel,
   AdminSection,
   AdminTaskCard,
+  AdminTaskGrid,
 } from '../components/admin-surface';
 import { InfoRow } from '../components/info-row';
 import {
@@ -860,7 +861,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-operations-command-board"
         title="Operations command board"
       >
-        <div className="ops-task-grid admin-mt-14">
+        <AdminTaskGrid className="admin-mt-14">
           {operationsCommandBoard.map((item) => (
             <AdminActionCard
               className={dashboardToneCardClass(item.tone)}
@@ -886,7 +887,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
             </AdminActionCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminSection>
 
       <AdminSection
@@ -1066,7 +1067,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-booking-evidence-command-queue"
         title="Booking evidence command queue"
       >
-        <div className="ops-task-grid admin-mt-14">
+        <AdminTaskGrid className="admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
             <AdminActionCard
               className={dashboardToneCardClass(item.tone)}
@@ -1099,7 +1100,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
             </AdminActionCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminSection>
 
       <AdminSection
@@ -1163,7 +1164,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-live-operations-radar"
             title="Live operations radar"
           >
-            <div className="ops-task-grid admin-mt-14">
+            <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.liveOperationsRadar.map((item) => (
                 <AdminActionCard
                   className={dashboardToneCardClass(item.tone)}
@@ -1193,7 +1194,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 </AdminActionCard>
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminSection
@@ -1209,7 +1210,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             title="Policy outcome pulse"
           >
             <DashboardTraceSummary className="admin-mt-12" metrics={fullDashboardData.policyOutcome.metrics} />
-            <div className="ops-task-grid admin-mt-14">
+            <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.policyOutcome.cards.map((card) => (
                 <AdminActionCard
                   actionLabel={card.operatorAction}
@@ -1222,7 +1223,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   variant="ops-task"
                 />
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminSection
@@ -1262,7 +1263,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 value: stat.value,
               }))}
             />
-            <div className="ops-task-grid admin-mt-14">
+            <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
                 <AdminActionCard
                   actionLabel="Open"
@@ -1289,7 +1290,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   />
                 </AdminNotePanel>
               )}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminSection
@@ -1313,7 +1314,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-opening-shift-checklist"
             title="Opening shift checklist"
           >
-            <div className="ops-task-grid admin-mt-14">
+            <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.operatorStartChecklist.map((item, index) => (
                 <AdminActionCard
                   actionLabel={item.action}
@@ -1331,7 +1332,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   variant="ops-task"
                 />
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminSection
@@ -1543,7 +1544,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminNotePanel>
               </AdminDetailGrid>
             ) : null}
-            <div className="ops-task-grid admin-mt-14">
+            <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.policySummary.decisions.map((decision) => (
                 <AdminActionCard
                   actionLabel="Open policy"
@@ -1558,7 +1559,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <small>{decision.recommendation}</small>
                 </AdminActionCard>
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminDetailGrid className="admin-mt-20">
@@ -1936,7 +1937,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-partner-dispatch-control"
             title="Partner dispatch control"
           >
-            <div className="ops-task-grid admin-mt-12">
+            <AdminTaskGrid className="admin-mt-12">
               {fullDashboardData.partnerOpsQueue.items.map((item) => (
                 <AdminActionCard
                   actionLabel={item.action}
@@ -1970,7 +1971,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   />
                 </AdminNotePanel>
               )}
-            </div>
+            </AdminTaskGrid>
             <DashboardTraceSummary
               className="admin-mt-14"
               metrics={[
@@ -2009,7 +2010,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-marketplace-unblock-quick-order"
             title="Marketplace unblock quick order"
           >
-            <div className="ops-task-grid admin-mt-12">
+            <AdminTaskGrid className="admin-mt-12">
               {fullDashboardData.acceptanceUnblockQuickOrder.map((step) => (
                 <AdminActionCard
                   actionLabel={step.action}
@@ -2033,7 +2034,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 </AdminActionCard>
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminSection
