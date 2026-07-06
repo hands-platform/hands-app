@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminKpiCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import {
@@ -132,15 +133,7 @@ export function BookingAlertTraceSection({
       description="Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and disabled device checks."
       title="Booking alert trace"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {notificationTrace.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardTrace cards={notificationTrace.metrics} />
       {notificationTrace.backupBatches.length > 0 ? (
         <div className="ops-check-list">
           {notificationTrace.backupBatches.map((batch) => (
@@ -207,15 +200,7 @@ export function BookingOperationsAuditTraceSection({
       description="Booking-specific operator actions plus policy updates that happened after this request opened."
       title="Operations audit trace"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {operationsTrace.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardTrace cards={operationsTrace.metrics} />
       <AdminNotePanel className="admin-mt-14">
         <div className="ops-row">
           <div>
@@ -390,15 +375,7 @@ export function BookingServicePricingSnapshotSection({
       id="service-pricing-snapshot"
       title="Service pricing snapshot"
     >
-      <div className="service-trace-summary admin-mt-12">
-        {servicePricingSnapshotRows.map((row) => (
-          <div key={row.label}>
-            <span>{row.label}</span>
-            <strong>{row.value}</strong>
-            <small>{row.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardTrace cards={servicePricingSnapshotRows} />
     </AdminSection>
   );
 }
@@ -416,4 +393,17 @@ function signalToneFromClass(signalClass: string): AdminSignalTone {
     return 'info';
   }
   return 'ok';
+}
+
+function SummaryCardTrace({ cards }: { cards: SummaryCard[] }) {
+  return (
+    <AdminTraceSummary
+      className="admin-mt-12"
+      metrics={cards.map((card) => ({
+        detail: card.helper,
+        label: card.label,
+        value: card.value,
+      }))}
+    />
+  );
 }
