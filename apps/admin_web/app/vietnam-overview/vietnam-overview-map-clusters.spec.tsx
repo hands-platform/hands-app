@@ -38,10 +38,13 @@ describe('VietnamOverviewMapClusters', () => {
 
     expect(source).toContain('DateTimeText');
     expect(source).toContain('<DateTimeText value={latestPoint.occurredAt} />');
-    expect(source).toContain('<DateTimeText value={item.latestPoint.occurredAt} />');
+    expect(source).toContain("detailDateTimePrefix: item.latestPoint ? 'Latest ' : undefined");
+    expect(source).toContain("detailDateTimeFallback: 'pending'");
+    expect(source).toContain('detailDateTimeValue: item.latestPoint?.occurredAt');
     expect(source).toContain('<DateTimeText value={point.occurredAt} />');
     expect(source).not.toContain('{metricLabel(latestPoint.kind)} / {formatDateTime(latestPoint.occurredAt)}');
     expect(source).not.toContain('Latest {item.latestPoint ? formatDateTime(item.latestPoint.occurredAt) : \'pending\'}');
+    expect(source).not.toContain("detail: <>Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}</>");
     expect(source).not.toContain('{formatDateTime(point.occurredAt)}');
   });
 });

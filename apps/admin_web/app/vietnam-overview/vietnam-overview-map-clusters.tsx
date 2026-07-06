@@ -275,7 +275,10 @@ function ClusterDetailPanel({
         itemClassName="vietnam-map-cluster-summary-card"
         items={signalSummary.map((item) => ({
           className: `is-${item.key}`,
-          detail: <>Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}</>,
+          detail: item.latestPoint ? undefined : 'pending',
+          detailDateTimeFallback: 'pending',
+          detailDateTimePrefix: item.latestPoint ? 'Latest ' : undefined,
+          detailDateTimeValue: item.latestPoint?.occurredAt,
           key: item.key,
           label: (
             <>
