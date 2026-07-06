@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import {
   AdminFormCheckbox,
@@ -12,6 +11,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminSignal, StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -537,9 +537,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <StatusBadge tone={statusBadgeToneFromPillClass(row.toneClassName)}>{row.statusLabel}</StatusBadge>
             <div>
               <strong>
-                <Link className="text-link" href={row.bookingHref}>
+                <AdminTextLink href={row.bookingHref}>
                   {row.bookingLabel}
-                </Link>{' '}
+                </AdminTextLink>{' '}
                 / {row.providerLabel}
               </strong>
               <p className="muted">
@@ -547,12 +547,12 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 {row.taxLogLabel} / delta {row.deltaLabel}
               </p>
               <div className="actions admin-mt-8">
-                <Link className="text-link" href={row.earningHref}>
+                <AdminTextLink href={row.earningHref}>
                   Open earning
-                </Link>
-                <Link className="text-link" href={row.financeTraceHref}>
+                </AdminTextLink>
+                <AdminTextLink href={row.financeTraceHref}>
                   Finance trace
-                </Link>
+                </AdminTextLink>
               </div>
             </div>
             <small>{row.snapshotLabel}</small>

@@ -159,6 +159,11 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<span className={`pill ${row.toneClassName}`}>{row.statusLabel}</span>');
   });
 
+  it('uses the shared Vuexy text link atom for tax policy drill-down links', () => {
+    expect(pageSource).toContain('AdminTextLink');
+    expect(pageSource).not.toContain('className="text-link"');
+  });
+
   it('uses the shared money atom for visible tax policy amounts', () => {
     expect(pageSource).toContain('MoneyText');
     expect(pageSource).not.toContain('`${formatBps(preview.rule.rateBps)} plus ${formatMoney(');
