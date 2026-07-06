@@ -10897,16 +10897,12 @@ a.action-button-card:hover {
   border-color: var(--admin-border-strong);
 }
 
-.coupon-management-section-header,
+.coupon-management-section .admin-card-header,
 .coupon-window-copy {
   align-items: start;
   gap: 16px;
   justify-content: space-between;
   min-width: 0;
-}
-
-.coupon-management-section-header {
-  display: flex;
 }
 
 .coupon-code-line,

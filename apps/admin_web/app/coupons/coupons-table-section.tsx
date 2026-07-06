@@ -15,7 +15,7 @@ import {
   AdminFormShell,
   AdminFormInput,
 } from '../../components/admin-form-controls';
-import { AdminCard, AdminDisclosure } from '../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminDisclosure } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, type StatusBadgeTone, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
@@ -131,19 +131,21 @@ function CouponManagementCard({
 
   return (
     <AdminCard className={`coupon-management-section coupon-management-section-${row.windowState}`}>
-      <div className="coupon-management-section-header">
-        <div>
-          <div className="coupon-code-line">
+      <AdminCardHeader
+        actions={
+          <div className="coupon-discount-summary">
+            <strong>{row.discountLabel}</strong>
+            <span className="muted">{row.windowSignal}</span>
+          </div>
+        }
+        title={
+          <span className="coupon-code-line">
             <strong>{row.code}</strong>
             <span className="coupon-window-title">{row.windowLabel}</span>
             <StatusBadge tone={couponStatusBadgeTone(row.statusClassName)}>{row.statusLabel}</StatusBadge>
-          </div>
-        </div>
-        <div className="coupon-discount-summary">
-          <strong>{row.discountLabel}</strong>
-          <span className="muted">{row.windowSignal}</span>
-        </div>
-      </div>
+          </span>
+        }
+      />
 
       <p className="coupon-window-copy">{row.checkoutHint}</p>
 
