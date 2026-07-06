@@ -32,12 +32,12 @@ describe('AdminRoundedPagination', () => {
     expect(pagination.type).toBe('nav');
     expect(pagination.props).toMatchObject({
       'aria-label': 'Customer review pages',
-      className: 'vuexy-review-pagination',
+      className: 'admin-rounded-pagination vuexy-review-pagination',
     });
     expect(classNamesIn(pagination)).toEqual(
       expect.arrayContaining([
-        'vuexy-review-page-link',
-        'vuexy-review-page-link is-active',
+        'vuexy-review-page-link admin-pagination-page-link',
+        'vuexy-review-page-link admin-pagination-page-link is-active',
       ]),
     );
     expect(hrefsIn(pagination)).toEqual(
@@ -58,8 +58,8 @@ describe('AdminRoundedPagination', () => {
     expect(elementTypesIn(pagination)).toContain('button');
     expect(classNamesIn(pagination)).toEqual(
       expect.arrayContaining([
-        'admin-pagination-button vuexy-booking-page-link is-active',
-        'admin-pagination-button vuexy-booking-page-link',
+        'admin-pagination-button vuexy-booking-page-link admin-pagination-page-link is-active',
+        'admin-pagination-button vuexy-booking-page-link admin-pagination-page-link',
       ]),
     );
   });
@@ -74,11 +74,11 @@ describe('AdminRoundedPagination', () => {
       totalPages: 3,
     });
 
-    expect(pagination.props.className).toBe('vuexy-booking-pagination finance-pagination');
+    expect(pagination.props.className).toBe('admin-rounded-pagination vuexy-booking-pagination finance-pagination');
     expect(classNamesIn(pagination)).toEqual(
       expect.arrayContaining([
-        'vuexy-booking-page-link finance-page-link',
-        'vuexy-booking-page-link finance-page-link is-active',
+        'vuexy-booking-page-link finance-page-link admin-pagination-page-link',
+        'vuexy-booking-page-link finance-page-link admin-pagination-page-link is-active',
       ]),
     );
   });

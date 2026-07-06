@@ -4168,6 +4168,7 @@ a.action-button-card:hover {
   line-height: 22px;
 }
 
+.admin-rounded-pagination,
 .vuexy-booking-pagination {
   align-items: center;
   display: flex;
@@ -4176,6 +4177,7 @@ a.action-button-card:hover {
   justify-content: flex-end;
 }
 
+.admin-pagination-page-link,
 .vuexy-booking-page-link {
   align-items: center;
   background: var(--admin-action-hover);

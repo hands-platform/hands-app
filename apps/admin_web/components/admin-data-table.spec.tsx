@@ -144,8 +144,8 @@ describe('AdminDataTable', () => {
     expect(classNamesIn(footer)).toEqual(
       expect.arrayContaining([
         'vuexy-booking-pagination-summary',
-        'vuexy-booking-pagination',
-        'vuexy-booking-page-link is-active',
+        'admin-rounded-pagination vuexy-booking-pagination',
+        'vuexy-booking-page-link admin-pagination-page-link is-active',
       ]),
     );
     expect(hrefsIn(footer)).toEqual(

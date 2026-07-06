@@ -3,6 +3,20 @@ import { readFileSync } from 'node:fs';
 const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
 describe('Admin rounded pagination CSS', () => {
+  it('anchors the shared pagination atom classes outside booking and review domains', () => {
+    const paginationIndex = globalsCss.indexOf('.admin-rounded-pagination,');
+    const paginationBlock = cssRuleBlockAt(paginationIndex);
+    const pageLinkIndex = globalsCss.indexOf('.admin-pagination-page-link,');
+    const pageLinkBlock = cssRuleBlockAt(pageLinkIndex);
+
+    expect(paginationIndex).toBeGreaterThan(-1);
+    expect(paginationBlock).toContain('display: flex');
+    expect(paginationBlock).toContain('gap: 6px');
+    expect(pageLinkIndex).toBeGreaterThan(-1);
+    expect(pageLinkBlock).toContain('height: 38px');
+    expect(pageLinkBlock).toContain('font-weight: 500');
+  });
+
   it.each([
     ['booking', '.vuexy-booking-page-link:not(:disabled):hover'],
     ['review', '.vuexy-review-page-link:not(.is-disabled):hover'],

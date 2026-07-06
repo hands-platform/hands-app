@@ -28,7 +28,7 @@ export function AdminRoundedPagination({
   const pageItems = adminRoundedPaginationPages(page, lastPage);
 
   return (
-    <nav aria-label={ariaLabel} className={joinClassNames(className)}>
+    <nav aria-label={ariaLabel} className={joinClassNames('admin-rounded-pagination', className)}>
       <AdminRoundedPaginationControl
         disabled={page <= 1}
         href={hrefForPage?.(1)}
@@ -108,7 +108,7 @@ function AdminRoundedPaginationControl({
   readonly onClick?: () => void;
   readonly pageLinkClassName: string;
 }) {
-  const className = joinClassNames(pageLinkClassName, active ? 'is-active' : undefined);
+  const className = joinClassNames(pageLinkClassName, 'admin-pagination-page-link', active ? 'is-active' : undefined);
 
   if (onClick) {
     return (
@@ -127,7 +127,11 @@ function AdminRoundedPaginationControl({
 
   if (disabled || !href) {
     return (
-      <span aria-disabled="true" aria-label={label} className={joinClassNames(pageLinkClassName, 'is-disabled')}>
+      <span
+        aria-disabled="true"
+        aria-label={label}
+        className={joinClassNames(pageLinkClassName, 'admin-pagination-page-link', 'is-disabled')}
+      >
         {children}
       </span>
     );
