@@ -14,6 +14,8 @@ describe('PartnerFilesCell', () => {
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toContain('className="text-link"');

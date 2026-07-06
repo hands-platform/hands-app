@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { ProviderListAction } from './partner-list-actions';
 import { partnerListActionPillClass } from './partner-list-actions';
@@ -65,9 +65,9 @@ function PartnerNextActionSummary({ action }: { readonly action: ProviderListAct
   return (
     <div className="admin-mb-10">
       <div className="participant-list admin-mb-6">
-        <StatusBadge tone={statusBadgeToneFromPillClass(partnerListActionPillClass(action.tone))}>
+        <StatusBadgeFromPillClass pillClass={partnerListActionPillClass(action.tone)}>
           {action.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       </div>
       <p className="muted admin-mb-4">
         {action.detail}
@@ -83,13 +83,13 @@ function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsB
   return (
     <div className="participant-list admin-mb-8">
       {badges.map((badge) => (
-        <StatusBadge
+        <StatusBadgeFromPillClass
           key={badge.label}
-          tone={statusBadgeToneFromPillClass(partnerOpsBadgePillClass(badge.tone))}
+          pillClass={partnerOpsBadgePillClass(badge.tone)}
           title={badge.detail}
         >
           {badge.label}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       ))}
     </div>
   );

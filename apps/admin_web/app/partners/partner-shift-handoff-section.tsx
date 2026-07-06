@@ -9,7 +9,7 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import {
   AdminSignal,
   StatusBadge,
-  statusBadgeToneFromPillClass,
+  StatusBadgeFromPillClass,
   type AdminSignalTone,
 } from '../../components/status-badge';
 import type { PartnerCommandLane } from './partner-command-center';
@@ -65,9 +65,9 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             href={item.href}
             key={item.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(partnerShiftPillClass(item.tone))}>
+              <StatusBadgeFromPillClass pillClass={partnerShiftPillClass(item.tone)}>
                 {item.scope}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={item.title}
             variant="ops-task"

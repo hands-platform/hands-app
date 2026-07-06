@@ -163,6 +163,8 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('Partner segments');
     expect(markup).not.toContain('ONLINE_AVAILABLE');
     expect(pageSource).toContain('StatusBadge');
+    expect(pageSource).toContain('StatusBadgeFromPillClass');
+    expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
     expect(pageSource).toContain('DateTimeText');
     expect(pageSource).toContain('formatDateTime,');
     expect(pageSource).not.toContain('const generatedAt = formatDateTime(overview.generatedAt);');

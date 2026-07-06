@@ -3,7 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import type { PartnerDailyActionQueue } from './partner-daily-action-queue';
@@ -56,9 +56,9 @@ export function PartnerChecklistWorkQueueSection({
           {queue.rows.map((row, index) => (
             <tr key={`${row.provider.id}-${row.action.status}`}>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(partnerShiftPillClass(row.tone))}>
+                <StatusBadgeFromPillClass pillClass={partnerShiftPillClass(row.tone)}>
                   #{index + 1}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <AdminPersonCell

@@ -1,7 +1,7 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import {
   providerDocumentLabel,
@@ -70,9 +70,9 @@ export function PartnerOnboardingCell({
         <StatusBadge tone={primaryBank?.status === 'APPROVED' ? 'success' : 'neutral'}>
           Withdrawal details {primaryBank?.status ?? 'MISSING'}
         </StatusBadge>
-        <StatusBadge tone={statusBadgeToneFromPillClass(partnerTaxPillClass(provider))}>
+        <StatusBadgeFromPillClass pillClass={partnerTaxPillClass(provider)}>
           Tax optional {taxStatus}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       </div>
       <p className="muted admin-mb-8">
         {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
@@ -82,9 +82,9 @@ export function PartnerOnboardingCell({
         {ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((documentType) => {
           const documentStatus = providerKycDocumentStatus(provider, documentType);
           return (
-            <StatusBadge key={documentType} tone={statusBadgeToneFromPillClass(kycDocumentPillClass(documentStatus))}>
+            <StatusBadgeFromPillClass key={documentType} pillClass={kycDocumentPillClass(documentStatus)}>
               {providerDocumentLabel(documentType)} {documentStatus}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
           );
         })}
       </div>

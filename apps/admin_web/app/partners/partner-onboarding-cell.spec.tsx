@@ -13,6 +13,8 @@ describe('PartnerOnboardingCell', () => {
     const source = readFileSync('app/partners/partner-onboarding-cell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('AdminFormControlLink');

@@ -2,7 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatBytes } from './partner-list-ops';
@@ -90,9 +90,9 @@ function PartnerPublicMediaQueue({
         <div key={file.id} className="provider-file-row">
           <div className="participant-list admin-mb-6">
             <StatusBadge tone="info">{file.purpose}</StatusBadge>
-            <StatusBadge tone={statusBadgeToneFromPillClass(publicMediaReviewPillClass(file.reviewStatus))}>
+            <StatusBadgeFromPillClass pillClass={publicMediaReviewPillClass(file.reviewStatus)}>
               {file.reviewStatus ?? 'PENDING_REVIEW'}
-            </StatusBadge>
+            </StatusBadgeFromPillClass>
           </div>
           <p className="muted admin-mb-6">
             {file.contentType}
