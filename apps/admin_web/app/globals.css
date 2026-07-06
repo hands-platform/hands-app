@@ -1832,9 +1832,15 @@ a {
 .calendar-board-toolbar {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   justify-content: space-between;
   min-width: 0;
+}
+
+.calendar-board-toolbar > :first-child {
+  flex: 1 1 240px;
+  min-inline-size: 240px;
 }
 
 .calendar-board-eyebrow,
@@ -1846,6 +1852,7 @@ a {
   letter-spacing: 0.4px;
   margin-bottom: 6px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .calendar-board-toolbar h2,
@@ -1857,7 +1864,7 @@ a {
   align-items: center;
   display: flex;
   flex: 0 0 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
   min-width: 0;
@@ -1960,7 +1967,7 @@ a {
 
 .calendar-board-surface .fc {
   font-family: inherit;
-  min-width: 1040px;
+  min-width: 0;
 }
 
 .calendar-board-surface .fc .fc-col-header,
