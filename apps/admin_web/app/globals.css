@@ -2706,8 +2706,13 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.admin-filter-panel-header > .pill {
+.admin-filter-panel-actions {
+  align-items: center;
+  display: flex;
   flex-shrink: 0;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .admin-filter-panel-body {

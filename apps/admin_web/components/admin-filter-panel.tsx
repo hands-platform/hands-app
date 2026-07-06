@@ -37,7 +37,11 @@ export function AdminFilterPanel({
           <h2 id={headingId}>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {resultLabel ? <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge> : null}
+        {resultLabel ? (
+          <div className="admin-filter-panel-actions">
+            <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge>
+          </div>
+        ) : null}
       </div>
       {hasBody ? <div className="admin-filter-panel-body admin-section-body">{children}</div> : null}
       {footer ? <div className="admin-filter-panel-footer admin-section-footer">{footer}</div> : null}

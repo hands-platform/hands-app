@@ -24,7 +24,8 @@ describe('AdminFilterPanel', () => {
       'ops-section-header admin-filter-panel-header admin-section-header',
     );
     expect(panel.props.children[0].props.children[0].props.className).toBe('admin-filter-panel-copy');
-    expect(panel.props.children[0].props.children[1].props.tone).toBe('warning');
+    expect(panel.props.children[0].props.children[1].props.className).toBe('admin-filter-panel-actions');
+    expect(panel.props.children[0].props.children[1].props.children.props.tone).toBe('warning');
     expect(panel.props.children[1].props.className).toBe('admin-filter-panel-body admin-section-body');
     expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
   });

@@ -6,7 +6,7 @@ describe('Admin filter panel CSS', () => {
   it('keeps filter panel headers on the Vuexy CardHeader title/action layout', () => {
     const copyIndex = globalsCss.indexOf('.admin-filter-panel-copy {');
     const copyBlock = cssRuleBlockAt(copyIndex);
-    const actionIndex = globalsCss.indexOf('.admin-filter-panel-header > .pill {');
+    const actionIndex = globalsCss.indexOf('.admin-filter-panel-actions {');
     const actionBlock = cssRuleBlockAt(actionIndex);
 
     expect(copyIndex).toBeGreaterThan(-1);
@@ -14,7 +14,11 @@ describe('Admin filter panel CSS', () => {
     expect(copyBlock).toContain('gap: 4px');
     expect(copyBlock).toContain('min-width: 0');
     expect(actionIndex).toBeGreaterThan(copyIndex);
+    expect(actionBlock).toContain('align-items: center');
+    expect(actionBlock).toContain('display: flex');
     expect(actionBlock).toContain('flex-shrink: 0');
+    expect(actionBlock).toContain('gap: 8px');
+    expect(actionBlock).toContain('justify-content: flex-end');
   });
 
   it('keeps filter panel footers on the Vuexy card actions rhythm', () => {
