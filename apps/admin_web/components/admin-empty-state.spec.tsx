@@ -54,16 +54,30 @@ describe('AdminEmptyState', () => {
     expect(emptyState.props.className).toBe('empty-state admin-mt-14');
   });
 
-  it('keeps custom spacing classes on unframed empty states when a page supplies them', () => {
+  it('keeps custom spacing classes on the shared Vuexy empty surface when a page supplies them', () => {
     const emptyState = AdminEmptyState({
       className: 'admin-mt-8',
       message: 'No partner files are retained for this profile.',
     });
 
     expect(emptyState.type).toBe('div');
-    expect(emptyState.props.className).toBe('admin-mt-8');
+    expect(emptyState.props).toMatchObject({
+      'aria-live': 'polite',
+      className: 'empty-state admin-mt-8',
+      role: 'status',
+    });
     expect(emptyState.props.children[0].props.children).toBe('No records found');
     expect(emptyState.props.children[1].props.children).toBe('No partner files are retained for this profile.');
+  });
+
+  it('deduplicates empty-state class tokens on classed empty states', () => {
+    const emptyState = AdminEmptyState({
+      className: 'empty-state admin-mt-8 empty-state',
+      message: 'No visible operator activity.',
+    });
+
+    expect(emptyState.type).toBe('div');
+    expect(emptyState.props.className).toBe('empty-state admin-mt-8');
   });
 
   it('can render legacy sentence-only empty states without adding a title', () => {

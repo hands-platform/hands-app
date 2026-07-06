@@ -28,7 +28,11 @@ export function AdminEmptyState({
   ];
 
   if (className) {
-    return <div className={joinClassNames(className)}>{content}</div>;
+    return (
+      <div aria-live="polite" className={joinClassNames('empty-state', className)} role="status">
+        {content}
+      </div>
+    );
   }
 
   return <>{content}</>;

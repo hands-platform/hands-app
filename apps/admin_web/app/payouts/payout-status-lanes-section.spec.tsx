@@ -71,7 +71,7 @@ describe('PayoutStatusLanesSection', () => {
     });
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-status-lanes-section.tsx'), 'utf8');
 
-    expect(classNamesIn(section)).toContain('admin-mt-8');
+    expect(classNamesIn(section)).toContain('empty-state admin-mt-8');
     expect(textContent(section)).toContain('No blocked payout batch.');
     expect(source).toContain('AdminEmptyState');
     expect(source).not.toContain('<p className="muted">{lane.emptyText}</p>');
