@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -54,17 +54,17 @@ export function PartnerDetailOperatingChecklistSection({
                   <strong>{item.area}</strong>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(item.tone))}>
+                  <StatusBadgeFromPillClass pillClass={pillClassForTone(item.tone)}>
                     {item.status}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
                   <p className="muted">{item.detail}</p>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(item.tone))}>
+                  <StatusBadgeFromPillClass pillClass={pillClassForTone(item.tone)}>
                     {item.nextAction}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
                   <AdminTextLink href={item.href}>

@@ -14,7 +14,9 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
   it('uses shared Vuexy badge atoms instead of raw unblock playbook pill spans', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-acceptance-unblock-playbook-section.tsx', 'utf8');
 
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(step.tone)}`}>{step.status}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{step.owner}</span>');
@@ -94,7 +96,7 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-success',
         'pill pill-info',
-        'pill pill-warn',
+        'pill pill-warn pill-pending',
         'text-link',
       ]),
     );

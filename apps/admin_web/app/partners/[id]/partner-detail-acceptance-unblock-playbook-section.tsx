@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -77,9 +77,9 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
                 </td>
                 <td>
                   <div className="participant-list">
-                    <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(step.tone))}>
+                    <StatusBadgeFromPillClass pillClass={pillClassForTone(step.tone)}>
                       {step.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <StatusBadge tone="info">{step.owner}</StatusBadge>
                   </div>
                 </td>

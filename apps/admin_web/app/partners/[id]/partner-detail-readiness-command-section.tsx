@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
@@ -84,14 +84,14 @@ export function PartnerDetailReadinessSnapshotSection({
     >
       <div className="participant-list admin-mt-12">
         {snapshot.badges.map((badge) => (
-          <StatusBadge
+          <StatusBadgeFromPillClass
             key={badge.label}
+            pillClass={partnerOpsPillClass(badge.tone)}
             title={badge.detail}
-            tone={statusBadgeToneFromPillClass(partnerOpsPillClass(badge.tone))}
           >
             {badge.label}
             {badge.detailNode ? <span className="sr-only">{badge.detailNode}</span> : null}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         ))}
       </div>
       <div className="admin-mt-16">
@@ -104,9 +104,9 @@ export function PartnerDetailReadinessSnapshotSection({
           >
             <tr>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(partnerOpsPillClass(snapshot.tone))}>
+                <StatusBadgeFromPillClass pillClass={partnerOpsPillClass(snapshot.tone)}>
                   {snapshot.gate.label}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <strong>{snapshot.gate.title}</strong>
@@ -185,9 +185,9 @@ export function PartnerAcceptanceRepairCommandSection({
                   <p className="muted">{step.operatorAction}</p>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(partnerOpsPillClass(step.tone))}>
+                  <StatusBadgeFromPillClass pillClass={partnerOpsPillClass(step.tone)}>
                     {partnerOpsStepLabel(step.tone)}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>
                   <AdminTextLink href={step.href}>

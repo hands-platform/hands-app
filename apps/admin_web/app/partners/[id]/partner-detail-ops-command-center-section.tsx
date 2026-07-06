@@ -1,7 +1,7 @@
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminTaskCard } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -55,9 +55,9 @@ export function PartnerDetailOpsCommandCenterSection({
             detail={card.detail}
             key={card.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(card.tone))}>
+              <StatusBadgeFromPillClass pillClass={pillClassForTone(card.tone)}>
                 {card.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={card.title}
           />

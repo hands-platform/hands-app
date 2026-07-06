@@ -15,7 +15,9 @@ describe('PartnerDetailDeviceSessionActivitySection', () => {
 
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
     expect(sectionSource).toContain('AdminDetailGrid');
+    expect(sectionSource).toContain('StatusBadgeFromPillClass');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).toContain('AdminTaskCard');

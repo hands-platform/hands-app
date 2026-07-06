@@ -34,7 +34,8 @@ describe('partner detail readiness command sections', () => {
       'utf8',
     );
 
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');

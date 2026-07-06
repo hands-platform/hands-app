@@ -3,7 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -92,9 +92,9 @@ export function PartnerDetailDeviceSessionActivitySection({
             detail={card.detail}
             key={card.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(card.tone))}>
+              <StatusBadgeFromPillClass pillClass={pillClassForTone(card.tone)}>
                 {card.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={card.title}
           />
