@@ -20,6 +20,17 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(source).not.toContain('<div className="partner-detail-usage-summary-grid">');
   });
 
+  it('builds the summary rail on the shared Vuexy AdminSection surface', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain("import { AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain('<AdminSection');
+    expect(source).toContain('className="partner-detail-section-band admin-mb-16"');
+    expect(source).toContain('bodyClassName="partner-detail-section-band-body"');
+    expect(source).toContain('headerClassName="partner-detail-section-band-header"');
+    expect(source).not.toContain('<section className="partner-detail-section-band admin-mb-16"');
+  });
+
   it('renders summary rail items with links and status label', () => {
     const section = PartnerDetailSummaryRailSection({
       description: 'Fast facts for operators before opening the full partner record.',
@@ -45,6 +56,9 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(rendered).toContain('District 1, Ho Chi Minh City');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#partner-master-facts', '#payout']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining([
+      'card admin-section partner-detail-section-band admin-mb-16',
+      'ops-section-header admin-section-header partner-detail-section-band-header',
+      'admin-section-body partner-detail-section-band-body',
       'partner-detail-usage-summary admin-mt-12',
       'admin-summary-card-grid partner-detail-usage-summary-grid',
       'card admin-card admin-summary-card',
