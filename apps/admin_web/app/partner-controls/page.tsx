@@ -31,7 +31,7 @@ import {
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import {
   AdminActionCard,
   AdminSection,
@@ -219,7 +219,7 @@ export default async function PartnerControlsPage({
         title="Next operator actions"
       >
         {commandCenter.nextActions.length ? (
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {commandCenter.nextActions.map((action) => (
               <AdminStageItem key={action.id}>
                 <span>{action.status}</span>
@@ -240,7 +240,7 @@ export default async function PartnerControlsPage({
                 </AdminTextLink>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         ) : (
           <p className="muted admin-mt-12">
             No Partner control action currently needs operator review.
@@ -276,7 +276,7 @@ export default async function PartnerControlsPage({
           ))}
         </AdminTaskGrid>
         {partnerControlBoard.items.length ? (
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {partnerControlBoard.items.map((item) => (
               <AdminStageItem key={item.provider.id}>
                 <span>{item.status}</span>
@@ -308,7 +308,7 @@ export default async function PartnerControlsPage({
                 </div>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         ) : (
           <p className="muted admin-mt-12">
             No Partner currently has an active account, wallet, document, payout, location, or device
@@ -386,7 +386,7 @@ export default async function PartnerControlsPage({
         }
         title="Marketplace and payout unblock playbook"
       >
-        <div className="setup-stage-list admin-mt-12">
+        <AdminStageList className="admin-mt-12">
           {acceptanceUnblockPlaybook.map((step) => (
             <AdminStageItem key={step.id}>
               <span>{step.step}</span>
@@ -417,7 +417,7 @@ export default async function PartnerControlsPage({
               </AdminTextLink>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection
@@ -432,7 +432,7 @@ export default async function PartnerControlsPage({
         title="Partner operating block matrix"
       >
         {operatingBlocks.length ? (
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {operatingBlocks.map((block) => (
               <AdminStageItem key={block.id}>
                 <span>{block.impact}</span>
@@ -458,7 +458,7 @@ export default async function PartnerControlsPage({
                 </div>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         ) : (
           <p className="muted admin-mt-12">
             No Partner currently has a control record that should block operations.

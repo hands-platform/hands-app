@@ -69,6 +69,8 @@ describe('PartnerControlsPage', () => {
 
   it('uses the shared Vuexy stage item atom for partner control row surfaces', () => {
     expect(partnerControlsSource).toContain('AdminStageItem');
+    expect(partnerControlsSource).toContain('AdminStageList');
+    expect(partnerControlsSource).not.toContain('<div className="setup-stage-list admin-mt-12">');
     expect(partnerControlsSource).not.toContain('className="setup-stage-item"');
   });
 
