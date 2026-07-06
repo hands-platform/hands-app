@@ -278,14 +278,14 @@ export default async function MarketingAnalyticsPage({
           </StatusBadge>
         </>
       }
-      contentClassName="marketing-analytics-page usage-overview-page"
+      contentClassName="marketing-analytics-page"
       description="Acquisition funnel, source, campaign, and region analytics from stored HANDS app, booking, referral, and finance records. This page is intentionally separate from Vietnam Operations Map."
       title="Marketing Analytics"
     >
 
       <AdminSection
         actions={<StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>}
-        className="usage-overview-filter-panel marketing-analytics-filter-panel"
+        className="marketing-analytics-filter-panel"
         description="Bounded ranges and aggregate dimensions only. Phone numbers, exact location points, and ad identifiers are not exposed here."
         title="Marketing filters"
       >
@@ -358,7 +358,7 @@ export default async function MarketingAnalyticsPage({
 
       <AdminOverviewGrid
         ariaLabel="Marketing analytics funnel and breakdowns"
-        className="marketing-analytics-grid"
+        baseClassName="marketing-analytics-grid"
         variant="content"
       >
         <FunnelCard overview={overview} />
@@ -555,7 +555,7 @@ function FilterButtons<T extends string>({
       <AdminSegmentedControl
         activeValue={activeValue}
         ariaLabel={label}
-        className="usage-overview-range-buttons"
+        className="marketing-analytics-range-buttons"
         options={options.map((option) => ({
           href: hrefFor(option.value),
           label: option.label,

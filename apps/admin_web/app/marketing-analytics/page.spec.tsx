@@ -53,8 +53,8 @@ describe('MarketingAnalyticsPage', () => {
     const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('form-grid marketing-analytics-campaign-form');
-    expect(markup).toContain('form-grid marketing-spend-form');
+    expect(markup).toContain('admin-form-grid form-grid marketing-analytics-campaign-form');
+    expect(markup).toContain('admin-form-grid form-grid marketing-spend-form');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
@@ -79,7 +79,12 @@ describe('MarketingAnalyticsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('toolbar admin-page-header');
-    expect(markup).toContain('card admin-section usage-overview-filter-panel marketing-analytics-filter-panel');
+    expect(markup).toContain('class="marketing-analytics-page"');
+    expect(markup).not.toContain('usage-overview-page');
+    expect(markup).toContain('card admin-section marketing-analytics-filter-panel');
+    expect(markup).not.toContain('usage-overview-filter-panel marketing-analytics-filter-panel');
+    expect(markup).toContain('booking-date-filter-buttons marketing-analytics-range-buttons');
+    expect(markup).not.toContain('booking-date-filter-buttons usage-overview-range-buttons');
     expect(markup).toContain('card admin-section marketing-spend-panel');
     expect(markup).toContain('card admin-kpi-card vietnam-overview-metric');
     expect(markup).toContain('class="metric-card"');
@@ -97,6 +102,8 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).not.toContain('usage-overview-ranking-card marketing-funnel-card');
     expect(markup).not.toContain('usage-overview-ranking-card marketing-insight-card');
     expect(markup).not.toContain('usage-overview-ranking-card marketing-table-card');
+    expect(markup).toContain('marketing-analytics-grid');
+    expect(markup).not.toContain('usage-overview-grid marketing-analytics-grid');
     expect(markup).toContain('admin-section-body marketing-breakdown-loader-body');
     expect(markup).toContain('empty-state marketing-breakdown-loader-empty');
     expect(markup).toContain('admin-form-control-link button button-primary');

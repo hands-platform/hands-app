@@ -8192,6 +8192,7 @@ a.action-button-card:hover {
   background: var(--admin-info);
 }
 
+.marketing-analytics-page,
 .usage-overview-page,
 .partner-overview-page,
 .finance-overview-page {
@@ -8200,6 +8201,8 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.marketing-analytics-page > .toolbar,
+.marketing-analytics-page > .card,
 .usage-overview-page > .toolbar,
 .usage-overview-page > .card,
 .partner-overview-page > .toolbar,
@@ -8210,6 +8213,7 @@ a.action-button-card:hover {
   margin-top: 0;
 }
 
+.marketing-analytics-page > .toolbar,
 .usage-overview-page > .toolbar,
 .partner-overview-page > .toolbar,
 .finance-overview-page > .toolbar {
@@ -8220,6 +8224,7 @@ a.action-button-card:hover {
   padding: 24px;
 }
 
+.marketing-analytics-page > .toolbar h1,
 .usage-overview-page > .toolbar h1,
 .partner-overview-page > .toolbar h1,
 .finance-overview-page > .toolbar h1 {
@@ -8228,6 +8233,7 @@ a.action-button-card:hover {
   margin-bottom: 8px;
 }
 
+.marketing-analytics-filter-panel,
 .usage-overview-filter-panel,
 .partner-overview-filter-panel,
 .finance-overview-filter-panel {
@@ -8236,6 +8242,7 @@ a.action-button-card:hover {
   padding: 18px;
 }
 
+.marketing-analytics-range-buttons,
 .usage-overview-range-buttons,
 .partner-overview-range-buttons,
 .finance-overview-range-buttons {
@@ -9794,6 +9801,7 @@ a.action-button-card:hover {
   }
 }
 
+.marketing-analytics-grid,
 .usage-overview-grid {
   display: grid;
   gap: 18px;
@@ -10261,6 +10269,7 @@ a.action-button-card:hover {
 }
 
 @media (max-width: 860px) {
+  .marketing-analytics-grid,
   .usage-overview-grid {
     grid-template-columns: 1fr;
   }
