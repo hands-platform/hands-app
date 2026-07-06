@@ -8,9 +8,10 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     const section = PaymentCallbackAttemptLedgerSection({
       rows: [
         {
-          amountLabel: '1.000.000 VND',
+          amount: 1000000,
           bookingHref: '/bookings/booking-1',
           createdAt: '2026-06-09T03:00:00.000Z',
+          currency: 'VND',
           errorMessage: null,
           gatewayTransactionId: 'gw-1',
           id: 'attempt-1',
@@ -52,9 +53,10 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     const section = PaymentCallbackAttemptLedgerSection({
       rows: [
         {
-          amountLabel: '1.000.000 VND',
+          amount: 1000000,
           bookingHref: '/bookings/booking-1',
           createdAt: '2026-06-09T03:00:00.000Z',
+          currency: 'VND',
           errorMessage: null,
           gatewayTransactionId: 'gw-1',
           id: 'attempt-1',
@@ -103,6 +105,17 @@ describe('PaymentCallbackAttemptLedgerSection', () => {
     expect(source).not.toContain('readonly createdAtLabel: string;');
     expect(source).not.toContain('<td>{row.createdAtLabel}</td>');
     expect(modelSource).not.toContain('createdAtLabel: formatDateTime(attempt.createdAt)');
+  });
+
+  it('uses the shared money atom for callback gateway amounts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/payments/payment-callback-attempt-ledger-section.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('readonly amountLabel: string;');
+    expect(source).not.toContain('Amount: {row.amountLabel}');
   });
 
   it('uses shared inline fallback atoms for callback absence labels', () => {

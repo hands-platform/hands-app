@@ -3,12 +3,14 @@ import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
-  readonly amountLabel: string;
+  readonly amount: number | null;
   readonly bookingHref: string | null;
   readonly createdAt: string | null;
+  readonly currency: string;
   readonly errorMessage: string | null;
   readonly gatewayTransactionId: string;
   readonly id: string;
@@ -90,7 +92,9 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
                   <StatusBadge tone="neutral">Gateway</StatusBadge>
                   <div>
                     <strong>{row.providerStatus}</strong>
-                    <p className="muted">Amount: {row.amountLabel}</p>
+                    <p className="muted">
+                      Amount: <MoneyText amount={row.amount} currency={row.currency} fallback="unknown" />
+                    </p>
                   </div>
                 </div>
               </div>

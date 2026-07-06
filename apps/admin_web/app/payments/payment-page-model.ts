@@ -1,5 +1,5 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt, AdminPaymentSummary } from '../../lib/admin-api';
-import { formatMoney as money, shortId } from '../../lib/admin-format';
+import { shortId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -123,12 +123,10 @@ export function buildPaymentCallbackAttemptLedgerRows(
   attempts: readonly AdminPaymentCallbackAttempt[],
 ): PaymentCallbackAttemptLedgerRow[] {
   return attempts.map((attempt) => ({
-    amountLabel:
-      attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
-        ? money(attempt.callbackAmount)
-        : 'unknown',
+    amount: attempt.callbackAmount ?? null,
     bookingHref: attempt.payment?.bookingId ? `/bookings/${attempt.payment.bookingId}` : null,
     createdAt: attempt.createdAt,
+    currency: attempt.payment?.currency ?? 'VND',
     errorMessage: attempt.errorMessage ?? null,
     gatewayTransactionId: attempt.gatewayTransactionId ?? 'No gateway transaction id',
     id: attempt.id,
