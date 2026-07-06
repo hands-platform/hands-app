@@ -2,7 +2,6 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -10,7 +9,7 @@ import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from 
 
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -59,8 +58,7 @@ export function PartnerDetailKycDecisionSection({
   submittedLabel,
 }: PartnerDetailKycDecisionSectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Partner identity review, required CCCD evidence, selfie evidence, and app correction guidance."
       id="kyc"
       resultLabel={`KYC ${status ?? 'MISSING'}`}
@@ -162,7 +160,7 @@ export function PartnerDetailKycDecisionSection({
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={evidence.rows.length} />
       <p className="muted admin-mt-10">{evidence.nextAction}</p>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

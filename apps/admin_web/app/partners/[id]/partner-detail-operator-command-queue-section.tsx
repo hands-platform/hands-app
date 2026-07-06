@@ -2,7 +2,6 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -13,7 +12,7 @@ import {
 } from './partner-detail-operator-command-action';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 import { partnerOpsStatusBadgeTone, type PartnerOpsTone } from './partner-detail-tone';
@@ -59,8 +58,8 @@ export function PartnerDetailOperatorCommandQueueSection({
   const shortcutCommands = primaryCommands.filter((command) => command.id !== nextCommand?.id);
 
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Same-shift approval queue for account holds, KYC, public profile review, and service setup. Settlement, location, and app reachability evidence stays in the dedicated sections below."
       id="partner-operator-command-queue"
       resultLabel={queue.status}
@@ -150,6 +149,6 @@ export function PartnerDetailOperatorCommandQueueSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={queue.commands.length} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

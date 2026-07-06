@@ -2,6 +2,14 @@ import { readFileSync } from 'node:fs';
 import { PartnerDetailKycDecisionSection } from './partner-detail-kyc-decision-section';
 
 describe('PartnerDetailKycDecisionSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the KYC decision shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy trace summary atom for KYC correction guidance', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
 
