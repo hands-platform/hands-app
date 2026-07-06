@@ -1,6 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminCard } from '../../../components/admin-surface';
@@ -9,7 +8,7 @@ import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/s
 import type { PartnerReviewIssue } from '../partner-list-readiness';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -114,8 +113,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
   const firstOpenRow = rows.find((row) => row.tone !== 'pill-success' && row.tone !== 'pill-neutral');
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Compact review checklist for Level 2 approval evidence plus finance-only follow-up rows. Open the detail card only when this row needs a decision."
       id="partner-approval-evidence-summary"
       resultLabel={openRows ? `${openRows} approval task(s)` : 'Ready to approve'}
@@ -175,7 +173,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -204,8 +202,7 @@ export function PartnerDetailReviewControlPanelSection({
   ] as const;
 
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="One-screen review map for submitted Partner information, active hold reason, resubmission needs, and the latest admin decision trail."
       id="partner-review-control-panel"
       resultLabel={panel.status}
@@ -288,14 +285,13 @@ export function PartnerDetailReviewControlPanelSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={panel.items.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
 export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Operator view of Level 1 signup and Level 2 activity approval. Withdrawal detail review happens when wallet withdrawal is requested."
       id="partner-level-path"
       resultLabel={plan.currentLevel}
@@ -332,7 +328,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={plan.items.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -340,8 +336,7 @@ export function PartnerDetailResubmissionGuidanceSection({
   plan,
 }: PartnerDetailResubmissionGuidanceSectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Use this when a partner asks what to fix after rejection. Keep the message specific and auditable."
       id="partner-resubmission-guidance"
       resultLabel={`${plan.items.length} item(s)`}
@@ -381,7 +376,7 @@ export function PartnerDetailResubmissionGuidanceSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={plan.items.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
@@ -390,8 +385,7 @@ export function PartnerDetailReviewHistorySection({
   totalCount,
 }: PartnerDetailReviewHistorySectionProps) {
   return (
-    <AdminFilterPanel
-      className={partnerDetailReviewCardClassName}
+    <PartnerDetailVuexyTablePanel
       description="Partner approval, KYC, document, service profile, public media, finance follow-up, and hold decisions are shown here for handoff and audit."
       id="partner-review-history"
       resultLabel={`${totalCount} recent event(s)`}
@@ -435,7 +429,7 @@ export function PartnerDetailReviewHistorySection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

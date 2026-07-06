@@ -4,6 +4,14 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { PartnerDetailReportsControlsSection } from './partner-detail-reports-controls-section';
 
 describe('PartnerDetailReportsControlsSection', () => {
+  it('uses the partner detail Vuexy table panel atom for reports and controls shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');

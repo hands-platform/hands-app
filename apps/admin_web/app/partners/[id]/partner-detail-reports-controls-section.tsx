@@ -1,7 +1,6 @@
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import {
@@ -25,7 +24,7 @@ import {
 } from '../../partner-controls/actions';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -81,8 +80,8 @@ export function PartnerDetailReportsControlsSection({
   reportsDeskHref,
 }: PartnerDetailReportsControlsSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Keep customer complaints, staff findings, payout holds, and account blocks visible on the partner profile."
       footer={
         <AdminTextLink href={reportsDeskHref}>
@@ -313,7 +312,7 @@ export function PartnerDetailReportsControlsSection({
         </div>
       </AdminDetailGrid>
       <PartnerReportCommandPanel providerId={providerId} reports={reports} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

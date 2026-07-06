@@ -10,6 +10,14 @@ import {
 } from './partner-detail-review-progress-section';
 
 describe('PartnerDetailReviewControlPanelSection', () => {
+  it('uses the partner detail Vuexy table panel atom for review progress shells', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy trace summary atom for review progress metrics', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-review-progress-section.tsx', 'utf8');
 
