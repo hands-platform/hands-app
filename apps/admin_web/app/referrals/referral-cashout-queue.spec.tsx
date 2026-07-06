@@ -88,7 +88,24 @@ const cashoutQueueSource = readFileSync('app/referrals/referral-cashout-queue.ts
 describe('Referral cashout queue', () => {
   it('uses the shared Vuexy text link atom for inline cashout navigation', () => {
     expect(cashoutQueueSource).toContain('AdminTextLink');
+    expect(cashoutQueueSource).not.toContain("import Link from 'next/link';");
+    expect(cashoutQueueSource).not.toContain('<Link');
     expect(cashoutQueueSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
+  });
+
+  it('uses the shared segmented control atom for cashout state filters', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'all', q: '', status: 'approved' }}
+        rows={[row]}
+        summary={summary}
+      />,
+    );
+
+    expect(cashoutQueueSource).toContain('AdminSegmentedControl');
+    expect(markup).toContain('booking-date-filter-buttons referral-reward-queue');
+    expect(markup).toContain('booking-date-filter-button is-active');
   });
 
   it('uses the shared StatusBadge atom for the queue count chip', () => {

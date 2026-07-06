@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import {
   AdminDataTable,
@@ -20,6 +18,7 @@ import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import type {
@@ -161,21 +160,23 @@ export function ReferralCashoutQueuePage({
             Reset
           </AdminFormControlLink>
         </AdminFormGrid>
-        <div aria-label="Referral cashout queue summary" className="referral-reward-queue">
-          {summary.statusSummaries.map((item) => (
-            <Link
-              aria-pressed={filters.status === item.status}
-              className={filters.status === item.status ? 'is-active' : undefined}
-              href={buildReferralCashoutListHref(filters, { status: item.status }, 1)}
-              key={item.status}
-            >
-              <span>{referralCashoutStatusFilterLabel(item.status)}</span>
-              <strong>
-                {item.count} · <MoneyText amount={item.amount} fallback="0 VND" />
-              </strong>
-            </Link>
-          ))}
-        </div>
+        <AdminSegmentedControl
+          activeValue={filters.status}
+          ariaLabel="Referral cashout queue summary"
+          className="referral-reward-queue"
+          options={summary.statusSummaries.map((item) => ({
+            href: buildReferralCashoutListHref(filters, { status: item.status }, 1),
+            label: (
+              <>
+                <span>{referralCashoutStatusFilterLabel(item.status)}</span>
+                <strong>
+                  {item.count} · <MoneyText amount={item.amount} fallback="0 VND" />
+                </strong>
+              </>
+            ),
+            value: item.status,
+          }))}
+        />
       </AdminFilterPanel>
 
       <AdminTableSection
@@ -282,9 +283,9 @@ function ReferralCashoutPersonCell({ person }: { readonly person: AdminReferralC
   );
 
   return person.href ? (
-    <Link className="admin-person-cell-link" href={person.href}>
+    <AdminTextLink className="admin-person-cell-link" href={person.href}>
       {content}
-    </Link>
+    </AdminTextLink>
   ) : (
     <span className="admin-person-cell-link">{content}</span>
   );
