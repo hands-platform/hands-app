@@ -61,10 +61,11 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-priority-board');
     expect(markup).not.toContain('usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
-    expect(markup).toContain('card admin-card usage-overview-command-card partner-overview-priority-card');
-    expect(pageSource).not.toContain('className={`card admin-card usage-overview-command-card partner-overview-priority-card');
-    expect(markup).toContain('card admin-card usage-overview-command-card');
-    expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
+    expect(markup).toContain('card admin-card partner-overview-command-card partner-overview-priority-card');
+    expect(markup).toContain('partner-overview-command-icon');
+    expect(markup).not.toContain('usage-overview-command-card');
+    expect(markup).not.toContain('usage-overview-command-icon');
+    expect(markup).not.toContain('<article class="card admin-card partner-overview-command-card');
     expect(markup).toContain('card admin-card partner-overview-action-card');
     expect(markup).not.toContain('<article class="card admin-card partner-overview-action-card');
     expect(markup).toContain('ops-section-header admin-section-header admin-card-header');
@@ -108,6 +109,8 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminOverviewCommandCard');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${tone}`}');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${segment.tone}`}');
+    expect(pageSource).toContain('baseClassName="partner-overview-command-card"');
+    expect(pageSource).toContain('iconClassName="partner-overview-command-icon"');
     expect(markup).toContain('aria-label="Remove Risk filter High"');
     expect(markup).toContain('aria-label="Remove Wallet filter Negative"');
     expect(markup).toContain('aria-label="Remove Selection issue filter Availability"');

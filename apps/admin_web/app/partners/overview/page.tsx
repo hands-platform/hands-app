@@ -354,9 +354,11 @@ function PartnerKpiCard({
 
   return (
     <AdminOverviewCommandCard
+      baseClassName="partner-overview-command-card"
       className={`is-${tone}`}
       detail={kpi.detail}
       icon={<Icon size={20} aria-hidden="true" />}
+      iconClassName="partner-overview-command-icon"
       label={kpi.label}
       value={formatKpiValue(kpi)}
     />
@@ -484,10 +486,12 @@ function PartnerPriorityBoard({
           return (
             <AdminOverviewCommandCard
               ariaLabel={`${card.label}, ${card.value}. ${card.action}`}
+              baseClassName="partner-overview-command-card"
               className={`partner-overview-priority-card is-${card.tone}`}
               detail={card.detail}
               href={card.href}
               icon={<Icon size={20} aria-hidden="true" />}
+              iconClassName="partner-overview-command-icon"
               key={card.key}
               label={card.label}
               value={card.value}
@@ -924,9 +928,11 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
 
   return (
     <AdminOverviewCommandCard
+      baseClassName="partner-overview-command-card"
       className={`is-${segment.tone}`}
       detail={segment.explanation}
       icon={<Icon size={20} aria-hidden="true" />}
+      iconClassName="partner-overview-command-icon"
       label={segment.label}
       value={formatNumber(segment.count)}
     >

@@ -63,6 +63,25 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Active customers in the selected range</small>');
   });
 
+  it('allows overview pages to supply scoped command card and icon classes', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandCard
+        baseClassName="partner-overview-command-card"
+        iconClassName="partner-overview-command-icon"
+        className="is-success"
+        detail="Ready Partners in the selected range"
+        icon={<svg aria-hidden="true" />}
+        label="Ready supply"
+        value="12"
+      />,
+    );
+
+    expect(markup).toContain('class="card admin-card partner-overview-command-card is-success"');
+    expect(markup).toContain('class="partner-overview-command-icon"');
+    expect(markup).not.toContain('usage-overview-command-card');
+    expect(markup).not.toContain('usage-overview-command-icon');
+  });
+
   it('keeps optional action content inside the shared card body', () => {
     const markup = renderToStaticMarkup(
       <AdminOverviewCommandCard

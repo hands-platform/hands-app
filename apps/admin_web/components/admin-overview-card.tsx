@@ -32,12 +32,14 @@ type AdminProfileOverviewCardProps = {
 
 type AdminOverviewCommandCardProps = {
   readonly ariaLabel?: string;
+  readonly baseClassName?: string;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly detail?: ReactNode;
   readonly href?: string;
   readonly htmlTitle?: string;
   readonly icon: ReactNode;
+  readonly iconClassName?: string;
   readonly label: ReactNode;
   readonly trailing?: ReactNode;
   readonly value: ReactNode;
@@ -308,19 +310,21 @@ function traceSummaryDetail(metric: AdminTraceSummaryMetric) {
 
 export function AdminOverviewCommandCard({
   ariaLabel,
+  baseClassName,
   children,
   className,
   detail,
   href,
   htmlTitle,
   icon,
+  iconClassName,
   label,
   trailing,
   value,
 }: AdminOverviewCommandCardProps) {
   const content = (
     <>
-      <span className="usage-overview-command-icon">{icon}</span>
+      <span className={iconClassName ?? 'usage-overview-command-icon'}>{icon}</span>
       <div>
         <span>{label}</span>
         <strong>{value}</strong>
@@ -330,7 +334,7 @@ export function AdminOverviewCommandCard({
       {trailing}
     </>
   );
-  const cardClassName = joinClassNames('usage-overview-command-card', className);
+  const cardClassName = joinClassNames(baseClassName ?? 'usage-overview-command-card', className);
 
   if (href) {
     return (

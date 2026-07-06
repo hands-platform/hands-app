@@ -8618,7 +8618,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-command-card {
+.usage-overview-command-card,
+.partner-overview-command-card {
   align-items: flex-start;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
@@ -8631,20 +8632,23 @@ a.action-button-card:hover {
   padding: 18px;
 }
 
-.usage-overview-command-card > div {
+.usage-overview-command-card > div,
+.partner-overview-command-card > div {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.usage-overview-command-card > div > span {
+.usage-overview-command-card > div > span,
+.partner-overview-command-card > div > span {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 500;
   line-height: 20px;
 }
 
-.usage-overview-command-card > div > strong {
+.usage-overview-command-card > div > strong,
+.partner-overview-command-card > div > strong {
   color: var(--admin-text);
   font-size: 28px;
   font-weight: 500;
@@ -8654,7 +8658,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-command-card > div > small {
+.usage-overview-command-card > div > small,
+.partner-overview-command-card > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 500;
@@ -8662,6 +8667,7 @@ a.action-button-card:hover {
 }
 
 .usage-overview-command-icon,
+.partner-overview-command-icon,
 .finance-overview-action-icon {
   align-items: center;
   background: rgb(var(--admin-main-channel) / 0.07);
@@ -8678,7 +8684,17 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
+.partner-overview-command-card.is-primary .partner-overview-command-icon {
+  background: rgb(var(--admin-primary-channel) / 0.14);
+  color: var(--admin-accent-strong);
+}
+
 .usage-overview-command-card.is-info .usage-overview-command-icon {
+  background: rgb(var(--admin-info-channel) / 0.14);
+  color: var(--admin-info-text);
+}
+
+.partner-overview-command-card.is-info .partner-overview-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8688,12 +8704,27 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
+.partner-overview-command-card.is-success .partner-overview-command-icon {
+  background: rgb(var(--admin-success-channel) / 0.14);
+  color: var(--admin-success-text);
+}
+
 .usage-overview-command-card.is-warning .usage-overview-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
+.partner-overview-command-card.is-warning .partner-overview-command-icon {
+  background: rgb(var(--admin-warning-channel) / 0.16);
+  color: var(--admin-warning-text);
+}
+
 .usage-overview-command-card.is-danger .usage-overview-command-icon {
+  background: rgb(var(--admin-danger-channel) / 0.14);
+  color: var(--admin-danger-text);
+}
+
+.partner-overview-command-card.is-danger .partner-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9645,7 +9676,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.partner-overview-page .usage-overview-command-card a {
+.partner-overview-page .partner-overview-command-card a {
   color: var(--admin-accent-strong);
   font-size: 12px;
   font-weight: 700;
@@ -9654,7 +9685,7 @@ a.action-button-card:hover {
   text-decoration: none;
 }
 
-.partner-overview-page .usage-overview-command-card a:hover {
+.partner-overview-page .partner-overview-command-card a:hover {
   text-decoration: underline;
 }
 
