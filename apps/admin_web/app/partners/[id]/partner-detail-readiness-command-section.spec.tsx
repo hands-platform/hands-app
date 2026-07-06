@@ -13,6 +13,8 @@ describe('partner detail readiness command sections', () => {
     );
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${partnerOpsPillClass(badge.tone)}`}');
     expect(source).not.toContain(
