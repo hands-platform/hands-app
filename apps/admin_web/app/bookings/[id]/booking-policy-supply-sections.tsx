@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminNoteCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -147,9 +147,9 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
             <p className="muted">{stageSnapshot.detail}</p>
             <PillBadgeList badges={stageSnapshot.badges} />
           </div>
-          <Link className="text-link" href={stageSnapshot.actionHref}>
+          <AdminTextLink href={stageSnapshot.actionHref}>
             {stageSnapshot.actionLabel}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
     </AdminSection>
@@ -182,9 +182,9 @@ export function BookingCustomerWaitPanelSection({
             <p className="muted">{customerWaitPanel.detail}</p>
             <PillBadgeList badges={customerWaitPanel.badges} showDetailTitle />
           </div>
-          <Link className="text-link" href={customerWaitPanel.nextActionHref}>
+          <AdminTextLink href={customerWaitPanel.nextActionHref}>
             {customerWaitPanel.nextActionLabel}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       <OpsTaskCardGrid cards={customerWaitPanel.cards} />
@@ -200,9 +200,9 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href="/operations-policy">
+        <AdminTextLink href="/operations-policy">
           Open policy
-        </Link>
+        </AdminTextLink>
       }
       className="admin-mb-16"
       description="The live admin policy that operators should use when handling this booking. Existing bookings keep their saved timeout, while Partner visibility and participation checks use the latest policy."
@@ -219,9 +219,9 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             <strong>{policySnapshot.decisionTitle}</strong>
             <p className="muted">{policySnapshot.decisionDetail}</p>
           </div>
-          <Link className="text-link" href="/operations-policy">
+          <AdminTextLink href="/operations-policy">
             Review decision
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       <div className="ops-task-grid admin-mt-14">
@@ -308,9 +308,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             <strong>{marketplaceSupply.candidateCommand.title}</strong>
             <p className="muted">{marketplaceSupply.candidateCommand.detail}</p>
           </div>
-          <Link className="text-link" href={marketplaceSupply.candidateCommand.href}>
+          <AdminTextLink href={marketplaceSupply.candidateCommand.href}>
             {marketplaceSupply.candidateCommand.action}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       <div className="grid admin-mt-14">
@@ -346,9 +346,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                     title="No usable marketplace participant"
                   />
                 </div>
-                <Link className="text-link" href="/partners?review=marketplace-ready">
+                <AdminTextLink href="/partners?review=marketplace-ready">
                   Open marketplace queue
-                </Link>
+                </AdminTextLink>
               </div>
             ) : null}
           </div>
@@ -368,9 +368,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                   <p className="muted">{group.detail}</p>
                   {group.samples.length ? <p className="muted">Sample: {group.samples.join(', ')}</p> : null}
                 </div>
-                <Link className="text-link" href={group.href}>
+                <AdminTextLink href={group.href}>
                   {group.count}
-                </Link>
+                </AdminTextLink>
               </div>
             ))}
           </div>
@@ -407,9 +407,9 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
             <strong>{marketplaceSupply.decisionTitle}</strong>
             <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
-          <Link className="text-link" href="/partners">
+          <AdminTextLink href="/partners">
             Open Partners
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       <div className="stack admin-mt-14">
