@@ -141,14 +141,33 @@ describe('finance-overview-model', () => {
   it('keeps money metadata on finance section rows for shared MoneyText rendering', () => {
     const sections = buildFinanceOverviewSections({
       ...emptyFinanceOverviewSummaries('2026-07'),
+      cashSummary: {
+        generatedAt: '',
+        currency: 'VND',
+        rowCount: 2,
+        providerCount: 1,
+        totalCompanyCouponOffset: 0,
+        totalDebtAmount: 500_000,
+        totalPlatformFee: 0,
+        totalTaxAmount: 0,
+        oldestOpenAt: null,
+        oldestOpenAgeMinutes: 0,
+        staleDebtRowCount: 1,
+        highDebtProviderCount: 1,
+        missingPaymentEvidenceCount: 1,
+        cashPaymentRowCount: 2,
+        topProviderGroups: [],
+      },
       couponSummary: { ...emptyCouponFinanceSummary(), companyCouponExpense: 2_000_000 },
       settlementSummary: {
         ...emptyBookingSettlementSummary(),
+        count: 4,
         customerPaymentAmount: 100_000_000,
         platformFeeNetRevenue: 22_000_000,
       },
     });
     const revenueRows = sections.find((section) => section.title === 'Revenue & Platform Fee')?.rows ?? [];
+    const cashRows = sections.find((section) => section.title === 'Cash Payment / Receivable')?.rows ?? [];
 
     expect(revenueRows.find((row) => row.label === 'Gross booking amount')).toMatchObject({
       amount: 100_000_000,
@@ -157,6 +176,16 @@ describe('finance-overview-model', () => {
     expect(revenueRows.find((row) => row.label === 'Gross booking amount')?.value).toBeUndefined();
     expect(revenueRows.find((row) => row.label === 'Platform fee net revenue')?.value).toBeUndefined();
     expect(revenueRows.find((row) => row.label === 'Company coupon cost')?.value).toBeUndefined();
+    expect(revenueRows.find((row) => row.label === 'Average platform fee')).toMatchObject({
+      amount: 5_500_000,
+      currency: 'VND',
+    });
+    expect(revenueRows.find((row) => row.label === 'Average platform fee')?.value).toBeUndefined();
+    expect(cashRows.find((row) => row.label === 'Cash debt amount')).toMatchObject({
+      amount: 500_000,
+      currency: 'VND',
+    });
+    expect(cashRows.find((row) => row.label === 'Cash debt amount')?.value).toBeUndefined();
   });
 
   it('selects six top-level KPI cards for the overview wall', () => {

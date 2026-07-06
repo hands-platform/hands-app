@@ -525,7 +525,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           ...financeOverviewMoneyValue(averagePlatformFee, currency),
           label: 'Average platform fee',
-          value: averagePlatformFee === null ? '—' : formatMoney(averagePlatformFee, currency),
+          value: averagePlatformFee === null ? '—' : undefined,
           detail: `${input.settlementSummary.count} settlement snapshot row(s).`,
         },
         {
@@ -660,7 +660,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
           label: 'Cash debt amount',
-          value: input.cashSummary ? formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency) : '—',
+          value: input.cashSummary ? undefined : '—',
           detail: `${input.cashSummary?.rowCount ?? 0} row(s), ${input.cashSummary?.providerCount ?? 0} Partner(s).`,
         },
         {
