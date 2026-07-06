@@ -7,7 +7,7 @@ import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
@@ -99,9 +99,9 @@ export function PartnerDetailPayoutOperationsSection({
             detail={card.detailNode ?? card.detail}
             key={card.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(pillClassForTone(card.tone))}>
+              <StatusBadgeFromPillClass pillClass={pillClassForTone(card.tone)}>
                 {card.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={card.title}
           />
@@ -269,9 +269,9 @@ export function PartnerDetailPayoutOperationsSection({
                     <strong>{batch.totalNetLabel}</strong>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(payoutBatchPill(batch.status))}>
+                    <StatusBadgeFromPillClass pillClass={payoutBatchPill(batch.status)}>
                       {batch.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   </td>
                   <td>
                     <span className="muted">{batch.createdLineNode ?? batch.createdLine}</span>

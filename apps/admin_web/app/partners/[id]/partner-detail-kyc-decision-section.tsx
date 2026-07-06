@@ -5,7 +5,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
 import {
   PartnerDetailVuexyTableFooter,
@@ -135,9 +135,9 @@ export function PartnerDetailKycDecisionSection({
                 <p className="muted">{row.type}</p>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(kycEvidencePill(row.status))}>
+                <StatusBadgeFromPillClass pillClass={kycEvidencePill(row.status)}>
                   {row.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <span className="muted">{row.fileLabel}</span>

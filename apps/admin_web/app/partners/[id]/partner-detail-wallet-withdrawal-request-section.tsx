@@ -9,7 +9,7 @@ import {
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
 import { shortRecordId } from './partner-detail-format';
@@ -70,9 +70,9 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 <p className="muted">{bankAccountLabel(request)}</p>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(request.status))}>
+                <StatusBadgeFromPillClass pillClass={statusPillClass(request.status)}>
                   {statusLabel(request.status)}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}

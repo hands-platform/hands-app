@@ -8,7 +8,9 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).toContain("import type { ReactNode } from 'react';");

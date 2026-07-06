@@ -207,7 +207,9 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
   });
 
   it('uses shared Vuexy badges for withdrawal status and finance action chips', () => {
+    expect(sectionSource).toContain('StatusBadgeFromPillClass');
     expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
     expect(sectionSource).not.toContain('<span className={`pill ${statusPillClass(request.status)}`}>');
     expect(sectionSource).not.toContain('<span className="pill pill-warn">Waiting for partner bank correction</span>');
