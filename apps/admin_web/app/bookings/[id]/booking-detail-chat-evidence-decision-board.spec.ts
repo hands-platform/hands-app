@@ -60,11 +60,13 @@ describe('booking detail chat evidence decision board', () => {
         }),
         expect.objectContaining({
           label: 'Latest message',
+          dateTimeValue: '2026-06-14T02:00:00.000Z',
           helper: 'Partner: Linh Partner: I am close to the address',
           value: '14 Jun 2026, 09:00',
         }),
         expect.objectContaining({
           label: 'Location handoff',
+          dateTimeValue: '2026-06-14T02:10:00.000Z',
           helper: 'Location recorded without readable address latest Partner location.',
           value: '14 Jun 2026, 09:10',
         }),

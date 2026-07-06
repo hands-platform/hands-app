@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import { BookingEvidenceSections } from './booking-evidence-sections';
 
@@ -12,6 +13,9 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminTextLink');
+    expect(source).toContain('DateTimeText');
+    expect(source).toContain('fallback={metric.value}');
+    expect(source).toContain('value={metric.dateTimeValue}');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
@@ -47,6 +51,7 @@ describe('Booking evidence sections', () => {
       chatEvidenceDecisionBoard: {
         metrics: [
           {
+            dateTimeValue: '2026-06-14T02:00:00.000Z',
             helper: 'Partner cancellation message exists.',
             label: 'Chat',
             value: 'Retained',
@@ -124,6 +129,7 @@ describe('Booking evidence sections', () => {
     });
 
     const rendered = normalizedText(section);
+    const markup = renderToStaticMarkup(section);
 
     expect(rendered).toContain('Decision evidence guardrails');
     expect(rendered).toContain('Evidence packet for admin decision');
@@ -159,5 +165,7 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section)).not.toContain('table vuexy-data-table');
     expect(classNamesIn(section)).not.toContain('setup-stage-list admin-mt-12');
     expect(classNamesIn(section).filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(5);
+    expect(classNamesIn(section)).toContain('date-time-text');
+    expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
   });
 });

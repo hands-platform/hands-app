@@ -3,12 +3,14 @@ import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
   label: string;
   value: string;
+  dateTimeValue?: string | null;
   helper: string;
 };
 
@@ -286,7 +288,11 @@ function EvidenceMetricSummary({ metrics }: { metrics: EvidenceMetric[] }) {
       metrics={metrics.map((metric) => ({
         detail: metric.helper,
         label: metric.label,
-        value: metric.value,
+        value: metric.dateTimeValue ? (
+          <DateTimeText fallback={metric.value} value={metric.dateTimeValue} />
+        ) : (
+          metric.value
+        ),
       }))}
     />
   );

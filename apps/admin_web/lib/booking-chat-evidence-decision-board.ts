@@ -7,9 +7,11 @@ export type BookingChatEvidenceDecisionBoardInput = {
   chatRoomShortId?: string | null;
   messageCount: number;
   latestMessageAtLabel?: string | null;
+  latestMessageAtValue?: string | null;
   latestMessagePreview?: string | null;
   hasLatestLocation: boolean;
   latestLocationAtLabel?: string | null;
+  latestLocationAtValue?: string | null;
   latestLocationCoordinateLabel?: string | null;
   alertCount: number;
   auditLogCount: number;
@@ -20,7 +22,7 @@ export type BookingChatEvidenceDecisionBoard = {
   status: string;
   tone: BoardTone;
   summary: string;
-  metrics: Array<{ label: string; value: string; helper: string }>;
+  metrics: Array<{ label: string; value: string; helper: string; dateTimeValue?: string | null }>;
   rows: Array<{
     lane: string;
     scope: string;
@@ -113,11 +115,13 @@ export function bookingChatEvidenceDecisionBoard(
       {
         label: 'Latest message',
         value: input.latestMessageAtLabel ?? 'No message',
+        dateTimeValue: input.latestMessageAtValue ?? null,
         helper: input.latestMessagePreview ?? 'No customer or Partner message has been retained yet.',
       },
       {
         label: 'Location handoff',
         value: input.latestLocationAtLabel ?? 'No location',
+        dateTimeValue: input.latestLocationAtValue ?? null,
         helper: partnerLocationMetricHelper(input.latestLocationCoordinateLabel),
       },
       {

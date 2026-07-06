@@ -36,11 +36,13 @@ export function bookingDetailChatEvidenceDecisionBoard({
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     messageCount: messages.length,
     latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
+    latestMessageAtValue: latestMessage?.createdAt ?? null,
     latestMessagePreview: latestMessage
       ? `${messageSenderLabel(latestMessage)}: ${compactActivityText(latestMessage.body, 90)}`
       : null,
     hasLatestLocation: Boolean(latestLocation),
     latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+    latestLocationAtValue: latestLocation?.recordedAt ?? null,
     latestLocationCoordinateLabel: latestLocationLabel(latestLocation),
     alertCount: notificationCount,
     auditLogCount: booking.auditLogs?.length ?? 0,
