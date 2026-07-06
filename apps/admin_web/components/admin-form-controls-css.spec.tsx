@@ -175,6 +175,45 @@ describe('Admin form control CSS', () => {
     expect(timeSurfaceBlock).toContain('background: var(--admin-surface) !important');
   });
 
+  it('keeps react-datepicker time list scrollbars on the Vuexy template surface', () => {
+    const scrollbarIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar {');
+    const scrollbarTrackIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar-track {',
+    );
+    const scrollbarThumbIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar-thumb {',
+    );
+    const scrollbarBlock = cssRuleBlockAt(scrollbarIndex);
+    const scrollbarTrackBlock = cssRuleBlockAt(scrollbarTrackIndex);
+    const scrollbarThumbBlock = cssRuleBlockAt(scrollbarThumbIndex);
+
+    expect(scrollbarIndex).toBeGreaterThan(-1);
+    expect(scrollbarTrackIndex).toBeGreaterThan(scrollbarIndex);
+    expect(scrollbarThumbIndex).toBeGreaterThan(scrollbarTrackIndex);
+    expect(scrollbarBlock).toContain('width: 8px');
+    expect(scrollbarTrackBlock).toContain('background: var(--admin-surface)');
+    expect(scrollbarThumbBlock).toContain('border-radius: 10px');
+    expect(scrollbarThumbBlock).toContain('background: rgb(var(--admin-main-channel) / 0.34)');
+  });
+
+  it('keeps disabled react-datepicker time rows on the Vuexy disabled contract', () => {
+    const disabledIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--disabled {',
+    );
+    const disabledSelectedIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--disabled.react-datepicker__time-list-item--selected {',
+    );
+    const disabledBlock = cssRuleBlockAt(disabledIndex);
+    const disabledSelectedBlock = cssRuleBlockAt(disabledSelectedIndex);
+
+    expect(disabledIndex).toBeGreaterThan(-1);
+    expect(disabledSelectedIndex).toBeGreaterThan(disabledIndex);
+    expect(disabledBlock).toContain('color: var(--admin-disabled)');
+    expect(disabledBlock).toContain('pointer-events: none');
+    expect(disabledSelectedBlock).toContain('background: var(--admin-action-hover) !important');
+    expect(disabledSelectedBlock).toContain('font-weight: 400');
+  });
+
   it('matches Vuexy text field focus weight on shared form controls', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const focusBlock = cssRuleBlockAt(focusIndex);

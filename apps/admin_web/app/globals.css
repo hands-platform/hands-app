@@ -1613,6 +1613,23 @@ a {
   scrollbar-color: rgb(var(--admin-main-channel) / 0.22) transparent;
 }
 
+.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar-track {
+  background: var(--admin-surface);
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar-thumb {
+  background: rgb(var(--admin-main-channel) / 0.34);
+  border-radius: 10px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--admin-main-channel) / 0.42);
+}
+
 .calendar-vuexy-datepicker .react-datepicker__time-list-item {
   align-items: center;
   color: var(--admin-text);
@@ -1623,6 +1640,17 @@ a {
   justify-content: center;
   margin-inline: 18px 10px;
   padding: 7px 0 !important;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list-item--disabled {
+  color: var(--admin-disabled);
+  pointer-events: none;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list-item--disabled.react-datepicker__time-list-item--selected {
+  background: var(--admin-action-hover) !important;
+  box-shadow: none;
+  font-weight: 400;
 }
 
 .calendar-vuexy-datepicker .react-datepicker__time-list-item:hover {
