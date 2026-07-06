@@ -11,7 +11,9 @@ describe('BookingCloseoutSections', () => {
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).toContain('StatusBadgeLinkFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('DateTimeText');
     expect(source).toContain('closeoutChecklistDetail(item)');

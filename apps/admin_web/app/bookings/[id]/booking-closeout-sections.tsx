@@ -4,8 +4,8 @@ import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
   StatusBadge,
-  StatusBadgeLink,
-  statusBadgeToneFromPillClass,
+  StatusBadgeFromPillClass,
+  StatusBadgeLinkFromPillClass,
 } from '../../../components/status-badge';
 
 type CloseoutChecklistItem = {
@@ -66,9 +66,9 @@ export function BookingCloseoutSections({
               href={item.href}
               key={item.title}
               leading={
-                <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                <StatusBadgeFromPillClass pillClass={item.pillClass}>
                   {item.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               }
               title={item.title}
               variant="ops-task"
@@ -88,9 +88,9 @@ export function BookingCloseoutSections({
           className="admin-mt-12"
           metrics={connectedRecordLinks.map((record) => ({
             action: (
-              <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
+              <StatusBadgeLinkFromPillClass href={record.href} pillClass={record.tone}>
                 Open
-              </StatusBadgeLink>
+              </StatusBadgeLinkFromPillClass>
             ),
             detail: record.detail,
             label: record.label,
