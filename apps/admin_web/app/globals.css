@@ -869,8 +869,27 @@ a {
   min-width: 0;
   overflow-x: auto;
   overflow-y: visible;
+  scrollbar-color: rgb(var(--admin-main-channel) / 0.28) transparent;
   scrollbar-gutter: stable;
   width: 100%;
+}
+
+.admin-table-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.admin-table-scroll::-webkit-scrollbar-track {
+  background: var(--admin-surface);
+}
+
+.admin-table-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--admin-main-channel) / 0.34);
+  border-radius: 10px;
+}
+
+.admin-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--admin-main-channel) / 0.42);
 }
 
 .admin-table-scroll > .table,

@@ -119,7 +119,9 @@ export function AdminDataTable({
       <thead>
         <tr>
           {headers.map((header, index) => (
-            <th key={`${header}-${index}`}>{header}</th>
+            <th key={`${header}-${index}`} scope="col">
+              {header}
+            </th>
           ))}
         </tr>
       </thead>

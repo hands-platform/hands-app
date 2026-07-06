@@ -24,6 +24,8 @@ describe('AdminDataTable', () => {
     expect(table.type).toBe('table');
     expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-booking-table' });
     expect(table.props.children[0].props.children.props.children).toHaveLength(2);
+    expect(table.props.children[0].props.children.props.children[0].props.scope).toBe('col');
+    expect(table.props.children[0].props.children.props.children[1].props.scope).toBe('col');
     expect(table.props.children[1].props.children[1]).toBeNull();
   });
 
