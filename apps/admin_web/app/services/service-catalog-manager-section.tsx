@@ -11,7 +11,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminCard, AdminCardHeader, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminDrawerSurface, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
@@ -247,9 +247,9 @@ function ServiceDialogFrame({
   return (
     <>
       <a aria-label="Close service dialog" className="calendar-drawer-backdrop" href={returnHref} />
-      <aside
-        aria-label={title}
-        aria-modal="true"
+      <AdminDrawerSurface
+        ariaLabel={title}
+        ariaModal
         className="calendar-drawer service-menu-dialog"
         role="dialog"
       >
@@ -267,7 +267,7 @@ function ServiceDialogFrame({
           </AdminFormControlLink>
         </div>
         <div className="calendar-drawer-body">{children}</div>
-      </aside>
+      </AdminDrawerSurface>
     </>
   );
 }

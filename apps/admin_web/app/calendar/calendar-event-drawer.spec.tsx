@@ -61,6 +61,13 @@ describe('CalendarEventDrawer', () => {
     expect(source).not.toContain('<button\n        aria-label="Close event editor"');
   });
 
+  it('uses the shared Vuexy drawer surface atom for the app side panel', () => {
+    const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDrawerSurface');
+    expect(source).not.toContain('<aside aria-label="Event editor" className="calendar-drawer">');
+  });
+
   it('uses the shared Vuexy button atom for visible drawer header actions', () => {
     const source = readFileSync(join(process.cwd(), 'app/calendar/calendar-event-drawer.tsx'), 'utf8');
 

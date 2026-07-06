@@ -15,6 +15,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
+import { AdminDrawerSurface } from '../../components/admin-surface';
 import { calendarTagsToInputValue, parseCalendarTags, type CalendarEventDraft } from './calendar-model';
 
 type CalendarEventDrawerProps = {
@@ -81,7 +82,7 @@ export function CalendarEventDrawer({
         aria-label="Close event editor"
         onClick={onClose}
       />
-      <aside aria-label="Event editor" className="calendar-drawer">
+      <AdminDrawerSurface ariaLabel="Event editor" className="calendar-drawer">
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">
@@ -249,7 +250,7 @@ export function CalendarEventDrawer({
             </AdminFormControlButton>
           </AdminDrawerActionFooter>
         ) : null}
-      </aside>
+      </AdminDrawerSurface>
     </>
   );
 }

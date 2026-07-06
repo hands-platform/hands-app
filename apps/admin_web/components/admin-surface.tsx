@@ -67,6 +67,14 @@ type AdminDialogCardProps = AdminCardProps & {
   readonly loading?: boolean;
 };
 
+type AdminDrawerSurfaceProps = {
+  readonly ariaLabel: string;
+  readonly ariaModal?: boolean;
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly role?: 'dialog';
+};
+
 type AdminLinkCardProps = AdminCardProps & {
   readonly href: string;
   readonly htmlTitle?: string;
@@ -371,6 +379,25 @@ export function AdminDialogCard({
     >
       {children}
     </section>
+  );
+}
+
+export function AdminDrawerSurface({
+  ariaLabel,
+  ariaModal,
+  children,
+  className,
+  role,
+}: AdminDrawerSurfaceProps) {
+  return (
+    <aside
+      aria-label={ariaLabel}
+      aria-modal={ariaModal}
+      className={className}
+      role={role}
+    >
+      {children}
+    </aside>
   );
 }
 

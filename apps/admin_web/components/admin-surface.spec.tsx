@@ -9,6 +9,7 @@ import {
   AdminCardHeader,
   AdminDisclosure,
   AdminDialogCard,
+  AdminDrawerSurface,
   AdminDisclosureCard,
   AdminDetailGrid,
   AdminErrorState,
@@ -354,6 +355,20 @@ describe('Admin surface components', () => {
       'aria-labelledby': 'confirm-title',
       className: 'card admin-card admin-dialog-card',
       role: 'alertdialog',
+    });
+  });
+
+  it('renders a reusable Vuexy drawer surface for app side panels', () => {
+    const drawer = AdminDrawerSurface({
+      ariaLabel: 'Event editor',
+      children: <p>Drawer content</p>,
+      className: 'calendar-drawer',
+    });
+
+    expect(drawer.type).toBe('aside');
+    expect(drawer.props).toMatchObject({
+      'aria-label': 'Event editor',
+      className: 'calendar-drawer',
     });
   });
 
