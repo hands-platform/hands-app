@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminKpiCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import {
   AdminSignal,
   StatusBadge,
@@ -124,9 +124,9 @@ export function BookingAlertTraceSection({
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href={`/notifications?booking=${bookingId}`}>
+        <AdminTextLink href={`/notifications?booking=${bookingId}`}>
           Open notification board
-        </Link>
+        </AdminTextLink>
       }
       className="admin-mb-16"
       description="Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and disabled device checks."
@@ -199,9 +199,9 @@ export function BookingOperationsAuditTraceSection({
   return (
     <AdminSection
       actions={
-        <Link className="text-link" href={`/audit-log?q=${encodeURIComponent(bookingId)}`}>
+        <AdminTextLink href={`/audit-log?q=${encodeURIComponent(bookingId)}`}>
           Open audit log
-        </Link>
+        </AdminTextLink>
       }
       className="admin-mb-16"
       description="Booking-specific operator actions plus policy updates that happened after this request opened."
@@ -225,9 +225,9 @@ export function BookingOperationsAuditTraceSection({
             <strong>{operationsTrace.title}</strong>
             <p className="muted">{operationsTrace.detail}</p>
           </div>
-          <Link className="text-link" href="/operations-policy">
+          <AdminTextLink href="/operations-policy">
             Review policy
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       {operationsTrace.rows.length > 0 ? (

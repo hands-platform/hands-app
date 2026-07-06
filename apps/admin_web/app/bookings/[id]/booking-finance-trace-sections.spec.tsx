@@ -16,8 +16,10 @@ describe('BookingPayoutBatchEligibilitySection', () => {
 
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-14">');
     expect(source).not.toContain('<span className="signal signal-info">{batch.signal}</span>');
     expect(source).not.toContain('<span className={`signal ${row.signalClass}`}>{row.signal}</span>');
