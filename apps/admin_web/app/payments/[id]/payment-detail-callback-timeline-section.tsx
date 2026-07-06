@@ -4,7 +4,7 @@ import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 
 export type PaymentDetailCallbackTimelineRow = {
   readonly amount: number | null;
@@ -48,7 +48,7 @@ export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: Paym
               <DateTimeText fallback="-" value={row.createdAt} />
             </td>
             <td>
-              <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.outcome}</StatusBadgeFromPillClass>
               <div className="muted">Signature: {row.signatureLabel}</div>
             </td>
             <td>

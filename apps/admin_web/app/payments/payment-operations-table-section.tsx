@@ -8,7 +8,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type PaymentActionExecutionRow = {
   readonly action: string;
@@ -118,9 +118,9 @@ export function PaymentOperationsTableSection({ emptyMessage, pagination }: Paym
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((executionRow) => (
                       <AdminStageItem key={`${row.id}-${executionRow.action}`}>
-                        <StatusBadge tone={statusBadgeToneFromPillClass(executionRow.pillClass)}>
+                        <StatusBadgeFromPillClass pillClass={executionRow.pillClass}>
                           {executionRow.status}
-                        </StatusBadge>
+                        </StatusBadgeFromPillClass>
                         <div>
                           <strong>{executionRow.action}</strong>
                           <p className="muted">{executionRow.reason}</p>

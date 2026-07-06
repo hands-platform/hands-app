@@ -5,7 +5,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type PaymentCallbackAttemptLedgerRow = {
   readonly amount: number | null;
@@ -51,7 +51,7 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             </td>
             <td>{row.method}</td>
             <td>
-              <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>{row.outcome}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.outcome}</StatusBadgeFromPillClass>
               <div>
                 <AdminInlineFallback>{row.errorMessage ?? 'No processing error recorded.'}</AdminInlineFallback>
               </div>
