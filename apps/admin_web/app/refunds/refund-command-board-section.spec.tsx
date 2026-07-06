@@ -21,7 +21,7 @@ describe('RefundCommandBoardSection', () => {
     expect(rendered).toContain('Needs operator');
     expect(rendered).toContain('REQUESTED');
     expect(rendered).toContain('2 case(s)');
-    expect(rendered).toContain('refund-1 / Customer One / 200000 VND');
+    expect(rendered).toContain('refund-1 / Customer One / 200.000 VND');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/refunds?review=requested']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -65,6 +65,14 @@ describe('RefundCommandBoardSection', () => {
     expect(source).not.toContain('<span className="pill">{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.refunds.length} case(s)</span>');
   });
+
+  it('uses the shared money atom for command preview amounts', () => {
+    const source = readFileSync(join(process.cwd(), 'app/refunds/refund-command-board-section.tsx'), 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(source).not.toContain('readonly amountLabel: string;');
+    expect(source).not.toContain('{refund.amountLabel}');
+  });
 });
 
 function buildItems(): RefundCommandItem[] {
@@ -74,8 +82,8 @@ function buildItems(): RefundCommandItem[] {
       href: '/refunds?review=requested',
       operatorAction: 'Confirm eligibility, payment method, and customer message.',
       refunds: [
-        { amountLabel: '200000 VND', customerLabel: 'Customer One', id: 'refund-1' },
-        { amountLabel: '150000 VND', customerLabel: 'Customer Two', id: 'refund-2' },
+        { amount: 200000, currency: 'VND', customerLabel: 'Customer One', id: 'refund-1' },
+        { amount: 150000, currency: 'VND', customerLabel: 'Customer Two', id: 'refund-2' },
       ],
       status: 'REQUESTED',
       title: 'Customer refund requests',

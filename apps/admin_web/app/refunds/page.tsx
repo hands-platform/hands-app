@@ -181,7 +181,8 @@ function buildRefundCommandBoard(refunds: AdminRefund[], summary: AdminRefundSum
 
 function buildRefundCommandPreviews(refunds: readonly AdminRefund[]): RefundCommandPreview[] {
   return refunds.map((refund) => ({
-    amountLabel: `${refund.amount} ${refund.payment?.currency ?? 'VND'}`,
+    amount: refund.amount,
+    currency: refund.payment?.currency ?? 'VND',
     customerLabel: refundCustomerLabel(refund),
     id: shortId(refund.id),
   }));

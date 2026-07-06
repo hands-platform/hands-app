@@ -1,11 +1,13 @@
 import { AdminActionCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
 export type RefundCommandTone = 'warn' | 'info' | 'ok';
 
 export type RefundCommandPreview = {
-  readonly amountLabel: string;
+  readonly amount: number;
+  readonly currency: string;
   readonly customerLabel: string;
   readonly id: string;
 };
@@ -55,7 +57,8 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
               <div className="stack">
                 {item.refunds.slice(0, 3).map((refund) => (
                   <span className="muted" key={`${item.title}-${refund.id}`}>
-                    {refund.id} / {refund.customerLabel} / {refund.amountLabel}
+                    {refund.id} / {refund.customerLabel} /{' '}
+                    <MoneyText amount={refund.amount} currency={refund.currency} />
                   </span>
                 ))}
               </div>
