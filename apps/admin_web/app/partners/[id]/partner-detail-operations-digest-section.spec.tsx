@@ -16,6 +16,13 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(source).not.toContain('formatLatestAt');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders digest lanes with evidence, links, and latest dates', () => {
     const section = PartnerDetailOperationsDigestSection({
       description: 'One-screen factual digest for partner operations.',
