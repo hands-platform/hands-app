@@ -1,7 +1,7 @@
 import { AdminActionCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type RefundDecisionChecklistItem = {
   readonly className: string;
@@ -39,9 +39,9 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
             href={item.href}
             key={item.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+              <StatusBadgeFromPillClass pillClass={item.pillClass}>
                 {item.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={item.title}
             variant="ops-task"

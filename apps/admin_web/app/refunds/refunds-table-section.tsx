@@ -6,7 +6,7 @@ import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type RefundActionExecutionRow = {
   readonly action: string;
@@ -94,9 +94,9 @@ export function RefundsTableSection({ emptyMessage, pagination }: RefundsTableSe
                   <div className="setup-stage-list admin-mt-8">
                     {row.executionRows.map((item) => (
                       <AdminStageItem key={`${row.id}-${item.action}`}>
-                        <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
+                        <StatusBadgeFromPillClass pillClass={item.pillClass}>
                           {item.status}
-                        </StatusBadge>
+                        </StatusBadgeFromPillClass>
                         <div>
                           <strong>{item.action}</strong>
                           <p className="muted">{item.reason}</p>
