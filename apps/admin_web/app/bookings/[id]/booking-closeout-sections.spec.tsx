@@ -9,6 +9,7 @@ describe('BookingCloseoutSections', () => {
 
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('AdminTextLink');
@@ -18,6 +19,7 @@ describe('BookingCloseoutSections', () => {
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).toContain('AdminActionCard');
+    expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('<Link className={`ops-task-card');
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{connectedRecordLinks.length} links</span>');

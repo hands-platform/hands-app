@@ -1,5 +1,5 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -39,7 +39,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
         status={<StatusBadge tone="info">No auto assignment</StatusBadge>}
         title="Marketplace operating queue"
       />
-      <div className="ops-task-grid admin-mt-12">
+      <AdminTaskGrid className="admin-mt-12">
         {visibleOperatingQueue.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorAction}
@@ -77,7 +77,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             title="No marketplace lane needs action"
           />
         )}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

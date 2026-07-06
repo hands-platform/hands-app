@@ -39,11 +39,13 @@ describe('BookingOperatorQueueSections', () => {
 
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('DateTimeText');
     expect(source).toContain('ActionEvidenceGateDetail');
     expect(source).toContain('fallback={row.evidence}');
     expect(source).toContain('value={row.evidenceDateTimeValue}');
     expect(source).not.toContain('className={`ops-task-card ${finalGateReason.className}`');
+    expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('<a className={`ops-task-card ${row.className}`');
     expect(source).not.toContain('<div className="action-button-card ops-task-blocked"');
   });

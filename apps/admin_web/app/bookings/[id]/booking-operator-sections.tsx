@@ -3,7 +3,13 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminStageItem } from '../../../components/admin-stage-item';
-import { AdminActionCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskCard,
+  AdminTaskGrid,
+} from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
@@ -229,7 +235,7 @@ export function BookingOpsCommandCenter({
           description="Evidence status for the manual action buttons below."
           title="Action evidence gate"
         />
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {actionEvidenceGate.rows.map((row) => (
             <AdminActionCard
               className={row.className}
@@ -243,7 +249,7 @@ export function BookingOpsCommandCenter({
               <small>{row.operatorRule}</small>
             </AdminActionCard>
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminNotePanel>
       <div className="action-button-grid">
         {booking.payment?.id ? (

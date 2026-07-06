@@ -1,5 +1,5 @@
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
-import { AdminActionCard, AdminSection } from '../../../components/admin-surface';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
@@ -57,7 +57,7 @@ export function BookingCloseoutSections({
         id="booking-closeout-checklist"
         title="Booking closeout checklist"
       >
-        <div className="ops-task-grid admin-mt-12">
+        <AdminTaskGrid className="admin-mt-12">
           {bookingCloseoutChecklist.map((item) => (
             <AdminActionCard
               actionLabel={item.operatorRule}
@@ -74,7 +74,7 @@ export function BookingCloseoutSections({
               variant="ops-task"
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminSection>
 
       <AdminSection
