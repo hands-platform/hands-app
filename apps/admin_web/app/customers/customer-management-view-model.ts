@@ -1,4 +1,4 @@
-import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
+import { formatDateTime as formatDate } from '../../lib/admin-format';
 import type { AdminPageMetric } from '../../components/admin-page-template';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import type { CustomerRow } from './customer-list-model';
@@ -61,7 +61,7 @@ export type CustomerManagementTableRow = {
   readonly name: string;
   readonly paymentsHref: string;
   readonly phone: string;
-  readonly totalWalletAmountLabel: string;
+  readonly totalWalletAmount: number;
 };
 
 export function buildCustomerManagementMetrics(summary: CustomerSummary): AdminPageMetric[] {
@@ -158,7 +158,7 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
       name: row.name,
       paymentsHref: `/payments?customer=${encodeURIComponent(row.id)}`,
       phone: row.phone,
-      totalWalletAmountLabel: formatMoney(row.capturedSpend),
+      totalWalletAmount: row.capturedSpend,
     };
   });
 }

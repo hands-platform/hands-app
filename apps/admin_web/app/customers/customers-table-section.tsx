@@ -3,6 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
+import { MoneyText } from '../../components/money-text';
 import type { CustomerFilters } from './customer-filters';
 import { buildCustomerListHref } from './customer-filters';
 import type { CustomerPagination } from './customer-list-model';
@@ -70,7 +71,9 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
                 </strong>
               </td>
               <td>
-                <strong>{row.totalWalletAmountLabel}</strong>
+                <strong>
+                  <MoneyText amount={row.totalWalletAmount} />
+                </strong>
               </td>
             </tr>
           ))}

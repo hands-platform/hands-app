@@ -50,6 +50,18 @@ describe('CustomersTableSection', () => {
     expect(modelSource).not.toContain("lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured'");
   });
 
+  it('uses the shared money atom for visible customer directory wallet amounts', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+    const modelSource = readFileSync('app/customers/customer-management-view-model.ts', 'utf8');
+
+    expect(source).toContain('MoneyText');
+    expect(modelSource).toContain('readonly totalWalletAmount: number;');
+    expect(source).toContain('<MoneyText amount={row.totalWalletAmount} />');
+    expect(modelSource).not.toContain('readonly totalWalletAmountLabel: string;');
+    expect(source).not.toContain('<strong>{row.totalWalletAmountLabel}</strong>');
+    expect(modelSource).not.toContain('totalWalletAmountLabel: formatMoney(row.capturedSpend)');
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),
@@ -68,7 +80,7 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('13 Jun 2026');
     expect(rendered).toContain('Not captured');
     expect(rendered).toContain('13 Jun 2026, 03:15 (12)');
-    expect(rendered).toContain('1,200,000');
+    expect(rendered).toContain('1.200.000 VND');
     expect(rendered).toContain('Country');
     expect(rendered).toContain('Gender');
     expect(rendered).toContain('Last Completed');
@@ -142,7 +154,7 @@ function buildRow(): CustomerManagementTableRow {
     paymentsHref: '/payments?customer=customer-1',
     phone: '+84900000000',
     lastCompletedAt: '2026-06-12T20:15:00.000Z',
-    totalWalletAmountLabel: '1,200,000',
+    totalWalletAmount: 1200000,
   };
 }
 
