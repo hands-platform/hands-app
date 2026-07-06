@@ -26,6 +26,7 @@ import { AdminSegmentedControl } from '../../components/admin-segmented-control'
 import { AdminDisclosure } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -220,34 +221,34 @@ function ReferralAccountingGuardrailsPanel() {
       resultTone="info"
       title="Referral accounting guardrails"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Expense treatment</span>
-          <strong>Acquisition cost</strong>
-          <small className="muted">
-            Referral rewards are company marketing/acquisition expenses, not reductions of platform fee revenue.
-          </small>
-        </div>
-        <div>
-          <span>Wallet offsets</span>
-          <strong>No revenue netting</strong>
-          <small className="muted">
-            Wallet offsets settle payable and receivable balances. They must not reduce revenue.
-          </small>
-        </div>
-        <div>
-          <span>Customer cashout</span>
-          <strong>Approval required</strong>
-          <small className="muted">Customer referral cashout requires admin approval and tax review.</small>
-        </div>
-        <div>
-          <span>Tax policy</span>
-          <strong>Accounting owned</strong>
-          <small className="muted">
-            Tax policies are configurable and must be confirmed by accounting before production use.
-          </small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            key: 'expense-treatment',
+            label: 'Expense treatment',
+            value: 'Acquisition cost',
+            detail: 'Referral rewards are company marketing/acquisition expenses, not reductions of platform fee revenue.',
+          },
+          {
+            key: 'wallet-offsets',
+            label: 'Wallet offsets',
+            value: 'No revenue netting',
+            detail: 'Wallet offsets settle payable and receivable balances. They must not reduce revenue.',
+          },
+          {
+            key: 'customer-cashout',
+            label: 'Customer cashout',
+            value: 'Approval required',
+            detail: 'Customer referral cashout requires admin approval and tax review.',
+          },
+          {
+            key: 'tax-policy',
+            label: 'Tax policy',
+            value: 'Accounting owned',
+            detail: 'Tax policies are configurable and must be confirmed by accounting before production use.',
+          },
+        ]}
+      />
     </AdminFilterPanel>
   );
 }
@@ -262,24 +263,28 @@ function ReferralLinkReadinessPanel({ audience }: { readonly audience: ReferralA
       resultTone="info"
       title="Referral link readiness"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Audience</span>
-          <strong>{audienceLabel}</strong>
-          <small className="muted">
-            {audienceLabel} referral links route visitors to the correct store before attribution starts.
-          </small>
-        </div>
-        <div>
-          <span>Public route</span>
-          <strong>/r/{audience}/:code</strong>
-          <small className="muted">Android and iOS visitors must land on the matching app download page.</small>
-        </div>
-        <div>
-          <span>Setup status</span>
-          <ReferralStoreSetupStatus audience={audience} />
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            key: 'audience',
+            label: 'Audience',
+            value: audienceLabel,
+            detail: `${audienceLabel} referral links route visitors to the correct store before attribution starts.`,
+          },
+          {
+            key: 'public-route',
+            label: 'Public route',
+            value: `/r/${audience}/:code`,
+            detail: 'Android and iOS visitors must land on the matching app download page.',
+          },
+          {
+            key: 'setup-status',
+            label: 'Setup status',
+            value: 'Environment check',
+            action: <ReferralStoreSetupStatus audience={audience} />,
+          },
+        ]}
+      />
     </AdminFilterPanel>
   );
 }
@@ -392,51 +397,57 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
       resultTone={policy.enabled ? 'success' : 'neutral'}
       title="Referral policy"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Reward mode</span>
-          <strong>{policy.rewardMode === 'COMMISSION_PERCENT' ? 'Commission %' : 'Fixed amount'}</strong>
-          <small className="muted">{policy.source === 'stored-policy' ? 'Stored policy' : 'Default disabled'}</small>
-        </div>
-        <div>
-          <span>Customer percent</span>
-          <strong>{percentLabel}</strong>
-          <small className="muted">Applied only after a qualifying completed booking.</small>
-        </div>
-        <div>
-          <span>Fixed reward</span>
-          <strong>
-            {policy.rewardMode === 'FIXED_AMOUNT' ? (
-              <MoneyText amount={policy.fixedRewardAmount} currency={policy.currency} />
-            ) : (
-              'Not applicable'
-            )}
-          </strong>
-          <small className="muted">Used for Partner referral rewards.</small>
-        </div>
-        <div>
-          <span>Hold period</span>
-          <strong>{policy.holdPeriodDays} day(s)</strong>
-          <small className="muted">Wallet credit can stay pending until this window passes.</small>
-        </div>
-        <div>
-          <span>Platform fee VAT</span>
-          <strong>{platformFeeVatLabel}</strong>
-          <small className="muted">Removed from gross platform fee before customer referral reward calculation.</small>
-        </div>
-        <div>
-          <span>Per-user cap</span>
-          <strong>
-            <MoneyText amount={policy.totalRewardCapAmount} currency={policy.currency} />
-          </strong>
-          <small className="muted">Maximum total referral rewards per parent account.</small>
-        </div>
-        <div>
-          <span>Max rewarded referrals</span>
-          <strong>{policy.maxRewardedReferrals ?? 'Not set'}</strong>
-          <small className="muted">Manual policy limit for rewardable referred accounts.</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            key: 'reward-mode',
+            label: 'Reward mode',
+            value: policy.rewardMode === 'COMMISSION_PERCENT' ? 'Commission %' : 'Fixed amount',
+            detail: policy.source === 'stored-policy' ? 'Stored policy' : 'Default disabled',
+          },
+          {
+            key: 'customer-percent',
+            label: 'Customer percent',
+            value: percentLabel,
+            detail: 'Applied only after a qualifying completed booking.',
+          },
+          {
+            key: 'fixed-reward',
+            label: 'Fixed reward',
+            value:
+              policy.rewardMode === 'FIXED_AMOUNT' ? (
+                <MoneyText amount={policy.fixedRewardAmount} currency={policy.currency} />
+              ) : (
+                'Not applicable'
+              ),
+            detail: 'Used for Partner referral rewards.',
+          },
+          {
+            key: 'hold-period',
+            label: 'Hold period',
+            value: `${policy.holdPeriodDays} day(s)`,
+            detail: 'Wallet credit can stay pending until this window passes.',
+          },
+          {
+            key: 'platform-fee-vat',
+            label: 'Platform fee VAT',
+            value: platformFeeVatLabel,
+            detail: 'Removed from gross platform fee before customer referral reward calculation.',
+          },
+          {
+            key: 'per-user-cap',
+            label: 'Per-user cap',
+            value: <MoneyText amount={policy.totalRewardCapAmount} currency={policy.currency} />,
+            detail: 'Maximum total referral rewards per parent account.',
+          },
+          {
+            key: 'max-rewarded-referrals',
+            label: 'Max rewarded referrals',
+            value: policy.maxRewardedReferrals ?? 'Not set',
+            detail: 'Manual policy limit for rewardable referred accounts.',
+          },
+        ]}
+      />
       <ReferralPolicyActions />
       <ReferralPolicyForm label={label} policy={policy} />
     </AdminFilterPanel>

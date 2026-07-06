@@ -165,6 +165,11 @@ describe('ReferralDashboard', () => {
     expect(storeSetupSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
   });
 
+  it('uses the shared Vuexy trace summary atom for referral overview panels', () => {
+    expect(dashboardSource).toContain('AdminTraceSummary');
+    expect(dashboardSource).not.toContain('<div className="service-trace-summary">');
+  });
+
   it('renders policy controls and the hold-window release action', () => {
     const markup = renderToStaticMarkup(
       <ReferralDashboard audience="customer" policy={policy} rows={rows} />,

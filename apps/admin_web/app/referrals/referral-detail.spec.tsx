@@ -121,6 +121,11 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toMatch(/className=(?:\{)?["'`][^"'`]*\btext-link\b/);
   });
 
+  it('uses the shared Vuexy trace summary atom for referral detail panels', () => {
+    expect(detailSource).toContain('AdminTraceSummary');
+    expect(detailSource).not.toContain('<div className="service-trace-summary">');
+  });
+
   it('builds stable referral parent detail routes', () => {
     expect(referralParentDetailHref('customer', 'parent customer')).toBe('/referrals/customers/parent%20customer');
     expect(referralParentDetailHref('partner', 'parent-partner')).toBe('/referrals/partners/parent-partner');

@@ -11,6 +11,7 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
@@ -152,52 +153,59 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         resultTone="info"
         title="Parent account"
       >
-        <div className="service-trace-summary">
-          <div>
-            <span>Parent</span>
-            <AdminPersonCell
-              avatarClassName="vuexy-booking-avatar"
-              avatarStatus="offline"
-              className="vuexy-booking-person admin-mt-8"
-              copyClassName="vuexy-booking-person-copy"
-              helper={props.row.referrer.user?.phone}
-              href={profileHref}
-              label={parentLabel}
-              linkClassName="vuexy-booking-person-link"
-            />
-          </div>
-          <div>
-            <span>Referral code</span>
-            <strong>{props.row.referralCode?.code ?? 'No code'}</strong>
-            {props.row.referralCode ? (
-              <small className="muted">
-                {props.row.referralCode.active ? 'Active' : 'Paused'} ·{' '}
-                <DateTimeText value={props.row.referralCode.createdAt} />
-              </small>
-            ) : null}
-          </div>
-          <div>
-            <span>Share link</span>
-            {props.row.referralCode ? (
-              <>
-                <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
-                  Open referral link
-                </AdminTextLink>
-                <ReferralStoreSetupStatus audience={props.audience} />
-              </>
-            ) : (
-              <strong>Not ready</strong>
-            )}
-            <small className="muted">Public link routes to the correct app store.</small>
-          </div>
-          <div>
-            <span>Total rewards</span>
-            <strong>
-              <MoneyText amount={numberOrZero(props.row.totals.totalRewardAmount)} fallback="0 VND" />
-            </strong>
-            <small className="muted">{numberOrZero(props.row.totals.rewardCount)} reward record(s)</small>
-          </div>
-        </div>
+        <AdminTraceSummary
+          metrics={[
+            {
+              key: 'parent',
+              label: 'Parent',
+              value: parentLabel,
+              detail: props.row.referrer.user?.phone ?? 'No phone on file',
+              action: (
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar"
+                  avatarStatus="offline"
+                  className="vuexy-booking-person admin-mt-8"
+                  copyClassName="vuexy-booking-person-copy"
+                  helper={props.row.referrer.user?.phone}
+                  href={profileHref}
+                  label={parentLabel}
+                  linkClassName="vuexy-booking-person-link"
+                />
+              ),
+            },
+            {
+              key: 'referral-code',
+              label: 'Referral code',
+              value: props.row.referralCode?.code ?? 'No code',
+              detail: props.row.referralCode ? (
+                <>
+                  {props.row.referralCode.active ? 'Active' : 'Paused'} ·{' '}
+                  <DateTimeText value={props.row.referralCode.createdAt} />
+                </>
+              ) : null,
+            },
+            {
+              key: 'share-link',
+              label: 'Share link',
+              value: props.row.referralCode ? 'Available' : 'Not ready',
+              detail: 'Public link routes to the correct app store.',
+              action: props.row.referralCode ? (
+                <>
+                  <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
+                    Open referral link
+                  </AdminTextLink>
+                  <ReferralStoreSetupStatus audience={props.audience} />
+                </>
+              ) : null,
+            },
+            {
+              key: 'total-rewards',
+              label: 'Total rewards',
+              value: <MoneyText amount={numberOrZero(props.row.totals.totalRewardAmount)} fallback="0 VND" />,
+              detail: `${numberOrZero(props.row.totals.rewardCount)} reward record(s)`,
+            },
+          ]}
+        />
       </AdminFilterPanel>
 
       <ReferralOperationsBoard
@@ -465,43 +473,38 @@ function ReferralOperationsBoard({
       resultTone={summary.ready.count > 0 ? 'success' : summary.held.count > 0 ? 'warning' : 'info'}
       title="Referral operations board"
     >
-      <div className="service-trace-summary">
-        <div>
-          <span>Referred accounts</span>
-          <strong>{referralCount}</strong>
-          <small className="muted">{rewardCount} reward record(s)</small>
-        </div>
-        <ReferralRewardReviewCard label="Ready to credit" summary={summary.ready} />
-        <ReferralRewardReviewCard label="Pending checks" summary={summary.pending} />
-        <ReferralRewardReviewCard label="Held for review" summary={summary.held} />
-        <ReferralRewardReviewCard label="Ledger posted" summary={summary.credited} />
-        <ReferralRewardReviewCard label="Closed rewards" summary={summary.closed} />
-        <div>
-          <span>Next operator action</span>
-          <strong>{referralRewardNextOperatorAction(summary)}</strong>
-          <small className="muted">Use the reward row action menu for the final wallet decision.</small>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            key: 'referred-accounts',
+            label: 'Referred accounts',
+            value: referralCount,
+            detail: `${rewardCount} reward record(s)`,
+          },
+          referralRewardReviewMetric('ready-to-credit', 'Ready to credit', summary.ready),
+          referralRewardReviewMetric('pending-checks', 'Pending checks', summary.pending),
+          referralRewardReviewMetric('held-for-review', 'Held for review', summary.held),
+          referralRewardReviewMetric('ledger-posted', 'Ledger posted', summary.credited),
+          referralRewardReviewMetric('closed-rewards', 'Closed rewards', summary.closed),
+          {
+            key: 'next-operator-action',
+            label: 'Next operator action',
+            value: referralRewardNextOperatorAction(summary),
+            detail: 'Use the reward row action menu for the final wallet decision.',
+          },
+        ]}
+      />
     </AdminFilterPanel>
   );
 }
 
-function ReferralRewardReviewCard({
-  label,
-  summary,
-}: {
-  readonly label: string;
-  readonly summary: ReferralRewardReviewBucket;
-}) {
-  return (
-    <div>
-      <span>{label}</span>
-      <strong>{summary.count} reward(s)</strong>
-      <small className="muted">
-        <MoneyText amount={summary.amount} fallback="0 VND" />
-      </small>
-    </div>
-  );
+function referralRewardReviewMetric(key: string, label: string, summary: ReferralRewardReviewBucket) {
+  return {
+    key,
+    label,
+    value: `${summary.count} reward(s)`,
+    detail: <MoneyText amount={summary.amount} fallback="0 VND" />,
+  };
 }
 
 function ReferralRewardActions({
