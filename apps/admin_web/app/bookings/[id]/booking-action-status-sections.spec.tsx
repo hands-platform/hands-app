@@ -111,6 +111,14 @@ describe('BookingActionStatusSections', () => {
     expect(source).not.toContain('<span className={`pill ${signal.tone}`}>{signal.label}</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible outcome timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-action-status-sections.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('<DateTimeText fallback={row.value} value={row.dateTimeValue} />');
+    expect(source).not.toContain('title={row.value}');
+  });
+
   it('hides inactive action cards that only repeat not-available copy', () => {
     const markup = render();
 
@@ -276,6 +284,35 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Open review queue');
     expect(markup).toContain('href="/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1"');
     expect(markup).toContain('booking-outcome-review-actions');
+  });
+
+  it('renders outcome review timestamps through the shared date atom', () => {
+    const markup = render({
+      outcomeReview: {
+        helper: 'Review completed service before final closeout.',
+        postMatchDecision: hiddenPostMatchDecision(),
+        primaryHref: null,
+        primaryLabel: null,
+        rows: [
+          {
+            dateTimeValue: '2026-06-13T03:15:00.000Z',
+            helper: 'Completed at',
+            href: '#operating-timeline',
+            label: 'Outcome time',
+            tone: 'pill-info',
+            value: 'Not set',
+          },
+        ],
+        status: 'Completed',
+        title: 'Completed booking review',
+        tone: 'pill-success',
+        visible: true,
+      },
+    });
+
+    expect(markup).toContain('class="date-time-text"');
+    expect(markup).toContain('dateTime="2026-06-13T03:15:00.000Z"');
+    expect(markup).toContain('Outcome time');
   });
 
   it('can hide outcome review when the decision is rendered under the lifecycle list', () => {

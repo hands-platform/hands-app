@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
-import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
+import type { BookingOutcomeReviewPanel, BookingOutcomeReviewRow } from './booking-outcome-review-panel';
 import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
 type BookingDetailPostMatchDecisionSectionProps = {
@@ -47,7 +48,7 @@ export function BookingDetailPostMatchDecisionSection({
         {outcomeReview.rows.map((row) => (
           <AdminLinkCard className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
             <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.label}</StatusBadge>
-            <strong>{row.value}</strong>
+            <strong>{bookingOutcomeReviewRowValue(row)}</strong>
             <small>{row.helper}</small>
           </AdminLinkCard>
         ))}
@@ -96,4 +97,8 @@ export function BookingDetailPostMatchDecisionSection({
       </AdminCard>
     </AdminSection>
   );
+}
+
+function bookingOutcomeReviewRowValue(row: BookingOutcomeReviewRow) {
+  return row.dateTimeValue ? <DateTimeText fallback={row.value} value={row.dateTimeValue} /> : row.value;
 }

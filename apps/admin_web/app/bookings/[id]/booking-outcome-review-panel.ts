@@ -18,11 +18,11 @@ import {
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
 } from '../booking-post-match-cancellations-model';
-import { formatDate } from './booking-formatters';
 
 export type BookingOutcomeReviewRow = {
   label: string;
   value: string;
+  dateTimeValue?: string | null;
   helper: string;
   tone: PillTone;
   href: string;
@@ -123,7 +123,8 @@ export function bookingOutcomeReviewPanel({
       },
       {
         label: 'Outcome time',
-        value: formatDate(outcomeTime),
+        value: 'Not set',
+        dateTimeValue: outcomeTime,
         helper: booking.statusChangedLabel ?? `Current booking state: ${humanizeStatus(booking.status)}.`,
         tone: 'pill-info',
         href: '#operating-timeline',

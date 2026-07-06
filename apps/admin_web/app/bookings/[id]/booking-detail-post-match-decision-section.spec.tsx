@@ -26,6 +26,14 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(source).not.toContain('<span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>');
   });
 
+  it('uses the shared DateTimeText atom for visible outcome timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('<DateTimeText fallback={row.value} value={row.dateTimeValue} />');
+    expect(source).not.toContain('<strong>{row.value}</strong>');
+  });
+
   it('renders evidence checklist and clear fee decision actions', () => {
     const markup = renderToStaticMarkup(
       <BookingDetailPostMatchDecisionSection bookingId="booking-1" outcomeReview={outcomeReview()} />,
@@ -55,6 +63,30 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(markup).toContain('card admin-card booking-post-match-detail-evidence-card');
     expect(markup).toContain('card admin-card booking-outcome-decision-panel');
     expect(markup).toContain('booking-outcome-decision-main');
+  });
+
+  it('renders outcome timestamps through the shared date atom', () => {
+    const markup = renderToStaticMarkup(
+      <BookingDetailPostMatchDecisionSection
+        bookingId="booking-1"
+        outcomeReview={outcomeReview({
+          rows: [
+            {
+              dateTimeValue: '2026-06-13T03:15:00.000Z',
+              helper: 'Completed at',
+              href: '#operating-timeline',
+              label: 'Outcome time',
+              tone: 'pill-info',
+              value: 'Not set',
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(markup).toContain('class="date-time-text"');
+    expect(markup).toContain('dateTime="2026-06-13T03:15:00.000Z"');
+    expect(markup).toContain('Outcome time');
   });
 
   it('locks decision actions when the post-match cancellation is already resolved', () => {

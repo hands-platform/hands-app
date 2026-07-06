@@ -67,6 +67,10 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       helper: 'Service completed; closeout reconciliation needs review.',
     });
+    expect(review.rows.find((row) => row.label === 'Outcome time')).toMatchObject({
+      dateTimeValue: '2026-06-13T03:15:00.000Z',
+      value: 'Not set',
+    });
   });
 
   it('keeps pre-match cancellation out of the post-match review panel', () => {

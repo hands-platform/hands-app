@@ -8,10 +8,11 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminOpsNoteForm } from '../../../components/admin-ops-note-form';
 import { AdminActionCard, AdminCard, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
-import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
+import type { BookingOutcomeReviewPanel, BookingOutcomeReviewRow } from './booking-outcome-review-panel';
 import {
   addBookingOpsNote,
   approvePostMatchCancellationFromDetail,
@@ -182,7 +183,7 @@ function BookingOutcomeReviewSection({
             key={row.label}
             signalClassName={outcomeSignalClass(row.tone)}
             signalLabel={row.label}
-            title={row.value}
+            title={bookingOutcomeReviewRowValue(row)}
             variant="ops-task"
           />
         ))}
@@ -192,6 +193,10 @@ function BookingOutcomeReviewSection({
       ) : null}
     </AdminSection>
   );
+}
+
+function bookingOutcomeReviewRowValue(row: BookingOutcomeReviewRow) {
+  return row.dateTimeValue ? <DateTimeText fallback={row.value} value={row.dateTimeValue} /> : row.value;
 }
 
 function BookingOutcomePostMatchDecision({
