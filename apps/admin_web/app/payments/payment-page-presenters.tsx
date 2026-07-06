@@ -1,7 +1,7 @@
 import type { AdminPayment } from '../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminDisclosure, AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
@@ -159,7 +159,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
   return (
     <AdminNotePanel className="admin-mt-8">
       <StatusBadge tone={callback.verified ? 'success' : 'warning'}>{callbackLabel}</StatusBadge>
-      <div className="setup-stage-list admin-mt-8">
+      <AdminStageList className="admin-mt-8">
         <AdminStageItem>
           <StatusBadge tone="info">Received</StatusBadge>
           <div>
@@ -179,7 +179,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
             </p>
           </div>
         </AdminStageItem>
-      </div>
+      </AdminStageList>
       {callback.rawKeys.length ? (
         <AdminDisclosure className="admin-mt-8">
           <summary>Callback payload keys</summary>

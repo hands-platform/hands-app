@@ -6,9 +6,11 @@ describe('payment page presenters', () => {
 
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-8">');
+    expect(source).not.toContain('<div className="setup-stage-list admin-mt-8">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<span className="signal signal-warn">Callback check</span>');
     expect(source).not.toContain('<span className="signal signal-warn">Cash fee debt</span>');
