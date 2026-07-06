@@ -2416,6 +2416,11 @@ function buildPartnerActivityRecords(
       detail: bookingGateAttempt
         ? `${bookingGateAttempt.gateLabel} / ${bookingGateAttempt.detail}`
         : `${marketplaceDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System')} / ${auditLogNoteText(log)}`,
+      detailNode: bookingGateAttempt ? (
+        <>
+          {bookingGateAttempt.gateLabel} / {bookingGateAttempt.detailNode}
+        </>
+      ) : undefined,
     });
   }
 

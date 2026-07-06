@@ -75,7 +75,7 @@ describe('PartnerDetailAppActivitySection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-info',
       ]),
@@ -105,7 +105,7 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );
@@ -139,6 +139,11 @@ describe('PartnerDetailAppActivitySection', () => {
   it('keeps sanction detail timestamps on shared DateTimeText nodes from the detail page', () => {
     expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.liftedAt} />');
     expect(pageSource).toContain('<DateTimeText fallback="Missing" value={sanction.expiresAt} />');
+  });
+
+  it('propagates booking gate evidence detail nodes into activity timelines', () => {
+    expect(pageSource).toContain('detailNode: bookingGateAttempt ?');
+    expect(pageSource).toContain('{bookingGateAttempt.gateLabel} / {bookingGateAttempt.detailNode}');
   });
 });
 
