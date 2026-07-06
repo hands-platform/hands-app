@@ -68,11 +68,21 @@ describe('CustomerDetailSectionShell', () => {
     expect(rendered).toContain('Band body');
     expect(classNamesIn(band)).toEqual(
       expect.arrayContaining([
-        'customer-detail-section-band admin-mb-16',
-        'customer-detail-section-band-header',
-        'customer-detail-section-band-body',
+        'card admin-section customer-detail-section-band admin-mb-16',
+        'ops-section-header admin-section-header customer-detail-section-band-header',
+        'admin-section-body customer-detail-section-band-body',
       ]),
     );
+  });
+
+  it('builds customer section bands on the shared Vuexy AdminSection surface', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-section-shell.tsx', 'utf8');
+
+    expect(source).toContain("import { AdminRowLink, AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain('<AdminSection');
+    expect(source).toContain('bodyClassName="customer-detail-section-band-body"');
+    expect(source).toContain('headerClassName="customer-detail-section-band-header"');
+    expect(source).not.toContain('<section className="customer-detail-section-band admin-mb-16"');
   });
 });
 

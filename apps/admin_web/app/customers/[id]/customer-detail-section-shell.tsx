@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Grid2x2, MessageSquareText, ScrollText, UserRound, Wallet } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminRowLink } from '../../../components/admin-surface';
+import { AdminRowLink, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 export type CustomerDetailShortcut = {
@@ -61,17 +61,18 @@ export function CustomerDetailSectionBand({
   title,
 }: CustomerDetailSectionBandProps) {
   return (
-    <section className="customer-detail-section-band admin-mb-16" id={id}>
-      <div className="customer-detail-section-band-header">
-        <div>
-          <span>{eyebrow}</span>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        {status ? <div className="participant-list">{status}</div> : null}
-      </div>
-      <div className="customer-detail-section-band-body">{children}</div>
-    </section>
+    <AdminSection
+      actions={status}
+      bodyClassName="customer-detail-section-band-body"
+      className="customer-detail-section-band admin-mb-16"
+      description={description}
+      eyebrow={eyebrow}
+      headerClassName="customer-detail-section-band-header"
+      id={id}
+      title={title}
+    >
+      {children}
+    </AdminSection>
   );
 }
 

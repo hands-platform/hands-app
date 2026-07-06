@@ -96,6 +96,7 @@ type AdminSectionProps = {
   readonly children?: ReactNode;
   readonly className?: string;
   readonly description?: ReactNode;
+  readonly eyebrow?: ReactNode;
   readonly footer?: ReactNode;
   readonly footerClassName?: string;
   readonly headerClassName?: string;
@@ -488,6 +489,7 @@ export function AdminSection({
   children,
   className,
   description,
+  eyebrow,
   footer,
   footerClassName,
   headerClassName,
@@ -505,6 +507,7 @@ export function AdminSection({
     <section className={joinClassNames('card admin-section', className)} id={id} aria-labelledby={headingId}>
       <div className={joinClassNames('ops-section-header admin-section-header', headerClassName)}>
         <div>
+          {eyebrow ? <span>{eyebrow}</span> : null}
           <h2 id={headingId}>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
