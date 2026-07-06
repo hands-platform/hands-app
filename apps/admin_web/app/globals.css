@@ -4399,6 +4399,8 @@ a.action-button-card:hover {
   border-top: 1px solid var(--admin-border);
   display: grid;
   gap: 8px;
+  margin: 0;
+  min-inline-size: 0;
   padding-top: 14px;
 }
 
@@ -4410,9 +4412,11 @@ a.action-button-card:hover {
 .booking-monitor-view-category-heading {
   display: grid;
   gap: 3px;
+  margin: 0;
+  padding: 0;
 }
 
-.booking-monitor-view-category-heading h3 {
+.booking-monitor-view-category-heading span {
   color: rgb(var(--admin-main-channel) / 0.88);
   font-size: 0.875rem;
   font-weight: 600;

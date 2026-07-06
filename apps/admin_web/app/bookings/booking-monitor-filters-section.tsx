@@ -190,11 +190,11 @@ export function BookingMonitorFiltersSection({
       </div>
       <div className="booking-monitor-view-categories" aria-label="Booking operation categories">
         {categorizedViewOptions.map(({ category, options }) => (
-          <section className="booking-monitor-view-category" key={category.key}>
-            <div className="booking-monitor-view-category-heading">
-              <h3>{category.title}</h3>
+          <fieldset className="booking-monitor-view-category" key={category.key}>
+            <legend className="booking-monitor-view-category-heading">
+              <span>{category.title}</span>
               <p>{category.description}</p>
-            </div>
+            </legend>
             <div className="participant-list">
               {options.map((option) => (
                 <AdminFormControlButton
@@ -212,7 +212,7 @@ export function BookingMonitorFiltersSection({
                 </AdminFormControlButton>
               ))}
             </div>
-          </section>
+          </fieldset>
         ))}
       </div>
     </AdminTablePanel>

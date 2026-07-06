@@ -91,6 +91,8 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('No-show (0)');
     expect(rendered).toContain('Start with active bookings.');
     expect(renderToStaticMarkup(section)).toContain('aria-current="page"');
+    expect(renderToStaticMarkup(section)).toContain('<fieldset class="booking-monitor-view-category">');
+    expect(renderToStaticMarkup(section)).toContain('<legend class="booking-monitor-view-category-heading">');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
@@ -203,6 +205,9 @@ describe('BookingMonitorFiltersSection', () => {
     );
 
     expect(source).not.toContain('<button\n                  key={option.view}');
+    expect(source).not.toContain('<section className="booking-monitor-view-category"');
+    expect(source).toContain('<fieldset className="booking-monitor-view-category"');
+    expect(source).toContain('<legend className="booking-monitor-view-category-heading">');
     expect(markup).toContain('admin-form-control-button button button-secondary booking-monitor-view-option');
   });
 
