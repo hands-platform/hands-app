@@ -7,8 +7,8 @@ describe('BookingPostMatchCancellationsSection', () => {
   it('uses shared Vuexy badge atoms instead of raw post-match cancellation pill spans', () => {
     const source = readFileSync('app/bookings/booking-post-match-cancellations-section.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-info">{board.totalCount} total</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{board.monthCount} this month</span>');

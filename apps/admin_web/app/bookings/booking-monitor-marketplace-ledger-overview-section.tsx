@@ -1,6 +1,6 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { MarketplaceOperatingQueueItem } from '../../lib/marketplace-operating-queue';
@@ -52,9 +52,9 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             variant="ops-task"
           >
             <div className="participant-list">
-              <StatusBadge tone={statusBadgeToneFromPillClass(stagePillClass(item.tone))}>
+              <StatusBadgeFromPillClass pillClass={stagePillClass(item.tone)}>
                 {item.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
               <StatusBadge tone="neutral">{item.value}</StatusBadge>
             </div>
             {item.bookings.length > 0 && (

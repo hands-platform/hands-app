@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
@@ -100,7 +100,7 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
           {metrics.map((metric) => (
             <tr key={metric.label}>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(metric.tone)}>{metric.label}</StatusBadge>
+                <StatusBadgeFromPillClass pillClass={metric.tone}>{metric.label}</StatusBadgeFromPillClass>
               </td>
               <td>
                 <strong>{metric.count}</strong>
