@@ -23,6 +23,7 @@ import {
   AdminDetailGrid,
   AdminNotePanel,
   AdminSection,
+  AdminTaskBreakdown,
   AdminTaskCard,
   AdminTaskGrid,
 } from '../components/admin-surface';
@@ -1924,17 +1925,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   title={item.name}
                   variant="ops-task"
                 >
-                  <div className="ops-task-breakdown">
-                    {item.metrics.map((metric) => (
-                      <span
-                        className={`ops-task-breakdown-item ops-task-breakdown-${metric.tone}`}
-                        key={`${item.id}-${metric.label}`}
-                      >
-                        <span>{metric.label}</span>
-                        <strong>{metric.value}</strong>
-                      </span>
-                    ))}
-                  </div>
+                  <AdminTaskBreakdown
+                    items={item.metrics.map((metric) => ({
+                      label: metric.label,
+                      tone: metric.tone,
+                      value: metric.value,
+                    }))}
+                  />
                 </AdminActionCard>
               ))}
               {fullDashboardData.partnerOpsQueue.items.length === 0 && (
@@ -1997,16 +1994,20 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   title={step.title}
                   variant="ops-task"
                 >
-                  <div className="ops-task-breakdown">
-                    <span className={`ops-task-breakdown-item ops-task-breakdown-${step.tone}`}>
-                      <span>{step.metricLabel}</span>
-                      <strong>{step.metricValue}</strong>
-                    </span>
-                    <span className="ops-task-breakdown-item ops-task-breakdown-info">
-                      <span>Owner</span>
-                      <strong>{step.owner}</strong>
-                    </span>
-                  </div>
+                  <AdminTaskBreakdown
+                    items={[
+                      {
+                        label: step.metricLabel,
+                        tone: step.tone,
+                        value: step.metricValue,
+                      },
+                      {
+                        label: 'Owner',
+                        tone: 'info',
+                        value: step.owner,
+                      },
+                    ]}
+                  />
                 </AdminActionCard>
               ))}
             </AdminTaskGrid>
@@ -2051,33 +2052,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   title={signal.title}
                   variant="ops-task"
                 >
-                  <div className="ops-task-breakdown">
-                    {signal.breakdown.map((item) => {
-                      const content = (
-                        <>
-                          <span>{item.label}</span>
-                          <strong>{item.value}</strong>
-                        </>
-                      );
-
-                      return item.href ? (
-                        <Link
-                          className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                          href={item.href}
-                          key={`${signal.title}-${item.label}`}
-                        >
-                          {content}
-                        </Link>
-                      ) : (
-                        <div
-                          className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-                          key={`${signal.title}-${item.label}`}
-                        >
-                          {content}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <AdminTaskBreakdown
+                    items={signal.breakdown.map((item) => ({
+                      href: item.href,
+                      label: item.label,
+                      tone: item.tone,
+                      value: item.value,
+                    }))}
+                  />
                 </AdminActionCard>
               ))}
             </AdminTaskGrid>

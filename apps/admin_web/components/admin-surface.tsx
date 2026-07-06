@@ -140,6 +140,21 @@ type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'var
   readonly variant?: 'default' | 'ops-blocked' | 'ops-signal';
 };
 
+type AdminTaskBreakdownTone = 'danger' | 'info' | 'ok' | 'warn';
+
+export type AdminTaskBreakdownItem = {
+  readonly className?: string;
+  readonly href?: string;
+  readonly label: ReactNode;
+  readonly tone?: AdminTaskBreakdownTone;
+  readonly value: ReactNode;
+};
+
+type AdminTaskBreakdownProps = {
+  readonly className?: string;
+  readonly items: readonly AdminTaskBreakdownItem[];
+};
+
 type AdminTaskGridProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -655,6 +670,35 @@ export function AdminTaskGrid({ children, className }: AdminTaskGridProps) {
   return <div className={joinClassNames('ops-task-grid', className)}>{children}</div>;
 }
 
+export function AdminTaskBreakdown({ className, items }: AdminTaskBreakdownProps) {
+  return (
+    <div className={joinClassNames('ops-task-breakdown', className)}>
+      {items.map((item, index) => {
+        const itemClassName = joinClassNames(
+          'ops-task-breakdown-item',
+          item.tone ? `ops-task-breakdown-${item.tone}` : undefined,
+          item.className,
+        );
+        const content = [
+          <span key="label">{item.label}</span>,
+          <strong key="value">{item.value}</strong>,
+        ];
+        const key = adminTaskBreakdownKey(item.label, index);
+
+        return item.href ? (
+          <Link className={itemClassName} href={item.href} key={key}>
+            {content}
+          </Link>
+        ) : (
+          <span className={itemClassName} key={key}>
+            {content}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasicTimelineProps) {
   return (
     <div className={joinClassNames('vuexy-basic-timeline', className)}>
@@ -753,6 +797,14 @@ function joinClassNames(...classNames: Array<string | undefined>) {
     .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
     .filter((className, index, values) => values.indexOf(className) === index)
     .join(' ');
+}
+
+function adminTaskBreakdownKey(label: ReactNode, index: number) {
+  if (typeof label === 'string' || typeof label === 'number') {
+    return `${label}-${index}`;
+  }
+
+  return `metric-${index}`;
 }
 
 const noticeToneIcons: Record<AdminNoticeTone, LucideIcon> = {

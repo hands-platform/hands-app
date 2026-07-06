@@ -26,6 +26,7 @@ import {
   AdminRowLink,
   AdminSection,
   AdminTaskCard,
+  AdminTaskBreakdown,
   AdminTaskGrid,
 } from './admin-surface';
 
@@ -489,6 +490,35 @@ describe('Admin surface components', () => {
 
     expect(grid.type).toBe('div');
     expect(grid.props.className).toBe('ops-task-grid admin-mt-14');
+  });
+
+  it('renders reusable Vuexy task breakdown metrics with tone and optional links', () => {
+    const breakdown = AdminTaskBreakdown({
+      items: [
+        {
+          href: '/partners?review=cash-debt',
+          label: 'Cash debt',
+          tone: 'danger',
+          value: '3',
+        },
+        {
+          label: 'Ready partners',
+          tone: 'ok',
+          value: '12',
+        },
+      ],
+    });
+
+    expect(breakdown.type).toBe('div');
+    expect(breakdown.props.className).toBe('ops-task-breakdown');
+    expect(breakdown.props.children[0].props).toMatchObject({
+      className: 'ops-task-breakdown-item ops-task-breakdown-danger',
+      href: '/partners?review=cash-debt',
+    });
+    expect(breakdown.props.children[0].props.children[0].props.children).toBe('Cash debt');
+    expect(breakdown.props.children[0].props.children[1].props.children).toBe('3');
+    expect(breakdown.props.children[1].type).toBe('span');
+    expect(breakdown.props.children[1].props.className).toBe('ops-task-breakdown-item ops-task-breakdown-ok');
   });
 
   it('renders reusable Vuexy basic timeline markup with dot, connector, status, time, and meta rows', () => {

@@ -361,9 +361,11 @@ describe('DashboardPage', () => {
 
   it('uses shared Vuexy task card surfaces instead of raw dashboard ops task card markup', () => {
     expect(dashboardSource).toContain('AdminActionCard');
+    expect(dashboardSource).toContain('AdminTaskBreakdown');
     expect(dashboardSource).toContain('AdminTaskCard');
     expect(dashboardSource).toContain('AdminTaskGrid');
     expect(dashboardSource).toContain('AdminNotePanel');
+    expect(dashboardSource).not.toContain('<div className="ops-task-breakdown">');
     expect(dashboardSource).not.toContain('<div className="ops-task-grid">');
     expect(dashboardSource).not.toContain('<div className="ops-task-grid admin-grid-single admin-mt-12">');
     expect(dashboardSource).not.toContain('<div className="ops-task-grid admin-mt-14">');
@@ -372,6 +374,7 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('<div className="ops-task-note admin-mt-14">');
     expect(dashboardSource).not.toContain('<div className="ops-task-note">');
     expect(dashboardSource).not.toContain('className={`ops-task-card');
+    expect(dashboardSource).not.toContain('className={`ops-task-breakdown-item');
     expect(dashboardSource).not.toContain('className="ops-task-card-action"');
   });
 
