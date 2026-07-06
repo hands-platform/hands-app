@@ -23,7 +23,9 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).toContain('AdminTaskCard className="partner-report-command-grid admin-mt-16"');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="detail-grid">');
     expect(source).not.toContain('<div className="ops-section-header">');

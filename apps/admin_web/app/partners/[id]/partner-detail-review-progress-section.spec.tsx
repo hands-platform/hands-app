@@ -31,7 +31,9 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminInlineFallback');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');

@@ -16,7 +16,7 @@ import {
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   createProviderReport,
   createProviderSanction,
@@ -233,14 +233,14 @@ export function PartnerDetailReportsControlsSection({
                     ) : null}
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(reportSeverityPill(report.severity))}>
+                    <StatusBadgeFromPillClass pillClass={reportSeverityPill(report.severity)}>
                       {report.severity}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(reportStatusPill(report.status))}>
+                    <StatusBadgeFromPillClass pillClass={reportStatusPill(report.status)}>
                       {report.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   </td>
                   <td>
                     {report.bookingHref && report.bookingLabel ? (
@@ -277,9 +277,9 @@ export function PartnerDetailReportsControlsSection({
                     {control.reportLine ? <p className="muted">{control.reportLine}</p> : null}
                   </td>
                   <td>
-                    <StatusBadge tone={statusBadgeToneFromPillClass(controlStatusPill(control.status))}>
+                    <StatusBadgeFromPillClass pillClass={controlStatusPill(control.status)}>
                       {control.status}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   </td>
                   <td>
                     <ControlTimeline expiresAt={control.expiresAt} startsAt={control.startsAt} />

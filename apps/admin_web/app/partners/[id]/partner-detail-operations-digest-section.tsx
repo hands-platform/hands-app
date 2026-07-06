@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 import {
   PartnerDetailVuexyTableFooter,
@@ -61,9 +61,9 @@ export function PartnerDetailOperationsDigestSection({
                 <td>
                   <div className="participant-list">
                     {row.evidence.map((item) => (
-                      <StatusBadge key={item} tone={statusBadgeToneFromPillClass(row.tone)}>
+                      <StatusBadgeFromPillClass key={item} pillClass={row.tone}>
                         {item}
-                      </StatusBadge>
+                      </StatusBadgeFromPillClass>
                     ))}
                   </div>
                 </td>

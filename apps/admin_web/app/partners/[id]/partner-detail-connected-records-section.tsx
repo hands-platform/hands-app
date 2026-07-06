@@ -1,7 +1,7 @@
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
-import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeLinkFromPillClass } from '../../../components/status-badge';
 
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
@@ -32,9 +32,9 @@ export function PartnerDetailConnectedRecordsSection({
         className="admin-mt-12"
         metrics={links.map((record) => ({
           action: (
-            <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
+            <StatusBadgeLinkFromPillClass href={record.href} pillClass={record.tone}>
               Open
-            </StatusBadgeLink>
+            </StatusBadgeLinkFromPillClass>
           ),
           detail: record.detail,
           detailDateTimePrefix: record.detailDateTimePrefix,
