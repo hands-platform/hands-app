@@ -49,9 +49,10 @@ describe('ServiceBookingFinanceTraceSection', () => {
 
     const rendered = JSON.stringify(section);
 
-    expect(section.type.name).toBe('AdminSection');
+    expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       statusLabel: '1 trace row(s)',
       statusTone: 'info',
       title: 'Recent booking finance trace',

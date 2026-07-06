@@ -52,9 +52,10 @@ describe('ServiceTypeCoverageBoardSection', () => {
     const rendered = JSON.stringify(section);
     const markup = renderToStaticMarkup(section);
 
-    expect(section.type.name).toBe('AdminSection');
+    expect(section.type.name).toBe('AdminTableSection');
     expect(section.props).toMatchObject({
-      className: 'admin-card-scroll admin-mb-16',
+      className: 'admin-mb-16',
+      scrollable: true,
       title: 'Service type coverage board',
     });
     expect(rendered).toContain('Service type coverage board');

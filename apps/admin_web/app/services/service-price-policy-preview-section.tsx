@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type {
@@ -42,9 +42,10 @@ export function ServicePricePolicyPreviewSection({
   visibleRows,
 }: ServicePricePolicyPreviewSectionProps) {
   return (
-    <AdminSection
-      className="admin-card-scroll admin-mb-16"
+    <AdminTableSection
+      className="admin-mb-16"
       description="Before changing service prices, compare the current minimum price against common one-step scenarios. This helps avoid accidentally creating zero-margin prices or Partner payouts that create cash booking closeout problems."
+      scrollable
       statusLabel={`${summary.policyCheckCount} policy check(s)`}
       statusTone={summary.policyCheckCount ? 'warning' : 'success'}
       title="Price policy change preview"
@@ -138,7 +139,7 @@ export function ServicePricePolicyPreviewSection({
           the full active catalog.
         </p>
       ) : null}
-    </AdminSection>
+    </AdminTableSection>
   );
 }
 

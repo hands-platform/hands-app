@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
@@ -40,9 +40,10 @@ export function ServiceTypeCoverageBoardSection({
   visibleRows,
 }: ServiceTypeCoverageBoardSectionProps) {
   return (
-    <AdminSection
-      className="admin-card-scroll admin-mb-16"
+    <AdminTableSection
+      className="admin-mb-16"
       description="Checks each service name as one operating unit: duration options, minimum-price payout rules, Partner price visibility, and projected company commission."
+      scrollable
       status={
         <div className="actions">
           <StatusBadge tone={summary.blockedCount ? 'danger' : 'success'}>
@@ -144,6 +145,6 @@ export function ServiceTypeCoverageBoardSection({
           key to narrow the board.
         </p>
       ) : null}
-    </AdminSection>
+    </AdminTableSection>
   );
 }

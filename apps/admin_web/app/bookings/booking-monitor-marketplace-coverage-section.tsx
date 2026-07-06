@@ -1,6 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
@@ -38,7 +38,7 @@ export function BookingMonitorMarketplaceCoverageSection({
   marketplaceBookingCoverageSummary,
 }: BookingMonitorMarketplaceCoverageSectionProps) {
   return (
-    <AdminSection
+    <AdminTableSection
       actions={
         <>
           {marketplaceBookingCoveragePills.map((pill) => (
@@ -48,8 +48,9 @@ export function BookingMonitorMarketplaceCoverageSection({
           ))}
         </>
       }
-      className="admin-card-scroll admin-mt-14"
+      className="admin-mt-14"
       description="Booking-level exceptions for marketplace supply, customer choice, wallet gate, and final selection."
+      scrollable
       title="Marketplace booking coverage board"
     >
       <div className="participant-list admin-mt-12">
@@ -126,7 +127,7 @@ export function BookingMonitorMarketplaceCoverageSection({
           </AdminDataTable>
         </AdminTableScroll>
       )}
-    </AdminSection>
+    </AdminTableSection>
   );
 }
 

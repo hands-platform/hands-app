@@ -132,6 +132,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminPersonCell',
       'AdminSection',
       'AdminSectionHeader',
+      'AdminTableSection',
       'AdminTaskCard',
       'AdminTraceSummary',
       'MetricCard',

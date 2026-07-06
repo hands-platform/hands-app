@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminSection } from '../../components/admin-surface';
+import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -37,9 +37,10 @@ export function ServiceBookingFinanceTraceSection({
   summary,
 }: ServiceBookingFinanceTraceSectionProps) {
   return (
-    <AdminSection
-      className="admin-card-scroll admin-mb-16"
+    <AdminTableSection
+      className="admin-mb-16"
       description="Links service pricing to booking payment, Partner earning, tax log, platform fee log, and wallet movement. Use this after changing a price policy to confirm real bookings are producing the expected finance records."
+      scrollable
       statusLabel={`${rows.length} trace row(s)`}
       statusTone="info"
       title="Recent booking finance trace"
@@ -185,6 +186,6 @@ export function ServiceBookingFinanceTraceSection({
           title={null}
         />
       )}
-    </AdminSection>
+    </AdminTableSection>
   );
 }

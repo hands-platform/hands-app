@@ -90,7 +90,7 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-section admin-card-scroll admin-mt-14',
+        'card admin-section vuexy-booking-table-card vuexy-booking-table-group admin-card-scroll admin-mt-14',
         'ops-section-header admin-section-header',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table',
