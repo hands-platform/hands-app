@@ -8,7 +8,7 @@ import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type {
   BookingUnifiedDetail,
   BookingUnifiedDetailPerson,
@@ -24,9 +24,9 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
     <>
       <AdminSection
         actions={
-          <StatusBadge tone={statusBadgeToneFromPillClass(unifiedDetail.statusTone)}>
+          <StatusBadgeFromPillClass pillClass={unifiedDetail.statusTone}>
             {unifiedDetail.statusLabel}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         }
         className="admin-mb-16 booking-unified-summary-card"
         description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."

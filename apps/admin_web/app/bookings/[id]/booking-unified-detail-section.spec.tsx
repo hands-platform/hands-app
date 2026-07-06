@@ -15,6 +15,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(source).not.toContain('<div className="booking-unified-detail-grid admin-mt-12">');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('actions={<span className={`pill ${unifiedDetail.statusTone}`}>{unifiedDetail.statusLabel}</span>}');
