@@ -67,7 +67,9 @@ export function PartnerDetailBookingGateEvidenceSection({
             value: filteredAttempts.length,
           },
           {
-            detail: <DateTimeText fallback="No gate row" value={latestAttempt?.at} />,
+            detail: 'No gate row',
+            detailDateTimeFallback: 'No gate row',
+            detailDateTimeValue: latestAttempt?.at,
             label: 'Latest gate',
             value: latestAttempt?.reasonLabel ?? 'None',
           },

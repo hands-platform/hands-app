@@ -15,6 +15,10 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
 
     expect(source).toContain('StatusBadge');
     expect(source).toContain('DateTimeText');
+    expect(source).toContain("detail: 'No gate row'");
+    expect(source).toContain("detailDateTimeFallback: 'No gate row'");
+    expect(source).toContain('detailDateTimeValue: latestAttempt?.at');
+    expect(source).not.toContain('detail: <DateTimeText fallback="No gate row" value={latestAttempt?.at} />');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{attempt.addressLabel}</span>');
