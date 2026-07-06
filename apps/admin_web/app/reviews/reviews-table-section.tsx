@@ -21,7 +21,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
@@ -275,7 +275,7 @@ export function ReviewsTableSection({
                   {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
                 </td>
                 <td className="vuexy-review-visibility-cell">
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.statusClassName)}>{row.statusLabel}</StatusBadge>
+                  <StatusBadgeFromPillClass pillClass={row.statusClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
                   <small>{row.appVisibilityLabel}</small>
                 </td>
                 <td>

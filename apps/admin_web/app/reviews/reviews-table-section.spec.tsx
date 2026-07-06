@@ -9,7 +9,7 @@ describe('ReviewsTableSection', () => {
   it('uses the shared StatusBadge atom for active filter labels', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('AdminFilterSummary');
     expect(source).not.toContain('<div className="vuexy-review-filter-summary">');
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
@@ -18,7 +18,8 @@ describe('ReviewsTableSection', () => {
   it('uses the shared StatusBadge atom for review row statuses', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
-    expect(source).toContain('statusBadgeToneFromPillClass(row.statusClassName)');
+    expect(source).toContain('pillClass={row.statusClassName}');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('<span className={row.statusClassName}>{row.statusLabel}</span>');
   });
 
