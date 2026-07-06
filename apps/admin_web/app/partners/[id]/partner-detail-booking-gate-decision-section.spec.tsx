@@ -16,6 +16,13 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
     expect(pageSource).toContain('cashDebtLabel: <MoneyText amount={bookingAcceptance.cashDebt} />');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-decision-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders marketplace booking gate decisions as a Vuexy table', () => {
     const section = PartnerDetailBookingGateDecisionSection({
       cardClassForTone: (tone) => `card-${tone}`,

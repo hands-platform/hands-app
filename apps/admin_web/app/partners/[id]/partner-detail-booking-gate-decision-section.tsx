@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -87,9 +87,9 @@ export function PartnerDetailBookingGateDecisionSection({
         <StatusBadge tone="info">First response window: {decision.responseWindowLabel}</StatusBadge>
         <StatusBadge tone="info">Marketplace radius: {decision.backupRadiusLabel}</StatusBadge>
         <StatusBadge tone="info">Marketplace location: {decision.locationFreshnessLabel} fresh</StatusBadge>
-        <Link className="text-link" href="/operations-policy">
+        <AdminTextLink href="/operations-policy">
           Edit matching policy
-        </Link>
+        </AdminTextLink>
       </div>
       <AdminTableScroll>
         <AdminDataTable
