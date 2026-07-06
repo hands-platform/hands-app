@@ -68,6 +68,16 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(pageSource).not.toContain('cashDebtLabel: formatCurrency(cashFeeDebtTotal)');
   });
 
+  it('keeps payout unpaid net detail money on the shared MoneyText atom', () => {
+    expect(modelSource).toContain('readonly unpaidNetDetail?: ReactNode;');
+    expect(pageSource).toContain(
+      "unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detailNode",
+    );
+    expect(pageSource).not.toContain(
+      "unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail,",
+    );
+  });
+
   it('keeps operator first-read dates on the shared DateTimeText atom', () => {
     expect(modelSource).toContain('readonly joinedAtLabel: ReactNode;');
     expect(modelSource).toContain('readonly latestStaffNoteDetail?: ReactNode;');

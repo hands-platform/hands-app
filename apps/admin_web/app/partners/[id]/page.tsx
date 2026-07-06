@@ -730,7 +730,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     operationsDigestCount: partnerOperationsDigest.length,
     payoutStatus: payoutOps.status,
     responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
-    unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail,
+    unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detailNode,
   });
   const partnerUsageRegionSummary = buildPartnerUsageRegionSummary({
     bookingArchive: partnerBookingArchive,

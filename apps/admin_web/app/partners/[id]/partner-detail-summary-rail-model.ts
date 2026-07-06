@@ -245,7 +245,7 @@ export function buildPartnerOperationsQuickRail({
   readonly operationsDigestCount: number;
   readonly payoutStatus: string;
   readonly responseWindowMinutes: number;
-  readonly unpaidNetDetail?: string;
+  readonly unpaidNetDetail?: ReactNode;
   readonly bookingJourneyRowCount: number;
 }): PartnerDetailSummaryRailItem[] {
   return [
