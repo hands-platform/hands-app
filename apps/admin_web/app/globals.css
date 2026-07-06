@@ -8240,6 +8240,7 @@ a.action-button-card:hover {
 }
 
 .usage-overview-command-grid,
+.finance-overview-command-grid,
 .usage-overview-segment-grid {
   display: grid;
   gap: 16px;
@@ -10240,6 +10241,7 @@ a.action-button-card:hover {
 
 @media (max-width: 1180px) {
   .usage-overview-command-grid,
+  .finance-overview-command-grid,
   .usage-overview-segment-grid,
   .usage-overview-behavior-grid,
   .usage-overview-insight-grid,
@@ -10262,6 +10264,7 @@ a.action-button-card:hover {
 
 @media (max-width: 640px) {
   .usage-overview-command-grid,
+  .finance-overview-command-grid,
   .usage-overview-segment-grid,
   .usage-overview-behavior-grid,
   .usage-overview-insight-grid,

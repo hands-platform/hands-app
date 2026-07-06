@@ -43,6 +43,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 const financeOverviewCommandCardClassName = 'finance-overview-command-card';
+const financeOverviewCommandGridClassName = 'finance-overview-command-grid';
 const financeOverviewCommandIconClassName = 'finance-overview-command-icon';
 
 type FinanceOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -171,13 +172,21 @@ export default async function FinanceOverviewPage({
         ))}
       </AdminSection>
 
-      <AdminOverviewCommandGrid className="finance-overview-control-board" ariaLabel="Finance control board">
+      <AdminOverviewCommandGrid
+        ariaLabel="Finance control board"
+        baseClassName={financeOverviewCommandGridClassName}
+        className="finance-overview-control-board"
+      >
         {controlMetrics.map((metric) => (
           <FinanceControlMetricCard key={metric.label} metric={metric} />
         ))}
       </AdminOverviewCommandGrid>
 
-      <AdminOverviewCommandGrid className="finance-overview-principle-grid" ariaLabel="Finance accounting principles">
+      <AdminOverviewCommandGrid
+        ariaLabel="Finance accounting principles"
+        baseClassName={financeOverviewCommandGridClassName}
+        className="finance-overview-principle-grid"
+      >
         {principleCards.map((card) => (
           <AdminOverviewCommandCard
             baseClassName={financeOverviewCommandCardClassName}
@@ -204,7 +213,11 @@ export default async function FinanceOverviewPage({
         ))}
       </AdminSection>
 
-      <AdminOverviewCommandGrid className="finance-overview-section-grid" ariaLabel="Finance overview sections">
+      <AdminOverviewCommandGrid
+        ariaLabel="Finance overview sections"
+        baseClassName={financeOverviewCommandGridClassName}
+        className="finance-overview-section-grid"
+      >
         {sections.map((section) => (
           <FinanceOverviewSectionCard key={section.title} section={section} />
         ))}

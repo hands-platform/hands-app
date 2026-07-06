@@ -27,6 +27,24 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span>Card slot</span>');
   });
 
+  it('allows overview pages to supply a scoped command grid class', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandGrid
+        ariaLabel="Finance command board"
+        baseClassName="finance-overview-command-grid"
+        className="finance-overview-control-board"
+      >
+        <span>Card slot</span>
+      </AdminOverviewCommandGrid>,
+    );
+
+    expect(markup).toContain(
+      'class="finance-overview-command-grid finance-overview-control-board"',
+    );
+    expect(markup).not.toContain('usage-overview-command-grid');
+    expect(markup).toContain('aria-label="Finance command board"');
+  });
+
   it('renders shared overview grid variants for segment and insight layouts', () => {
     const segmentMarkup = renderToStaticMarkup(
       <AdminOverviewGrid ariaLabel="Customer segments" variant="segment">

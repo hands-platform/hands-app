@@ -186,6 +186,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('finance-overview-command-icon');
     expect(markup).not.toContain('usage-overview-command-card');
     expect(markup).not.toContain('usage-overview-command-icon');
+    expect(markup).toContain('finance-overview-command-grid finance-overview-control-board');
+    expect(markup).toContain('finance-overview-command-grid finance-overview-principle-grid');
+    expect(markup).toContain('finance-overview-command-grid finance-overview-section-grid');
+    expect(markup).not.toContain('usage-overview-command-grid');
     expect(pageSource).toContain('AdminOverviewCommandGrid');
     expect(pageSource).not.toContain('<section className="finance-overview-control-board"');
     expect(pageSource).toContain('AdminOverviewCommandCard');
@@ -203,14 +207,15 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-command-card is-${kpi.tone}`');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-command-card is-');
     expect(markup).toContain('card admin-card finance-overview-command-card finance-overview-principle-card');
-    expect(pageSource).toContain('AdminOverviewCommandGrid className="finance-overview-principle-grid"');
+    expect(pageSource).toContain('className="finance-overview-principle-grid"');
     expect(pageSource).not.toContain('<section className="finance-overview-principle-grid"');
     expect(pageSource).not.toContain('<AdminCard className="finance-overview-principle-card');
     expect(markup).toContain('money-text money-text-positive');
     expect(markup).toContain('Revenue separation');
     expect(markup).toContain('Wallet exposure');
     expect(markup).toContain('Open finance risks');
-    expect(pageSource).toContain('AdminOverviewCommandGrid className="finance-overview-section-grid"');
+    expect(pageSource).toContain('className="finance-overview-section-grid"');
+    expect(pageSource).toContain('baseClassName={financeOverviewCommandGridClassName}');
     expect(pageSource).toContain('AdminRowLink');
     expect(pageSource).toContain('AdminRowItem');
     expect(pageSource).not.toContain('<section className="finance-overview-section-grid"');

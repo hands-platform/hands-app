@@ -5,12 +5,14 @@ import { DateTimeText } from './date-time-text';
 
 type AdminOverviewCommandGridProps = {
   readonly ariaLabel: string;
+  readonly baseClassName?: string;
   readonly children: ReactNode;
   readonly className?: string;
 };
 
 type AdminOverviewGridProps = {
   readonly ariaLabel: string;
+  readonly baseClassName?: string;
   readonly children: ReactNode;
   readonly className?: string;
   readonly variant: AdminOverviewGridVariant;
@@ -109,17 +111,22 @@ type AdminTraceSummaryProps = {
   readonly metrics: readonly AdminTraceSummaryMetric[];
 };
 
-export function AdminOverviewCommandGrid({ ariaLabel, children, className }: AdminOverviewCommandGridProps) {
+export function AdminOverviewCommandGrid({
+  ariaLabel,
+  baseClassName,
+  children,
+  className,
+}: AdminOverviewCommandGridProps) {
   return (
-    <AdminOverviewGrid ariaLabel={ariaLabel} className={className} variant="command">
+    <AdminOverviewGrid ariaLabel={ariaLabel} baseClassName={baseClassName} className={className} variant="command">
       {children}
     </AdminOverviewGrid>
   );
 }
 
-export function AdminOverviewGrid({ ariaLabel, children, className, variant }: AdminOverviewGridProps) {
+export function AdminOverviewGrid({ ariaLabel, baseClassName, children, className, variant }: AdminOverviewGridProps) {
   return (
-    <section className={joinClassNames(adminOverviewGridClassNames[variant], className)} aria-label={ariaLabel}>
+    <section className={joinClassNames(baseClassName ?? adminOverviewGridClassNames[variant], className)} aria-label={ariaLabel}>
       {children}
     </section>
   );
