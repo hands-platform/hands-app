@@ -1567,6 +1567,14 @@ a {
   font-weight: 400;
 }
 
+.calendar-vuexy-datepicker .react-datepicker__day--selected:hover,
+.calendar-vuexy-datepicker .react-datepicker__month-text--selected:hover,
+.calendar-vuexy-datepicker .react-datepicker__quarter-text--selected:hover,
+.calendar-vuexy-datepicker .react-datepicker__year-text--selected:hover {
+  background: var(--admin-accent-strong) !important;
+  color: var(--admin-inverse-text) !important;
+}
+
 .calendar-vuexy-datepicker .react-datepicker__day--range-start {
   border-radius: 18px 0 0 18px;
 }

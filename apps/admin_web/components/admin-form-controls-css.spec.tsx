@@ -165,6 +165,17 @@ describe('Admin form control CSS', () => {
     expect(todayBlock).not.toContain('font-weight: 500');
   });
 
+  it('keeps selected react-datepicker dates on the Vuexy primary-dark hover treatment', () => {
+    const selectedHoverIndex = globalsCss.indexOf(
+      '.calendar-vuexy-datepicker .react-datepicker__day--selected:hover,',
+    );
+    const selectedHoverBlock = cssRuleBlockAt(selectedHoverIndex);
+
+    expect(selectedHoverIndex).toBeGreaterThan(-1);
+    expect(selectedHoverBlock).toContain('background: var(--admin-accent-strong) !important');
+    expect(selectedHoverBlock).toContain('color: var(--admin-inverse-text) !important');
+  });
+
   it('keeps time picker rows on Vuexy body typography and selected weight', () => {
     const timeItemIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-list-item {');
     const timeItemBlock = cssRuleBlockAt(timeItemIndex);
