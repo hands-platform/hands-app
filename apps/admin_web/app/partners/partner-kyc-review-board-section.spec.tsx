@@ -9,8 +9,10 @@ describe('PartnerKycReviewBoardSection', () => {
   it('uses shared Vuexy badge atoms instead of raw KYC board pill spans', () => {
     const source = readFileSync('app/partners/partner-kyc-review-board-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className={`pill ${board.openCount > 0 ? \'pill-warn\' : \'pill-success\'}`}>');
     expect(source).not.toContain('<span className="pill pill-success">{board.readyToApprove} ready to approve</span>');
     expect(source).not.toContain('<span className="pill pill-danger">{board.blockedByDocuments} blocked by docs</span>');

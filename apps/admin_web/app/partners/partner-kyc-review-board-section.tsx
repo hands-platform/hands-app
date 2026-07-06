@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
 type PartnerKycReviewTone = 'danger' | 'info' | 'ok' | 'warn';
@@ -90,9 +89,9 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
               <p className="muted">{step.detail}</p>
               <p className="muted">{step.operatorAction}</p>
             </div>
-            <Link className="text-link" href={step.href}>
+            <AdminTextLink href={step.href}>
               {step.count}
-            </Link>
+            </AdminTextLink>
           </div>
         ))}
       </div>
