@@ -50,8 +50,8 @@ describe('booking detail record rows', () => {
       { label: 'Phone', value: '+84000000001' },
       { label: 'Address', value: 'District service address' },
       { label: 'Address snapshot', value: 'Snapshot saved' },
-      { label: 'Request opened', value: '14 Jun 2026, 08:15' },
-      { label: 'Expires', value: '14 Jun 2026, 10:00' },
+      { label: 'Request opened', value: 'Not set', dateTimeValue: '2026-06-14T01:15:00.000Z' },
+      { label: 'Expires', value: 'Not set', dateTimeValue: '2026-06-14T03:00:00.000Z' },
     ]);
     expect(rows.map((row) => row.value).join(' ')).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
   });
@@ -82,7 +82,7 @@ describe('booking detail record rows', () => {
       { label: 'Final', value: 'Linh Partner' },
       { label: 'Final phone', value: '+84987654321' },
       { label: 'Latest Partner location', value: 'Location recorded without readable address' },
-      { label: 'Latest location time', value: '1 Jan 2999, 07:00' },
+      { label: 'Latest location time', value: 'No location shared', dateTimeValue: '2999-01-01T00:00:00.000Z' },
       { label: 'Location freshness', value: 'Updated just now' },
     ]);
     expect(rows.map((row) => row.value).join(' ')).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
@@ -132,7 +132,8 @@ describe('booking detail record rows', () => {
         detail: 'Address not recorded for this location snapshot.',
         id: 'trail-1',
         label: 'Partner live snapshot',
-        recordedAt: '14 Jun 2026, 09:00',
+        recordedAt: 'Not set',
+        recordedAtValue: '2026-06-14T02:00:00.000Z',
       },
     ]);
   });
@@ -157,7 +158,8 @@ describe('booking detail record rows', () => {
         detail: 'Coordinate retained for distance checks.',
         id: 'action-trail-1',
         label: 'Booking action snapshot',
-        recordedAt: '14 Jun 2026, 09:00',
+        recordedAt: 'Not set',
+        recordedAtValue: '2026-06-14T02:00:00.000Z',
       },
     ]);
   });

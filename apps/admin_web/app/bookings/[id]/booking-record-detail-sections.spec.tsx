@@ -164,6 +164,16 @@ describe('BookingRecordDetailSections', () => {
     expect(source).not.toContain('<span className={getParticipantBoundaryPillClass(index)}');
   });
 
+  it('uses the shared DateTimeText atom for booking detail record timestamps', () => {
+    const source = readFileSync('app/bookings/[id]/booking-record-detail-sections.tsx', 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(source).toContain('<DateTimeText fallback={snapshot.recordedAt} value={snapshot.recordedAtValue} />');
+    expect(source).toContain('<DateTimeText fallback={row.value} value={row.dateTimeValue} />');
+    expect(source).toContain('<strong>{infoRowValue(row)}</strong>');
+    expect(source).not.toContain('<p className="muted">{snapshot.recordedAt}</p>');
+  });
+
   it('renders participant ledger details and toolbar-linked record state', () => {
     const markup = renderSections();
 
@@ -211,6 +221,34 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('No chat evidence snapshot linked to this booking yet.');
     expect(markup).toContain('No Partner location snapshots linked to this booking yet.');
     expect(markup.match(/class="empty-state/g) ?? []).toHaveLength(3);
+  });
+
+  it('renders customer and location timestamps through shared date atoms', () => {
+    const markup = renderSections({
+      customerRows: [
+        {
+          dateTimeValue: '2026-06-14T01:15:00.000Z',
+          label: 'Request opened',
+          value: 'Not set',
+        },
+      ],
+      locationTrailRows: [
+        {
+          badge: 'Action',
+          badgeTone: 'pill-info',
+          coordinate: 'District 1, Ho Chi Minh City',
+          detail: 'Coordinate retained for distance checks.',
+          id: 'location_1',
+          label: 'Booking action snapshot',
+          recordedAt: 'Not set',
+          recordedAtValue: '2026-06-14T02:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('dateTime="2026-06-14T01:15:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
   });
 
   it('renders post-match cancellation chat evidence inside the booking transcript', () => {

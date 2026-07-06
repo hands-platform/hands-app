@@ -2,6 +2,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
+import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -10,6 +11,7 @@ import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat
 type InfoRowModel = {
   label: string;
   value: string;
+  dateTimeValue?: string | null;
 };
 
 type TimelineStage = {
@@ -144,6 +146,7 @@ type LocationTrailRow = {
   coordinate: string;
   detail: string;
   recordedAt: string;
+  recordedAtValue?: string | null;
 };
 
 export type BookingRecordDetailSectionsProps = {
@@ -271,7 +274,9 @@ export function BookingRecordDetailSections({
               <div className="booking-settlement-ledger-row is-location-evidence" key={snapshot.id}>
                 <div>
                   <span className="booking-settlement-ledger-label">{snapshot.label}</span>
-                  <p className="muted">{snapshot.recordedAt}</p>
+                  <p className="muted">
+                    <DateTimeText fallback={snapshot.recordedAt} value={snapshot.recordedAtValue} />
+                  </p>
                 </div>
                 <strong className="booking-settlement-ledger-value">{snapshot.coordinate}</strong>
                 <p className="muted">{snapshot.detail}</p>
@@ -488,11 +493,15 @@ function InfoRows({ rows }: InfoRowsProps) {
       {rows.map((row) => (
         <div className="info-row" key={row.label}>
           <span>{row.label}</span>
-          <strong>{row.value}</strong>
+          <strong>{infoRowValue(row)}</strong>
         </div>
       ))}
     </>
   );
+}
+
+function infoRowValue(row: InfoRowModel) {
+  return row.dateTimeValue ? <DateTimeText fallback={row.value} value={row.dateTimeValue} /> : row.value;
 }
 
 function countLabel(count: number, singular: string) {

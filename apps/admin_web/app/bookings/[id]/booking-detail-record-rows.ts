@@ -24,8 +24,8 @@ export function bookingDetailCustomerRows({
     { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
     { label: 'Address', value: addressLine },
     { label: 'Address snapshot', value: addressPin === 'No pin' ? 'No snapshot saved' : 'Snapshot saved' },
-    { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
-    { label: 'Expires', value: formatDate(booking.expiresAt) },
+    { label: 'Request opened', value: 'Not set', dateTimeValue: bookingRequestOpenedAt(booking) },
+    { label: 'Expires', value: 'Not set', dateTimeValue: booking.expiresAt },
   ];
 }
 
@@ -61,7 +61,8 @@ export function bookingDetailHandoffRows({
     },
     {
       label: 'Latest location time',
-      value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared',
+      value: 'No location shared',
+      dateTimeValue: latestLocation?.recordedAt ?? null,
     },
     { label: 'Location freshness', value: bookingDetailProviderLocationMetricHelper(booking) },
   ];
@@ -78,7 +79,8 @@ export function bookingDetailLocationTrailRows(
     detail: locationTrailDetail(snapshot),
     id: snapshot.id,
     label: bookingId && snapshot.bookingId === bookingId ? 'Booking action snapshot' : 'Partner live snapshot',
-    recordedAt: formatDate(snapshot.recordedAt),
+    recordedAt: 'Not set',
+    recordedAtValue: snapshot.recordedAt,
   }));
 }
 
