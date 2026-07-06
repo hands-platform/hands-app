@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
@@ -131,13 +131,13 @@ export function PartnerDetailCashDebtOriginSection({
                 <td>
                   <div className="button-row">
                     {row.bookingHref ? (
-                      <Link className="text-link" href={row.bookingHref}>
+                      <AdminTextLink href={row.bookingHref}>
                         Booking evidence
-                      </Link>
+                      </AdminTextLink>
                     ) : null}
-                    <Link className="text-link" href="/cash-settlements">
+                    <AdminTextLink href="/cash-settlements">
                       Settle
-                    </Link>
+                    </AdminTextLink>
                   </div>
                 </td>
               </tr>

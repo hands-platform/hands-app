@@ -26,6 +26,13 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(pageSource).toContain('taxLabel: <MoneyText amount={earning.withholdingAmount} />');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders cash debt origins as a Vuexy table', () => {
     const section = PartnerDetailCashDebtOriginSection({
       hasCashFeeDebt: true,
