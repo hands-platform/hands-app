@@ -10,8 +10,8 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
     expect(source).toContain('AdminTableScroll');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('MoneyText');
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass(row.statusClass)');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass(row.statusClass)');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="admin-table-scroll">');
     expect(source).not.toContain('formatMoney(');

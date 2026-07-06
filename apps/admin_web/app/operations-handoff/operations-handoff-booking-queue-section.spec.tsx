@@ -10,9 +10,9 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(source).toContain('AdminTableSection');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableScroll');
-    expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass(booking.statusClass)');
-    expect(source).toContain('statusBadgeToneFromPillClass(booking.chatClass)');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass(booking.statusClass)');
+    expect(source).not.toContain('statusBadgeToneFromPillClass(booking.chatClass)');
     expect(source).not.toContain(
       'admin-mb-16 operations-handoff-booking-queue-card vuexy-booking-table-card vuexy-booking-table-group',
     );

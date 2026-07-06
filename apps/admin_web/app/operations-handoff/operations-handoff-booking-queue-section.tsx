@@ -3,7 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTableSection } from '../../components/admin-table-panel';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -83,14 +83,14 @@ export function OperationsHandoffBookingQueueSection({
                 />
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(booking.statusClass)}>{booking.status}</StatusBadge>
+                <StatusBadgeFromPillClass pillClass={booking.statusClass}>{booking.status}</StatusBadgeFromPillClass>
               </td>
               <td>
                 <div>{booking.paymentLabel}</div>
                 <small className="muted">{booking.walletLabel}</small>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(booking.chatClass)}>{booking.chatLabel}</StatusBadge>
+                <StatusBadgeFromPillClass pillClass={booking.chatClass}>{booking.chatLabel}</StatusBadgeFromPillClass>
               </td>
               <td>{booking.nextAction}</td>
             </tr>

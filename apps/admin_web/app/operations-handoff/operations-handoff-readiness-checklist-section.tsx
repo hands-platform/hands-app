@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 
 import type { HandoffReadinessChecklistRow } from './operations-handoff-readiness-checklist';
 
@@ -43,7 +43,7 @@ export function OperationsHandoffReadinessChecklistSection({
         >
           <div className="participant-list">
             <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-            <StatusBadge tone={statusBadgeToneFromPillClass(item.badgeClass)}>{item.owner}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
           </div>
         </AdminActionCard>
       ))}

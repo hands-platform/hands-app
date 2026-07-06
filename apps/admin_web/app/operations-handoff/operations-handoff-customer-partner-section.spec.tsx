@@ -11,9 +11,9 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     );
 
     expect(source).toContain('AdminActionCard');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('<span className="pill pill-success">{customer.completedCount} completed</span>');
     expect(source).not.toContain('<span className={partner.className}>{partner.status}</span>');
     expect(source).not.toContain('<Link className="ops-signal-card"');

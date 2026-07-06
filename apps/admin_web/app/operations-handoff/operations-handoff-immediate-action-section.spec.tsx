@@ -8,9 +8,9 @@ describe('OperationsHandoffImmediateActionSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-immediate-action-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<span className="pill pill-info">{visibleActions.length} action lane(s)</span>');
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
