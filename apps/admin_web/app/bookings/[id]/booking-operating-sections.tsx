@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import {
@@ -7,6 +6,7 @@ import {
   AdminSection,
   type AdminBasicTimelineItem,
 } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
@@ -157,9 +157,9 @@ export function BookingMarketplaceWalletEvidenceSection({
             <span className="booking-settlement-ledger-label">{command.label}</span>
             <strong className="booking-settlement-ledger-value">{command.value}</strong>
             <p className="muted">{command.helper}</p>
-            <a className="text-link" href={command.href}>
+            <AdminTextLink href={command.href}>
               Open
-            </a>
+            </AdminTextLink>
           </div>
         ))}
       </div>
@@ -203,9 +203,9 @@ export function BookingOperatingLedgerSection({
               <td>{row.status}</td>
               <td>{row.evidence}</td>
               <td>
-                <a className="text-link" href={row.href}>
+                <AdminTextLink href={row.href}>
                   Open
-                </a>
+                </AdminTextLink>
               </td>
             </tr>
           ))}
@@ -264,9 +264,9 @@ export function BookingCloseoutReadinessSection({
                       : 'Clear before the next handoff.'}
                   </small>
                 </div>
-                <a className="text-link" href={item.href}>
+                <AdminTextLink href={item.href}>
                   Resolve
-                </a>
+                </AdminTextLink>
               </div>
             ))}
           </div>
@@ -315,9 +315,9 @@ export function BookingOperatingSnapshotSection({
             <strong>{operatingSnapshot.nextAction}</strong>
             <p className="muted">{operatingSnapshot.nextDetail}</p>
           </div>
-          <Link className="text-link" href={operatingSnapshot.href}>
+          <AdminTextLink href={operatingSnapshot.href}>
             {operatingSnapshot.hrefLabel}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
     </AdminSection>
@@ -437,9 +437,9 @@ export function BookingHandoffChecklistSection({
               <p className="muted">{item.detail}</p>
             </div>
             {item.href ? (
-              <Link className="text-link" href={item.href}>
+              <AdminTextLink href={item.href}>
                 {item.status}
-              </Link>
+              </AdminTextLink>
             ) : (
               <small>{item.status}</small>
             )}
@@ -484,9 +484,9 @@ export function BookingCommunicationMovementHandoffSection({
             <strong>{communicationMovementHandoff.nextAction}</strong>
             <p className="muted">{communicationMovementHandoff.nextDetail}</p>
           </div>
-          <Link className="text-link" href={communicationMovementHandoff.href}>
+          <AdminTextLink href={communicationMovementHandoff.href}>
             {communicationMovementHandoff.hrefLabel}
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminNotePanel>
       {communicationMovementHandoff.events.length ? (
