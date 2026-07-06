@@ -16,6 +16,13 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     expect(source).not.toContain('formatDate(attempt.at)');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders booking create gate attempts as a Vuexy table', () => {
     const section = PartnerDetailBookingGateEvidenceSection({
       loadedAttempts: [

@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
@@ -44,9 +44,9 @@ export function PartnerDetailBookingGateEvidenceSection({
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
       description="Booking creation attempts where this Partner was the first-pick Partner. These rows show factual address, distance, and GPS evidence before payment and matching."
       footer={
-        <Link className="text-link" href="/bookings?view=blocked-create&gate=first-pick-distance">
+        <AdminTextLink href="/bookings?view=blocked-create&gate=first-pick-distance">
           Open gate queue
-        </Link>
+        </AdminTextLink>
       }
       id="partner-booking-create-gates"
       resultLabel={`${visibleAttempts.length} attempt(s)`}
@@ -88,9 +88,9 @@ export function PartnerDetailBookingGateEvidenceSection({
                 </StatusBadge>
               </td>
               <td>
-                <Link className="text-link" href={attempt.bookingMonitorHref}>
+                <AdminTextLink href={attempt.bookingMonitorHref}>
                   <strong>{attempt.reasonLabel}</strong>
-                </Link>
+                </AdminTextLink>
                 <p className="muted">{attempt.detailNode ?? attempt.detail}</p>
               </td>
               <td>
@@ -106,12 +106,12 @@ export function PartnerDetailBookingGateEvidenceSection({
               </td>
               <td>
                 <div className="participant-list">
-                  <Link className="text-link" href={attempt.bookingMonitorHref}>
+                  <AdminTextLink href={attempt.bookingMonitorHref}>
                     Booking gate queue
-                  </Link>
-                  <Link className="text-link" href={attempt.auditHref}>
+                  </AdminTextLink>
+                  <AdminTextLink href={attempt.auditHref}>
                     Audit evidence
-                  </Link>
+                  </AdminTextLink>
                 </div>
               </td>
             </tr>
