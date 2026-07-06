@@ -45,10 +45,14 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('admin-section-body usage-overview-segment-board-grid');
     expect(markup).toContain('card admin-card usage-overview-segment-board-item');
     expect(markup).not.toContain('<article class="usage-overview-segment-board-item');
+    expect(pageSource).toContain('baseClassName="usage-overview-segment-board-item"');
+    expect(pageSource).not.toContain('<AdminCard key={label} className={`usage-overview-segment-board-item');
     expect(markup).toContain('card admin-section usage-overview-action-card');
     expect(markup).toContain('admin-section-body usage-overview-action-list');
     expect(markup).toContain('card admin-card usage-overview-action-item');
     expect(markup).not.toContain('<article class="card admin-card usage-overview-action-item');
+    expect(pageSource).toContain('baseClassName="usage-overview-action-item"');
+    expect(pageSource).not.toContain('<AdminCard className={`usage-overview-action-item');
     expect(markup).toContain('card admin-card usage-overview-command-card');
     expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(markup).toContain('card admin-section usage-overview-platform-card');

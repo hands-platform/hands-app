@@ -424,17 +424,17 @@ function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOver
       title="Customer segments"
     >
       {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
-        <AdminCard key={label} className={`usage-overview-segment-board-item is-${tone}`}>
-          <span className="usage-overview-command-icon">
-            <Icon size={17} aria-hidden="true" />
-          </span>
-          <div>
-            <span>{label}</span>
-            <strong>{formatNumber(value)}</strong>
-            <small>{detail}</small>
-          </div>
-          <em>{percent}</em>
-        </AdminCard>
+        <AdminOverviewCommandCard
+          baseClassName="usage-overview-segment-board-item"
+          className={`is-${tone}`}
+          detail={detail}
+          icon={<Icon size={17} aria-hidden="true" />}
+          iconClassName="usage-overview-command-icon"
+          key={label}
+          label={label}
+          trailing={<em>{percent}</em>}
+          value={formatNumber(value)}
+        />
       ))}
     </AdminSection>
   );
@@ -564,17 +564,16 @@ function ActionPriorityItem({ priority }: { readonly priority: UsageActionPriori
     : formatNumber(priority.value);
 
   return (
-    <AdminCard className={`usage-overview-action-item is-${priority.tone}`}>
-      <span className="usage-overview-command-icon">
-        <Icon size={17} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{priority.label}</span>
-        <strong>{value}</strong>
-        <small>{priority.detail}</small>
-      </div>
-      <em>{priority.valueLabel}</em>
-    </AdminCard>
+    <AdminOverviewCommandCard
+      baseClassName="usage-overview-action-item"
+      className={`is-${priority.tone}`}
+      detail={priority.detail}
+      icon={<Icon size={17} aria-hidden="true" />}
+      iconClassName="usage-overview-command-icon"
+      label={priority.label}
+      trailing={<em>{priority.valueLabel}</em>}
+      value={value}
+    />
   );
 }
 
