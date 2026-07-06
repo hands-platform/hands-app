@@ -15101,7 +15101,29 @@ textarea:focus-visible {
 }
 
 .admin-mini-metric {
+  background: rgb(var(--admin-surface-channel) / 0.7);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-muted);
+  display: grid;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 2px;
+  line-height: 15px;
   min-width: 0;
+  padding: 8px 10px;
+}
+
+.admin-mini-metric span {
+  color: var(--admin-muted);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.admin-mini-metric strong {
+  color: var(--admin-text);
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-form-control-help {

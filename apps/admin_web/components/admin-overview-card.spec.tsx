@@ -153,6 +153,23 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<strong>12</strong>');
   });
 
+  it('keeps shared mini metrics on the Vuexy compact surface token contract', () => {
+    const globals = readFileSync('app/globals.css', 'utf8');
+    const metricBlock = cssRuleBlock(globals, '.admin-mini-metric {');
+    const metricLabelBlock = cssRuleBlock(globals, '.admin-mini-metric span {');
+    const metricValueBlock = cssRuleBlock(globals, '.admin-mini-metric strong {');
+
+    expect(metricBlock).toContain('background: rgb(var(--admin-surface-channel) / 0.7);');
+    expect(metricBlock).toContain('border: 1px solid var(--admin-border);');
+    expect(metricBlock).toContain('border-radius: var(--admin-radius-sm);');
+    expect(metricBlock).toContain('display: grid;');
+    expect(metricBlock).toContain('padding: 8px 10px;');
+    expect(metricLabelBlock).toContain('color: var(--admin-muted);');
+    expect(metricLabelBlock).toContain('font-size: 11px;');
+    expect(metricValueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(metricValueBlock).toContain('font-variant-numeric: tabular-nums;');
+  });
+
   it('renders shared summary card grids with Vuexy card surfaces', () => {
     const markup = renderToStaticMarkup(
       <AdminSummaryCardGrid
@@ -340,3 +357,15 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span>Profile slot</span>');
   });
 });
+
+function cssRuleBlock(source: string, selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`(^|\\n)${escapedSelector}`).exec(source);
+  if (!match || match.index < 0) {
+    return '';
+  }
+
+  const index = match.index + (match[1] ? match[1].length : 0);
+  const endIndex = source.indexOf('}', index);
+  return source.slice(index, endIndex + 1);
+}
