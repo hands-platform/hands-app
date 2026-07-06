@@ -8,6 +8,7 @@ describe('Vuexy basic timeline CSS', () => {
     const dotBlock = cssRuleBlockAt(globalsCss.indexOf('.vuexy-basic-timeline-dot {'));
     const connectorBlock = cssRuleBlockAt(globalsCss.indexOf('.vuexy-basic-timeline-connector {'));
     const contentBlock = cssRuleBlockAt(globalsCss.indexOf('.vuexy-basic-timeline-content {'));
+    const timeBlock = cssRuleBlockAt(globalsCss.indexOf('.vuexy-basic-timeline-time {'));
 
     expect(timelineBlock).toContain('padding: 0');
     expect(timelineBlock).not.toContain('padding: 2px 0 0');
@@ -15,6 +16,8 @@ describe('Vuexy basic timeline CSS', () => {
     expect(connectorBlock).toContain('width: 1px');
     expect(contentBlock).toContain('padding: 0 0 1rem 16px');
     expect(contentBlock).not.toContain('padding: 0 0 22px 12px');
+    expect(timeBlock).toContain('white-space: nowrap');
+    expect(timeBlock).toContain('font-size: 12px');
   });
 });
 

@@ -469,6 +469,31 @@ describe('Admin surface components', () => {
     expect(secondItem.props.children[0].props.children.filter(Boolean)).toHaveLength(1);
   });
 
+  it('keeps timeline time slots compatible with shared DateTimeText atoms', () => {
+    const sharedDateTimeAtom = (
+      <time className="date-time-text" dateTime="2026-07-15T10:30:00.000Z">
+        15 Jul 2026, 10:30
+      </time>
+    );
+    const timeline = AdminBasicTimeline({
+      items: [
+        {
+          id: 'shared-time-atom',
+          time: sharedDateTimeAtom,
+          title: 'Shared atom timestamp',
+          tone: 'info',
+        },
+      ],
+    });
+
+    const titleRow = timeline.props.children[0].props.children[1].props.children[0];
+    const timeSlot = titleRow.props.children[1];
+
+    expect(timeSlot.type).toBe('span');
+    expect(timeSlot.props.className).toBe('vuexy-basic-timeline-time');
+    expect(timeSlot.props.children).toBe(sharedDateTimeAtom);
+  });
+
   it('keeps duplicate timeline item ids and meta labels on unique React keys', () => {
     const timeline = AdminBasicTimeline({
       items: [

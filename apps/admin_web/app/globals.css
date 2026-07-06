@@ -13225,7 +13225,7 @@ a.ops-task-card {
   overflow-wrap: anywhere;
 }
 
-.vuexy-basic-timeline-title-row time {
+.vuexy-basic-timeline-time {
   color: var(--admin-muted);
   flex: 0 0 auto;
   font-size: 12px;

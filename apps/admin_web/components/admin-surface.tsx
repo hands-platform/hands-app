@@ -564,7 +564,7 @@ export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasic
                 <h3>{item.title}</h3>
                 {item.value ? <strong>{item.value}</strong> : null}
               </div>
-              {item.time ? <time>{item.time}</time> : null}
+              {item.time ? <span className="vuexy-basic-timeline-time">{item.time}</span> : null}
             </div>
             {item.detail ? (
               <p className={item.detailClassName === null ? undefined : item.detailClassName ?? 'muted'}>
