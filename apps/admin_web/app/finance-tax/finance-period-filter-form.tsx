@@ -34,7 +34,7 @@ export function FinancePeriodFilterForm({
   submitLabel = 'Apply period',
 }: FinancePeriodFilterFormProps) {
   return (
-    <AdminFormGrid action={action} className={className} method="get">
+    <AdminFormGrid action={action} className={joinClassNames('finance-period-filter-form', className)} method="get">
       {hiddenFields.map((field) => (
         <input key={field.name} name={field.name} type="hidden" value={field.value} />
       ))}
@@ -62,4 +62,8 @@ export function FinancePeriodFilterForm({
       </AdminFormControlButton>
     </AdminFormGrid>
   );
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
 }

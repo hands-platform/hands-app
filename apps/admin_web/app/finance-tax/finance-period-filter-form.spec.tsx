@@ -5,6 +5,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { FinancePeriodFilterForm } from './finance-period-filter-form';
 
+const globalsCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
 describe('FinancePeriodFilterForm', () => {
   it('delegates the form shell to the shared Vuexy form grid atom', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-period-filter-form.tsx'), 'utf8');
@@ -26,6 +28,7 @@ describe('FinancePeriodFilterForm', () => {
 
     expect(markup).toContain('action="/finance-overview"');
     expect(markup).toContain('method="get"');
+    expect(markup).toContain('finance-period-filter-form');
     expect(markup).toContain('name="range"');
     expect(markup).toContain('value="7d"');
     expect(markup).toContain(
@@ -39,4 +42,22 @@ describe('FinancePeriodFilterForm', () => {
     expect(markup).toContain('value="25" selected=""');
     expect(markup).toContain('class="admin-form-control-button button button-primary"');
   });
+
+  it('keeps finance period filters on compact Vuexy control widths', () => {
+    const controlBlock = cssRuleBlockAt(globalsCss.indexOf('.finance-period-filter-form >'));
+    const buttonBlock = cssRuleBlockAt(globalsCss.indexOf('.finance-period-filter-form .admin-form-control-button {'));
+
+    expect(controlBlock).toContain('max-inline-size: 220px');
+    expect(controlBlock).toContain('min-inline-size: 180px');
+    expect(buttonBlock).toContain('align-self: end');
+  });
 });
+
+function cssRuleBlockAt(index: number) {
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = globalsCss.indexOf('}', index);
+  return globalsCss.slice(index, endIndex + 1);
+}

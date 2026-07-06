@@ -2695,6 +2695,20 @@ a.action-button-card:hover {
   justify-self: start;
 }
 
+.finance-period-filter-form.compact-form {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
+}
+
+.finance-period-filter-form > .admin-form-date,
+.finance-period-filter-form > .admin-form-select {
+  max-inline-size: 220px;
+  min-inline-size: 180px;
+}
+
+.finance-period-filter-form .admin-form-control-button {
+  align-self: end;
+}
+
 .admin-grid-span-2,
 .form-grid-wide {
   grid-column: 1 / -1;
