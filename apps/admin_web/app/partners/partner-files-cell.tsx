@@ -1,6 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -53,9 +53,9 @@ export function PartnerFilesCell({
             <p className="muted">
               {marketplaceDisplayText(file.key)}
               {' / '}
-              <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#documents`}>
+              <AdminTextLink href={`/partners/${provider.id}#documents`}>
                 open detail to view
-              </AdminFormControlLink>
+              </AdminTextLink>
             </p>
           </div>
         ))
@@ -125,9 +125,9 @@ function PartnerPublicMediaQueue({
         </div>
       ))}
       {media.length > 4 ? (
-        <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#media`}>
+        <AdminTextLink href={`/partners/${provider.id}#media`}>
           Review {media.length - 4} more media item(s)
-        </AdminFormControlLink>
+        </AdminTextLink>
       ) : null}
     </div>
   );
