@@ -1377,7 +1377,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   description="The most likely reason matching will feel slow before operators touch a booking."
                   title="Supply and policy checks"
                 />
-                <div className="ops-task-grid admin-grid-single admin-mt-12">
+                <AdminTaskGrid className="admin-grid-single admin-mt-12">
                   {matchingControl.checks.map((check) => (
                     <AdminTaskCard
                       className={check.className}
@@ -1389,7 +1389,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       <small>{check.operatorAction}</small>
                     </AdminTaskCard>
                   ))}
-                </div>
+                </AdminTaskGrid>
               </AdminNotePanel>
             </AdminDetailGrid>
           </AdminSection>
@@ -2039,7 +2039,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </div>
               </AdminNotePanel>
             )}
-            <div className="ops-task-grid">
+            <AdminTaskGrid>
               {fullDashboardData.commandSignals.map((signal) => (
                 <AdminActionCard
                   actionLabel={signal.action}
@@ -2080,7 +2080,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </div>
                 </AdminActionCard>
               ))}
-            </div>
+            </AdminTaskGrid>
           </AdminSection>
 
           <AdminDetailGrid className="admin-mt-20 dashboard-queue-grid">
