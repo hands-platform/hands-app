@@ -930,7 +930,7 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
       label={segment.label}
       value={formatNumber(segment.count)}
     >
-      <a href={segment.href}>{segment.recommendedAction}</a>
+      <AdminTextLink href={segment.href}>{segment.recommendedAction}</AdminTextLink>
     </AdminOverviewCommandCard>
   );
 }
