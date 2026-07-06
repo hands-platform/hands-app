@@ -256,9 +256,13 @@ function ServiceDialogFrame({
             <span className="calendar-drawer-eyebrow">{eyebrow}</span>
             <h2>{title}</h2>
           </div>
-          <a aria-label="Close service dialog" className="calendar-icon-button" href={returnHref}>
+          <AdminFormControlLink
+            aria-label="Close service dialog"
+            className="button-secondary calendar-icon-button"
+            href={returnHref}
+          >
             <X aria-hidden="true" size={16} />
-          </a>
+          </AdminFormControlLink>
         </div>
         <div className="calendar-drawer-body">{children}</div>
       </aside>

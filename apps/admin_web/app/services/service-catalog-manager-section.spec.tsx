@@ -74,11 +74,13 @@ describe('ServiceCatalogManagerSection', () => {
     expect(classNames).toContain('admin-form-control-button button button-primary');
     expect(classNames).toContain('admin-form-control-link button button-primary');
     expect(classNames).toContain('admin-form-control-link button button-secondary');
+    expect(classNames).toContain('admin-form-control-link button button-secondary calendar-icon-button');
     expect(classNames).toContain('admin-form-control-link button button-secondary service-table-action');
     expect(sectionSource).toContain('AdminCard');
     expect(sectionSource).toContain('AdminDrawerFormGrid');
     expect(sectionSource).toContain('AdminFormControlLink');
     expect(sectionSource).not.toContain('<a className="button');
+    expect(sectionSource).not.toContain('<a aria-label="Close service dialog" className="calendar-icon-button"');
     expect(sectionSource).not.toContain('<form action={createServiceDurationSet} className="calendar-form-grid service-menu-dialog-form">');
     expect(sectionSource).not.toContain('<form action={saveServiceDurationMenu} className="calendar-form-grid service-menu-dialog-form">');
     expect(sectionSource).not.toContain('<div className="card admin-card service-menu-duration-panel');
