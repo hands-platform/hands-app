@@ -16988,8 +16988,18 @@ textarea:focus-visible {
   box-shadow: var(--admin-shadow-xs);
   display: grid;
   gap: 6px;
+  min-width: 0;
   padding: 12px;
   text-decoration: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.service-trace-summary > a:hover,
+.service-trace-summary > a:focus-visible {
+  border-color: rgb(var(--admin-primary-rgb) / 0.45);
+  box-shadow: var(--admin-shadow-md);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .service-trace-summary span {
@@ -17000,7 +17010,9 @@ textarea:focus-visible {
 
 .service-trace-summary strong {
   color: var(--admin-text);
+  font-feature-settings: "tnum" 1;
   font-size: 16px;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 

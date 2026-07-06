@@ -243,6 +243,21 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<span>Cash debt</span>');
   });
 
+  it('keeps shared trace summaries on the Vuexy linked card token contract', () => {
+    const globals = readFileSync('app/globals.css', 'utf8');
+    const itemBlock = cssRuleBlock(globals, '.service-trace-summary > div,\n.service-trace-summary > a {');
+    const hoverBlock = cssRuleBlock(globals, '.service-trace-summary > a:hover,\n.service-trace-summary > a:focus-visible {');
+    const valueBlock = cssRuleBlock(globals, '.service-trace-summary strong {');
+
+    expect(itemBlock).toContain('min-width: 0;');
+    expect(itemBlock).toContain('transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;');
+    expect(hoverBlock).toContain('border-color: rgb(var(--admin-primary-rgb) / 0.45);');
+    expect(hoverBlock).toContain('box-shadow: var(--admin-shadow-md);');
+    expect(hoverBlock).toContain('transform: translateY(-1px);');
+    expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
+  });
+
   it('renders trace summary metric dates through the shared DateTimeText atom', () => {
     const source = readFileSync('components/admin-overview-card.tsx', 'utf8');
     const markup = renderToStaticMarkup(
