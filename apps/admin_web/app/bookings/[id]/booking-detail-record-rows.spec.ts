@@ -119,7 +119,14 @@ describe('booking detail record rows', () => {
       { label: 'Name', value: 'Aromatherapy' },
       { label: 'Duration', value: '90 min' },
       { label: 'Notes', value: 'Customer prefers quiet room' },
-      { label: 'Record time', value: '14 Jun 2026, 08:00 / updated 14 Jun 2026, 09:30' },
+      {
+        dateTimeEndLabel: '14 Jun 2026, 09:30',
+        dateTimeEndValue: '2026-06-14T02:30:00.000Z',
+        dateTimeStartLabel: '14 Jun 2026, 08:00',
+        dateTimeStartValue: '2026-06-14T01:00:00.000Z',
+        label: 'Record time',
+        value: '14 Jun 2026, 08:00 / updated 14 Jun 2026, 09:30',
+      },
     ]);
   });
 

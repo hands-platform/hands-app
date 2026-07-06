@@ -275,6 +275,27 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('dateTime="2026-06-14T02:08:00.000Z"');
   });
 
+  it('renders service record created and updated times through shared date atoms', () => {
+    const markup = renderSections({
+      serviceRows: [
+        {
+          dateTimeEndLabel: 'Not set',
+          dateTimeEndValue: '2026-06-14T02:30:00.000Z',
+          dateTimeStartLabel: 'Not set',
+          dateTimeStartValue: '2026-06-14T01:00:00.000Z',
+          label: 'Record time',
+          value: 'Not set / updated Not set',
+        },
+      ],
+    });
+
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('<strong><time');
+    expect(markup).toContain('dateTime="2026-06-14T01:00:00.000Z"');
+    expect(markup).toContain('updated <time');
+    expect(markup).toContain('dateTime="2026-06-14T02:30:00.000Z"');
+  });
+
   it('renders post-match cancellation chat evidence inside the booking transcript', () => {
     const markup = renderSections({
       chatEvidenceRows: [

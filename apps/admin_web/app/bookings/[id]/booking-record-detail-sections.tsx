@@ -12,6 +12,10 @@ type InfoRowModel = {
   label: string;
   value: string;
   dateTimeValue?: string | null;
+  dateTimeStartLabel?: string;
+  dateTimeStartValue?: string | null;
+  dateTimeEndLabel?: string;
+  dateTimeEndValue?: string | null;
 };
 
 type TimelineStage = {
@@ -519,6 +523,15 @@ function InfoRows({ rows }: InfoRowsProps) {
 }
 
 function infoRowValue(row: InfoRowModel) {
+  if (row.dateTimeStartValue || row.dateTimeEndValue) {
+    return (
+      <>
+        <DateTimeText fallback={row.dateTimeStartLabel ?? row.value} value={row.dateTimeStartValue} /> / updated{' '}
+        <DateTimeText fallback={row.dateTimeEndLabel ?? row.value} value={row.dateTimeEndValue} />
+      </>
+    );
+  }
+
   return row.dateTimeValue ? <DateTimeText fallback={row.value} value={row.dateTimeValue} /> : row.value;
 }
 

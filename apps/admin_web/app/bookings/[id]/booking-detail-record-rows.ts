@@ -38,7 +38,9 @@ export function bookingDetailServiceRows(booking: AdminBookingDetail) {
     durationLabel: `${service?.service?.durationMin ?? '-'} min`,
     notesLabel: booking.notes ?? 'No notes',
     createdLabel: formatDate(booking.createdAt),
+    createdValue: booking.createdAt,
     updatedLabel: formatDate(booking.updatedAt),
+    updatedValue: booking.updatedAt,
   });
 }
 

@@ -12,7 +12,9 @@ describe('booking record info rows', () => {
         durationLabel: '60 min',
         notesLabel: 'No notes',
         createdLabel: '2026-06-11',
+        createdValue: '2026-06-11T01:00:00.000Z',
         updatedLabel: '2026-06-12',
+        updatedValue: '2026-06-12T02:00:00.000Z',
       }).map((row) => row.label),
     ).toEqual([
       'Option',
@@ -21,6 +23,28 @@ describe('booking record info rows', () => {
       'Notes',
       'Record time',
     ]);
+  });
+
+  it('keeps raw service record timestamps for shared DateTimeText rendering', () => {
+    expect(
+      bookingRecordServiceRows({
+        optionLabel: 'Massage / 60 min',
+        serviceName: 'Massage',
+        durationLabel: '60 min',
+        notesLabel: 'No notes',
+        createdLabel: '11 Jun 2026, 08:00',
+        createdValue: '2026-06-11T01:00:00.000Z',
+        updatedLabel: '12 Jun 2026, 09:00',
+        updatedValue: '2026-06-12T02:00:00.000Z',
+      }),
+    ).toContainEqual({
+      dateTimeEndLabel: '12 Jun 2026, 09:00',
+      dateTimeEndValue: '2026-06-12T02:00:00.000Z',
+      dateTimeStartLabel: '11 Jun 2026, 08:00',
+      dateTimeStartValue: '2026-06-11T01:00:00.000Z',
+      label: 'Record time',
+      value: '11 Jun 2026, 08:00 / updated 12 Jun 2026, 09:00',
+    });
   });
 
   it('adds cash fee debt only when the booking needs settlement', () => {

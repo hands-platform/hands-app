@@ -4,7 +4,9 @@ type BookingRecordServiceRowsInput = {
   durationLabel: string;
   notesLabel: string;
   createdLabel: string;
+  createdValue?: string | null;
   updatedLabel: string;
+  updatedValue?: string | null;
 };
 
 type BookingRecordPaymentRowsInput = {
@@ -23,7 +25,14 @@ export function bookingRecordServiceRows(input: BookingRecordServiceRowsInput) {
     { label: 'Name', value: input.serviceName },
     { label: 'Duration', value: input.durationLabel },
     { label: 'Notes', value: input.notesLabel },
-    { label: 'Record time', value: `${input.createdLabel} / updated ${input.updatedLabel}` },
+    {
+      dateTimeEndLabel: input.updatedLabel,
+      dateTimeEndValue: input.updatedValue,
+      dateTimeStartLabel: input.createdLabel,
+      dateTimeStartValue: input.createdValue,
+      label: 'Record time',
+      value: `${input.createdLabel} / updated ${input.updatedLabel}`,
+    },
   ];
 }
 
