@@ -64,6 +64,9 @@ describe('CouponsTableSection', () => {
     expect(sectionSource).not.toContain("booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'");
     expect(sectionSource).toContain('AdminTablePaginationFooter');
     expect(sectionSource).toContain('className="coupon-usage-table-footer"');
+    expect(sectionSource).toContain('MoneyText');
+    expect(sectionSource).toContain('<MoneyText amount={booking.amount} currency={booking.currency} />');
+    expect(sectionSource).not.toContain('<td>{booking.amountLabel}</td>');
     expect(sectionSource).not.toContain('<AdminTableFooter');
     expect(sectionSource).not.toContain('Showing {pageFrom} to {pageTo} of {totalCount} entries');
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
@@ -100,9 +103,10 @@ function buildRow(): CouponTableRow {
     usageBookingCount: 1,
     usageBookings: [
       {
-        amountLabel: '270,000 VND',
+        amount: 270_000,
         bookingHref: '/bookings/booking-1',
         bookingLabel: 'booking...',
+        currency: 'VND',
         customerLabel: 'Demo Customer',
         discountLabel: '30,000 VND',
         partnerLabel: 'Smoke Partner',

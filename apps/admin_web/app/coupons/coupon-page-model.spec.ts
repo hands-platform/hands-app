@@ -102,7 +102,8 @@ describe('coupon page model', () => {
       statusLabel: 'ACTIVE',
       usageBookings: [
         expect.objectContaining({
-          amountLabel: '270.000 VND',
+          amount: 270_000,
+          currency: 'VND',
           bookingHref: '/bookings/booking-1',
           customerLabel: 'Demo Customer',
           discountLabel: '30.000 VND',

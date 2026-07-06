@@ -18,14 +18,16 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminCard, AdminCardHeader, AdminDisclosure } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { MoneyText } from '../../components/money-text';
 import { StatusBadge, type StatusBadgeTone, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { CouponWindowState } from './coupon-page-model';
 import { couponDeleteConfirmHref } from './coupon-action-confirmation';
 
 export type CouponUsageBookingRow = {
-  readonly amountLabel: string;
+  readonly amount: number;
   readonly bookingHref: string;
   readonly bookingLabel: string;
+  readonly currency: string;
   readonly customerLabel: string;
   readonly discountLabel: string;
   readonly partnerLabel: string;
@@ -262,7 +264,7 @@ function CouponUsageBookingTable({
               <td>{booking.customerLabel}</td>
               <td>{booking.partnerLabel}</td>
               <td>{booking.serviceLabel}</td>
-              <td>{booking.amountLabel}</td>
+              <td><MoneyText amount={booking.amount} currency={booking.currency} /></td>
               <td>{booking.discountLabel}</td>
               <td>
                 <StatusBadge tone="neutral">{booking.statusLabel}</StatusBadge>

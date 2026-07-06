@@ -217,9 +217,10 @@ export function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTab
     endsAtInputValue: datetimeLocalInputValue(coupon.endsAt),
     usageBookingCount: coupon.usageBookingCount ?? coupon.usageBookings?.length ?? 0,
     usageBookings: (coupon.usageBookings ?? []).map((booking) => ({
-      amountLabel: formatMoney(booking.amount, booking.currency ?? 'VND', '-'),
+      amount: booking.amount ?? 0,
       bookingHref: `/bookings/${booking.bookingId}`,
       bookingLabel: shortDisplayId(booking.bookingId),
+      currency: booking.currency ?? 'VND',
       customerLabel: booking.customerName ?? booking.customerPhone ?? 'Unknown customer',
       discountLabel: formatMoney(booking.discountAmount, booking.currency ?? 'VND', '-'),
       partnerLabel: booking.partnerName ?? 'Not matched',
