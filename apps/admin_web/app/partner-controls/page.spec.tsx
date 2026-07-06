@@ -53,7 +53,10 @@ describe('PartnerControlsPage', () => {
   it('uses shared Vuexy status badge atoms instead of raw partner control pill markup', () => {
     expect(partnerControlsSource).toContain("from '../../components/status-badge'");
     expect(partnerControlsSource).toContain('StatusBadge');
-    expect(partnerControlsSource).toContain('statusBadgeToneFromPillClass');
+    expect(partnerControlsSource).toContain('StatusBadgeFromPillClass');
+    expect(partnerControlsSource).not.toContain('statusBadgeToneFromPillClass');
+    expect(partnerControlsSource).not.toContain('function PartnerControlStatusBadge');
+    expect(partnerControlsSource).not.toContain('partnerControlStatusBadgeExtraClassName');
     expect(partnerControlsSource).not.toContain('PillClassBadge');
     expect(partnerControlsSource).not.toContain('<span className="pill');
     expect(partnerControlsSource).not.toContain('<span className={`pill');
