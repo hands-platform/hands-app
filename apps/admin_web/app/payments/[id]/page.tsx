@@ -7,6 +7,7 @@ import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '..
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
@@ -226,7 +227,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
             <ChatEvidenceRow message={message} key={message.id} />
           ))}
           {messages.length === 0 ? (
-            <div className="setup-stage-item">
+            <AdminStageItem>
               <StatusBadge tone="warning">Chat</StatusBadge>
               <div>
                 <AdminEmptyState
@@ -234,7 +235,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
                   title="No retained messages"
                 />
               </div>
-            </div>
+            </AdminStageItem>
           ) : null}
         </div>
       </AdminTablePanel>
@@ -263,13 +264,13 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
 
 function EvidenceRow({ label, value, helper }: { label: string; value: ReactNode; helper: ReactNode }) {
   return (
-    <div className="setup-stage-item">
+    <AdminStageItem>
       <StatusBadge tone="info">{label}</StatusBadge>
       <div>
         <strong>{value}</strong>
         <p className="muted">{helper}</p>
       </div>
-    </div>
+    </AdminStageItem>
   );
 }
 
@@ -467,12 +468,12 @@ function PayloadDetails({ value }: { value: unknown }) {
       <summary>{keys.length} key(s)</summary>
       <div className="setup-stage-list">
         {keys.slice(0, 12).map((key) => (
-          <div className="setup-stage-item" key={key}>
+          <AdminStageItem key={key}>
             <StatusBadge tone="neutral">{key}</StatusBadge>
             <div>
               <strong>{redactPaymentPayloadValue(record[key], key)}</strong>
             </div>
-          </div>
+          </AdminStageItem>
         ))}
       </div>
     </AdminDisclosure>
@@ -511,7 +512,7 @@ function redactPaymentPayloadObject(value: unknown): unknown {
 function ChatEvidenceRow({ message }: { message: AdminChatMessage }) {
   const sender = message.sender?.fullName ?? message.sender?.phone ?? 'App user';
   return (
-    <div className="setup-stage-item">
+    <AdminStageItem>
       <StatusBadge tone="info">
         <DateTimeText value={message.createdAt} />
       </StatusBadge>
@@ -519,7 +520,7 @@ function ChatEvidenceRow({ message }: { message: AdminChatMessage }) {
         <strong>{sender}</strong>
         <p className="muted">{message.body}</p>
       </div>
-    </div>
+    </AdminStageItem>
   );
 }
 

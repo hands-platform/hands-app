@@ -73,6 +73,13 @@ describe('PaymentDetailPage', () => {
     expect(source).not.toContain('<span className="pill pill-info">{formatDate(message.createdAt)}</span>');
   });
 
+  it('uses the shared Vuexy stage item atom for payment detail row surfaces', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminStageItem');
+    expect(source).not.toContain('className="setup-stage-item"');
+  });
+
   it('uses the shared DateTimeText atom for visible payment evidence timestamps', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
 
