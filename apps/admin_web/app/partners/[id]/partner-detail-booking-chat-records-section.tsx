@@ -6,13 +6,12 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminDisclosure, AdminNotePanel } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -46,8 +45,8 @@ export function PartnerDetailBookingChatRecordsSection({
   rows,
 }: PartnerDetailBookingChatRecordsSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Every matched booking should have a chat room. Completed service chats disappear from mobile apps, but the admin archive remains visible here."
       footer={
         <AdminTextLink href={openBookingsHref}>
@@ -137,7 +136,7 @@ export function PartnerDetailBookingChatRecordsSection({
         </AdminDataTable>
       </AdminTableScroll>
       <PartnerDetailVuexyTableFooter rowCount={rows.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -46,8 +45,8 @@ export function PartnerDetailBookingOpsLedgerSection({
   statusPillClass,
 }: PartnerDetailBookingOpsLedgerSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Booking-level notes, manual closeout context, and staff tasks linked to this partner. This is factual operator history only for follow-up, settlement, and evidence review."
       id="partner-booking-ops-ledger"
       resultLabel={`${rows.length} booking note row(s)`}
@@ -102,6 +101,6 @@ export function PartnerDetailBookingOpsLedgerSection({
           No booking-level operation notes or staff tasks matched this partner date filter.
         </p>
       ) : null}
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

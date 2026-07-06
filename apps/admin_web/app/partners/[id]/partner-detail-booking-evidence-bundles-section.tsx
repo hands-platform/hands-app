@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
+  PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -54,8 +53,8 @@ export function PartnerDetailBookingEvidenceBundlesSection({
   statusPillClass,
 }: PartnerDetailBookingEvidenceBundlesSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Booking-by-booking partner work bundle for operators. Each row connects the partner role, customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and staff task records as factual history only."
       id="partner-booking-evidence-bundles"
       resultLabel={`${rows.length} booking bundle(s)`}
@@ -122,6 +121,6 @@ export function PartnerDetailBookingEvidenceBundlesSection({
           No partner booking bundle matched this date filter.
         </p>
       ) : null}
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }

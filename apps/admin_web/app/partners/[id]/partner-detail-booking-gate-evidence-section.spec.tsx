@@ -34,6 +34,14 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     expect(source).not.toContain('className="text-link"');
   });
 
+  it('uses the partner detail Vuexy table panel atom for the booking gate evidence surface', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('renders booking create gate attempts as a Vuexy table', () => {
     const section = PartnerDetailBookingGateEvidenceSection({
       loadedAttempts: [
