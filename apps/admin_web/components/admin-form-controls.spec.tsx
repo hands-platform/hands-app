@@ -31,7 +31,7 @@ describe('Admin form controls', () => {
 
     expect(grid.props).toMatchObject({
       action: '/audit-log',
-      className: 'form-grid compact-form audit-filter-form',
+      className: 'admin-form-grid form-grid compact-form audit-filter-form',
       method: 'get',
     });
     expect(textContent(grid)).toBe('Filters');
@@ -44,7 +44,7 @@ describe('Admin form controls', () => {
     });
 
     expect(fields.type).toBe('div');
-    expect(fields.props.className).toBe('form-grid compact-form operator-note-lanes');
+    expect(fields.props.className).toBe('admin-form-grid form-grid compact-form operator-note-lanes');
     expect(textContent(fields)).toBe('Two selects');
   });
 
@@ -187,7 +187,7 @@ describe('Admin form controls', () => {
       type: 'month',
     });
 
-    expect(grid.props.className).toBe('form-grid compact-form');
+    expect(grid.props.className).toBe('admin-form-grid form-grid compact-form');
     expect(date.props.className).toBe(
       'admin-form-date admin-form-date-picker admin-form-input-date-picker settlement-date',
     );

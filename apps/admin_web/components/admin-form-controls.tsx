@@ -174,7 +174,7 @@ export function AdminFormShell({ children, className, ...formProps }: AdminFormS
 
 export function AdminFormGrid({ children, className, ...formProps }: AdminFormGridProps) {
   return (
-    <form {...formProps} className={joinClassNames('form-grid', className)}>
+    <form {...formProps} className={joinClassNames('admin-form-grid form-grid', className)}>
       {children}
     </form>
   );
@@ -182,7 +182,7 @@ export function AdminFormGrid({ children, className, ...formProps }: AdminFormGr
 
 export function AdminFormGridFields({ children, className, ...divProps }: AdminFormGridFieldsProps) {
   return (
-    <div {...divProps} className={joinClassNames('form-grid', className)}>
+    <div {...divProps} className={joinClassNames('admin-form-grid form-grid', className)}>
       {children}
     </div>
   );
