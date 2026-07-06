@@ -2,6 +2,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminKpiCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { DateTimeText } from '../../../components/date-time-text';
 import {
   AdminSignal,
   StatusBadge,
@@ -29,6 +30,8 @@ type NotificationTrace = {
   totalRows?: number;
   backupBatches: Array<{
     id: string;
+    createdAtLabel?: string | null;
+    createdAtValue?: string | null;
     signal: string;
     title: string;
     detail: string;
@@ -37,6 +40,8 @@ type NotificationTrace = {
   }>;
   rows: Array<{
     id: string;
+    createdAtLabel?: string | null;
+    createdAtValue?: string | null;
     signalClass: string;
     signal: string;
     title: string;
@@ -142,7 +147,8 @@ export function BookingAlertTraceSection({
               <div>
                 <h3>{batch.title}</h3>
                 <p>{batch.detail}</p>
-                <small>{batch.meta}</small>
+                <TraceCreatedAt label={batch.createdAtLabel} value={batch.createdAtValue} />
+                {batch.meta ? <small>{batch.meta}</small> : null}
                 {batch.providers ? <small>{batch.providers}</small> : null}
               </div>
             </div>
@@ -157,7 +163,8 @@ export function BookingAlertTraceSection({
               <div>
                 <h3>{row.title}</h3>
                 <p>{row.detail}</p>
-                <small>{row.meta}</small>
+                <TraceCreatedAt label={row.createdAtLabel} value={row.createdAtValue} />
+                {row.meta ? <small>{row.meta}</small> : null}
                 {row.delivery ? <small>{row.delivery}</small> : null}
               </div>
             </div>
@@ -177,6 +184,18 @@ export function BookingAlertTraceSection({
         </p>
       )}
     </AdminSection>
+  );
+}
+
+function TraceCreatedAt({ label, value }: { label?: string | null; value?: string | null }) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <small>
+      Created <DateTimeText fallback={label ?? 'Not set'} value={value} />
+    </small>
   );
 }
 

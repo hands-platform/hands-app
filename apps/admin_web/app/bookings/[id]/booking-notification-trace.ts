@@ -122,7 +122,9 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
 
       return {
         id: `${createdAt ?? 'batch'}-${stage}-${index}`,
+        createdAtLabel: createdAt ? formatDate(createdAt) : 'Not set',
         createdAtTime: createdAt ? Date.parse(createdAt) : 0,
+        createdAtValue: createdAt,
         signal: notifiedCount > 0 ? 'Marketplace invited' : 'No marketplace sent',
         title: `${humanizeNotificationType(stage)} / ${notifiedCount} Partner(s)`,
         notifiedCountLabel: `${notifiedCount}`,
@@ -131,7 +133,6 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
             ? `${notifiedCount} Partner(s) were sent marketplace availability alerts.`
             : 'The marketplace batch ran, but no eligible Partner was available under the saved policy.',
         meta: [
-          createdAt ? `created ${formatDate(createdAt)}` : null,
           websocketTargetCount !== null ? `websocket targets ${websocketTargetCount}` : null,
           marketplaceFields.radius !== null ? `radius ${formatDistanceMeters(marketplaceFields.radius)}` : null,
           marketplaceFields.invitationLimit !== null ? `invite cap ${marketplaceFields.invitationLimit}` : null,
@@ -146,6 +147,8 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
     .sort((left, right) => right.createdAtTime - left.createdAtTime)
     .map((batch) => ({
       id: batch.id,
+      createdAtLabel: batch.createdAtLabel,
+      createdAtValue: batch.createdAtValue,
       signal: batch.signal,
       title: batch.title,
       notifiedCountLabel: batch.notifiedCountLabel,
@@ -180,6 +183,8 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     deliveryStatuses,
     disabledDeviceCount: deliveries.filter((delivery) => delivery.pushDevice?.enabled === false).length,
     staleDeviceCount: deliveries.filter(isStaleNotificationPushDeviceDelivery).length,
+    createdAtLabel: formatDate(notification.createdAt),
+    createdAtValue: notification.createdAt,
     signal: failed
       ? 'Retry needed'
       : disabled
@@ -194,7 +199,6 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     detail: marketplaceDisplayText(notification.body),
     meta: [
       humanizeNotificationType(notification.type),
-      `created ${formatDate(notification.createdAt)}`,
       providerProfileId ? `Partner ${shortId(providerProfileId)}` : null,
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
       marketplaceFields.radius !== null

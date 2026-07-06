@@ -20,6 +20,8 @@ describe('booking notification trace', () => {
       deliveries: [],
     } as AdminNotification);
 
+    expect(row.createdAtValue).toBe('2026-06-07T01:00:00.000Z');
+    expect(row.createdAtLabel).toBeTruthy();
     expect(row.meta).toContain('marketplace radius 5 km');
     expect(row.meta).toContain('invite cap 25');
     expect(row.meta).toContain('marketplace mode IMMEDIATE_WITHIN_WINDOW');
@@ -85,6 +87,8 @@ describe('booking notification trace', () => {
       [],
     );
 
+    expect(trace.backupBatches[0]?.createdAtValue).toBe('2026-06-07T01:00:00.000Z');
+    expect(trace.backupBatches[0]?.createdAtLabel).toBeTruthy();
     expect(trace.backupBatches[0]?.meta).toContain('radius 5 km');
     expect(trace.backupBatches[0]?.meta).toContain('invite cap 25');
     expect(trace.backupBatches[0]?.meta).toContain('mode IMMEDIATE_WITHIN_WINDOW');

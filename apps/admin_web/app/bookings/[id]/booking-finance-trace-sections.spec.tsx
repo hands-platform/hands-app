@@ -109,4 +109,45 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     expect(markup).toContain('No active attention checks. Continue normal monitoring from the timeline.');
     expect(markup).toContain('class="empty-state');
   });
+
+  it('renders notification trace created times through the shared DateTimeText atom', () => {
+    const source = readFileSync('app/bookings/[id]/booking-finance-trace-sections.tsx', 'utf8');
+    const markup = renderToStaticMarkup(
+      <BookingAlertTraceSection
+        bookingId="booking-1"
+        notificationTrace={{
+          backupBatches: [
+            {
+              createdAtLabel: 'Not set',
+              createdAtValue: '2026-06-14T02:10:00.000Z',
+              detail: 'Two Partners were invited.',
+              id: 'batch-1',
+              meta: 'radius 5 km',
+              signal: 'Marketplace invited',
+              title: 'Marketplace alert batch',
+            },
+          ],
+          metrics: [],
+          rows: [
+            {
+              createdAtLabel: 'Not set',
+              createdAtValue: '2026-06-14T02:12:00.000Z',
+              detail: 'Partner was notified.',
+              id: 'notification-1',
+              meta: 'Booking requested',
+              signal: 'Delivered',
+              signalClass: 'signal-ok',
+              title: 'Booking requested / Partner One',
+            },
+          ],
+        }}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('Created <time');
+    expect(markup).toContain('dateTime="2026-06-14T02:10:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-14T02:12:00.000Z"');
+  });
 });
