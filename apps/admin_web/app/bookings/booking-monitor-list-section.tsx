@@ -17,6 +17,7 @@ import {
 import { AdminErrorState, AdminLoadingState } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -412,15 +413,17 @@ function bookingTableGroupResultTone(
 
 function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly BookingNeedsReviewMetric[] }) {
   return (
-    <div className="vuexy-booking-review-summary" aria-label="Post-match cancellation review priorities">
-      {metrics.map((metric) => (
-        <div className={`vuexy-booking-review-metric ${metric.tone}`} key={metric.label}>
-          <span>{metric.label}</span>
-          <strong>{metric.value}</strong>
-          <p>{metric.helper}</p>
-        </div>
-      ))}
-    </div>
+    <AdminTraceSummary
+      ariaLabel="Post-match cancellation review priorities"
+      className="vuexy-booking-review-summary"
+      metrics={metrics.map((metric) => ({
+        className: metric.tone,
+        detail: metric.helper,
+        key: metric.label,
+        label: metric.label,
+        value: metric.value,
+      }))}
+    />
   );
 }
 

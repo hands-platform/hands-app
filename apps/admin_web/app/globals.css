@@ -3028,49 +3028,22 @@ a.action-button-card:hover {
   background: var(--admin-surface-raised);
 }
 
-.vuexy-booking-review-summary {
+.vuexy-booking-review-summary.service-trace-summary {
   border-top: 1px solid var(--admin-border);
-  display: grid;
-  gap: 12px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 14px 24px 18px;
 }
 
-.vuexy-booking-review-metric {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  display: grid;
+.vuexy-booking-review-summary.service-trace-summary > div {
   gap: 5px;
-  min-width: 0;
   padding: 12px;
 }
 
-.vuexy-booking-review-metric span {
-  color: var(--admin-muted);
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.vuexy-booking-review-metric strong {
-  color: var(--admin-text);
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 28px;
-}
-
-.vuexy-booking-review-metric p {
-  color: var(--admin-muted);
-  font-size: 12px;
-  line-height: 18px;
-  margin: 0;
-}
-
-.vuexy-booking-review-metric.is-warn {
+.vuexy-booking-review-summary.service-trace-summary > div.is-warn {
   border-color: rgb(var(--admin-warning-channel) / 0.34);
 }
 
-.vuexy-booking-review-metric.is-danger {
+.vuexy-booking-review-summary.service-trace-summary > div.is-danger {
   border-color: rgb(var(--admin-danger-channel) / 0.34);
 }
 

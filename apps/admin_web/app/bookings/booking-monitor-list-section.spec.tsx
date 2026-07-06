@@ -38,6 +38,14 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
   });
 
+  it('uses the shared Vuexy trace summary atom for post-match cancellation review metrics', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="vuexy-booking-review-summary"');
+    expect(source).not.toContain('<div className={`vuexy-booking-review-metric ${metric.tone}`}');
+  });
+
   it('uses the shared Vuexy button atom for post-match chat close controls', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 
@@ -591,10 +599,10 @@ describe('BookingMonitorListSection', () => {
       'title="Partner cancellation happened after the 15-minute auto-approval window."',
     );
     expect(markup).toContain('title="Partner fee deduction remains until approval."');
-    expect(markup).toContain('vuexy-booking-review-summary');
+    expect(markup).toContain('service-trace-summary vuexy-booking-review-summary');
     expect(markup).toContain('vuexy-booking-review-reasons');
-    expect(markup).toContain('vuexy-booking-review-metric is-warn');
-    expect(markup).toContain('vuexy-booking-review-metric is-danger');
+    expect(markup).toContain('class="is-warn"');
+    expect(markup).toContain('class="is-danger"');
     expect(markup).not.toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
     expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
