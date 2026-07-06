@@ -1,9 +1,8 @@
-import Link from 'next/link';
-
 import type { AdminManualWalletAdjustmentRow } from '../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 import { AdminInlineFallback } from './admin-inline-fallback';
 import { AdminTablePanel } from './admin-table-panel';
+import { AdminTextLink } from './admin-text-link';
 import { DateTimeText } from './date-time-text';
 import { MoneyText } from './money-text';
 import { StatusBadge } from './status-badge';
@@ -38,9 +37,9 @@ export function AdminManualWalletAdjustmentHistory({
       title="Recent manual wallet adjustments"
     >
       <div className="actions admin-mb-12">
-        <Link className="text-link" href={walletAdjustmentsHref}>
+        <AdminTextLink href={walletAdjustmentsHref}>
           Open wallet adjustment desk
-        </Link>
+        </AdminTextLink>
       </div>
       <AdminTableScroll>
         <AdminDataTable

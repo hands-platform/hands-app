@@ -252,6 +252,9 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTablePanel');
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('import Link from \'next/link\';');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain(
       'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card"',
     );

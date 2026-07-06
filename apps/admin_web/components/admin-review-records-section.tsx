@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Eye, Star } from 'lucide-react';
 
 import {
@@ -10,6 +9,7 @@ import { AdminInlineFallback } from './admin-inline-fallback';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
 import { AdminTablePanel } from './admin-table-panel';
+import { AdminTextLink } from './admin-text-link';
 import { DateTimeText } from './date-time-text';
 import { StatusBadge, type StatusBadgeTone } from './status-badge';
 import {
@@ -247,10 +247,10 @@ function reviewRequestCell(review: AdminReview) {
     <>
       <div className="vuexy-booking-id-line">
         {bookingId ? (
-          <Link className="text-link" href={`/bookings/${bookingId}`} title="Open booking detail">
+          <AdminTextLink href={`/bookings/${bookingId}`} title="Open booking detail">
             <Eye aria-hidden="true" size={14} />
             {shortId(bookingId)}
-          </Link>
+          </AdminTextLink>
         ) : (
           <AdminInlineFallback>No booking link</AdminInlineFallback>
         )}
@@ -271,10 +271,10 @@ function partnerEvaluationRequestCell(review: AdminPartnerCustomerReview) {
     <>
       <div className="vuexy-booking-id-line">
         {bookingId ? (
-          <Link className="text-link" href={`/bookings/${bookingId}`} title="Open booking detail">
+          <AdminTextLink href={`/bookings/${bookingId}`} title="Open booking detail">
             <Eye aria-hidden="true" size={14} />
             {shortId(bookingId)}
-          </Link>
+          </AdminTextLink>
         ) : (
           <AdminInlineFallback>No booking link</AdminInlineFallback>
         )}

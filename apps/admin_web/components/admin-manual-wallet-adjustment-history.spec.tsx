@@ -54,6 +54,9 @@ describe('AdminManualWalletAdjustmentHistory', () => {
     expect(componentSource).toContain('DateTimeText');
     expect(componentSource).toContain('AdminTablePanel');
     expect(componentSource).toContain('AdminInlineFallback');
+    expect(componentSource).toContain('AdminTextLink');
+    expect(componentSource).not.toContain('import Link from \'next/link\';');
+    expect(componentSource).not.toContain('className="text-link"');
     expect(componentSource).not.toContain(
       "className = 'admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group'",
     );
