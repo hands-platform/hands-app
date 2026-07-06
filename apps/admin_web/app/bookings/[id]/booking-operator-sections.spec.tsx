@@ -21,6 +21,8 @@ describe('BookingOperatorQueueSections', () => {
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<div className="ops-task-note admin-mt-14">');
