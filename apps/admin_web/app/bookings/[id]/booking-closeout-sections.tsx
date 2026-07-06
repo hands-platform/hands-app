@@ -1,6 +1,7 @@
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminActionCard, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { DateTimeText } from '../../../components/date-time-text';
 import {
   StatusBadge,
   StatusBadgeLink,
@@ -11,6 +12,10 @@ type CloseoutChecklistItem = {
   title: string;
   status: string;
   detail: string;
+  detailDateTimeFallback?: string | null;
+  detailDateTimePrefix?: string;
+  detailDateTimeSuffix?: string;
+  detailDateTimeValue?: string | null;
   operatorRule: string;
   href: string;
   className: string;
@@ -57,7 +62,7 @@ export function BookingCloseoutSections({
             <AdminActionCard
               actionLabel={item.operatorRule}
               className={item.className}
-              detail={item.detail}
+              detail={closeoutChecklistDetail(item)}
               href={item.href}
               key={item.title}
               leading={
@@ -93,6 +98,21 @@ export function BookingCloseoutSections({
           }))}
         />
       </AdminSection>
+    </>
+  );
+}
+
+function closeoutChecklistDetail(item: CloseoutChecklistItem) {
+  if (!item.detailDateTimeFallback && !item.detailDateTimeValue) {
+    return item.detail;
+  }
+
+  return (
+    <>
+      {item.detail}
+      {item.detailDateTimePrefix ?? ' '}
+      <DateTimeText fallback={item.detailDateTimeFallback ?? 'Not set'} value={item.detailDateTimeValue} />
+      {item.detailDateTimeSuffix}
     </>
   );
 }

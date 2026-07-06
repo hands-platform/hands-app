@@ -10,6 +10,10 @@ export type BookingCloseoutChecklistItem = {
   title: string;
   status: string;
   detail: string;
+  detailDateTimeFallback?: string | null;
+  detailDateTimePrefix?: string;
+  detailDateTimeSuffix?: string;
+  detailDateTimeValue?: string | null;
   operatorRule: string;
   href: string;
   className: BookingChecklistClassName;
@@ -29,6 +33,7 @@ export type BookingCloseoutChecklistRowsInput = {
   chatRoomShortId?: string | null;
   chatMessageCount: number;
   latestMessageAtLabel?: string | null;
+  latestMessageAtValue?: string | null;
   cashDebt: boolean;
   paymentStatus?: string | null;
   paymentMethod: string;
@@ -47,6 +52,8 @@ export type BookingCloseoutChecklistRowsInput = {
   taxRows: number;
   operatorTrailCount: number;
   latestLocationLabel?: string | null;
+  latestLocationAtLabel?: string | null;
+  latestLocationAtValue?: string | null;
   notificationCount: number;
 };
 
@@ -95,12 +102,13 @@ export function bookingCloseoutChecklistRows(
       title: 'Chat archive',
       status: input.chatReady ? 'Archived' : input.chatNeeded ? 'Repair needed' : 'Locked',
       detail: input.chatReady
-        ? `Room ${input.chatRoomShortId ?? 'missing'} keeps ${input.chatMessageCount} message(s); latest ${
-            input.latestMessageAtLabel ?? 'not sent yet'
-          }.`
+        ? `Room ${input.chatRoomShortId ?? 'missing'} keeps ${input.chatMessageCount} message(s); latest`
         : input.chatNeeded
           ? 'Matched or active booking has no retained chat room attached.'
           : 'Chat opens after the customer selects the final Partner.',
+      detailDateTimeFallback: input.chatReady ? input.latestMessageAtLabel ?? 'not sent yet' : null,
+      detailDateTimeSuffix: input.chatReady ? '.' : undefined,
+      detailDateTimeValue: input.chatReady ? input.latestMessageAtValue ?? null : null,
       operatorRule: 'Mobile chat may hide after completion, but admin must retain the transcript.',
       href: input.chatReady
         ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}`
@@ -163,8 +171,12 @@ export function bookingCloseoutChecklistRows(
       title: 'Location and alert trail',
       status: input.latestLocationLabel ? 'Movement saved' : input.notificationCount ? 'Alerts saved' : 'Sparse',
       detail: input.latestLocationLabel
-        ? `${input.latestLocationLabel}.`
+        ? input.latestLocationLabel
         : `${input.notificationCount} alert row(s), ${input.failedAlertCount} failed delivery row(s).`,
+      detailDateTimeFallback: input.latestLocationLabel ? input.latestLocationAtLabel ?? 'No timestamp' : null,
+      detailDateTimePrefix: input.latestLocationLabel ? ' / ' : undefined,
+      detailDateTimeSuffix: input.latestLocationLabel ? '.' : undefined,
+      detailDateTimeValue: input.latestLocationLabel ? input.latestLocationAtValue ?? null : null,
       operatorRule: 'Use saved pins and alert delivery only as factual operations history.',
       href: input.latestLocationLabel
         ? '#location'

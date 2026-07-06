@@ -12,6 +12,8 @@ describe('BookingCloseoutSections', () => {
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('AdminTextLink');
+    expect(source).toContain('DateTimeText');
+    expect(source).toContain('closeoutChecklistDetail(item)');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('className="text-link"');
@@ -20,6 +22,32 @@ describe('BookingCloseoutSections', () => {
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill pill-info">{connectedRecordLinks.length} links</span>');
     expect(source).not.toContain('<Link className={`pill ${record.tone}`} href={record.href}>');
+  });
+
+  it('renders checklist timestamp details through the shared date atom', () => {
+    const markup = renderToStaticMarkup(
+      <BookingCloseoutSections
+        bookingCloseoutChecklist={[
+          {
+            className: 'ops-task-done',
+            detail: 'Room room_123 keeps 3 message(s); latest',
+            detailDateTimeFallback: '07 Jun 2026 10:30',
+            detailDateTimeSuffix: '.',
+            detailDateTimeValue: '2026-06-07T03:30:00.000Z',
+            href: '#chat',
+            operatorRule: 'Retain admin transcript.',
+            pillClass: 'pill-success',
+            status: 'Archived',
+            title: 'Chat archive',
+          },
+        ]}
+        connectedRecordLinks={[]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('class="date-time-text"');
+    expect(markup).toContain('dateTime="2026-06-07T03:30:00.000Z"');
+    expect(markup).toContain('Room room_123 keeps 3 message(s); latest');
   });
 
   it('renders closeout checklist and connected records on shared Vuexy section surfaces', () => {

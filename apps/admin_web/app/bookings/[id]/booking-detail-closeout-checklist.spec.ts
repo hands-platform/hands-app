@@ -129,10 +129,12 @@ describe('bookingDetailCloseoutChecklist', () => {
       status: 'Selected',
     });
     expect(rows.find((row) => row.title === 'Chat archive')).toMatchObject({
+      detailDateTimeValue: '2026-06-14T01:05:00.000Z',
       status: 'Archived',
     });
     expect(rows.find((row) => row.title === 'Location and alert trail')).toMatchObject({
-      detail: 'Location recorded without readable address / 14 Jun 2026, 08:10.',
+      detail: 'Location recorded without readable address',
+      detailDateTimeValue: '2026-06-14T01:10:00.000Z',
       status: 'Movement saved',
     });
     expect(rows.find((row) => row.title === 'Location and alert trail')?.detail).not.toMatch(

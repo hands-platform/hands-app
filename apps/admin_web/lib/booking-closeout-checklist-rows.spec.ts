@@ -13,6 +13,7 @@ const baseInput = {
   chatRoomShortId: 'room_123',
   chatMessageCount: 3,
   latestMessageAtLabel: '07 Jun 2026 10:30',
+  latestMessageAtValue: '2026-06-07T03:30:00.000Z',
   cashDebt: false,
   paymentStatus: 'AUTHORIZED',
   paymentMethod: 'MOMO',
@@ -30,7 +31,9 @@ const baseInput = {
   closeoutOpenItemLabels: ['capture payment'],
   taxRows: 1,
   operatorTrailCount: 4,
-  latestLocationLabel: '10.7769, 106.7009 / 07 Jun 2026 10:31',
+  latestLocationLabel: 'District 1, Ho Chi Minh City',
+  latestLocationAtLabel: '07 Jun 2026 10:31',
+  latestLocationAtValue: '2026-06-07T03:31:00.000Z',
   notificationCount: 2,
 };
 
@@ -99,6 +102,27 @@ describe('bookingCloseoutChecklistRows', () => {
     expect(rows[3].operatorRule).toContain(
       'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
     );
+  });
+
+  it('keeps closeout timestamps as shared Atom-ready values instead of embedding them in detail copy', () => {
+    const rows = bookingCloseoutChecklistRows(baseInput);
+
+    expect(rows[2]).toMatchObject({
+      title: 'Chat archive',
+      detail: 'Room room_123 keeps 3 message(s); latest',
+      detailDateTimeFallback: '07 Jun 2026 10:30',
+      detailDateTimeSuffix: '.',
+      detailDateTimeValue: '2026-06-07T03:30:00.000Z',
+    });
+    expect(rows[6]).toMatchObject({
+      title: 'Location and alert trail',
+      detail: 'District 1, Ho Chi Minh City',
+      detailDateTimeFallback: '07 Jun 2026 10:31',
+      detailDateTimePrefix: ' / ',
+      detailDateTimeSuffix: '.',
+      detailDateTimeValue: '2026-06-07T03:31:00.000Z',
+    });
+    expect(`${rows[2].detail} ${rows[6].detail}`).not.toContain('07 Jun 2026');
   });
 
   it('keeps terminal and batch evidence factual for admin decisions', () => {

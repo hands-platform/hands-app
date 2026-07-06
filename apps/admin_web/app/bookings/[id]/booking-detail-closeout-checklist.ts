@@ -70,6 +70,7 @@ export function bookingDetailCloseoutChecklist({
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     chatMessageCount: messages.length,
     latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
+    latestMessageAtValue: latestMessage?.createdAt ?? null,
     cashDebt: cashFeeDebtNeedsSettlement,
     paymentStatus: booking.payment?.status ?? null,
     paymentMethod: booking.payment?.method ?? 'NONE',
@@ -88,6 +89,8 @@ export function bookingDetailCloseoutChecklist({
     taxRows: booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0,
     operatorTrailCount: operatorNoteLines.length + bookingActivityRecords.length + (booking.auditLogs?.length ?? 0),
     latestLocationLabel: latestCloseoutLocationLabel(latestLocation),
+    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+    latestLocationAtValue: latestLocation?.recordedAt ?? null,
     notificationCount: notificationTrace.rows.length,
   });
 }
@@ -101,5 +104,5 @@ function latestCloseoutLocationLabel(latestLocation: AdminLocationSnapshot | nul
   const locationLabel = address
     ? serviceAddressAreaLabel(address)
     : 'Location recorded without readable address';
-  return `${locationLabel} / ${formatDate(latestLocation.recordedAt)}`;
+  return locationLabel;
 }
