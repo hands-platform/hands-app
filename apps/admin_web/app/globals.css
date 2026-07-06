@@ -2517,7 +2517,13 @@ a.action-button-card:hover {
 }
 
 .admin-inline-fallback {
+  align-items: center;
   color: var(--admin-muted);
+  display: inline-flex;
+  font-size: 0.8125rem;
+  line-height: 20px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .money-text {
