@@ -239,6 +239,34 @@ describe('BookingUnifiedDetailSection', () => {
     });
   });
 
+  it('keeps raw latest Partner location timestamps for shared DateTimeText rendering', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture(),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: {
+        id: 'latest-readable-location',
+        addressText: '33 Nguyen Dinh Chieu, Sai Gon, Ho Chi Minh City, Vietnam',
+        lat: 10.7823,
+        lng: 106.6978,
+        providerProfileId: 'partner-1',
+        recordedAt: '2026-06-19T07:49:50.000Z',
+      } as AdminLocationSnapshot,
+      messageCount: 3,
+    });
+
+    const latest = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Latest location');
+
+    expect(latest).toMatchObject({
+      detail: 'Recorded 19 Jun 2026, 14:49',
+      detailDateTimePrefix: 'Recorded ',
+      detailDateTimeValue: '2026-06-19T07:49:50.000Z',
+      value: 'Sai Gon, Ho Chi Minh City',
+    });
+  });
+
   it('renders location checkpoint detail timestamps through shared DateTimeText atoms', () => {
     const markup = renderToStaticMarkup(
       <BookingUnifiedDetailSection

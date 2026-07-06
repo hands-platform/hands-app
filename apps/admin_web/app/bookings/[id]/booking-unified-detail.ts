@@ -284,6 +284,14 @@ function bookingUnifiedMatchedPartnerRows({
       label: 'Latest location',
       value: latestPartnerLocation.value,
       detail: latestPartnerLocation.detail,
+      detailDateTimeFallback: latestPartnerLocation.detailDateTimeFallback,
+      detailDateTimePrefix: latestPartnerLocation.detailDateTimePrefix,
+      detailDateTimeSuffix: latestPartnerLocation.detailDateTimeSuffix,
+      detailDateTimeValue: latestPartnerLocation.detailDateTimeValue,
+      detailSecondDateTimeFallback: latestPartnerLocation.detailSecondDateTimeFallback,
+      detailSecondDateTimePrefix: latestPartnerLocation.detailSecondDateTimePrefix,
+      detailSecondDateTimeSuffix: latestPartnerLocation.detailSecondDateTimeSuffix,
+      detailSecondDateTimeValue: latestPartnerLocation.detailSecondDateTimeValue,
       variant: 'secondary',
     },
   ];
@@ -906,13 +914,16 @@ function providerLocationAddressDetail({
   readonly booking: AdminBookingDetail;
   readonly latestLocation?: AdminLocationSnapshot | null;
   readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
-}) {
+}): BookingUnifiedLocationDetail {
   const latestAddress = readAddressText(latestLocation);
   if (latestAddress) {
     return {
       detail: latestLocation
         ? `Recorded ${formatDate(latestLocation.recordedAt)}`
         : 'Latest Partner location address.',
+      detailDateTimeFallback: latestLocation ? formatDate(latestLocation.recordedAt) : undefined,
+      detailDateTimePrefix: latestLocation ? 'Recorded ' : undefined,
+      detailDateTimeValue: latestLocation?.recordedAt,
       value: serviceAddressAreaLabel(latestAddress),
     };
   }
