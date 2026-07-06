@@ -24,6 +24,8 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('DecisionGuardrailEvidence');
     expect(source).toContain('value={row.evidenceDateTimeValue}');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="ops-section-header">');
