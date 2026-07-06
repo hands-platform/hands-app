@@ -361,6 +361,7 @@ describe('Admin surface components', () => {
   it('renders a reusable Vuexy drawer surface for app side panels', () => {
     const drawer = AdminDrawerSurface({
       ariaLabel: 'Event editor',
+      ariaLabelledBy: 'event-editor-title',
       children: <p>Drawer content</p>,
       className: 'calendar-drawer',
     });
@@ -368,6 +369,7 @@ describe('Admin surface components', () => {
     expect(drawer.type).toBe('aside');
     expect(drawer.props).toMatchObject({
       'aria-label': 'Event editor',
+      'aria-labelledby': 'event-editor-title',
       className: 'calendar-drawer',
     });
   });

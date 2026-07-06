@@ -24,4 +24,11 @@ describe('ReviewRowActions Vuexy action menu usage', () => {
     expect(source).toContain('AdminDrawerBackdropButton');
     expect(source).not.toContain('<button\n        aria-label="Close review editor"');
   });
+
+  it('keeps review edit drawer shell on the shared Vuexy drawer surface atom', () => {
+    const source = readFileSync(join(process.cwd(), 'app/reviews/review-row-actions.tsx'), 'utf8');
+
+    expect(source).toContain('AdminDrawerSurface');
+    expect(source).not.toContain('<aside\n        aria-labelledby={titleId}');
+  });
 });

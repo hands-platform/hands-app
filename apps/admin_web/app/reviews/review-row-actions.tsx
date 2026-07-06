@@ -13,7 +13,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminDrawerBackdropButton } from '../../components/admin-drawer-backdrop-button';
-import { AdminCard } from '../../components/admin-surface';
+import { AdminCard, AdminDrawerSurface } from '../../components/admin-surface';
 import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
 
@@ -135,9 +135,10 @@ function ReviewEditDrawer({
         className="review-edit-drawer-backdrop"
         onClick={onClose}
       />
-      <aside
-        aria-labelledby={titleId}
-        aria-modal="true"
+      <AdminDrawerSurface
+        ariaLabel="Review editor"
+        ariaLabelledBy={titleId}
+        ariaModal={true}
         className="calendar-drawer review-edit-drawer"
         role="dialog"
       >
@@ -217,7 +218,7 @@ function ReviewEditDrawer({
             </AdminDrawerActionFooter>
           </AdminDrawerFormGrid>
         </div>
-      </aside>
+      </AdminDrawerSurface>
     </>
   );
 }

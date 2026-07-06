@@ -69,6 +69,7 @@ type AdminDialogCardProps = AdminCardProps & {
 
 type AdminDrawerSurfaceProps = {
   readonly ariaLabel: string;
+  readonly ariaLabelledBy?: string;
   readonly ariaModal?: boolean;
   readonly children: ReactNode;
   readonly className?: string;
@@ -384,6 +385,7 @@ export function AdminDialogCard({
 
 export function AdminDrawerSurface({
   ariaLabel,
+  ariaLabelledBy,
   ariaModal,
   children,
   className,
@@ -392,6 +394,7 @@ export function AdminDrawerSurface({
   return (
     <aside
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       aria-modal={ariaModal}
       className={className}
       role={role}
