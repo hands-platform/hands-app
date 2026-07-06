@@ -23,6 +23,8 @@ describe('Booking operating sections', () => {
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="ops-section-header">');

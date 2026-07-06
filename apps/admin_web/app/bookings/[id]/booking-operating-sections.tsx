@@ -10,7 +10,7 @@ import {
 } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 
 type SummaryCard = {
   label: string;
@@ -138,9 +138,9 @@ export function BookingMarketplaceWalletEvidenceSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(marketplaceWalletEvidence.tone)}>
+        <StatusBadgeFromPillClass pillClass={marketplaceWalletEvidence.tone}>
           {marketplaceWalletEvidence.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Participant, customer choice, alert, and wallet evidence for this booking."
@@ -167,7 +167,7 @@ export function BookingMarketplaceWalletEvidenceSection({
               <span className="booking-settlement-ledger-label">{row.lane}</span>
               <p className="muted">{row.scope}</p>
             </div>
-            <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={row.tone}>{row.status}</StatusBadgeFromPillClass>
             <p>{row.record}</p>
             <p>{row.operatorUse}</p>
           </div>
@@ -223,9 +223,9 @@ export function BookingCloseoutReadinessSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(closeoutReadiness.tone)}>
+        <StatusBadgeFromPillClass pillClass={closeoutReadiness.tone}>
           {closeoutReadiness.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Factual completeness check for booking closeout."
@@ -288,9 +288,9 @@ export function BookingOperatingSnapshotSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(operatingSnapshot.tone)}>
+        <StatusBadgeFromPillClass pillClass={operatingSnapshot.tone}>
           {operatingSnapshot.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Same-shift control view for the confirmed address, customer choice, Partner participation, chat, payment, wallet, and next operator action."
@@ -361,17 +361,17 @@ function operatingTimelineTone(item: OperatingTimelineItem): OperatingTimelineTo
   return 'info';
 }
 
-function operatingTimelinePillTone(tone: OperatingTimelineTone) {
+function operatingTimelineStatusTone(tone: OperatingTimelineTone): StatusBadgeTone {
   if (tone === 'success') {
-    return 'pill-success';
+    return 'success';
   }
   if (tone === 'warning') {
-    return 'pill-warn';
+    return 'warning';
   }
   if (tone === 'danger') {
-    return 'pill-danger';
+    return 'danger';
   }
-  return 'pill-info';
+  return 'info';
 }
 
 function BookingVuexyTimelineList({ items }: { readonly items: readonly BookingVuexyTimelineItem[] }) {
@@ -398,7 +398,7 @@ function bookingOperatingBasicTimelineItems(
         { label: 'State', value: item.status },
       ],
       statusLabel: item.status,
-      statusTone: statusBadgeToneFromPillClass(operatingTimelinePillTone(tone)),
+      statusTone: operatingTimelineStatusTone(tone),
       time: <DateTimeText fallback={item.status} value={item.at} />,
       title: item.title,
       tone,
@@ -449,9 +449,9 @@ export function BookingCommunicationMovementHandoffSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(communicationMovementHandoff.tone)}>
+        <StatusBadgeFromPillClass pillClass={communicationMovementHandoff.tone}>
           {communicationMovementHandoff.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This helps support confirm whether the assigned Partner and customer are connected."
@@ -543,9 +543,9 @@ export function BookingChatLifecycleSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone={statusBadgeToneFromPillClass(chatLifecycle.tone)}>
+        <StatusBadgeFromPillClass pillClass={chatLifecycle.tone}>
           {chatLifecycle.status}
-        </StatusBadge>
+        </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
       description="Chat is a required operational handoff after matching/service start. Mobile apps may hide it after service closeout, but admin keeps the full archive for support and dispute review."
