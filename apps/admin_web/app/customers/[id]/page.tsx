@@ -13,6 +13,7 @@ import {
   reviewRecordsForCustomer,
 } from '../../../components/admin-review-records-section';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { MoneyText } from '../../../components/money-text';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
@@ -700,15 +701,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         id="customer-account-evidence"
         title="Customer contact and evidence"
       >
-        <div className="service-trace-summary admin-mt-12">
-          {accountFacts.map((fact) => (
-            <div key={fact.label}>
-              <span>{fact.label}</span>
-              <strong>{fact.value}</strong>
-              <small className="muted">{fact.helper}</small>
-            </div>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={accountFacts.map((fact) => ({
+            detail: fact.helper,
+            label: fact.label,
+            value: fact.value,
+          }))}
+        />
       </AdminSection>
 
       <AdminSection

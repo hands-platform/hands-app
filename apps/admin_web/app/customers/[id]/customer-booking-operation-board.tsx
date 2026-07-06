@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
@@ -83,15 +84,15 @@ export function CustomerBookingOperationBoard({
         statusTone="info"
         title="Customer booking situation board"
       >
-        <div className="service-trace-summary admin-mt-12">
-          {metrics.map((metric) => (
-            <div className={`customer-booking-operation-metric ${metric.tone}`} key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
+        <AdminTraceSummary
+          className="admin-mt-12"
+          metrics={metrics.map((metric) => ({
+            className: `customer-booking-operation-metric ${metric.tone}`,
+            detail: metric.helper,
+            label: metric.label,
+            value: metric.value,
+          }))}
+        />
       </AdminSection>
 
       {groups.map((group) => (
