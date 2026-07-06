@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { AdminFormControlButton, AdminFormShell } from '../../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import { addBookingOpsNote } from './actions';
 
@@ -121,9 +121,9 @@ export function BookingEvidenceSections({
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.nextStep}</p>
-              <Link className="text-link" href={row.href}>
+              <AdminTextLink href={row.href}>
                 Open
-              </Link>
+              </AdminTextLink>
             </div>
           ))}
         </div>
@@ -162,9 +162,9 @@ export function BookingEvidenceSections({
               </div>
               <p>{record.evidence}</p>
               <StatusBadge tone="neutral">Record</StatusBadge>
-              <a className="text-link" href={record.href}>
+              <AdminTextLink href={record.href}>
                 Open
-              </a>
+              </AdminTextLink>
             </div>
           ))}
         </div>
@@ -203,9 +203,9 @@ export function BookingEvidenceSections({
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.state}</StatusBadge>
               <p>{row.record}</p>
               <p>{row.operatorUse}</p>
-              <Link className="text-link" href={row.href}>
+              <AdminTextLink href={row.href}>
                 Open
-              </Link>
+              </AdminTextLink>
             </div>
           ))}
         </div>
@@ -214,9 +214,9 @@ export function BookingEvidenceSections({
       <AdminSection
         actions={
           <div className="actions">
-            <Link className="text-link" href="/bookings?view=manual-decision">
+            <AdminTextLink href="/bookings?view=manual-decision">
               Open manual queue
-            </Link>
+            </AdminTextLink>
             <StatusBadge tone="info">{manualDecisionReadiness.length} decision lane(s)</StatusBadge>
           </div>
         }
@@ -235,9 +235,9 @@ export function BookingEvidenceSections({
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
-              <Link className="text-link" href={row.href}>
+              <AdminTextLink href={row.href}>
                 Open
-              </Link>
+              </AdminTextLink>
             </div>
           ))}
         </div>
@@ -283,9 +283,9 @@ export function BookingEvidenceSections({
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
               <p>{row.evidence}</p>
               <p>{row.operatorUse}</p>
-              <Link className="text-link" href={row.href}>
+              <AdminTextLink href={row.href}>
                 Open
-              </Link>
+              </AdminTextLink>
             </div>
           ))}
         </div>
