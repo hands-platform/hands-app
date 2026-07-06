@@ -13,6 +13,7 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
   it('uses the shared AdminFormControlLink atom for evidence actions', () => {
     expect(sectionSource).toContain('AdminTableSection');
     expect(sectionSource).toContain('AdminSectionHeader');
+    expect(sectionSource).toContain('AdminTaskCard');
     expect(sectionSource).toContain('AdminTraceSummary');
     expect(sectionSource).toContain('AdminFormControlLink');
     expect(sectionSource).toContain('DateTimeText');
@@ -72,8 +73,8 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
     expect(rendered).toContain('Service area');
     expect(rendered).toContain('Blocked booking create attempt');
     expect(elementTypesIn(section)).not.toContain('article');
-    expect(classNamesIn(section)).toContain('operations-policy-blocked-attempt-section');
-    expect(classNamesIn(section)).not.toContain('ops-task-card');
+    expect(classNamesIn(section)).toContain('ops-task-card operations-policy-blocked-attempt-section');
+    expect(sectionSource).not.toContain('<section className="operations-policy-blocked-attempt-section"');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=blocked-create',

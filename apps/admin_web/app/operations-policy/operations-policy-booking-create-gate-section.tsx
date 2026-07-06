@@ -4,7 +4,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminTaskGrid } from '../../components/admin-surface';
+import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -110,22 +110,29 @@ export function OperationsPolicyBookingCreateGateSection({
       ) : (
         <AdminTaskGrid className="admin-mt-14">
           {review.recentAttempts.map((attempt) => (
-            <section className="operations-policy-blocked-attempt-section" key={attempt.id}>
-              <StatusBadgeFromPillClass pillClass={attempt.pillClass}>
-                {attempt.reason}
-              </StatusBadgeFromPillClass>
-              <h3>Blocked booking create attempt</h3>
-              <p>{attempt.detail}</p>
-              <small>
-                Attempt {shortDisplayId(attempt.id)} - Recorded <DateTimeText value={attempt.createdAt} />
-              </small>
+            <AdminTaskCard
+              actionLabel={(
+                <>
+                  Attempt {shortDisplayId(attempt.id)} - Recorded <DateTimeText value={attempt.createdAt} />
+                </>
+              )}
+              className="operations-policy-blocked-attempt-section"
+              key={attempt.id}
+              leading={(
+                <StatusBadgeFromPillClass pillClass={attempt.pillClass}>
+                  {attempt.reason}
+                </StatusBadgeFromPillClass>
+              )}
+              detail={attempt.detail}
+              title="Blocked booking create attempt"
+            >
               <div className="actions admin-mt-10">
                 <AdminFormControlLink className="button-secondary" href={attempt.href}>
                   <ExternalLink size={16} aria-hidden="true" />
                   Open evidence
                 </AdminFormControlLink>
               </div>
-            </section>
+            </AdminTaskCard>
           ))}
         </AdminTaskGrid>
       )}
