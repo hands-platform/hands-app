@@ -31,6 +31,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
+import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -483,7 +484,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         ) : (
           <div className="setup-stage-list admin-mt-14">
             {filteredBookingCreateGateAttempts.slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT).map((attempt) => (
-              <div className="setup-stage-item" key={attempt.id}>
+              <AdminStageItem key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
                 <div>
                   <AdminTextLink href={attempt.bookingMonitorHref}>
@@ -509,7 +510,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 <small>
                   <DateTimeText value={attempt.at} />
                 </small>
-              </div>
+              </AdminStageItem>
             ))}
           </div>
         )}

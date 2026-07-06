@@ -9,7 +9,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('customer-chat-history-section');
     expect(pageSource).toContain('chatHistoryPage');
-    expect(pageSource).toContain('AdminRoundedPagination');
+    expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
     expect(pageSource).toContain('Customer contact and evidence');
     expect(pageSource).toContain('Customer account operations');

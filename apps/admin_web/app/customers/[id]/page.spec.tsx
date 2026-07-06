@@ -63,8 +63,10 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain("from '../../../components/status-badge'");
     expect(customerDetailSource).toContain('AdminSectionHeader');
     expect(customerDetailSource).toContain('AdminNotePanel');
+    expect(customerDetailSource).toContain('AdminStageItem');
     expect(customerDetailSource).toContain('StatusBadge');
     expect(customerDetailSource).not.toContain('PillClassBadge');
+    expect(customerDetailSource).not.toContain('className="setup-stage-item"');
     expect(customerDetailSource).not.toContain('<div className="ops-section-header');
     expect(customerDetailSource).not.toContain('<div className={`ops-task-note');
     expect(customerDetailSource).not.toContain('<div className="ops-task-note ops-task-pending admin-mt-14">');
