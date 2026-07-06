@@ -305,6 +305,21 @@ describe('Admin form control CSS', () => {
     expect(disabledSelectedBlock).toContain('font-weight: 400');
   });
 
+  it('keeps clearable react-datepicker icons on the Vuexy transparent close affordance', () => {
+    const closeIconIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__close-icon {');
+    const closeIconBlock = cssRuleBlockAt(closeIconIndex);
+    const closeIconAfterIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__close-icon::after {');
+    const closeIconAfterBlock = cssRuleBlockAt(closeIconAfterIndex);
+
+    expect(closeIconIndex).toBeGreaterThan(-1);
+    expect(closeIconAfterIndex).toBeGreaterThan(closeIconIndex);
+    expect(closeIconBlock).toContain('padding-inline-end: 16px');
+    expect(closeIconBlock).toContain('top: 10px');
+    expect(closeIconAfterBlock).toContain('background: transparent !important');
+    expect(closeIconAfterBlock).toContain('color: var(--admin-text)');
+    expect(closeIconAfterBlock).toContain('font-size: 1.5rem');
+  });
+
   it('matches Vuexy text field focus weight on shared form controls', () => {
     const focusIndex = globalsCss.indexOf('.admin-form-search:focus-within,');
     const focusBlock = cssRuleBlockAt(focusIndex);

@@ -1778,6 +1778,20 @@ a {
   display: none;
 }
 
+.calendar-vuexy-datepicker .react-datepicker__close-icon {
+  inset-inline-end: 0;
+  padding-inline-end: 16px;
+  top: 10px;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__close-icon::after {
+  background: transparent !important;
+  color: var(--admin-text);
+  font-size: 1.5rem;
+  height: unset;
+  width: unset;
+}
+
 .calendar-vuexy-datepicker .react-datepicker__time-container {
   background: var(--admin-surface);
   border-color: var(--admin-border);
