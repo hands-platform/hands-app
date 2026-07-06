@@ -8,7 +8,9 @@ describe('PartnerDetailOpsCommandCenterSection', () => {
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('className={`ops-task-card');
     expect(source).not.toContain('className="card admin-mb-16"');

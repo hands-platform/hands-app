@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminTaskCard } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
@@ -40,9 +39,9 @@ export function PartnerDetailOpsCommandCenterSection({
             <StatusBadge tone={summary.ready ? 'success' : 'warning'}>
               {summary.ready ? 'Operational' : 'Needs operator attention'}
             </StatusBadge>
-            <Link className="text-link" href="/operations-policy">
+            <AdminTextLink href="/operations-policy">
               Location freshness: {locationFreshnessMinutes}m
-            </Link>
+            </AdminTextLink>
           </>
         )}
         description="One-page operating view for dispatch, payout, reports, and the next admin action."
