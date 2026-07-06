@@ -64,7 +64,10 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
                 <strong>{row.lastLoginAddressLabel}</strong>
               </td>
               <td>
-                <strong>{row.lastCompletedLabel}</strong>
+                <strong>
+                  <DateTimeText fallback="No completed work" value={row.lastCompletedAt} />{' '}
+                  {`(${row.completedBookings})`}
+                </strong>
               </td>
               <td>
                 <strong>{row.totalWalletAmountLabel}</strong>

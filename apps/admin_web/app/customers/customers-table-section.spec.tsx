@@ -35,10 +35,16 @@ describe('CustomersTableSection', () => {
 
     expect(source).toContain('DateTimeText');
     expect(modelSource).toContain('readonly joinedAt: string | null;');
+    expect(modelSource).toContain('readonly completedBookings: number;');
+    expect(modelSource).toContain('readonly lastCompletedAt: string | null;');
     expect(source).toContain('<DateTimeText fallback="Join date missing" value={row.joinedAt} />');
+    expect(source).toContain('<DateTimeText fallback="No completed work" value={row.lastCompletedAt} />');
     expect(modelSource).not.toContain('readonly joinedLabel: string;');
+    expect(modelSource).not.toContain('readonly lastCompletedLabel: string;');
     expect(source).not.toContain('<strong>{row.joinedLabel}</strong>');
+    expect(source).not.toContain('<strong>{row.lastCompletedLabel}</strong>');
     expect(modelSource).not.toContain("joinedLabel: row.joinedAt ? formatDate(row.joinedAt) : 'Join date missing'");
+    expect(modelSource).not.toContain('lastCompletedLabel: customerLastCompletedLabel(row.lastCompletedAt, row.completedBookings)');
     expect(modelSource).not.toContain('readonly lastLoginDateLabel: string;');
     expect(source).not.toContain('<strong>{row.lastLoginDateLabel}</strong>');
     expect(modelSource).not.toContain("lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured'");
@@ -122,6 +128,7 @@ function buildRow(): CustomerManagementTableRow {
     countryFlag: 'VN',
     countryFlagLabel: 'Vietnam flag',
     countryLabel: 'Vietnam',
+    completedBookings: 12,
     customerIdLabel: 'customer-1',
     detailHref: '/customers/customer-1',
     deviceLanguageLabel: 'vi-VN',
@@ -134,7 +141,7 @@ function buildRow(): CustomerManagementTableRow {
     name: 'Customer One',
     paymentsHref: '/payments?customer=customer-1',
     phone: '+84900000000',
-    lastCompletedLabel: '13 Jun 2026, 03:15 (12)',
+    lastCompletedAt: '2026-06-12T20:15:00.000Z',
     totalWalletAmountLabel: '1,200,000',
   };
 }

@@ -44,6 +44,7 @@ export type CustomerManagementSpotlight = {
 export type CustomerManagementTableRow = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly chatHref: string;
+  readonly completedBookings: number;
   readonly countryFlag: string | null;
   readonly countryFlagLabel: string;
   readonly countryLabel: string;
@@ -54,7 +55,7 @@ export type CustomerManagementTableRow = {
   readonly genderLabel: string;
   readonly initials: string;
   readonly joinedAt: string | null;
-  readonly lastCompletedLabel: string;
+  readonly lastCompletedAt: string | null;
   readonly lastLoginAddressLabel: string;
   readonly lastSeenAt: string | null;
   readonly name: string;
@@ -140,6 +141,7 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
     return {
       avatarStatus: customerAvatarStatus(row),
       chatHref: `/chat-archive?q=${encodeURIComponent(row.id)}`,
+      completedBookings: row.completedBookings,
       countryFlag: countryCode === 'UNKNOWN' ? null : countryFlagFromRegion(countryCode),
       countryFlagLabel: countryCode === 'UNKNOWN' ? 'Unknown country' : `${countryLabel} flag`,
       countryLabel,
@@ -150,7 +152,7 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
       genderLabel: row.genderLabel,
       initials: readInitials(row.name),
       joinedAt: row.joinedAt ?? null,
-      lastCompletedLabel: customerLastCompletedLabel(row.lastCompletedAt, row.completedBookings),
+      lastCompletedAt: row.lastCompletedAt ?? null,
       lastLoginAddressLabel: row.lastLoginAddress,
       lastSeenAt: row.lastSeenAt ?? null,
       name: row.name,
@@ -159,11 +161,6 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
       totalWalletAmountLabel: formatMoney(row.capturedSpend),
     };
   });
-}
-
-function customerLastCompletedLabel(lastCompletedAt: string | null | undefined, completedBookings: number) {
-  const countLabel = `(${completedBookings})`;
-  return lastCompletedAt ? `${formatDate(lastCompletedAt)} ${countLabel}` : `No completed work ${countLabel}`;
 }
 
 function genderBreakdownLabel(breakdown: CustomerGenderBreakdown) {
