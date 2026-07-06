@@ -14237,6 +14237,7 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
+.admin-filter-summary,
 .vuexy-review-filter-summary {
   align-items: center;
   display: flex;

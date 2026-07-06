@@ -4,6 +4,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -19,7 +20,6 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge } from '../../components/status-badge';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import {
   REVIEW_DATE_RANGE_OPTIONS,
@@ -73,15 +73,11 @@ export function PartnerCustomerEvaluationsSection({
         resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
         title="Partner customer evaluation filters"
         footer={
-          activeFilterLabels.length > 0 ? (
-            <div className="vuexy-review-filter-summary">
-              {activeFilterLabels.map((label) => (
-                <StatusBadge key={label} tone="warning">
-                  {label}
-                </StatusBadge>
-              ))}
-            </div>
-          ) : null
+          <AdminFilterSummary
+            ariaLabel="Active partner evaluation filters"
+            className="vuexy-review-filter-summary"
+            labels={activeFilterLabels}
+          />
         }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Partner evaluation filters">

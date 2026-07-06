@@ -4,6 +4,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../components/admin-data-table';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -94,12 +95,11 @@ export function ReviewsTableSection({
         title="Review operation filters"
         description="Customer-written reviews are published by default. Operators can hold visibility, mark follow-up, or correct rating and review copy."
         footer={
-          <div className="vuexy-review-filter-summary">
-            {activeFilterLabels.map((label) => (
-              <StatusBadge key={label} tone="warning">
-                {label}
-              </StatusBadge>
-            ))}
+          <AdminFilterSummary
+            ariaLabel="Active review filters"
+            className="vuexy-review-filter-summary"
+            labels={activeFilterLabels}
+          >
             {activeFilterLabels.length > 0 ? (
               <AdminFormControlLink
                 className="admin-directory-filter-button is-ghost"
@@ -116,7 +116,7 @@ export function ReviewsTableSection({
                 Clear filters
               </AdminFormControlLink>
             ) : null}
-          </div>
+          </AdminFilterSummary>
         }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Review list filters">

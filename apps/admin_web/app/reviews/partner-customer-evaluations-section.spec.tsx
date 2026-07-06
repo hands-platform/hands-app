@@ -12,8 +12,14 @@ describe('PartnerCustomerEvaluationsSection', () => {
       new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
       'utf8',
     );
+    const filterSummarySource = readFileSync(
+      new URL('../../components/admin-filter-summary.tsx', import.meta.url),
+      'utf8',
+    );
 
-    expect(source).toContain('StatusBadge');
+    expect(filterSummarySource).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('<div className="vuexy-review-filter-summary">');
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
   });
 

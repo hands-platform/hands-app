@@ -10,6 +10,8 @@ describe('ReviewsTableSection', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('<div className="vuexy-review-filter-summary">');
     expect(source).not.toContain('<span className="pill pill-warn" key={label}>');
   });
 
