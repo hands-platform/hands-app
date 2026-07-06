@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import type { PartnerOperatingLedgerRow } from './partner-detail-operating-ledger-model';
 import {
   PartnerDetailVuexyTableFooter,
@@ -37,9 +36,9 @@ export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOpera
               <td>{row.status}</td>
               <td>{row.evidence}</td>
               <td>
-                <Link className="text-link" href={row.href}>
+                <AdminTextLink href={row.href}>
                   Open
-                </Link>
+                </AdminTextLink>
               </td>
             </tr>
           ))}

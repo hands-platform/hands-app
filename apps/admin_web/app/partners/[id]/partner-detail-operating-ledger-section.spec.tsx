@@ -1,6 +1,15 @@
+import { readFileSync } from 'node:fs';
+
 import { PartnerDetailOperatingLedgerSection } from './partner-detail-operating-ledger-section';
 
 describe('PartnerDetailOperatingLedgerSection', () => {
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-operating-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders operating ledger rows with shared table styling and links', () => {
     const section = PartnerDetailOperatingLedgerSection({
       rows: [
