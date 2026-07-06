@@ -58,6 +58,8 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).toContain('marketing-analytics-apply-button');
+    expect(markup).not.toContain('booking-date-apply-button');
     expect(markup).toContain('admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-grid-span-2');

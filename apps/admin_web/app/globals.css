@@ -3114,7 +3114,8 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.booking-date-apply-button {
+.booking-date-apply-button,
+.marketing-analytics-apply-button {
   align-items: center;
   background: var(--admin-accent);
   border: 0;
@@ -3130,7 +3131,8 @@ a.action-button-card:hover {
   padding: 0 16px;
 }
 
-.booking-date-apply-button:hover {
+.booking-date-apply-button:hover,
+.marketing-analytics-apply-button:hover {
   box-shadow: var(--admin-primary-shadow-sm);
 }
 

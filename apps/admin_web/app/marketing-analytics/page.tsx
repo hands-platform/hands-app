@@ -335,7 +335,7 @@ export default async function MarketingAnalyticsPage({
             placeholder="ref-smoke, campaign id..."
             type="search"
           />
-          <AdminFormControlButton className="booking-date-apply-button" type="submit">
+          <AdminFormControlButton className="marketing-analytics-apply-button" type="submit">
             Apply campaign
           </AdminFormControlButton>
         </AdminFormGrid>
@@ -502,7 +502,7 @@ function ManualSpendForm({ filters }: { filters: ReturnType<typeof normalizeMark
           placeholder="Manual import note"
         />
         <AdminFormControlButton
-          className="booking-date-apply-button marketing-spend-submit"
+          className="marketing-analytics-apply-button marketing-spend-submit"
           type="submit"
         >
           Save spend
