@@ -337,6 +337,11 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('className="button button-secondary"');
   });
 
+  it('uses the shared Vuexy text link atom for inline dashboard navigation', () => {
+    expect(dashboardSource).toContain('AdminTextLink');
+    expect(dashboardSource).not.toContain('className="text-link"');
+  });
+
   it('uses shared Vuexy task card surfaces instead of raw dashboard ops task card markup', () => {
     expect(dashboardSource).toContain('AdminActionCard');
     expect(dashboardSource).toContain('AdminTaskCard');

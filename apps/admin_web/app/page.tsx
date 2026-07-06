@@ -15,6 +15,7 @@ import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
+import { AdminTextLink } from '../components/admin-text-link';
 import {
   AdminActionCard,
   AdminDetailGrid,
@@ -750,12 +751,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <Activity size={16} aria-hidden="true" />
             App sessions
           </AdminFormControlLink>
-          <Link className="text-link" href="/cash-settlements">
+          <AdminTextLink href="/cash-settlements">
             Cash settlements
-          </Link>
-          <Link className="text-link" href="/payments">
+          </AdminTextLink>
+          <AdminTextLink href="/payments">
             Payments
-          </Link>
+          </AdminTextLink>
           <AdminFormControlLink href="/partners">
             <HeartHandshake size={16} aria-hidden="true" />
             Partner review
@@ -764,9 +765,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <ShieldCheck size={16} aria-hidden="true" />
             Partner controls
           </AdminFormControlLink>
-          <Link className="text-link" href="/tax-policy">
+          <AdminTextLink href="/tax-policy">
             Tax policy
-          </Link>
+          </AdminTextLink>
           <AdminFormControlLink href="/setup">
             <ClipboardCheck size={16} aria-hidden="true" />
             Setup
@@ -815,9 +816,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <Activity size={16} aria-hidden="true" />
             Live customers
           </AdminFormControlLink>
-          <Link className="text-link" href="/cash-settlements">
+          <AdminTextLink href="/cash-settlements">
             Cash settlement gate
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminSection>
 
@@ -864,9 +865,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <AdminSection
         actions={
-          <Link className="text-link" href="/bookings?view=marketplace">
+          <AdminTextLink href="/bookings?view=marketplace">
             Open participant ledger
-          </Link>
+          </AdminTextLink>
         }
         className="admin-mt-20"
         description="Actual booking participant records only. Partners with negative wallets can see marketplace demand, but final acceptance, service start, and payout release wait for settlement."
@@ -926,31 +927,31 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Latest participant</span>
             <strong>
-              <Link className="text-link" href={marketplaceParticipantSnapshot.latestParticipantHref}>
+              <AdminTextLink href={marketplaceParticipantSnapshot.latestParticipantHref}>
                 {marketplaceParticipantSnapshot.latestParticipantLabel}
-              </Link>
+              </AdminTextLink>
             </strong>
             <small>{marketplaceParticipantSnapshot.declinedRows} declined response row(s) retained.</small>
           </div>
         </div>
         <div className="actions admin-mt-12">
-          <Link className="text-link" href="/bookings?view=marketplace">
+          <AdminTextLink href="/bookings?view=marketplace">
             Marketplace bookings
-          </Link>
-          <Link className="text-link" href="/bookings?view=customer-choice">
+          </AdminTextLink>
+          <AdminTextLink href="/bookings?view=customer-choice">
             Customer choice
-          </Link>
-          <Link className="text-link" href="/cash-settlements">
+          </AdminTextLink>
+          <AdminTextLink href="/cash-settlements">
             Negative wallet settlement
-          </Link>
+          </AdminTextLink>
         </div>
       </AdminSection>
 
       <AdminSection
         actions={
-          <Link className="text-link" href="/bookings?view=attention">
+          <AdminTextLink href="/bookings?view=attention">
             Open evidence queue
-          </Link>
+          </AdminTextLink>
         }
         className="admin-mt-20"
         description="Fast paths for admin decisions that must be based on retained facts: chat, location, alert, payment, cash settlement, refund, and audit evidence."
@@ -962,65 +963,65 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <span>Booking create gates</span>
             <strong>{bookingCreateRejections.length}</strong>
             <small>
-              <Link className="text-link" href="/bookings?view=blocked-create">
+              <AdminTextLink href="/bookings?view=blocked-create">
                 {bookingCreateGateSummary.customerGpsGate} optional GPS evidence,{' '}
                 {bookingCreateGateSummary.customerDistanceGate} customer distance,{' '}
                 {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>Chat evidence</span>
             <strong>{liveBookingDeepDive.matchedWithoutChat + liveBookingDeepDive.quietActiveChats}</strong>
             <small>
-              <Link className="text-link" href="/bookings?view=chat-repair">
+              <AdminTextLink href="/bookings?view=chat-repair">
                 Missing or quiet retained chat checks
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>No-show evidence</span>
             <strong>{bookingOps.noShowSignal}</strong>
             <small>
-              <Link className="text-link" href="/bookings?view=no-show">
+              <AdminTextLink href="/bookings?view=no-show">
                 Review only with booking and chat evidence
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>Alert evidence</span>
             <strong>{failedNotificationCount}</strong>
             <small>
-              <Link className="text-link" href="/notifications?review=failed">
+              <AdminTextLink href="/notifications?review=failed">
                 Failed push and in-app delivery rows
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>Settlement evidence</span>
             <strong>{cashSettlementSummary.rowCount}</strong>
             <small>
-              <Link className="text-link" href="/cash-settlements">
+              <AdminTextLink href="/cash-settlements">
                 Cash fee debt rows before final acceptance, service start, and payout release
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>Refund evidence</span>
             <strong>{refundSummary.totalCount}</strong>
             <small>
-              <Link className="text-link" href="/refunds">
+              <AdminTextLink href="/refunds">
                 Refund ledger and payment release checks
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
           <div>
             <span>Payout evidence</span>
             <strong>{activePayoutBatchCount}</strong>
             <small>
-              <Link className="text-link" href="/payouts">
+              <AdminTextLink href="/payouts">
                 Weekly, monthly, and admin-selected batches
-              </Link>
+              </AdminTextLink>
             </small>
           </div>
         </div>
@@ -1028,9 +1029,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <AdminSection
         actions={
-          <Link className="text-link" href={bookingEvidenceCommandQueue[0]?.href ?? '/bookings'}>
+          <AdminTextLink href={bookingEvidenceCommandQueue[0]?.href ?? '/bookings'}>
             Open first evidence queue
-          </Link>
+          </AdminTextLink>
         }
         className="admin-mt-20"
         description="Direct routes into the booking monitor evidence filters. Use these when staff need the exact booking list behind address, Partner choice, chat archive, payment, wallet, location, alert, or closeout evidence."
@@ -1093,9 +1094,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 {link.label}
               </StatusBadgeLink>
             ) : (
-              <Link className="text-link" href={link.href} key={link.range}>
+              <AdminTextLink href={link.href} key={link.range}>
                 {link.label}
-              </Link>
+              </AdminTextLink>
             )
           ))}
         </div>
@@ -1122,12 +1123,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <>
           <AdminSection
             actions={
-              <Link
-                className="text-link"
-                href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}
-              >
+              <AdminTextLink href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}>
                 Open first lane
-              </Link>
+              </AdminTextLink>
             }
             className="admin-mt-20"
             description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat handoff, Partner supply, cash fee gates, payout batches, and setup readiness."
@@ -1358,9 +1356,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   {matchingControl.openRows.map((row) => (
                     <div className="ops-row" key={row.id}>
                       <div>
-                        <Link className="text-link" href={`/bookings/${row.id}`}>
+                        <AdminTextLink href={`/bookings/${row.id}`}>
                           {row.title}
-                        </Link>
+                        </AdminTextLink>
                         <p className="muted">{row.detail}</p>
                         <div className="participant-list admin-mt-8">
                           <DashboardStatusBadge pillClass={row.customerPillClass}>{row.customerState}</DashboardStatusBadge>
@@ -1441,9 +1439,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
                   <small>{item.helper}</small>
-                  <Link className="text-link" href={item.href}>
+                  <AdminTextLink href={item.href}>
                     Tune
-                  </Link>
+                  </AdminTextLink>
                 </div>
               ))}
             </div>
@@ -1620,9 +1618,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
             <AdminSection
               actions={
-                <Link className="text-link" href="/services">
+                <AdminTextLink href="/services">
                   Pricing setup
-                </Link>
+                </AdminTextLink>
               }
               description="Which services and payment methods created operational load in the selected dashboard date range."
               id="dashboard-service-payment-mix"
@@ -1677,9 +1675,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
-                <Link className="text-link" href="/bookings">
+                <AdminTextLink href="/bookings">
                   Open bookings
-                </Link>
+                </AdminTextLink>
               }
               description="Total, matching, completion, cancellation, and no-show proxy for the selected dashboard date range."
               id="dashboard-booking-status-control"
@@ -1816,9 +1814,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
             <AdminSection
               actions={
-                <Link className="text-link" href="/bookings?view=all">
+                <AdminTextLink href="/bookings?view=all">
                   Full booking list
-                </Link>
+                </AdminTextLink>
               }
               description="Top service areas inferred from booking address text."
               id="dashboard-regional-booking-demand"
@@ -1848,9 +1846,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
-                <Link className="text-link" href="/partners">
+                <AdminTextLink href="/partners">
                   Open Partners
-                </Link>
+                </AdminTextLink>
               }
               description="Current operational capacity, app presence, location freshness, and finance blockers."
               id="dashboard-partner-supply-snapshot"
@@ -1902,9 +1900,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
             <AdminSection
               actions={
-                <Link className="text-link" href="/partner-controls">
+                <AdminTextLink href="/partner-controls">
                   Review queue
-                </Link>
+                </AdminTextLink>
               }
               description="Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile review."
               id="dashboard-partner-readiness-funnel"
@@ -1947,9 +1945,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <Link className="text-link" href="/partners">
+              <AdminTextLink href="/partners">
                 Partner queue
-              </Link>
+              </AdminTextLink>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card"
             description="Partner checklist queue for marketplace blockers, location readiness, first-revenue payout requirements, and app contactability."
@@ -2017,9 +2015,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <Link className="text-link" href="/partner-controls">
+              <AdminTextLink href="/partner-controls">
                 Full unblock playbook
-              </Link>
+              </AdminTextLink>
             }
             className="admin-mt-20"
             description="First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a post-first-earning payout gate, not an initial marketplace gate."
@@ -2074,9 +2072,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     <strong>{fullDashboardData.topCommandSignal.title}</strong>
                     <p className="muted">{fullDashboardData.topCommandSignal.detail}</p>
                   </div>
-                  <Link className="text-link" href={fullDashboardData.topCommandSignal.href}>
+                  <AdminTextLink href={fullDashboardData.topCommandSignal.href}>
                     {fullDashboardData.topCommandSignal.action}
-                  </Link>
+                  </AdminTextLink>
                 </div>
               </AdminNotePanel>
             )}
@@ -2180,9 +2178,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       {fullDashboardData.queueSummary.first.detail}
                     </p>
                   </div>
-                  <Link className="text-link" href={fullDashboardData.queueSummary.first.href}>
+                  <AdminTextLink href={fullDashboardData.queueSummary.first.href}>
                     Open task
-                  </Link>
+                  </AdminTextLink>
                 </AdminNotePanel>
               )}
               <div className="ops-check-list">
@@ -2347,9 +2345,9 @@ function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks
         <DashboardStatusBadge pillClass={check.status === 'READY' ? 'pill-success' : 'pill-warn'}>
           {check.status}
         </DashboardStatusBadge>
-        <Link className="text-link" href={href}>
+        <AdminTextLink href={href}>
           Related page
-        </Link>
+        </AdminTextLink>
       </div>
     </div>
   );
