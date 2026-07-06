@@ -119,7 +119,7 @@ export default async function PartnerOverviewPage({
     >
 
       <AdminSection
-        className="usage-overview-filter-panel partner-overview-filter-panel"
+        className="partner-overview-filter-panel"
         description="Default view stays focused on current supply and bounded operating windows."
         statusLabel={overview.rangeLabel}
         title="Partner supply range"
@@ -127,7 +127,7 @@ export default async function PartnerOverviewPage({
         <AdminSegmentedControl
           activeValue={range}
           ariaLabel="Partner overview range"
-          className="usage-overview-range-buttons"
+          className="partner-overview-range-buttons"
           options={partnerOverviewRangeOptions.map((option) => ({
             href: partnerOverviewHref(option.value, filters),
             label: option.label,
@@ -759,7 +759,7 @@ function SelectionFrictionCard({
           <AdminSegmentedControl
             activeValue={activeIssue}
             ariaLabel="Partner selection issue"
-            className="usage-overview-range-buttons"
+            className="partner-overview-range-buttons"
             options={selectionIssueOptions.map((option) => ({
               href: partnerOverviewHref(range, {
                 ...filters,

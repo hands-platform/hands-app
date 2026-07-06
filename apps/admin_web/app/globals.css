@@ -8215,13 +8215,15 @@ a.action-button-card:hover {
   margin-bottom: 8px;
 }
 
-.usage-overview-filter-panel {
+.usage-overview-filter-panel,
+.partner-overview-filter-panel {
   display: grid;
   gap: 14px;
   padding: 18px;
 }
 
-.usage-overview-range-buttons {
+.usage-overview-range-buttons,
+.partner-overview-range-buttons {
   justify-content: flex-start;
 }
 

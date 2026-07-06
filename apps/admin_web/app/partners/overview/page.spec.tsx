@@ -42,8 +42,11 @@ describe('PartnerOverviewPage', () => {
     );
     expect(markup).toContain('Risk and action queues');
     expect(markup).toContain('toolbar admin-page-header');
-    expect(markup).toContain('card admin-section usage-overview-filter-panel partner-overview-filter-panel');
-    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel partner-overview-filter-panel');
+    expect(markup).toContain('card admin-section partner-overview-filter-panel');
+    expect(markup).toContain('booking-date-filter-buttons partner-overview-range-buttons');
+    expect(markup).not.toContain('usage-overview-filter-panel');
+    expect(markup).not.toContain('usage-overview-range-buttons');
+    expect(markup).not.toContain('card admin-filter-panel partner-overview-filter-panel');
     expect(markup).not.toContain('class="admin-form-control"');
     expect(markup).toContain('class="admin-form-input admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
@@ -88,6 +91,8 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-command-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-segment-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-insight-grid');
+    expect(pageSource).not.toContain('className="usage-overview-filter-panel partner-overview-filter-panel"');
+    expect(pageSource).not.toContain('className="usage-overview-range-buttons"');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );
