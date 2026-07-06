@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminMiniMetricStrip } from '../../components/admin-overview-card';
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
@@ -133,10 +134,17 @@ function CouponManagementCard({
     <AdminCard className={`coupon-management-section coupon-management-section-${row.windowState}`}>
       <AdminCardHeader
         actions={
-          <div className="coupon-discount-summary">
-            <strong>{row.discountLabel}</strong>
-            <span className="muted">{row.windowSignal}</span>
-          </div>
+          <AdminMiniMetricStrip
+            ariaLabel={`${row.code} discount window summary`}
+            className="coupon-discount-summary"
+            metrics={[
+              {
+                key: 'discount-window',
+                label: row.windowSignal,
+                value: row.discountLabel,
+              },
+            ]}
+          />
         }
         title={
           <span className="coupon-code-line">

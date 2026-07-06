@@ -44,7 +44,9 @@ describe('CouponsTableSection', () => {
       expect.arrayContaining(['admin-form-input', 'admin-form-checkbox', 'admin-form-control-button', 'button-primary']),
     );
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-disclosure', 'coupon-section-disclosure']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-mini-metric-strip', 'coupon-discount-summary']));
     expect(classNamesIn(section)).not.toContain('coupon-management-card');
+    expect(sectionSource).toContain('AdminMiniMetricStrip');
     expect(sectionSource).toContain('AdminCard');
     expect(sectionSource).toContain('AdminCardHeader');
     expect(sectionSource).toContain('AdminDisclosure');
@@ -56,6 +58,7 @@ describe('CouponsTableSection', () => {
     expect(sectionSource).not.toContain('coupon-active-field');
     expect(sectionSource).not.toContain('<section className={`card admin-card coupon-management-section');
     expect(sectionSource).not.toContain('<div className="coupon-management-section-header">');
+    expect(sectionSource).not.toContain('<div className="coupon-discount-summary">');
     expect(sectionSource).not.toContain('<span className={row.statusClassName}>{row.statusLabel}</span>');
     expect(sectionSource).not.toContain('<span className="pill pill-neutral">{booking.statusLabel}</span>');
     expect(sectionSource).not.toContain("booking.reversalStatusLabel === 'REVERSED' ? 'pill pill-warn' : 'pill pill-neutral'");

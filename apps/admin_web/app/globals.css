@@ -10922,6 +10922,24 @@ a.action-button-card:hover {
   text-align: right;
 }
 
+.coupon-discount-summary.admin-mini-metric-strip {
+  gap: 2px;
+  justify-items: end;
+}
+
+.coupon-discount-summary .admin-mini-metric {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  text-align: right;
+}
+
+.coupon-discount-summary .admin-mini-metric span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .coupon-window-copy {
   line-height: 18px;
   margin: 0;
