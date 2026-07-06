@@ -151,8 +151,9 @@ export type AdminTaskBreakdownItem = {
 };
 
 type AdminTaskBreakdownProps = {
+  readonly children?: ReactNode;
   readonly className?: string;
-  readonly items: readonly AdminTaskBreakdownItem[];
+  readonly items?: readonly AdminTaskBreakdownItem[];
 };
 
 type AdminTaskGridProps = {
@@ -670,10 +671,9 @@ export function AdminTaskGrid({ children, className }: AdminTaskGridProps) {
   return <div className={joinClassNames('ops-task-grid', className)}>{children}</div>;
 }
 
-export function AdminTaskBreakdown({ className, items }: AdminTaskBreakdownProps) {
-  return (
-    <div className={joinClassNames('ops-task-breakdown', className)}>
-      {items.map((item, index) => {
+export function AdminTaskBreakdown({ children, className, items }: AdminTaskBreakdownProps) {
+  const renderedItems = items
+    ? items.map((item, index) => {
         const itemClassName = joinClassNames(
           'ops-task-breakdown-item',
           item.tone ? `ops-task-breakdown-${item.tone}` : undefined,
@@ -694,7 +694,12 @@ export function AdminTaskBreakdown({ className, items }: AdminTaskBreakdownProps
             {content}
           </span>
         );
-      })}
+      })
+    : children;
+
+  return (
+    <div className={joinClassNames('ops-task-breakdown', className)}>
+      {renderedItems}
     </div>
   );
 }
