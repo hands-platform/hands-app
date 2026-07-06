@@ -7,7 +7,9 @@ describe('PayoutBatchTable', () => {
   it('uses the shared Vuexy note panel for payout action execution maps', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
+    expect(source).toContain('AdminStageItem');
     expect(source).toContain('AdminNotePanel');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<div className="ops-task-note admin-mb-10">');
   });
 

@@ -5,6 +5,7 @@ import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -201,7 +202,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <strong>Payout action execution map</strong>
               <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
-                  <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
+                  <AdminStageItem key={`${row.id}-${item.action}`}>
                     <StatusBadge tone={statusBadgeToneFromPillClass(item.pillClass)}>
                       {item.status}
                     </StatusBadge>
@@ -210,7 +211,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                       <p className="muted">{item.reason}</p>
                       <small>{item.operatorRule}</small>
                     </div>
-                  </div>
+                  </AdminStageItem>
                 ))}
               </div>
             </AdminNotePanel>
