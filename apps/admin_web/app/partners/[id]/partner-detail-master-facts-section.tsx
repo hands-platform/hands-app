@@ -9,6 +9,8 @@ export type PartnerMasterFact = {
   readonly helper: ReactNode;
   readonly label: string;
   readonly value: ReactNode;
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 type PartnerDetailMasterFactsSectionProps = {
@@ -29,6 +31,8 @@ export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFa
           detail: fact.helper,
           label: fact.label,
           value: fact.value,
+          valueDateTimeFallback: fact.valueDateTimeFallback,
+          valueDateTimeValue: fact.valueDateTimeValue,
         }))}
       />
     </AdminCard>

@@ -2673,7 +2673,9 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Joined / recent access',
-      value: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />,
+      value: 'Missing',
+      valueDateTimeFallback: 'Missing',
+      valueDateTimeValue: provider.user?.createdAt,
       helper: latestAccessAt ? (
         <>
           Recent app access <DateTimeText fallback="No app session recorded" value={latestAccessAt} />

@@ -33,12 +33,19 @@ describe('PartnerDetailMasterFactsSection', () => {
   });
 
   it('keeps partner master fact date values on the shared DateTimeText atom', () => {
+    const sectionSource = readFileSync('app/partners/[id]/partner-detail-master-facts-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(pageSource).toContain("import { DateTimeText } from '../../../components/date-time-text';");
     expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.dateOfBirth} />');
-    expect(pageSource).toContain('<DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
+    expect(sectionSource).toContain('readonly valueDateTimeFallback?: string;');
+    expect(sectionSource).toContain('readonly valueDateTimeValue?: string | null;');
+    expect(sectionSource).toContain('valueDateTimeFallback: fact.valueDateTimeFallback');
+    expect(sectionSource).toContain('valueDateTimeValue: fact.valueDateTimeValue');
+    expect(pageSource).toContain("valueDateTimeFallback: 'Missing'");
+    expect(pageSource).toContain('valueDateTimeValue: provider.user?.createdAt');
     expect(pageSource).toContain('<DateTimeText fallback="No app session recorded" value={latestAccessAt} />');
+    expect(pageSource).not.toContain('value: <DateTimeText fallback="Missing" value={provider.user?.createdAt} />');
     expect(pageSource).not.toContain('value: `${provider.gender ?? \'Not saved\'} / ${formatDate(provider.dateOfBirth)}`');
     expect(pageSource).not.toContain('value: formatDate(provider.user?.createdAt)');
     expect(pageSource).not.toContain("helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app session recorded'");
