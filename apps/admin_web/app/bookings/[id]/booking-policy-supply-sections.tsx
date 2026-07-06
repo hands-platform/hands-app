@@ -2,7 +2,13 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminStageItem } from '../../../components/admin-stage-item';
-import { AdminNoteCard, AdminNotePanel, AdminSection, AdminTaskCard } from '../../../components/admin-surface';
+import {
+  AdminNoteCard,
+  AdminNotePanel,
+  AdminSection,
+  AdminTaskCard,
+  AdminTaskGrid,
+} from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -226,7 +232,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
           </AdminTextLink>
         </div>
       </AdminNotePanel>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {policySnapshot.decisionCards.map((decision) => (
           <AdminTaskCard
             className={decision.className}
@@ -242,7 +248,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             <small title={decision.helper}>{compactPolicyDecisionHelper(decision.helper)}</small>
           </AdminTaskCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }
@@ -507,7 +513,7 @@ function PillBadgeList({
 
 function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
   return (
-    <div className="ops-task-grid admin-mt-14">
+    <AdminTaskGrid className="admin-mt-14">
       {cards.map((card) => (
         <AdminTaskCard
           className={card.className}
@@ -519,6 +525,6 @@ function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
           <small>{card.action}</small>
         </AdminTaskCard>
       ))}
-    </div>
+    </AdminTaskGrid>
   );
 }
