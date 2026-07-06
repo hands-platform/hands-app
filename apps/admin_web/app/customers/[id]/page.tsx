@@ -342,7 +342,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Sign-up Date',
-      value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />,
+      value: 'Unknown',
+      valueDateTimeFallback: 'Unknown',
+      valueDateTimeValue: customer.user?.createdAt,
       helper: customer.user?.updatedAt ? (
         <>
           Last account update <DateTimeText value={customer.user.updatedAt} />
@@ -353,7 +355,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Last Login Date',
-      value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />,
+      value: 'No session',
+      valueDateTimeFallback: 'No session',
+      valueDateTimeValue: latestSession?.lastSeenAt,
       helper: latestSession
         ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
         : 'No app session loaded.',

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { DateTimeText } from '../../../components/date-time-text';
 import { AdminProfileOverviewCard, AdminSummaryCardGrid } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import { StatusBadge } from '../../../components/status-badge';
@@ -10,6 +11,8 @@ export type CustomerDetailOverviewFact = {
   readonly helper: ReactNode;
   readonly label: string;
   readonly value: ReactNode;
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 export type CustomerDetailOverviewHighlight = {
@@ -106,7 +109,7 @@ export function CustomerDetailOverviewShell({
         {facts.map((fact) => (
           <div key={fact.label}>
             <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
+            <strong>{customerDetailOverviewFactValue(fact)}</strong>
             <small>{fact.helper}</small>
           </div>
         ))}
@@ -195,6 +198,19 @@ export function CustomerDetailOverviewShell({
       ) : null}
     </AdminProfileOverviewCard>
   );
+}
+
+function customerDetailOverviewFactValue(fact: CustomerDetailOverviewFact) {
+  if (fact.valueDateTimeValue !== undefined) {
+    return (
+      <DateTimeText
+        fallback={fact.valueDateTimeFallback ?? String(fact.value)}
+        value={fact.valueDateTimeValue}
+      />
+    );
+  }
+
+  return fact.value;
 }
 
 function readInitials(name: string) {

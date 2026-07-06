@@ -100,12 +100,16 @@ describe('CustomerDetailPage', () => {
   });
 
   it('uses the shared DateTimeText atom for visible customer overview timestamps', () => {
-    expect(customerDetailSource).toContain('value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />');
-    expect(customerDetailSource).toContain(
-      'value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />',
-    );
+    expect(customerDetailSource).toContain("valueDateTimeFallback: 'Unknown'");
+    expect(customerDetailSource).toContain('valueDateTimeValue: customer.user?.createdAt');
+    expect(customerDetailSource).toContain("valueDateTimeFallback: 'No session'");
+    expect(customerDetailSource).toContain('valueDateTimeValue: latestSession?.lastSeenAt');
     expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />');
     expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(latestBooking)} />');
+    expect(customerDetailSource).not.toContain('value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />');
+    expect(customerDetailSource).not.toContain(
+      'value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />',
+    );
     expect(customerDetailSource).not.toContain('value: formatDate(customer.user?.createdAt)');
     expect(customerDetailSource).not.toContain('value: formatDate(latestSession?.lastSeenAt)');
   });

@@ -36,6 +36,32 @@ describe('CustomerDetailOverviewShell', () => {
     expect(pageSource).not.toContain('helper: `Latest ${formatDate(region.latestAt)}`');
   });
 
+  it('renders customer overview date fact values through the shared date atom', () => {
+    const source = readFileSync('app/customers/[id]/customer-detail-overview-shell.tsx', 'utf8');
+    const section = CustomerDetailOverviewShell({
+      avatarStatus: 'online',
+      facts: [
+        {
+          label: 'Sign-up Date',
+          value: 'Unknown',
+          valueDateTimeFallback: 'Unknown',
+          valueDateTimeValue: '2026-07-01T00:00:00.000Z',
+          helper: 'Stored account timestamp.',
+        },
+      ],
+      highlights: buildHighlights(),
+      name: 'Customer One',
+      statusBadges: ['Active booking'],
+      subtitle: '+84900000000 / customer@example.com',
+    });
+
+    expect(source).toContain("from '../../../components/date-time-text'");
+    expect(source).toContain('readonly valueDateTimeFallback?: string;');
+    expect(source).toContain('readonly valueDateTimeValue?: string | null;');
+    expect(source).toContain('customerDetailOverviewFactValue(fact)');
+    expect(classNamesIn(section)).toContain('date-time-text');
+  });
+
   it('renders a focused one-card customer overview', () => {
     const section = CustomerDetailOverviewShell({
       avatarStatus: 'online',
