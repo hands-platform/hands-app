@@ -1,5 +1,5 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
@@ -33,7 +33,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
       description="Suggested operator order for fixing factual blockers from profile, KYC, required documents, public media, wallet settlement, location, and push readiness."
       title="Partner checklist lane"
     >
-      <div className="setup-stage-list">
+      <AdminStageList>
         {items.map((item) => (
           <AdminStageItem key={item.partnerId}>
             <span>{item.actionStatus}</span>
@@ -61,7 +61,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
             <small>Clear</small>
           </AdminStageItem>
         ) : null}
-      </div>
+      </AdminStageList>
     </AdminSection>
   );
 }

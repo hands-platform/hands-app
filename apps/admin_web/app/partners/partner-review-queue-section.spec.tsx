@@ -11,8 +11,10 @@ describe('PartnerReviewQueueSection', () => {
 
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="setup-stage-list">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className={`pill ${queue.totalOpen === 0 ? \'pill-success\' : \'pill-warn\'}`}>');

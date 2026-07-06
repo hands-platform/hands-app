@@ -1,5 +1,5 @@
 import { AdminSection } from '../../components/admin-surface';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -31,7 +31,7 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
       description="Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch location freshness."
       title="Review queue"
     >
-      <div className="setup-stage-list">
+      <AdminStageList>
         {queue.items.map((item) => (
           <AdminStageItem key={item.label}>
             <span>{item.count ? 'CHECK' : 'OK'}</span>
@@ -44,7 +44,7 @@ export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionPr
             </AdminTextLink>
           </AdminStageItem>
         ))}
-      </div>
+      </AdminStageList>
     </AdminSection>
   );
 }

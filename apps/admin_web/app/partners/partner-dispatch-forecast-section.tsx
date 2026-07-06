@@ -2,7 +2,7 @@ import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import {
   AdminActionCard,
   AdminDetailGrid,
@@ -80,7 +80,7 @@ export function PartnerDispatchForecastSection({
       <AdminDetailGrid className="admin-mt-12">
         <AdminNoteCard className="partner-dispatch-panel">
           <h3>Dispatch blockers</h3>
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {forecast.blockers.map((item) => (
               <AdminStageItem key={item.label}>
                 <span>{item.count ? 'FIX' : 'OK'}</span>
@@ -94,7 +94,7 @@ export function PartnerDispatchForecastSection({
                 </AdminFormControlLink>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         </AdminNoteCard>
         <AdminNoteCard className="partner-dispatch-panel">
           <h3>City supply lanes</h3>
@@ -102,7 +102,7 @@ export function PartnerDispatchForecastSection({
             Use this to see which partner onboarding, location refresh, or push registration records need
             operator attention.
           </p>
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {forecast.supplyLanes.map((lane) => (
               <AdminStageItem key={lane.city}>
                 <span>{lane.ready ? 'LIVE' : 'CHECK'}</span>
@@ -134,7 +134,7 @@ export function PartnerDispatchForecastSection({
                 <small>0</small>
               </AdminStageItem>
             ) : null}
-          </div>
+          </AdminStageList>
         </AdminNoteCard>
       </AdminDetailGrid>
     </AdminSection>

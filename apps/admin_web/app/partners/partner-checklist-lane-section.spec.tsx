@@ -11,6 +11,8 @@ describe('PartnerChecklistLaneSection', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
+    expect(source).not.toContain('<div className="setup-stage-list">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<strong>No partners need immediate attention</strong>');
   });

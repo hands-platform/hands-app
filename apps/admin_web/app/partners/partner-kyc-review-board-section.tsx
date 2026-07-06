@@ -1,5 +1,5 @@
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -81,7 +81,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
           </AdminActionCard>
         ))}
       </AdminDetailGrid>
-      <div className="setup-stage-list admin-mt-14">
+      <AdminStageList className="admin-mt-14">
         {board.playbook.map((step) => (
           <AdminStageItem key={step.title}>
             <span>{step.status}</span>
@@ -95,7 +95,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
             </AdminTextLink>
           </AdminStageItem>
         ))}
-      </div>
+      </AdminStageList>
     </AdminSection>
   );
 }

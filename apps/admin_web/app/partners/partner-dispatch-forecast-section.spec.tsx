@@ -13,7 +13,9 @@ describe('PartnerDispatchForecastSection', () => {
     expect(source).toContain('AdminNoteCard');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
     expect(source).not.toContain('<div className="grid admin-mt-12">');
+    expect(source).not.toContain('<div className="setup-stage-list admin-mt-12">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<AdminCard className="ops-task-note partner-dispatch-panel">');
     expect(source).not.toContain('className="card admin-card ops-task-note partner-dispatch-panel"');
