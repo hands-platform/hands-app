@@ -64,6 +64,31 @@ describe('Admin data table CSS', () => {
     expect(pageLinkBlock).toContain('font-weight: 500');
     expect(pageLinkBlock).not.toContain('font-weight: 700');
   });
+
+  it('keeps table-owned empty rows quiet instead of rendering a nested framed box', () => {
+    const emptyCellIndex = globalsCss.indexOf('.table.vuexy-data-table td.admin-data-table-empty-cell {');
+    const emptyCellBlock = cssRuleBlockAt(emptyCellIndex);
+    const emptyIndex = globalsCss.indexOf('.admin-data-table-empty {');
+    const emptyBlock = cssRuleBlockAt(emptyIndex);
+    const emptyMessageIndex = globalsCss.indexOf('.admin-data-table-empty .muted {');
+    const emptyMessageBlock = cssRuleBlockAt(emptyMessageIndex);
+
+    expect(emptyCellIndex).toBeGreaterThan(-1);
+    expect(emptyCellBlock).toContain('padding: 24px');
+    expect(emptyCellBlock).toContain('text-align: center');
+    expect(emptyIndex).toBeGreaterThan(emptyCellIndex);
+    expect(emptyBlock).toContain('display: grid');
+    expect(emptyBlock).toContain('gap: 4px');
+    expect(emptyBlock).toContain('justify-items: center');
+    expect(emptyBlock).toContain('min-height: 54px');
+    expect(emptyBlock).not.toContain('border:');
+    expect(emptyBlock).not.toContain('border-radius');
+    expect(emptyBlock).not.toContain('dashed');
+    expect(emptyMessageIndex).toBeGreaterThan(emptyIndex);
+    expect(emptyMessageBlock).toContain('font-size: 0.8125rem');
+    expect(emptyMessageBlock).toContain('line-height: 1.45');
+    expect(emptyMessageBlock).toContain('margin: 0');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

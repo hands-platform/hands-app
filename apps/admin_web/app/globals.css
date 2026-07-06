@@ -14370,12 +14370,17 @@ textarea:focus-visible {
 
 .admin-data-table-empty {
   align-items: center;
-  border: 1px dashed var(--admin-border);
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  min-height: 64px;
-  padding: 16px;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  min-height: 54px;
+  padding: 8px 0;
+}
+
+.admin-data-table-empty .muted {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
 }
 
 .sr-only {
