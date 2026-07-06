@@ -10,6 +10,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
@@ -98,14 +99,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         title="Policy checklist"
       >
         {healthItems.map((item) => (
-          <div className="setup-stage-item" key={item.label}>
+          <AdminStageItem key={item.label}>
             <span>{item.ok ? 'OK' : 'CHECK'}</span>
             <div>
               <strong>{item.label}</strong>
               <p className="muted">{item.detail}</p>
             </div>
             <small>{item.value}</small>
-          </div>
+          </AdminStageItem>
         ))}
       </AdminSection>
 
@@ -143,7 +144,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </AdminFormControlButton>
         </AdminFormGrid>
         <div className="setup-stage-list admin-mt-12">
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>{preview.policy ? 'POLICY' : 'MISSING'}</span>
             <div>
               <strong>{preview.policy?.name ?? 'No active policy available now'}</strong>
@@ -158,8 +159,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               </p>
             </div>
             <small>{preview.policy?.status ?? 'NONE'}</small>
-          </div>
-          <div className="setup-stage-item">
+          </AdminStageItem>
+          <AdminStageItem>
             <span>{preview.rule ? 'RULE' : 'FALLBACK'}</span>
             <div>
               <strong>{preview.rule ? <TaxPolicyRuleLabel rule={preview.rule} /> : 'No matching active rule'}</strong>
@@ -175,8 +176,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               </p>
             </div>
             <small>{preview.rule?.id.slice(0, 8) ?? '-'}</small>
-          </div>
-          <div className="setup-stage-item">
+          </AdminStageItem>
+          <AdminStageItem>
             <span>TAX</span>
             <div>
               <strong>
@@ -188,7 +189,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               </p>
             </div>
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
-          </div>
+          </AdminStageItem>
         </div>
       </AdminSection>
 
@@ -315,7 +316,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </p>
             <div className="setup-stage-list admin-mb-12">
               {(policy.rules ?? []).map((rule) => (
-                <div className="setup-stage-item" key={rule.id}>
+                <AdminStageItem key={rule.id}>
                   <span>{rule.active ? 'ON' : 'OFF'}</span>
                   <div>
                     <strong>
@@ -404,7 +405,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     </AdminFormGrid>
                   </div>
                   <small>{rule.id.slice(0, 8)}</small>
-                </div>
+                </AdminStageItem>
               ))}
               {(policy.rules ?? []).length === 0 ? <AdminInlineFallback>No rules yet.</AdminInlineFallback> : null}
             </div>
@@ -485,7 +486,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         title="Tax policy audit summary"
       >
         {auditSummary.rows.map((row) => (
-          <div className="setup-stage-item" key={row.id}>
+          <AdminStageItem key={row.id}>
             <StatusBadge tone={statusBadgeToneFromPillClass(row.toneClassName)}>
               {row.actionLabel.split(' ')[0].toUpperCase()}
             </StatusBadge>
@@ -497,10 +498,10 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               </p>
             </div>
             <small>{row.targetLabel}</small>
-          </div>
+          </AdminStageItem>
         ))}
         {auditSummary.rows.length === 0 ? (
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>EMPTY</span>
             <div>
               <AdminEmptyState
@@ -509,7 +510,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               />
             </div>
             <small>-</small>
-          </div>
+          </AdminStageItem>
         ) : null}
       </AdminSection>
 
@@ -533,7 +534,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         title="Settlement snapshot consistency"
       >
         {snapshotConsistency.rows.map((row) => (
-          <div className="setup-stage-item" key={row.id}>
+          <AdminStageItem key={row.id}>
             <StatusBadge tone={statusBadgeToneFromPillClass(row.toneClassName)}>{row.statusLabel}</StatusBadge>
             <div>
               <strong>
@@ -556,10 +557,10 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               </div>
             </div>
             <small>{row.snapshotLabel}</small>
-          </div>
+          </AdminStageItem>
         ))}
         {snapshotConsistency.rows.length === 0 ? (
-          <div className="setup-stage-item">
+          <AdminStageItem>
             <span>EMPTY</span>
             <div>
               <AdminEmptyState
@@ -568,7 +569,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               />
             </div>
             <small>30d</small>
-          </div>
+          </AdminStageItem>
         ) : null}
       </AdminSection>
     </AdminPageTemplate>

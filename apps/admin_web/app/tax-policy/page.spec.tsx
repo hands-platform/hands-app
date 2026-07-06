@@ -132,6 +132,11 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<span className="muted">No rules yet.</span>');
   });
 
+  it('uses the shared Vuexy stage item atom for tax policy row surfaces', () => {
+    expect(pageSource).toContain('AdminStageItem');
+    expect(pageSource).not.toContain('className="setup-stage-item"');
+  });
+
   it('uses the shared DateTimeText atom for visible tax policy timestamps', () => {
     expect(pageSource).toContain('DateTimeText');
     expect(pageSource).not.toContain("`Effective from ${formatDateTime(preview.policy.effectiveFrom, 'No date')}`");
