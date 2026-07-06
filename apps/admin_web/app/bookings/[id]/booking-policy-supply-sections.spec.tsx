@@ -50,6 +50,8 @@ describe('booking policy supply sections', () => {
 
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('actions={<span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>}');
