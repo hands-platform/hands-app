@@ -10,9 +10,11 @@ describe('OperationsPolicyForm', () => {
   it('uses shared Vuexy badge atoms for policy form status labels', () => {
     expect(sectionSource).toContain('AdminNotePanel');
     expect(sectionSource).toContain('AdminSectionHeader');
+    expect(sectionSource).toContain('AdminTraceSummary');
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="service-trace-summary">');
     expect(sectionSource).not.toContain('<div className="ops-task-note admin-mt-12">');
     expect(sectionSource).not.toContain('<div className="ops-section-header">');
     expect(sectionSource).not.toContain("<span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>");

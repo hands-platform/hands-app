@@ -7,6 +7,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard, AdminFormCard, AdminLinkCard, AdminNotePanel } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
@@ -48,24 +49,14 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         description={displayOperationalWording(setting.description)}
         title={displayOperationalWording(setting.label)}
       />
-      <div className="service-trace-summary">
-        <div>
-          <span>Current</span>
-          <strong>{policyDisplayValue(setting)}</strong>
-        </div>
-        <div>
-          <span>Recommended</span>
-          <strong>{recommended}</strong>
-        </div>
-        <div>
-          <span>Impact</span>
-          <strong>{impact.area}</strong>
-        </div>
-        <div>
-          <span>Related booking records</span>
-          <strong>{relatedBookings.recordCount}</strong>
-        </div>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Current', value: policyDisplayValue(setting) },
+          { label: 'Recommended', value: recommended },
+          { label: 'Impact', value: impact.area },
+          { label: 'Related booking records', value: relatedBookings.recordCount },
+        ]}
+      />
       <AdminNotePanel className="admin-mt-12">
         <div className="ops-row">
           <div>
