@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -83,13 +83,13 @@ export function PartnerDetailBookingOpsLedgerSection({
                 <p className="muted">{row.closeoutDetailNode ?? row.closeoutDetail}</p>
               </td>
               <td>
-                <Link className="text-link" href={`/bookings/${row.id}`}>
+                <AdminTextLink href={`/bookings/${row.id}`}>
                   Booking
-                </Link>
+                </AdminTextLink>
                 {row.chatHref ? (
-                  <Link className="text-link admin-ml-10" href={row.chatHref}>
+                  <AdminTextLink className="admin-ml-10" href={row.chatHref}>
                     Chat
-                  </Link>
+                  </AdminTextLink>
                 ) : null}
               </td>
             </tr>

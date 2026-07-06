@@ -11,6 +11,13 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(source).not.toContain('<span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-ops-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders booking operation notes with shared table styling and links', () => {
     const section = PartnerDetailBookingOpsLedgerSection({
       rows: [
