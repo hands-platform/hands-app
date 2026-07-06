@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import {
@@ -9,6 +8,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminDisclosure, AdminNotePanel } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
@@ -50,9 +50,9 @@ export function PartnerDetailBookingChatRecordsSection({
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
       description="Every matched booking should have a chat room. Completed service chats disappear from mobile apps, but the admin archive remains visible here."
       footer={
-        <Link className="text-link" href={openBookingsHref}>
+        <AdminTextLink href={openBookingsHref}>
           Open bookings
-        </Link>
+        </AdminTextLink>
       }
       id="booking-chat-records"
       resultLabel={`${rows.length} record(s)`}
@@ -117,18 +117,18 @@ export function PartnerDetailBookingChatRecordsSection({
               </td>
               <td>
                 <div className="participant-list">
-                  <Link className="text-link" href={row.bookingHref}>
+                  <AdminTextLink href={row.bookingHref}>
                     Open booking
-                  </Link>
+                  </AdminTextLink>
                   {row.customerHref ? (
-                    <Link className="text-link" href={row.customerHref}>
+                    <AdminTextLink href={row.customerHref}>
                       Open customer
-                    </Link>
+                    </AdminTextLink>
                   ) : null}
                   {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref}>
+                    <AdminTextLink href={row.chatHref}>
                       Open chat archive
-                    </Link>
+                    </AdminTextLink>
                   ) : null}
                 </div>
               </td>

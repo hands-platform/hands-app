@@ -24,6 +24,13 @@ describe('PartnerDetailBookingChatRecordsSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">{row.chatMessages.length} message(s)</span>');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-booking-chat-records-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders booking chat records as a Vuexy table', () => {
     const section = PartnerDetailBookingChatRecordsSection({
       openBookingsHref: '/bookings',
