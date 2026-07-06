@@ -1170,6 +1170,34 @@ a {
   border-color: var(--admin-border-strong);
 }
 
+.admin-summary-card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  min-width: 0;
+}
+
+.admin-summary-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-summary-card span,
+.admin-summary-card small {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-summary-card strong {
+  color: var(--admin-text);
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .admin-summary-card-value {
   display: block;
   font-size: 1.5em;

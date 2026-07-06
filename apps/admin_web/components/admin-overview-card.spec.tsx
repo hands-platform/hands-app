@@ -202,6 +202,22 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Realtime</small><strong>42</strong><span>Ready partners</span>');
   });
 
+  it('keeps shared summary cards on the Vuexy card rhythm token contract', () => {
+    const globals = readFileSync('app/globals.css', 'utf8');
+    const gridBlock = cssRuleBlock(globals, '.admin-summary-card-grid {');
+    const cardBlock = cssRuleBlock(globals, '.admin-summary-card {');
+    const valueBlock = cssRuleBlock(globals, '.admin-summary-card strong {');
+
+    expect(gridBlock).toContain('display: grid;');
+    expect(gridBlock).toContain('gap: 12px;');
+    expect(gridBlock).toContain('grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));');
+    expect(cardBlock).toContain('display: grid;');
+    expect(cardBlock).toContain('gap: 6px;');
+    expect(cardBlock).toContain('min-width: 0;');
+    expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
+  });
+
   it('renders summary card detail dates through the shared DateTimeText atom', () => {
     const source = readFileSync('components/admin-overview-card.tsx', 'utf8');
     const markup = renderToStaticMarkup(
