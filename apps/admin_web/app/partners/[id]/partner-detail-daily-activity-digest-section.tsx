@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -10,6 +11,7 @@ import {
 export type PartnerDetailDailyActivityRecord = {
   readonly at: string;
   readonly detail: string;
+  readonly detailNode?: ReactNode;
   readonly id: string;
   readonly title: string;
   readonly type: string;
@@ -69,7 +71,7 @@ export function PartnerDetailDailyActivityDigestSection({
                         <small>
                           {record.type} / <DateTimeText fallback="Missing" value={record.at} />
                         </small>
-                        <p className="muted admin-m-0">{record.detail}</p>
+                        <p className="muted admin-m-0">{record.detailNode ?? record.detail}</p>
                       </div>
                     ))}
                   </div>

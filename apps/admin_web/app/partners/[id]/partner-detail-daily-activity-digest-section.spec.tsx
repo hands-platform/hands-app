@@ -64,12 +64,43 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'partner-daily-highlight-list',
       ]),
     );
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
+  });
+
+  it('prefers shared detail nodes over fallback activity detail strings', () => {
+    const section = PartnerDetailDailyActivityDigestSection({
+      days: [
+        {
+          highlights: [
+            {
+              at: '2026-06-01T10:00:00.000Z',
+              detail: 'Fallback detail string',
+              detailNode: <span>Shared detail atom marker</span>,
+              id: 'event-1',
+              title: 'Marketplace joined',
+              type: 'BOOKING',
+            },
+          ],
+          key: '2026-06-01',
+          label: 'Jun 1',
+          latestAt: '2026-06-01T10:00:00.000Z',
+          total: 1,
+          typeCounts: [{ count: 1, type: 'BOOKING' }],
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Shared detail atom marker');
+    expect(rendered).not.toContain('Fallback detail string');
+    expect(sectionSource).toContain('readonly detailNode?: ReactNode;');
+    expect(sectionSource).toContain('{record.detailNode ?? record.detail}');
   });
 
   it('renders an empty state when no daily digest rows match the filters', () => {
@@ -85,7 +116,7 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
       ]),
     );
