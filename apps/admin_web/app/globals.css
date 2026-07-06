@@ -2679,8 +2679,23 @@ a.action-button-card:hover {
 }
 
 .money-text {
+  font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0;
   white-space: nowrap;
+}
+
+.money-text-positive {
+  color: var(--admin-text);
+}
+
+.money-text-negative {
+  color: rgb(var(--admin-danger-rgb));
+}
+
+.money-text-zero {
+  color: var(--admin-muted);
 }
 
 .money-text-muted {
@@ -2688,7 +2703,12 @@ a.action-button-card:hover {
 }
 
 .date-time-text {
+  align-items: center;
+  display: inline-flex;
+  font-feature-settings: "tnum" 1;
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1.35;
   white-space: nowrap;
 }
 

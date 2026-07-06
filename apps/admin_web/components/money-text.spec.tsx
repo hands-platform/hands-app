@@ -32,11 +32,28 @@ describe('MoneyText', () => {
 
   it('keeps money values backed by the Vuexy numeric display token contract', () => {
     const globals = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+    const moneyBlock = cssRuleBlock(globals, '.money-text {');
 
     expect(globals).toContain('.money-text {');
-    expect(globals).toContain('font-variant-numeric: tabular-nums;');
-    expect(globals).toContain('white-space: nowrap;');
+    expect(moneyBlock).toContain('font-feature-settings: "tnum" 1;');
+    expect(moneyBlock).toContain('font-variant-numeric: tabular-nums;');
+    expect(moneyBlock).toContain('font-weight: 600;');
+    expect(moneyBlock).toContain('letter-spacing: 0;');
+    expect(moneyBlock).toContain('white-space: nowrap;');
+    expect(globals).toContain('.money-text-positive {');
+    expect(globals).toContain('.money-text-negative {');
+    expect(globals).toContain('.money-text-zero {');
     expect(globals).toContain('.money-text-muted {');
     expect(globals).toContain('color: var(--admin-muted);');
   });
 });
+
+function cssRuleBlock(source: string, selector: string) {
+  const index = source.indexOf(selector);
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = source.indexOf('}', index);
+  return source.slice(index, endIndex + 1);
+}
