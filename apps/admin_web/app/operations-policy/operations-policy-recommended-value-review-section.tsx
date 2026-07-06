@@ -1,5 +1,5 @@
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
@@ -33,7 +33,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
           value: item.value,
         }))}
       />
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {visibleCards.map((card) => (
           <AdminTaskCard
             actionLabel={card.operatorAction}
@@ -53,7 +53,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
             title="Recommended values are aligned"
           />
         ) : null}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

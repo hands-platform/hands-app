@@ -8,6 +8,7 @@ import {
   AdminNotePanel,
   AdminSection,
   AdminTaskCard,
+  AdminTaskGrid,
 } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -51,7 +52,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             value: item.value,
           }))}
         />
-        <div className="ops-task-grid admin-mt-14">
+        <AdminTaskGrid className="admin-mt-14">
           {pressure.cards.map((item) => (
             <AdminActionCard
               actionLabel={item.operatorAction}
@@ -64,9 +65,9 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
               variant="ops-task"
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       </AdminNotePanel>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {backlog.map((item) => (
           <AdminTaskCard
             actionLabel={item.evidence}
@@ -96,7 +97,7 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
             </AdminNotePanel>
           </AdminTaskCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

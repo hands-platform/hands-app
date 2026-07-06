@@ -1,4 +1,4 @@
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
 import type { PolicyEnforcementTraceItem } from './policy-enforcement-trace';
@@ -18,7 +18,7 @@ export function OperationsPolicyEnforcementTraceSection({
       statusTone="info"
       title="Policy enforcement trace"
     >
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {trace.map((item) => (
           <AdminTaskCard
             className="ops-task-done"
@@ -32,7 +32,7 @@ export function OperationsPolicyEnforcementTraceSection({
             <small>{item.verify}</small>
           </AdminTaskCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

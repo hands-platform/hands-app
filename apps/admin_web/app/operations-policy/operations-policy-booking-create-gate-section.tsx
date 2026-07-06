@@ -4,6 +4,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
@@ -107,7 +108,7 @@ export function OperationsPolicyBookingCreateGateSection({
           title={null}
         />
       ) : (
-        <div className="ops-task-grid admin-mt-14">
+        <AdminTaskGrid className="admin-mt-14">
           {review.recentAttempts.map((attempt) => (
             <section className="operations-policy-blocked-attempt-section" key={attempt.id}>
               <StatusBadge tone={statusBadgeToneFromPillClass(attempt.pillClass)}>
@@ -126,7 +127,7 @@ export function OperationsPolicyBookingCreateGateSection({
               </div>
             </section>
           ))}
-        </div>
+        </AdminTaskGrid>
       )}
     </AdminTableSection>
   );

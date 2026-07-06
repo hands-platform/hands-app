@@ -8,6 +8,7 @@ import {
   AdminNotePanel,
   AdminSection,
   AdminTaskCard,
+  AdminTaskGrid,
 } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
@@ -121,7 +122,7 @@ export function OperationsPolicyLiveSimulatorSection({
           </div>
         </AdminNotePanel>
       </AdminDetailGrid>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {simulation.checks.map((check) => (
           <AdminTaskCard
             actionLabel={check.operatorAction}
@@ -134,7 +135,7 @@ export function OperationsPolicyLiveSimulatorSection({
             title={check.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

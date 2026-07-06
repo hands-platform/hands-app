@@ -1,5 +1,10 @@
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminActionCard, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import {
+  AdminActionCard,
+  AdminSection,
+  AdminTaskCard,
+  AdminTaskGrid,
+} from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { ActionGatePolicyChecklist } from './action-gate-policy-checklist';
 
@@ -33,7 +38,7 @@ export function OperationsPolicyActionGateChecklistSection({
           value: item.value,
         }))}
       />
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {visibleCards.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorAction}
@@ -59,7 +64,7 @@ export function OperationsPolicyActionGateChecklistSection({
             title="Action gate policies are aligned"
           />
         ) : null}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

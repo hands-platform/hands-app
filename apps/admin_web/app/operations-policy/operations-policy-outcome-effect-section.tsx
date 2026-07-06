@@ -1,6 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyOutcomeEffectAnalysis } from './policy-outcome-effect';
@@ -74,7 +74,7 @@ export function OperationsPolicyOutcomeEffectSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {analysis.cards.map((card) => (
           <AdminTaskCard
             actionLabel={card.operatorAction}
@@ -85,7 +85,7 @@ export function OperationsPolicyOutcomeEffectSection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

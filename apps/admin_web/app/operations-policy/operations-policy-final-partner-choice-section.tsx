@@ -2,7 +2,7 @@ import { Users } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 type FinalPartnerChoiceMatrix = {
@@ -42,7 +42,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
           value: item.value,
         }))}
       />
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {matrix.cards.map((card) => (
           <AdminTaskCard
             actionLabel={card.operatorAction}
@@ -53,7 +53,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
       <AdminSectionHeader
         actions={(
           <AdminFormControlLink className="button-secondary" href="/partners">

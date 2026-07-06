@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminNotePanel, AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminNotePanel, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 
 export type PolicyDrilldownPill = {
@@ -44,11 +44,11 @@ export function OperationsPolicyDrilldownSection({ drilldown }: OperationsPolicy
       statusTone="info"
       title="Policy impact drill-down"
     >
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {drilldown.lists.map((list) => (
           <PolicyDrilldownList key={list.key} list={list} />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }
