@@ -35,7 +35,7 @@ import {
 } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminCardHeader, AdminLinkCard, AdminRowLink, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminRowLink, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -294,6 +294,13 @@ export default async function PartnerOverviewPage({
 
 const summaryIcons = [Users, BadgeCheck, ClipboardCheck, RadioTower, MapPinned, UserCheck, Activity, AlertTriangle];
 const activityIcons = [ShieldAlert, Activity, RadioTower, AlertTriangle, Star];
+const partnerOperatingStatusIcons: Record<string, typeof Users> = {
+  'available-soon': Clock,
+  'busy-now': Activity,
+  'inactive-7d': UserX,
+  offline: Ban,
+  'ready-now': UserCheck,
+};
 
 const verificationStatusOptions = [
   { label: 'All', value: '' },
@@ -374,26 +381,33 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
       statusLabel={`${cards.length} statuses`}
       title="Partner operating status"
     >
-        {cards.length > 0 ? (
-          cards.map((card) => (
-            <AdminLinkCard
+      {cards.length > 0 ? (
+        cards.map((card) => {
+          const Icon = partnerOperatingStatusIcons[card.key] ?? RadioTower;
+
+          return (
+            <AdminOverviewCommandCard
               ariaLabel={`${card.label}, ${formatNumber(card.count)} Partners. Open filtered Partners list`}
-              className={`partner-overview-operating-card is-${card.tone}`}
+              baseClassName="partner-overview-operating-card"
+              className={`is-${card.tone}`}
+              detail={card.detail}
               href={card.href}
+              icon={<Icon size={18} aria-hidden="true" />}
+              iconClassName="partner-overview-command-icon"
               key={card.key}
+              label={card.label}
+              value={formatNumber(card.count)}
             >
-              <span>{card.label}</span>
-              <strong>{formatNumber(card.count)}</strong>
-              <small>{card.detail}</small>
               <em>
                 Open filtered list
                 <ChevronRight size={14} aria-hidden="true" />
               </em>
-            </AdminLinkCard>
-          ))
-        ) : (
-          <AdminEmptyState framed message="No operating status data is available yet." title={null} />
-        )}
+            </AdminOverviewCommandCard>
+          );
+        })
+      ) : (
+        <AdminEmptyState framed message="No operating status data is available yet." title={null} />
+      )}
     </AdminSection>
   );
 }

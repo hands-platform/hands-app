@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormShell } from '../../../components/admin-form-controls';
-import { AdminCard, AdminDetailGrid, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
+import { AdminSummaryCardGrid } from '../../../components/admin-overview-card';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { BookingOutcomeReviewPanel, BookingOutcomeReviewRow } from './booking-outcome-review-panel';
@@ -40,19 +40,18 @@ export function BookingDetailPostMatchDecisionSection({
       id="booking-post-match-cancellation-decision"
       title="Post-match cancellation processing"
     >
-
-      <AdminDetailGrid
+      <AdminSummaryCardGrid
         ariaLabel="Post-match cancellation evidence checklist"
         className="booking-post-match-detail-evidence-grid admin-mt-12"
-      >
-        {outcomeReview.rows.map((row) => (
-          <AdminLinkCard className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
-            <StatusBadgeFromPillClass pillClass={row.tone}>{row.label}</StatusBadgeFromPillClass>
-            <strong>{bookingOutcomeReviewRowValue(row)}</strong>
-            <small>{row.helper}</small>
-          </AdminLinkCard>
-        ))}
-      </AdminDetailGrid>
+        itemClassName="booking-post-match-detail-evidence-card"
+        items={outcomeReview.rows.map((row) => ({
+          detail: row.helper,
+          href: row.href,
+          key: row.label,
+          label: <StatusBadgeFromPillClass pillClass={row.tone}>{row.label}</StatusBadgeFromPillClass>,
+          value: bookingOutcomeReviewRowValue(row),
+        }))}
+      />
 
       <AdminCard className="booking-outcome-decision-panel">
         <div className="booking-outcome-decision-main">

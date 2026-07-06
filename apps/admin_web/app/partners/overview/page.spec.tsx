@@ -60,6 +60,8 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
     expect(markup).toContain('card admin-card partner-overview-operating-card');
     expect(pageSource).not.toContain('className={`card admin-card partner-overview-operating-card');
+    expect(pageSource).toContain('baseClassName="partner-overview-operating-card"');
+    expect(pageSource).not.toContain('AdminLinkCard');
     expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-priority-board');
     expect(markup).not.toContain('usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
