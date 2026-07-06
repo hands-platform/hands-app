@@ -167,7 +167,9 @@ describe('CashSettlement board sections', () => {
 
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).not.toContain('className={`ops-task-card');
+    expect(source).not.toContain('<div className="ops-task-grid"');
   });
 
   it('allows cash settlement command card details to render shared money atoms', () => {

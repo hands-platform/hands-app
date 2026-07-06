@@ -1,7 +1,7 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminStageItem } from '../../components/admin-stage-item';
-import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
+import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -191,7 +191,7 @@ function CommandCardSection({
 
 function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) {
   return (
-    <div className="ops-task-grid">
+    <AdminTaskGrid>
       {cards.map((card) => (
         <AdminTaskCard
           actionLabel={card.action}
@@ -202,7 +202,7 @@ function CommandCardGrid({ cards }: { readonly cards: readonly CommandCard[] }) 
           title={card.title}
         />
       ))}
-    </div>
+    </AdminTaskGrid>
   );
 }
 
@@ -231,7 +231,7 @@ function LinkedCardSection({
           {linkLabel}
         </AdminTextLink>
       </div>
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard
             actionLabel={item.operatorRule}
@@ -244,7 +244,7 @@ function LinkedCardSection({
             variant="ops-task"
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminTablePanel>
   );
 }
