@@ -14,7 +14,8 @@ describe('PartnerDetailBookingJourneySection', () => {
   });
 
   it('uses the shared Vuexy badge atom for journey steps', () => {
-    expect(sectionSource).toContain('StatusBadge');
+    expect(sectionSource).toContain('StatusBadgeFromPillClass');
+    expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).toContain('readonly value: ReactNode;');
     expect(sectionSource).not.toContain('PillClassBadge');

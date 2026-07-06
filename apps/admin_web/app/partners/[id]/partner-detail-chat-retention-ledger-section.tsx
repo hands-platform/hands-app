@@ -6,7 +6,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -72,9 +72,9 @@ export function PartnerDetailChatRetentionLedgerSection({
               <td>
                 <strong>{row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
-                <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
+                <StatusBadgeFromPillClass pillClass={statusPillClass(row.status)}>
                   {row.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <strong>{row.relation}</strong>

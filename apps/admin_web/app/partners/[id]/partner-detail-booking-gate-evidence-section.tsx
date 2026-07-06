@@ -5,7 +5,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
@@ -86,9 +86,9 @@ export function PartnerDetailBookingGateEvidenceSection({
           {visibleAttempts.map((attempt) => (
             <tr key={attempt.id}>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(attempt.tone)}>
+                <StatusBadgeFromPillClass pillClass={attempt.tone}>
                   {attempt.gateLabel}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <AdminTextLink href={attempt.bookingMonitorHref}>

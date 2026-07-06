@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTablePanel,
   PartnerDetailVuexyTableFooter,
@@ -64,9 +64,9 @@ export function PartnerDetailBookingOpsLedgerSection({
               <td>
                 <strong>{row.bookingLabelNode ?? row.bookingLabel}</strong>
                 <p className="muted">{row.serviceLabel}</p>
-                <StatusBadge tone={statusBadgeToneFromPillClass(statusPillClass(row.status))}>
+                <StatusBadgeFromPillClass pillClass={statusPillClass(row.status)}>
                   {row.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>{row.relation}</td>
               <td>

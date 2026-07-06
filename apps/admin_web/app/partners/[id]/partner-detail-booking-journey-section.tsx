@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -80,9 +80,9 @@ export function PartnerDetailBookingJourneySection({
                 <td>
                   <div className="participant-list">
                     {row.steps.map((step) => (
-                      <StatusBadge key={`${row.id}-${step.label}`} tone={statusBadgeToneFromPillClass(step.tone)}>
+                      <StatusBadgeFromPillClass key={`${row.id}-${step.label}`} pillClass={step.tone}>
                         {step.label}: {step.value}
-                      </StatusBadge>
+                      </StatusBadgeFromPillClass>
                     ))}
                   </div>
                 </td>

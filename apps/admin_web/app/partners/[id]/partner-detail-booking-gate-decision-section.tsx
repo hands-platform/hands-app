@@ -4,7 +4,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
   PartnerDetailVuexyTablePanel,
@@ -107,9 +107,9 @@ export function PartnerDetailBookingGateDecisionSection({
                 <strong>{gate.label}</strong>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(bookingGatePillClass(gate))}>
+                <StatusBadgeFromPillClass pillClass={bookingGatePillClass(gate)}>
                   {bookingGateStatusLabel(gate)}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <p className="muted">{gate.detailNode ?? gate.detail}</p>

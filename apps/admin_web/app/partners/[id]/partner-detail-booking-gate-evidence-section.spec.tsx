@@ -14,6 +14,8 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('DateTimeText');
     expect(source).toContain("detail: 'No gate row'");
     expect(source).toContain("detailDateTimeFallback: 'No gate row'");
