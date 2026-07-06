@@ -3,7 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ServiceTypeCoverageRow } from '../../lib/service-type-coverage-rows';
 
 type ServiceTypeCoverageBoardSummary = {
@@ -129,7 +129,7 @@ export function ServiceTypeCoverageBoardSection({
                   </div>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.statusLabel}</StatusBadge>
+                  <StatusBadgeFromPillClass pillClass={row.tone}>{row.statusLabel}</StatusBadgeFromPillClass>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>

@@ -9,7 +9,8 @@ describe('ServiceTypeCoverageBoardSection', () => {
     const source = readFileSync('app/services/service-type-coverage-board-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain("<span className={summary.blockedCount ? 'pill pill-danger' : 'pill pill-success'}>");
     expect(source).not.toContain("<span className={summary.warningCount ? 'pill pill-warn' : 'pill pill-success'}>");

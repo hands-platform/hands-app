@@ -3,7 +3,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type {
   ServicePricePolicyPreviewRow,
   ServicePricePolicyScenario,
@@ -121,9 +121,9 @@ export function ServicePricePolicyPreviewSection({
                   <ScenarioPreviewCell scenario={row.balancedStepScenario} />
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.checkTone)}>
+                  <StatusBadgeFromPillClass pillClass={row.checkTone}>
                     {row.checkLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                   <p className="muted">{row.nextAction}</p>
                 </td>
               </tr>
@@ -150,7 +150,7 @@ function ScenarioPreviewCell({ scenario }: { readonly scenario: ServicePricePoli
 
   return (
     <div className="service-matrix-cell">
-      <StatusBadge tone={statusBadgeToneFromPillClass(scenario.tone)}>{scenario.status}</StatusBadge>
+      <StatusBadgeFromPillClass pillClass={scenario.tone}>{scenario.status}</StatusBadgeFromPillClass>
       <strong>
         <MoneyText amount={scenario.customerPrice} currency={scenario.currency} />
       </strong>

@@ -4,7 +4,7 @@ import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ServiceBookingTraceRow } from '../../lib/service-booking-trace-rows';
 
 type ServiceBookingFinanceTraceSummary = {
@@ -172,9 +172,9 @@ export function ServiceBookingFinanceTraceSection({
                   </div>
                 </td>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.traceTone)}>
+                  <StatusBadgeFromPillClass pillClass={row.traceTone}>
                     {row.traceStatus}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
               </tr>
             ))}

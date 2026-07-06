@@ -1,7 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ServicePayoutLedgerRow } from '../../lib/service-payout-ledger-rows';
 import { slugify } from '../../lib/service-catalog-filters';
 
@@ -84,13 +84,13 @@ export function ServicePayoutLedgerSection({
                 )}
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(row.commissionTone)}>
+                <StatusBadgeFromPillClass pillClass={row.commissionTone}>
                   {row.baseRule ? (
                     <MoneyText amount={row.finance.actualCompanyCommission} currency={row.currency} />
                   ) : (
                     'Missing rule'
                   )}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </td>
               <td>
                 <div className="service-matrix-cell">
@@ -101,7 +101,7 @@ export function ServicePayoutLedgerSection({
                 </div>
               </td>
               <td>
-                <StatusBadge tone={statusBadgeToneFromPillClass(row.actionTone)}>{row.action}</StatusBadge>
+                <StatusBadgeFromPillClass pillClass={row.actionTone}>{row.action}</StatusBadgeFromPillClass>
               </td>
             </tr>
           ))}
