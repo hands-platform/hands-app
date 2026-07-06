@@ -152,6 +152,7 @@ describe('PayoutsPage', () => {
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"');

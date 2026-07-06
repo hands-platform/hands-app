@@ -61,6 +61,7 @@ describe('PayoutCommandQueueSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-command-queue-section.tsx'), 'utf8');
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadgeFromPillClass');
@@ -69,6 +70,7 @@ describe('PayoutCommandQueueSection', () => {
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className={`ops-task-card');
+    expect(source).not.toContain('<div className="ops-task-grid"');
   });
 });
 

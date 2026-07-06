@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -33,7 +33,7 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
         </AdminTextLink>
       </div>
       {signals.length ? (
-        <div className="ops-task-grid">
+        <AdminTaskGrid>
           {signals.map((signal) => (
             <AdminTaskCard
               actionLabel={signal.action}
@@ -48,7 +48,7 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
               title={signal.title}
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       ) : (
         <AdminEmptyState framed message="No payout command signal is visible for this range." />
       )}

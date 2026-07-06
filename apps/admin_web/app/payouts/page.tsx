@@ -230,7 +230,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             value: card.value,
           }))}
         />
-        <div className="ops-task-grid">
+        <AdminTaskGrid>
           {releasePolicyDesk.map((signal) => (
             <AdminTaskCard
               actionLabel={signal.action}
@@ -241,7 +241,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               title={signal.title}
             />
           ))}
-        </div>
+        </AdminTaskGrid>
         <AdminSectionHeader
           actions={
             <AdminTextLink href="/cash-settlements">

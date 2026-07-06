@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminTaskCard } from '../../components/admin-surface';
+import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -52,7 +52,7 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
         }))}
       />
       {checks.length ? (
-        <div className="ops-task-grid admin-mt-16">
+        <AdminTaskGrid className="admin-mt-16">
           {checks.map((check) => (
             <AdminTaskCard
               actionLabel={check.action}
@@ -67,7 +67,7 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
               title={check.title}
             />
           ))}
-        </div>
+        </AdminTaskGrid>
       ) : (
         <AdminEmptyState framed message="No payout money flow check is visible for this range." />
       )}
