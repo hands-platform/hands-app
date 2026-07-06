@@ -55,7 +55,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
                 <strong>{row.genderLabel}</strong>
               </td>
               <td>
-                <strong>{row.joinedLabel}</strong>
+                <DateTimeText fallback="Join date missing" value={row.joinedAt} />
               </td>
               <td>
                 <DateTimeText fallback="Not captured" value={row.lastSeenAt} />

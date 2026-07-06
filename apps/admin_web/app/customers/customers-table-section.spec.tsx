@@ -29,11 +29,16 @@ describe('CustomersTableSection', () => {
     );
   });
 
-  it('uses the shared date time atom for last login timestamps', () => {
+  it('uses the shared date time atom for visible customer directory timestamps', () => {
     const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
     const modelSource = readFileSync('app/customers/customer-management-view-model.ts', 'utf8');
 
     expect(source).toContain('DateTimeText');
+    expect(modelSource).toContain('readonly joinedAt: string | null;');
+    expect(source).toContain('<DateTimeText fallback="Join date missing" value={row.joinedAt} />');
+    expect(modelSource).not.toContain('readonly joinedLabel: string;');
+    expect(source).not.toContain('<strong>{row.joinedLabel}</strong>');
+    expect(modelSource).not.toContain("joinedLabel: row.joinedAt ? formatDate(row.joinedAt) : 'Join date missing'");
     expect(modelSource).not.toContain('readonly lastLoginDateLabel: string;');
     expect(source).not.toContain('<strong>{row.lastLoginDateLabel}</strong>');
     expect(modelSource).not.toContain("lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured'");
@@ -53,6 +58,7 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('+84900000000');
     expect(rendered).toContain('Vietnam');
     expect(rendered).toContain('Female');
+    expect(rendered).toContain('1 Jun 2026');
     expect(rendered).toContain('13 Jun 2026');
     expect(rendered).toContain('Not captured');
     expect(rendered).toContain('13 Jun 2026, 03:15 (12)');
@@ -124,7 +130,7 @@ function buildRow(): CustomerManagementTableRow {
     initials: 'CO',
     lastLoginAddressLabel: 'Not captured',
     lastSeenAt: '2026-06-12T20:15:00.000Z',
-    joinedLabel: '2026-06-01',
+    joinedAt: '2026-06-01T00:00:00.000Z',
     name: 'Customer One',
     paymentsHref: '/payments?customer=customer-1',
     phone: '+84900000000',

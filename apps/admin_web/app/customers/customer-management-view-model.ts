@@ -53,10 +53,10 @@ export type CustomerManagementTableRow = {
   readonly email: string;
   readonly genderLabel: string;
   readonly initials: string;
+  readonly joinedAt: string | null;
   readonly lastCompletedLabel: string;
   readonly lastLoginAddressLabel: string;
   readonly lastSeenAt: string | null;
-  readonly joinedLabel: string;
   readonly name: string;
   readonly paymentsHref: string;
   readonly phone: string;
@@ -149,10 +149,10 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
       email: row.email,
       genderLabel: row.genderLabel,
       initials: readInitials(row.name),
+      joinedAt: row.joinedAt ?? null,
       lastCompletedLabel: customerLastCompletedLabel(row.lastCompletedAt, row.completedBookings),
       lastLoginAddressLabel: row.lastLoginAddress,
       lastSeenAt: row.lastSeenAt ?? null,
-      joinedLabel: row.joinedAt ? formatDate(row.joinedAt) : 'Join date missing',
       name: row.name,
       paymentsHref: `/payments?customer=${encodeURIComponent(row.id)}`,
       phone: row.phone,
