@@ -44,8 +44,12 @@ describe('VietnamOverviewPage', () => {
     expect(markup).not.toContain('<article class="vietnam-realtime-widget');
     expect(markup).toContain('card admin-section vietnam-overview-map-card');
     expect(markup).toContain('card admin-section vietnam-overview-filter-panel');
-    expect(markup).toContain('card admin-card vietnam-overview-filter-summary-card');
+    expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-filter-summary-card');
     expect(markup).not.toContain('<article class="vietnam-overview-filter-summary-card');
+    expect(pageSource).toContain('AdminSummaryCardGrid');
+    expect(pageSource).not.toContain('<div className="vietnam-overview-filter-summary-grid"');
+    expect(pageSource).not.toContain('<div className="vietnam-region-focus-summary-items is-realtime">');
+    expect(pageSource).not.toContain('<div className="vietnam-region-focus-summary-items is-period">');
     expect(markup).not.toContain('card admin-filter-panel vietnam-overview-filter-panel');
     expect(markup).toContain('card admin-section vietnam-realtime-chart-card');
     expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
@@ -91,7 +95,7 @@ describe('VietnamOverviewPage', () => {
 
     expect(markup).toContain('Ho Chi Minh metrics');
     expect(markup).toContain('card admin-section vietnam-region-focus-summary-card');
-    expect(markup).toContain('card admin-card vietnam-region-focus-summary-item');
+    expect(markup).toContain('card admin-card admin-summary-card vietnam-region-focus-summary-item');
     expect(markup).not.toContain('<article class="vietnam-region-focus-summary-item');
   });
 

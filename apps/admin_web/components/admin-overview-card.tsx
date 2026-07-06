@@ -57,6 +57,23 @@ type AdminMiniMetricStripProps = {
   readonly metrics: readonly AdminMiniMetric[];
 };
 
+type AdminSummaryCardItem = {
+  readonly className?: string;
+  readonly detail?: ReactNode;
+  readonly key?: string;
+  readonly label: ReactNode;
+  readonly overline?: ReactNode;
+  readonly tone?: string;
+  readonly value: ReactNode;
+};
+
+type AdminSummaryCardGridProps = {
+  readonly ariaLabel?: string;
+  readonly className?: string;
+  readonly itemClassName?: string;
+  readonly items: readonly AdminSummaryCardItem[];
+};
+
 type AdminTraceSummaryMetric = {
   readonly action?: ReactNode;
   readonly className?: string;
@@ -125,6 +142,34 @@ export function AdminMiniMetricStrip({
           <span>{metric.label}</span>
           <strong>{metric.value}</strong>
         </div>
+      ))}
+    </div>
+  );
+}
+
+export function AdminSummaryCardGrid({
+  ariaLabel,
+  className,
+  itemClassName,
+  items,
+}: AdminSummaryCardGridProps) {
+  return (
+    <div aria-label={ariaLabel} className={joinClassNames('admin-summary-card-grid', className)}>
+      {items.map((item, index) => (
+        <AdminCard
+          className={joinClassNames(
+            'admin-summary-card',
+            itemClassName,
+            item.className,
+            item.tone ? `is-${item.tone}` : undefined,
+          )}
+          key={summaryCardKey(item, index)}
+        >
+          {item.overline ? <small>{item.overline}</small> : <span>{item.label}</span>}
+          <strong>{item.value}</strong>
+          {item.overline ? <span>{item.label}</span> : null}
+          {item.detail ? <small>{item.detail}</small> : null}
+        </AdminCard>
       ))}
     </div>
   );
@@ -215,6 +260,12 @@ function miniMetricKey(metric: AdminMiniMetric, index: number) {
   if (metric.key) return metric.key;
   if (typeof metric.label === 'string' || typeof metric.label === 'number') return String(metric.label);
   return `metric-${index}`;
+}
+
+function summaryCardKey(item: AdminSummaryCardItem, index: number) {
+  if (item.key) return item.key;
+  if (typeof item.label === 'string' || typeof item.label === 'number') return String(item.label);
+  return `summary-card-${index}`;
 }
 
 function traceSummaryKey(metric: AdminTraceSummaryMetric, index: number) {

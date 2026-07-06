@@ -7,6 +7,7 @@ import {
   AdminOverviewGrid,
   AdminOverviewGroup,
   AdminProfileOverviewCard,
+  AdminSummaryCardGrid,
   AdminTraceSummary,
 } from './admin-overview-card';
 
@@ -112,6 +113,30 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('class="admin-mini-metric usage-overview-mini-metric is-info"');
     expect(markup).toContain('<span>Coupon bookings</span>');
     expect(markup).toContain('<strong>12</strong>');
+  });
+
+  it('renders shared summary card grids with Vuexy card surfaces', () => {
+    const markup = renderToStaticMarkup(
+      <AdminSummaryCardGrid
+        ariaLabel="Selected filters"
+        className="vietnam-overview-filter-summary-grid"
+        itemClassName="vietnam-overview-filter-summary-card"
+        items={[
+          { detail: 'Realtime dots stay current.', label: 'Range', tone: 'info', value: 'Today' },
+          { key: 'ready', label: 'Ready partners', overline: 'Realtime', tone: 'success', value: '42' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('class="admin-summary-card-grid vietnam-overview-filter-summary-grid"');
+    expect(markup).toContain(
+      'class="card admin-card admin-summary-card vietnam-overview-filter-summary-card is-info"',
+    );
+    expect(markup).toContain('<span>Range</span><strong>Today</strong><small>Realtime dots stay current.</small>');
+    expect(markup).toContain(
+      'class="card admin-card admin-summary-card vietnam-overview-filter-summary-card is-success"',
+    );
+    expect(markup).toContain('<small>Realtime</small><strong>42</strong><span>Ready partners</span>');
   });
 
   it('renders shared trace summary metrics for finance and operations strips', () => {

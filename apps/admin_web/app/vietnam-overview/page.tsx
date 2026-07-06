@@ -27,6 +27,7 @@ import {
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminSection } from '../../components/admin-surface';
@@ -544,15 +545,12 @@ export default async function VietnamOverviewPage({
               value: option.value,
             }))}
           />
-          <div className="vietnam-overview-filter-summary-grid" aria-label="Selected Vietnam overview filters">
-            {periodFilterSummary.map((item) => (
-              <AdminCard key={item.label} className={`vietnam-overview-filter-summary-card is-${item.tone}`}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <small>{item.detail}</small>
-              </AdminCard>
-            ))}
-          </div>
+          <AdminSummaryCardGrid
+            ariaLabel="Selected Vietnam overview filters"
+            className="vietnam-overview-filter-summary-grid"
+            itemClassName="vietnam-overview-filter-summary-card"
+            items={periodFilterSummary}
+          />
       </AdminSection>
 
       {activeRegion ? (
@@ -568,30 +566,28 @@ export default async function VietnamOverviewPage({
                 <strong>Realtime map signals</strong>
                 <span>Current operating dots only</span>
               </div>
-              <div className="vietnam-region-focus-summary-items is-realtime">
-                {regionRealtimeSummary.map((item) => (
-                  <AdminCard key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
-                    <small>Realtime</small>
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </AdminCard>
-                ))}
-              </div>
+              <AdminSummaryCardGrid
+                className="vietnam-region-focus-summary-items is-realtime"
+                itemClassName="vietnam-region-focus-summary-item"
+                items={regionRealtimeSummary.map((item) => ({
+                  ...item,
+                  overline: 'Realtime',
+                }))}
+              />
             </div>
             <div className="vietnam-region-focus-summary-group">
               <div className="vietnam-region-focus-summary-group-label">
                 <strong>Period totals</strong>
                 <span>{overview.rangeLabel} stored event totals</span>
               </div>
-              <div className="vietnam-region-focus-summary-items is-period">
-                {regionPeriodSummary.map((item) => (
-                  <AdminCard key={item.label} className="vietnam-region-focus-summary-item">
-                    <small>{overview.rangeLabel}</small>
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </AdminCard>
-                ))}
-              </div>
+              <AdminSummaryCardGrid
+                className="vietnam-region-focus-summary-items is-period"
+                itemClassName="vietnam-region-focus-summary-item"
+                items={regionPeriodSummary.map((item) => ({
+                  ...item,
+                  overline: overview.rangeLabel,
+                }))}
+              />
             </div>
         </AdminSection>
       ) : null}
