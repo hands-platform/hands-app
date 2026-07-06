@@ -2,7 +2,7 @@ import { Settings2 } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
 import type {
@@ -71,7 +71,7 @@ export function NotificationChannelPolicySection({
           </StatusBadgeLink>
         </div>
       ) : (
-        <div className="ops-task-grid">
+        <AdminTaskGrid>
           <AdminTaskCard
             detail="Direct requests, marketplace participation alerts, matching, and payout setup."
             leading={<StatusBadge tone="info">Partner booking alerts</StatusBadge>}
@@ -196,7 +196,7 @@ export function NotificationChannelPolicySection({
               ) : null}
             </AdminTaskCard>
           ) : null}
-        </div>
+        </AdminTaskGrid>
       )}
     </AdminSection>
   );

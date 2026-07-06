@@ -56,6 +56,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     );
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('PillClassBadge');
@@ -65,6 +66,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.label}</span>');
     expect(source).not.toContain('<AdminFormControlLink className="pill pill-neutral" href={item.href}>');
     expect(source).not.toContain('<span className="pill pill-success">Ready</span>');
+    expect(source).not.toContain('<div className="ops-task-grid"');
   });
 });
 

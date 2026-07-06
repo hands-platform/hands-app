@@ -1,4 +1,4 @@
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink, type StatusBadgeTone } from '../../components/status-badge';
 
 export type NotificationDeliveryOpsQueueItem = {
@@ -26,7 +26,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
       }
       title="Delivery operations queue"
     >
-      <div className="ops-task-grid">
+      <AdminTaskGrid>
         {items.length ? (
           items.map((item) => (
             <AdminTaskCard
@@ -47,7 +47,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
             title="Delivery path is clean"
           />
         )}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

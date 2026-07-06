@@ -168,6 +168,7 @@ describe('NotificationChannelPolicySection', () => {
     );
 
     expect(source).toContain('AdminTaskCard');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('fcmSmokeReadinessTone');
@@ -179,6 +180,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(source).not.toContain('<Link className="pill pill-neutral" href="/notifications?diagnostics=full">');
     expect(source).not.toContain('<Link className="pill pill-info" href="/setup#notifications">');
     expect(source).not.toContain('<span className="pill pill-warn">FCM smoke fallback</span>');
+    expect(source).not.toContain('<div className="ops-task-grid"');
   });
 
   it('uses the shared AdminFormControlLink atom for policy actions', () => {
