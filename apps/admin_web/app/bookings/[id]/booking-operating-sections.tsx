@@ -14,15 +14,18 @@ import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/s
 type SummaryCard = {
   label: string;
   value: string;
+  dateTimeValue?: string | null;
   helper: string;
   href?: string;
 };
 
+type LinkedSummaryCard = SummaryCard & { href: string };
+
 type MarketplaceWalletEvidence = {
   status: string;
   tone: string;
-  cards: Array<Required<SummaryCard>>;
-  commandStrip: Array<Required<SummaryCard>>;
+  cards: LinkedSummaryCard[];
+  commandStrip: LinkedSummaryCard[];
   rows: Array<{
     lane: string;
     scope: string;
@@ -620,7 +623,11 @@ function SummaryCardTrace({ cards }: { cards: SummaryCard[] }) {
         detail: card.helper,
         href: card.href,
         label: card.label,
-        value: card.value,
+        value: card.dateTimeValue ? (
+          <DateTimeText fallback={card.value} value={card.dateTimeValue} />
+        ) : (
+          card.value
+        ),
       }))}
     />
   );

@@ -165,6 +165,14 @@ describe('bookingCommunicationMovementHandoff', () => {
     expect(handoff.metrics.find((metric) => metric.label === 'Movement rows')).toMatchObject({
       value: '2',
     });
+    expect(handoff.metrics.find((metric) => metric.label === 'Latest message')).toMatchObject({
+      dateTimeValue: '2026-06-14T03:00:00.000Z',
+      value: '14 Jun 2026, 10:00',
+    });
+    expect(handoff.metrics.find((metric) => metric.label === 'Booking alerts')).toMatchObject({
+      dateTimeValue: '2026-06-14T02:00:00.000Z',
+      value: '1',
+    });
     expect(handoff.events.find((event) => event.id === 'location-location-new')).toMatchObject({
       detail: expect.stringContaining('Location recorded without readable address / Updated'),
     });

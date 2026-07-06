@@ -143,6 +143,7 @@ export function bookingCommunicationMovementHandoff({
       {
         label: 'Latest message',
         value: lastMessage ? formatDate(lastMessage.createdAt) : 'No message',
+        dateTimeValue: lastMessage?.createdAt ?? null,
         helper: lastMessage
           ? `${messageSenderLabel(lastMessage)} / ${compactActivityText(lastMessage.body, 72)}`
           : 'No Customer or Partner message yet.',
@@ -150,6 +151,7 @@ export function bookingCommunicationMovementHandoff({
       {
         label: 'Booking alerts',
         value: `${relatedNotifications.length}`,
+        dateTimeValue: latestAlert?.createdAt ?? null,
         helper: latestAlert
           ? `Latest ${humanizeNotificationType(latestAlert.type)} at ${formatDate(latestAlert.createdAt)}.`
           : 'No booking notification row linked yet.',

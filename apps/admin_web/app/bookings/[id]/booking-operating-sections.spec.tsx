@@ -40,6 +40,7 @@ describe('Booking operating sections', () => {
 
     expect(source).toContain("import { DateTimeText } from '../../../components/date-time-text';");
     expect(source).toContain('<DateTimeText fallback={item.status} value={item.at} />');
+    expect(source).toContain('<DateTimeText fallback={card.value} value={card.dateTimeValue} />');
     expect(source).not.toContain('time: item.at ? formatDate(item.at) : item.status');
   });
 
@@ -196,9 +197,10 @@ describe('Booking operating sections', () => {
         hrefLabel: 'Open full activity',
         metrics: [
           {
+            dateTimeValue: '2026-06-19T08:00:00.000Z',
             helper: '3 message(s) kept in admin archive.',
             label: 'Chat room',
-            value: 'Retained',
+            value: '19 Jun 2026, 15:00',
           },
         ],
         nextAction: 'Continue normal monitoring',
@@ -220,6 +222,7 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('Evidence Partner movement');
     expect(rendered).toContain('Evidence Notification delivery');
     expect(rendered).toContain('Evidence Admin chat archive');
+    expect(renderToStaticMarkup(section)).toContain('dateTime="2026-06-19T08:00:00.000Z"');
     expect(classNames).toEqual(
       expect.arrayContaining([
         'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
