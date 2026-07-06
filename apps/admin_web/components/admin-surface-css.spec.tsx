@@ -91,6 +91,10 @@ describe('Admin surface CSS', () => {
   it('keeps framed empty states on the Vuexy raised surface rhythm', () => {
     const emptyIndex = globalsCss.indexOf('.empty-state {');
     const emptyBlock = cssRuleBlockAt(emptyIndex);
+    const titleIndex = globalsCss.indexOf('.empty-state strong {');
+    const titleBlock = cssRuleBlockAt(titleIndex);
+    const messageIndex = globalsCss.indexOf('.empty-state .muted {');
+    const messageBlock = cssRuleBlockAt(messageIndex);
 
     expect(emptyIndex).toBeGreaterThan(-1);
     expect(emptyBlock).toContain('background: var(--admin-surface-raised)');
@@ -102,6 +106,14 @@ describe('Admin surface CSS', () => {
     expect(emptyBlock).not.toContain('background: var(--admin-primary-soft)');
     expect(emptyBlock).not.toContain('border: 1px dashed');
     expect(emptyBlock).not.toContain('min-height: 92px');
+    expect(titleIndex).toBeGreaterThan(emptyIndex);
+    expect(titleBlock).toContain('color: var(--admin-text)');
+    expect(titleBlock).toContain('font-size: 0.9375rem');
+    expect(titleBlock).toContain('line-height: 1.35');
+    expect(messageIndex).toBeGreaterThan(titleIndex);
+    expect(messageBlock).toContain('font-size: 0.8125rem');
+    expect(messageBlock).toContain('line-height: 1.45');
+    expect(messageBlock).toContain('margin: 0');
   });
 
   it('keeps shared disclosures on the Vuexy Accordion rhythm', () => {
