@@ -26,6 +26,20 @@ describe('Status badge CSS', () => {
     expect(primaryBlock).toContain('background: var(--admin-primary-soft)');
     expect(primaryBlock).toContain('color: var(--admin-accent-strong)');
   });
+
+  it('keeps clickable tonal chips on the Vuexy filled-hover interaction', () => {
+    const primaryHoverIndex = globalsCss.indexOf('button.pill-primary:hover,\na.pill-primary:hover {');
+    const primaryHoverBlock = cssRuleBlockAt(primaryHoverIndex);
+    const successHoverIndex = globalsCss.indexOf('button.pill-success:hover,\na.pill-success:hover');
+    const dangerHoverIndex = globalsCss.indexOf('button.pill-danger:hover,\na.pill-danger:hover');
+
+    expect(primaryHoverIndex).toBeGreaterThan(-1);
+    expect(primaryHoverBlock).toContain('background: var(--admin-accent)');
+    expect(primaryHoverBlock).toContain('color: var(--admin-inverse-text)');
+    expect(primaryHoverBlock).toContain('filter: none');
+    expect(successHoverIndex).toBeGreaterThan(-1);
+    expect(dangerHoverIndex).toBeGreaterThan(-1);
+  });
 });
 
 function cssRuleBlockAt(index: number) {

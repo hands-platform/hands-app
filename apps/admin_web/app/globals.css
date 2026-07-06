@@ -14396,6 +14396,54 @@ button.pill-neutral:hover {
   color: var(--admin-muted);
 }
 
+button.pill-primary:hover,
+a.pill-primary:hover {
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
+button.pill-success:hover,
+a.pill-success:hover {
+  background: var(--admin-success);
+  border-color: var(--admin-success);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
+button.pill-info:hover,
+a.pill-info:hover {
+  background: var(--admin-info);
+  border-color: var(--admin-info);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
+button.pill-warn:hover,
+a.pill-warn:hover {
+  background: var(--admin-warning);
+  border-color: var(--admin-warning);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
+button.pill-danger:hover,
+a.pill-danger:hover {
+  background: var(--admin-danger);
+  border-color: var(--admin-danger);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
+button.pill-neutral:hover,
+a.pill-neutral:hover {
+  background: var(--admin-secondary);
+  border-color: var(--admin-secondary);
+  color: var(--admin-inverse-text);
+  filter: none;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
