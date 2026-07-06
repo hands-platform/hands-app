@@ -18,7 +18,7 @@ import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../compon
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminLinkCard, AdminRowItem, AdminRowLink, AdminSection } from '../../components/admin-surface';
+import { AdminRowItem, AdminRowLink, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
@@ -320,17 +320,17 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
 
   return (
-    <AdminLinkCard className={`finance-overview-action-item is-${item.tone}`} href={item.href}>
-      <span className="finance-overview-action-icon">
-        <Icon size={17} aria-hidden="true" />
-      </span>
-      <div>
-        <span>{item.label}</span>
-        <strong>{item.countLabel}</strong>
-        <small>{item.detail}</small>
-      </div>
-      <FinanceActionAmount item={item} />
-    </AdminLinkCard>
+    <AdminOverviewCommandCard
+      baseClassName="finance-overview-action-item"
+      className={`is-${item.tone}`}
+      detail={item.detail}
+      href={item.href}
+      icon={<Icon size={17} aria-hidden="true" />}
+      iconClassName="finance-overview-action-icon"
+      label={item.label}
+      trailing={<FinanceActionAmount item={item} />}
+      value={item.countLabel}
+    />
   );
 }
 

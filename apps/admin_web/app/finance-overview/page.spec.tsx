@@ -237,6 +237,8 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('card admin-card finance-overview-action-item');
     expect(markup).toContain('finance-overview-action-icon');
     expect(markup).not.toContain('card admin-card usage-overview-action-item');
+    expect(pageSource).toContain('baseClassName="finance-overview-action-item"');
+    expect(pageSource).not.toContain('<AdminLinkCard className={`finance-overview-action-item');
     expect(pageSource).not.toContain('<a className={`card admin-card usage-overview-action-item');
     expect(pageSource).not.toContain('usage-overview-command-icon');
     expect(pageSource).not.toContain('contentClassName="usage-overview-page finance-overview-page"');
