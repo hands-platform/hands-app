@@ -18,6 +18,7 @@ import { AdminErrorState, AdminLoadingState } from '../../components/admin-surfa
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import {
   adminAvatarStatusFromSignals,
@@ -668,7 +669,7 @@ function BookingChatMessageRow({ message }: { readonly message: BookingChatMessa
       <div className="booking-chat-message-meta">
         <strong>{senderName}</strong>
         <StatusBadge tone="neutral">{senderRole}</StatusBadge>
-        <time>{formatBookingDate(message.createdAt)}</time>
+        <DateTimeText fallback="Missing" value={message.createdAt} />
       </div>
       <p>{message.body || 'No message body retained.'}</p>
     </div>

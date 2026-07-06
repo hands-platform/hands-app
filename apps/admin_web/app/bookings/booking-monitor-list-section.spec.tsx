@@ -38,6 +38,14 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<div className="booking-chat-empty">No retained chat messages for this booking.</div>');
   });
 
+  it('uses the shared DateTimeText atom for retained chat message timestamps', () => {
+    const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
+
+    expect(source).toContain("from '../../components/date-time-text'");
+    expect(source).toContain('<DateTimeText fallback="Missing" value={message.createdAt} />');
+    expect(source).not.toContain('<time>{formatBookingDate(message.createdAt)}</time>');
+  });
+
   it('uses the shared Vuexy trace summary atom for post-match cancellation review metrics', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 
