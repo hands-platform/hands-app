@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -32,6 +31,7 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   AdminAppSession,
@@ -403,16 +403,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             Back to customers
           </AdminFormControlLink>
           {latestBooking?.id && (
-            <Link className="text-link" href={`/bookings/${latestBooking.id}`}>
+            <AdminTextLink href={`/bookings/${latestBooking.id}`}>
               Open latest booking
-            </Link>
+            </AdminTextLink>
           )}
-          <Link className="text-link" href={`/payments?customer=${customer.id}`}>
+          <AdminTextLink href={`/payments?customer=${customer.id}`}>
             Payment view
-          </Link>
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
+          </AdminTextLink>
+          <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
             All customer chats
-          </Link>
+          </AdminTextLink>
         </>
       }
       contentClassName="customer-detail-page"
@@ -461,9 +461,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               {filteredBookingCreateGateAttempts.length} filtered
             </StatusBadge>
             <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
-            <Link className="text-link" href="/bookings?view=blocked-create">
+            <AdminTextLink href="/bookings?view=blocked-create">
               Open gate queue
-            </Link>
+            </AdminTextLink>
           </>
         }
         className="admin-mb-16"
@@ -481,9 +481,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <div className="setup-stage-item" key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
                 <div>
-                  <Link className="text-link" href={attempt.bookingMonitorHref}>
+                  <AdminTextLink href={attempt.bookingMonitorHref}>
                     <strong>{attempt.reasonLabel}</strong>
-                  </Link>
+                  </AdminTextLink>
                   <p className="muted">{attempt.detail}</p>
                   <div className="participant-list admin-mt-8">
                     <StatusBadge tone={statusBadgeToneFromPillClass(attempt.tone)}>
@@ -493,12 +493,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
                   </div>
                   <div className="participant-list admin-mt-8">
-                    <Link className="text-link" href={attempt.bookingMonitorHref}>
+                    <AdminTextLink href={attempt.bookingMonitorHref}>
                       Booking gate queue
-                    </Link>
-                    <Link className="text-link" href={attempt.auditHref}>
+                    </AdminTextLink>
+                    <AdminTextLink href={attempt.auditHref}>
                       Audit evidence
-                    </Link>
+                    </AdminTextLink>
                   </div>
                 </div>
                 <small>
@@ -637,9 +637,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 ))}
               </div>
             </div>
-            <Link className="text-link" href={activityPlan.primaryHref}>
+            <AdminTextLink href={activityPlan.primaryHref}>
               {activityPlan.primaryAction}
-            </Link>
+            </AdminTextLink>
           </div>
         </AdminNotePanel>
         <AdminFormGrid action={addCustomerOpsNote} className="compact-form admin-mt-14">
@@ -718,9 +718,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <MoneyText amount={wallet.customerBalance} />
             </StatusBadge>
             <StatusBadge tone="neutral">{addresses.length} saved address(es)</StatusBadge>
-            <Link className="text-link" href={customerWalletAdjustmentHref}>
+            <AdminTextLink href={customerWalletAdjustmentHref}>
               Review or create adjustment
-            </Link>
+            </AdminTextLink>
           </>
         }
         className="admin-mb-16"
@@ -929,13 +929,13 @@ function CustomerChatHistoryRoomCard({
       <AdminSectionHeader
         actions={(
           <div className="customer-chat-history-actions">
-            <Link className="text-link" href={`/bookings/${booking.id}`}>
+            <AdminTextLink href={`/bookings/${booking.id}`}>
               Open booking
-            </Link>
+            </AdminTextLink>
             {booking.chatRoom ? (
-              <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+              <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
                 Open full chat archive
-              </Link>
+              </AdminTextLink>
             ) : null}
           </div>
         )}
@@ -1028,9 +1028,9 @@ function CustomerOperatorCommandAction({
 }) {
   if (command.action.type === 'link') {
     return (
-      <Link className="text-link" href={command.action.href}>
+      <AdminTextLink href={command.action.href}>
         {command.action.label}
-      </Link>
+      </AdminTextLink>
     );
   }
 
