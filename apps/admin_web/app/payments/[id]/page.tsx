@@ -16,7 +16,6 @@ import { MoneyText } from '../../../components/money-text';
 import { StatusBadge } from '../../../components/status-badge';
 import {
   compactValue,
-  formatDateTime as formatDate,
   formatMoney as money,
   readPlainRecord,
   shortId,
@@ -433,7 +432,7 @@ function cashDebtHint(payment: AdminPaymentDetail) {
     return 'No negative partner wallet gate from this payment.';
   }
   const amount = Math.abs(payment.booking?.earning?.netAmount ?? 0);
-  return `Partner owes ${money(amount, payment.currency)} before final acceptance, service start, or payout release.`;
+  return <>Partner owes <MoneyText amount={amount} currency={payment.currency} /> before final acceptance, service start, or payout release.</>;
 }
 
 function buildPaymentDetailCallbackTimelineRows(
@@ -562,13 +561,14 @@ function bookingServiceLabel(payment: AdminPaymentDetail) {
 function bookingServicePriceLabel(payment: AdminPaymentDetail) {
   const item = payment.booking?.services?.[0];
   const service = item?.service;
-  return [
-    `Booked ${money(item?.price, payment.currency)}`,
-    service?.basePrice ? `admin minimum ${money(service.basePrice, payment.currency)}` : null,
-    service?.priceStep ? `step ${money(service.priceStep, payment.currency)}` : null,
-  ]
-    .filter(Boolean)
-    .join(' / ');
+  const parts: ReactNode[] = [<>Booked <MoneyText amount={item?.price} currency={payment.currency} /></>];
+  if (service?.basePrice) {
+    parts.push(<>admin minimum <MoneyText amount={service.basePrice} currency={payment.currency} /></>);
+  }
+  if (service?.priceStep) {
+    parts.push(<>step <MoneyText amount={service.priceStep} currency={payment.currency} /></>);
+  }
+  return joinPaymentEvidenceParts(parts);
 }
 
 function bookingAddressLabel(payment: AdminPaymentDetail) {
@@ -615,10 +615,18 @@ function refundSummary(payment: AdminPaymentDetail) {
   if (!refunds.length) {
     return 'No refund record for this payment.';
   }
-  return refunds
-    .slice(0, 3)
-    .map((refund) => `${refund.status} ${money(refund.amount, payment.currency)} ${formatDate(refund.createdAt)}`)
-    .join(' / ');
+  return joinPaymentEvidenceParts(
+    refunds.slice(0, 3).map((refund) => (
+      <span key={refund.id}>
+        {refund.status} <MoneyText amount={refund.amount} currency={payment.currency} />{' '}
+        <DateTimeText value={refund.createdAt} />
+      </span>
+    )),
+  );
+}
+
+function joinPaymentEvidenceParts(parts: ReactNode[]) {
+  return parts.flatMap((part, index) => (index === 0 ? [part] : [' / ', part]));
 }
 
 function addressLabel(address: unknown) {

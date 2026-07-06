@@ -93,10 +93,24 @@ describe('PaymentDetailPage', () => {
 
     expect(source).toContain('MoneyText');
     expect(source).toContain('paymentMoney');
+    expect(source).toContain('Partner owes <MoneyText amount={amount} currency={payment.currency} />');
+    expect(source).toContain('Booked <MoneyText amount={item?.price} currency={payment.currency} />');
     expect(source).not.toContain("value={money(earning?.grossAmount ?? payment.amount, payment.currency)}");
     expect(source).not.toContain("value={money(earning?.platformFee, earning?.currency ?? payment.currency)}");
     expect(source).not.toContain("value={money(earning?.withholdingAmount, earning?.currency ?? payment.currency)}");
     expect(source).not.toContain("value={money(earning?.netAmount, earning?.currency ?? payment.currency)}");
+    expect(source).not.toContain('return `Partner owes ${money(amount, payment.currency)}');
+    expect(source).not.toContain('`Booked ${money(item?.price, payment.currency)}`');
+  });
+
+  it('uses shared atoms for visible payment refund summary rows', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
+
+    expect(source).toContain('<MoneyText amount={refund.amount} currency={payment.currency} />');
+    expect(source).toContain('<DateTimeText value={refund.createdAt} />');
+    expect(source).not.toContain(
+      '`${refund.status} ${money(refund.amount, payment.currency)} ${formatDate(refund.createdAt)}`',
+    );
   });
 
   it('uses the shared Vuexy form control link for button-style payment actions', () => {
