@@ -1,9 +1,8 @@
-import Link from 'next/link';
-
 import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -81,9 +80,9 @@ export function PartnerChecklistWorkQueueSection({
               <td>{row.sla}</td>
               <td>{row.age}</td>
               <td>
-                <Link className="text-link" href={row.href}>
+                <AdminTextLink href={row.href}>
                   Open partner
-                </Link>
+                </AdminTextLink>
               </td>
             </tr>
           ))}
