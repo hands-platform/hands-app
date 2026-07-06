@@ -106,7 +106,7 @@ export function BookingActivityPanel({
                 ) : (
                   <strong>{record.title}</strong>
                 )}
-                <p className="muted">{record.detail}</p>
+                <p className="muted">{record.detailNode ?? record.detail}</p>
               </div>
               <small>
                 <DateTimeText value={record.at} />

@@ -132,6 +132,33 @@ describe('BookingActivityPanel', () => {
     expect(markup).toContain('dateTime="2026-06-19T01:00:00.000Z"');
   });
 
+  it('prefers shared detail nodes over fallback activity detail strings', () => {
+    const markup = renderToStaticMarkup(
+      <BookingActivityPanel
+        records={[
+          {
+            at: '2026-06-19T14:40:00.000Z',
+            detail: 'Fallback activity detail',
+            detailNode: <span>Shared booking activity detail marker</span>,
+            id: 'activity-1',
+            title: 'Payment captured',
+            type: 'PAYMENT',
+          },
+        ]}
+        summary={[
+          {
+            helper: 'Payment activity.',
+            label: 'Finance',
+            value: '1',
+          },
+        ]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Shared booking activity detail marker');
+    expect(markup).not.toContain('Fallback activity detail');
+  });
+
   it('shows the full activity count when only preview rows are rendered', () => {
     const markup = renderToStaticMarkup(
       <BookingActivityPanel

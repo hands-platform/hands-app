@@ -1,4 +1,5 @@
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { buildBookingActivityRecords, buildBookingActivitySummary } from './booking-activity-records';
 
 function booking(input: Partial<AdminBookingDetail> = {}): AdminBookingDetail {
@@ -133,5 +134,30 @@ describe('buildBookingActivityRecords', () => {
       label: 'Range',
       valueDateTimeValue: '2026-06-19T03:00:00.000Z',
     });
+  });
+
+  it('keeps payment activity money on the shared MoneyText atom while preserving CSV detail text', () => {
+    const records = recordsFor({
+      booking: {
+        payment: {
+          amount: 120000,
+          currency: 'VND',
+          id: 'payment-1',
+          method: 'CARD',
+          providerRef: 'gateway-ref-1',
+          status: 'PAID',
+        },
+      },
+    });
+
+    const paymentRecord = records.find((record) => record.id === 'payment-1');
+
+    expect(paymentRecord).toMatchObject({
+      detail: '120.000 VND / ref gateway-ref-1',
+      title: 'PAID CARD payment',
+      type: 'PAYMENT',
+    });
+    expect(renderToStaticMarkup(paymentRecord?.detailNode)).toContain('class="money-text money-text-positive"');
+    expect(renderToStaticMarkup(paymentRecord?.detailNode)).toContain('120.000 VND');
   });
 });

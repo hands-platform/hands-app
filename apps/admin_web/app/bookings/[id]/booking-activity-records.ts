@@ -1,4 +1,6 @@
+import { Fragment, createElement, type ReactNode } from 'react';
 import type { AdminBookingDetail, AdminLocationSnapshot, AdminNotification } from '../../../lib/admin-api';
+import { MoneyText } from '../../../components/money-text';
 import { bookingRecordCreatedAt, bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
@@ -23,6 +25,7 @@ export type BookingActivityRecord = {
   at: string;
   title: string;
   detail: string;
+  detailNode?: ReactNode;
   href?: string;
 };
 
@@ -176,6 +179,16 @@ export function buildBookingActivityRecords({
       detail: `${money(booking.payment.amount, booking.payment.currency)} / ref ${
         booking.payment.providerRef ?? 'no gateway ref'
       }`,
+      detailNode: createElement(
+        Fragment,
+        null,
+        createElement(MoneyText, {
+          amount: booking.payment.amount,
+          currency: booking.payment.currency,
+        }),
+        ' / ref ',
+        booking.payment.providerRef ?? 'no gateway ref',
+      ),
       href: booking.payment.id ? `/payments#payment-${booking.payment.id}` : '#payment',
     });
   }
