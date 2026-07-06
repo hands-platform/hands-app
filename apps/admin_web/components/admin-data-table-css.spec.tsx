@@ -3,6 +3,19 @@ import { readFileSync } from 'node:fs';
 const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
 describe('Admin data table CSS', () => {
+  it('anchors the shared table shell on the Admin data table atom class', () => {
+    const tableIndex = Math.max(
+      globalsCss.indexOf('.table.vuexy-data-table.admin-data-table {'),
+      globalsCss.indexOf('.table.vuexy-data-table.admin-data-table,'),
+    );
+    const tableBlock = cssRuleBlockAt(tableIndex);
+
+    expect(tableIndex).toBeGreaterThan(-1);
+    expect(tableBlock).toContain('width: 100%');
+    expect(tableBlock).toContain('border-collapse: separate');
+    expect(tableBlock).toContain('border-spacing: 0');
+  });
+
   it('keeps shared Vuexy data table cells vertically centered for scan-friendly rows', () => {
     const cellIndex = globalsCss.indexOf('.table.vuexy-data-table th,\n.table.vuexy-data-table td {');
     const cellBlock = cssRuleBlockAt(cellIndex);

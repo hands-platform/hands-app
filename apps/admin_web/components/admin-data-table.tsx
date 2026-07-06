@@ -112,7 +112,7 @@ export function AdminDataTable({
   headers,
   rowCount,
 }: AdminDataTableProps) {
-  const tableClassName = joinClassNames('table vuexy-data-table vuexy-booking-table', className);
+  const tableClassName = joinClassNames('table vuexy-data-table vuexy-booking-table admin-data-table', className);
 
   return (
     <table className={tableClassName}>

@@ -22,7 +22,9 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.type).toBe('table');
-    expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-booking-table' });
+    expect(table.props).toMatchObject({
+      className: 'table vuexy-data-table vuexy-booking-table admin-data-table',
+    });
     expect(table.props.children[0].props.children.props.children).toHaveLength(2);
     expect(table.props.children[0].props.children.props.children[0].props.scope).toBe('col');
     expect(table.props.children[0].props.children.props.children[1].props.scope).toBe('col');
@@ -39,7 +41,7 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.props).toMatchObject({
-      className: 'table vuexy-data-table vuexy-booking-table vuexy-customer-table',
+      className: 'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-customer-table',
     });
     const emptyRow = table.props.children[1].props.children[1];
     expect(emptyRow.props.children.props).toMatchObject({
@@ -77,7 +79,7 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.props).toMatchObject({
-      className: 'table vuexy-data-table vuexy-booking-table compact-table',
+      className: 'table vuexy-data-table vuexy-booking-table admin-data-table compact-table',
     });
   });
 

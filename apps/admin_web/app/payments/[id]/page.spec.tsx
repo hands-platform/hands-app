@@ -46,7 +46,7 @@ describe('PaymentDetailPage', () => {
     expect(markup).toContain(
       'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section" id="payment-audit-log"',
     );
-    expect(markup).toContain('class="table vuexy-data-table vuexy-booking-table"');
+    expect(markup).toContain('class="table vuexy-data-table vuexy-booking-table admin-data-table"');
     expect(markup).not.toContain('class="card" id="booking-evidence"');
     expect(markup).not.toContain('class="card" id="money-ledger"');
     expect(markup).not.toContain('class="card admin-mb-16" id="chat-payment-evidence"');

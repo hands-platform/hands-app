@@ -14504,10 +14504,13 @@ textarea:focus-visible {
   outline-offset: -2px;
 }
 
+.table.vuexy-data-table.admin-data-table,
 .table.vuexy-data-table {
   background: var(--admin-surface-raised);
   border: 0;
+  border-collapse: separate;
   border-radius: 0;
+  border-spacing: 0;
   box-shadow: none;
   color: var(--admin-text);
   margin: 0;
