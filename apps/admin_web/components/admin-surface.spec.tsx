@@ -23,6 +23,7 @@ import {
   AdminNoticeCard,
   AdminSection,
   AdminTaskCard,
+  AdminTaskGrid,
 } from './admin-surface';
 
 describe('Admin surface components', () => {
@@ -405,6 +406,16 @@ describe('Admin surface components', () => {
       'h3',
       'p',
     ]);
+  });
+
+  it('renders a reusable Vuexy ops task grid wrapper with stable spacing classes', () => {
+    const grid = AdminTaskGrid({
+      children: <AdminTaskCard title="Wallet guard" detail="Partner balance is checked." />,
+      className: 'admin-mt-14',
+    });
+
+    expect(grid.type).toBe('div');
+    expect(grid.props.className).toBe('ops-task-grid admin-mt-14');
   });
 
   it('renders reusable Vuexy basic timeline markup with dot, connector, status, time, and meta rows', () => {

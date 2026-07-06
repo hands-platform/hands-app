@@ -114,6 +114,11 @@ type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'var
   readonly leading?: ReactNode;
 };
 
+type AdminTaskGridProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminBasicTimelineTone = 'danger' | 'info' | 'primary' | 'success' | 'warning';
 
 export type AdminBasicTimelineMeta = {
@@ -535,6 +540,10 @@ export function AdminTaskCard({
       {actionLabel ? <small>{actionLabel}</small> : null}
     </div>
   );
+}
+
+export function AdminTaskGrid({ children, className }: AdminTaskGridProps) {
+  return <div className={joinClassNames('ops-task-grid', className)}>{children}</div>;
 }
 
 export function AdminBasicTimeline({ className, compactMeta, items }: AdminBasicTimelineProps) {

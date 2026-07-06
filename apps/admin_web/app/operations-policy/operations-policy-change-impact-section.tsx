@@ -1,6 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminMetricGrid } from '../../components/admin-page-template';
-import { AdminSection, AdminTaskCard } from '../../components/admin-surface';
+import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
@@ -30,7 +30,7 @@ export function OperationsPolicyChangeImpactSection({
       title="Policy change impact"
     >
       <AdminMetricGrid className="admin-mt-12" metrics={dashboard.metrics} />
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {dashboard.snapshotSummary.map((item) => (
           <AdminTaskCard
             actionLabel={item.helper}
@@ -41,7 +41,7 @@ export function OperationsPolicyChangeImpactSection({
             title={item.label}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
       <AdminTableScroll>
         <AdminDataTable
           className="service-trace"
@@ -64,7 +64,7 @@ export function OperationsPolicyChangeImpactSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <div className="ops-task-grid admin-mt-14">
+      <AdminTaskGrid className="admin-mt-14">
         {dashboard.cards.map((card) => (
           <AdminTaskCard
             actionLabel={card.operatorAction}
@@ -75,7 +75,7 @@ export function OperationsPolicyChangeImpactSection({
             title={card.title}
           />
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

@@ -8,10 +8,12 @@ describe('OperationsPolicyChangeImpactSection', () => {
     const source = readFileSync('app/operations-policy/operations-policy-change-impact-section.tsx', 'utf8');
 
     expect(source).toContain('AdminMetricGrid');
+    expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="grid admin-mt-12">');
+    expect(source).not.toContain('<div className="ops-task-grid admin-mt-14">');
     expect(source).not.toContain('<span className="pill pill-info">{item.scope}</span>');
   });
 
