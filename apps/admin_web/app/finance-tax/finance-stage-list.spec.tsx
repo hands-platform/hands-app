@@ -31,7 +31,9 @@ describe('FinanceStageList', () => {
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminStageItem');
     expect(source).toContain('AdminStageItemLink');
+    expect(source).toContain('AdminStageList');
     expect(source).not.toContain('<span>{item.signal}</span>');
+    expect(source).not.toContain('<div className="setup-stage-list admin-mt-12">');
     expect(source).not.toContain('className="setup-stage-item"');
   });
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AdminStageItem, AdminStageItemLink } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageItemLink, AdminStageList } from '../../components/admin-stage-item';
 import { AdminSignal } from '../../components/status-badge';
 
 export type FinanceStageListItem = {
@@ -14,7 +14,7 @@ export type FinanceStageListItem = {
 
 export function FinanceStageList({ items }: { readonly items: readonly FinanceStageListItem[] }) {
   return (
-    <div className="setup-stage-list admin-mt-12">
+    <AdminStageList className="admin-mt-12">
       {items.map((item) => {
         const content = (
           <>
@@ -37,6 +37,6 @@ export function FinanceStageList({ items }: { readonly items: readonly FinanceSt
           </AdminStageItem>
         );
       })}
-    </div>
+    </AdminStageList>
   );
 }

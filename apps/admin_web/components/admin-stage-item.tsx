@@ -2,7 +2,12 @@ import Link from 'next/link';
 import type { ComponentProps } from 'react';
 
 type AdminStageItemProps = ComponentProps<'div'>;
+type AdminStageListProps = ComponentProps<'div'>;
 type AdminStageItemLinkProps = ComponentProps<typeof Link>;
+
+export function AdminStageList({ className, ...props }: AdminStageListProps) {
+  return <div {...props} className={joinClassNames('setup-stage-list', className)} />;
+}
 
 export function AdminStageItem({ className, ...props }: AdminStageItemProps) {
   return <div {...props} className={joinClassNames('setup-stage-item', className)} />;
