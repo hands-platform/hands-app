@@ -20,6 +20,13 @@ describe('ReviewsTableSection', () => {
     expect(source).not.toContain('<span className={row.statusClassName}>{row.statusLabel}</span>');
   });
 
+  it('uses the shared Vuexy text link atom for review booking links', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('uses the shared table pagination footer while preserving review classes', () => {
     const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
 

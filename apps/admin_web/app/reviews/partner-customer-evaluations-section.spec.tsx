@@ -48,6 +48,16 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(modelSource).not.toContain('createdAtLabel: formatReviewDate(review.createdAt)');
   });
 
+  it('uses the shared Vuexy text link atom for evaluation booking links', () => {
+    const source = readFileSync(
+      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders partner-written customer evaluations as a text-only review board', () => {
     const section = PartnerCustomerEvaluationsSection({
       filters: filters(),

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Download, Eye, Star, X } from 'lucide-react';
 import {
   AdminDataTable,
@@ -8,6 +7,7 @@ import {
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
+import { AdminTextLink } from '../../components/admin-text-link';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
@@ -220,10 +220,10 @@ export function ReviewsTableSection({
                 <td>
                   <div className="vuexy-booking-id-line">
                     {row.bookingHref ? (
-                      <Link className="text-link" href={row.bookingHref} title="Open booking detail">
+                      <AdminTextLink href={row.bookingHref} title="Open booking detail">
                         <Eye aria-hidden="true" size={14} />
                         {row.bookingLabel}
-                      </Link>
+                      </AdminTextLink>
                     ) : (
                       <span className="muted">{row.bookingLabel}</span>
                     )}
