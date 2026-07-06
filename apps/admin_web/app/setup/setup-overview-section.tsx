@@ -1,6 +1,6 @@
 import { AdminMetricGrid, AdminSectionHeader } from '../../components/admin-page-template';
+import { DateTimeText } from '../../components/date-time-text';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
-import { formatDateTime as formatDate } from '../../lib/admin-format';
 
 type SetupOverviewSectionProps = {
   readonly readinessOk: boolean;
@@ -41,7 +41,7 @@ export function SetupOverviewSection({
                   : 'Production deferred'}
             </AdminSignal>
             <StatusBadge tone="info">
-              {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readinessTimestamp)}`}
+              {readinessUnavailable ? 'Readiness not loaded' : <>Updated <DateTimeText value={readinessTimestamp} /></>}
             </StatusBadge>
           </>
         }

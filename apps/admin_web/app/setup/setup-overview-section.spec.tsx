@@ -12,6 +12,14 @@ describe('SetupOverviewSection', () => {
     expect(source).not.toContain('<span className="pill pill-info">');
   });
 
+  it('uses the shared DateTimeText atom for the readiness timestamp value', () => {
+    const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain("import { DateTimeText } from '../../components/date-time-text';");
+    expect(source).toContain('Updated <DateTimeText value={readinessTimestamp} />');
+    expect(source).not.toContain('`Updated ${formatDate(readinessTimestamp)}`');
+  });
+
   it('uses the shared AdminSignal atom for readiness action chips', () => {
     const source = readFileSync(new URL('./setup-overview-section.tsx', import.meta.url), 'utf8');
 
