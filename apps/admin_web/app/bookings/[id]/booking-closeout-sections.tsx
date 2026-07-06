@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminActionCard, AdminSection } from '../../../components/admin-surface';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import {
   StatusBadge,
   StatusBadgeLink,
@@ -39,12 +38,12 @@ export function BookingCloseoutSections({
       <AdminSection
         actions={
           <div className="actions">
-            <Link className="text-link" href="/bookings?view=manual-decision">
+            <AdminTextLink href="/bookings?view=manual-decision">
               Manual decision queue
-            </Link>
-            <Link className="text-link" href="/finance-closeout">
+            </AdminTextLink>
+            <AdminTextLink href="/finance-closeout">
               Finance closeout
-            </Link>
+            </AdminTextLink>
           </div>
         }
         className="admin-mb-16 booking-closeout-checklist-card"
