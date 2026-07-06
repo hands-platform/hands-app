@@ -11,6 +11,8 @@ describe('OperationsHandoffOperatorNotesSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<span className="pill pill-info">{note.area}</span>');
     expect(source).not.toContain('<Link className="ops-signal-card"');
+    expect(source).not.toContain('className="ops-signal-card"');
+    expect(source).toContain('variant="ops-signal"');
   });
 
   it('uses the shared AdminFormControlLink atom for audit actions', () => {

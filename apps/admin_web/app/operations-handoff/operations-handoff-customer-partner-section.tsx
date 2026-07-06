@@ -38,11 +38,10 @@ export function OperationsHandoffCustomerPartnerSection({
             {visibleCustomers.map((customer) => (
               <AdminActionCard
                 actionLabel={customer.lastWorkLabel}
-                className="ops-signal-card"
                 href={`/customers/${customer.id}`}
                 key={customer.id}
                 leading={<StatusBadge tone="success">{customer.completedCount} completed</StatusBadge>}
-                variant="ops-task"
+                variant="ops-signal"
               >
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar"
@@ -72,13 +71,12 @@ export function OperationsHandoffCustomerPartnerSection({
             {visiblePartners.map((partner) => (
               <AdminActionCard
                 actionLabel={partner.action}
-                className="ops-signal-card"
                 href={`/partners/${partner.id}`}
                 key={partner.id}
                 leading={
                   <StatusBadgeFromPillClass pillClass={partner.className}>{partner.status}</StatusBadgeFromPillClass>
                 }
-                variant="ops-task"
+                variant="ops-signal"
               >
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar is-partner"

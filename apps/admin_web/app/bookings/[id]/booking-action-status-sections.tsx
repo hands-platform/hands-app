@@ -563,7 +563,6 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
       <AdminDetailGrid className="admin-mt-12">
         {liveSignals.map((signal) => (
           <AdminTaskCard
-            className="ops-signal-card"
             detail={signal.helper}
             key={signal.label}
             leading={
@@ -572,6 +571,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
               </StatusBadgeFromPillClass>
             }
             value={signal.value}
+            variant="ops-signal"
           />
         ))}
       </AdminDetailGrid>

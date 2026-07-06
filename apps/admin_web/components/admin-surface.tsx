@@ -132,11 +132,12 @@ type AdminActionCardProps = {
   readonly title?: ReactNode;
   readonly value?: ReactNode;
   readonly valueClassName?: string;
-  readonly variant?: 'default' | 'ops-task';
+  readonly variant?: 'default' | 'ops-signal' | 'ops-task';
 };
 
 type AdminTaskCardProps = Omit<AdminActionCardProps, 'href' | 'htmlTitle' | 'variant'> & {
   readonly leading?: ReactNode;
+  readonly variant?: 'default' | 'ops-signal';
 };
 
 type AdminTaskGridProps = {
@@ -574,12 +575,20 @@ export function AdminActionCard({
   valueClassName,
   variant = 'default',
 }: AdminActionCardProps) {
-  if (variant === 'ops-task') {
+  if (variant === 'ops-task' || variant === 'ops-signal') {
     const hasTitle = title !== undefined && title !== null;
     const hasValue = value !== undefined && value !== null;
 
     return (
-      <Link className={joinClassNames('ops-task-card', className)} href={href} title={htmlTitle}>
+      <Link
+        className={joinClassNames(
+          'ops-task-card',
+          variant === 'ops-signal' ? 'ops-signal-card' : undefined,
+          className,
+        )}
+        href={href}
+        title={htmlTitle}
+      >
         {leading}
         {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
         {hasTitle ? <h3>{title}</h3> : null}
@@ -616,12 +625,19 @@ export function AdminTaskCard({
   title,
   value,
   valueClassName,
+  variant = 'default',
 }: AdminTaskCardProps) {
   const hasTitle = title !== undefined && title !== null;
   const hasValue = value !== undefined && value !== null;
 
   return (
-    <div className={joinClassNames('ops-task-card', className)}>
+    <div
+      className={joinClassNames(
+        'ops-task-card',
+        variant === 'ops-signal' ? 'ops-signal-card' : undefined,
+        className,
+      )}
+    >
       {leading}
       {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
       {hasTitle ? <h3>{title}</h3> : null}

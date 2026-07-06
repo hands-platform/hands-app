@@ -89,12 +89,11 @@ export function OperationsHandoffOperatorNotesSection({
         {notes.slice(0, 8).map((note) => (
           <AdminActionCard
             actionLabel={`${note.actor} / ${relativeTime(note.createdAt)}`}
-            className="ops-signal-card"
             href={note.href}
             key={note.id}
             leading={<StatusBadge tone="info">{note.area}</StatusBadge>}
             value={note.note}
-            variant="ops-task"
+            variant="ops-signal"
           />
         ))}
         {notes.length === 0 ? <AdminEmptyState framed message="No operator note has been written yet." /> : null}

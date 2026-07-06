@@ -432,6 +432,20 @@ describe('Admin surface components', () => {
     expect(children.map((child: { type: unknown }) => child.type)).toEqual(['span', 'strong', 'p']);
   });
 
+  it('renders clickable ops signal cards without page-level class wiring', () => {
+    const card = AdminActionCard({
+      actionLabel: 'Open Customer',
+      href: '/customers/customer-1',
+      title: 'Customer Mai',
+      variant: 'ops-signal',
+    });
+
+    expect(card.props).toMatchObject({
+      className: 'ops-task-card ops-signal-card',
+      href: '/customers/customer-1',
+    });
+  });
+
   it('renders a static Vuexy ops task card surface for non-clickable states', () => {
     const card = AdminTaskCard({
       detail: 'First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.',
@@ -446,6 +460,16 @@ describe('Admin surface components', () => {
       'h3',
       'p',
     ]);
+  });
+
+  it('renders static ops signal cards through the shared task variant', () => {
+    const card = AdminTaskCard({
+      detail: 'Last-known location monitoring.',
+      value: 'Fresh',
+      variant: 'ops-signal',
+    });
+
+    expect(card.props.className).toBe('ops-task-card ops-signal-card');
   });
 
   it('renders a reusable Vuexy ops task grid wrapper with stable spacing classes', () => {
