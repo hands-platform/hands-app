@@ -5,7 +5,7 @@ import {
   adminPersonInitials,
 } from '../../../components/admin-person-cell';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -100,11 +100,11 @@ function BookingUnifiedRows({
 
 function BookingUnifiedCardGrid({ rows }: { readonly rows: readonly BookingUnifiedDetailRow[] }) {
   return (
-    <div className="booking-unified-detail-grid admin-mt-12">
+    <AdminDetailGrid className="booking-unified-detail-grid admin-mt-12">
       {rows.map((row) => (
         <BookingUnifiedInfoCard key={row.label} row={row} />
       ))}
-    </div>
+    </AdminDetailGrid>
   );
 }
 

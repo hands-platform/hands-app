@@ -11,6 +11,8 @@ describe('BookingUnifiedDetailSection', () => {
     const source = readFileSync('app/bookings/[id]/booking-unified-detail-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('AdminDetailGrid');
+    expect(source).not.toContain('<div className="booking-unified-detail-grid admin-mt-12">');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminTextLink');

@@ -9,7 +9,10 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminDetailGrid');
     expect(source).toContain('AdminLinkCard');
+    expect(source).toContain('ariaLabel="Post-match cancellation evidence checklist"');
+    expect(source).not.toContain('aria-label="Post-match cancellation evidence checklist"');
     expect(source).not.toContain('className="card admin-card booking-post-match-detail-evidence-card"');
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
   });

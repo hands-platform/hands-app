@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormShell } from '../../../components/admin-form-controls';
-import { AdminCard, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminDetailGrid, AdminLinkCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import type { BookingOutcomeReviewPanel, BookingOutcomeReviewRow } from './booking-outcome-review-panel';
@@ -41,8 +41,8 @@ export function BookingDetailPostMatchDecisionSection({
       title="Post-match cancellation processing"
     >
 
-      <div
-        aria-label="Post-match cancellation evidence checklist"
+      <AdminDetailGrid
+        ariaLabel="Post-match cancellation evidence checklist"
         className="booking-post-match-detail-evidence-grid admin-mt-12"
       >
         {outcomeReview.rows.map((row) => (
@@ -52,7 +52,7 @@ export function BookingDetailPostMatchDecisionSection({
             <small>{row.helper}</small>
           </AdminLinkCard>
         ))}
-      </div>
+      </AdminDetailGrid>
 
       <AdminCard className="booking-outcome-decision-panel">
         <div className="booking-outcome-decision-main">
