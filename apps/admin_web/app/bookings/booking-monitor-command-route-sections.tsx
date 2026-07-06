@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import { shortId } from '../../lib/admin-format';
 import type { BookingCommandRouteCard } from '../../lib/booking-command-route-cards';
@@ -62,9 +62,9 @@ export function BookingMonitorCommandRouteSections({
           {visibleCommandSummaryCards.map((item) => (
             <tr key={item.label}>
               <td>
-                <Link className="text-link" href={item.href}>
+                <AdminTextLink href={item.href}>
                   {item.label}
-                </Link>
+                </AdminTextLink>
                 <div className="muted">{item.detail}</div>
               </td>
               <td>
@@ -98,9 +98,9 @@ export function BookingMonitorCommandRouteSections({
                 <StatusBadge tone={statusBadgeToneFromPillClass(item.tone)}>{item.status}</StatusBadge>
               </td>
               <td>
-                <Link className="text-link" href={item.href}>
+                <AdminTextLink href={item.href}>
                   {item.count} booking(s)
-                </Link>
+                </AdminTextLink>
               </td>
               <td>
                 <strong>{item.primaryAction}</strong>

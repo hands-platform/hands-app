@@ -138,4 +138,11 @@ describe('BookingMonitorCommandRouteSections', () => {
     expect(source).not.toContain('<span className={`pill ${item.tone}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill" key={bookingId}>');
   });
+
+  it('uses the shared Vuexy text link atom for command route links', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
 });
