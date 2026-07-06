@@ -1,7 +1,7 @@
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -36,7 +36,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
       title="Partner payout queue"
     >
       {groups.length ? (
-        <div className="setup-stage-list">
+        <AdminStageList>
           {groups.slice(0, 12).map((group) => (
             <AdminStageItem key={group.providerProfileId}>
               <span>{group.status}</span>
@@ -79,7 +79,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
               </div>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       ) : (
         <AdminEmptyState framed message="No Partner has unpaid earnings in the current admin result window." />
       )}

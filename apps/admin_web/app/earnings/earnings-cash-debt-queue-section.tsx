@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -61,7 +61,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
         />
       ) : null}
       {items.length ? (
-        <div className="setup-stage-list">
+        <AdminStageList>
           {items.slice(0, 12).map((item) => (
             <AdminStageItem key={item.earningId}>
               <span>DEBT</span>
@@ -124,7 +124,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
               </div>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       ) : (
         <AdminEmptyState framed message="No Partner has unsettled cash fee debt in the current admin result window." />
       )}
