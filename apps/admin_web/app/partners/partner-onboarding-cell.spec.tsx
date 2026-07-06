@@ -13,7 +13,10 @@ describe('PartnerOnboardingCell', () => {
     const source = readFileSync('app/partners/partner-onboarding-cell.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminTextLink');
     expect(source).toContain('DateTimeText');
+    expect(source).not.toContain('AdminFormControlLink');
+    expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain("` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}`");
     expect(source).not.toContain('<span className="pill pill-info">{provider.level ?? \'LEVEL_1_SIGNUP\'}</span>');
@@ -115,7 +118,7 @@ describe('PartnerOnboardingCell', () => {
         'provider-file-row',
         'pill pill-success',
         'pill pill-warn',
-        'admin-form-control-link text-link',
+        'text-link',
       ]),
     );
   });

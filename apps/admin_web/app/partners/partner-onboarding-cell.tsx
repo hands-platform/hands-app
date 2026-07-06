@@ -1,5 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminFormControlLink } from '../../components/admin-form-controls';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminProvider } from '../../lib/admin-api';
@@ -147,9 +147,9 @@ export function PartnerOnboardingCell({
                 {document.fileAsset?.id ? (
                   <>
                     {' / '}
-                    <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#documents`}>
+                    <AdminTextLink href={`/partners/${provider.id}#documents`}>
                       open detail to view
-                    </AdminFormControlLink>
+                    </AdminTextLink>
                   </>
                 ) : null}
               </p>
