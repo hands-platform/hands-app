@@ -34,7 +34,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin
 import { AdminStageItem } from '../../../components/admin-stage-item';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -492,9 +492,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   </AdminTextLink>
                   <p className="muted">{attempt.detail}</p>
                   <div className="participant-list admin-mt-8">
-                    <StatusBadge tone={statusBadgeToneFromPillClass(attempt.tone)}>
+                    <StatusBadgeFromPillClass pillClass={attempt.tone}>
                       {attempt.gateLabel}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
                     <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
                   </div>
@@ -521,9 +521,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
         id="customer-operator-command-queue"
         status={
-          <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(customerOperatorCommandQueue.tone))}>
+          <StatusBadgeFromPillClass pillClass={customerSupportPillClass(customerOperatorCommandQueue.tone)}>
             {customerOperatorCommandQueue.status}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         }
         title="Customer operator command queue"
       >
@@ -532,9 +532,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <AdminNotePanel className={`ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
                 <div>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(command.tone))}>
+                  <StatusBadgeFromPillClass pillClass={customerSupportPillClass(command.tone)}>
                     {command.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                   <h3>{command.title}</h3>
                   <p className="muted">{command.detailNode ?? command.detail}</p>
                   <small className="muted">Owner: {command.owner}</small>
@@ -621,9 +621,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         className="admin-mb-16"
         description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
         status={
-          <StatusBadge tone={statusBadgeToneFromPillClass(customerSupportPillClass(activityPlan.tone))}>
+          <StatusBadgeFromPillClass pillClass={customerSupportPillClass(activityPlan.tone)}>
             {activityPlan.status}
-          </StatusBadge>
+          </StatusBadgeFromPillClass>
         }
         title="Customer activity action panel"
       >
@@ -634,12 +634,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <p className="muted">{activityPlan.detail}</p>
               <div className="participant-list admin-mt-8">
                 {activityPlan.badges.map((badge) => (
-                  <StatusBadge
+                  <StatusBadgeFromPillClass
                     key={badge.label}
-                    tone={statusBadgeToneFromPillClass(customerSupportPillClass(badge.tone))}
+                    pillClass={customerSupportPillClass(badge.tone)}
                   >
                     {badge.label}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 ))}
               </div>
             </div>

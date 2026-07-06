@@ -65,6 +65,8 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain('AdminNotePanel');
     expect(customerDetailSource).toContain('AdminStageItem');
     expect(customerDetailSource).toContain('StatusBadge');
+    expect(customerDetailSource).toContain('StatusBadgeFromPillClass');
+    expect(customerDetailSource).not.toContain('statusBadgeToneFromPillClass');
     expect(customerDetailSource).not.toContain('PillClassBadge');
     expect(customerDetailSource).not.toContain('className="setup-stage-item"');
     expect(customerDetailSource).not.toContain('<div className="ops-section-header');

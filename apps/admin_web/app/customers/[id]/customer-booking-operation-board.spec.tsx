@@ -53,6 +53,8 @@ describe('CustomerBookingOperationBoard', () => {
     expect(boardSource).toContain('AdminTextLink');
     expect(boardSource).not.toContain('className="text-link"');
     expect(boardSource).toContain('StatusBadge');
+    expect(boardSource).toContain('StatusBadgeFromPillClass');
+    expect(boardSource).not.toContain('statusBadgeToneFromPillClass');
     expect(boardSource).not.toContain('PillClassBadge');
     expect(boardSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(boardSource).not.toContain('<span className="pill');

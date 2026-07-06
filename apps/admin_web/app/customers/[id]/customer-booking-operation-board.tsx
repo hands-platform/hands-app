@@ -8,7 +8,7 @@ import { AdminSection } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerBookingOperationMetric = {
@@ -180,7 +180,7 @@ function CustomerBookingOperationSection({
             </td>
             <td>{row.addressLabel}</td>
             <td>
-              <StatusBadge tone={statusBadgeToneFromPillClass(row.stateTone)}>{row.stateLabel}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={row.stateTone}>{row.stateLabel}</StatusBadgeFromPillClass>
               <p className="muted">{row.stateDetail}</p>
             </td>
           </tr>
