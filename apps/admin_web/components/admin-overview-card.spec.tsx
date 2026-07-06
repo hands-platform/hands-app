@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import {
@@ -163,6 +164,31 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<strong>1.200.000 VND</strong>');
     expect(markup).toContain('<small>Customer charge represented.</small>');
     expect(markup).toContain('<span>Cash debt</span>');
+  });
+
+  it('renders trace summary metric dates through the shared DateTimeText atom', () => {
+    const source = readFileSync('components/admin-overview-card.tsx', 'utf8');
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        metrics={[
+          {
+            detail: 'Oldest loaded: Not set',
+            detailDateTimePrefix: 'Oldest loaded: ',
+            detailDateTimeValue: '2026-06-19T01:00:00.000Z',
+            label: 'Range',
+            value: 'Not set',
+            valueDateTimeValue: '2026-06-19T03:00:00.000Z',
+          },
+        ]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(source).toContain("import { DateTimeText } from './date-time-text';");
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(2);
+    expect(markup).toContain('<strong><time');
+    expect(markup).toContain('dateTime="2026-06-19T03:00:00.000Z"');
+    expect(markup).toContain('<small>Oldest loaded: <time');
+    expect(markup).toContain('dateTime="2026-06-19T01:00:00.000Z"');
   });
 
   it('renders trace summary metrics as links when href is provided', () => {

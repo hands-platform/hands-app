@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminCard, AdminLinkCard } from './admin-surface';
+import { DateTimeText } from './date-time-text';
 
 type AdminOverviewCommandGridProps = {
   readonly ariaLabel: string;
@@ -81,10 +82,16 @@ type AdminTraceSummaryMetric = {
   readonly action?: ReactNode;
   readonly className?: string;
   readonly detail?: ReactNode;
+  readonly detailDateTimeFallback?: string;
+  readonly detailDateTimePrefix?: ReactNode;
+  readonly detailDateTimeSuffix?: ReactNode;
+  readonly detailDateTimeValue?: string | null;
   readonly href?: string;
   readonly key?: string;
   readonly label: ReactNode;
   readonly value: ReactNode;
+  readonly valueDateTimeFallback?: string;
+  readonly valueDateTimeValue?: string | null;
 };
 
 type AdminTraceSummaryProps = {
@@ -207,8 +214,8 @@ export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics
         const content = (
           <>
             <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            {metric.detail ? <small>{metric.detail}</small> : null}
+            <strong>{traceSummaryValue(metric)}</strong>
+            {traceSummaryDetail(metric)}
             {metric.action}
           </>
         );
@@ -233,6 +240,36 @@ export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics
       })}
     </div>
   );
+}
+
+function traceSummaryValue(metric: AdminTraceSummaryMetric) {
+  return metric.valueDateTimeValue ? (
+    <DateTimeText
+      fallback={metric.valueDateTimeFallback ?? (typeof metric.value === 'string' ? metric.value : 'Not set')}
+      value={metric.valueDateTimeValue}
+    />
+  ) : (
+    metric.value
+  );
+}
+
+function traceSummaryDetail(metric: AdminTraceSummaryMetric) {
+  if (metric.detailDateTimeValue) {
+    return (
+      <small>
+        {metric.detailDateTimePrefix}
+        <DateTimeText
+          fallback={
+            metric.detailDateTimeFallback ?? (typeof metric.detail === 'string' ? metric.detail : 'Not set')
+          }
+          value={metric.detailDateTimeValue}
+        />
+        {metric.detailDateTimeSuffix}
+      </small>
+    );
+  }
+
+  return metric.detail ? <small>{metric.detail}</small> : null;
 }
 
 export function AdminOverviewCommandCard({

@@ -100,6 +100,38 @@ describe('BookingActivityPanel', () => {
     expect(markup).not.toContain('setup-stage-item');
   });
 
+  it('renders activity range summary timestamps through shared date atoms', () => {
+    const markup = renderToStaticMarkup(
+      <BookingActivityPanel
+        records={[
+          {
+            id: 'activity-1',
+            type: 'BOOKING',
+            at: '2026-06-19T03:00:00.000Z',
+            title: 'Booking updated',
+            detail: 'Latest operational record.',
+          },
+        ]}
+        summary={[
+          {
+            detailDateTimePrefix: 'Oldest loaded: ',
+            detailDateTimeValue: '2026-06-19T01:00:00.000Z',
+            helper: 'Oldest loaded: Not set',
+            label: 'Range',
+            value: 'Not set',
+            valueDateTimeValue: '2026-06-19T03:00:00.000Z',
+          },
+        ]}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup.match(/class="date-time-text"/g)).toHaveLength(3);
+    expect(markup).toContain('<strong><time');
+    expect(markup).toContain('dateTime="2026-06-19T03:00:00.000Z"');
+    expect(markup).toContain('<small>Oldest loaded: <time');
+    expect(markup).toContain('dateTime="2026-06-19T01:00:00.000Z"');
+  });
+
   it('shows the full activity count when only preview rows are rendered', () => {
     const markup = renderToStaticMarkup(
       <BookingActivityPanel

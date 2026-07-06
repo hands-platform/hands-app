@@ -108,4 +108,30 @@ describe('buildBookingActivityRecords', () => {
       ]),
     );
   });
+
+  it('keeps raw range timestamps for shared trace summary date atoms', () => {
+    const summary = buildBookingActivitySummary([
+      {
+        at: '2026-06-19T03:00:00.000Z',
+        detail: 'Latest event',
+        id: 'latest',
+        title: 'Latest',
+        type: 'BOOKING',
+      },
+      {
+        at: '2026-06-19T01:00:00.000Z',
+        detail: 'Oldest event',
+        id: 'oldest',
+        title: 'Oldest',
+        type: 'AUDIT',
+      },
+    ]);
+
+    expect(summary[0]).toMatchObject({
+      detailDateTimePrefix: 'Oldest loaded: ',
+      detailDateTimeValue: '2026-06-19T01:00:00.000Z',
+      label: 'Range',
+      valueDateTimeValue: '2026-06-19T03:00:00.000Z',
+    });
+  });
 });

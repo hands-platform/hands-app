@@ -82,9 +82,12 @@ export function BookingActivityPanel({
       <AdminTraceSummary
         className="admin-mt-12"
         metrics={summary.map((item) => ({
+          detailDateTimePrefix: item.detailDateTimePrefix,
+          detailDateTimeValue: item.detailDateTimeValue,
           detail: item.helper,
           label: item.label,
           value: item.value,
+          valueDateTimeValue: item.valueDateTimeValue,
         }))}
       />
       <div className="booking-activity-record-list admin-mt-12">

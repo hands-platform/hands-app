@@ -30,6 +30,9 @@ export type BookingActivitySummaryItem = {
   label: string;
   value: string;
   helper: string;
+  valueDateTimeValue?: string | null;
+  detailDateTimePrefix?: string;
+  detailDateTimeValue?: string | null;
 };
 
 type BookingClosureSummary = {
@@ -364,6 +367,9 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
       label: 'Range',
       value: latestAt ? formatDate(latestAt) : 'None',
       helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No activity loaded.',
+      valueDateTimeValue: latestAt,
+      detailDateTimePrefix: oldestAt ? 'Oldest loaded: ' : undefined,
+      detailDateTimeValue: oldestAt,
     },
     {
       label: 'Matching',
