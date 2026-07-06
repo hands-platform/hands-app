@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
@@ -39,9 +39,9 @@ export function PartnerDetailRecentTimelineSection({
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
       description="Latest factual partner events in the order operators need them: onboarding, app, location, booking, chat, finance, payout, document, tax, and staff records."
       footer={
-        <Link className="text-link" href="#app-activity">
+        <AdminTextLink href="#app-activity">
           Open full timeline
-        </Link>
+        </AdminTextLink>
       }
       id="partner-recent-operations-timeline"
       resultLabel={`${records.length} event(s)`}
@@ -61,9 +61,9 @@ export function PartnerDetailRecentTimelineSection({
                   <StatusBadge tone="info">{record.type}</StatusBadge>
                 </td>
                 <td>
-                  <Link className="text-link" href={record.href}>
+                  <AdminTextLink href={record.href}>
                     {adminActionTitleText(record.title)}
-                  </Link>
+                  </AdminTextLink>
                 </td>
                 <td>
                   <p className="muted">{record.detailNode ?? marketplaceDisplayText(record.detail)}</p>

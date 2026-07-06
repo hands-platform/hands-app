@@ -12,6 +12,11 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(sectionSource).not.toContain('{formatDate(record.at)}');
   });
 
+  it('uses the shared Vuexy text-link atom instead of raw text-link classes', () => {
+    expect(sectionSource).toContain('AdminTextLink');
+    expect(sectionSource).not.toContain('className="text-link"');
+  });
+
   it('renders recent partner timeline records with links and formatted dates', () => {
     const section = PartnerDetailRecentTimelineSection({
       records: [
