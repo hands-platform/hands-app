@@ -10,6 +10,8 @@ describe('PartnerDetailConnectedRecordsSection', () => {
   it('uses the shared Vuexy admin card surface for the section shell', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-connected-records-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminSectionHeader');
     expect(source).not.toContain('className="card admin-mb-16"');

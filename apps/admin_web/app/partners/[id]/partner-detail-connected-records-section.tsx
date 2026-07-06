@@ -1,3 +1,4 @@
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge, StatusBadgeLink, statusBadgeToneFromPillClass } from '../../../components/status-badge';
@@ -27,18 +28,19 @@ export function PartnerDetailConnectedRecordsSection({
         description={description}
         title={title}
       />
-      <div className="service-trace-summary admin-mt-12">
-        {links.map((record) => (
-          <div key={record.label}>
-            <span>{record.label}</span>
-            <strong>{record.value}</strong>
-            <small>{record.detail}</small>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={links.map((record) => ({
+          action: (
             <StatusBadgeLink href={record.href} tone={statusBadgeToneFromPillClass(record.tone)}>
               Open
             </StatusBadgeLink>
-          </div>
-        ))}
-      </div>
+          ),
+          detail: record.detail,
+          label: record.label,
+          value: record.value,
+        }))}
+      />
     </AdminCard>
   );
 }

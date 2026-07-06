@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
@@ -22,15 +23,14 @@ export function PartnerDetailMasterFactsSection({ facts }: PartnerDetailMasterFa
         description="Single-page operating sheet for identity, verification, service, booking, revenue, tax, location, review, and account facts."
         title="Partner master facts"
       />
-      <div className="service-trace-summary admin-mt-12">
-        {facts.map((fact) => (
-          <div key={fact.label}>
-            <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
-            <small className="muted">{fact.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTraceSummary
+        className="admin-mt-12"
+        metrics={facts.map((fact) => ({
+          detail: fact.helper,
+          label: fact.label,
+          value: fact.value,
+        }))}
+      />
     </AdminCard>
   );
 }
