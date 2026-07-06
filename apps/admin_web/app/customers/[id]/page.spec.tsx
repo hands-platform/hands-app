@@ -166,6 +166,7 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain(
       '<MoneyText amount={Number(paymentIssueBooking.payment?.amount ?? 0)}',
     );
+    expect(customerDetailSource).not.toContain('formatMoney(paymentAmount, paymentCurrency)');
     expect(customerDetailSource).not.toContain(
       '} / ${formatMoney(Number(paymentIssueBooking.payment?.amount ?? 0))}`',
     );

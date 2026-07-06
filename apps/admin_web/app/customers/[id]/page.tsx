@@ -1445,14 +1445,13 @@ function buildCustomerOperatorCommandQueue({
   if (paymentIssueBooking) {
     const paymentStatus = paymentIssueBooking.payment?.status ?? 'Unknown';
     const paymentMethod = paymentIssueBooking.payment?.method ?? 'No method';
-    const paymentAmount = Number(paymentIssueBooking.payment?.amount ?? 0);
     const paymentCurrency = paymentIssueBooking.payment?.currency ?? 'VND';
 
     commands.push({
       id: `payment-${paymentIssueBooking.id}`,
       label: 'Payment row',
       title: 'Review the latest non-captured payment status',
-      detail: `${paymentStatus} / ${paymentMethod} / ${formatMoney(paymentAmount, paymentCurrency)}`,
+      detail: `${paymentStatus} / ${paymentMethod} / ${paymentCurrency} payment amount`,
       detailNode: (
         <>
           {paymentStatus} / {paymentMethod} /{' '}
