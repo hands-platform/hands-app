@@ -44,6 +44,26 @@ describe('Admin data table CSS', () => {
     expect(scrollbarThumbBlock).toContain('background: rgb(var(--admin-main-channel) / 0.34)');
     expect(scrollbarThumbBlock).toContain('border-radius: 10px');
   });
+
+  it('keeps table pagination footers on the Vuexy TablePagination rhythm', () => {
+    const footerIndex = globalsCss.indexOf('.vuexy-booking-table-footer {');
+    const footerBlock = cssRuleBlockAt(footerIndex);
+    const summaryIndex = globalsCss.indexOf('.vuexy-booking-pagination-summary {');
+    const summaryBlock = cssRuleBlockAt(summaryIndex);
+    const pageLinkIndex = globalsCss.indexOf('.vuexy-booking-page-link {');
+    const pageLinkBlock = cssRuleBlockAt(pageLinkIndex);
+
+    expect(footerIndex).toBeGreaterThan(-1);
+    expect(footerBlock).toContain('flex-wrap: wrap');
+    expect(footerBlock).toContain('gap: 8px');
+    expect(footerBlock).toContain('padding: 12px 24px');
+    expect(footerBlock).not.toContain('gap: 18px');
+    expect(summaryIndex).toBeGreaterThan(footerIndex);
+    expect(summaryBlock).toContain('color: var(--admin-disabled)');
+    expect(summaryBlock).toContain('font-size: 15px');
+    expect(pageLinkBlock).toContain('font-weight: 500');
+    expect(pageLinkBlock).not.toContain('font-weight: 700');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

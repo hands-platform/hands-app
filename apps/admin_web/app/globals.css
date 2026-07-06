@@ -4075,13 +4075,15 @@ a.action-button-card:hover {
   align-items: center;
   border-top: 1px solid var(--admin-border);
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
   min-height: 64px;
-  padding: 14px 24px;
+  padding: 12px 24px;
 }
 
-.vuexy-booking-table-footer > span {
+.vuexy-booking-table-footer > span,
+.vuexy-booking-pagination-summary {
   color: var(--admin-disabled);
   font-size: 15px;
   line-height: 22px;
@@ -4104,7 +4106,7 @@ a.action-button-card:hover {
   cursor: pointer;
   display: inline-flex;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   height: 38px;
   justify-content: center;
   min-width: 38px;
@@ -16103,10 +16105,11 @@ textarea:focus-visible {
 .vuexy-review-footer {
   align-items: center;
   display: flex;
-  gap: 18px;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
   min-height: 64px;
-  padding: 14px 24px;
+  padding: 12px 24px;
 }
 
 .vuexy-review-footer > span {
@@ -16130,7 +16133,7 @@ textarea:focus-visible {
   color: var(--admin-text);
   display: inline-flex;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   height: 38px;
   justify-content: center;
   min-width: 38px;

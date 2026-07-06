@@ -83,7 +83,7 @@ export function AdminTablePaginationFooter({
     className,
     children: (
       <>
-        <span>
+        <span className="vuexy-booking-pagination-summary">
           {summaryLabel ?? (
             <>
               Showing {from} to {to} of {totalRows} {itemLabel}

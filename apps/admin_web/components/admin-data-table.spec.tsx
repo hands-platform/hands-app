@@ -140,7 +140,11 @@ describe('AdminDataTable', () => {
     expect(footer.props.className).toBe('vuexy-booking-table-footer');
     expect(normalizeText(textContent(footer))).toContain('Showing 11 to 20 of 42 entries');
     expect(classNamesIn(footer)).toEqual(
-      expect.arrayContaining(['vuexy-booking-pagination', 'vuexy-booking-page-link is-active']),
+      expect.arrayContaining([
+        'vuexy-booking-pagination-summary',
+        'vuexy-booking-pagination',
+        'vuexy-booking-page-link is-active',
+      ]),
     );
     expect(hrefsIn(footer)).toEqual(
       expect.arrayContaining(['/finance-tax/general-ledger?page=1', '/finance-tax/general-ledger?page=2']),

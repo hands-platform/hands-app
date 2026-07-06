@@ -27,6 +27,18 @@ describe('Admin rounded pagination CSS', () => {
     expect(disabledBlock).toContain('opacity: 0.45');
     expect(disabledBlock).toContain('pointer-events: none');
   });
+
+  it.each([
+    ['booking', '.vuexy-booking-page-link {'],
+    ['review', '.vuexy-review-page-link {'],
+  ])('keeps %s pagination numbers on the Vuexy medium button weight', (_label, selector) => {
+    const pageLinkIndex = globalsCss.indexOf(selector);
+    const pageLinkBlock = cssRuleBlockAt(pageLinkIndex);
+
+    expect(pageLinkIndex).toBeGreaterThan(-1);
+    expect(pageLinkBlock).toContain('font-weight: 500');
+    expect(pageLinkBlock).not.toContain('font-weight: 700');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
