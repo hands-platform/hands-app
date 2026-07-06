@@ -261,6 +261,34 @@ describe('finance-overview-model', () => {
     expect(actions.find((action) => action.label === 'General ledger audit')?.amount).toBeUndefined();
   });
 
+  it('keeps finance action money as amount metadata instead of preformatted labels', () => {
+    const actions = buildFinanceOverviewActionItems({
+      ...emptyFinanceOverviewSummaries('2026-07'),
+      bankSummary: { ...emptyBankReconciliationSummary(), amount: 700_000, unmatchedCount: 3 },
+      clearingSummary: { ...emptyBookingPaymentClearingSummary(), amount: 900_000, openCount: 4 },
+      withdrawalSummary: {
+        ...emptyProviderWalletWithdrawalRequestSummary(),
+        currency: 'VND',
+        pendingWithdrawalPayableAmount: 300_000,
+        requested: 2,
+      },
+    });
+
+    expect(actions.find((action) => action.label === 'Payment clearing open')).toMatchObject({
+      amount: 900_000,
+      currency: 'VND',
+    });
+    expect(actions.find((action) => action.label === 'Payment clearing open')?.amountLabel).toBeUndefined();
+    expect(actions.find((action) => action.label === 'Bank reconciliation unmatched')?.amountLabel).toBeUndefined();
+    expect(actions.find((action) => action.label === 'Withdrawal payable')?.amountLabel).toBeUndefined();
+    expect(actions.find((action) => action.label === 'Tax and closeout review')?.amountLabel).toContain(
+      'formula issue',
+    );
+    expect(actions.find((action) => action.label === 'General ledger audit')?.amountLabel).toBe(
+      'Debit / credit equality',
+    );
+  });
+
   it('preserves range in UI hrefs', () => {
     expect(financeOverviewHref('90d')).toBe('/finance-overview?range=90d');
   });

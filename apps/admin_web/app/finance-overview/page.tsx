@@ -324,7 +324,7 @@ function FinanceActionAmount({ item }: { readonly item: FinanceOverviewActionIte
   return (
     <em>
       {item.amount === undefined ? (
-        item.amountLabel
+        item.amountLabel ?? 'Not set'
       ) : (
         <MoneyText amount={item.amount} currency={item.currency ?? 'VND'} />
       )}

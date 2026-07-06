@@ -100,7 +100,7 @@ export type FinanceOverviewSection = {
 
 export type FinanceOverviewActionItem = {
   readonly amount?: number;
-  readonly amountLabel: string;
+  readonly amountLabel?: string;
   readonly countLabel: string;
   readonly currency?: string;
   readonly detail: string;
@@ -833,7 +833,6 @@ export function buildFinanceOverviewActionItems(
   return [
     {
       amount: input.clearingSummary.amount,
-      amountLabel: formatMoney(input.clearingSummary.amount, input.clearingSummary.currency),
       countLabel: `${input.clearingSummary.openCount} open`,
       currency: input.clearingSummary.currency,
       detail: 'Customer payment, settlement posting, refund, payment fee, or coupon clearing rows still open.',
@@ -843,7 +842,6 @@ export function buildFinanceOverviewActionItems(
     },
     {
       amount: input.bankSummary.amount,
-      amountLabel: formatMoney(input.bankSummary.amount, input.bankSummary.currency),
       countLabel: `${input.bankSummary.unmatchedCount} unmatched`,
       currency: input.bankSummary.currency,
       detail: 'Company bank transactions missing explicit reconciliation evidence.',
@@ -853,7 +851,6 @@ export function buildFinanceOverviewActionItems(
     },
     {
       amount: cashDebtAmount,
-      amountLabel: formatMoney(cashDebtAmount, input.cashSummary?.currency ?? input.monthlyClosingSummary.currency),
       countLabel: `${input.cashSummary?.highDebtProviderCount ?? 0} high debt`,
       currency: input.cashSummary?.currency ?? input.monthlyClosingSummary.currency,
       detail: 'Partner negative wallet / cash receivable that can block payout or matching.',
@@ -863,7 +860,6 @@ export function buildFinanceOverviewActionItems(
     },
     {
       amount: refundPendingAmount,
-      amountLabel: formatMoney(refundPendingAmount, refundCurrency),
       countLabel: `${input.refundSummary?.openCount ?? 0} open`,
       currency: refundCurrency,
       detail: 'Refund cases requiring booking/payment/reversal evidence.',
@@ -873,10 +869,6 @@ export function buildFinanceOverviewActionItems(
     },
     {
       amount: input.withdrawalSummary.pendingWithdrawalPayableAmount,
-      amountLabel: formatMoney(
-        input.withdrawalSummary.pendingWithdrawalPayableAmount,
-        input.withdrawalSummary.currency,
-      ),
       countLabel: `${input.withdrawalSummary.requested} requested`,
       currency: input.withdrawalSummary.currency,
       detail: 'Withdrawal payable exposure waiting for review or manual bank transfer.',
