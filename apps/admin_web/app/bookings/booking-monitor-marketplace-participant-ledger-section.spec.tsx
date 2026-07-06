@@ -26,6 +26,13 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.chatHandoffTone}`} title={row.choiceNextStep}>');
   });
 
+  it('uses the shared Vuexy text link atom for marketplace participant booking links', () => {
+    const source = readFileSync('app/bookings/booking-monitor-marketplace-participant-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders participant ledger pills, operations cards, and row details', () => {
     const booking = {
       id: 'booking_123456789',

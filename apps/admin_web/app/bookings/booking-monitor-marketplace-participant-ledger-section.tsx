@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminTaskCard } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -105,9 +105,9 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
               <tr key={`${row.booking.id}-${row.participant.id}`}>
                 <td>
                   <strong>
-                    <Link className="text-link" href={`/bookings/${row.booking.id}`}>
+                    <AdminTextLink href={`/bookings/${row.booking.id}`}>
                       {shortId(row.booking.id)}
-                    </Link>
+                    </AdminTextLink>
                   </strong>
                   <div className="muted">{row.booking.status}</div>
                 </td>

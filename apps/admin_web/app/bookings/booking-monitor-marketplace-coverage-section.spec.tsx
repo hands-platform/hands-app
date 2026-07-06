@@ -19,6 +19,13 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
     expect(source).not.toContain('<span className={`pill ${row.nextActionTone}`} title={row.nextAction}>');
   });
 
+  it('uses the shared Vuexy text link atom for marketplace booking links', () => {
+    const source = readFileSync('app/bookings/booking-monitor-marketplace-coverage-section.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('className="text-link"');
+  });
+
   it('renders coverage rows, pills, and booking links', () => {
     const booking = {
       id: 'booking_123456789',

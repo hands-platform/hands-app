@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSection } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -75,9 +75,9 @@ export function BookingMonitorMarketplaceCoverageSection({
               <tr key={row.booking.id}>
                 <td>
                   <strong>
-                    <Link className="text-link" href={`/bookings/${row.booking.id}`}>
+                    <AdminTextLink href={`/bookings/${row.booking.id}`}>
                       {shortId(row.booking.id)}
-                    </Link>
+                    </AdminTextLink>
                   </strong>
                   <div className="muted">{getCustomerLabel(row.booking)}</div>
                   <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
