@@ -220,7 +220,7 @@ export default async function PartnerOverviewPage({
 
       <AdminSection
         bodyClassName="partner-overview-funnel-steps"
-        className="usage-overview-funnel-card"
+        className="partner-overview-section-card"
         description="From signup to approved supply, request activity, completed work, and payout readiness."
         statusLabel={overview.rangeLabel}
         title="Partner readiness funnel"
@@ -256,7 +256,7 @@ export default async function PartnerOverviewPage({
 
       <AdminSection
         bodyClassName="partner-overview-action-grid"
-        className="usage-overview-funnel-card"
+        className="partner-overview-section-card"
         description="Small, operator-first queues. Open full filtered lists from each section when needed."
         statusLabel={`${overview.actionLists.length} queues`}
         statusTone="warning"
@@ -367,7 +367,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
   return (
     <AdminSection
       bodyClassName="partner-overview-operating-grid"
-      className="usage-overview-funnel-card partner-overview-operating-board"
+      className="partner-overview-section-card partner-overview-operating-board"
       description="Separates ready supply from busy, soon-online, offline, and inactive Partners."
       statusLabel={`${cards.length} statuses`}
       title="Partner operating status"
@@ -473,7 +473,7 @@ function PartnerPriorityBoard({
   return (
     <AdminSection
       bodyClassName="partner-overview-priority-grid"
-      className="usage-overview-funnel-card partner-overview-priority-board"
+      className="partner-overview-section-card partner-overview-priority-board"
       description="The shortest route from supply signal to the next operator action."
       statusLabel={`${cards.length} actions`}
       title="Partner operations priority"

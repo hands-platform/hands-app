@@ -8718,7 +8718,8 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.usage-overview-funnel-card {
+.usage-overview-funnel-card,
+.partner-overview-section-card {
   display: grid;
   gap: 18px;
   min-width: 0;

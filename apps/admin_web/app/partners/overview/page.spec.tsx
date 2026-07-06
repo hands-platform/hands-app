@@ -54,11 +54,12 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).toContain('AdminFormGrid');
     expect(pageSource).not.toContain('<form className="partner-overview-filter-grid"');
     expect(pageSource).not.toContain('<form action="/partners/overview" className="partner-overview-selection-sort-form">');
-    expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-operating-board');
+    expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-operating-board');
     expect(markup).toContain('admin-section-body partner-overview-operating-grid');
     expect(markup).toContain('card admin-card partner-overview-operating-card');
     expect(pageSource).not.toContain('className={`card admin-card partner-overview-operating-card');
-    expect(markup).toContain('card admin-section usage-overview-funnel-card partner-overview-priority-board');
+    expect(markup).toContain('card admin-section partner-overview-section-card partner-overview-priority-board');
+    expect(markup).not.toContain('usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body partner-overview-priority-grid');
     expect(markup).toContain('card admin-card usage-overview-command-card partner-overview-priority-card');
     expect(pageSource).not.toContain('className={`card admin-card usage-overview-command-card partner-overview-priority-card');
@@ -93,6 +94,7 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-insight-grid');
     expect(pageSource).not.toContain('className="usage-overview-filter-panel partner-overview-filter-panel"');
     expect(pageSource).not.toContain('className="usage-overview-range-buttons"');
+    expect(pageSource).not.toContain('className="usage-overview-funnel-card"');
     expect(pageSource).not.toContain(
       '<table className="table vuexy-data-table vuexy-booking-table usage-overview-table">',
     );
