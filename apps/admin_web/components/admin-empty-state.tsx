@@ -13,7 +13,7 @@ export function AdminEmptyState({
 }: AdminEmptyStateProps) {
   if (framed) {
     return (
-      <div className={joinClassNames('empty-state', className)}>
+      <div aria-live="polite" className={joinClassNames('empty-state', className)} role="status">
         {title === null ? null : <strong>{title}</strong>}
         <p className="muted">{message}</p>
       </div>

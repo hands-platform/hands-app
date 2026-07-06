@@ -130,7 +130,9 @@ export function AdminDataTable({
         {rowCount === 0 && emptyMessage !== null ? (
           <tr>
             <td className="admin-data-table-empty-cell" colSpan={headers.length}>
-              <div className="admin-data-table-empty">{renderEmptyMessage(emptyMessage)}</div>
+              <div aria-live="polite" className="admin-data-table-empty" role="status">
+                {renderEmptyMessage(emptyMessage)}
+              </div>
             </td>
           </tr>
         ) : null}

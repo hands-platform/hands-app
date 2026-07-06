@@ -48,7 +48,9 @@ describe('AdminDataTable', () => {
     });
     const emptyContainer = emptyRow.props.children.props.children;
     expect(emptyContainer.props).toMatchObject({
+      'aria-live': 'polite',
       className: 'admin-data-table-empty',
+      role: 'status',
     });
     expect(classNamesIn(emptyContainer)).not.toContain('empty-state');
     expect(normalizeText(textContent(emptyContainer))).toBe('No feedback records loaded.');

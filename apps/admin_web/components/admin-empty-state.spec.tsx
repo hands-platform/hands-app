@@ -24,7 +24,11 @@ describe('AdminEmptyState', () => {
     });
 
     expect(emptyState.type).toBe('div');
-    expect(emptyState.props).toMatchObject({ className: 'empty-state' });
+    expect(emptyState.props).toMatchObject({
+      'aria-live': 'polite',
+      className: 'empty-state',
+      role: 'status',
+    });
     expect(emptyState.props.children[0].props.children).toBe('No wallet evidence found');
   });
 
