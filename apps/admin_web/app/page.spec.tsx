@@ -35,6 +35,11 @@ describe('DashboardPage', () => {
     mockedApiGet.mockReset();
   });
 
+  it('uses the shared Vuexy trace summary atom for dashboard metric groups', () => {
+    expect(dashboardSource).toContain('AdminTraceSummary');
+    expect(dashboardSource).not.toMatch(/<div className="service-trace-summary(?: [^"]*)?">/);
+  });
+
   it('renders server-scoped dashboard finance rows without applying a second local date filter', async () => {
     const earningSummary: AdminEarningSummary = {
       availableNetAmount: 120000,

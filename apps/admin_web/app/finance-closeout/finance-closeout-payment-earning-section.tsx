@@ -1,3 +1,4 @@
+import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -19,39 +20,38 @@ export function FinanceCloseoutPaymentEarningSection({
           Open earnings
         </AdminTextLink>
       }
-      bodyClassName="service-trace-summary"
       className="admin-mb-16"
       description="Confirms that completed services have earning records, captured payments, or a cash settlement trail. Cash jobs with negative wallet balance stay visible until settled."
       title="Payment-to-earning checks"
     >
-      <div>
-        <span>Gross represented</span>
-        <strong>
-          <MoneyText amount={summary.grossAmount} currency={currency} />
-        </strong>
-        <small>{summary.count} earning record(s)</small>
-      </div>
-      <div>
-        <span>HANDS fee</span>
-        <strong>
-          <MoneyText amount={summary.platformFee} currency={currency} />
-        </strong>
-        <small>Before VAT, withholding, and other cost views.</small>
-      </div>
-      <div>
-        <span>Tax withheld</span>
-        <strong>
-          <MoneyText amount={summary.withholdingAmount} currency={currency} />
-        </strong>
-        <small>Stored from active tax policy snapshots.</small>
-      </div>
-      <div>
-        <span>Pending Partner net</span>
-        <strong>
-          <MoneyText amount={summary.pendingNetAmount} currency={currency} />
-        </strong>
-        <small>Positive payout or negative cash-fee debt.</small>
-      </div>
+      <AdminTraceSummary
+        metrics={[
+          {
+            key: 'gross-represented',
+            label: 'Gross represented',
+            value: <MoneyText amount={summary.grossAmount} currency={currency} />,
+            detail: `${summary.count} earning record(s)`,
+          },
+          {
+            key: 'hands-fee',
+            label: 'HANDS fee',
+            value: <MoneyText amount={summary.platformFee} currency={currency} />,
+            detail: 'Before VAT, withholding, and other cost views.',
+          },
+          {
+            key: 'tax-withheld',
+            label: 'Tax withheld',
+            value: <MoneyText amount={summary.withholdingAmount} currency={currency} />,
+            detail: 'Stored from active tax policy snapshots.',
+          },
+          {
+            key: 'pending-partner-net',
+            label: 'Pending Partner net',
+            value: <MoneyText amount={summary.pendingNetAmount} currency={currency} />,
+            detail: 'Positive payout or negative cash-fee debt.',
+          },
+        ]}
+      />
     </AdminSection>
   );
 }

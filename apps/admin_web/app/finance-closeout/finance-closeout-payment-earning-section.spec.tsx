@@ -11,7 +11,9 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
     );
 
     expect(source).toContain('MoneyText');
+    expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('formatMoney(');
+    expect(source).not.toContain('bodyClassName="service-trace-summary"');
   });
 
   it('uses the shared Vuexy text link atom for the earnings action', () => {
@@ -46,15 +48,15 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
-      bodyClassName: 'service-trace-summary',
       className: 'admin-mb-16',
       title: 'Payment-to-earning checks',
     });
+    expect(section.props).not.toHaveProperty('bodyClassName', 'service-trace-summary');
     expect(rendered).toContain('Payment-to-earning checks');
     expect(markup).toContain('900.000 VND');
-    expect(rendered).toContain('3');
-    expect(rendered).toContain('earning record(s)');
-    expect(rendered).toContain('Pending Partner net');
+    expect(markup).toContain('3');
+    expect(markup).toContain('earning record(s)');
+    expect(markup).toContain('Pending Partner net');
     expect(hrefsIn(section)).toContain('/earnings');
   });
 });

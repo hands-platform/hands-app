@@ -14,6 +14,7 @@ import {
 import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFormControlLink } from '../components/admin-form-controls';
+import { AdminTraceSummary } from '../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
 import { AdminTextLink } from '../components/admin-text-link';
 import {
@@ -127,6 +128,39 @@ function DashboardStatusBadgeLink({
     <StatusBadgeLink href={href} tone={statusBadgeToneFromPillClass(pillClass)}>
       {children}
     </StatusBadgeLink>
+  );
+}
+
+type DashboardTraceSummaryMetric = {
+  readonly action?: ReactNode;
+  readonly className?: string;
+  readonly helper?: ReactNode;
+  readonly href?: string;
+  readonly key?: string;
+  readonly label: ReactNode;
+  readonly value: ReactNode;
+};
+
+function DashboardTraceSummary({
+  className,
+  metrics,
+}: {
+  readonly className?: string;
+  readonly metrics: readonly DashboardTraceSummaryMetric[];
+}) {
+  return (
+    <AdminTraceSummary
+      className={className}
+      metrics={metrics.map((metric) => ({
+        action: metric.action,
+        className: metric.className,
+        detail: metric.helper,
+        href: metric.href,
+        key: metric.key,
+        label: metric.label,
+        value: metric.value,
+      }))}
+    />
   );
 }
 
@@ -794,15 +828,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-core-operating-counters"
         title="Core operating counters"
       >
-        <div className="service-trace-summary admin-mt-12">
-          {coreOperatingCounters.map((counter) => (
-            <div key={counter.label}>
-              <span>{counter.label}</span>
-              <strong>{counter.value}</strong>
-              <small>{counter.helper}</small>
-            </div>
-          ))}
-        </div>
+        <DashboardTraceSummary className="admin-mt-12" metrics={coreOperatingCounters} />
         <div className="actions admin-mt-12">
           <AdminFormControlLink href="/bookings?view=matching">
             <BellRing size={16} aria-hidden="true" />
@@ -874,66 +900,65 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-marketplace-participant-snapshot"
         title="Marketplace participant snapshot"
       >
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Open marketplace bookings</span>
-            <strong>{marketplaceParticipantSnapshot.openMarketplaceBookings}</strong>
-            <small>
-              Bookings still open for first-pick response, Partner participation, or customer choice.
-            </small>
-          </div>
-          <div>
-            <span>Participant rows</span>
-            <strong>{marketplaceParticipantSnapshot.participantRows}</strong>
-            <small>First-pick, marketplace, accepted, declined, and selected records.</small>
-          </div>
-          <div>
-            <span>First-pick rows</span>
-            <strong>{marketplaceParticipantSnapshot.firstPickRows}</strong>
-            <small>Preferred Partner response rows from the first-pick window.</small>
-          </div>
-          <div>
-            <span>Marketplace participants</span>
-            <strong>{marketplaceParticipantSnapshot.marketplaceRows}</strong>
-            <small>Rows from Partners beyond the preferred first-pick Partner.</small>
-          </div>
-          <div>
-            <span>Customer-selectable</span>
-            <strong>{marketplaceParticipantSnapshot.customerSelectableRows}</strong>
-            <small>Accepted or selected rows that can support customer final choice.</small>
-          </div>
-          <div>
-            <span>Choice pending bookings</span>
-            <strong>{marketplaceParticipantSnapshot.customerChoicePendingBookings}</strong>
-            <small>Open bookings where the customer can choose a final Partner now.</small>
-          </div>
-          <div>
-            <span>Customer selected</span>
-            <strong>{marketplaceParticipantSnapshot.customerSelectedRows}</strong>
-            <small>Final Partner decisions owned by the customer.</small>
-          </div>
-          <div>
-            <span>No participants yet</span>
-            <strong>{marketplaceParticipantSnapshot.openBookingsWithoutParticipants}</strong>
-            <small>Open matching rows where the customer is still waiting for Partner options.</small>
-          </div>
-          <div>
-            <span>Cash fee gate</span>
-            <strong>{marketplaceParticipantSnapshot.cashDebtBlockedBookings}</strong>
-            <small>
-              Bookings where unpaid HANDS fees block final acceptance, service start, and payout release.
-            </small>
-          </div>
-          <div>
-            <span>Latest participant</span>
-            <strong>
-              <AdminTextLink href={marketplaceParticipantSnapshot.latestParticipantHref}>
-                {marketplaceParticipantSnapshot.latestParticipantLabel}
-              </AdminTextLink>
-            </strong>
-            <small>{marketplaceParticipantSnapshot.declinedRows} declined response row(s) retained.</small>
-          </div>
-        </div>
+        <DashboardTraceSummary
+          className="admin-mt-12"
+          metrics={[
+            {
+              label: 'Open marketplace bookings',
+              value: marketplaceParticipantSnapshot.openMarketplaceBookings,
+              helper: 'Bookings still open for first-pick response, Partner participation, or customer choice.',
+            },
+            {
+              label: 'Participant rows',
+              value: marketplaceParticipantSnapshot.participantRows,
+              helper: 'First-pick, marketplace, accepted, declined, and selected records.',
+            },
+            {
+              label: 'First-pick rows',
+              value: marketplaceParticipantSnapshot.firstPickRows,
+              helper: 'Preferred Partner response rows from the first-pick window.',
+            },
+            {
+              label: 'Marketplace participants',
+              value: marketplaceParticipantSnapshot.marketplaceRows,
+              helper: 'Rows from Partners beyond the preferred first-pick Partner.',
+            },
+            {
+              label: 'Customer-selectable',
+              value: marketplaceParticipantSnapshot.customerSelectableRows,
+              helper: 'Accepted or selected rows that can support customer final choice.',
+            },
+            {
+              label: 'Choice pending bookings',
+              value: marketplaceParticipantSnapshot.customerChoicePendingBookings,
+              helper: 'Open bookings where the customer can choose a final Partner now.',
+            },
+            {
+              label: 'Customer selected',
+              value: marketplaceParticipantSnapshot.customerSelectedRows,
+              helper: 'Final Partner decisions owned by the customer.',
+            },
+            {
+              label: 'No participants yet',
+              value: marketplaceParticipantSnapshot.openBookingsWithoutParticipants,
+              helper: 'Open matching rows where the customer is still waiting for Partner options.',
+            },
+            {
+              label: 'Cash fee gate',
+              value: marketplaceParticipantSnapshot.cashDebtBlockedBookings,
+              helper: 'Bookings where unpaid HANDS fees block final acceptance, service start, and payout release.',
+            },
+            {
+              label: 'Latest participant',
+              value: (
+                <AdminTextLink href={marketplaceParticipantSnapshot.latestParticipantHref}>
+                  {marketplaceParticipantSnapshot.latestParticipantLabel}
+                </AdminTextLink>
+              ),
+              helper: `${marketplaceParticipantSnapshot.declinedRows} declined response row(s) retained.`,
+            },
+          ]}
+        />
         <div className="actions admin-mt-12">
           <AdminTextLink href="/bookings?view=marketplace">
             Marketplace bookings
@@ -958,73 +983,76 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         id="dashboard-evidence-drilldown"
         title="Evidence drilldown"
       >
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Booking create gates</span>
-            <strong>{bookingCreateRejections.length}</strong>
-            <small>
-              <AdminTextLink href="/bookings?view=blocked-create">
-                {bookingCreateGateSummary.customerGpsGate} optional GPS evidence,{' '}
-                {bookingCreateGateSummary.customerDistanceGate} customer distance,{' '}
-                {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>Chat evidence</span>
-            <strong>{liveBookingDeepDive.matchedWithoutChat + liveBookingDeepDive.quietActiveChats}</strong>
-            <small>
-              <AdminTextLink href="/bookings?view=chat-repair">
-                Missing or quiet retained chat checks
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>No-show evidence</span>
-            <strong>{bookingOps.noShowSignal}</strong>
-            <small>
-              <AdminTextLink href="/bookings?view=no-show">
-                Review only with booking and chat evidence
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>Alert evidence</span>
-            <strong>{failedNotificationCount}</strong>
-            <small>
-              <AdminTextLink href="/notifications?review=failed">
-                Failed push and in-app delivery rows
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>Settlement evidence</span>
-            <strong>{cashSettlementSummary.rowCount}</strong>
-            <small>
-              <AdminTextLink href="/cash-settlements">
-                Cash fee debt rows before final acceptance, service start, and payout release
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>Refund evidence</span>
-            <strong>{refundSummary.totalCount}</strong>
-            <small>
-              <AdminTextLink href="/refunds">
-                Refund ledger and payment release checks
-              </AdminTextLink>
-            </small>
-          </div>
-          <div>
-            <span>Payout evidence</span>
-            <strong>{activePayoutBatchCount}</strong>
-            <small>
-              <AdminTextLink href="/payouts">
-                Weekly, monthly, and admin-selected batches
-              </AdminTextLink>
-            </small>
-          </div>
-        </div>
+        <DashboardTraceSummary
+          className="admin-mt-12"
+          metrics={[
+            {
+              label: 'Booking create gates',
+              value: bookingCreateRejections.length,
+              helper: (
+                <AdminTextLink href="/bookings?view=blocked-create">
+                  {bookingCreateGateSummary.customerGpsGate} optional GPS evidence,{' '}
+                  {bookingCreateGateSummary.customerDistanceGate} customer distance,{' '}
+                  {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'Chat evidence',
+              value: liveBookingDeepDive.matchedWithoutChat + liveBookingDeepDive.quietActiveChats,
+              helper: (
+                <AdminTextLink href="/bookings?view=chat-repair">
+                  Missing or quiet retained chat checks
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'No-show evidence',
+              value: bookingOps.noShowSignal,
+              helper: (
+                <AdminTextLink href="/bookings?view=no-show">
+                  Review only with booking and chat evidence
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'Alert evidence',
+              value: failedNotificationCount,
+              helper: (
+                <AdminTextLink href="/notifications?review=failed">
+                  Failed push and in-app delivery rows
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'Settlement evidence',
+              value: cashSettlementSummary.rowCount,
+              helper: (
+                <AdminTextLink href="/cash-settlements">
+                  Cash fee debt rows before final acceptance, service start, and payout release
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'Refund evidence',
+              value: refundSummary.totalCount,
+              helper: (
+                <AdminTextLink href="/refunds">
+                  Refund ledger and payment release checks
+                </AdminTextLink>
+              ),
+            },
+            {
+              label: 'Payout evidence',
+              value: activePayoutBatchCount,
+              helper: (
+                <AdminTextLink href="/payouts">
+                  Weekly, monthly, and admin-selected batches
+                </AdminTextLink>
+              ),
+            },
+          ]}
+        />
       </AdminSection>
 
       <AdminSection
@@ -1100,23 +1128,26 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             )
           ))}
         </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Range bookings</span>
-            <strong>{rangeBookings.length}</strong>
-            <small>Records included in demand and status analysis.</small>
-          </div>
-          <div>
-            <span>Range payments</span>
-            <strong>{rangePayments.length}</strong>
-            <small>Payment method mix for the selected window.</small>
-          </div>
-          <div>
-            <span>Range earnings</span>
-            <strong>{rangeEarningRows.length}</strong>
-            <small>Earning rows created in the selected window.</small>
-          </div>
-        </div>
+        <DashboardTraceSummary
+          className="admin-mt-12"
+          metrics={[
+            {
+              label: 'Range bookings',
+              value: rangeBookings.length,
+              helper: 'Records included in demand and status analysis.',
+            },
+            {
+              label: 'Range payments',
+              value: rangePayments.length,
+              helper: 'Payment method mix for the selected window.',
+            },
+            {
+              label: 'Range earnings',
+              value: rangeEarningRows.length,
+              helper: 'Earning rows created in the selected window.',
+            },
+          ]}
+        />
       </AdminSection>
 
       {fullDashboardData ? (
@@ -1177,15 +1208,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-policy-outcome-pulse"
             title="Policy outcome pulse"
           >
-            <div className="service-trace-summary admin-mt-12">
-              {fullDashboardData.policyOutcome.metrics.map((metric) => (
-                <div key={metric.label}>
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                  <small>{metric.helper}</small>
-                </div>
-              ))}
-            </div>
+            <DashboardTraceSummary className="admin-mt-12" metrics={fullDashboardData.policyOutcome.metrics} />
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.policyOutcome.cards.map((card) => (
                 <AdminActionCard
@@ -1229,19 +1252,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminFormControlLink>
               </div>
             </AdminNotePanel>
-            <div className="service-trace-summary admin-mt-14">
-              {fullDashboardData.shiftBriefing.stats.map((stat) => (
-                <Link
-                  className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
-                  href={stat.href}
-                  key={stat.label}
-                >
-                  <span>{stat.label}</span>
-                  <strong>{stat.value}</strong>
-                  <small>{stat.helper}</small>
-                </Link>
-              ))}
-            </div>
+            <DashboardTraceSummary
+              className="admin-mt-14"
+              metrics={fullDashboardData.shiftBriefing.stats.map((stat) => ({
+                className: `ops-task-breakdown-item ops-task-breakdown-${stat.tone}`,
+                helper: stat.helper,
+                href: stat.href,
+                label: stat.label,
+                value: stat.value,
+              }))}
+            />
             <div className="ops-task-grid admin-mt-14">
               {fullDashboardData.shiftBriefing.nextActions.map((item, index) => (
                 <AdminActionCard
@@ -1332,15 +1352,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-matching-control-room"
             title="Matching control room"
           >
-            <div className="service-trace-summary admin-mt-12">
-              {matchingControl.metrics.map((metric) => (
-                <div key={metric.label}>
-                  <span>{metric.label}</span>
-                  <strong>{metric.value}</strong>
-                  <small>{metric.helper}</small>
-                </div>
-              ))}
-            </div>
+            <DashboardTraceSummary className="admin-mt-12" metrics={matchingControl.metrics} />
             <AdminDetailGrid className="admin-mt-14">
               <AdminNotePanel>
                 <AdminSectionHeader
@@ -1418,33 +1430,37 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-operations-policy-snapshot"
             title="Operations policy snapshot"
           >
-            <div className="service-trace-summary admin-mt-12">
-              <div>
-                <span>Active overrides</span>
-                <strong>{fullDashboardData.policySummary.activeOverrideCount}</strong>
-                <small>Values different from recommended baseline.</small>
-              </div>
-              <div>
-                <span>Recent changes</span>
-                <strong>{fullDashboardData.policySummary.recentChangeCount}</strong>
-                <small>Policy records changed in the last 7 days.</small>
-              </div>
-              <div>
-                <span>Policy alignment</span>
-                <strong>{fullDashboardData.policySummary.healthLabel}</strong>
-                <small>{fullDashboardData.policySummary.healthHelper}</small>
-              </div>
-              {fullDashboardData.policySummary.enforced.map((item) => (
-                <div key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small>{item.helper}</small>
-                  <AdminTextLink href={item.href}>
-                    Tune
-                  </AdminTextLink>
-                </div>
-              ))}
-            </div>
+            <DashboardTraceSummary
+              className="admin-mt-12"
+              metrics={[
+                {
+                  label: 'Active overrides',
+                  value: fullDashboardData.policySummary.activeOverrideCount,
+                  helper: 'Values different from recommended baseline.',
+                },
+                {
+                  label: 'Recent changes',
+                  value: fullDashboardData.policySummary.recentChangeCount,
+                  helper: 'Policy records changed in the last 7 days.',
+                },
+                {
+                  label: 'Policy alignment',
+                  value: fullDashboardData.policySummary.healthLabel,
+                  helper: fullDashboardData.policySummary.healthHelper,
+                },
+                ...fullDashboardData.policySummary.enforced.map((item) => ({
+                  action: (
+                    <AdminTextLink href={item.href}>
+                      Tune
+                    </AdminTextLink>
+                  ),
+                  helper: item.helper,
+                  key: item.label,
+                  label: item.label,
+                  value: item.value,
+                })),
+              ]}
+            />
             {fullDashboardData.policySummary.activeOverrides.length ||
             fullDashboardData.policySummary.recentChanges.length ? (
               <AdminDetailGrid className="admin-mt-14">
@@ -1567,53 +1583,55 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Attention bookings
                 </AdminFormControlLink>
               </div>
-              <div className="service-trace-summary">
-                <div>
-                  <span>Matching escalations</span>
-                  <strong>{fullDashboardData.bookingDeepDive.matchingEscalations}</strong>
-                  <small>First-pick, marketplace participants, final choice, or chat handoff</small>
-                </div>
-                <div>
-                  <span>Expired matching</span>
-                  <strong>{fullDashboardData.bookingDeepDive.expiredOpenMatching}</strong>
-                  <small>Open windows past timeout</small>
-                </div>
-                <div>
-                  <span>No participants</span>
-                  <strong>{fullDashboardData.bookingDeepDive.openWithoutParticipants}</strong>
-                  <small>Customer waiting, no Partner participation yet</small>
-                </div>
-                <div>
-                  <span>Matched no chat</span>
-                  <strong>{fullDashboardData.bookingDeepDive.matchedWithoutChat}</strong>
-                  <small>Partner selected, room missing</small>
-                </div>
-                <div>
-                  <span>Quiet active chats</span>
-                  <strong>{fullDashboardData.bookingDeepDive.quietActiveChats}</strong>
-                  <small>Room exists but no messages</small>
-                </div>
-                <div>
-                  <span>Payment release check</span>
-                  <strong>{fullDashboardData.bookingDeepDive.releaseChecks}</strong>
-                  <small>Cancelled/expired/no-show not released</small>
-                </div>
-                <div>
-                  <span>Completion capture check</span>
-                  <strong>{fullDashboardData.bookingDeepDive.captureChecks}</strong>
-                  <small>Completed service still authorized</small>
-                </div>
-                <div>
-                  <span>Avg participants</span>
-                  <strong>{fullDashboardData.bookingDeepDive.averageParticipants}</strong>
-                  <small>Open/matched response depth</small>
-                </div>
-                <div>
-                  <span>Manual closeout</span>
-                  <strong>{fullDashboardData.bookingDeepDive.manualCloseout}</strong>
-                  <small>Needs operator audit trail</small>
-                </div>
-              </div>
+              <DashboardTraceSummary
+                metrics={[
+                  {
+                    label: 'Matching escalations',
+                    value: fullDashboardData.bookingDeepDive.matchingEscalations,
+                    helper: 'First-pick, marketplace participants, final choice, or chat handoff',
+                  },
+                  {
+                    label: 'Expired matching',
+                    value: fullDashboardData.bookingDeepDive.expiredOpenMatching,
+                    helper: 'Open windows past timeout',
+                  },
+                  {
+                    label: 'No participants',
+                    value: fullDashboardData.bookingDeepDive.openWithoutParticipants,
+                    helper: 'Customer waiting, no Partner participation yet',
+                  },
+                  {
+                    label: 'Matched no chat',
+                    value: fullDashboardData.bookingDeepDive.matchedWithoutChat,
+                    helper: 'Partner selected, room missing',
+                  },
+                  {
+                    label: 'Quiet active chats',
+                    value: fullDashboardData.bookingDeepDive.quietActiveChats,
+                    helper: 'Room exists but no messages',
+                  },
+                  {
+                    label: 'Payment release check',
+                    value: fullDashboardData.bookingDeepDive.releaseChecks,
+                    helper: 'Cancelled/expired/no-show not released',
+                  },
+                  {
+                    label: 'Completion capture check',
+                    value: fullDashboardData.bookingDeepDive.captureChecks,
+                    helper: 'Completed service still authorized',
+                  },
+                  {
+                    label: 'Avg participants',
+                    value: fullDashboardData.bookingDeepDive.averageParticipants,
+                    helper: 'Open/matched response depth',
+                  },
+                  {
+                    label: 'Manual closeout',
+                    value: fullDashboardData.bookingDeepDive.manualCloseout,
+                    helper: 'Needs operator audit trail',
+                  },
+                ]}
+              />
             </AdminSection>
 
             <AdminSection
@@ -1683,48 +1701,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               id="dashboard-booking-status-control"
               title="Booking status control"
             >
-              <div className="service-trace-summary">
-                <div>
-                  <span>Total</span>
-                  <strong>{bookingOps.total}</strong>
-                  <small>All bookings</small>
-                </div>
-                <div>
-                  <span>Matching wait</span>
-                  <strong>{bookingOps.openMatching}</strong>
-                  <small>Customer waiting</small>
-                </div>
-                <div>
-                  <span>Completed</span>
-                  <strong>{bookingOps.completed}</strong>
-                  <small>Service finished</small>
-                </div>
-                <div>
-                  <span>Cancelled</span>
-                  <strong>{bookingOps.cancelled}</strong>
-                  <small>Refund/release check</small>
-                </div>
-                <div>
-                  <span>Expired</span>
-                  <strong>{bookingOps.expired}</strong>
-                  <small>Manual closeout</small>
-                </div>
-                <div>
-                  <span>Formal no-show</span>
-                  <strong>{bookingOps.noShowFormal}</strong>
-                  <small>Operator decision</small>
-                </div>
-                <div>
-                  <span>No-show records</span>
-                  <strong>{bookingOps.noShowSignal}</strong>
-                  <small>Formal and overdue</small>
-                </div>
-                <div>
-                  <span>Closeout checks</span>
-                  <strong>{bookingOps.completedCloseoutChecks}</strong>
-                  <small>Finance records</small>
-                </div>
-              </div>
+              <DashboardTraceSummary
+                metrics={[
+                  { label: 'Total', value: bookingOps.total, helper: 'All bookings' },
+                  { label: 'Matching wait', value: bookingOps.openMatching, helper: 'Customer waiting' },
+                  { label: 'Completed', value: bookingOps.completed, helper: 'Service finished' },
+                  { label: 'Cancelled', value: bookingOps.cancelled, helper: 'Refund/release check' },
+                  { label: 'Expired', value: bookingOps.expired, helper: 'Manual closeout' },
+                  { label: 'Formal no-show', value: bookingOps.noShowFormal, helper: 'Operator decision' },
+                  { label: 'No-show records', value: bookingOps.noShowSignal, helper: 'Formal and overdue' },
+                  { label: 'Closeout checks', value: bookingOps.completedCloseoutChecks, helper: 'Finance records' },
+                ]}
+              />
             </AdminSection>
 
             <AdminSection
@@ -1854,48 +1842,42 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               id="dashboard-partner-supply-snapshot"
               title="Partner supply snapshot"
             >
-              <div className="service-trace-summary">
-                <div>
-                  <span>Total Partners</span>
-                  <strong>{partnerSupply.total}</strong>
-                  <small>All registered Partner profiles</small>
-                </div>
-                <div>
-                  <span>Online supply</span>
-                  <strong>{partnerSupply.online}</strong>
-                  <small>{partnerSupply.onlineAvailable} available now</small>
-                </div>
-                <div>
-                  <span>Live app Partners</span>
-                  <strong>{partnerSupply.liveSessions}</strong>
-                  <small>Active session heartbeat</small>
-                </div>
-                <div>
-                  <span>Supply pressure</span>
-                  <strong>{partnerSupply.supplyPressureLabel}</strong>
-                  <small>Active demand / available supply</small>
-                </div>
-                <div>
-                  <span>Stale location</span>
-                  <strong>{partnerSupply.staleLocation}</strong>
-                  <small>Last saved location older than 90m</small>
-                </div>
-                <div>
-                  <span>Cash debt gate</span>
-                  <strong>{partnerSupply.cashDebtPartners}</strong>
-                  <small>Must settle before final acceptance, service start, and payout release</small>
-                </div>
-                <div>
-                  <span>Verification queue</span>
-                  <strong>{partnerSupply.pendingVerification}</strong>
-                  <small>Submitted for review</small>
-                </div>
-                <div>
-                  <span>Account holds</span>
-                  <strong>{partnerSupply.blocked}</strong>
-                  <small>Account-control blockers</small>
-                </div>
-              </div>
+              <DashboardTraceSummary
+                metrics={[
+                  { label: 'Total Partners', value: partnerSupply.total, helper: 'All registered Partner profiles' },
+                  {
+                    label: 'Online supply',
+                    value: partnerSupply.online,
+                    helper: `${partnerSupply.onlineAvailable} available now`,
+                  },
+                  {
+                    label: 'Live app Partners',
+                    value: partnerSupply.liveSessions,
+                    helper: 'Active session heartbeat',
+                  },
+                  {
+                    label: 'Supply pressure',
+                    value: partnerSupply.supplyPressureLabel,
+                    helper: 'Active demand / available supply',
+                  },
+                  {
+                    label: 'Stale location',
+                    value: partnerSupply.staleLocation,
+                    helper: 'Last saved location older than 90m',
+                  },
+                  {
+                    label: 'Cash debt gate',
+                    value: partnerSupply.cashDebtPartners,
+                    helper: 'Must settle before final acceptance, service start, and payout release',
+                  },
+                  {
+                    label: 'Verification queue',
+                    value: partnerSupply.pendingVerification,
+                    helper: 'Submitted for review',
+                  },
+                  { label: 'Account holds', value: partnerSupply.blocked, helper: 'Account-control blockers' },
+                ]}
+              />
             </AdminSection>
 
             <AdminSection
@@ -1989,28 +1971,31 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminNotePanel>
               )}
             </div>
-            <div className="service-trace-summary admin-mt-14">
-              <div>
-                <span>Blocked now</span>
-                <strong>{fullDashboardData.partnerOpsQueue.blockedNow}</strong>
-                <small>Marketplace or account control held</small>
-              </div>
-              <div>
-                <span>Needs payout setup</span>
-                <strong>{fullDashboardData.partnerOpsQueue.payoutSetup}</strong>
-                <small>First revenue follow-up</small>
-              </div>
-              <div>
-                <span>Location stale/missing</span>
-                <strong>{fullDashboardData.partnerOpsQueue.locationIssue}</strong>
-                <small>Dispatch visibility gap</small>
-              </div>
-              <div>
-                <span>Not contactable</span>
-                <strong>{fullDashboardData.partnerOpsQueue.contactIssue}</strong>
-                <small>No app session or push</small>
-              </div>
-            </div>
+            <DashboardTraceSummary
+              className="admin-mt-14"
+              metrics={[
+                {
+                  label: 'Blocked now',
+                  value: fullDashboardData.partnerOpsQueue.blockedNow,
+                  helper: 'Marketplace or account control held',
+                },
+                {
+                  label: 'Needs payout setup',
+                  value: fullDashboardData.partnerOpsQueue.payoutSetup,
+                  helper: 'First revenue follow-up',
+                },
+                {
+                  label: 'Location stale/missing',
+                  value: fullDashboardData.partnerOpsQueue.locationIssue,
+                  helper: 'Dispatch visibility gap',
+                },
+                {
+                  label: 'Not contactable',
+                  value: fullDashboardData.partnerOpsQueue.contactIssue,
+                  helper: 'No app session or push',
+                },
+              ]}
+            />
           </AdminSection>
 
           <AdminSection
@@ -2136,28 +2121,30 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               id="dashboard-operations-checklist-queue"
               title="Operations checklist queue"
             >
-              <div className="service-trace-summary">
-                <div>
-                  <span>Immediate checks</span>
-                  <strong>{fullDashboardData.queueSummary.high}</strong>
-                  <small>Same-shift checklist actions</small>
-                </div>
-                <div>
-                  <span>Customer protection</span>
-                  <strong>{fullDashboardData.queueSummary.customerProtection}</strong>
-                  <small>Booking checks</small>
-                </div>
-                <div>
-                  <span>Finance checks</span>
-                  <strong>{fullDashboardData.queueSummary.financeImmediate}</strong>
-                  <small>Payment, payout, debt</small>
-                </div>
-                <div>
-                  <span>Partner ops</span>
-                  <strong>{fullDashboardData.queueSummary.partnerImmediate}</strong>
-                  <small>Reports or verification</small>
-                </div>
-              </div>
+              <DashboardTraceSummary
+                metrics={[
+                  {
+                    label: 'Immediate checks',
+                    value: fullDashboardData.queueSummary.high,
+                    helper: 'Same-shift checklist actions',
+                  },
+                  {
+                    label: 'Customer protection',
+                    value: fullDashboardData.queueSummary.customerProtection,
+                    helper: 'Booking checks',
+                  },
+                  {
+                    label: 'Finance checks',
+                    value: fullDashboardData.queueSummary.financeImmediate,
+                    helper: 'Payment, payout, debt',
+                  },
+                  {
+                    label: 'Partner ops',
+                    value: fullDashboardData.queueSummary.partnerImmediate,
+                    helper: 'Reports or verification',
+                  },
+                ]}
+              />
               {fullDashboardData.queueSummary.first && (
                 <AdminNotePanel className="admin-mt-14">
                   <div>
