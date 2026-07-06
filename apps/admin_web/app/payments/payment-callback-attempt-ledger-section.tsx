@@ -1,5 +1,6 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
@@ -81,14 +82,14 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
             </td>
             <td>
               <div className="setup-stage-list">
-                <div className="setup-stage-item">
+                <AdminStageItem>
                   <StatusBadge tone="info">Signature</StatusBadge>
                   <div>
                     <strong>{row.signatureLabel}</strong>
                     <p className="muted">Mode: {row.verificationMode}</p>
                   </div>
-                </div>
-                <div className="setup-stage-item">
+                </AdminStageItem>
+                <AdminStageItem>
                   <StatusBadge tone="neutral">Gateway</StatusBadge>
                   <div>
                     <strong>{row.providerStatus}</strong>
@@ -96,7 +97,7 @@ export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAtt
                       Amount: <MoneyText amount={row.amount} currency={row.currency} fallback="unknown" />
                     </p>
                   </div>
-                </div>
+                </AdminStageItem>
               </div>
             </td>
           </tr>
