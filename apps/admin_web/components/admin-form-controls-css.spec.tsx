@@ -444,6 +444,21 @@ describe('Admin form control CSS', () => {
     expect(globalsCss).not.toContain('/* Page-scoped controls keep the same Vuexy atom baseline. */');
   });
 
+  it('anchors shared form grid layout and field widths on the Vuexy form grid atom', () => {
+    const layoutIndex = globalsCss.indexOf('.admin-form-grid,\n.form-grid {');
+    const layoutBlock = cssRuleBlockAt(layoutIndex);
+    const fieldWidthIndex = globalsCss.indexOf(
+      '.admin-form-grid input,\n.admin-form-grid select,\n.admin-form-grid textarea,',
+    );
+    const fieldWidthBlock = cssRuleBlockAt(fieldWidthIndex);
+
+    expect(layoutIndex).toBeGreaterThan(-1);
+    expect(layoutBlock).toContain('display: grid');
+    expect(layoutBlock).toContain('grid-template-columns: repeat(auto-fit, minmax(190px, 1fr))');
+    expect(fieldWidthIndex).toBeGreaterThan(-1);
+    expect(fieldWidthBlock).toContain('width: 100%');
+  });
+
   it.each([
     [
       'native root fields',

@@ -2677,6 +2677,7 @@ a.action-button-card:hover {
   width: 100%;
 }
 
+.admin-form-grid,
 .form-grid {
   align-items: end;
   display: grid;
@@ -2734,6 +2735,7 @@ a.action-button-card:hover {
   margin: 0;
 }
 
+.admin-form-grid label,
 .filter-grid label,
 .form-grid label,
 .ops-filter-grid label {
@@ -2745,6 +2747,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.admin-form-grid > *,
 .form-grid > *,
 .ops-filter-grid > *,
 .filter-grid > * {
@@ -14265,6 +14268,9 @@ textarea {
   resize: vertical;
 }
 
+.admin-form-grid input,
+.admin-form-grid select,
+.admin-form-grid textarea,
 .form-grid input,
 .form-grid select,
 .form-grid textarea,
