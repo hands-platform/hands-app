@@ -240,7 +240,11 @@ describe('finance-overview-model', () => {
       'Monthly close readiness',
     ]);
     expect(metrics.find((metric) => metric.label === 'Revenue separation')?.value).toBe('22%');
-    expect(metrics.find((metric) => metric.label === 'Wallet exposure')?.value).toContain('400.000');
+    expect(metrics.find((metric) => metric.label === 'Wallet exposure')).toMatchObject({
+      amount: 400_000,
+      currency: 'VND',
+    });
+    expect(metrics.find((metric) => metric.label === 'Wallet exposure')?.value).toBeUndefined();
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.value).toBe('10');
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.detail).toContain('coupon');
     expect(metrics.find((metric) => metric.label === 'Monthly close readiness')?.value).toBe('DRAFT');

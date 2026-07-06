@@ -110,11 +110,13 @@ export type FinanceOverviewActionItem = {
 };
 
 export type FinanceOverviewControlMetric = {
+  readonly amount?: number;
+  readonly currency?: string;
   readonly detail: string;
   readonly href: string;
   readonly label: string;
   readonly tone: FinanceOverviewTone;
-  readonly value: string;
+  readonly value?: string;
 };
 
 export type FinanceOverviewSummaryInput = {
@@ -285,11 +287,12 @@ export function buildFinanceOverviewControlMetrics(
       value: revenueShare,
     },
     {
+      amount: walletExposure,
+      currency: input.walletSummary.currency,
       detail: `${input.walletSummary.customerWalletAccountCount} customer wallet / ${input.walletSummary.partnerPositiveWalletAccountCount} positive Partner wallet / ${input.walletSummary.partnerNegativeWalletAccountCount} negative Partner wallet account(s).`,
       href: '/wallet-adjustments',
       label: 'Wallet exposure',
       tone: walletExposure > 0 ? 'warning' : 'success',
-      value: formatMoney(walletExposure, input.walletSummary.currency),
     },
     {
       detail: `${input.clearingSummary.openCount} payment clearing / ${input.bankSummary.unmatchedCount} bank unmatched / ${input.refundSummary?.openCount ?? 0} refund / ${input.settlementSummary.openTaxCount} tax / ${input.couponSummary.couponReviewFlagCount} coupon / ${input.paymentSummary?.needsAction ?? 0} payment action item(s), plus closeout deltas when present.`,

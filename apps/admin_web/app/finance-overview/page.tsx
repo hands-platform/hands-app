@@ -230,8 +230,16 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
       href={metric.href}
       icon={<Icon size={18} aria-hidden="true" />}
       label={metric.label}
-      value={metric.value}
+      value={<FinanceControlMetricValue metric={metric} />}
     />
+  );
+}
+
+function FinanceControlMetricValue({ metric }: { readonly metric: FinanceOverviewControlMetric }) {
+  return metric.amount === undefined ? (
+    metric.value ?? 'Not set'
+  ) : (
+    <MoneyText amount={metric.amount} currency={metric.currency ?? 'VND'} />
   );
 }
 
