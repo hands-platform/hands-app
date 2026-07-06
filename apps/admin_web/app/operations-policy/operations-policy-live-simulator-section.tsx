@@ -10,7 +10,7 @@ import {
   AdminTaskCard,
   AdminTaskGrid,
 } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
 type LivePolicySimulator = {
@@ -75,12 +75,9 @@ export function OperationsPolicyLiveSimulatorSection({
                 <p>{step.detail}</p>
                 <div className="participant-list">
                   {step.tags.map((tag) => (
-                    <StatusBadge
-                      tone={statusBadgeToneFromPillClass(tag.tone)}
-                      key={`${step.title}-${tag.label}`}
-                    >
+                    <StatusBadgeFromPillClass pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
                       {tag.label}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                   ))}
                 </div>
               </div>
@@ -108,9 +105,9 @@ export function OperationsPolicyLiveSimulatorSection({
                     {partner.distanceLabel} / location {partner.locationAgeLabel}
                   </p>
                 </div>
-                <StatusBadge tone={statusBadgeToneFromPillClass(partner.pillClass)}>
+                <StatusBadgeFromPillClass pillClass={partner.pillClass}>
                   {partner.status}
-                </StatusBadge>
+                </StatusBadgeFromPillClass>
               </div>
             ))}
             {simulation.partnerRows.length === 0 ? (
@@ -130,7 +127,7 @@ export function OperationsPolicyLiveSimulatorSection({
             detail={check.detail}
             key={check.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(check.pillClass)}>{check.status}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={check.pillClass}>{check.status}</StatusBadgeFromPillClass>
             }
             title={check.title}
           />

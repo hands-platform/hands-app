@@ -1,7 +1,7 @@
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
 
 type OperationsPolicySensitivityPreviewSectionProps = {
@@ -57,9 +57,9 @@ export function OperationsPolicySensitivityPreviewSection({
             {sensitivity.radiusRows.map((row) => (
               <tr key={row.radiusLabel}>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>
+                  <StatusBadgeFromPillClass pillClass={row.pillClass}>
                     {row.radiusLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>{row.eligible}</td>
                 <td>{row.fresh}</td>
@@ -84,9 +84,9 @@ export function OperationsPolicySensitivityPreviewSection({
             {sensitivity.freshnessRows.map((row) => (
               <tr key={row.freshnessLabel}>
                 <td>
-                  <StatusBadge tone={statusBadgeToneFromPillClass(row.pillClass)}>
+                  <StatusBadgeFromPillClass pillClass={row.pillClass}>
                     {row.freshnessLabel}
-                  </StatusBadge>
+                  </StatusBadgeFromPillClass>
                 </td>
                 <td>{row.eligible}</td>
                 <td>{row.staleExcluded}</td>
