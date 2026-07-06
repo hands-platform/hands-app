@@ -148,7 +148,10 @@ describe('admin shell navigation', () => {
 
   it('keeps topbar icon buttons inside the shared Vuexy icon button atom', () => {
     expect(workspaceHeaderSource).toContain("import { AdminIconButton } from './admin-icon-button';");
+    expect(workspaceHeaderSource).toContain("import { AdminIconLink } from './admin-icon-link';");
     expect(workspaceHeaderSource).toContain('<AdminIconButton');
+    expect(workspaceHeaderSource).toContain('<AdminIconLink');
+    expect(workspaceHeaderSource).not.toContain('<Link className="topbar-icon-chip" aria-label="Help"');
     expect(workspaceHeaderSource).not.toContain('<button className="topbar-icon-chip topbar-icon-button"');
     expect(workspaceHeaderSource).not.toContain('className="topbar-icon-chip topbar-icon-button" type="submit"');
   });

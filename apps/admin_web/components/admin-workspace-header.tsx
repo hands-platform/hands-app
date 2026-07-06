@@ -18,6 +18,7 @@ import { hrefMatchesPath } from '../lib/admin-nav-match';
 import { AdminEmptyState } from './admin-empty-state';
 import { AdminFormShell } from './admin-form-controls';
 import { AdminIconButton } from './admin-icon-button';
+import { AdminIconLink } from './admin-icon-link';
 import { AdminThemeToggle } from './admin-theme-toggle';
 import { AdminTopbarButton } from './admin-topbar-button';
 import { AdminTopbarSearchInput } from './admin-topbar-search-input';
@@ -149,9 +150,9 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
           ) : null}
         </div>
         <AdminThemeToggle />
-        <Link className="topbar-icon-chip" aria-label="Help" href="/operations-policy">
+        <AdminIconLink className="topbar-icon-chip" aria-label="Help" href="/operations-policy">
           <CircleHelp aria-hidden="true" size={18} />
-        </Link>
+        </AdminIconLink>
         <div className="topbar-menu">
           <AdminIconButton
             aria-expanded={notificationsOpen}
