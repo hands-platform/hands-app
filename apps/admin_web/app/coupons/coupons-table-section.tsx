@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Eye } from 'lucide-react';
 
 import {
@@ -165,9 +164,9 @@ function CouponManagementCard({
         <AdminTextLink href={usageHrefForPage(row.id, 1)}>
           View usage
         </AdminTextLink>
-        <Link className="coupon-delete-link" href={couponDeleteConfirmHref(row.id)}>
+        <AdminTextLink className="coupon-delete-link" href={couponDeleteConfirmHref(row.id)}>
           Delete
-        </Link>
+        </AdminTextLink>
       </div>
 
       <AdminDisclosure className="coupon-section-disclosure">

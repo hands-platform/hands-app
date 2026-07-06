@@ -51,6 +51,8 @@ describe('CouponsTableSection', () => {
     expect(sectionSource).toContain('AdminCardHeader');
     expect(sectionSource).toContain('AdminDisclosure');
     expect(sectionSource).toContain('AdminTextLink');
+    expect(sectionSource).not.toContain("import Link from 'next/link';");
+    expect(sectionSource).not.toContain('<Link className="coupon-delete-link"');
     expect(sectionSource).not.toContain('AdminDisclosureCard');
     expect(sectionSource).toContain('StatusBadgeFromPillClass');
     expect(sectionSource).toContain('StatusBadge');
