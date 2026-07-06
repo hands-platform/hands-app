@@ -77,7 +77,8 @@ describe('EarningsMoneyFlowSection', () => {
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('AdminTraceSummary');
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('StatusBadgeFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('<div className="service-trace-summary">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('className="text-link"');

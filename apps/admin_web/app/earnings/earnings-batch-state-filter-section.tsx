@@ -2,7 +2,7 @@ import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadgeLink, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeLinkFromPillClass } from '../../components/status-badge';
 
 export type EarningsBatchStateCard = {
   readonly amount: number;
@@ -34,14 +34,14 @@ export function EarningsBatchStateFilterSection({
     >
       <AdminFilterChipGroup ariaLabel="Earning batch state" className="admin-mt-12">
         {cards.map((card) => (
-          <StatusBadgeLink
+          <StatusBadgeLinkFromPillClass
             ariaCurrent={card.state === activeState ? 'page' : undefined}
             href={card.href}
             key={card.state}
-            tone={statusBadgeToneFromPillClass(activeBatchStateFilterClassName(card.state, activeState))}
+            pillClass={activeBatchStateFilterClassName(card.state, activeState)}
           >
             {card.label} / {card.count}
-          </StatusBadgeLink>
+          </StatusBadgeLinkFromPillClass>
         ))}
       </AdminFilterChipGroup>
       <AdminTraceSummary

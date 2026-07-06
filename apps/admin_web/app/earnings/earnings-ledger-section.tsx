@@ -8,9 +8,9 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import {
   AdminSignal,
   StatusBadge,
+  StatusBadgeFromPillClass,
   StatusBadgeLink,
   adminSignalToneFromClassName,
-  statusBadgeToneFromPillClass,
 } from '../../components/status-badge';
 
 export type EarningsLedgerRow = {
@@ -125,13 +125,13 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                 </AdminSignal>
                 {row.cancellationDecisionLabel ? (
                   <div className="participant-list admin-mt-6">
-                    <StatusBadge tone={statusBadgeToneFromPillClass(row.cancellationDecisionTone ?? 'pill-neutral')}>
+                    <StatusBadgeFromPillClass pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>
                       {row.cancellationDecisionLabel}
-                    </StatusBadge>
+                    </StatusBadgeFromPillClass>
                     {row.cancellationFeeLabel ? (
-                      <StatusBadge tone={statusBadgeToneFromPillClass(row.cancellationFeeTone ?? 'pill-neutral')}>
+                      <StatusBadgeFromPillClass pillClass={row.cancellationFeeTone ?? 'pill-neutral'}>
                         {row.cancellationFeeLabel}
-                      </StatusBadge>
+                      </StatusBadgeFromPillClass>
                     ) : null}
                   </div>
                 ) : null}

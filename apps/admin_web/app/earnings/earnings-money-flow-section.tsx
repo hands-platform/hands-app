@@ -3,7 +3,7 @@ import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { StatusBadge, statusBadgeToneFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 
 export type EarningsMoneyFlowCard = {
   readonly amount: number;
@@ -55,9 +55,9 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
             detail={check.detail}
             key={check.title}
             leading={
-              <StatusBadge tone={statusBadgeToneFromPillClass(check.pillClass)}>
+              <StatusBadgeFromPillClass pillClass={check.pillClass}>
                 {check.status}
-              </StatusBadge>
+              </StatusBadgeFromPillClass>
             }
             title={check.title}
           />

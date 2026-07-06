@@ -14,8 +14,8 @@ describe('EarningsBatchStateFilterSection', () => {
     const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('StatusBadgeLink');
-    expect(source).toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('StatusBadgeLinkFromPillClass');
+    expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('filter-pill');
