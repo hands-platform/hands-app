@@ -1,3 +1,4 @@
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import type { ServicePricingHealthItem } from '../../lib/service-pricing-health';
 
@@ -18,14 +19,14 @@ export function ServicePricingHealthSection({ items }: ServicePricingHealthSecti
       title="Pricing health"
     >
       {items.map((item) => (
-        <div className="setup-stage-item" key={item.label}>
+        <AdminStageItem key={item.label}>
           <span>{item.ok ? 'OK' : 'CHECK'}</span>
           <div>
             <strong>{item.label}</strong>
             <p className="muted">{item.detail}</p>
           </div>
           <small>{item.value}</small>
-        </div>
+        </AdminStageItem>
       ))}
     </AdminSection>
   );

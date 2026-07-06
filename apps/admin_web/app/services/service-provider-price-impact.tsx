@@ -3,6 +3,7 @@ import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provi
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminCard } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -45,7 +46,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
       {impact.rows.length ? (
         <div className="setup-stage-list">
           {impact.rows.slice(0, 6).map((row) => (
-            <div className="setup-stage-item" key={row.id}>
+            <AdminStageItem key={row.id}>
               <span>{row.state === 'bookable' ? 'SHOW' : 'HIDE'}</span>
               <div>
                 <strong>{row.providerName}</strong>
@@ -69,7 +70,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
                 ) : null}
               </div>
               <small>{row.providerStatus}</small>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       ) : (

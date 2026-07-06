@@ -1,3 +1,4 @@
+import { AdminStageItem } from '../../components/admin-stage-item';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { ServiceBookingReadinessItem } from '../../lib/service-booking-readiness-queue';
@@ -34,7 +35,7 @@ export function ServiceBookingReadinessQueueSection({
       {items.length ? (
         <div className="setup-stage-list">
           {items.slice(0, VISIBLE_READINESS_ITEM_LIMIT).map((item) => (
-            <div className="setup-stage-item" key={`${item.serviceId}-${item.title}-${item.detail}`}>
+            <AdminStageItem key={`${item.serviceId}-${item.title}-${item.detail}`}>
               <span>{item.status}</span>
               <div>
                 <strong>{item.title}</strong>
@@ -42,7 +43,7 @@ export function ServiceBookingReadinessQueueSection({
                 <p className="muted">{item.action}</p>
               </div>
               <small>{item.serviceId.slice(0, 8)}</small>
-            </div>
+            </AdminStageItem>
           ))}
         </div>
       ) : (

@@ -6,8 +6,10 @@ describe('ServiceProviderPriceImpact source', () => {
 
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminStageItem');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminEmptyState');
+    expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<div className="ops-section-header">');
     expect(source).not.toContain('<div className="service-impact-card">');
     expect(source).not.toContain("<span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>");
