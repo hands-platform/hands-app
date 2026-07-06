@@ -23,6 +23,15 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain('<aside className="vietnam-map-cluster-panel"');
   });
 
+  it('uses the shared Vuexy text link atom for cluster detail navigation', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain('<a className="vietnam-map-cluster-latest-link"');
+    expect(source).not.toContain('<a className="vietnam-map-cluster-focus-link"');
+    expect(source).not.toContain('<a className="vietnam-map-cluster-event-link"');
+  });
+
   it('keeps clickable map dots inside the shared Vuexy icon button atom', () => {
     const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
 

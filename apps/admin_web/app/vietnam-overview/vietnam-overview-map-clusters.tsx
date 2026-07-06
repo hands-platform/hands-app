@@ -14,6 +14,7 @@ import { AdminIconButton } from '../../components/admin-icon-button';
 import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDrawerSurface } from '../../components/admin-surface';
+import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
 import {
@@ -265,9 +266,9 @@ function ClusterDetailPanel({
           <span>{latestSignalSource.label}</span>
         </div>
         {latestTargetHref ? (
-          <a className="vietnam-map-cluster-latest-link" href={latestTargetHref}>
+          <AdminTextLink className="vietnam-map-cluster-latest-link" href={latestTargetHref}>
             Open latest
-          </a>
+          </AdminTextLink>
         ) : null}
       </div>
 
@@ -321,9 +322,9 @@ function ClusterDetailPanel({
       />
 
       {focusHref ? (
-        <a className="vietnam-map-cluster-focus-link" href={focusHref}>
+        <AdminTextLink className="vietnam-map-cluster-focus-link" href={focusHref}>
           Focus this region
-        </a>
+        </AdminTextLink>
       ) : null}
 
       <div className="vietnam-map-cluster-events-header">
@@ -368,9 +369,9 @@ function ClusterEventRow({ point }: { readonly point: VietnamOverviewMapPoint })
         <p className="vietnam-map-cluster-event-source-detail">{sourceCopy.detail}</p>
       </div>
       {targetHref ? (
-        <a className="vietnam-map-cluster-event-link" href={targetHref}>
+        <AdminTextLink className="vietnam-map-cluster-event-link" href={targetHref}>
           Open
-        </a>
+        </AdminTextLink>
       ) : null}
     </div>
   );
