@@ -1,10 +1,9 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { DateTimeText } from '../../../components/date-time-text';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -35,8 +34,8 @@ export function PartnerDetailDailyActivityDigestSection({
   days,
 }: PartnerDetailDailyActivityDigestSectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Date-grouped factual partner operations records for same-shift review before reading the full event timeline."
       id="partner-daily-digest"
       resultLabel={`${days.length} day(s)`}
@@ -86,7 +85,7 @@ export function PartnerDetailDailyActivityDigestSection({
         </AdminTableScroll>
         <PartnerDetailVuexyTableFooter rowCount={days.length} />
       </div>
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

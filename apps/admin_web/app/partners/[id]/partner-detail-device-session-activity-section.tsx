@@ -2,12 +2,11 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminDetailGrid, AdminTaskCard } from '../../../components/admin-surface';
 import { StatusBadge, statusBadgeToneFromPillClass } from '../../../components/status-badge';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -77,8 +76,8 @@ export function PartnerDetailDeviceSessionActivitySection({
   sharedDeviceRows,
 }: PartnerDetailDeviceSessionActivitySectionProps) {
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Review shared devices, session checks, blocked devices, and stale partner app activity."
       id="device-session-activity"
       resultLabel={followUpNeeded ? 'Follow-up needed' : 'No active follow-up'}
@@ -217,7 +216,7 @@ export function PartnerDetailDeviceSessionActivitySection({
           <PartnerDetailVuexyTableFooter rowCount={sharedDeviceRows.length} />
         </div>
       ) : null}
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 

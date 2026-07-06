@@ -4,6 +4,14 @@ import { PartnerDetailAppActivitySection } from './partner-detail-app-activity-s
 const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('PartnerDetailAppActivitySection', () => {
+  it('uses the partner detail Vuexy table panel atom for the app activity shell', () => {
+    const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
+
+    expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).not.toContain('AdminFilterPanel');
+    expect(source).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy trace summary atom for activity metrics', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-app-activity-section.tsx', 'utf8');
 

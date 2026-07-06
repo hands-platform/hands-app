@@ -7,6 +7,12 @@ const sectionSource = readFileSync(
 );
 
 describe('PartnerDetailDeviceSessionActivitySection', () => {
+  it('uses the partner detail Vuexy table panel atom for the device session shell', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses shared Vuexy badge atoms for device and session status pills', () => {
     expect(sectionSource).toContain('AdminDetailGrid');
     expect(sectionSource).toContain('StatusBadge');

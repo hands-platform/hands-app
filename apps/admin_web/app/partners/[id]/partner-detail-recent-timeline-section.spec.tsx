@@ -4,6 +4,12 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./partner-detail-recent-timeline-section.tsx', import.meta.url), 'utf8');
 
 describe('PartnerDetailRecentTimelineSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the recent timeline shell', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy badge atom for timeline event type', () => {
     expect(sectionSource).toContain('StatusBadge');
     expect(sectionSource).toContain('DateTimeText');

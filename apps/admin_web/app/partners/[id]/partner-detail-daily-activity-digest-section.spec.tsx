@@ -7,6 +7,12 @@ const sectionSource = readFileSync(
 );
 
 describe('PartnerDetailDailyActivityDigestSection', () => {
+  it('uses the partner detail Vuexy table panel atom for the daily digest shell', () => {
+    expect(sectionSource).toContain('PartnerDetailVuexyTablePanel');
+    expect(sectionSource).not.toContain('AdminFilterPanel');
+    expect(sectionSource).not.toContain('partnerDetailReviewCardClassName');
+  });
+
   it('uses the shared Vuexy date time atom for activity timestamps', () => {
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).not.toContain('readonly formatDate: (value: string) => string;');

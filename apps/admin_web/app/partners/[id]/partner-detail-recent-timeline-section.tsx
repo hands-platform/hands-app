@@ -2,14 +2,13 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   PartnerDetailVuexyTableFooter,
-  partnerDetailReviewCardClassName,
+  PartnerDetailVuexyTablePanel,
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
@@ -35,8 +34,8 @@ export function PartnerDetailRecentTimelineSection({
   const visibleRecords = records.slice(0, 8);
 
   return (
-    <AdminFilterPanel
-      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+    <PartnerDetailVuexyTablePanel
+      className="admin-mb-16"
       description="Latest factual partner events in the order operators need them: onboarding, app, location, booking, chat, finance, payout, document, tax, and staff records."
       footer={
         <AdminTextLink href="#app-activity">
@@ -79,7 +78,7 @@ export function PartnerDetailRecentTimelineSection({
         </AdminTableScroll>
       </div>
       <PartnerDetailVuexyTableFooter rowCount={visibleRecords.length} />
-    </AdminFilterPanel>
+    </PartnerDetailVuexyTablePanel>
   );
 }
 
