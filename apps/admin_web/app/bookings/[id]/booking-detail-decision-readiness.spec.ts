@@ -105,6 +105,12 @@ describe('bookingDetailDecisionReadiness', () => {
       evidence: 'Selected Partner',
       status: 'Final Partner saved',
     });
+    expect(result.decisionEvidenceGuardrails.find((row) => row.id === 'supporting-context')).toMatchObject({
+      evidence: '14 Jun 2026, 08:10',
+      evidenceDateTimePrefix: '2 message(s) / location ',
+      evidenceDateTimeSuffix: ' / 1 alert row(s) / 1 note(s)',
+      evidenceDateTimeValue: '2026-06-14T01:10:00.000Z',
+    });
   });
 
   it('keeps cash fee debt, missing context, and closeout blockers visible', () => {

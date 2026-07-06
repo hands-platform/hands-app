@@ -85,6 +85,7 @@ export function bookingDetailDecisionReadiness({
       messageCount,
       hasLatestLocation: Boolean(latestLocation),
       latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+      latestLocationAtValue: latestLocation?.recordedAt ?? null,
       notificationCount,
       operatorNoteCount,
       hasOpsTrail: (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0,

@@ -41,6 +41,9 @@ type DecisionGuardrailRow = {
   status: string;
   tone: string;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   nextStep: string;
   href: string;
 };
@@ -128,7 +131,9 @@ export function BookingEvidenceSections({
                 <p className="muted">{row.scope}</p>
               </div>
               <StatusBadge tone={statusBadgeToneFromPillClass(row.tone)}>{row.status}</StatusBadge>
-              <p>{row.evidence}</p>
+              <p>
+                <DecisionGuardrailEvidence row={row} />
+              </p>
               <p>{row.nextStep}</p>
               <AdminTextLink href={row.href}>
                 Open
@@ -318,6 +323,20 @@ function EvidenceRecordEvidence({ record }: { record: EvidencePacketRecord }) {
       {record.evidenceDateTimePrefix}
       <DateTimeText fallback={record.evidence} value={record.evidenceDateTimeValue} />
       {record.evidenceDateTimeSuffix}
+    </>
+  );
+}
+
+function DecisionGuardrailEvidence({ row }: { row: DecisionGuardrailRow }) {
+  if (!row.evidenceDateTimeValue) {
+    return row.evidence;
+  }
+
+  return (
+    <>
+      {row.evidenceDateTimePrefix}
+      <DateTimeText fallback={row.evidence} value={row.evidenceDateTimeValue} />
+      {row.evidenceDateTimeSuffix}
     </>
   );
 }

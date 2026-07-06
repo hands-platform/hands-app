@@ -7,6 +7,9 @@ export type BookingDecisionEvidenceGuardrailRow = {
   status: string;
   tone: GuardrailTone;
   evidence: string;
+  evidenceDateTimePrefix?: string;
+  evidenceDateTimeSuffix?: string;
+  evidenceDateTimeValue?: string | null;
   nextStep: string;
   href: string;
 };
@@ -25,6 +28,7 @@ export type BookingDecisionEvidenceGuardrailsInput = {
   messageCount: number;
   hasLatestLocation: boolean;
   latestLocationAtLabel?: string | null;
+  latestLocationAtValue?: string | null;
   notificationCount: number;
   operatorNoteCount: number;
   hasOpsTrail: boolean;
@@ -125,14 +129,26 @@ export function bookingDecisionEvidenceGuardrails(
         'Chat messages, Partner pin, alerts, and notes explain what happened without judging either side.',
       status: hasSupportingContext ? 'Context loaded' : 'Needs factual note',
       tone: hasSupportingContext ? 'pill-success' : 'pill-warn',
-      evidence: [
-        `${input.messageCount} message(s)`,
-        input.hasLatestLocation && input.latestLocationAtLabel
-          ? `location ${input.latestLocationAtLabel}`
-          : 'no Partner pin',
-        `${input.notificationCount} alert row(s)`,
-        `${input.operatorNoteCount} note(s)`,
-      ].join(' / '),
+      evidence: input.hasLatestLocation && input.latestLocationAtLabel && input.latestLocationAtValue
+        ? input.latestLocationAtLabel
+        : [
+            `${input.messageCount} message(s)`,
+            input.hasLatestLocation && input.latestLocationAtLabel
+              ? `location ${input.latestLocationAtLabel}`
+              : 'no Partner pin',
+            `${input.notificationCount} alert row(s)`,
+            `${input.operatorNoteCount} note(s)`,
+          ].join(' / '),
+      evidenceDateTimePrefix:
+        input.hasLatestLocation && input.latestLocationAtLabel && input.latestLocationAtValue
+          ? `${input.messageCount} message(s) / location `
+          : undefined,
+      evidenceDateTimeSuffix:
+        input.hasLatestLocation && input.latestLocationAtLabel && input.latestLocationAtValue
+          ? ` / ${input.notificationCount} alert row(s) / ${input.operatorNoteCount} note(s)`
+          : undefined,
+      evidenceDateTimeValue:
+        input.hasLatestLocation && input.latestLocationAtLabel ? input.latestLocationAtValue : null,
       nextStep: hasSupportingContext
         ? 'Review the factual context before outcome changes.'
         : 'Add a factual operator note before no-show, refund, or closure handling.',

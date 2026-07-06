@@ -21,6 +21,8 @@ describe('Booking evidence sections', () => {
     expect(source).toContain('value={record.evidenceDateTimeValue}');
     expect(source).toContain('EvidenceBundleRowEvidence');
     expect(source).toContain('value={row.evidenceDateTimeValue}');
+    expect(source).toContain('DecisionGuardrailEvidence');
+    expect(source).toContain('value={row.evidenceDateTimeValue}');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
@@ -82,6 +84,8 @@ describe('Booking evidence sections', () => {
       decisionEvidenceGuardrails: [
         {
           evidence: 'Payment capture and wallet state are visible.',
+          evidenceDateTimePrefix: 'Latest supporting context: ',
+          evidenceDateTimeValue: '2026-06-14T02:20:00.000Z',
           href: '#guardrail',
           id: 'payment',
           nextStep: 'Check settlement before closeout.',
@@ -176,7 +180,9 @@ describe('Booking evidence sections', () => {
     expect(classNamesIn(section)).toContain('date-time-text');
     expect(markup).toContain('dateTime="2026-06-14T02:00:00.000Z"');
     expect(markup).toContain('dateTime="2026-06-14T02:10:00.000Z"');
+    expect(markup).toContain('dateTime="2026-06-14T02:20:00.000Z"');
     expect(markup).toContain('Latest message:');
     expect(markup).toContain('Latest bundle event:');
+    expect(markup).toContain('Latest supporting context:');
   });
 });

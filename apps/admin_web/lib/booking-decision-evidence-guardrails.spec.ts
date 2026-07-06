@@ -14,6 +14,7 @@ const baseInput = {
   messageCount: 0,
   hasLatestLocation: false,
   latestLocationAtLabel: null,
+  latestLocationAtValue: null,
   notificationCount: 0,
   operatorNoteCount: 0,
   hasOpsTrail: false,
@@ -113,6 +114,26 @@ describe('bookingDecisionEvidenceGuardrails', () => {
       evidence: '80.000 VND HANDS fee / 20.000 VND withholding / -80.000 VND Partner wallet',
       nextStep: 'Record verified company deposit or approved admin offset before clearing the block.',
       href: '/cash-settlements',
+    });
+  });
+
+  it('keeps supporting location timestamps available for shared date rendering', () => {
+    const rows = bookingDecisionEvidenceGuardrails({
+      ...baseInput,
+      messageCount: 2,
+      hasLatestLocation: true,
+      latestLocationAtLabel: '07 Jun 2026 10:31',
+      latestLocationAtValue: '2026-06-07T03:31:00.000Z',
+      notificationCount: 1,
+      operatorNoteCount: 1,
+    });
+
+    expect(rows[3]).toMatchObject({
+      id: 'supporting-context',
+      evidence: '07 Jun 2026 10:31',
+      evidenceDateTimePrefix: '2 message(s) / location ',
+      evidenceDateTimeSuffix: ' / 1 alert row(s) / 1 note(s)',
+      evidenceDateTimeValue: '2026-06-07T03:31:00.000Z',
     });
   });
 
