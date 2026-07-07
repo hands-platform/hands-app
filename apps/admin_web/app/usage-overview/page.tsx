@@ -35,7 +35,7 @@ import {
 } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminCardGrid, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminKpiCard, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -706,10 +706,11 @@ function UsageCommandCard({
   readonly value: string;
 }) {
   return (
-    <AdminOverviewCommandCard
-      className={`is-${tone}`}
-      detail={detail}
-      icon={<Icon size={18} aria-hidden="true" />}
+    <AdminKpiCard
+      className={`usage-overview-kpi-card is-${tone}`}
+      helper={detail}
+      icon={Icon}
+      iconSize={18}
       label={label}
       value={value}
     />

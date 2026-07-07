@@ -53,7 +53,7 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('<article class="card admin-card usage-overview-action-item');
     expect(pageSource).toContain('baseClassName="usage-overview-action-item"');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-action-item');
-    expect(markup).toContain('card admin-card usage-overview-command-card');
+    expect(markup).toContain('card admin-kpi-card usage-overview-kpi-card');
     expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(markup).toContain('card admin-section usage-overview-platform-card');
     expect(markup).toContain('card admin-section usage-overview-discovery-card');
@@ -101,5 +101,18 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<span className="pill pill-info">Generated {generatedAt}</span>');
     expect(pageSource).not.toContain('empty-state usage-overview-empty-state');
     expect(pageSource).not.toContain('<div className="empty-state');
+  });
+
+  it('renders usage summary and segment KPIs through the shared AdminKpiCard surface', async () => {
+    const page = await UsageOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(pageSource).toContain('AdminKpiCard');
+    expect(pageSource).toContain('<AdminKpiCard');
+    expect(markup).toContain('card admin-kpi-card usage-overview-kpi-card');
+    expect(markup).not.toContain('aria-label="Usage command summary"><div class="card admin-card usage-overview-command-card');
+    expect(markup).not.toContain('aria-label="Customer usage segments"><div class="card admin-card usage-overview-command-card');
   });
 });
