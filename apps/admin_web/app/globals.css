@@ -2474,21 +2474,21 @@ a {
   min-width: 0;
 }
 
-.metric-card p {
+.metric-card-content > p {
   color: var(--admin-muted);
   font-size: 0.8125rem;
   font-weight: 500;
   margin: 0;
 }
 
-.metric-card h2 {
+.metric-card-content > h2 {
   font-size: 1.5rem;
   font-weight: 500;
   line-height: 1.2;
   margin: 5px 0 4px;
 }
 
-.metric-card small {
+.metric-card-content > small {
   display: block;
   line-height: 1.35;
 }
