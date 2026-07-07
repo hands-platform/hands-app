@@ -15209,13 +15209,13 @@ textarea:focus-visible {
   padding: 8px 10px;
 }
 
-.admin-mini-metric span {
+.admin-mini-metric > span {
   color: var(--admin-muted);
   font-size: 11px;
   line-height: 15px;
 }
 
-.admin-mini-metric strong {
+.admin-mini-metric > strong {
   color: var(--admin-text);
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;

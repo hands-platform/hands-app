@@ -156,8 +156,8 @@ describe('AdminOverviewCommandCard', () => {
   it('keeps shared mini metrics on the Vuexy compact surface token contract', () => {
     const globals = readFileSync('app/globals.css', 'utf8');
     const metricBlock = cssRuleBlock(globals, '.admin-mini-metric {');
-    const metricLabelBlock = cssRuleBlock(globals, '.admin-mini-metric span {');
-    const metricValueBlock = cssRuleBlock(globals, '.admin-mini-metric strong {');
+    const metricLabelBlock = cssRuleBlock(globals, '.admin-mini-metric > span {');
+    const metricValueBlock = cssRuleBlock(globals, '.admin-mini-metric > strong {');
 
     expect(metricBlock).toContain('background: rgb(var(--admin-surface-channel) / 0.7);');
     expect(metricBlock).toContain('border: 1px solid var(--admin-border);');
@@ -168,6 +168,8 @@ describe('AdminOverviewCommandCard', () => {
     expect(metricLabelBlock).toContain('font-size: 11px;');
     expect(metricValueBlock).toContain('font-feature-settings: "tnum" 1;');
     expect(metricValueBlock).toContain('font-variant-numeric: tabular-nums;');
+    expect(cssRuleBlock(globals, '.admin-mini-metric span {')).toBe('');
+    expect(cssRuleBlock(globals, '.admin-mini-metric strong {')).toBe('');
   });
 
   it('renders shared summary card grids with Vuexy card surfaces', () => {
