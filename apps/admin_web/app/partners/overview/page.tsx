@@ -35,7 +35,7 @@ import {
 } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminCardHeader, AdminRowLink, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminCardHeader, AdminRowLink, AdminSection } from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -899,13 +899,13 @@ function ActionListCard({ list }: { readonly list: AdminPartnerOverviewActionLis
         description={`${formatNumber(list.totalCount)} Partners`}
         title={list.title}
       />
-      <div className="partner-overview-action-rows">
+      <AdminCardGrid ariaLabel={`${list.title} action rows`} className="partner-overview-action-rows">
         {list.rows.length > 0 ? (
           list.rows.map((row) => <ActionRow key={`${list.key}-${row.partnerId}`} row={row} />)
         ) : (
           <AdminEmptyState framed message="No Partners need this action right now." title={null} />
         )}
-      </div>
+      </AdminCardGrid>
     </AdminCard>
   );
 }
