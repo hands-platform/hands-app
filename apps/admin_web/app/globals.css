@@ -4203,7 +4203,7 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
-.booking-post-match-decision-step span {
+.booking-post-match-decision-step > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
@@ -4211,13 +4211,13 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.booking-post-match-decision-step strong {
+.booking-post-match-decision-step > strong {
   color: var(--admin-text);
   font-size: 17px;
   line-height: 24px;
 }
 
-.booking-post-match-decision-step p {
+.booking-post-match-decision-step > p {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;

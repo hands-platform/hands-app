@@ -15,6 +15,17 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(source).not.toContain('<span className={`pill ${metric.tone}`}>{metric.label}</span>');
   });
 
+  it('scopes decision step typography to direct step content', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-post-match-decision-step > span');
+    expect(css).toContain('.booking-post-match-decision-step > strong');
+    expect(css).toContain('.booking-post-match-decision-step > p');
+    expect(css).not.toContain('.booking-post-match-decision-step span');
+    expect(css).not.toContain('.booking-post-match-decision-step strong');
+    expect(css).not.toContain('.booking-post-match-decision-step p');
+  });
+
   it('renders counts and admin handling guidance for post-match cancellations', () => {
     const markup = renderToStaticMarkup(
       <BookingPostMatchCancellationsSection
