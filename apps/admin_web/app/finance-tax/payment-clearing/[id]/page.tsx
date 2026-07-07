@@ -51,7 +51,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
     return match.status === 'REVERSED' ? total : total + Math.abs(match.amount);
   }, 0);
   const remainingAmount = Math.max(0, Math.abs(entry.amount) - matchedAmount);
-  const settlementTraceLinks = buildFinanceSettlementTraceLinks(entry);
+  const settlementRecordLinks = buildFinanceSettlementTraceLinks(entry);
   const settlementPaymentFee = paymentFeePolicyInfo(entry.settlementSnapshot, entry.currency);
 
   return (
@@ -61,12 +61,12 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           Back to clearing
         </AdminFormControlLink>
       }
-      description="Evidence for one booking payment clearing row. Open this only when finance needs source, settlement, or bank matching detail."
+      description="Evidence for one booking payment clearing row. Open this only when finance needs payment, settlement, or bank matching detail."
       metrics={[
         { helper: 'Clearing state.', label: 'Status', value: entry.status },
         { helper: 'Clearing row amount.', label: 'Amount', value: <MoneyText amount={entry.amount} currency={entry.currency} /> },
         { helper: 'Bank reconciliation evidence linked to this row.', label: 'Matches', value: matches.length },
-        { helper: 'Clearing source type.', label: 'Type', value: entry.type },
+        { helper: 'Clearing record type.', label: 'Type', value: entry.type },
       ]}
       title="Payment Clearing Detail"
     >
@@ -90,7 +90,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <FinanceDetailInfoItem label="Payment" value={entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : '-'} />
-          <FinanceDetailInfoItem label="Source key" value={entry.sourceKey} />
+          <FinanceDetailInfoItem label="Record key" value={entry.sourceKey} />
           <FinanceDetailInfoItem
             label="Settlement payment fee"
             value={
@@ -132,11 +132,11 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             }
           />
           <FinanceDetailInfoItem
-            label="Settlement trace"
+            label="Settlement links"
             value={
-              settlementTraceLinks.length > 0 ? (
+              settlementRecordLinks.length > 0 ? (
                 <AdminTableSubstack>
-                  {settlementTraceLinks.map((link) => (
+                  {settlementRecordLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
@@ -157,7 +157,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Quick links from this clearing row to the payment source, settlement snapshot, journal, and bank match evidence."
+        description="Quick links from this clearing row to the payment record, settlement snapshot, journal, and bank match evidence."
         resultLabel={remainingAmount > 0 ? 'Needs match' : 'Fully matched'}
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Clearing evidence hub"
@@ -167,7 +167,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           steps={[
             {
               detail: `Booking ${shortId(entry.bookingId)}`,
-              label: 'Payment source',
+              label: 'Payment record',
               value: entry.payment ? `${entry.payment.method} · ${entry.payment.status}` : entry.type,
             },
             {
@@ -178,7 +178,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             {
               detail: settlementPaymentFee.policyVersionId,
               label: 'Settlement evidence',
-              value: paymentClearingSettlementLabel(entry, settlementTraceLinks.length),
+              value: paymentClearingSettlementLabel(entry, settlementRecordLinks.length),
             },
             {
               detail: paymentClearingNextAction(entry.status, remainingAmount, latestActiveMatch),
@@ -189,7 +189,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
         />
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
-            label="Source payment"
+            label="Payment record"
             value={
               <AdminTableSubstack>
                 {entry.paymentId ? (
@@ -208,9 +208,9 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem
             label="Linked settlement"
             value={
-              settlementTraceLinks.length > 0 ? (
+              settlementRecordLinks.length > 0 ? (
                 <AdminTableSubstack>
-                  {settlementTraceLinks.map((link) => (
+                  {settlementRecordLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
@@ -320,17 +320,17 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
   );
 }
 
-function paymentClearingSettlementLabel(entry: AdminBookingPaymentClearingEntryDetail, settlementTraceCount: number) {
+function paymentClearingSettlementLabel(entry: AdminBookingPaymentClearingEntryDetail, settlementRecordLinkCount: number) {
   if (entry.settlementSnapshot) {
     return `Settlement ${shortId(entry.settlementSnapshot.id)}`;
   }
   if (entry.settlementReversalEntry) {
     return `Reversal ${shortId(entry.settlementReversalEntry.id)}`;
   }
-  if (settlementTraceCount > 0) {
-    return `${settlementTraceCount} linked trace(s)`;
+  if (settlementRecordLinkCount > 0) {
+    return `${settlementRecordLinkCount} linked record(s)`;
   }
-  return 'No settlement trace';
+  return 'No settlement link';
 }
 
 function paymentClearingBankMatchLabel(

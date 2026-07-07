@@ -349,7 +349,10 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Original tax PAID');
     expect(markup).toContain('Reversal tax REVERSED');
     expect(markup).toContain('Monthly closing closing-1');
-    expect(markup).toContain('Reversal source seed-finance-smoke-reversal');
+    expect(markup).toContain('Reversal record seed-finance-smoke-reversal');
+    expect(markup).not.toContain('Reversal source seed-finance-smoke-reversal');
+    expect(markup).toContain('Record key');
+    expect(markup).not.toContain('Source key');
     expect(markup).toContain(
       'Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot.',
     );
@@ -454,15 +457,21 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Clearing overview');
     expect(markup).toContain('Clearing evidence hub');
     expect(markup).toContain('Payment clearing operating path');
-    expect(markup).toContain('Payment source');
+    expect(markup).toContain('Payment record');
+    expect(markup).not.toContain('Payment source');
     expect(markup).toContain('Clearing row');
     expect(markup).toContain('Settlement evidence');
     expect(markup).toContain('Bank closeout');
     expect(markup).toContain('Ready for closeout');
-    expect(markup).toContain('Source payment');
+    expect(markup).toContain('Payment record');
+    expect(markup).not.toContain('Source payment');
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Bank match status');
-    expect(markup).toContain('Source key');
+    expect(markup).toContain('Record key');
+    expect(markup).not.toContain('Source key');
+    expect(markup).not.toContain('Settlement trace');
+    expect(markup).not.toContain('No settlement trace');
+    expect(markup).not.toContain('linked trace(s)');
     expect(markup).toContain('payment:payment-1:capture');
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('10.000 VND');
@@ -634,12 +643,14 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Journal batch overview');
     expect(markup).toContain('Journal evidence hub');
     expect(markup).toContain('General ledger operating path');
-    expect(markup).toContain('Finance source');
+    expect(markup).toContain('Finance record');
+    expect(markup).not.toContain('Finance source');
     expect(markup).toContain('Journal batch');
     expect(markup).toContain('Double-entry');
     expect(markup).toContain('Monthly close');
     expect(markup).toContain('Resolve formula delta');
-    expect(markup).toContain('Source record');
+    expect(markup).toContain('Finance record');
+    expect(markup).not.toContain('Source record');
     expect(markup).toContain('Linked settlement');
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('10.000 VND');
@@ -652,7 +663,11 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Monthly close blocker');
     expect(markup).toContain('Formula delta');
     expect(markup).toContain('42.000 VND');
-    expect(markup).toContain('Closeout readiness');
+    expect(markup).toContain('Monthly close status');
+    expect(markup).not.toContain('Closeout readiness');
+    expect(markup).not.toContain('Settlement trace');
+    expect(markup).not.toContain('linked trace(s)');
+    expect(markup).not.toContain('Source key');
     expect(markup).toContain('Resolve formula delta before monthly close');
     expect(markup).toContain('Debit total');
     expect(markup).toContain('Credit total');

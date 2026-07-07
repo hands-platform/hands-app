@@ -39,7 +39,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   if (!batch) {
     notFound();
   }
-  const settlementTraceLinks = buildFinanceSettlementTraceLinks(batch);
+  const settlementRecordLinks = buildFinanceSettlementTraceLinks(batch);
   const balanceDelta = Math.abs(batch.totalDebit - batch.totalCredit);
   const formulaDelta = journalFormulaDelta(batch);
   const bankMatches = batch.entries.flatMap((entry) => entry.bankReconciliationMatches ?? []);
@@ -52,7 +52,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           Back to ledger
         </AdminFormControlLink>
       }
-      description="Entry-level accounting evidence for a single finance source record. Lists stay light; this page loads journal entries only when opened."
+      description="Entry-level accounting evidence for a single finance record. Lists stay light; this page loads journal entries only when opened."
       metrics={[
         { helper: 'Journal batch status.', label: 'Status', value: batch.status },
         { helper: 'Monthly tax/accounting period.', label: 'Period', value: batch.monthlyPeriod ?? '-' },
@@ -72,7 +72,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         title="Journal batch overview"
       >
         <FinanceDetailGrid>
-          <FinanceDetailInfoItem label="Source key" value={batch.sourceKey} />
+          <FinanceDetailInfoItem label="Record key" value={batch.sourceKey} />
           <FinanceDetailInfoItem label="Double-entry check" value={journalBalanceLabel(batch)} />
           <FinanceDetailInfoItem
             label="Monthly close blocker"
@@ -104,11 +104,11 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           <FinanceDetailInfoItem label="Payment" value={batch.payment ? `${batch.payment.method} · ${batch.payment.status}` : '-'} />
           <FinanceDetailInfoItem label="Entries" value={`${batch.entries.length} journal rows`} />
           <FinanceDetailInfoItem
-            label="Settlement trace"
+            label="Settlement links"
             value={
-              settlementTraceLinks.length > 0 ? (
+              settlementRecordLinks.length > 0 ? (
                 <AdminTableSubstack>
-                  {settlementTraceLinks.map((link) => (
+                  {settlementRecordLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
@@ -123,7 +123,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Quick route from this journal batch back to the source record, settlement snapshot, clearing row, and bank evidence."
+        description="Quick route from this journal batch back to the finance record, settlement snapshot, clearing row, and bank evidence."
         resultLabel={balanceDelta === 0 ? 'Balanced' : 'Unbalanced'}
         resultTone={balanceDelta === 0 ? 'success' : 'danger'}
         title="Journal evidence hub"
@@ -133,8 +133,8 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           steps={[
             {
               detail: batch.sourceType,
-              label: 'Finance source',
-              value: journalSourceLabel(batch, settlementTraceLinks.length),
+              label: 'Finance record',
+              value: journalSourceLabel(batch, settlementRecordLinks.length),
             },
             {
               detail: batch.monthlyPeriod ?? 'No monthly period',
@@ -155,7 +155,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
         />
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
-            label="Source record"
+            label="Finance record"
             value={
               <AdminTableSubstack>
                 <strong>{batch.sourceType}</strong>
@@ -166,9 +166,9 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           <FinanceDetailInfoItem
             label="Linked settlement"
             value={
-              settlementTraceLinks.length > 0 ? (
+              settlementRecordLinks.length > 0 ? (
                 <AdminTableSubstack>
-                  {settlementTraceLinks.map((link) => (
+                  {settlementRecordLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
@@ -209,7 +209,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           />
           <FinanceDetailInfoItem label="Bank reconciliation evidence" value={`${bankMatches.length} match(es)`} />
           <FinanceDetailInfoItem
-            label="Closeout readiness"
+            label="Monthly close status"
             value={formulaDelta === 0 ? 'Ready for monthly close checks' : 'Resolve formula delta before monthly close'}
           />
           <FinanceDetailInfoItem
@@ -221,14 +221,14 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
 
       <FinanceTablePanel
         grouped
-        description="Debits and credits posted by the source record. Bank match count is shown without loading unrelated bank transaction lists."
+        description="Debits and credits posted by the finance record. Bank match count is shown without loading unrelated bank transaction lists."
         resultLabel={`${batch.entries.length} entry row(s)`}
         resultTone="info"
         title="Journal entries"
       >
         <FinanceDataTable
             emptyMessage="No journal entries were recorded for this batch."
-            headers={['Side', 'Account', 'Amount', 'Memo', 'Source', 'Bank match']}
+            headers={['Side', 'Account', 'Amount', 'Memo', 'Record', 'Bank match']}
             rowCount={batch.entries.length}
           >
             {batch.entries.map((entry) => (
@@ -266,7 +266,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
   );
 }
 
-function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlementTraceCount: number) {
+function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlementRecordLinkCount: number) {
   if (batch.settlementSnapshot) {
     return `Settlement ${shortId(batch.settlementSnapshot.id)}`;
   }
@@ -276,8 +276,8 @@ function journalSourceLabel(batch: AdminAccountingJournalBatchDetail, settlement
   if (batch.payment) {
     return `Payment ${batch.payment.method} · ${batch.payment.status}`;
   }
-  if (settlementTraceCount > 0) {
-    return `${settlementTraceCount} linked trace(s)`;
+  if (settlementRecordLinkCount > 0) {
+    return `${settlementRecordLinkCount} linked record(s)`;
   }
   return shortId(batch.sourceId);
 }

@@ -44,7 +44,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
   }
 
   const evidenceState = buildBookingSettlementReversalEvidenceState(reversal);
-  const traceLinks = buildBookingSettlementReversalTraceLinks(reversal);
+  const evidenceLinks = buildBookingSettlementReversalTraceLinks(reversal);
   const originalSettlement = reversal.originalSettlementSnapshot ?? null;
   const reversalJournal = reversal.accountingJournalBatches?.[0] ?? null;
   const journalBalanceDelta = reversalJournal
@@ -242,7 +242,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
             }
           />
           <FinanceDetailInfoItem label="Reason" value={reversal.reason ?? 'Payment refund'} />
-          <FinanceDetailInfoItem label="Source key" value={reversal.sourceKey} />
+          <FinanceDetailInfoItem label="Record key" value={reversal.sourceKey} />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 
@@ -375,16 +375,16 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       <FinanceTablePanel
         grouped
         description="Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot."
-        resultLabel={`${traceLinks.length} link(s)`}
+        resultLabel={`${evidenceLinks.length} link(s)`}
         resultTone="info"
         title="Reversal evidence links"
       >
         <FinanceDataTable
             emptyMessage="No reversal evidence links are available."
-            headers={['Evidence', 'Record', 'Status', 'Source']}
-            rowCount={traceLinks.length}
+            headers={['Evidence', 'Record', 'Status', 'Record key']}
+            rowCount={evidenceLinks.length}
           >
-            {traceLinks.map((link) => (
+            {evidenceLinks.map((link) => (
               <tr key={link.label}>
                 <td>
                   <AdminTextLink href={link.href}>
@@ -436,7 +436,7 @@ function evidenceSourceForLink(label: string, reversal: AdminBookingSettlementRe
     return `Monthly closing ${reversal.originalMonthlyClosingId}`;
   }
   if (label === 'Reversal monthly close') {
-    return `Reversal source ${reversal.sourceKey}`;
+    return `Reversal record ${reversal.sourceKey}`;
   }
   if (label === 'Reversal journal') {
     return reversal.accountingJournalBatches?.[0]?.sourceKey ?? '-';
