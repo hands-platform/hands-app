@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { commandToneClass, commandToneLabel, type BookingCommandTone } from './booking-command-display';
@@ -35,13 +36,13 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
             value={lane.status}
             valueClassName="admin-summary-card-value"
           >
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${lane.title} metrics`} className="admin-mt-10">
               {lane.metrics.map((item) => (
                 <StatusBadge tone="neutral" key={item.label}>
                   {item.label}: {item.value}
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminDetailGrid>

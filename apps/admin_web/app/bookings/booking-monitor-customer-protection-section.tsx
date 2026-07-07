@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
@@ -54,10 +55,10 @@ export function BookingMonitorCustomerProtectionSection({
             title={lane.title}
             variant="ops-task"
           >
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel={`${lane.title} closeout status`}>
               <StatusBadge tone="neutral">{lane.status}</StatusBadge>
               <StatusBadge tone="neutral">{lane.bookings.length} booking(s)</StatusBadge>
-            </div>
+            </AdminFilterChipGroup>
             {lane.bookings.length > 0 ? (
               <div className="stack">
                 {lane.bookings.slice(0, 3).map((booking) => (

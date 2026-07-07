@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -107,13 +108,13 @@ export function BookingMonitorCommandRouteSections({
                 <div className="muted">{item.detail}</div>
               </td>
               <td>
-                <div className="participant-list">
+                <AdminFilterChipGroup ariaLabel={`${item.status} sample bookings`}>
                   {item.sampleBookingIds.map((bookingId) => (
                     <StatusBadge tone="neutral" key={bookingId}>
                       {shortId(bookingId)}
                     </StatusBadge>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
               </td>
             </tr>
           ))}
