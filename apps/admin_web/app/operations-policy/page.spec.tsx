@@ -16,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('OperationsPolicyPage', () => {
   beforeEach(() => {
@@ -68,5 +69,14 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).not.toContain('<div className="ops-task-note admin-m-0">');
     expect(pageSource).not.toContain('<h3>No matching policies loaded</h3>');
     expect(pageSource).not.toContain('<p className="muted">\n                Seed operational policies');
+  });
+
+  it('scopes operations policy header overflow rules to direct page cards', () => {
+    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > div,');
+    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > .pill,');
+    expect(globalCss).toContain('.operations-policy-page > .card > .ops-section-header > .signal,');
+    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > div,');
+    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > .pill,');
+    expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > .signal,');
   });
 });

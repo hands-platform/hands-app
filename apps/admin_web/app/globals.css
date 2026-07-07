@@ -11160,13 +11160,13 @@ a.action-button-card:hover {
   width: fit-content;
 }
 
-.operations-policy-page .ops-section-header > div,
+.operations-policy-page > .card > .ops-section-header > div,
 .operations-policy-page .ops-row > div {
   min-width: 0;
 }
 
-.operations-policy-page .ops-section-header > .pill,
-.operations-policy-page .ops-section-header > .signal,
+.operations-policy-page > .card > .ops-section-header > .pill,
+.operations-policy-page > .card > .ops-section-header > .signal,
 .operations-policy-page .ops-row > .pill,
 .operations-policy-page .ops-row > .signal,
 .operations-policy-page .ops-row > .text-link {
