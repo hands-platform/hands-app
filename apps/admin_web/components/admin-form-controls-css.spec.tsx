@@ -241,7 +241,7 @@ describe('Admin form control CSS', () => {
     const timeItemIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-list-item {');
     const timeItemBlock = cssRuleBlockAt(timeItemIndex);
     const selectedIndex = globalsCss.indexOf(
-      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected,',
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected {',
     );
     const selectedBlock = cssRuleBlockAt(selectedIndex);
 
