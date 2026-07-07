@@ -295,6 +295,15 @@ describe('FinanceOverviewPage', () => {
     expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-command-card');
   });
 
+  it('scopes finance KPI value typography to the direct shared metric-card slot', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain(
+      '.finance-overview-kpi-grid > .finance-overview-kpi-card > .metric-card > .metric-card-content > h2',
+    );
+    expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-kpi-card .metric-card h2 {');
+  });
+
   it('scopes principle card typography to direct command-card text children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
