@@ -44,7 +44,7 @@ describe('bookingOperatorPriorityBriefing', () => {
       'Next operator step',
       'Customer',
       'Partner state',
-      'Chat archive',
+      'Chat record',
       'Location record',
       'Payment',
       'Closeout',
@@ -52,6 +52,10 @@ describe('bookingOperatorPriorityBriefing', () => {
     expect(briefing.rows[2]).toMatchObject({
       value: 'Demo Customer',
       helper: '0865907184 / District 1, Ho Chi Minh City',
+    });
+    expect(briefing.rows.find((row) => row.label === 'Chat record')).toMatchObject({
+      helper: '2 retained message(s). Admin keeps chat history after service closeout.',
+      value: 'Ready',
     });
   });
 

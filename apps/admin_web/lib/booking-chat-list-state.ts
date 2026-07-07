@@ -6,7 +6,7 @@ export type BookingChatListStateInput = {
 
 export type BookingChatListState = {
   readonly detail: string;
-  readonly label: 'Chat ready' | 'Chat missing' | 'Chat archived' | 'Chat pending';
+  readonly label: 'Chat ready' | 'Chat missing' | 'Chat record ready' | 'Chat pending';
   readonly tone: 'pill-success' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 };
 
@@ -33,8 +33,8 @@ export function bookingChatListStateFromFacts(
 
   if (input.status === 'COMPLETED') {
     return {
-      label: 'Chat archived',
-      detail: 'Service is completed. Admin should retain any linked chat history.',
+      label: 'Chat record ready',
+      detail: 'Service is completed. Admin should keep any linked chat record available.',
       tone: 'pill-info',
     };
   }

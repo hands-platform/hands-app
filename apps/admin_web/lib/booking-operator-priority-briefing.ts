@@ -59,7 +59,7 @@ export function bookingOperatorPriorityBriefing(input: BookingOperatorPriorityBr
         helper: `${input.participantCount} participant record(s) / ${input.partnerHint}`,
       },
       {
-        label: 'Chat archive',
+        label: 'Chat record',
         value: input.hasChatRoom ? 'Ready' : 'Missing',
         helper: `${input.messageCount} retained message(s). Admin keeps chat history after service closeout.`,
       },

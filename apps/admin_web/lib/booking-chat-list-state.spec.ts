@@ -37,8 +37,8 @@ describe('bookingChatListStateFromFacts', () => {
 
   it('returns archived state for completed bookings without a chat room', () => {
     expect(bookingChatListStateFromFacts({ ...baseInput, status: 'COMPLETED' })).toEqual({
-      label: 'Chat archived',
-      detail: 'Service is completed. Admin should retain any linked chat history.',
+      label: 'Chat record ready',
+      detail: 'Service is completed. Admin should keep any linked chat record available.',
       tone: 'pill-info',
     });
   });

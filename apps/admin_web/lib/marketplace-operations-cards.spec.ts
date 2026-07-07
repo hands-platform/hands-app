@@ -18,10 +18,11 @@ describe('marketplace operations cards', () => {
       ['Open marketplace', '5', 'pill-warn', '/bookings?view=marketplace'],
       ['Customer choice', '2', 'pill-info', '/bookings?view=customer-choice'],
       ['No participant supply', '3', 'pill-warn', '/bookings?view=marketplace'],
-      ['Alert trace missing', '4', 'pill-warn', '/bookings?view=marketplace'],
+      ['Alert delivery missing', '4', 'pill-warn', '/bookings?view=marketplace'],
       ['Selected Partners', '1', 'pill-success', '/bookings?view=marketplace'],
       ['Cash fee debt', '6', 'pill-warn', '/bookings?view=cash-debt'],
     ]);
+    expect(cards.map((card) => `${card.title} ${card.detail}`).join(' ')).not.toMatch(/trace/i);
   });
 
   it('uses calm tones when marketplace counts are clear', () => {
@@ -38,7 +39,7 @@ describe('marketplace operations cards', () => {
       ['Open marketplace', 'pill-success'],
       ['Customer choice', 'pill-neutral'],
       ['No participant supply', 'pill-success'],
-      ['Alert trace missing', 'pill-success'],
+      ['Alert delivery missing', 'pill-success'],
       ['Selected Partners', 'pill-neutral'],
       ['Cash fee debt', 'pill-neutral'],
     ]);

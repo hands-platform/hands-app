@@ -167,8 +167,8 @@ function selectedPartnerState<TBooking>(input: MarketplaceBookingCoverageRowInpu
 function alertState<TBooking>(input: MarketplaceBookingCoverageRowInput<TBooking>) {
   if (input.traceBatchCount === 0) {
     return {
-      detail: 'Marketplace notification trace is not saved for this booking.',
-      label: input.status === 'OPEN_MATCHING' ? 'No alert batch' : 'No alert trace',
+      detail: 'Marketplace notification delivery is not recorded for this booking.',
+      label: input.status === 'OPEN_MATCHING' ? 'No alert batch' : 'No alert record',
       tone: input.status === 'OPEN_MATCHING' ? 'pill-danger' : 'pill-neutral',
     } as const;
   }

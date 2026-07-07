@@ -121,9 +121,10 @@ describe('marketplace booking coverage summary', () => {
     const rows = buildMarketplaceBookingCoverageRows([coverageInput('missing-alert')]);
 
     expect(rows[0]).toMatchObject({
-      alertDetail: 'Marketplace notification trace is not saved for this booking.',
+      alertDetail: 'Marketplace notification delivery is not recorded for this booking.',
       alertLabel: 'No alert batch',
       alertTone: 'pill-danger',
     });
+    expect(`${rows[0].alertDetail} ${rows[0].alertLabel}`).not.toMatch(/trace/i);
   });
 });

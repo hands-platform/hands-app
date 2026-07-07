@@ -85,7 +85,7 @@ export function buildMarketplaceOperationsCards({
       href: '/bookings?view=marketplace',
     },
     {
-      title: 'Alert trace missing',
+      title: 'Alert delivery missing',
       value: `${alertTraceMissingCount}`,
       detail: 'Open requests without recorded 10 km marketplace notification batches.',
       tone: alertTraceMissingCount > 0 ? 'pill-warn' : 'pill-success',
