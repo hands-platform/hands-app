@@ -1768,11 +1768,11 @@ a {
   right: 135px !important;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation-icon {
+.calendar-vuexy-datepicker > .react-datepicker__navigation > .react-datepicker__navigation-icon {
   display: none;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__navigation::before {
+.calendar-vuexy-datepicker > .react-datepicker__navigation::before {
   display: none;
 }
 

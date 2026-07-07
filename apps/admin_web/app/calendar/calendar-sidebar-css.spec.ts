@@ -22,6 +22,15 @@ describe('Calendar sidebar CSS', () => {
     );
     expect(globalsCss).not.toContain('.calendar-filter-row span:not(.pill) {');
   });
+
+  it('scopes Vuexy datepicker navigation chrome to direct navigation buttons', () => {
+    expect(globalsCss).toContain(
+      '.calendar-vuexy-datepicker > .react-datepicker__navigation > .react-datepicker__navigation-icon',
+    );
+    expect(globalsCss).toContain('.calendar-vuexy-datepicker > .react-datepicker__navigation::before');
+    expect(globalsCss).not.toContain('.calendar-vuexy-datepicker .react-datepicker__navigation-icon {');
+    expect(globalsCss).not.toContain('.calendar-vuexy-datepicker .react-datepicker__navigation::before');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
