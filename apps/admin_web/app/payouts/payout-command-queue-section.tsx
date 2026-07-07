@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -27,11 +28,11 @@ export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSection
       resultTone={signals.length > 0 ? 'warning' : 'success'}
       title="Payout command queue"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Payout command queue links" className="admin-mb-12">
         <AdminTextLink href="/earnings">
           Review earnings queue
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       {signals.length ? (
         <AdminTaskGrid>
           {signals.map((signal) => (

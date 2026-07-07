@@ -1,5 +1,6 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import type { PayoutServerPagination } from './payouts-page-model';
@@ -26,14 +27,14 @@ export function PayoutBatchListSection({
       resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
       title="Payout batch list"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Payout batch toolbar" className="admin-mb-12">
         <StatusBadge tone="success">Newest active first</StatusBadge>
         <StatusBadge tone="info">Payout record</StatusBadge>
         <StatusBadge tone="warning">Reconciliation</StatusBadge>
         <StatusBadgeLink href="/earnings" tone="neutral">
           Review earnings
         </StatusBadgeLink>
-      </div>
+      </AdminFilterChipGroup>
 
       <AdminTableScroll>
         <PayoutBatchTable rows={rows} updateTransferRefAction={updateTransferRefAction} />

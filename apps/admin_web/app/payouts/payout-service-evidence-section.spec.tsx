@@ -60,10 +60,12 @@ describe('PayoutServiceEvidenceSection', () => {
   it('uses the shared badge atom for cash debt evidence', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-service-evidence-section.tsx'), 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain(
       "<span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>",

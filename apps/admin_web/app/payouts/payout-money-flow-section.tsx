@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -38,11 +39,11 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
       resultTone={checks.length > 0 ? 'warning' : 'success'}
       title="Payout money flow"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Payout money flow links" className="admin-mb-12">
         <AdminTextLink href="/bookings">
           Trace bookings
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTraceSummary
         metrics={cards.map((card) => ({
           detail: card.detail,

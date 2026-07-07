@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -37,11 +38,11 @@ export function PayoutServiceEvidenceSection({
       resultTone={items.length > 0 ? 'info' : 'warning'}
       title="Payout service evidence"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Payout service evidence links" className="admin-mb-12">
         <AdminTextLink href="/services">
           Review service pricing
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTraceSummary
         metrics={[
           { label: 'Service options', value: items.length },
