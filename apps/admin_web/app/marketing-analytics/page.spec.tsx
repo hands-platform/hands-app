@@ -137,14 +137,34 @@ describe('MarketingAnalyticsPage', () => {
     expect(css).toContain('.marketing-funnel-step > div > strong');
     expect(css).toContain('.marketing-funnel-step > div > small');
     expect(css).toContain('.marketing-funnel-step > span:not(.marketing-funnel-dot)');
+    expect(css).toContain('.marketing-funnel-step > em');
     expect(css).toContain('.marketing-insight-list > p');
     expect(css).toContain('.marketing-data-gap-list > span');
 
     expect(css).not.toContain('.marketing-funnel-step div {');
     expect(css).not.toContain('.marketing-funnel-step strong {');
     expect(css).not.toContain('.marketing-funnel-step small {');
+    expect(css).not.toContain('.marketing-funnel-step em {');
     expect(css).not.toContain('.marketing-insight-list p {');
     expect(css).not.toContain('.marketing-data-gap-list span {');
+  });
+
+  it('scopes shared ranking table name-cell typography to direct copy slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-name-cell > div > a');
+    expect(css).toContain('.usage-overview-name-cell > div > strong');
+    expect(css).toContain('.usage-overview-name-cell > div > small');
+    expect(css).toContain('.marketing-analytics-name-cell > div > a');
+    expect(css).toContain('.marketing-analytics-name-cell > div > strong');
+    expect(css).toContain('.marketing-analytics-name-cell > div > small');
+
+    expect(css).not.toContain('.usage-overview-name-cell a,');
+    expect(css).not.toContain('.usage-overview-name-cell strong,');
+    expect(css).not.toContain('.usage-overview-name-cell small,');
+    expect(css).not.toContain('.marketing-analytics-name-cell a,');
+    expect(css).not.toContain('.marketing-analytics-name-cell strong {');
+    expect(css).not.toContain('.marketing-analytics-name-cell small {');
   });
 
   it('renders breakdown tables with shared Vuexy table atoms when requested', async () => {

@@ -10478,10 +10478,10 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-name-cell a,
-.usage-overview-name-cell strong,
-.marketing-analytics-name-cell a,
-.marketing-analytics-name-cell strong {
+.usage-overview-name-cell > div > a,
+.usage-overview-name-cell > div > strong,
+.marketing-analytics-name-cell > div > a,
+.marketing-analytics-name-cell > div > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 700;
@@ -10490,8 +10490,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-name-cell small,
-.marketing-analytics-name-cell small {
+.usage-overview-name-cell > div > small,
+.marketing-analytics-name-cell > div > small {
   color: var(--admin-muted);
 }
 
@@ -10681,7 +10681,7 @@ a.action-button-card:hover {
   text-align: right;
 }
 
-.marketing-funnel-step em {
+.marketing-funnel-step > em {
   color: var(--admin-muted);
   font-size: 12px;
   font-style: normal;
