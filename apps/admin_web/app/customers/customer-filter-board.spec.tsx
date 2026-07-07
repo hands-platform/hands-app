@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { CustomerFilterBoard } from './customer-filter-board';
 import type { CustomerFilters } from './customer-filters';
 
+const globalCss = readFileSync('app/globals.css', 'utf8');
+
 describe('CustomerFilterBoard', () => {
   it('uses the shared Vuexy badge atom for active filter chips', () => {
     const source = readFileSync('app/customers/customer-filter-board.tsx', 'utf8');
@@ -94,6 +96,26 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('name="joinedTo"');
     expect(rendered).toContain('admin-form-control-button button button-primary booking-date-apply-button');
     expect(rendered).toContain('Apply dates');
+  });
+
+  it('scopes customer and partner filter header typography to direct Vuexy panel copy slots', () => {
+    expect(globalCss).toContain(
+      '.vuexy-customer-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > h2,',
+    );
+    expect(globalCss).toContain(
+      '.vuexy-partner-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > h2,',
+    );
+    expect(globalCss).toContain(
+      '.vuexy-customer-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > p,',
+    );
+    expect(globalCss).toContain(
+      '.vuexy-partner-filter-card > .admin-filter-panel-header > .admin-filter-panel-copy > p,',
+    );
+
+    expect(globalCss).not.toContain('.vuexy-customer-filter-card .admin-filter-panel-header h2,');
+    expect(globalCss).not.toContain('.vuexy-partner-filter-card .admin-filter-panel-header h2,');
+    expect(globalCss).not.toContain('.vuexy-customer-filter-card .admin-filter-panel-header p,');
+    expect(globalCss).not.toContain('.vuexy-partner-filter-card .admin-filter-panel-header p,');
   });
 });
 
