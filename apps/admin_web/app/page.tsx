@@ -874,9 +874,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminTextLink>
         }
         className="admin-mt-20"
-        description="Actual booking participant records only. Partners with negative wallets can see marketplace demand, but final acceptance, service start, and payout release wait for settlement."
+        description="Actual booking participant records only. Partners with negative wallets can see open booking requests, but final acceptance, service start, and payout release wait for settlement."
         id="dashboard-marketplace-participant-snapshot"
-        title="Marketplace participant snapshot"
+        title="Booking participant snapshot"
       >
         <DashboardTraceSummary
           className="admin-mt-12"

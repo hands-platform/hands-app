@@ -7,7 +7,6 @@ import { AdminKpiCard } from '../../components/admin-surface';
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
 const financeListCommandBoardClassName = 'finance-list-command-board';
-const financeListCommandCardClassName = 'finance-list-command-card';
 export function FinanceListCommandBoard({
   ariaLabel,
   children,

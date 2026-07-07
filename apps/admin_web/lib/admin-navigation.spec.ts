@@ -4,7 +4,6 @@ import path from 'node:path';
 import {
   adminHiddenRoutePolicy,
   adminHiddenRouteRoutes,
-  intentionallyUnlistedPageRoutes,
 } from './admin-hidden-route-policy';
 import { adminOperatorCategoryForPath } from './admin-operator-access-model';
 import { adminNavSections } from './admin-navigation';

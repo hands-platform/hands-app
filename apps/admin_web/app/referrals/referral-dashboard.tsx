@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import {
   AdminDataTable,

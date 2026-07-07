@@ -107,13 +107,13 @@ describe('AdminOverviewCommandCard', () => {
         label="Repeat customers"
         value="12"
       >
-        <a href="/customers">Open list</a>
+        <a href="#customers">Open list</a>
       </AdminOverviewCommandCard>,
     );
 
     expect(markup).toContain('class="card admin-card usage-overview-command-card"');
     expect(markup).not.toContain('<small>');
-    expect(markup).toContain('<a href="/customers">Open list</a>');
+    expect(markup).toContain('<a href="#customers">Open list</a>');
   });
 
   it('renders a link card when an href is provided', () => {

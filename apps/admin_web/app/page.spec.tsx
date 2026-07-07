@@ -290,7 +290,7 @@ describe('DashboardPage', () => {
       'class="card admin-section admin-mt-20" id="dashboard-marketplace-participant-snapshot"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-marketplace-participant-snapshot-title">Marketplace participant snapshot</h2>',
+      '<h2 id="dashboard-marketplace-participant-snapshot-title">Booking participant snapshot</h2>',
     );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',

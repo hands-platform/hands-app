@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';

@@ -685,7 +685,7 @@ describe('AdminService partner overview request events', () => {
               tone: 'info',
             }),
             expect.objectContaining({
-              count: 0,
+              count: 2,
               detail: 'Auto-offline follow-up queue for approved partners',
               href: '/partners?review=marketplace-ready&activity=inactive-7d',
               key: 'inactive-7d',

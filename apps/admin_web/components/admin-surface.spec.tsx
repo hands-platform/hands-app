@@ -72,7 +72,7 @@ describe('Admin surface components', () => {
 
   it('renders a reusable Vuexy card header with card-level heading semantics', () => {
     const header = AdminCardHeader({
-      actions: <a href="/partners">Open</a>,
+      actions: <a href="#partners">Open</a>,
       description: 'Bounded queue for operators.',
       title: 'Partner action queue',
     });
@@ -656,7 +656,7 @@ describe('Admin surface components', () => {
   it('renders standard loading and error states with operational roles', () => {
     const loading = AdminLoadingState({ message: 'Checking latest booking records.' });
     const error = AdminErrorState({
-      action: <a href="/bookings">Retry</a>,
+      action: <a href="#bookings">Retry</a>,
       message: 'The booking API returned an error.',
     });
 
