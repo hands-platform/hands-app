@@ -1,5 +1,6 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminDetailGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -20,11 +21,11 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
       resultTone={providers.length > 0 ? 'warning' : 'success'}
       title="Partner wallet debt groups"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Partner wallet debt links" className="admin-mb-12">
         <AdminTextLink href="/partner-controls">
           Partner controls
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       {providers.length ? (
         <AdminDetailGrid className="admin-mt-16">
           {providers.map((provider) => (
@@ -42,7 +43,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                 <MoneyText amount={provider.platformFee} currency={provider.currency} /> HANDS fee,{' '}
                 <MoneyText amount={provider.taxAmount} currency={provider.currency} /> tax.
               </p>
-              <div className="participant-list admin-mt-8">
+              <AdminFilterChipGroup ariaLabel={`${provider.providerName} debt group actions`} className="admin-mt-8">
                 <ActionMenu
                   actions={[
                     {
@@ -56,7 +57,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                 />
                 <StatusBadge tone="warning">Suggested ref {provider.settlementReference}</StatusBadge>
                 <StatusBadge tone="info">{provider.oldestOpenLabel}</StatusBadge>
-              </div>
+              </AdminFilterChipGroup>
             </div>
           ))}
         </AdminDetailGrid>
