@@ -22,6 +22,8 @@ describe('ServiceCatalogManagerSection', () => {
   it('scopes service catalog card typography to direct component slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
+    expect(css).toContain('.service-catalog-manager-card > .admin-section-header {');
+    expect(css).toContain('.service-catalog-manager-card > .admin-section-header .button');
     expect(css).toContain('.service-menu-card > .admin-card-header > div > h3');
     expect(css).toContain('.service-menu-language-list > span');
     expect(css).toContain('.service-menu-language-list > span > strong');
@@ -31,6 +33,8 @@ describe('ServiceCatalogManagerSection', () => {
     expect(css).not.toContain('.service-menu-language-list span');
     expect(css).not.toContain('.service-menu-language-list strong');
     expect(css).not.toContain('.service-menu-duration-panel strong');
+    expect(css).not.toContain('.service-catalog-manager-card .admin-filter-panel-header');
+    expect(css).not.toContain('.service-catalog-manager-card .admin-section-header');
   });
 
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {

@@ -11970,13 +11970,11 @@ a.action-button-card:hover {
   overflow: visible;
 }
 
-.service-catalog-manager-card .admin-filter-panel-header,
-.service-catalog-manager-card .admin-section-header {
+.service-catalog-manager-card > .admin-section-header {
   align-items: flex-start;
 }
 
-.service-catalog-manager-card .admin-filter-panel-header .button,
-.service-catalog-manager-card .admin-section-header .button {
+.service-catalog-manager-card > .admin-section-header .button {
   white-space: nowrap;
 }
 
