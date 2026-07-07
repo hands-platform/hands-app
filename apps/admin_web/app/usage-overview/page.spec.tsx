@@ -128,4 +128,30 @@ describe('UsageOverviewPage', () => {
     expect(css).not.toContain('.usage-overview-mini-metric.is-primary strong');
     expect(css).not.toContain('.usage-overview-mini-metric.is-danger strong');
   });
+
+  it('scopes platform, payment, and service row typography to their direct Vuexy slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-platform-main > div > strong');
+    expect(css).toContain('.usage-overview-platform-main > div > small');
+    expect(css).toContain('.usage-overview-platform-value > strong');
+    expect(css).toContain('.usage-overview-platform-value > span');
+    expect(css).toContain('.usage-overview-payment-row > div:first-child > span');
+    expect(css).toContain('.usage-overview-payment-row > strong');
+    expect(css).toContain('.usage-overview-payment-row > small');
+    expect(css).toContain('.usage-overview-service-main > div > strong');
+    expect(css).toContain('.usage-overview-service-main > div > small');
+    expect(css).toContain('.usage-overview-service-metrics .admin-mini-metric > strong');
+
+    expect(css).not.toContain('.usage-overview-platform-main strong {');
+    expect(css).not.toContain('.usage-overview-platform-main small {');
+    expect(css).not.toContain('.usage-overview-platform-value strong {');
+    expect(css).not.toContain('.usage-overview-platform-value span {');
+    expect(css).not.toContain('.usage-overview-payment-row span {');
+    expect(css).not.toContain('.usage-overview-payment-row strong {');
+    expect(css).not.toContain('.usage-overview-payment-row small {');
+    expect(css).not.toContain('.usage-overview-service-main strong {');
+    expect(css).not.toContain('.usage-overview-service-main small {');
+    expect(css).not.toContain('.usage-overview-service-metrics strong {');
+  });
 });

@@ -8690,14 +8690,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-platform-main strong {
+.usage-overview-platform-main > div > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 800;
   line-height: 18px;
 }
 
-.usage-overview-platform-main small {
+.usage-overview-platform-main > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
@@ -8733,14 +8733,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-platform-value strong {
+.usage-overview-platform-value > strong {
   color: var(--admin-text);
   font-size: 18px;
   font-weight: 800;
   line-height: 22px;
 }
 
-.usage-overview-platform-value span {
+.usage-overview-platform-value > span {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 700;
@@ -9090,16 +9090,16 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-funnel-step-header span,
-.partner-overview-funnel-step-header span {
+.usage-overview-funnel-step-header > span,
+.partner-overview-funnel-step-header > span {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
 }
 
-.usage-overview-funnel-step-header strong,
-.partner-overview-funnel-step-header strong {
+.usage-overview-funnel-step-header > strong,
+.partner-overview-funnel-step-header > strong {
   color: var(--admin-text);
   font-size: 22px;
   font-weight: 600;
@@ -9548,8 +9548,8 @@ a.action-button-card:hover {
   }
 }
 
-.usage-overview-funnel-step small,
-.partner-overview-funnel-step small {
+.usage-overview-funnel-step > small,
+.partner-overview-funnel-step > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
@@ -9854,14 +9854,14 @@ a.action-button-card:hover {
   padding: 10px 12px;
 }
 
-.partner-overview-mini-kpis span {
+.partner-overview-mini-kpis > div > span {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 750;
   line-height: 15px;
 }
 
-.partner-overview-mini-kpis strong {
+.partner-overview-mini-kpis > div > strong {
   color: var(--admin-text);
   font-size: 17px;
   font-weight: 650;
@@ -9899,7 +9899,8 @@ a.action-button-card:hover {
 }
 
 .partner-overview-action-card .admin-card-header .muted,
-.partner-overview-action-row small {
+.partner-overview-action-identity > small,
+.partner-overview-action-reason > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
@@ -9954,7 +9955,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.partner-overview-action-row strong {
+.partner-overview-action-identity > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 650;
@@ -9964,7 +9965,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.partner-overview-action-row small {
+.partner-overview-action-identity > small,
+.partner-overview-action-reason > small {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -10285,7 +10287,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-payment-row span {
+.usage-overview-payment-row > div:first-child > span {
   align-items: center;
   color: var(--admin-muted);
   display: inline-flex;
@@ -10296,7 +10298,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-payment-row strong {
+.usage-overview-payment-row > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 800;
@@ -10304,7 +10306,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-payment-row small {
+.usage-overview-payment-row > small {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 650;
@@ -10349,7 +10351,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-service-main strong {
+.usage-overview-service-main > div > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 750;
@@ -10359,7 +10361,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.usage-overview-service-main small {
+.usage-overview-service-main > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 650;
@@ -10387,7 +10389,7 @@ a.action-button-card:hover {
   padding: 8px;
 }
 
-.usage-overview-service-metrics strong {
+.usage-overview-service-metrics .admin-mini-metric > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 800;
@@ -12478,14 +12480,14 @@ a.action-button-card:hover {
   padding: 14px 16px;
 }
 
-.finance-reconciliation-path-node span,
-.finance-reconciliation-path-node small {
+.finance-reconciliation-path-node > span,
+.finance-reconciliation-path-node > small {
   color: var(--admin-muted);
   font-size: 0.78rem;
   line-height: 1.35;
 }
 
-.finance-reconciliation-path-node strong {
+.finance-reconciliation-path-node > strong {
   color: var(--admin-text);
   font-size: 0.95rem;
   line-height: 1.35;

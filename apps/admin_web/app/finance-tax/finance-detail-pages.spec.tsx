@@ -27,6 +27,17 @@ describe('finance detail pages', () => {
     mockedAdminGet.mockReset();
   });
 
+  it('scopes finance operating path typography to direct path-node children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.finance-reconciliation-path-node > span');
+    expect(css).toContain('.finance-reconciliation-path-node > small');
+    expect(css).toContain('.finance-reconciliation-path-node > strong');
+    expect(css).not.toContain('.finance-reconciliation-path-node span,');
+    expect(css).not.toContain('.finance-reconciliation-path-node small {');
+    expect(css).not.toContain('.finance-reconciliation-path-node strong {');
+  });
+
   it('renders booking settlement audit detail with immutable accounting evidence', async () => {
     mockedAdminGet.mockResolvedValue({
       accountingJournalBatches: [

@@ -278,6 +278,27 @@ describe('PartnerOverviewPage', () => {
     expect(css).not.toContain('.partner-overview-operating-card strong {');
     expect(css).not.toContain('.partner-overview-operating-card small {');
   });
+
+  it('scopes partner overview typography to direct Vuexy card slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-overview-funnel-step-header > span');
+    expect(css).toContain('.partner-overview-funnel-step-header > strong');
+    expect(css).toContain('.partner-overview-funnel-step > small');
+    expect(css).toContain('.partner-overview-mini-kpis > div > span');
+    expect(css).toContain('.partner-overview-mini-kpis > div > strong');
+    expect(css).toContain('.partner-overview-action-identity > strong');
+    expect(css).toContain('.partner-overview-action-identity > small');
+    expect(css).toContain('.partner-overview-action-reason > small');
+
+    expect(css).not.toContain('.partner-overview-funnel-step-header span {');
+    expect(css).not.toContain('.partner-overview-funnel-step-header strong {');
+    expect(css).not.toContain('.partner-overview-funnel-step small {');
+    expect(css).not.toContain('.partner-overview-mini-kpis span {');
+    expect(css).not.toContain('.partner-overview-mini-kpis strong {');
+    expect(css).not.toContain('.partner-overview-action-row strong {');
+    expect(css).not.toContain('.partner-overview-action-row small {');
+  });
 });
 
 const partnerOverviewFixture: AdminPartnerOverview = {
