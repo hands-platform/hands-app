@@ -11,7 +11,7 @@ import {
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminCard, AdminCardHeader, AdminDrawerSurface, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminCardHeader, AdminDrawerSurface, AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
@@ -61,7 +61,7 @@ export function ServiceCatalogManagerSection({
           </p>
         </div>
 
-        <div className="admin-filter-panel-body service-menu-card-grid">
+        <AdminCardGrid ariaLabel="Service menu cards" className="admin-filter-panel-body service-menu-card-grid">
           {groups.length ? (
             groups.map((group) => <ServiceCatalogCard group={group} key={group.key} />)
           ) : (
@@ -72,7 +72,7 @@ export function ServiceCatalogManagerSection({
               title="No service menu items are registered."
             />
           )}
-        </div>
+        </AdminCardGrid>
       </AdminSection>
 
       {dialogMode === 'new' ? <NewServiceDialog /> : null}
