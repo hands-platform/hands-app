@@ -20,9 +20,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="admin-auth-page" aria-label="HANDS Admin login">
-      <section className="admin-auth-visual" aria-label="Operations control preview">
+      <AdminCard className="admin-auth-visual" ariaLabel="Operations control preview">
         <div className="admin-auth-illustration" aria-hidden="true" />
-      </section>
+      </AdminCard>
 
       <AdminCard className="admin-auth-card" ariaLabel="Admin sign in form">
         <div className="admin-auth-brand">

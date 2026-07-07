@@ -33,6 +33,7 @@ describe('LoginPage', () => {
 
     expect(markup).toContain('admin-auth-page');
     expect(markup).toContain('admin-auth-visual');
+    expect(markup).toContain('card admin-card admin-auth-visual');
     expect(markup).not.toContain('admin-auth-visual-copy');
     expect(markup).toContain('card admin-card admin-auth-card');
     expect(markup).not.toContain('Welcome to HANDS Admin');

@@ -55,6 +55,24 @@ describe('Admin page Vuexy surface usage', () => {
 
     expect(brokenDelegates).toEqual([]);
   });
+
+  it('keeps page-level card surfaces behind shared Admin surface components', () => {
+    const pageFiles = collectPageFiles(appDirectory);
+    const rawPageSurfaces = pageFiles.flatMap((file) => {
+      const source = readFileSync(file, 'utf8');
+      const rawSurfaceLines = source
+        .split('\n')
+        .flatMap((line, index) =>
+          /<(section|article|details)\s+className=/.test(line.trim())
+            ? [`${pageFileToRoute(file)}:${index + 1}: ${line.trim()}`]
+            : [],
+        );
+
+      return rawSurfaceLines;
+    });
+
+    expect(rawPageSurfaces).toEqual([]);
+  });
 });
 
 type PageSurface =
