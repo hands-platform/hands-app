@@ -69,7 +69,7 @@ export const adminChatMessageSummarySelect = {
   sender: { select: { id: true, phone: true, fullName: true, roles: true } },
 } satisfies Prisma.ChatMessageSelect;
 
-export const ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT = 5;
+export const ADMIN_CUSTOMER_DETAIL_BOOKING_CHAT_MESSAGE_LIMIT = 3;
 export const ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT = 200;
 
 export const adminBookingListSelect = {

@@ -80,6 +80,17 @@ describe('admin customer selects', () => {
     });
   });
 
+  it('keeps customer detail booking chat previews intentionally small', () => {
+    expect(adminCustomerDetailBookingSelect.chatRoom).toMatchObject({
+      select: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 3,
+        },
+      },
+    });
+  });
+
   it('keeps customer detail notification delivery payload compact', () => {
     expect(adminCustomerNotificationSelect.deliveries.select).toMatchObject({
       id: true,
