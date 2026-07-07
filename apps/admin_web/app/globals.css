@@ -4656,7 +4656,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-.chat-archive-page .ops-section-header {
+.chat-archive-page > .card > .ops-section-header {
   border-bottom: 1px solid var(--admin-border);
   padding-bottom: 14px;
 }
@@ -12322,12 +12322,6 @@ a.action-button-card:hover {
 
 .partner-chat-window-disclosure .admin-chat-transcript-summary {
   padding: 12px 14px;
-}
-
-.chat-transcript-room .ops-section-header {
-  background: var(--admin-surface-raised);
-  margin: -24px -24px 0;
-  padding: 18px 24px 14px;
 }
 
 .chat-transcript-messages {

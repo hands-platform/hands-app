@@ -17,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('ChatArchivePage', () => {
   beforeEach(() => {
@@ -174,6 +175,12 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('className="admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
+  });
+
+  it('scopes chat archive headers to direct cards and removes stale transcript selectors', () => {
+    expect(globalCss).toContain('.chat-archive-page > .card > .ops-section-header {');
+    expect(globalCss).not.toContain('.chat-archive-page .ops-section-header {');
+    expect(globalCss).not.toContain('.chat-transcript-room .ops-section-header');
   });
 });
 
