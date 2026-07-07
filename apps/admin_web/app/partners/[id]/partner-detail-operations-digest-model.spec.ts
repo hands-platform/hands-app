@@ -57,6 +57,7 @@ describe('partner detail operations digest model', () => {
     });
     expect(rowByLane(rows, 'Location')).toMatchObject({
       detail: 'Latest Partner location saved for dispatch checks. Policy freshness Infinitym.',
+      evidence: ['1 record(s)', '10km marketplace radius', 'Fresh enough'],
       tone: 'pill-success',
     });
     expect(JSON.stringify(rowByLane(rows, 'Location'))).not.toMatch(

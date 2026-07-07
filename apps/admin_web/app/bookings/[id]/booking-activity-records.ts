@@ -267,8 +267,8 @@ export function buildBookingActivityRecords({
       id: snapshot.id,
       type: 'LOCATION',
       at: snapshot.recordedAt,
-      title: isBookingActionSnapshot ? 'Partner booking action location' : 'Partner location snapshot',
-      detail: isBookingActionSnapshot ? `Booking action snapshot / ${locationDetail}` : locationDetail,
+      title: isBookingActionSnapshot ? 'Partner booking action location' : 'Partner location record',
+      detail: isBookingActionSnapshot ? `Booking action record / ${locationDetail}` : locationDetail,
       href: '#location',
     });
   }
@@ -409,7 +409,7 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
     {
       label: 'Location',
       value: count((record) => record.type === 'LOCATION').toString(),
-      helper: 'Booking action and Partner location snapshots linked to this booking.',
+      helper: 'Booking action and Partner location records linked to this booking.',
     },
   ];
 }

@@ -254,7 +254,7 @@ describe('partner detail summary rail model', () => {
         detailDateTimeSuffix: '.',
         detailDateTimeValue: '2026-06-14T01:45:00.000Z',
         label: 'Location evidence',
-        value: '2 snapshot(s)',
+        value: '2 record(s)',
       }),
       expect.objectContaining({
         detailDateTimePrefix: '1 device row(s) / latest ',

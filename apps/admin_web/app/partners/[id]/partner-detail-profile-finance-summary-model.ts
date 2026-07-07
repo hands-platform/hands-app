@@ -112,7 +112,7 @@ export function buildPartnerLocationSnapshotBadges(
 ): PartnerLocationSnapshotBadge[] {
   return (provider.locationSnapshots ?? []).slice(0, 5).map((snapshot) => ({
     id: snapshot.id,
-    label: 'Recorded location snapshot',
+    label: 'Recorded location record',
     recordedAt: snapshot.recordedAt,
   }));
 }

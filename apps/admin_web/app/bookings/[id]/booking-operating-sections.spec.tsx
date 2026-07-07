@@ -113,7 +113,7 @@ describe('Booking operating sections', () => {
       operatingLedger: [
         {
           area: 'Address',
-          evidence: 'Service address snapshot retained.',
+          evidence: 'Service address record retained.',
           href: '#address',
           status: 'Ready',
         },
@@ -125,7 +125,7 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('Booking operating ledger');
     expect(rendered).toContain('1 record areas');
     expect(rendered).toContain('Address');
-    expect(rendered).toContain('Service address snapshot retained.');
+    expect(rendered).toContain('Service address record retained.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#address']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -186,7 +186,7 @@ describe('Booking operating sections', () => {
             at: '2026-06-19T08:20:00.000Z',
             detail: 'Partner shared current location near the service address.',
             id: 'location-1',
-            title: 'Partner location snapshot',
+            title: 'Partner location record',
             type: 'LOC',
           },
           {
@@ -226,7 +226,7 @@ describe('Booking operating sections', () => {
     const classNames = classNamesIn(section);
 
     expect(rendered).toContain('Communication and movement handoff');
-    expect(rendered).toContain('Partner location snapshot');
+    expect(rendered).toContain('Partner location record');
     expect(rendered).toContain('Arrival reminder');
     expect(rendered).toContain('Partner: Nguyen');
     expect(rendered).toContain('Channel LOC');

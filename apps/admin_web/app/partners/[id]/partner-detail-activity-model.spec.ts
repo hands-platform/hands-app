@@ -14,6 +14,7 @@ describe('partner detail activity model', () => {
       activity({ at: '2026-06-10T09:30:00.000Z', id: 'earning', type: 'EARNING' }),
       activity({ at: '2026-06-10T09:40:00.000Z', id: 'kyc', type: 'VERIFY' }),
     ]);
+    expect(summary.find((item) => item.label === 'Location')?.helper).toBe('Last known location records.');
 
     expect(summary.map((item) => [item.label, item.value])).toEqual([
       ['Range', '10 Jun 2026, 16:40'],

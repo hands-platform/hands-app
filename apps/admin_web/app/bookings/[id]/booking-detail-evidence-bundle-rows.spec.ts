@@ -194,7 +194,7 @@ describe('bookingDetailEvidenceBundleRows', () => {
     });
   });
 
-  it('uses the service address snapshot label instead of service address coordinates', () => {
+  it('uses the service address record label instead of service address coordinates', () => {
     const input = booking({
       addressSnapshot: {
         addressText: 'District 3 service address',
@@ -210,7 +210,7 @@ describe('bookingDetailEvidenceBundleRows', () => {
     });
 
     expect(rows.find((row) => row.lane === 'Location')).toMatchObject({
-      evidence: 'Service address snapshot District 3 service address',
+      evidence: 'Confirmed service address District 3 service address',
     });
     expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });

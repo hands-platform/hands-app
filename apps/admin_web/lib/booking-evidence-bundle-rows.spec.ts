@@ -176,7 +176,7 @@ describe('bookingEvidenceBundleRows', () => {
     expect(rows[5]).toMatchObject({
       lane: 'Location',
       recordLabel: 'No latest location',
-      evidence: 'Service address snapshot District 1, Ho Chi Minh City',
+      evidence: 'Confirmed service address District 1, Ho Chi Minh City',
     });
   });
 

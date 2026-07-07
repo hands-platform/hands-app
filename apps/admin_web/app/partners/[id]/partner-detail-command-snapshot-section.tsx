@@ -29,7 +29,7 @@ export function PartnerDetailCommandSnapshotSection({
       headerClassName="partner-detail-section-band-header"
       id="partner-activity-command-snapshot"
       status={<StatusBadge tone="info">{items.length} fact groups</StatusBadge>}
-      title="Partner command snapshot"
+      title="Partner command summary"
     >
       <AdminTraceSummary
         className="partner-detail-summary-rail-grid"

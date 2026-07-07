@@ -91,6 +91,7 @@ describe('bookingCommunicationMovementHandoff', () => {
 
     expect(handoff).toMatchObject({
       href: '#alerts',
+      hrefLabel: 'Open alert records',
       nextAction: 'Review notification delivery',
       status: 'Alert delivery check',
       tone: 'pill-warn',
@@ -175,7 +176,10 @@ describe('bookingCommunicationMovementHandoff', () => {
     });
     expect(handoff.events.find((event) => event.id === 'location-location-new')).toMatchObject({
       detail: expect.stringContaining('Location recorded without readable address / Updated'),
+      title: 'Partner location record',
     });
+    expect(handoff.metrics.find((metric) => metric.label === 'Partner location')?.helper).not.toMatch(/snapshot/i);
+    expect(handoff.metrics.find((metric) => metric.label === 'Movement rows')?.helper).not.toMatch(/snapshot/i);
     expect(
       [
         ...handoff.metrics.map((metric) => metric.helper),

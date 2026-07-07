@@ -78,7 +78,7 @@ export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     {
       label: 'Location',
       value: count((record) => record.type === 'LOCATION').toString(),
-      helper: 'Last known location snapshots.',
+      helper: 'Last known location records.',
     },
     {
       label: 'Finance',

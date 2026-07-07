@@ -134,7 +134,7 @@ describe('BookingCommandBriefingSections', () => {
   it('renders booking command briefing cards with the shared Vuexy admin section surface', () => {
     const linkRows = [
       {
-        detail: 'Address snapshot is retained.',
+        detail: 'Service address record is retained.',
         href: '#address',
         label: 'Address',
         value: 'Ready',

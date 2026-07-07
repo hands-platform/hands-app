@@ -191,9 +191,9 @@ export function PartnerDetailLocationActivityCard({
 
   return (
     <PartnerDetailVuexyTablePanel
-      description="Latest Partner app location evidence and recent recorded snapshots."
+      description="Latest Partner app location evidence and recent recorded location records."
       id="location"
-      resultLabel={`${snapshots.length} snapshot(s)`}
+      resultLabel={`${snapshots.length} record(s)`}
       title="Location and activity"
     >
       <AdminTableScroll>
@@ -221,11 +221,11 @@ export function PartnerDetailLocationActivityCard({
           </tr>
           <tr>
             <td>
-              <strong>Recent snapshots</strong>
+              <strong>Recent location records</strong>
             </td>
             <td>
               {snapshots.length ? (
-                <AdminFilterChipGroup ariaLabel="Recent location snapshots">
+                <AdminFilterChipGroup ariaLabel="Recent location records">
                   {snapshots.map((snapshot) => (
                     <StatusBadge key={snapshot.id} tone="neutral">
                       {snapshot.recordedAt ? (

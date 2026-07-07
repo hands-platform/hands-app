@@ -42,7 +42,7 @@ export function bookingLiveServiceSignals(booking: AdminBookingDetail): BookingL
     {
       label: 'Service address',
       value: serviceAddressValue,
-      helper: booking.addressSnapshot ? 'Booking address snapshot saved.' : 'Stored booking address fallback.',
+      helper: booking.addressSnapshot ? 'Service address record saved.' : 'Stored booking address fallback.',
       tone: booking.addressSnapshot || (booking.lat && booking.lng) ? 'pill-success' : 'pill-warn',
     },
     {

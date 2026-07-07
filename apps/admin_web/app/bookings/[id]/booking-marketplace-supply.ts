@@ -263,7 +263,7 @@ function bookingDispatchPinLabel({
     return 'No service address location';
   }
 
-  return hasSnapshotPin ? 'Service address snapshot saved' : 'Stored booking location saved';
+  return hasSnapshotPin ? 'Service address record saved' : 'Stored booking location saved';
 }
 
 function bookingDispatchPinSourceLabel(source: string) {

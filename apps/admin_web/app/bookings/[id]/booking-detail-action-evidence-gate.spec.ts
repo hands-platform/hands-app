@@ -140,7 +140,7 @@ describe('bookingDetailActionEvidenceGate', () => {
 
     expect(gate.rows.find((row) => row.action === 'Expire matching')).toMatchObject({
       evidence: '14 Jun 2026, 08:45',
-      evidenceDateTimePrefix: 'Address snapshot missing / expires ',
+      evidenceDateTimePrefix: 'Confirmed address missing / expires ',
       evidenceDateTimeValue: '2026-06-14T01:45:00.000Z',
     });
   });

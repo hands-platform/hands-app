@@ -164,7 +164,7 @@ describe('booking policy supply sections', () => {
             {
               action: 'Use booking address.',
               className: 'ops-task-success',
-              detail: 'Address snapshot retained.',
+              detail: 'Service address record retained.',
               pillClass: 'pill-success',
               status: 'Ready',
               title: 'Address',

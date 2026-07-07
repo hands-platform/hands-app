@@ -55,7 +55,7 @@ describe('booking marketplace supply', () => {
     expect(supply.eligibleCount).toBe(0);
     expect(supply.rows).toHaveLength(1);
     expect(supply.policyPin).toMatchObject({
-      label: 'Service address snapshot saved',
+      label: 'Service address record saved',
       source: 'BookingAddressSnapshot',
     });
     expect(JSON.stringify(supply)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);

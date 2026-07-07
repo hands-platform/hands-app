@@ -74,7 +74,7 @@ describe('partner detail profile finance summary model', () => {
     });
   });
 
-  it('limits location snapshot badges to the latest five records', () => {
+  it('limits location record badges to the latest five records', () => {
     const snapshots = Array.from({ length: 6 }, (_, index) => ({
       id: `snapshot-${index}`,
       lat: 16,
@@ -99,6 +99,7 @@ describe('partner detail profile finance summary model', () => {
       })[0],
     ).toMatchObject({
       id: 'snapshot-0',
+      label: 'Recorded location record',
       recordedAt: '2026-06-10T00:00:00.000Z',
     });
   });

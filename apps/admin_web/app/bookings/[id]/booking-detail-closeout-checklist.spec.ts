@@ -116,9 +116,9 @@ describe('bookingDetailCloseoutChecklist', () => {
     const rows = bookingDetailCloseoutChecklist(baseInput(input));
 
     expect(rows.map((row) => row.title)).toEqual([
-      'Address snapshot',
+      'Confirmed service address',
       'Customer final Partner choice',
-      'Chat archive',
+      'Chat record',
       'Money and wallet gate',
       'Manual outcome evidence',
       'Finance closeout',
@@ -128,7 +128,7 @@ describe('bookingDetailCloseoutChecklist', () => {
       href: '/partners/partner-selected',
       status: 'Selected',
     });
-    expect(rows.find((row) => row.title === 'Chat archive')).toMatchObject({
+    expect(rows.find((row) => row.title === 'Chat record')).toMatchObject({
       detailDateTimeValue: '2026-06-14T01:05:00.000Z',
       status: 'Archived',
     });
@@ -166,11 +166,11 @@ describe('bookingDetailCloseoutChecklist', () => {
       messages: [],
     });
 
-    expect(rows.find((row) => row.title === 'Address snapshot')).toMatchObject({
+    expect(rows.find((row) => row.title === 'Confirmed service address')).toMatchObject({
       className: 'ops-task-blocked',
       status: 'Repair needed',
     });
-    expect(rows.find((row) => row.title === 'Chat archive')).toMatchObject({
+    expect(rows.find((row) => row.title === 'Chat record')).toMatchObject({
       href: '/chat-archive?status=missing-room',
       status: 'Repair needed',
     });

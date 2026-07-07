@@ -111,7 +111,7 @@ function buildProps(overrides: Partial<SectionsProps> = {}): SectionsProps {
         coordinate: 'District 1, Ho Chi Minh City',
         detail: 'Pin 10.1, 106.1',
         id: 'location_1',
-        label: 'Booking action snapshot',
+        label: 'Booking action record',
         recordedAt: 'Just now',
       },
     ],
@@ -190,7 +190,7 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Wallet: Clear');
     expect(markup).toContain('booking-participant-row-list');
     expect(markup).toContain('card admin-card booking-participant-row-card');
-    expect(markup).toContain('aria-label="Participant selection trace rows"');
+    expect(markup).toContain('aria-label="Participant selection record rows"');
     expect(markup).toContain('aria-label="Participant lifecycle rows"');
     expect(markup).toContain('Cash fee settlement path');
     expect(markup).toContain('booking-settlement-ledger');
@@ -203,9 +203,9 @@ describe('BookingRecordDetailSections', () => {
     expect(markup.match(/Linked in toolbar/g)).toHaveLength(2);
     expect(markup).toContain('href="/partners/partner_1"');
     expect(markup).toContain('Location evidence');
-    expect(markup).toContain('1 snapshot');
+    expect(markup).toContain('1 record');
     expect(markup).toContain('aria-label="Booking location evidence rows"');
-    expect(markup).toContain('Booking action snapshot');
+    expect(markup).toContain('Booking action record');
     expect(markup).toContain('District 1, Ho Chi Minh City');
     expect(markup).toContain('Pin 10.1, 106.1');
   });
@@ -222,8 +222,8 @@ describe('BookingRecordDetailSections', () => {
 
     expect(markup).toContain('Partner record link pending');
     expect(markup).toContain('No Partner participation has been recorded for this booking yet.');
-    expect(markup).toContain('No chat evidence snapshot linked to this booking yet.');
-    expect(markup).toContain('No Partner location snapshots linked to this booking yet.');
+    expect(markup).toContain('No chat evidence linked to this booking yet.');
+    expect(markup).toContain('No Partner location records linked to this booking yet.');
     expect(markup.match(/class="empty-state/g) ?? []).toHaveLength(3);
   });
 
@@ -243,7 +243,7 @@ describe('BookingRecordDetailSections', () => {
           coordinate: 'District 1, Ho Chi Minh City',
           detail: 'Coordinate retained for distance checks.',
           id: 'location_1',
-          label: 'Booking action snapshot',
+          label: 'Booking action record',
           recordedAt: 'Not set',
           recordedAtValue: '2026-06-14T02:00:00.000Z',
         },
@@ -330,7 +330,7 @@ describe('BookingRecordDetailSections', () => {
 
     expect(markup).toContain('Chat evidence');
     expect(markup).toContain('1 message');
-    expect(markup).toContain('Booking chat evidence snapshot');
+    expect(markup).toContain('Booking chat evidence records');
     expect(markup).toContain('Review state');
     expect(markup).toContain('Pending admin decision');
     expect(markup).toContain('30m after match / Fee held');

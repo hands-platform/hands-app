@@ -14,10 +14,10 @@ function safeLatestLocationEvidenceLabel(label?: string | null) {
 
 function safeServiceAddressPinEvidence(label: string) {
   if (COORDINATE_PAIR_TEXT_RE.test(label)) {
-    return 'Service address snapshot saved';
+    return 'Confirmed service address saved';
   }
 
-  return ['Service address snapshot', label].join(' ');
+  return ['Confirmed service address', label].join(' ');
 }
 
 export type BookingEvidenceBundleRowsInput = {

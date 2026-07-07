@@ -253,7 +253,7 @@ export function BookingRecordDetailSections({
           title="Chat evidence"
         >
           {chatEvidenceRows.length > 0 && (
-            <div className="booking-chat-evidence-grid is-detail" aria-label="Booking chat evidence snapshot">
+            <div className="booking-chat-evidence-grid is-detail" aria-label="Booking chat evidence records">
               {chatEvidenceRows.map((row) => (
                 <div className="booking-chat-evidence-item" key={row.label}>
                   <span>{row.label}</span>
@@ -264,13 +264,13 @@ export function BookingRecordDetailSections({
             </div>
           )}
           {chatEvidenceRows.length === 0 && (
-            <AdminEmptyState framed message="No chat evidence snapshot linked to this booking yet." />
+            <AdminEmptyState framed message="No chat evidence linked to this booking yet." />
           )}
         </AdminSection>
 
         <AdminSection
-          actions={<StatusBadge tone="neutral">{countLabel(locationTrailRows.length, 'snapshot')}</StatusBadge>}
-          description="Partner snapshots captured only for booking actions and live movement checks."
+          actions={<StatusBadge tone="neutral">{countLabel(locationTrailRows.length, 'record')}</StatusBadge>}
+          description="Partner location records captured only for booking actions and live movement checks."
           id="location"
           title="Location evidence"
         >
@@ -293,7 +293,7 @@ export function BookingRecordDetailSections({
               </div>
             ))}
             {locationTrailRows.length === 0 && (
-              <AdminEmptyState framed message="No Partner location snapshots linked to this booking yet." />
+              <AdminEmptyState framed message="No Partner location records linked to this booking yet." />
             )}
           </div>
         </AdminSection>
@@ -356,7 +356,7 @@ function getParticipantBoundaryPillClass(index: number) {
 
 function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
   return (
-    <div className="booking-settlement-ledger admin-mt-14" aria-label="Participant selection trace rows">
+    <div className="booking-settlement-ledger admin-mt-14" aria-label="Participant selection record rows">
       {rows.map((item) => (
         <div className="booking-settlement-ledger-row is-command" key={item.label}>
           <span className="booking-settlement-ledger-label">{item.label}</span>

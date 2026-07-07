@@ -2333,7 +2333,7 @@ function buildPartnerActivityRecords(
       id: snapshot.id,
       type: 'LOCATION',
       at: snapshot.recordedAt,
-      title: 'Location snapshot',
+      title: 'Location record',
       detail: `${snapshot.lat}, ${snapshot.lng}`,
     });
   }
@@ -2597,7 +2597,7 @@ function buildPartnerBookingGateAttemptRows(
           : null,
       ].filter(Boolean);
       const detailParts = [
-        addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
+        addressText ? `Address: ${addressText}` : 'Address record metadata missing',
         currentLocationRecordedAt
           ? `Optional customer GPS evidence: ${formatDate(currentLocationRecordedAt)}`
           : 'No optional GPS timestamp',
@@ -2606,7 +2606,7 @@ function buildPartnerBookingGateAttemptRows(
       ].filter(Boolean);
       const detailNode = (
         <>
-          {addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing'}
+          {addressText ? `Address: ${addressText}` : 'Address record metadata missing'}
           {' / '}
           {currentLocationRecordedAt ? (
             <>

@@ -113,7 +113,7 @@ export function partnerBookingAddressEvidenceLabel(booking: PartnerDetailBooking
     );
     const snapshotLocationSaved =
       booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null;
-    return `${snapshotText} / ${snapshotLocationSaved ? 'snapshot saved' : 'snapshot location not stored'}`;
+    return `${snapshotText} / ${snapshotLocationSaved ? 'location record saved' : 'location record not stored'}`;
   }
   if (booking.address) {
     return stringifyPartnerAddress(booking.address);

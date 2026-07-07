@@ -161,7 +161,7 @@ describe('bookingDetailEvidencePacket', () => {
       evidenceDateTimeValue: '2026-06-14T01:20:00.000Z',
     });
     expect(packet.records.find((record) => record.id === 'address-evidence')).toMatchObject({
-      evidence: 'Address snapshot District 3 service address',
+      evidence: 'Confirmed service address District 3 service address',
     });
     expect(JSON.stringify(packet)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });

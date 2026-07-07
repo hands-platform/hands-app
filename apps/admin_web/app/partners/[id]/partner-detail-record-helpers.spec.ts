@@ -23,7 +23,7 @@ describe('partner detail record helpers', () => {
     expect(bookingTotal(booking)).toBe(390_000);
   });
 
-  it('prefers address snapshot text without exposing raw coordinates', () => {
+  it('prefers saved service address text without exposing raw coordinates', () => {
     expect(
       partnerBookingAddressEvidenceLabel({
         id: 'booking_1',
@@ -33,7 +33,7 @@ describe('partner detail record helpers', () => {
           longitude: '105.79',
         },
       }),
-    ).toBe('Cau Giay, Ha Noi / snapshot saved');
+    ).toBe('Cau Giay, Ha Noi / location record saved');
   });
 
   it('uses a safe label when only legacy booking coordinates exist', () => {

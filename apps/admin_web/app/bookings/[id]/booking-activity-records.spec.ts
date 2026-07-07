@@ -57,7 +57,7 @@ describe('buildBookingActivityRecords', () => {
     expect(records).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          detail: 'Booking action snapshot / District 1, Ho Chi Minh City',
+          detail: 'Booking action record / District 1, Ho Chi Minh City',
           href: '#location',
           id: 'action-location',
           title: 'Partner booking action location',
@@ -67,7 +67,7 @@ describe('buildBookingActivityRecords', () => {
     );
   });
 
-  it('hides raw coordinates for general Partner location snapshots without readable addresses', () => {
+  it('hides raw coordinates for general Partner location records without readable addresses', () => {
     const records = recordsFor({
       locationSnapshots: [
         location({
@@ -84,7 +84,7 @@ describe('buildBookingActivityRecords', () => {
         expect.objectContaining({
           detail: 'Location recorded without readable address',
           id: 'general-location',
-          title: 'Partner location snapshot',
+          title: 'Partner location record',
         }),
       ]),
     );
@@ -102,7 +102,7 @@ describe('buildBookingActivityRecords', () => {
     expect(buildBookingActivitySummary(records)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          helper: 'Booking action and Partner location snapshots linked to this booking.',
+          helper: 'Booking action and Partner location records linked to this booking.',
           label: 'Location',
           value: '2',
         }),

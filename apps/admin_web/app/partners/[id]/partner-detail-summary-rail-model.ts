@@ -194,12 +194,12 @@ export function buildPartnerUsageRegionSummary({
       {
         detail: latestLocationRecordedAt
           ? `Latest Partner location timestamp ${formatDate(latestLocationRecordedAt)}.`
-          : 'No Partner location snapshot loaded.',
+          : 'No Partner location record loaded.',
         detailDateTimePrefix: latestLocationRecordedAt ? 'Latest Partner location timestamp ' : undefined,
         detailDateTimeSuffix: latestLocationRecordedAt ? '.' : undefined,
         detailDateTimeValue: latestLocationRecordedAt,
         label: 'Location evidence',
-        value: `${normalizedLocationCount} snapshot(s)`,
+        value: `${normalizedLocationCount} record(s)`,
       },
       {
         detail: latestDeviceAt

@@ -134,7 +134,9 @@ describe('AdminOperatorsPage', () => {
     expect(markup).toContain('Tax &amp; Accounting');
     expect(markup).toContain('Wallet adjustments');
     expect(markup).toContain('Communications');
-    expect(markup).toContain('Policies &amp; Setup');
+    expect(markup).toContain('Policies');
+    expect(markup).toContain('Developer / System');
+    expect(markup).not.toContain('Policies &amp; Setup');
     expect(markup).toContain('Admin Control');
     expect(markup).toContain('Admin operators');
     expect(markup).toContain('Master Admin');

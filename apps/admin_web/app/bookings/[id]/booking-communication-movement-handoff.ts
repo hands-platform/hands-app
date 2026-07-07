@@ -77,7 +77,7 @@ export function bookingCommunicationMovementHandoff({
             nextAction: 'Review notification delivery',
             nextDetail: 'One or more booking alerts failed or targeted a disabled device.',
             href: '#alerts',
-            hrefLabel: 'Open alert trace',
+            hrefLabel: 'Open alert records',
           }
         : activeNeedsLocation && !latestLocation
           ? {
@@ -85,7 +85,7 @@ export function bookingCommunicationMovementHandoff({
               tone: 'pill-info',
               noteClassName: 'ops-task-info',
               nextAction: 'Ask Partner to share current location',
-              nextDetail: 'The booking is active but no Partner location snapshot is linked yet.',
+              nextDetail: 'The booking is active but no Partner location record is linked yet.',
               href: '#location',
               hrefLabel: 'Open location trail',
             }
@@ -121,7 +121,7 @@ export function bookingCommunicationMovementHandoff({
     ...locationRows.slice(-4).map((snapshot) => ({
       id: `location-${snapshot.id}`,
       type: 'LOC',
-      title: 'Partner location snapshot',
+      title: 'Partner location record',
       detail: `${partnerLocationSnapshotLabel(snapshot)} / ${locationAgeLabel}`,
       at: snapshot.recordedAt,
     })),
@@ -168,14 +168,14 @@ export function bookingCommunicationMovementHandoff({
         value: bookingProviderLocationMetricValue(movementFreshness),
         helper:
           movementFreshness === 'missing'
-            ? 'No Partner movement snapshot yet.'
+            ? 'No Partner movement record yet.'
             : `${locationAgeLabel} / ${partnerLocationSnapshotLabel(latestLocation)}`,
       },
       {
         label: 'Movement rows',
         value: `${locationRows.length}`,
         helper: locationRows.length
-          ? 'Saved Partner location snapshots linked to this booking.'
+          ? 'Saved Partner location records linked to this booking.'
           : 'No movement row linked yet.',
       },
     ],

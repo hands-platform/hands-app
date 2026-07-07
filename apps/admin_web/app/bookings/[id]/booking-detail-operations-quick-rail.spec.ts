@@ -88,7 +88,7 @@ describe('bookingDetailOperationsQuickRail', () => {
     });
     expect(rows.find((row) => row.label === 'Address')).toMatchObject({
       detail: 'District service address',
-      value: 'Service address snapshot saved',
+      value: 'Service address record saved',
     });
     expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
     expect(rows.find((row) => row.label === 'Location')).toMatchObject({

@@ -176,7 +176,7 @@ export function bookingOperatingBaseTimelineItems({
       id: `location-missing-${booking.id}`,
       type: 'LOC',
       title: 'Partner location not shared',
-      detail: 'Active service state has no linked Partner location snapshot.',
+      detail: 'Active service state has no linked Partner location record.',
       status: 'Pending',
     });
   }

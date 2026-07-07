@@ -222,10 +222,10 @@ export function BookingEvidenceSections({
         }
         className="admin-mb-16"
         description="Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement, and completed closeout. It keeps the decision factual and evidence-based."
-        id="manual-decision-readiness"
-        title="Manual outcome decision readiness"
+        id="manual-decision-board"
+        title="Manual outcome decision board"
       >
-        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Manual decision readiness rows">
+        <div className="booking-settlement-ledger booking-evidence-ledger admin-mt-12" aria-label="Manual decision rows">
           {manualDecisionReadiness.map((row) => (
             <div className="booking-settlement-ledger-row is-evidence-record" key={row.lane}>
               <div>

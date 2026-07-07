@@ -143,7 +143,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       href: '#location',
       latestAt: optionalDate(provider.currentLocationUpdatedAt ?? provider.locationSnapshots?.[0]?.recordedAt),
       tone: locationFresh ? 'pill-success' : 'pill-warn',
-      evidence: [`${provider.locationSnapshots?.length ?? 0} snapshot(s)`, `${Math.round(dispatchPolicy.backupRadiusMeters / 1000)}km marketplace radius`, locationFresh ? 'Fresh enough' : 'Refresh needed'],
+      evidence: [`${provider.locationSnapshots?.length ?? 0} record(s)`, `${Math.round(dispatchPolicy.backupRadiusMeters / 1000)}km marketplace radius`, locationFresh ? 'Fresh enough' : 'Refresh needed'],
     },
     {
       lane: 'App reachability',

@@ -131,5 +131,5 @@ function quickRailAddressStateLabel(addressPin: string) {
     return serviceAddressAreaLabel(address);
   }
 
-  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
+  return addressPin === 'No pin' ? 'No service address location' : 'Service address record saved';
 }

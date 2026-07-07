@@ -23,7 +23,7 @@ export function bookingDetailCustomerRows({
     { label: 'Name', value: booking.customerProfile?.user?.fullName ?? 'Customer' },
     { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
     { label: 'Address', value: addressLine },
-    { label: 'Address snapshot', value: addressPin === 'No pin' ? 'No snapshot saved' : 'Snapshot saved' },
+    { label: 'Service address record', value: addressPin === 'No pin' ? 'No record saved' : 'Record saved' },
     { label: 'Request opened', value: 'Not set', dateTimeValue: bookingRequestOpenedAt(booking) },
     { label: 'Expires', value: 'Not set', dateTimeValue: booking.expiresAt },
   ];
@@ -80,7 +80,7 @@ export function bookingDetailLocationTrailRows(
     coordinate: locationTrailDisplayValue(snapshot),
     detail: locationTrailDetail(snapshot),
     id: snapshot.id,
-    label: bookingId && snapshot.bookingId === bookingId ? 'Booking action snapshot' : 'Partner live snapshot',
+    label: bookingId && snapshot.bookingId === bookingId ? 'Booking action record' : 'Partner location record',
     recordedAt: 'Not set',
     recordedAtValue: snapshot.recordedAt,
   }));
@@ -93,7 +93,7 @@ function locationTrailDisplayValue(snapshot: AdminLocationSnapshot) {
 
 function locationTrailDetail(snapshot: AdminLocationSnapshot) {
   const address = readAddressText(snapshot);
-  return address ? 'Coordinate retained for distance checks.' : 'Address not recorded for this location snapshot.';
+  return address ? 'Coordinate retained for distance checks.' : 'Address not recorded for this location record.';
 }
 
 function latestPartnerLocationValue(latestLocation?: AdminLocationSnapshot | null) {

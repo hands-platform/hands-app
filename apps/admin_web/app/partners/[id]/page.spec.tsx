@@ -135,6 +135,13 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).not.toContain('withdrawal setup blocker');
     expect(providerDetailSource).not.toContain("label: 'Withdrawal setup'");
   });
+
+  it('uses operator-facing record wording instead of diagnostic snapshot copy', () => {
+    expect(providerDetailSource).toContain("title: 'Location record'");
+    expect(providerDetailSource).toContain('Address record metadata missing');
+    expect(providerDetailSource).not.toContain("title: 'Location snapshot'");
+    expect(providerDetailSource).not.toContain('Address snapshot metadata missing');
+  });
 });
 
 function partnerDetail(): AdminProvider {

@@ -66,7 +66,7 @@ describe('partner detail profile and location sections', () => {
     );
   });
 
-  it('renders latest location evidence and snapshots in the same table pattern', () => {
+  it('renders latest location evidence and records in the same table pattern', () => {
     const section = PartnerDetailLocationActivityCard({
       coordinatesLabel: '21.02776, 105.83416',
       lastLocationLabel: '20 Jun 2026, 10:30',
@@ -79,10 +79,10 @@ describe('partner detail profile and location sections', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Location and activity');
-    expect(rendered).toContain('2 snapshot(s)');
+    expect(rendered).toContain('2 record(s)');
     expect(rendered).toContain('Last location');
     expect(rendered).toContain('Location evidence');
-    expect(rendered).toContain('Recent snapshots');
+    expect(rendered).toContain('Recent location records');
     expect(rendered).toContain('20 Jun 2026, 10:30');
     expect(rendered).toContain('20 Jun 2026, 09:15');
     expect(rendered).toContain('Partner location saved for dispatch checks.');

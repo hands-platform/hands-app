@@ -40,7 +40,7 @@ describe('PartnerDetailCommandSnapshotSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Partner command snapshot');
+    expect(rendered).toContain('Partner command summary');
     expect(rendered).toContain('Filter-aware facts for this partner');
     expect(rendered).toContain('2 fact groups');
     expect(rendered).toContain('Completed work');

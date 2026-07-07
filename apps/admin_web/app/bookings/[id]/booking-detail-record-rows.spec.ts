@@ -29,7 +29,7 @@ function location(input: Partial<AdminLocationSnapshot> = {}): AdminLocationSnap
 }
 
 describe('booking detail record rows', () => {
-  it('builds customer rows with address snapshot, opened, and expiry copy without exposing coordinates', () => {
+  it('builds customer rows with service address record, opened, and expiry copy without exposing coordinates', () => {
     const rows = bookingDetailCustomerRows({
       booking: booking({
         customerProfile: {
@@ -49,7 +49,7 @@ describe('booking detail record rows', () => {
       { label: 'Name', value: 'Mai Customer' },
       { label: 'Phone', value: '+84000000001' },
       { label: 'Address', value: 'District service address' },
-      { label: 'Address snapshot', value: 'Snapshot saved' },
+      { label: 'Service address record', value: 'Record saved' },
       { label: 'Request opened', value: 'Not set', dateTimeValue: '2026-06-14T01:15:00.000Z' },
       { label: 'Expires', value: 'Not set', dateTimeValue: '2026-06-14T03:00:00.000Z' },
     ]);
@@ -88,7 +88,7 @@ describe('booking detail record rows', () => {
     expect(rows.map((row) => row.value).join(' ')).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
   });
 
-  it('builds service rows from the loaded booking service snapshot', () => {
+  it('builds service rows from the loaded booking service record', () => {
     const rows = bookingDetailServiceRows(
       booking({
         notes: 'Customer prefers quiet room',
@@ -136,9 +136,9 @@ describe('booking detail record rows', () => {
         badge: 'Live',
         badgeTone: 'pill-neutral',
         coordinate: 'Location recorded without readable address',
-        detail: 'Address not recorded for this location snapshot.',
+        detail: 'Address not recorded for this location record.',
         id: 'trail-1',
-        label: 'Partner live snapshot',
+        label: 'Partner location record',
         recordedAt: 'Not set',
         recordedAtValue: '2026-06-14T02:00:00.000Z',
       },
@@ -164,7 +164,7 @@ describe('booking detail record rows', () => {
         coordinate: 'District 1, Ho Chi Minh City',
         detail: 'Coordinate retained for distance checks.',
         id: 'action-trail-1',
-        label: 'Booking action snapshot',
+        label: 'Booking action record',
         recordedAt: 'Not set',
         recordedAtValue: '2026-06-14T02:00:00.000Z',
       },

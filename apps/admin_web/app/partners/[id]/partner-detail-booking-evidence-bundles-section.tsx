@@ -55,7 +55,7 @@ export function PartnerDetailBookingEvidenceBundlesSection({
   return (
     <PartnerDetailVuexyTablePanel
       className="admin-mb-16"
-      description="Booking-by-booking partner work bundle for operators. Each row connects the partner role, customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and staff task records as factual history only."
+      description="Booking-by-booking partner work bundle for operators. Each row connects the partner role, customer service address record, chat record, payment, earning, payout/wallet records, location, and staff task records as factual history only."
       id="partner-booking-evidence-bundles"
       resultLabel={`${rows.length} booking bundle(s)`}
       title="Partner booking evidence bundles"

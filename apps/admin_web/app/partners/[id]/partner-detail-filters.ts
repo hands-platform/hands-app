@@ -17,7 +17,7 @@ export const PARTNER_ACTIVITY_TYPE_OPTIONS = [
     label: 'Account, app sessions, and devices',
     types: ['ACCOUNT', 'SESSION', 'DEVICE'],
   },
-  { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
+  { value: 'location', label: 'Location records', types: ['LOCATION'] },
   { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
   {
     value: 'verification',

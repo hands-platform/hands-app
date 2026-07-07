@@ -23,6 +23,10 @@ describe('PartnerDetailBookingEvidenceBundlesSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-evidence-bundles-section.tsx', 'utf8');
 
     expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).toContain('customer service address record');
+    expect(source).toContain('chat record');
+    expect(source).not.toContain('customer address snapshot');
+    expect(source).not.toContain('chat archive, payment');
     expect(source).not.toContain('AdminFilterPanel');
     expect(source).not.toContain('partnerDetailReviewCardClassName');
   });

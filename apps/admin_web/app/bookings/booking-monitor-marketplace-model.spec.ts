@@ -31,7 +31,7 @@ describe('booking monitor marketplace model', () => {
       ['Open marketplace', '0'],
       ['Customer choice', '0'],
       ['No participant supply', '0'],
-      ['Alert trace missing', '0'],
+      ['Alert delivery missing', '0'],
       ['Selected Partners', '0'],
       ['Cash fee debt', '0'],
     ]);
