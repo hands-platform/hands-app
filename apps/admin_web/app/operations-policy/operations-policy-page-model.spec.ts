@@ -35,6 +35,20 @@ describe('operations policy page model', () => {
     expect(bookingGateAuditUrl.searchParams.get('take')).toBe('50');
   });
 
+  it('falls back to the compact sample when full diagnostics are not allowed', () => {
+    const plan = buildOperationsPolicyLoadPlan({ details: 'all' }, { allowFullDiagnostics: false });
+    const bookingsUrl = new URL(plan.bookingsHref, 'http://admin.local');
+    const policyAuditUrl = new URL(plan.policyAuditHref, 'http://admin.local');
+    const bookingGateAuditUrl = new URL(plan.bookingGateAuditHref, 'http://admin.local');
+
+    expect(plan.detailsMode).toBe('summary');
+    expect(plan.shouldRenderFullDiagnostics).toBe(false);
+    expect(bookingsUrl.searchParams.get('take')).toBe('10');
+    expect(plan.providersHref).toBeNull();
+    expect(policyAuditUrl.searchParams.get('take')).toBe('5');
+    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('5');
+  });
+
   it('builds stable summary and full diagnostics links', () => {
     expect(buildOperationsPolicyDetailsHref('all')).toBe('/operations-policy?details=all');
     expect(buildOperationsPolicyDetailsHref('summary')).toBe('/operations-policy');

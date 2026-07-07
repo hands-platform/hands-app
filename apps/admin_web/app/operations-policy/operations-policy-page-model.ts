@@ -12,6 +12,9 @@ const FULL_POLICY_AUDIT_TAKE = 20;
 const FULL_BOOKING_GATE_AUDIT_TAKE = 50;
 
 type OperationsPolicyParams = Record<string, string | string[] | undefined>;
+type OperationsPolicyLoadPlanOptions = {
+  readonly allowFullDiagnostics?: boolean;
+};
 
 export type OperationsPolicyLoadPlan = {
   readonly bookingGateAuditHref: string;
@@ -23,8 +26,13 @@ export type OperationsPolicyLoadPlan = {
   readonly shouldRenderFullDiagnostics: boolean;
 };
 
-export function buildOperationsPolicyLoadPlan(params: OperationsPolicyParams): OperationsPolicyLoadPlan {
-  const detailsMode = normalizeOperationsPolicyDetailsMode(readSearchParam(params.details));
+export function buildOperationsPolicyLoadPlan(
+  params: OperationsPolicyParams,
+  options: OperationsPolicyLoadPlanOptions = {},
+): OperationsPolicyLoadPlan {
+  const requestedDetailsMode = normalizeOperationsPolicyDetailsMode(readSearchParam(params.details));
+  const detailsMode =
+    requestedDetailsMode === 'all' && options.allowFullDiagnostics === false ? 'summary' : requestedDetailsMode;
   const full = detailsMode === 'all';
   const bookingsTake = full ? FULL_BOOKING_SAMPLE_TAKE : SUMMARY_BOOKING_SAMPLE_TAKE;
   const policyAuditTake = full ? FULL_POLICY_AUDIT_TAKE : SUMMARY_POLICY_AUDIT_TAKE;

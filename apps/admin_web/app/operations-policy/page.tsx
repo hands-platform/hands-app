@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react';
+import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
@@ -16,6 +17,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 import { buildBookingCreateGateReview } from './booking-create-gate-review';
@@ -77,7 +79,9 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const loadPlan = buildOperationsPolicyLoadPlan(params);
+  const operatorAccess = await getCurrentAdminOperatorAccess();
+  const canLoadFullDiagnostics = canViewAdminDeveloperSystem(operatorAccess);
+  const loadPlan = buildOperationsPolicyLoadPlan(params, { allowFullDiagnostics: canLoadFullDiagnostics });
   const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, []),
     adminGet<AdminBooking[]>(loadPlan.bookingsHref, []),
@@ -221,7 +225,7 @@ export default async function OperationsPolicyPage({
 
           <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
         </>
-      ) : (
+      ) : canLoadFullDiagnostics ? (
         <AdminSection
           actions={
             <AdminFormControlLink className="button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
@@ -232,7 +236,7 @@ export default async function OperationsPolicyPage({
           description="The default policy page keeps live editing and gate checks fast. Load full diagnostics only when reviewing simulation, audit trail, drilldown, and owner decision pressure."
           title="Diagnostics loaded on demand"
         />
-      )}
+      ) : null}
 
       <AdminSection
         className="admin-mb-16"
@@ -258,7 +262,7 @@ export default async function OperationsPolicyPage({
               />
             ))}
           </AdminDetailGrid>
-        ) : (
+        ) : canLoadFullDiagnostics ? (
           <AdminNotePanel className="admin-m-0">
             <AdminSectionHeader
               description="Decision policy editors are available in the full diagnostics view so the default page stays focused on live matching edits and booking gates."
@@ -271,6 +275,14 @@ export default async function OperationsPolicyPage({
             >
               Load decision editor
             </AdminFormControlLink>
+          </AdminNotePanel>
+        ) : (
+          <AdminNotePanel className="admin-m-0">
+            <AdminSectionHeader
+              description="Decision policies are retained for owner review while this compact operations view stays focused on live matching and booking gates."
+              status={<StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>}
+              title="Decision policies retained"
+            />
           </AdminNotePanel>
         )}
       </AdminSection>

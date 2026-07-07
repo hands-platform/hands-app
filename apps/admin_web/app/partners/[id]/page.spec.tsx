@@ -89,6 +89,42 @@ describe('ProviderDetailPage data loading', () => {
       "status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}",
     );
   });
+
+  it('keeps deep partner diagnostic records behind the Developer/System section gate', () => {
+    expect(providerDetailSource).toContain('AdminDeveloperSystemSection');
+    expect(providerDetailSource).toContain(
+      'const partnerCommandSnapshotDiagnosticSection = await AdminDeveloperSystemSection({',
+    );
+    expect(providerDetailSource).toContain(
+      'const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({',
+    );
+    expect(providerDetailSource).toContain(
+      'const partnerBookingOpsLedgerDiagnosticSection = await AdminDeveloperSystemSection({',
+    );
+    expect(providerDetailSource).toContain(
+      'const partnerDeviceSessionDiagnosticSection = await AdminDeveloperSystemSection({',
+    );
+    expect(
+      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = await AdminDeveloperSystemSection({'),
+    ).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'),
+    );
+    expect(
+      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({'),
+    ).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'),
+    );
+    expect(
+      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({'),
+    ).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
+    );
+    expect(
+      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = await AdminDeveloperSystemSection({'),
+    ).toBeLessThan(
+      providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
+    );
+  });
 });
 
 function partnerDetail(): AdminProvider {
