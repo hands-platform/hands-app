@@ -58,23 +58,6 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
         </TaxFinanceWorkflowActions>
       }
       description="Payment processing fees are tracked separately from Partner VAT/PIT and company output VAT."
-      metrics={[
-        {
-          helper: 'Settlement snapshots included in this payment fee period.',
-          label: 'Settlements',
-          value: summary.settlementCount,
-        },
-        {
-          helper: 'Customer payment volume used to audit payment fee cost.',
-          label: 'Customer paid',
-          value: <MoneyText amount={summary.customerPaymentAmountTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Processing fees. This is not Partner withholding tax or company output VAT.',
-          label: 'Payment fees',
-          value: <MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />,
-        },
-      ]}
       title="Payment Fees"
     >
       <FinanceListCommandBoard ariaLabel="Fee command board">

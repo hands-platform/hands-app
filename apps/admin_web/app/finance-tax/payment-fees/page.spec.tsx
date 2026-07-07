@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('PaymentFeesPage', () => {
   beforeEach(() => {
@@ -41,6 +44,11 @@ describe('PaymentFeesPage', () => {
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
+  });
+
+  it('keeps the payment fee period compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Fee command board">');
+    expect(source).not.toContain('metrics={[');
   });
 
   it('uses the summary currency in every payment fee breakdown table', async () => {

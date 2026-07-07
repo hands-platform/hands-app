@@ -10,4 +10,9 @@ describe('SettlementReversalsPage Vuexy links', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain("import Link from 'next/link';");
   });
+
+  it('keeps the reversal queue compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Reversal command board">');
+    expect(source).not.toContain('metrics={[');
+  });
 });

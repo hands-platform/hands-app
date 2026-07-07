@@ -72,21 +72,6 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
         />
       }
       description="Closed-period refund and settlement reversal records. These rows preserve the original monthly close and point finance to reversal journal and clearing evidence."
-      metrics={[
-        { helper: 'Reversal rows matching the current filters.', label: 'Reversals', value: summary.count },
-        { helper: 'Cash settlement reversals.', label: 'Cash', value: summary.cashCount },
-        { helper: 'Non-cash settlement reversals.', label: 'Non-cash', value: summary.nonCashCount },
-        {
-          helper: 'Platform fee revenue reversed in this scope.',
-          label: 'Revenue reversal',
-          value: <MoneyText amount={summary.platformFeeNetRevenue} currency={summary.currency} />,
-        },
-        {
-          helper: 'Company output VAT reversed in this scope.',
-          label: 'VAT reversal',
-          value: <MoneyText amount={summary.companyOutputVat} currency={summary.currency} />,
-        },
-      ]}
       title="Settlement Reversals"
     >
       <FinanceListCommandBoard ariaLabel="Reversal command board">

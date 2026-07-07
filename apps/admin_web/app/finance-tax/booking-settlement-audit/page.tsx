@@ -83,26 +83,6 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         </TaxFinanceWorkflowActions>
       }
       description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
-      metrics={[
-        { helper: 'Snapshot rows matching the current filters.', label: 'Snapshots', value: summary.count },
-        { helper: 'Rows whose tax status still needs finance action.', label: 'Open tax', value: summary.openTaxCount },
-        { helper: 'Rows already marked paid in tax closeout.', label: 'Paid tax', value: summary.paidTaxCount },
-        {
-          helper: 'Partner VAT/PIT withheld in these snapshots.',
-          label: 'Withheld',
-          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Company output VAT from HANDS platform fee.',
-          label: 'Company VAT',
-          value: <MoneyText amount={summary.companyOutputVat} currency={summary.currency} />,
-        },
-        {
-          helper: 'Payment processing fees recorded by settlement.',
-          label: 'Payment fees',
-          value: <MoneyText amount={summary.paymentProcessingFee} currency={summary.currency} />,
-        },
-      ]}
       title="Booking Settlement Audit"
     >
       <FinanceListCommandBoard ariaLabel="Settlement audit command board">
