@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import type { AdminProvider } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
 import ProviderDetailPage from './page';
 
@@ -21,12 +22,18 @@ vi.mock('../../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const providerDetailSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
 describe('ProviderDetailPage data loading', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockReset();
   });
 
   it('requests only the operations policy keys needed by partner dispatch readiness', async () => {
@@ -46,8 +53,17 @@ describe('ProviderDetailPage data loading', () => {
   });
 
   it('renders the full partner detail header on the shared Vuexy page surface', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/partners/partner-1') {
+      if (href === '/admin/partners/partner-1?includeDiagnostics=true') {
         return partnerDetail();
       }
       if (href.startsWith('/admin/operational-policy')) {
@@ -65,6 +81,61 @@ describe('ProviderDetailPage data loading', () => {
     expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('Partner One');
     expect(markup).toContain('All Partner chats');
+  });
+
+  it('requests partner detail without diagnostics for ordinary operators', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['PARTNERS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    await expect(
+      ProviderDetailPage({
+        params: Promise.resolve({ id: 'partner-no-diagnostics' }),
+        searchParams: Promise.resolve({ section: 'full' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-no-diagnostics?includeDiagnostics=false',
+      null,
+    );
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/partners/partner-no-diagnostics?includeDiagnostics=true',
+      null,
+    );
+  });
+
+  it('keeps partner overview on the lightweight endpoint without diagnostics flags', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['PARTNERS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    await expect(
+      ProviderDetailPage({
+        params: Promise.resolve({ id: 'partner-overview' }),
+        searchParams: Promise.resolve({ section: 'overview' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/partners/partner-overview/overview', null);
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/partners/partner-overview?includeDiagnostics=false',
+      null,
+    );
   });
 
   it('uses the shared Vuexy form control link for button-style partner actions', () => {

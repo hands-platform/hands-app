@@ -576,8 +576,13 @@ export class AdminController {
   }
 
   @Get(['providers/:id', 'partners/:id'])
-  providerDetail(@Param('id') providerProfileId: string) {
-    return this.admin.getProviderDetail(providerProfileId);
+  providerDetail(
+    @Param('id') providerProfileId: string,
+    @Query('includeDiagnostics') includeDiagnostics?: string,
+  ) {
+    return this.admin.getProviderDetail(providerProfileId, {
+      includeDiagnostics: includeDiagnostics !== 'false',
+    });
   }
 
   @Post(['providers/:id/ops-note', 'partners/:id/ops-note'])

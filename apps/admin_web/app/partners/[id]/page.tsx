@@ -18,7 +18,10 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
 } from '../../../components/admin-review-records-section';
-import { AdminDeveloperSystemSection } from '../../../components/admin-developer-system-section';
+import {
+  AdminDeveloperSystemSection,
+  canViewAdminDeveloperSystem,
+} from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
@@ -43,6 +46,7 @@ import {
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readSearchParam } from '../../../lib/date-range';
 import {
@@ -455,8 +459,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
+  const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const providerEndpoint =
-    detailSection === 'overview' ? `/admin/partners/${id}/overview` : `/admin/partners/${id}`;
+    detailSection === 'overview'
+      ? `/admin/partners/${id}/overview`
+      : `/admin/partners/${id}?includeDiagnostics=${canLoadPartnerDiagnostics ? 'true' : 'false'}`;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(providerEndpoint, null),
     adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),

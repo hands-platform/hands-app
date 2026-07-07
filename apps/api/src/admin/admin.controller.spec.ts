@@ -13,6 +13,8 @@ describe('AdminController notification and push actions', () => {
     fileReviewSummary: vi.fn(),
     getMarketingOverview: vi.fn(),
     getPartnerOverview: vi.fn(),
+    getProviderDetail: vi.fn(),
+    getProviderOverview: vi.fn(),
     listMarketingDimensionRows: vi.fn(),
     getMarketingSummary: vi.fn(),
     getUsageOverview: vi.fn(),
@@ -1853,6 +1855,20 @@ describe('AdminController notification and push actions', () => {
       verificationStatus: 'APPROVED',
       walletStatus: 'negative',
     });
+  });
+
+  it('passes partner detail diagnostics intent to the service while preserving default compatibility', async () => {
+    admin.getProviderDetail.mockResolvedValue({ id: 'partner-1' });
+
+    await expect(controller.providerDetail('partner-1', undefined)).resolves.toEqual({ id: 'partner-1' });
+    await expect(controller.providerDetail('partner-1', 'false')).resolves.toEqual({ id: 'partner-1' });
+
+    expect(routeMetadata('providerDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: ['providers/:id', 'partners/:id'],
+    });
+    expect(admin.getProviderDetail).toHaveBeenNthCalledWith(1, 'partner-1', { includeDiagnostics: true });
+    expect(admin.getProviderDetail).toHaveBeenNthCalledWith(2, 'partner-1', { includeDiagnostics: false });
   });
 
   it('exposes marketing overview as a separate aggregate GET endpoint', async () => {

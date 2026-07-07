@@ -154,6 +154,7 @@ import {
   ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderControlSelect,
   adminProviderDetailSelect,
+  adminProviderDetailWithoutDiagnosticsSelect,
   adminProviderDirectorySelect,
   adminProviderFileReviewSelect,
   adminProviderFileReviewWhere,
@@ -6506,24 +6507,30 @@ export class AdminService {
     });
   }
 
-  async getProviderDetail(providerProfileId: string) {
+  async getProviderDetail(
+    providerProfileId: string,
+    options: { includeDiagnostics?: boolean } = {},
+  ) {
+    const includeDiagnostics = options.includeDiagnostics !== false;
     const provider = await this.prisma.providerProfile.findUnique({
       where: { id: providerProfileId },
-      select: adminProviderDetailSelect,
+      select: includeDiagnostics ? adminProviderDetailSelect : adminProviderDetailWithoutDiagnosticsSelect,
     });
     if (!provider) {
       throw new NotFoundException('Partner not found');
     }
+    const providerDevices = includeDiagnostics && Array.isArray(provider.devices) ? provider.devices : [];
+    const providerSessions = includeDiagnostics && Array.isArray(provider.sessions) ? provider.sessions : [];
 
     const deviceIds = Array.from(
       new Set(
         [
-          ...provider.devices.map((device) => device.deviceId),
-          ...provider.sessions.map((session) => session.deviceId),
+          ...providerDevices.map((device) => device.deviceId),
+          ...providerSessions.map((session) => session.deviceId),
         ].filter((deviceId): deviceId is string => Boolean(deviceId)),
       ),
     );
-    const sharedDeviceMatchesPromise = deviceIds.length
+    const sharedDeviceMatchesPromise = includeDiagnostics && deviceIds.length
       ? this.prisma.providerDevice.findMany({
           where: {
             deviceId: { in: deviceIds },

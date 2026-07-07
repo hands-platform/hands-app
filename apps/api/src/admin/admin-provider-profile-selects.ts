@@ -988,3 +988,7 @@ export const adminProviderDetailSelect = {
     select: adminProviderVerificationLogSummarySelect,
   },
 } satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderDetailWithoutDiagnosticsSelect = Object.fromEntries(
+  Object.entries(adminProviderDetailSelect).filter(([key]) => key !== 'devices' && key !== 'sessions'),
+) as Prisma.ProviderProfileSelect;

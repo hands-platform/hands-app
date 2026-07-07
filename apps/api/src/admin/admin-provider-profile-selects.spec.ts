@@ -9,6 +9,7 @@ import {
   adminBookingDetailProviderSelect,
   adminLocationSnapshotSummarySelect,
   adminProviderDetailSelect,
+  adminProviderDetailWithoutDiagnosticsSelect,
   adminProviderDirectorySelect,
   adminProviderListBookingSelect,
   adminProviderListEarningSelect,
@@ -117,6 +118,21 @@ describe('admin provider profile selects', () => {
     expect(adminProviderDetailSelect.bankAccounts.select).toMatchObject({
       createdAt: true,
       updatedAt: true,
+    });
+  });
+
+  it('keeps provider detail diagnostics selectable only when requested', () => {
+    expect(adminProviderDetailSelect).toMatchObject({
+      devices: { take: 10 },
+      sessions: { take: 10 },
+    });
+    expect(adminProviderDetailWithoutDiagnosticsSelect).not.toHaveProperty('devices');
+    expect(adminProviderDetailWithoutDiagnosticsSelect).not.toHaveProperty('sessions');
+    expect(adminProviderDetailWithoutDiagnosticsSelect).toMatchObject({
+      documents: { take: 50 },
+      bankAccounts: { take: 10 },
+      reports: { take: 20 },
+      sanctions: { take: 20 },
     });
   });
 
