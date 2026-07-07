@@ -4,6 +4,7 @@ import type { AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
@@ -177,7 +178,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                     <div className="muted">{user.id}</div>
                   </td>
                   <td>
-                    <div className="participant-list">
+                    <AdminFilterChipGroup ariaLabel={`${user.fullName ?? user.id} roles`}>
                       {user.roles.map((role) => (
                         <StatusBadge
                           key={role}
@@ -186,7 +187,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
                           {role}
                         </StatusBadge>
                       ))}
-                    </div>
+                    </AdminFilterChipGroup>
                   </td>
                   <td>
                     <strong>
