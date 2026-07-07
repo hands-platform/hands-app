@@ -43,6 +43,9 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('card admin-card vietnam-realtime-widget');
     expect(markup).not.toContain('<article class="vietnam-realtime-widget');
     expect(pageSource).toContain('AdminOverviewGrid');
+    expect(pageSource).toContain('AdminCardGrid');
+    expect(pageSource).not.toContain('<div className="vietnam-realtime-widget-grid">');
+    expect(pageSource).not.toContain('<div className="vietnam-realtime-analytics-grid">');
     expect(pageSource).not.toContain(
       '<section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">',
     );

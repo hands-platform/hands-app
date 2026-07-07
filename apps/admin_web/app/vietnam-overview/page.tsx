@@ -30,7 +30,7 @@ import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminOverviewGrid, AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminKpiCard, AdminRowLink, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminKpiCard, AdminRowLink, AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
@@ -404,7 +404,7 @@ export default async function VietnamOverviewPage({
         baseClassName="vietnam-realtime-dashboard"
         variant="content"
       >
-        <div className="vietnam-realtime-widget-grid">
+        <AdminCardGrid ariaLabel="Realtime Vietnam signal widgets" className="vietnam-realtime-widget-grid">
           {realtimeOperatorCards.map(({ label, value, detail, icon: Icon, tone, progress }) => (
             <AdminCard key={label} className={`vietnam-realtime-widget is-${tone}`}>
               <div className="vietnam-realtime-widget-icon">
@@ -420,9 +420,9 @@ export default async function VietnamOverviewPage({
               </div>
             </AdminCard>
           ))}
-        </div>
+        </AdminCardGrid>
 
-        <div className="vietnam-realtime-analytics-grid">
+        <AdminCardGrid ariaLabel="Realtime Vietnam analytics cards" className="vietnam-realtime-analytics-grid">
           <AdminSection
             actions={<strong>{formatNumber(realtimeSignalTotal)}</strong>}
             bodyClassName="vietnam-realtime-signal-bars"
@@ -482,7 +482,7 @@ export default async function VietnamOverviewPage({
               />
             ) : null}
           </AdminSection>
-        </div>
+        </AdminCardGrid>
       </AdminOverviewGrid>
 
       <AdminSection
