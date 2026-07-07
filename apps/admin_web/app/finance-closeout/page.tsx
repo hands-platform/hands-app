@@ -9,6 +9,7 @@ import {
   AdminRefundSummary,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -109,7 +110,6 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
             Open finance audit
           </AdminTextLink>
         }
-        bodyClassName="filter-row admin-mt-12"
         className="admin-mt-16 admin-mb-16"
         description={
           <>
@@ -119,21 +119,23 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
         }
         title="Finance date range"
       >
-        {[
-          { href: '/finance-closeout?range=all', label: 'All records', range: 'all' },
-          { href: '/finance-closeout?range=today', label: 'Today', range: 'today' },
-          { href: '/finance-closeout?range=7d', label: 'Last 7 days', range: '7d' },
-          { href: '/finance-closeout?range=30d', label: 'Last 30 days', range: '30d' },
-        ].map((option) => (
-          <StatusBadgeLink
-            ariaCurrent={option.range === filters.range ? 'page' : undefined}
-            href={option.href}
-            key={option.range}
-            tone={option.range === filters.range ? 'info' : 'neutral'}
-          >
-            {option.label}
-          </StatusBadgeLink>
-        ))}
+        <AdminFilterChipGroup ariaLabel="Finance closeout date range">
+          {[
+            { href: '/finance-closeout?range=all', label: 'All records', range: 'all' },
+            { href: '/finance-closeout?range=today', label: 'Today', range: 'today' },
+            { href: '/finance-closeout?range=7d', label: 'Last 7 days', range: '7d' },
+            { href: '/finance-closeout?range=30d', label: 'Last 30 days', range: '30d' },
+          ].map((option) => (
+            <StatusBadgeLink
+              ariaCurrent={option.range === filters.range ? 'page' : undefined}
+              href={option.href}
+              key={option.range}
+              tone={option.range === filters.range ? 'info' : 'neutral'}
+            >
+              {option.label}
+            </StatusBadgeLink>
+          ))}
+        </AdminFilterChipGroup>
       </AdminSection>
 
       <FinanceCloseoutTaskBoardSection tasks={closeoutTasks} />

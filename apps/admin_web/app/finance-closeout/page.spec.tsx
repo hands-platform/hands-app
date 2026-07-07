@@ -201,7 +201,9 @@ describe('FinanceCloseoutPage', () => {
   });
 
   it('uses shared status links for closeout range filters', () => {
+    expect(pageSource).toContain('AdminFilterChipGroup');
     expect(pageSource).toContain('StatusBadgeLink');
+    expect(pageSource).not.toContain('bodyClassName="filter-row admin-mt-12"');
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 
