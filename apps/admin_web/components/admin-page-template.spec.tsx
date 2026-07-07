@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { AdminMetricGrid, AdminPageTemplate, AdminSectionHeader } from './admin-page-template';
 
 describe('AdminPageTemplate', () => {
@@ -24,6 +26,15 @@ describe('AdminPageTemplate', () => {
     });
 
     expect(template.props.children[2].props.className).toBe('finance-overview-grid admin-page-content');
+  });
+
+  it('scopes shared page header typography to direct title copy slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.admin-page-header > div > h1');
+    expect(css).toContain('.admin-page-header > div > p');
+    expect(css).not.toContain('.admin-page-header h1');
+    expect(css).not.toContain('.admin-page-header p');
   });
 
   it('renders metric cards through the shared metric grid', () => {

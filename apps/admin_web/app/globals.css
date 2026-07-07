@@ -3130,13 +3130,13 @@ a.action-button-card:hover {
   padding: 24px;
 }
 
-.admin-page-header h1 {
+.admin-page-header > div > h1 {
   font-size: 26px;
   line-height: 1.18;
   margin-bottom: 8px;
 }
 
-.admin-page-header p {
+.admin-page-header > div > p {
   max-width: 780px;
 }
 
