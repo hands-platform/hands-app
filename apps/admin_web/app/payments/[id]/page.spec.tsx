@@ -77,6 +77,8 @@ describe('PaymentDetailPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/[id]/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
+    expect(source).not.toContain('<div className="setup-stage-list');
     expect(source).not.toContain('className="setup-stage-item"');
   });
 

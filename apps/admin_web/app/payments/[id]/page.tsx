@@ -7,7 +7,7 @@ import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '..
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
-import { AdminStageItem } from '../../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import { AdminTextLink } from '../../../components/admin-text-link';
@@ -186,14 +186,14 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
           resultTone={booking ? 'info' : 'warning'}
           title="Linked booking evidence"
         >
-          <div className="setup-stage-list">
+          <AdminStageList>
             <EvidenceRow label="Booking" value={booking?.id ?? 'Not linked'} helper={booking?.status ?? 'No booking status'} />
             <EvidenceRow label="Customer" value={customerLabel(payment)} helper={booking?.customerProfile?.user?.phone ?? 'No customer phone'} />
             <EvidenceRow label="Partner" value={partnerLabel(payment)} helper={booking?.selectedProvider?.user?.phone ?? 'No selected partner phone'} />
             <EvidenceRow label="Address" value={bookingAddress} helper={bookingCoordinateLabel(payment)} />
             <EvidenceRow label="Service" value={serviceLabel} helper={bookingServicePriceLabel(payment)} />
             <EvidenceRow label="Chat" value={booking?.chatRoom ? `${messages.length} message(s)` : 'No room'} helper="Admin keeps chat evidence after service completion." />
-          </div>
+          </AdminStageList>
         </AdminTablePanel>
 
         <AdminTablePanel
@@ -203,14 +203,14 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
           resultTone={cashDebt ? 'warning' : 'info'}
           title="Money ledger"
         >
-          <div className="setup-stage-list">
+          <AdminStageList>
             <EvidenceRow label="Gross" value={paymentMoney(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
             <EvidenceRow label="HANDS fee" value={paymentMoney(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
             <EvidenceRow label="Withholding" value={paymentMoney(earning?.withholdingAmount, earning?.currency ?? payment.currency)} helper="Tax withholding saved by current policy." />
             <EvidenceRow label="Partner net" value={paymentMoney(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before final acceptance, service start, or payout release.' : 'Net amount is not blocking final acceptance, service start, or payout release.'} />
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
-          </div>
+          </AdminStageList>
         </AdminTablePanel>
       </AdminDetailGrid>
 
@@ -221,7 +221,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         resultTone={messages.length ? 'success' : 'warning'}
         title="Chat and operation evidence"
       >
-        <div className="setup-stage-list">
+        <AdminStageList>
           {messages.slice(-8).map((message) => (
             <ChatEvidenceRow message={message} key={message.id} />
           ))}
@@ -236,7 +236,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
               </div>
             </AdminStageItem>
           ) : null}
-        </div>
+        </AdminStageList>
       </AdminTablePanel>
 
       <AdminTablePanel
@@ -465,7 +465,7 @@ function PayloadDetails({ value }: { value: unknown }) {
   return (
     <AdminDisclosure>
       <summary>{keys.length} key(s)</summary>
-      <div className="setup-stage-list">
+      <AdminStageList>
         {keys.slice(0, 12).map((key) => (
           <AdminStageItem key={key}>
             <StatusBadge tone="neutral">{key}</StatusBadge>
@@ -474,7 +474,7 @@ function PayloadDetails({ value }: { value: unknown }) {
             </div>
           </AdminStageItem>
         ))}
-      </div>
+      </AdminStageList>
     </AdminDisclosure>
   );
 }
