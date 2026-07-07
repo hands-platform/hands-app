@@ -13,6 +13,31 @@ describe('Admin chat window CSS', () => {
     expect(emptyBlock).toContain('padding: 18px');
     expect(emptyBlock).toContain('text-align: center');
   });
+
+  it('scopes chat transcript typography to direct Vuexy chat slots', () => {
+    expect(globalsCss).toContain('.booking-chat-evidence-item > span');
+    expect(globalsCss).toContain('.booking-chat-evidence-item > strong');
+    expect(globalsCss).toContain('.booking-chat-evidence-item > p');
+    expect(globalsCss).toContain('.admin-chat-contact > div > strong');
+    expect(globalsCss).toContain('.admin-chat-contact > div > span');
+    expect(globalsCss).toContain('.booking-chat-message > p');
+    expect(globalsCss).toContain('.booking-chat-message-meta > strong');
+    expect(globalsCss).toContain('.booking-chat-message-meta > time');
+    expect(globalsCss).toContain('.chat-transcript-bubble > p');
+
+    expect(globalsCss).not.toContain('.booking-chat-evidence-item span {');
+    expect(globalsCss).not.toContain('.booking-chat-evidence-item strong {');
+    expect(globalsCss).not.toContain('.booking-chat-evidence-item p {');
+    expect(globalsCss).not.toContain(
+      '.admin-chat-contact span:not(.admin-chat-contact-avatar):not(.admin-chat-contact-status)',
+    );
+    expect(globalsCss).not.toContain('.admin-chat-contact strong {');
+    expect(globalsCss).not.toContain('.admin-chat-contact div > span {');
+    expect(globalsCss).not.toContain('.booking-chat-message p {');
+    expect(globalsCss).not.toContain('.booking-chat-message-meta strong {');
+    expect(globalsCss).not.toContain('.booking-chat-message-meta time {');
+    expect(globalsCss).not.toContain('.chat-transcript-bubble p {');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

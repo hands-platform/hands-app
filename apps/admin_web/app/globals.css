@@ -3890,13 +3890,13 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.booking-chat-evidence-item span {
+.booking-chat-evidence-item > span {
   color: var(--admin-muted);
   font-size: 12px;
   line-height: 18px;
 }
 
-.booking-chat-evidence-item strong {
+.booking-chat-evidence-item > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 600;
@@ -3906,7 +3906,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.booking-chat-evidence-item p {
+.booking-chat-evidence-item > p {
   color: var(--admin-muted);
   font-size: 12px;
   line-height: 18px;
@@ -3994,19 +3994,19 @@ a.action-button-card:hover {
   width: 12px;
 }
 
-.admin-chat-contact strong,
-.admin-chat-contact span:not(.admin-chat-contact-avatar):not(.admin-chat-contact-status) {
+.admin-chat-contact > div > strong,
+.admin-chat-contact > div > span {
   display: block;
 }
 
-.admin-chat-contact strong {
+.admin-chat-contact > div > strong {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 400;
   line-height: 22px;
 }
 
-.admin-chat-contact div > span {
+.admin-chat-contact > div > span {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
@@ -4116,7 +4116,7 @@ a.action-button-card:hover {
   padding: 10px 12px;
 }
 
-.booking-chat-message p {
+.booking-chat-message > p {
   color: var(--admin-text);
   font-size: 13px;
   line-height: 18px;
@@ -4131,12 +4131,12 @@ a.action-button-card:hover {
   gap: 6px;
 }
 
-.booking-chat-message-meta strong {
+.booking-chat-message-meta > strong {
   font-size: 13px;
   line-height: 18px;
 }
 
-.booking-chat-message-meta time {
+.booking-chat-message-meta > time {
   color: var(--admin-disabled);
   font-size: 12px;
   line-height: 16px;
@@ -12395,7 +12395,7 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.chat-transcript-bubble p {
+.chat-transcript-bubble > p {
   margin: 6px 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
