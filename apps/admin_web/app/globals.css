@@ -8326,14 +8326,14 @@ a.action-button-card:hover {
   justify-content: space-between;
 }
 
-.vietnam-region-load-header span {
+.vietnam-region-load-header > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 800;
   line-height: 16px;
 }
 
-.vietnam-region-load-header strong {
+.vietnam-region-load-header > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 800;
@@ -8347,7 +8347,7 @@ a.action-button-card:hover {
   overflow: hidden;
 }
 
-.vietnam-region-load-bar i {
+.vietnam-region-load-bar > i {
   background: rgb(var(--admin-main-channel) / 0.24);
   border-radius: inherit;
   display: block;
@@ -8355,27 +8355,27 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-region-load.is-high .vietnam-region-load-header span {
+.vietnam-region-load.is-high > .vietnam-region-load-header > span {
   color: var(--admin-danger-strong);
 }
 
-.vietnam-region-load.is-high .vietnam-region-load-bar i {
+.vietnam-region-load.is-high > .vietnam-region-load-bar > i {
   background: var(--admin-danger);
 }
 
-.vietnam-region-load.is-medium .vietnam-region-load-header span {
+.vietnam-region-load.is-medium > .vietnam-region-load-header > span {
   color: var(--admin-warning-strong);
 }
 
-.vietnam-region-load.is-medium .vietnam-region-load-bar i {
+.vietnam-region-load.is-medium > .vietnam-region-load-bar > i {
   background: var(--admin-warning);
 }
 
-.vietnam-region-load.is-low .vietnam-region-load-header span {
+.vietnam-region-load.is-low > .vietnam-region-load-header > span {
   color: var(--admin-info-strong);
 }
 
-.vietnam-region-load.is-low .vietnam-region-load-bar i {
+.vietnam-region-load.is-low > .vietnam-region-load-bar > i {
   background: var(--admin-info);
 }
 

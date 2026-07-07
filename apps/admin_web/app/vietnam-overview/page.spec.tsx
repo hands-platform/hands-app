@@ -185,6 +185,24 @@ describe('VietnamOverviewPage', () => {
     }
   });
 
+  it('scopes region load typography and meter tones to direct slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-region-load-header > span');
+    expect(css).toContain('.vietnam-region-load-header > strong');
+    expect(css).toContain('.vietnam-region-load-bar > i');
+    expect(css).not.toContain('.vietnam-region-load-header span {');
+    expect(css).not.toContain('.vietnam-region-load-header strong {');
+    expect(css).not.toContain('.vietnam-region-load-bar i {');
+
+    for (const tone of ['high', 'medium', 'low']) {
+      expect(css).toContain(`.vietnam-region-load.is-${tone} > .vietnam-region-load-header > span`);
+      expect(css).toContain(`.vietnam-region-load.is-${tone} > .vietnam-region-load-bar > i`);
+      expect(css).not.toContain(`.vietnam-region-load.is-${tone} .vietnam-region-load-header span`);
+      expect(css).not.toContain(`.vietnam-region-load.is-${tone} .vietnam-region-load-bar i`);
+    }
+  });
+
   it('scopes map legend and cluster drawer typography to direct children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
