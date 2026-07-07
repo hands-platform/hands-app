@@ -10185,7 +10185,7 @@ a.action-button-card:hover {
   overflow: hidden;
 }
 
-.usage-overview-region-bar i {
+.usage-overview-region-bar > i {
   background: linear-gradient(90deg, var(--admin-accent), var(--admin-info));
   border-radius: inherit;
   display: block;

@@ -146,6 +146,13 @@ describe('UsageOverviewPage', () => {
     }
   });
 
+  it('scopes usage region meters to direct bar slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-region-bar > i');
+    expect(css).not.toContain('.usage-overview-region-bar i {');
+  });
+
   it('scopes mini metric typography and tones to direct metric children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
