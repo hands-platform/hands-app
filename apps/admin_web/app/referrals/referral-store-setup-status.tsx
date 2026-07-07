@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 import { referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
@@ -9,7 +10,7 @@ export function ReferralStoreSetupStatus({ audience }: { readonly audience: Refe
 
   return (
     <>
-      <div className="participant-list admin-mt-8" aria-label="Referral store setup">
+      <AdminFilterChipGroup ariaLabel="Referral store setup" className="admin-mt-8">
         <StatusBadge tone={storeSetup.publicBase ? 'success' : 'warning'}>
           Public link base {storeSetup.publicBase ? 'ready' : 'missing'}
         </StatusBadge>
@@ -19,7 +20,7 @@ export function ReferralStoreSetupStatus({ audience }: { readonly audience: Refe
         <StatusBadge tone={storeSetup.ios ? 'success' : 'warning'}>
           iOS store {storeSetup.ios ? 'ready' : 'missing'}
         </StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       {hasMissingSetup ? (
         <>
           <p className="muted admin-mt-8">Missing setup: {missingEnvKeys.join(', ')}</p>

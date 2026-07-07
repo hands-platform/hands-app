@@ -126,6 +126,11 @@ describe('Referral detail presentation', () => {
     expect(detailSource).not.toContain('<div className="service-trace-summary">');
   });
 
+  it('uses the shared Vuexy chip group atom for referral detail status groups', () => {
+    expect(detailSource).toContain('AdminFilterChipGroup');
+    expect(detailSource).not.toContain('<div className="participant-list');
+  });
+
   it('builds stable referral parent detail routes', () => {
     expect(referralParentDetailHref('customer', 'parent customer')).toBe('/referrals/customers/parent%20customer');
     expect(referralParentDetailHref('partner', 'parent-partner')).toBe('/referrals/partners/parent-partner');

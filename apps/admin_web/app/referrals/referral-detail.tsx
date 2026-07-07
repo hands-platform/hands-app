@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
@@ -236,12 +237,12 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                 <tr key={referral.id}>
                   <td>{referred}</td>
                   <td>
-                    <div className="participant-list">
+                    <AdminFilterChipGroup>
                       <StatusBadge tone={referralStatusTone(referral.status)}>{referral.status}</StatusBadge>
                       <StatusBadge tone={referral.fraudReviewStatus === 'CLEAR' ? 'success' : 'warning'}>
                         {referral.fraudReviewStatus}
                       </StatusBadge>
-                    </div>
+                    </AdminFilterChipGroup>
                   </td>
                   <td>
                     <strong>{referral.installSource ?? 'Unknown'}</strong>
@@ -444,7 +445,7 @@ function ReferralAttributionRewardCell({
   }
 
   return (
-    <div className="participant-list">
+    <AdminFilterChipGroup>
       {summary.ready.count > 0 ? <StatusBadge tone="success">Ready {summary.ready.count}</StatusBadge> : null}
       {summary.pending.count > 0 ? <StatusBadge tone="warning">Pending {summary.pending.count}</StatusBadge> : null}
       {summary.held.count > 0 ? <StatusBadge tone="warning">Held {summary.held.count}</StatusBadge> : null}
@@ -453,7 +454,7 @@ function ReferralAttributionRewardCell({
       <p className="muted">
         {rewardCount} reward(s) / <MoneyText amount={totalAmount} fallback="0 VND" />
       </p>
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 
@@ -691,21 +692,21 @@ function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralRew
   const evidenceItems = referralRewardDecisionEvidence(reward);
 
   return (
-    <div className="participant-list">
+    <AdminFilterChipGroup>
       <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
       <p className="muted">{creditState.helper}</p>
       {decisionSummary ? <p className="muted">{decisionSummary}</p> : null}
       <AdminDisclosure className="referral-reward-evidence-details">
         <summary>Decision evidence</summary>
-        <div className="participant-list referral-reward-decision-evidence">
+        <AdminFilterChipGroup className="referral-reward-decision-evidence">
           {evidenceItems.map((item) => (
             <span className="muted" key={item.id}>
               {item.node}
             </span>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       </AdminDisclosure>
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 

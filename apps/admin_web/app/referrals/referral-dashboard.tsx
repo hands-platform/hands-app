@@ -8,6 +8,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
@@ -823,12 +824,12 @@ function ReferralCodeCell({
   return (
     <div>
       <strong>{code.code}</strong>
-      <div className="participant-list admin-mt-8">
+      <AdminFilterChipGroup className="admin-mt-8">
         <StatusBadge tone={code.active ? 'success' : 'neutral'}>{code.active ? 'Active' : 'Paused'}</StatusBadge>
         <small className="muted">
           <DateTimeText value={code.createdAt} />
         </small>
-      </div>
+      </AdminFilterChipGroup>
     </div>
   );
 }
@@ -927,12 +928,12 @@ function ReferralRewardCell({
           </p>
           <AdminDisclosure className="referral-parent-reward-decision-details">
             <summary>Decision details</summary>
-            <div className="participant-list referral-parent-reward-decision-evidence">
+            <AdminFilterChipGroup className="referral-parent-reward-decision-evidence">
               {latestDecision.reason ? <span className="muted">{latestDecision.reason}</span> : null}
               <span className="muted">
                 <DateTimeText value={latestDecision.createdAt} />
               </span>
-            </div>
+            </AdminFilterChipGroup>
           </AdminDisclosure>
         </>
       ) : null}
@@ -1004,14 +1005,14 @@ function ReferralStatusLine({
   readonly status: string;
 }) {
   return (
-    <div className="participant-list admin-mt-8">
+    <AdminFilterChipGroup className="admin-mt-8">
       <StatusBadge tone={referralStatusTone(status)}>{status}</StatusBadge>
       <StatusBadge tone={fraudReviewStatus === 'CLEAR' ? 'success' : 'warning'}>{fraudReviewStatus}</StatusBadge>
       <small className="muted">
         {platform ? `${platform} · ` : ''}
         <DateTimeText value={createdAt} />
       </small>
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 
@@ -1028,13 +1029,13 @@ function ReferralEmptyState({
           message={`${totalCount} parent account${totalCount === 1 ? ' exists' : 's exist'}, but none match the current filters.`}
           title={`No matching ${audienceLabel} referral parents`}
         />
-        <div className="participant-list admin-mt-8" aria-label="Active referral filters">
+        <AdminFilterChipGroup ariaLabel="Active referral filters" className="admin-mt-8">
           {activeFilters.map((filter) => (
             <StatusBadge key={filter} tone="warning">
               {filter}
             </StatusBadge>
           ))}
-        </div>
+        </AdminFilterChipGroup>
         {clearHref ? (
           <AdminTextLink className="admin-mt-8" href={clearHref}>
             Clear referral filters

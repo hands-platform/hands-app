@@ -237,7 +237,11 @@ describe('ReferralDashboard', () => {
   });
 
   it('uses the shared StatusBadge atom for active referral filter labels', () => {
+    expect(dashboardSource).toContain('AdminFilterChipGroup');
+    expect(storeSetupSource).toContain('AdminFilterChipGroup');
     expect(dashboardSource).toContain('StatusBadge');
+    expect(dashboardSource).not.toContain('<div className="participant-list');
+    expect(storeSetupSource).not.toContain('<div className="participant-list');
     expect(dashboardSource).not.toContain('<span className="pill pill-warn" key={filter}>');
   });
 
