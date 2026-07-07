@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminDisclosure, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 
 type PartnerDetailSectionGroupProps = {
@@ -78,7 +78,7 @@ export function PartnerDetailDossierCluster({
   status,
 }: PartnerDetailDossierClusterProps) {
   return (
-    <section className="partner-detail-dossier-cluster">
+    <AdminCard className="partner-detail-dossier-cluster">
       <div className="partner-detail-dossier-cluster-header">
         <div>
           <strong>{label}</strong>
@@ -87,6 +87,6 @@ export function PartnerDetailDossierCluster({
         <StatusBadge tone="info">{status}</StatusBadge>
       </div>
       <div className="partner-detail-dossier-cluster-body">{children}</div>
-    </section>
+    </AdminCard>
   );
 }

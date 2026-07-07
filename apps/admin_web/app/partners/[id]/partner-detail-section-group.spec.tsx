@@ -35,7 +35,7 @@ describe('PartnerDetailSectionGroup', () => {
   it('builds partner section groups on the shared Vuexy AdminSection surface', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
-    expect(source).toContain("import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain("import { AdminCard, AdminDisclosure, AdminSection } from '../../../components/admin-surface';");
     expect(source).toContain('<AdminSection');
     expect(source).toContain('bodyClassName="partner-detail-section-band-body partner-detail-section-group-body"');
     expect(source).toContain('headerClassName="partner-detail-section-band-header"');
@@ -117,11 +117,18 @@ describe('PartnerDetailSectionGroup', () => {
     expect(rendered).toContain('Required KYC and profile cards');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'partner-detail-dossier-cluster',
+        'card admin-card partner-detail-dossier-cluster',
         'partner-detail-dossier-cluster-header',
         'partner-detail-dossier-cluster-body',
       ]),
     );
+  });
+
+  it('builds dossier clusters on the shared Vuexy card surface', () => {
+    const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
+
+    expect(source).toContain('<AdminCard className="partner-detail-dossier-cluster">');
+    expect(source).not.toContain('<section className="partner-detail-dossier-cluster">');
   });
 
   it('uses shared badge atoms for section and dossier status chips', () => {
