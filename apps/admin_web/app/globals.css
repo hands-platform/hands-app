@@ -7570,7 +7570,7 @@ a.action-button-card:hover {
   grid-column: 1 / -1;
 }
 
-.vietnam-map-cluster-context-card span {
+.vietnam-map-cluster-context-card > span {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 900;
@@ -7579,7 +7579,7 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.vietnam-map-cluster-context-card strong {
+.vietnam-map-cluster-context-card > strong {
   align-items: center;
   color: var(--admin-text);
   display: inline-flex;
@@ -7590,12 +7590,12 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-map-cluster-context-card strong svg {
+.vietnam-map-cluster-context-card > strong > svg {
   color: var(--admin-accent-strong);
   flex: 0 0 auto;
 }
 
-.vietnam-map-cluster-context-card small {
+.vietnam-map-cluster-context-card > small {
   color: var(--admin-soft-text);
   font-size: 12px;
   font-weight: 650;
@@ -7864,7 +7864,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
-.vietnam-map-empty-stats span {
+.vietnam-map-empty-stats > span {
   background: rgb(var(--admin-main-channel) / 0.055);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
@@ -7878,7 +7878,7 @@ a.action-button-card:hover {
   padding: 8px 10px;
 }
 
-.vietnam-map-empty-stats strong {
+.vietnam-map-empty-stats > span > strong {
   color: var(--admin-text);
   font-size: 14px;
   line-height: 18px;
@@ -8154,7 +8154,7 @@ a.action-button-card:hover {
 
 [data-theme='light'] .vietnam-overview-page :is(
   .vietnam-map-signal-filter:not(.is-active),
-  .vietnam-map-empty-stats span,
+  .vietnam-map-empty-stats > span,
   .vietnam-overview-filter-summary-card,
   .vietnam-overview-region-insight-card,
   .vietnam-region-focus-summary-item

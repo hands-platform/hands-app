@@ -259,6 +259,24 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-map-cluster-event p {');
     expect(css).not.toContain('.vietnam-map-cluster-event-meta span {');
   });
+
+  it('scopes map cluster context and empty-state typography to direct slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-map-cluster-context-card > span');
+    expect(css).toContain('.vietnam-map-cluster-context-card > strong');
+    expect(css).toContain('.vietnam-map-cluster-context-card > strong > svg');
+    expect(css).toContain('.vietnam-map-cluster-context-card > small');
+    expect(css).toContain('.vietnam-map-empty-stats > span');
+    expect(css).toContain('.vietnam-map-empty-stats > span > strong');
+    expect(css).not.toContain('.vietnam-map-cluster-context-card span {');
+    expect(css).not.toContain('.vietnam-map-cluster-context-card strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-context-card strong svg {');
+    expect(css).not.toContain('.vietnam-map-cluster-context-card small {');
+    expect(css).not.toContain('.vietnam-map-empty-stats span {');
+    expect(css).not.toContain('.vietnam-map-empty-stats strong {');
+    expect(css).not.toContain('.vietnam-map-empty-stats span,');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
