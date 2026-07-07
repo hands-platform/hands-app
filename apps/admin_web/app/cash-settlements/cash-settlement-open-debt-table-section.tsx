@@ -9,6 +9,7 @@ import {
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminNotePanel } from '../../components/admin-surface';
@@ -80,11 +81,11 @@ export function CashSettlementOpenDebtTableSection({
       resultTone={pagination.totalRows > 0 ? 'warning' : 'success'}
       title="Open cash fee debt rows"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Open cash debt links" className="admin-mb-12">
         <AdminTextLink href="/payments?review=cash-debt">
           Payment debt view
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <FinanceDataTable
         emptyMessage="No cash fee debt is waiting for settlement."
         headers={['Partner', 'Booking', 'Debt', 'Fee / Tax', 'Evidence', 'Settlement']}
@@ -95,13 +96,13 @@ export function CashSettlementOpenDebtTableSection({
             <td>
               <strong>{row.providerName}</strong>
               <div className="muted">{row.providerPhone}</div>
-              <div className="participant-list admin-mt-8">
+              <AdminFilterChipGroup ariaLabel={`${row.providerName} debt status actions`} className="admin-mt-8">
                 <ActionMenu
                   actions={[{ href: row.partnerHref, kind: 'link', label: 'Partner', tone: 'info' }]}
                   label={`${row.providerName} partner actions`}
                 />
                 <StatusBadge tone="danger">Final acceptance blocked</StatusBadge>
-              </div>
+              </AdminFilterChipGroup>
             </td>
             <td>
               <AdminTextLink href={row.bookingHref}>
