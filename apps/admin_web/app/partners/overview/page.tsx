@@ -35,7 +35,14 @@ import {
 } from '../../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminCardGrid, AdminCardHeader, AdminRowLink, AdminSection } from '../../../components/admin-surface';
+import {
+  AdminCard,
+  AdminCardGrid,
+  AdminCardHeader,
+  AdminKpiCard,
+  AdminRowLink,
+  AdminSection,
+} from '../../../components/admin-surface';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -360,12 +367,10 @@ function PartnerKpiCard({
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
 
   return (
-    <AdminOverviewCommandCard
-      baseClassName="partner-overview-command-card"
-      className={`is-${tone}`}
-      detail={kpi.detail}
-      icon={<Icon size={20} aria-hidden="true" />}
-      iconClassName="partner-overview-command-icon"
+    <AdminKpiCard
+      className={`partner-overview-kpi-card is-${tone}`}
+      helper={kpi.detail}
+      icon={Icon}
       label={kpi.label}
       value={formatKpiValue(kpi)}
     />

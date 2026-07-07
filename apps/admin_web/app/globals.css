@@ -8903,6 +8903,11 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
+.partner-overview-kpi-card.is-primary .metric-card-icon {
+  background: rgb(var(--admin-primary-channel) / 0.14);
+  color: var(--admin-accent-strong);
+}
+
 .finance-overview-command-card.is-primary .finance-overview-command-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
@@ -8914,6 +8919,11 @@ a.action-button-card:hover {
 }
 
 .partner-overview-command-card.is-info .partner-overview-command-icon {
+  background: rgb(var(--admin-info-channel) / 0.14);
+  color: var(--admin-info-text);
+}
+
+.partner-overview-kpi-card.is-info .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8933,6 +8943,11 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
+.partner-overview-kpi-card.is-success .metric-card-icon {
+  background: rgb(var(--admin-success-channel) / 0.14);
+  color: var(--admin-success-text);
+}
+
 .finance-overview-command-card.is-success .finance-overview-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
@@ -8944,6 +8959,11 @@ a.action-button-card:hover {
 }
 
 .partner-overview-command-card.is-warning .partner-overview-command-icon {
+  background: rgb(var(--admin-warning-channel) / 0.16);
+  color: var(--admin-warning-text);
+}
+
+.partner-overview-kpi-card.is-warning .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
@@ -8963,9 +8983,19 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
+.partner-overview-kpi-card.is-danger .metric-card-icon {
+  background: rgb(var(--admin-danger-channel) / 0.14);
+  color: var(--admin-danger-text);
+}
+
 .finance-overview-command-card.is-danger .finance-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
+}
+
+.partner-overview-kpi-card.is-neutral .metric-card-icon {
+  background: rgb(var(--admin-main-channel) / 0.07);
+  color: var(--admin-muted);
 }
 
 .finance-overview-action-item.is-info .finance-overview-action-icon {

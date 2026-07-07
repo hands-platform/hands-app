@@ -252,6 +252,21 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('function formatMoney(value: number)');
     expect(pageSource).not.toContain('function formatPlainVnd(value: number)');
   });
+
+  it('renders partner summary and activity KPIs through the shared AdminKpiCard surface', async () => {
+    mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(pageSource).toContain('AdminKpiCard');
+    expect(pageSource).toContain('<AdminKpiCard');
+    expect(markup).toContain('card admin-kpi-card partner-overview-kpi-card');
+    expect(markup).not.toContain('aria-label="Partner supply summary"><div class="card admin-card partner-overview-command-card');
+    expect(markup).not.toContain('aria-label="Partner activity and retention"><div class="card admin-card partner-overview-command-card');
+  });
 });
 
 const partnerOverviewFixture: AdminPartnerOverview = {
