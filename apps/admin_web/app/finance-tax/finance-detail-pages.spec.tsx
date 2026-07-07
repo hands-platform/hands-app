@@ -1111,4 +1111,17 @@ describe('finance detail pages', () => {
     expect(source).not.toContain('AdminTableScroll');
     expect(source).not.toContain('className="vuexy-booking-table"');
   });
+
+  it.each([
+    ['payment clearing detail', 'app/finance-tax/payment-clearing/[id]/page.tsx'],
+    ['general ledger detail', 'app/finance-tax/general-ledger/[id]/page.tsx'],
+    ['bank reconciliation detail', 'app/finance-tax/bank-reconciliation/[id]/page.tsx'],
+    ['bank match evidence helper', 'app/finance-tax/finance-bank-match-evidence.tsx'],
+  ] as const)('uses the shared table substack atom for %s dense cells', (_name, sourcePath) => {
+    const source = readFileSync(join(process.cwd(), sourcePath), 'utf8');
+
+    expect(source).toContain('AdminTableSubstack');
+    expect(source).not.toContain('<div className="admin-table-substack"');
+    expect(source).not.toContain("className = 'admin-table-substack'");
+  });
 });

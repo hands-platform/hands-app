@@ -5,6 +5,7 @@ import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTableSubstack } from '../../../../components/admin-data-table';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
@@ -134,13 +135,13 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
             label="Settlement trace"
             value={
               settlementTraceLinks.length > 0 ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   {settlementTraceLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
                   ))}
-                </div>
+                </AdminTableSubstack>
               ) : (
                 '-'
               )
@@ -190,7 +191,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
           <FinanceDetailInfoItem
             label="Source payment"
             value={
-              <div className="admin-table-substack">
+              <AdminTableSubstack>
                 {entry.paymentId ? (
                   <AdminTextLink href={`/payments/${entry.paymentId}`}>
                     Payment {shortId(entry.paymentId)}
@@ -201,20 +202,20 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
                 <AdminTextLink href={`/bookings/${entry.bookingId}`}>
                   Booking {shortId(entry.bookingId)}
                 </AdminTextLink>
-              </div>
+              </AdminTableSubstack>
             }
           />
           <FinanceDetailInfoItem
             label="Linked settlement"
             value={
               settlementTraceLinks.length > 0 ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   {settlementTraceLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
                   ))}
-                </div>
+                </AdminTableSubstack>
               ) : (
                 'No settlement link'
               )

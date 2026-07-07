@@ -21,6 +21,11 @@ type AdminTableFooterProps = {
   readonly className?: string;
 };
 
+type AdminTableSubstackProps = {
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
 type AdminBoundedTableFooterProps = {
   readonly className?: string;
   readonly rowCount: number;
@@ -49,6 +54,10 @@ export function AdminTableScroll({ children, className }: AdminTableScrollProps)
 
 export function AdminTableFooter({ children, className }: AdminTableFooterProps) {
   return <div className={joinClassNames('vuexy-booking-table-footer', className)}>{children}</div>;
+}
+
+export function AdminTableSubstack({ children, className }: AdminTableSubstackProps) {
+  return <div className={joinClassNames('admin-table-substack', className)}>{children}</div>;
 }
 
 export function AdminBoundedTableFooter({ className, rowCount }: AdminBoundedTableFooterProps) {

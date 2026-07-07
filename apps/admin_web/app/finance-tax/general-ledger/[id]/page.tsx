@@ -4,6 +4,7 @@ import type { AdminAccountingJournalBatchDetail } from '../../../../lib/admin-ap
 import { adminGet } from '../../../../lib/admin-api';
 import { AdminFormControlLink } from '../../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
+import { AdminTableSubstack } from '../../../../components/admin-data-table';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
@@ -106,13 +107,13 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
             label="Settlement trace"
             value={
               settlementTraceLinks.length > 0 ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   {settlementTraceLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
                   ))}
-                </div>
+                </AdminTableSubstack>
               ) : (
                 '-'
               )
@@ -156,23 +157,23 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
           <FinanceDetailInfoItem
             label="Source record"
             value={
-              <div className="admin-table-substack">
+              <AdminTableSubstack>
                 <strong>{batch.sourceType}</strong>
                 <span className="muted">{batch.sourceKey}</span>
-              </div>
+              </AdminTableSubstack>
             }
           />
           <FinanceDetailInfoItem
             label="Linked settlement"
             value={
               settlementTraceLinks.length > 0 ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   {settlementTraceLinks.map((link) => (
                     <AdminTextLink href={link.href} key={link.label}>
                       {link.label} <span className="muted">{link.value}</span>
                     </AdminTextLink>
                   ))}
-                </div>
+                </AdminTableSubstack>
               ) : (
                 'No settlement link'
               )

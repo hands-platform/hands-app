@@ -24,6 +24,7 @@ import {
 import { AdminInlineFallback } from '../../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminDisclosure } from '../../../../components/admin-surface';
+import { AdminTableSubstack } from '../../../../components/admin-data-table';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
@@ -201,12 +202,12 @@ export default async function BankReconciliationDetailPage({
             label="Payment clearing evidence"
             value={
               latestActiveMatch?.paymentClearingEntry ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   <AdminTextLink href={paymentClearingDetailHref(latestActiveMatch.paymentClearingEntry.id)}>
                     {latestActiveMatch.paymentClearingEntry.type}
                   </AdminTextLink>
                   <span className="muted">{latestActiveMatch.paymentClearingEntry.status}</span>
-                </div>
+                </AdminTableSubstack>
               ) : (
                 'No active payment clearing link'
               )
@@ -216,12 +217,12 @@ export default async function BankReconciliationDetailPage({
             label="Journal evidence"
             value={
               latestActiveMatch?.accountingJournalEntry ? (
-                <div className="admin-table-substack">
+                <AdminTableSubstack>
                   <AdminTextLink href={generalLedgerDetailHref(latestActiveMatch.accountingJournalEntry.batchId)}>
                     {latestActiveMatch.accountingJournalEntry.accountCode}
                   </AdminTextLink>
                   <span className="muted">{latestActiveMatch.accountingJournalEntry.accountName}</span>
-                </div>
+                </AdminTableSubstack>
               ) : (
                 'No active journal link'
               )
@@ -474,12 +475,12 @@ function ReconciliationJournalCell({ match }: { readonly match: AdminBankReconci
   }
 
   return (
-    <div className="admin-table-substack">
+    <AdminTableSubstack>
       <AdminTextLink href={generalLedgerDetailHref(match.accountingJournalEntry.batchId)}>
         {match.accountingJournalEntry.accountCode}
       </AdminTextLink>
       <span className="muted">{match.accountingJournalEntry.accountName}</span>
-    </div>
+    </AdminTableSubstack>
   );
 }
 
@@ -489,12 +490,12 @@ function ReconciliationPaymentClearingCell({ match }: { readonly match: AdminBan
   }
 
   return (
-    <div className="admin-table-substack">
+    <AdminTableSubstack>
       <AdminTextLink href={paymentClearingDetailHref(match.paymentClearingEntry.id)}>
         {match.paymentClearingEntry.type}
       </AdminTextLink>
       <span className="muted">{match.paymentClearingEntry.bookingId ? shortId(match.paymentClearingEntry.bookingId) : '-'}</span>
-    </div>
+    </AdminTableSubstack>
   );
 }
 
@@ -504,10 +505,10 @@ function ReconciliationPayoutCell({ match }: { readonly match: AdminBankReconcil
   }
 
   return (
-    <div className="admin-table-substack">
+    <AdminTableSubstack>
       {match.withdrawalRequest ? <strong>Withdrawal {shortId(match.withdrawalRequest.id)}</strong> : null}
       {match.payoutBatch ? <strong>Payout {shortId(match.payoutBatch.id)}</strong> : null}
-    </div>
+    </AdminTableSubstack>
   );
 }
 
@@ -625,7 +626,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
   }
 
   return (
-    <div className="admin-table-substack">
+    <AdminTableSubstack>
       {bankBefore || bankAfter ? (
         <span>
           Bank: {bankBefore ?? '-'}{' -> '}
@@ -638,7 +639,7 @@ function ReconciliationAuditTrail({ metadata }: { readonly metadata: unknown }) 
           {clearingAfter ?? '-'}
         </span>
       ) : null}
-    </div>
+    </AdminTableSubstack>
   );
 }
 

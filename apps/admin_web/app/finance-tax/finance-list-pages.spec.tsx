@@ -727,4 +727,11 @@ describe('finance list pages', () => {
     expect(source).not.toContain('AdminTableScroll');
     expect(source).not.toContain('className="vuexy-booking-table"');
   });
+
+  it('uses the shared table substack atom for settlement reversal evidence cells', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/settlement-reversals/page.tsx'), 'utf8');
+
+    expect(source).toContain('AdminTableSubstack');
+    expect(source).not.toContain('<div className="admin-table-substack"');
+  });
 });

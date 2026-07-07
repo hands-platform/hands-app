@@ -8,6 +8,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminTableSubstack } from '../../../components/admin-data-table';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
@@ -256,7 +257,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                     </div>
                   </td>
                   <td>
-                    <div className="admin-table-substack">
+                    <AdminTableSubstack>
                       <StatusBadgeFromPillClass pillClass={financeEvidenceTonePill(evidenceState.tone)}>
                         {evidenceState.label}
                       </StatusBadgeFromPillClass>
@@ -269,7 +270,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                           {link.label} <span className="muted">{link.value}</span>
                         </AdminTextLink>
                       ))}
-                    </div>
+                    </AdminTableSubstack>
                   </td>
                   <td>
                     <StatusBadgeFromPillClass pillClass={financeSettlementReversalTaxStatusPill(reversal.taxStatus)}>

@@ -4,6 +4,7 @@ import {
   AdminTableFooter,
   AdminTablePaginationFooter,
   AdminTableScroll,
+  AdminTableSubstack,
   adminBoundedTableFooterLabel,
 } from './admin-data-table';
 
@@ -103,6 +104,26 @@ describe('AdminDataTable', () => {
 
     expect(wrapper.type).toBe('div');
     expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll vietnam-overview-table-wrap' });
+  });
+
+  it('renders a reusable Vuexy table substack for dense table cells', () => {
+    const substack = AdminTableSubstack({
+      children: (
+        <>
+          <strong>Payment source</strong>
+          <span className="muted">Short id</span>
+        </>
+      ),
+      className: 'finance-reconciliation-source-cell',
+    });
+
+    expect(substack.type).toBe('div');
+    expect(substack.props).toMatchObject({
+      className: 'admin-table-substack finance-reconciliation-source-cell',
+    });
+    expect(classNamesIn(substack).filter((className) => className.includes('admin-table-substack'))).toEqual([
+      'admin-table-substack finance-reconciliation-source-cell',
+    ]);
   });
 
   it('renders a reusable Vuexy table footer shell', () => {

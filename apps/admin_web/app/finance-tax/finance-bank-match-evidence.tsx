@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AdminTableSubstack } from '../../components/admin-data-table';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
@@ -33,7 +34,7 @@ type FinanceBankMatchEvidenceProps = {
 };
 
 export function FinanceBankMatchEvidence({
-  className = 'admin-table-substack',
+  className,
   emptyLabel = 'No bank match',
   matches,
   showAmount = true,
@@ -45,7 +46,7 @@ export function FinanceBankMatchEvidence({
   }
 
   return (
-    <div className={className}>
+    <AdminTableSubstack className={className}>
       {matches.map((match) => (
         <div key={match.id}>
           {match.bankTransactionId ? (
@@ -78,6 +79,6 @@ export function FinanceBankMatchEvidence({
           ) : null}
         </div>
       ))}
-    </div>
+    </AdminTableSubstack>
   );
 }
