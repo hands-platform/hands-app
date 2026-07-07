@@ -15,6 +15,13 @@ describe('Calendar sidebar CSS', () => {
     expect(sectionBlock).not.toContain('padding: 16px');
     expect(miniPickerSectionBlock).toContain('padding: 0');
   });
+
+  it('scopes hashtag filter typography to the checkbox label slots', () => {
+    expect(globalsCss).toContain(
+      '.calendar-filter-row .admin-form-checkbox-label > span:not(.pill):not(.calendar-filter-count)',
+    );
+    expect(globalsCss).not.toContain('.calendar-filter-row span:not(.pill) {');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

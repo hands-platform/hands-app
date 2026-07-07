@@ -1948,7 +1948,7 @@ a {
   min-width: 0;
 }
 
-.calendar-filter-row span:not(.pill) {
+.calendar-filter-row .admin-form-checkbox-label > span:not(.pill):not(.calendar-filter-count) {
   color: var(--admin-text);
   font-size: 0.9375rem;
   font-weight: 400;
