@@ -81,6 +81,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('Partner One');
     expect(markup).toContain('All Partner chats');
+    expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
   });
 
   it('requests partner detail without diagnostics for ordinary operators', async () => {
@@ -161,37 +162,38 @@ describe('ProviderDetailPage data loading', () => {
     );
   });
 
-  it('keeps deep partner diagnostic records behind the Developer/System section gate', () => {
-    expect(providerDetailSource).toContain('AdminDeveloperSystemSection');
+  it('keeps deep partner diagnostic records behind the already-resolved Developer/System gate', () => {
+    expect(providerDetailSource).toContain('canLoadPartnerDiagnostics');
+    expect(providerDetailSource).not.toContain('AdminDeveloperSystemSection');
     expect(providerDetailSource).toContain(
-      'const partnerCommandSnapshotDiagnosticSection = await AdminDeveloperSystemSection({',
+      'const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? (',
     );
     expect(providerDetailSource).toContain(
-      'const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({',
+      'const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? (',
     );
     expect(providerDetailSource).toContain(
-      'const partnerBookingOpsLedgerDiagnosticSection = await AdminDeveloperSystemSection({',
+      'const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics ? (',
     );
     expect(providerDetailSource).toContain(
-      'const partnerDeviceSessionDiagnosticSection = await AdminDeveloperSystemSection({',
+      'const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? (',
     );
     expect(
-      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = await AdminDeveloperSystemSection({'),
+      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({'),
+      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({'),
+      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = await AdminDeveloperSystemSection({'),
+      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
     );

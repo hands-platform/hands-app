@@ -18,10 +18,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForPartner,
 } from '../../../components/admin-review-records-section';
-import {
-  AdminDeveloperSystemSection,
-  canViewAdminDeveloperSystem,
-} from '../../../components/admin-developer-system-section';
+import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
@@ -808,68 +805,62 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     { cancelHref: detailBaseHref },
   );
 
-  const partnerCommandSnapshotDiagnosticSection = await AdminDeveloperSystemSection({
-    children: <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />,
-  });
-  const partnerReferenceDiagnosticSection = await AdminDeveloperSystemSection({
-    children: (
-      <PartnerDetailReferenceDetails
-        helper="Digest, master facts, indexes, and filter controls are still available, but no longer compete with approval work."
-        label="Reference summaries and filters"
-        status="6 blocks"
-      >
-        <PartnerDetailOperationsDigestSection
-          description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
-          id="partner-operations-digest"
-          rows={partnerOperationsDigest}
-          title="Partner operations digest"
-        />
-        <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
-        <PartnerDetailFullRecordIndexSection
-          appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
-          bookingRecordCount={partnerBookingArchive.length}
-          cashDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}
-          dailyDigestCount={partnerDailyActivityDigest.length}
-          missingKycDocumentCount={missingKycDocumentCount}
-        />
-        <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
-        <PartnerDetailOperatingChecklistSection pillClassForTone={partnerOpsPillClass} rows={partnerOperatingChecklist} />
-        <PartnerDetailRecordDateFilterSection
-          activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
-          activityOrder={activityOrder}
-          activityType={activityType}
-          dateFilters={dateFilters}
-          filteredActivityCount={filteredPartnerActivityRecords.length}
-          filteredActivityCsvHref={filteredActivityCsvHref}
-          filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
-          partnerId={provider.id}
-          totalActivityCount={partnerActivityRecords.length}
-          totalBookingArchiveCount={partnerBookingArchive.length}
-        />
-      </PartnerDetailReferenceDetails>
-    ),
-  });
-  const partnerBookingOpsLedgerDiagnosticSection = await AdminDeveloperSystemSection({
-    children: (
-      <PartnerDetailBookingOpsLedgerSection
-        rows={partnerBookingOpsLedgerRows}
-        statusPillClass={partnerBookingStatusPillClass}
+  const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? (
+    <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
+  ) : null;
+  const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? (
+    <PartnerDetailReferenceDetails
+      helper="Digest, master facts, indexes, and filter controls are still available, but no longer compete with approval work."
+      label="Reference summaries and filters"
+      status="6 blocks"
+    >
+      <PartnerDetailOperationsDigestSection
+        description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
+        id="partner-operations-digest"
+        rows={partnerOperationsDigest}
+        title="Partner operations digest"
       />
-    ),
-  });
-  const partnerDeviceSessionDiagnosticSection = await AdminDeveloperSystemSection({
-    children: (
-      <PartnerDetailDeviceSessionActivitySection
-        cardClassForTone={partnerOpsCardClass}
-        deviceRows={partnerDeviceRows}
-        followUpNeeded={securitySummary.followUpNeeded}
-        pillClassForTone={partnerOpsPillClass}
-        securityCards={securitySummary.cards}
-        sessionRows={partnerSessionRows}
-        sharedDeviceRows={partnerSharedDeviceRows}
+      <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
+      <PartnerDetailFullRecordIndexSection
+        appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
+        bookingRecordCount={partnerBookingArchive.length}
+        cashDebtLabel={<MoneyText amount={cashFeeDebtTotal} />}
+        dailyDigestCount={partnerDailyActivityDigest.length}
+        missingKycDocumentCount={missingKycDocumentCount}
       />
-    ),
-  });
+      <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
+      <PartnerDetailOperatingChecklistSection pillClassForTone={partnerOpsPillClass} rows={partnerOperatingChecklist} />
+      <PartnerDetailRecordDateFilterSection
+        activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
+        activityOrder={activityOrder}
+        activityType={activityType}
+        dateFilters={dateFilters}
+        filteredActivityCount={filteredPartnerActivityRecords.length}
+        filteredActivityCsvHref={filteredActivityCsvHref}
+        filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
+        partnerId={provider.id}
+        totalActivityCount={partnerActivityRecords.length}
+        totalBookingArchiveCount={partnerBookingArchive.length}
+      />
+    </PartnerDetailReferenceDetails>
+  ) : null;
+  const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics ? (
+    <PartnerDetailBookingOpsLedgerSection
+      rows={partnerBookingOpsLedgerRows}
+      statusPillClass={partnerBookingStatusPillClass}
+    />
+  ) : null;
+  const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? (
+    <PartnerDetailDeviceSessionActivitySection
+      cardClassForTone={partnerOpsCardClass}
+      deviceRows={partnerDeviceRows}
+      followUpNeeded={securitySummary.followUpNeeded}
+      pillClassForTone={partnerOpsPillClass}
+      securityCards={securitySummary.cards}
+      sessionRows={partnerSessionRows}
+      sharedDeviceRows={partnerSharedDeviceRows}
+    />
+  ) : null;
 
   return (
     <AdminPageTemplate
