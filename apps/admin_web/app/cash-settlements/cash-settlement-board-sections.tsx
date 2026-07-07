@@ -1,4 +1,5 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
@@ -41,11 +42,11 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
       resultTone={priorityBoardRows.length > 0 ? 'warning' : 'success'}
       title="Cash settlement execution desk"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Cash settlement execution links" className="admin-mb-12">
         <AdminTextLink href="/audit-log?bucket=Finance%2FCloseout">
           Audit evidence
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <CommandCardGrid cards={executionDesk} />
       <AdminSectionHeader
         actions={
@@ -70,11 +71,11 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
       resultTone="info"
       title="Cash fee operating rules"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Cash settlement rule links" className="admin-mb-12">
         <AdminTextLink href="/operations-policy?review=wallet">
           Wallet policy
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminSectionHeader
         className="admin-mt-14"
         description="Live Admin policy values used by finance before clearing Partner cash-fee debt and reopening final acceptance, service start, and payout release."
@@ -116,11 +117,11 @@ export function CashSettlementWorkflowSections({
         resultTone={recoverySteps.length > 0 ? 'warning' : 'success'}
         title="Cash fee settlement workflow"
       >
-        <div className="participant-list admin-mb-12">
+        <AdminFilterChipGroup ariaLabel="Cash fee settlement workflow links" className="admin-mb-12">
           <AdminTextLink href="/partner-controls?review=cash-debt">
             Open Partner controls
           </AdminTextLink>
-        </div>
+        </AdminFilterChipGroup>
         <AdminStageList className="admin-mt-12">
           {recoverySteps.map((step) => (
             <AdminStageItem key={step.title}>
@@ -179,11 +180,11 @@ function CommandCardSection({
       resultTone={cards.length > 0 ? 'warning' : 'success'}
       title={title}
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel={`${title} links`} className="admin-mb-12">
         <AdminTextLink href={href}>
           {linkLabel}
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <CommandCardGrid cards={cards} />
     </AdminTablePanel>
   );
@@ -226,11 +227,11 @@ function LinkedCardSection({
       resultTone={items.length > 0 ? 'warning' : 'success'}
       title={title}
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel={`${title} links`} className="admin-mb-12">
         <AdminTextLink href={href}>
           {linkLabel}
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard

@@ -148,7 +148,9 @@ describe('CashSettlement board sections', () => {
     expect(source).toContain('AdminStageList');
     expect(source).not.toContain('<div className="setup-stage-list admin-mt-12">');
     expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('<AdminTextLink');
+    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain("import Link from 'next/link';");
