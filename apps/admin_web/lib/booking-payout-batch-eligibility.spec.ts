@@ -34,7 +34,7 @@ describe('bookingPayoutBatchEligibility', () => {
       'Earning ledger',
       'Tax, fee, and wallet logs',
       'Cash fee debt',
-      'Closeout readiness',
+      'Closeout status',
     ]);
     expect(result.rows[5]).toMatchObject({
       status: 'Ready',

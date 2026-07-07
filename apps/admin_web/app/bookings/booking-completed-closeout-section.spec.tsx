@@ -21,7 +21,7 @@ describe('BookingCompletedCloseoutSection', () => {
     expect(rendered).toContain('Completion evidence');
     expect(rendered).toContain('Partner completion location');
     expect(rendered).toContain('2. Check closeout records');
-    expect(rendered).toContain('Closeout readiness');
+    expect(rendered).toContain('Closeout status');
     expect(rendered).toContain('3. Keep audit trail');
     expect(rendered).toContain('Completed detail');
     expect(rendered).toContain('Admin handling rule');

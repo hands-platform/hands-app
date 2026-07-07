@@ -11,7 +11,7 @@ const COMPLETED_CLOSEOUT_FLOW = [
     helper:
       'Resolve open closeout items before operator notes, settlement records, or refund review are treated as final.',
     label: '2. Check closeout records',
-    value: 'Closeout readiness',
+    value: 'Closeout status',
   },
   {
     helper:

@@ -125,7 +125,7 @@ export function bookingDecisionNotePresets(
       label: 'Closeout',
       title: 'Closeout has open items',
       detail: labels,
-      preset: `Closeout readiness note: open factual items - ${labels}.`,
+      preset: `Closeout status note: open factual items - ${labels}.`,
     });
   }
 

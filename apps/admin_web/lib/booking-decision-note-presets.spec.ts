@@ -54,7 +54,7 @@ describe('bookingDecisionNotePresets', () => {
         expect.objectContaining({
           id: 'closeout-open-items-note',
           detail: 'Payment, Tax',
-          preset: 'Closeout readiness note: open factual items - Payment, Tax.',
+          preset: 'Closeout status note: open factual items - Payment, Tax.',
         }),
       ]),
     );

@@ -131,7 +131,7 @@ export function bookingPayoutBatchEligibility(
         pillClass: input.cashDebt ? 'pill-danger' : 'pill-success',
       },
       {
-        label: 'Closeout readiness',
+        label: 'Closeout status',
         status: closeoutReady
           ? 'Ready'
           : `${input.closeoutOpenItemLabels.length + input.financeFlagTitles.length} item(s)`,
