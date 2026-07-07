@@ -5511,14 +5511,16 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
-.operations-handoff-page .card .toolbar {
+.operations-handoff-page > .card > .toolbar,
+.operations-handoff-page > .detail-grid > .card > .toolbar {
   background: transparent;
   border-bottom: 1px solid var(--admin-border);
   margin-bottom: 14px;
   padding-bottom: 14px;
 }
 
-.operations-handoff-page .card .toolbar h2 {
+.operations-handoff-page > .card > .toolbar h2,
+.operations-handoff-page > .detail-grid > .card > .toolbar h2 {
   line-height: 1.2;
   margin-bottom: 6px;
 }

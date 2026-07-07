@@ -16,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('OperationsHandoffPage', () => {
   beforeEach(() => {
@@ -39,5 +40,13 @@ describe('OperationsHandoffPage', () => {
   it('uses the shared Vuexy detail grid atom for brief and note panels', () => {
     expect(pageSource).toContain('AdminDetailGrid');
     expect(pageSource).not.toContain('<section className="detail-grid admin-mb-16"');
+  });
+
+  it('scopes handoff toolbar styling to direct page and detail grid cards', () => {
+    expect(globalCss).toContain('.operations-handoff-page > .card > .toolbar,');
+    expect(globalCss).toContain('.operations-handoff-page > .detail-grid > .card > .toolbar {');
+    expect(globalCss).toContain('.operations-handoff-page > .card > .toolbar h2,');
+    expect(globalCss).toContain('.operations-handoff-page > .detail-grid > .card > .toolbar h2 {');
+    expect(globalCss).not.toContain('.operations-handoff-page .card .toolbar');
   });
 });
