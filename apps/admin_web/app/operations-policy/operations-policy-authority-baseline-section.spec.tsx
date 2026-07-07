@@ -28,7 +28,7 @@ describe('OperationsPolicyAuthorityBaselineSection', () => {
       title: 'MVP authority baseline',
     });
     expect(rendered).toContain('MVP authority baseline');
-    expect(rendered).toContain('Address snapshot required');
+    expect(rendered).toContain('Confirmed service address required');
     expect(rendered).toContain('First-pick priority with fallback choice');
     expect(rendered).toContain('Booking-address radius');
     expect(rendered).toContain('View demand, block finalization');

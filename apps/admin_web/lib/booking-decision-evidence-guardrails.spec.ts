@@ -44,7 +44,7 @@ describe('bookingDecisionEvidenceGuardrails', () => {
       id: 'required-address',
       status: 'Needs repair',
       tone: 'pill-danger',
-      evidence: 'No BookingAddressSnapshot is attached.',
+      evidence: 'No confirmed service address is attached.',
     });
   });
 

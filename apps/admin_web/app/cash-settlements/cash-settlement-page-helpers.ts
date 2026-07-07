@@ -51,7 +51,7 @@ export function cashDebtEvidenceLabel(earning: AdminEarning) {
   }
   const ledgerRef = earning.walletLedgerEntries?.find((entry) => entry.reference)?.reference;
   if (ledgerRef) {
-    return `Wallet ledger reference exists: ${ledgerRef}. Confirm whether it is a deposit or offset.`;
+    return `Wallet impact reference exists: ${ledgerRef}. Confirm whether it is a deposit or offset.`;
   }
   return 'No deposit or approved offset reference is recorded yet.';
 }

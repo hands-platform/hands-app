@@ -197,7 +197,7 @@ function primaryDecision(
     return {
       status: 'Address check',
       tone: 'pill-danger',
-      primaryAction: 'Confirm BookingAddressSnapshot',
+      primaryAction: 'Confirm service address',
       primaryDetail: rows[0].detail,
     };
   }

@@ -242,7 +242,7 @@ export function BookingRecordDetailSections({
 
         <CashFeeSettlementPathSection cashFeeSettlementPath={cashFeeSettlementPath} />
 
-        <AdminSection id="finance" title="Finance trace">
+        <AdminSection id="finance" title="Finance evidence">
           <InfoRows rows={financeRows} />
         </AdminSection>
 

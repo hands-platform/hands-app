@@ -26,10 +26,10 @@ export function bookingAddressRadiusContract(
     metrics: [
       {
         label: 'Policy pin source',
-        value: pin.source,
+        value: bookingAddressRadiusSourceLabel(pin.source),
         helper: snapshotLocked
-          ? 'Marketplace distance is measured from the immutable booking address snapshot.'
-          : 'Stored booking coordinates are being used because the snapshot is missing.',
+          ? 'Marketplace distance is measured from the confirmed service address.'
+          : 'Stored booking coordinates are being used because the confirmed address is missing.',
       },
       {
         label: 'Policy pin',
@@ -61,11 +61,11 @@ export function bookingAddressRadiusContract(
     ],
     cards: [
       {
-        title: 'Address snapshot',
+        title: 'Confirmed service address',
         status: snapshotLocked ? 'Required data ready' : 'Needs review',
         detail: snapshotLocked
-          ? 'This booking has an immutable BookingAddressSnapshot for audit and dispatch.'
-          : 'Create or repair the address snapshot before relying on Partner radius decisions.',
+          ? 'This booking has a confirmed service address for audit and dispatch.'
+          : 'Create or repair the confirmed service address before relying on Partner radius decisions.',
         action: booking.addressSnapshot?.createdAt
           ? `Created ${formatDate(booking.addressSnapshot.createdAt)}`
           : 'No snapshot creation time available.',
@@ -75,9 +75,9 @@ export function bookingAddressRadiusContract(
       {
         title: '10km participation rule',
         status: pinReady ? 'Enforced by pin' : 'Blocked',
-        detail: `Marketplace Partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
-          marketplaceSupply.radiusMeters,
-        )}.`,
+        detail: `Marketplace Partners are evaluated from ${bookingAddressRadiusSourceLabel(
+          pin.source,
+        )} and must be within ${formatDistanceMeters(marketplaceSupply.radiusMeters)}.`,
         action: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayable supply row(s).`,
         className: pinReady ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: pinReady ? 'pill-success' : 'pill-danger',
@@ -86,7 +86,7 @@ export function bookingAddressRadiusContract(
         title: 'Coordinate consistency',
         status: driftOk ? 'Aligned' : 'Drift found',
         detail: driftOk
-          ? 'Stored booking coordinates do not conflict with the address snapshot.'
+          ? 'Stored booking coordinates do not conflict with the confirmed service address.'
           : 'Operators should verify customer address before extending the wait window.',
         action: `Drift ${driftLabel}`,
         className: driftOk ? 'ops-task-done' : 'ops-task-warning',
@@ -96,11 +96,15 @@ export function bookingAddressRadiusContract(
         title: 'Booking creation gate',
         status: bookingGate.gatePassed ? 'Gate passed' : 'Needs evidence',
         detail:
-          'Booking creation records the service address snapshot, optional customer GPS evidence, and preferred Partner distance before payment and matching open.',
+          'Booking creation records the confirmed service address, optional customer GPS evidence, and preferred Partner distance before payment and matching open.',
         action: bookingGate.summary,
         className: bookingGate.gatePassed ? 'ops-task-done' : 'ops-task-warning',
         pillClass: bookingGate.gatePassed ? 'pill-success' : 'pill-warn',
       },
     ],
   };
+}
+
+function bookingAddressRadiusSourceLabel(source: string) {
+  return source === 'BookingAddressSnapshot' ? 'confirmed service address' : 'stored booking location';
 }

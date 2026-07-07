@@ -46,7 +46,7 @@ describe('booking chat lifecycle helper', () => {
     };
 
     expect(bookingChatLifecycle(booking, 8)).toEqual({
-      status: 'Admin retained',
+      status: 'Retained for review',
       tone: 'pill-success',
       customerState: 'Hidden after closeout',
       customerDetail: 'Customer app can hide the active room when the service record is closed.',

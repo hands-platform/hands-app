@@ -28,7 +28,7 @@ describe('bookingCommandDecisionStrip', () => {
     });
 
     expect(strip.status).toBe('Address check');
-    expect(strip.primaryAction).toBe('Confirm BookingAddressSnapshot');
+    expect(strip.primaryAction).toBe('Confirm service address');
     expect(strip.rows[0]).toMatchObject({
       lane: 'Address',
       state: 'Missing snapshot',

@@ -516,7 +516,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
 
       <AdminSection
         description="Open a preview here for quick audit triage. Full retained chat stays available from the connected booking, customer, and Partner detail pages."
-        statusLabel="Admin retained"
+        statusLabel="Retained for review"
         statusTone="info"
         title="Chat window previews"
       >

@@ -42,8 +42,8 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     return {
       title: 'Address snapshot gate',
       detail:
-        'BookingAddressSnapshot is missing. Marketplace radius and dispatch evidence should use the confirmed service address, not a moving customer GPS point.',
-      operatorRule: 'Repair or verify the booking address snapshot before relying on distance-based dispatch decisions.',
+        'Confirmed service address is missing. Marketplace radius and dispatch evidence should use the booked service address, not a moving customer GPS point.',
+      operatorRule: 'Repair or verify the confirmed service address before relying on distance-based dispatch decisions.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     };

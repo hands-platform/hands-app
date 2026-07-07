@@ -14,8 +14,8 @@ export function OperationsPolicyAuthorityBaselineSection() {
         <AdminTaskCard
           actionLabel="Customers may browse globally; booking requires a confirmed Vietnam service address."
           className="ops-task-done"
-          leading={<StatusBadge tone="success">BookingAddressSnapshot</StatusBadge>}
-          title="Address snapshot required"
+          leading={<StatusBadge tone="success">Confirmed address</StatusBadge>}
+          title="Confirmed service address required"
         >
           <p>
             Every booking must keep an immutable service address snapshot before distance matching,

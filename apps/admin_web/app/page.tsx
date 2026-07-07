@@ -698,7 +698,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Action queue',
       queue.length.toString(),
-      'Prioritized items generated from booking, payment, Partner, and notification state.',
+      'Prioritized items assembled from booking, payment, Partner, and notification state.',
     ],
   ];
   const coreOperatingCounterLabels = [
@@ -1723,7 +1723,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <InfoRow
                   label="Customer records"
                   value={appPresence.totalCustomers.toString()}
-                  detail="Total users with a customer profile in the latest admin snapshot."
+                  detail="Total users with a customer profile in the current admin summary."
                 />
               </AdminDataTable>
             </AdminSection>
@@ -3028,7 +3028,7 @@ function buildOperationsCommandBoard(input: {
           : 'No failed notification rows are visible in the current operations window.',
       href: input.failedNotificationCount ? '/notifications?review=failed' : '/notifications',
       tone: input.failedNotificationCount ? 'warn' : 'ok',
-      checks: ['Delivery status', 'Disabled device', 'Retry log'],
+      checks: ['Delivery status', 'Disabled device', 'Retry status'],
     },
   ];
 }
@@ -3067,12 +3067,12 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${addressChecks} check`,
       detail:
         addressChecks > 0
-          ? 'Booking rows need an address snapshot before Partner discovery and distance evidence are reliable.'
-          : 'Every loaded booking has the address snapshot needed for operations review.',
+          ? 'Booking rows need a confirmed service address before Partner discovery and distance evidence are reliable.'
+          : 'Every loaded booking has the confirmed service address needed for operations review.',
       href: '/bookings?view=all&evidence=address',
       tone: evidenceTone(addressChecks, 1, 3),
-      checks: ['BookingAddressSnapshot', 'Service address pin', 'Address text'],
-      operatorAction: addressChecks > 0 ? 'Open address snapshot queue' : 'Keep address snapshot monitor',
+      checks: ['Confirmed service address', 'Service address pin', 'Address text'],
+      operatorAction: addressChecks > 0 ? 'Open address evidence queue' : 'Keep address evidence watch',
       sample: bookingEvidenceSample(addressRows, 'Address sample'),
     },
     {
@@ -3099,10 +3099,10 @@ function buildBookingEvidenceCommandQueue(input: {
       detail:
         chatChecks > 0
           ? 'Matched work should have chat available during service and retained after completion for admin review.'
-          : 'Chat room and message archive checks are clear in the loaded booking set.',
+          : 'Chat room and retained message checks are clear in the loaded booking set.',
       href: '/bookings?view=all&evidence=chat',
       tone: evidenceTone(chatChecks, 1, 4),
-      checks: ['Room exists', 'Message archive', 'Admin retained'],
+      checks: ['Room exists', 'Messages retained', 'Review ready'],
       operatorAction: chatChecks > 0 ? 'Open chat evidence queue' : 'Keep chat archive monitor',
       sample: bookingEvidenceSample(chatRows, 'Chat sample'),
     },
@@ -3113,11 +3113,11 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${moneyChecks} item`,
       detail:
         moneyChecks > 0
-          ? 'Payment release, capture, cash fee, tax, earning, and wallet ledger rows need finance visibility.'
+          ? 'Payment release, capture, cash fee, tax, earning, and wallet impact rows need finance visibility.'
           : 'Payment, cash fee, earning, and wallet evidence is clear in the loaded data.',
       href: '/bookings?view=all&evidence=money',
       tone: evidenceTone(moneyChecks, 1, 5),
-      checks: ['Payment status', 'Cash fee', 'Wallet ledger'],
+      checks: ['Payment status', 'Cash fee', 'Wallet impact'],
       operatorAction: moneyChecks > 0 ? 'Open finance evidence queue' : 'Keep finance evidence monitor',
       sample: bookingEvidenceSample(moneyRows, 'Money sample'),
     },
@@ -3143,11 +3143,11 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${alertChecks} alert`,
       detail:
         alertChecks > 0
-          ? 'Notification delivery and marketplace invite traces need review so staff know who actually saw the request.'
+          ? 'Notification delivery and marketplace invite evidence need review so staff know who actually saw the request.'
           : 'Notification delivery evidence is clear in the loaded operations window.',
       href: '/bookings?view=all&evidence=alerts',
       tone: evidenceTone(alertChecks, 1, 4),
-      checks: ['Delivery state', 'Retry log', 'Invite trace'],
+      checks: ['Delivery state', 'Retry status', 'Partner invite evidence'],
       operatorAction: alertChecks > 0 ? 'Open alert delivery queue' : 'Keep alert evidence monitor',
       sample: bookingEvidenceSample(alertRows, 'Alert sample'),
     },
@@ -3162,7 +3162,7 @@ function buildBookingEvidenceCommandQueue(input: {
           : 'Closeout evidence is clear for terminal booking rows.',
       href: '/bookings?view=all&evidence=closeout',
       tone: evidenceTone(closeoutChecks, 1, 5),
-      checks: ['Final status', 'Chat evidence', 'Finance trace'],
+      checks: ['Final status', 'Chat evidence', 'Finance evidence'],
       operatorAction: closeoutChecks > 0 ? 'Open closeout evidence queue' : 'Keep closeout monitor',
       sample: bookingEvidenceSample(closeoutRows, 'Closeout sample'),
     },

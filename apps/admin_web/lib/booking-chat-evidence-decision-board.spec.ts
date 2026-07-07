@@ -79,7 +79,7 @@ describe('bookingChatEvidenceDecisionBoard', () => {
       record: 'District 1, Ho Chi Minh City / 07 Jun 2026 10:31',
     });
     expect(board.rows[3]).toMatchObject({
-      lane: 'Admin retained context',
+      lane: 'Retained review context',
       state: 'Context loaded',
       record: '2 notification row(s), 1 audit row(s), 1 note(s).',
     });

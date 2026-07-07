@@ -100,7 +100,7 @@ export function bookingEvidenceBundleRows(
     },
     {
       lane: 'Address',
-      recordLabel: input.addressReady ? 'BookingAddressSnapshot' : 'Snapshot missing',
+      recordLabel: input.addressReady ? 'Confirmed service address' : 'Address missing',
       status: input.addressReady ? 'Locked' : 'Repair needed',
       tone: input.addressReady ? 'pill-success' : 'pill-danger',
       evidence: `${input.addressLabel} / ${input.addressSourceLabel}`,

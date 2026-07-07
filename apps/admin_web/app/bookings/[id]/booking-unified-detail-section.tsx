@@ -60,10 +60,10 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
       />
 
       <BookingUnifiedRows
-        helper="Closeout, charge, payout, fee, tax, and wallet ledger."
+        helper="Closeout, charge, payout, fee, tax, and wallet impact."
         id="booking-finance-system-detail"
         rows={unifiedDetail.financeRows}
-        title="Finance and system detail"
+        title="Finance detail"
         variant="finance"
       />
     </>

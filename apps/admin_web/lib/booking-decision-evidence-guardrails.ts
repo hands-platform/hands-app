@@ -74,13 +74,13 @@ export function bookingDecisionEvidenceGuardrails(
   return [
     {
       id: 'required-address',
-      title: 'Required: address snapshot',
+      title: 'Required: confirmed service address',
       scope: 'Booking address is the source of truth for marketplace distance and support review.',
       status: input.hasAddressSnapshot ? 'Ready' : 'Needs repair',
       tone: input.hasAddressSnapshot ? 'pill-success' : 'pill-danger',
       evidence: input.hasAddressSnapshot
         ? `${input.addressSnapshotLabel} / ${safeAddressPinEvidence(input.addressPinLabel)}`
-        : 'No BookingAddressSnapshot is attached.',
+        : 'No confirmed service address is attached.',
       nextStep: input.hasAddressSnapshot
         ? 'Use this address for Partner radius, support, and settlement review.'
         : 'Repair or attach address evidence before relying on distance or closeout decisions.',

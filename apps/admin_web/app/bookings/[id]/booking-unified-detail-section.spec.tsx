@@ -47,7 +47,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Unified booking detail');
     expect(rendered).toContain('Customer detail');
     expect(rendered).toContain('Matched Partner detail');
-    expect(rendered).toContain('Finance and system detail');
+    expect(rendered).toContain('Finance detail');
     expect(rendered).toContain('6 fields');
     expect(rendered).toContain('9 fields');
     expect(rendered).toContain('Customer profile, service address, live location, and service request.');
@@ -77,7 +77,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Partner earning');
     expect(rendered).toContain('HANDS fee and costs');
     expect(rendered).toContain('Tax withholding');
-    expect(rendered).toContain('Wallet ledger');
+    expect(rendered).toContain('Wallet impact');
+    expect(rendered).not.toContain('Wallet ledger');
     expect(rendered).toContain('Service payout matrix');
     expect(rendered).toContain('3 chat messages');
     expect(rendered).toContain('500.000 VND customer -&gt; 400.000 VND Partner');

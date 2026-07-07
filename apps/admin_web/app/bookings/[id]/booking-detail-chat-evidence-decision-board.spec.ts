@@ -79,7 +79,7 @@ describe('booking detail chat evidence decision board', () => {
     );
     expect(board.rows).toContainEqual(
       expect.objectContaining({
-        lane: 'Admin retained context',
+        lane: 'Retained review context',
         record: '2 notification row(s), 1 audit row(s), 1 note(s).',
       }),
     );

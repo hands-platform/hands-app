@@ -174,7 +174,7 @@ export function bookingChatEvidenceDecisionBoard(
         href: '#location',
       },
       {
-        lane: 'Admin retained context',
+        lane: 'Retained review context',
         scope: 'Alerts, audit rows, and operator notes preserve support context after mobile chat closes.',
         state: hasContextEvidence ? 'Context loaded' : 'Needs operator note',
         tone: hasContextEvidence ? 'pill-success' : 'pill-warn',

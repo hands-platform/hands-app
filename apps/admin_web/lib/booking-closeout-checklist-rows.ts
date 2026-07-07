@@ -68,7 +68,7 @@ export function bookingCloseoutChecklistRows(
       status: input.addressReady ? 'Ready' : 'Repair needed',
       detail: input.addressReady
         ? `${input.addressLabel} is locked for Partner distance and evidence review.`
-        : 'BookingAddressSnapshot is required before distance matching and closeout review are reliable.',
+        : 'A confirmed service address is required before distance matching and closeout review are reliable.',
       operatorRule:
         'Use the booking address, not the customer current location, for 10km Partner participation.',
       href: '#address-radius-contract',

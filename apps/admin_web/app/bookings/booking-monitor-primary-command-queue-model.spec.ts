@@ -12,7 +12,7 @@ describe('buildBookingMonitorPrimaryCommandQueue', () => {
       expect.objectContaining({
         count: 2,
         href: '/bookings?view=address',
-        primaryAction: 'Confirm BookingAddressSnapshot',
+        primaryAction: 'Confirm service address',
         sampleBookingIds: ['missing-address-1', 'missing-address-2'],
         status: 'Address check',
       }),

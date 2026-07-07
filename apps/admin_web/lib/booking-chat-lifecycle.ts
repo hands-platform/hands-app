@@ -41,7 +41,7 @@ export function bookingChatLifecycle(
 
   if (terminalChatStatuses.has(booking.status ?? '')) {
     return {
-      status: 'Admin retained',
+      status: 'Retained for review',
       tone: 'pill-success',
       customerState: 'Hidden after closeout',
       customerDetail: 'Customer app can hide the active room when the service record is closed.',

@@ -76,7 +76,7 @@ export function bookingDetailRecordIndexCards({
     },
     {
       href: '#finance',
-      label: 'Finance trace',
+      label: 'Finance evidence',
       value: financeTrace.providerPayout,
       helper: `${financeTrace.platformFee} HANDS fee`,
     },

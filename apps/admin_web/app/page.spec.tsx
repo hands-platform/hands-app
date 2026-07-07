@@ -317,6 +317,18 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('setup readiness');
   });
 
+  it('keeps the operator dashboard free of raw Developer/System evidence labels', () => {
+    expect(dashboardSource).not.toContain('BookingAddressSnapshot');
+    expect(dashboardSource).not.toContain('Message archive');
+    expect(dashboardSource).not.toContain('Admin retained');
+    expect(dashboardSource).not.toContain('Wallet ledger');
+    expect(dashboardSource).not.toContain('Invite trace');
+    expect(dashboardSource).not.toContain('Finance trace');
+    expect(dashboardSource).not.toContain('Retry log');
+    expect(dashboardSource).not.toContain('generated from');
+    expect(dashboardSource).not.toContain('latest admin snapshot');
+  });
+
   it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {
     expect(dashboardSource).toContain('AdminEmptyState');
     expect(dashboardSource).not.toContain('className="ops-task-note"\n                  framed');

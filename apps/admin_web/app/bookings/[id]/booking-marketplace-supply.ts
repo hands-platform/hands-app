@@ -128,7 +128,9 @@ export function bookingMarketplacePartnerSupply(
                   : `Location ${locationAgeMinutes}m old`,
             detail: blockers.length
               ? `Excluded: ${blockers.join(', ')}.`
-              : `Inside ${formatDistanceMeters(radiusMeters)} radius from ${policyPin.source} and location is within ${freshnessMinutes}m.`,
+              : `Inside ${formatDistanceMeters(radiusMeters)} radius from ${bookingDispatchPinSourceLabel(
+                  policyPin.source,
+                )} and location is within ${freshnessMinutes}m.`,
           };
         })
         .sort((left, right) => {
@@ -188,7 +190,7 @@ export function bookingMarketplacePartnerSupply(
       {
         label: 'Radius pin',
         value: policyPin.label,
-        helper: `${policyPin.source} is used for marketplace distance checks.`,
+        helper: `${bookingDispatchPinSourceLabel(policyPin.source)} is used for marketplace distance checks.`,
       },
       {
         label: 'Eligible Partners',
@@ -262,6 +264,10 @@ function bookingDispatchPinLabel({
   }
 
   return hasSnapshotPin ? 'Service address snapshot saved' : 'Stored booking location saved';
+}
+
+function bookingDispatchPinSourceLabel(source: string) {
+  return source === 'BookingAddressSnapshot' ? 'confirmed service address' : 'stored booking location';
 }
 
 function bookingMarketplacePartnerExcludedGroups(

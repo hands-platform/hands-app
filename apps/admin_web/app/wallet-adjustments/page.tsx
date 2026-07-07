@@ -693,7 +693,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'created') {
     return {
       badge: 'Saved',
-      detail: 'Wallet ledger and admin audit log were written through the Admin API.',
+      detail: 'Wallet impact and admin audit log were written through the Admin API.',
       title: 'Manual adjustment created',
       tone: 'success' as const,
     };

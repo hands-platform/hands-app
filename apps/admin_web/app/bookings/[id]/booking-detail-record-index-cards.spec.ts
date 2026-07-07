@@ -74,7 +74,7 @@ describe('bookingDetailRecordIndexCards', () => {
       'Partners',
       'Chat archive',
       'Payment and wallet',
-      'Finance trace',
+      'Finance evidence',
       'Earnings ledger',
       'Cash settlement desk',
       'Tax policy',

@@ -193,7 +193,7 @@ function bookingUnifiedCustomerRows({
     {
       label: 'Service address',
       value: addressLine,
-      detail: addressPin === 'No pin' ? 'Booking address snapshot.' : 'Booking address snapshot saved.',
+      detail: addressPin === 'No pin' ? 'Confirmed service address.' : 'Confirmed service address saved.',
     },
     {
       label: 'Live customer location',
@@ -389,9 +389,9 @@ function bookingUnifiedFinanceRows({
       variant: 'secondary',
     },
     {
-      label: 'Wallet ledger',
+      label: 'Wallet impact',
       value: financeTrace.walletLedger,
-      detail: `${walletEntryCount} ledger row(s) / Partner wallet impact`,
+      detail: `${walletEntryCount} wallet row(s) / Partner wallet impact`,
       variant: 'secondary',
     },
     {

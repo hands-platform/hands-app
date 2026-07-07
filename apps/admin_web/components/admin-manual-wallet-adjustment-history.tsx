@@ -122,5 +122,5 @@ function walletImpactLabel(row: AdminManualWalletAdjustmentRow) {
     .filter(([, value]) => Boolean(value))
     .map(([key]) => key.replace(/[A-Z]/g, (match) => ` ${match.toLowerCase()}`).trim());
 
-  return affects.length > 0 ? affects.slice(0, 3).join(' / ') : 'Wallet ledger only';
+  return affects.length > 0 ? affects.slice(0, 3).join(' / ') : 'Wallet impact only';
 }

@@ -103,7 +103,7 @@ export function bookingCashFeeSettlementPath(
       },
       {
         lane: 'Partner wallet impact',
-        scope: 'Wallet ledger created by cash settlement or payout closeout.',
+        scope: 'Wallet impact created by cash settlement or payout closeout.',
         status: cashDebt ? 'Negative wallet' : walletEntries.length ? 'Ledger saved' : 'No ledger row',
         tone: cashDebt ? 'pill-danger' : walletEntries.length ? 'pill-success' : 'pill-warn',
         evidence: `${financeTrace.walletLedger} / ${walletEntries.length} wallet row(s)`,

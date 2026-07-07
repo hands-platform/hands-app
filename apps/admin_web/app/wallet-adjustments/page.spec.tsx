@@ -43,7 +43,7 @@ describe('WalletAdjustmentsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Manual adjustment created');
-    expect(markup).toContain('Wallet ledger and admin audit log were written through the Admin API.');
+    expect(markup).toContain('Wallet impact and admin audit log were written through the Admin API.');
   });
 
   it('renders a clear notice when attachment evidence URL is invalid', async () => {

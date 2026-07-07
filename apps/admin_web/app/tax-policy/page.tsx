@@ -552,7 +552,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     Open earning
                   </AdminTextLink>
                   <AdminTextLink href={row.financeTraceHref}>
-                    Finance trace
+                    Finance evidence
                   </AdminTextLink>
                 </div>
               </div>

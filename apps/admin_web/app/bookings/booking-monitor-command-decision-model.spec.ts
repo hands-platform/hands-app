@@ -9,7 +9,7 @@ describe('buildBookingMonitorCommandDecisionStrip', () => {
     } as unknown as AdminBooking);
 
     expect(strip.status).toBe('Address check');
-    expect(strip.primaryAction).toBe('Confirm BookingAddressSnapshot');
+    expect(strip.primaryAction).toBe('Confirm service address');
   });
 
   it('prioritizes handoff repair for matched bookings without retained chat', () => {
