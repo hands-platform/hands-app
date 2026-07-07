@@ -229,12 +229,12 @@ export default async function OperationsPolicyPage({
         <AdminSection
           actions={
             <AdminFormControlLink className="button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
-              Load full diagnostics
+              Open advanced review
             </AdminFormControlLink>
           }
           className="admin-mb-16"
-          description="The default policy page keeps live editing and gate checks fast. Load full diagnostics only when reviewing simulation, audit trail, drilldown, and owner decision pressure."
-          title="Diagnostics loaded on demand"
+          description="The default policy page keeps live editing and gate checks fast. Open advanced review when checking simulations, audit trail, drilldown, and owner decision pressure."
+          title="Advanced policy review"
         />
       ) : null}
 
@@ -265,9 +265,9 @@ export default async function OperationsPolicyPage({
         ) : canLoadFullDiagnostics ? (
           <AdminNotePanel className="admin-m-0">
             <AdminSectionHeader
-              description="Decision policy editors are available in the full diagnostics view so the default page stays focused on live matching edits and booking gates."
+              description="Decision policy editors are available in advanced review so the default page stays focused on live matching edits and booking gates."
               status={<StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>}
-              title="Decision editor is loaded on demand"
+              title="Decision policy editor"
             />
             <AdminFormControlLink
               className="button-secondary admin-mt-12"

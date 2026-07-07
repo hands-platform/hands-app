@@ -159,6 +159,12 @@ describe('OperationsPolicyPage', () => {
     expect(pageSource).toContain('allowFullDiagnostics: canLoadFullDiagnostics');
   });
 
+  it('keeps compact policy page copy free of developer verification wording', () => {
+    expect(pageSource).not.toContain('loaded on demand');
+    expect(pageSource).not.toContain('Load full diagnostics');
+    expect(pageSource).not.toContain('full diagnostics view');
+  });
+
   it('uses the shared Vuexy detail grid for policy form groups', () => {
     expect(pageSource).toContain('AdminDetailGrid');
     expect(pageSource).not.toContain('<div className="grid">');
