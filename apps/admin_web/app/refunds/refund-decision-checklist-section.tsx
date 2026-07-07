@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -25,11 +26,11 @@ export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklis
       resultTone={items.length > 0 ? 'warning' : 'success'}
       title="Refund decision checklist"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup className="admin-mb-12">
         <AdminTextLink href="/bookings?view=manual-decision">
           Manual decision queue
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTaskGrid>
         {items.map((item) => (
           <AdminActionCard

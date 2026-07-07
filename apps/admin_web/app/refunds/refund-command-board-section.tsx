@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
@@ -49,10 +50,10 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
             title={item.title}
             variant="ops-task"
           >
-            <div className="participant-list">
-              <StatusBadge tone={refundStatusBadgeTone(item.tone)}>{item.status}</StatusBadge>
-              <StatusBadge tone="neutral">{item.refunds.length} case(s)</StatusBadge>
-            </div>
+          <AdminFilterChipGroup>
+            <StatusBadge tone={refundStatusBadgeTone(item.tone)}>{item.status}</StatusBadge>
+            <StatusBadge tone="neutral">{item.refunds.length} case(s)</StatusBadge>
+          </AdminFilterChipGroup>
             {item.refunds.length > 0 ? (
               <div className="stack">
                 {item.refunds.slice(0, 3).map((refund) => (

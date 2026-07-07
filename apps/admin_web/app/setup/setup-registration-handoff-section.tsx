@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 
@@ -34,17 +35,17 @@ export function SetupRegistrationHandoffSection({
           <span>{item.provider}</span>
           <strong>{item.title}</strong>
           <p className="muted">{item.detail}</p>
-          <div className="participant-list">
+          <AdminFilterChipGroup>
             <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
             <StatusBadge tone="neutral">{item.owner}</StatusBadge>
-          </div>
-          <div className="participant-list admin-mt-8">
+          </AdminFilterChipGroup>
+          <AdminFilterChipGroup className="admin-mt-8">
             {item.env.map((name) => (
               <StatusBadge key={`${item.id}-${name}`} tone="info">
                 {name}
               </StatusBadge>
             ))}
-          </div>
+          </AdminFilterChipGroup>
         </a>
       ))}
     </AdminSection>

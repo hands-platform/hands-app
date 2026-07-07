@@ -10,12 +10,14 @@ describe('ServicePricingAuditTrailSection', () => {
 
     expect(source).toContain('DateTimeText');
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('AdminTableSection');
     expect(source).not.toContain(
       'className="admin-card-scroll admin-mb-16 vuexy-booking-table-card vuexy-booking-table-group"',
     );
     expect(source).not.toContain('<a className="button button-secondary"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${row.id}-${field}`}>');
     expect(source).not.toContain('<p className="muted">{formatDateTime(row.createdAt)}</p>');

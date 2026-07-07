@@ -16,10 +16,12 @@ describe('SetupGroupDetailSection', () => {
     const source = readFileSync(new URL('./setup-group-detail-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="detail-grid admin-mt-12">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('actions={');
     expect(source).toContain('pillClass={group.statusClass}');

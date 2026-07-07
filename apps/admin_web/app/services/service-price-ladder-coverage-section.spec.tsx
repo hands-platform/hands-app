@@ -5,6 +5,8 @@ describe('ServicePriceLadderCoverageSection source', () => {
     const source = readFileSync('app/services/service-price-ladder-coverage-section.tsx', 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain("className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}");
   });
 

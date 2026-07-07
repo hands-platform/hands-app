@@ -10,9 +10,11 @@ describe('SetupReadinessOrderSection', () => {
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className="pill pill-warn">BLOCKED</span>');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${isCurrentStage ?');
     expect(source).not.toContain('<span className="pill pill-neutral">Secret-safe</span>');
     expect(source).not.toContain('<a className="pill pill-neutral"');

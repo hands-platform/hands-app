@@ -1,4 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
@@ -49,13 +50,13 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
             <AdminDetailGrid className="admin-mt-12">
               <div>
                 <h3>Environment values</h3>
-                <div className="participant-list">
-                  {group.envPills.map((env) => (
-                    <StatusBadgeFromPillClass key={env.name} pillClass={env.className}>
-                      {env.name}
-                    </StatusBadgeFromPillClass>
-                  ))}
-                </div>
+              <AdminFilterChipGroup>
+                {group.envPills.map((env) => (
+                  <StatusBadgeFromPillClass key={env.name} pillClass={env.className}>
+                    {env.name}
+                  </StatusBadgeFromPillClass>
+                ))}
+              </AdminFilterChipGroup>
               </div>
               <div>
                 <h3>Implementation notes</h3>
@@ -79,17 +80,17 @@ export function SetupGroupDetailSection({ commandMode = 'full', groups }: SetupG
                       ? 'Fill or correct these values before expecting the group to pass.'
                       : 'No missing or invalid environment values are currently highlighted.'}
                   </p>
-                  <div className="participant-list">
-                    {attentionEnvPills.length ? (
-                      attentionEnvPills.map((env) => (
-                        <StatusBadgeFromPillClass key={`attention-${env.name}`} pillClass={env.className}>
-                          {env.name}
+                <AdminFilterChipGroup>
+                  {attentionEnvPills.length ? (
+                    attentionEnvPills.map((env) => (
+                      <StatusBadgeFromPillClass key={`attention-${env.name}`} pillClass={env.className}>
+                        {env.name}
                         </StatusBadgeFromPillClass>
                       ))
-                    ) : (
-                      <StatusBadge tone="success">No env blockers shown</StatusBadge>
-                    )}
-                  </div>
+                  ) : (
+                    <StatusBadge tone="success">No env blockers shown</StatusBadge>
+                  )}
+                </AdminFilterChipGroup>
                 </div>
                 <div>
                   <h4>Next command</h4>

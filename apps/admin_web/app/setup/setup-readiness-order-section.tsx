@@ -1,5 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
@@ -78,12 +79,12 @@ function ReadinessRow({
       <div>
         <strong>{setupReadinessDisplayText(check.name)}</strong>
         <p className="muted">{setupReadinessDisplayText(check.detail)}</p>
-        <div className="participant-list admin-mb-8">
+        <AdminFilterChipGroup className="admin-mb-8">
           <StatusBadge tone={isCurrentStage ? 'info' : 'neutral'}>
             {isCurrentStage ? 'Current stage' : 'Deferred'}
           </StatusBadge>
           {check.secretSafe && <StatusBadge tone="neutral">Secret-safe</StatusBadge>}
-        </div>
+        </AdminFilterChipGroup>
         {check.operatorAction && (
           <p className="muted">
             <strong>Operator action:</strong> {setupReadinessDisplayText(check.operatorAction)}

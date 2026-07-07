@@ -1,6 +1,7 @@
 import { FileClock } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
@@ -64,13 +65,13 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
                   <p className="muted">{row.target}</p>
                 </td>
                 <td>
-                  <div className="participant-list">
-                    {row.changedFields.map((field) => (
-                      <StatusBadge key={`${row.id}-${field}`} tone="info">
-                        {field}
-                      </StatusBadge>
-                    ))}
-                  </div>
+                <AdminFilterChipGroup>
+                  {row.changedFields.map((field) => (
+                    <StatusBadge key={`${row.id}-${field}`} tone="info">
+                      {field}
+                    </StatusBadge>
+                  ))}
+                </AdminFilterChipGroup>
                 </td>
                 <td>
                   <div className="service-matrix-cell">

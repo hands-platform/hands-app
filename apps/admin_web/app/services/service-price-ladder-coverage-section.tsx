@@ -1,5 +1,6 @@
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { servicePriceLadderCoverage } from '../../lib/service-price-ladder-coverage';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -15,7 +16,7 @@ export function ServicePriceLadderCoverageSection({ service }: ServicePriceLadde
         Partners may set prices at these increments. Booking stays blocked for any exact customer price
         without an active payout rule.
       </p>
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup className="admin-mb-12">
         {servicePriceLadderCoverage(service).map((item) => (
           <StatusBadge key={`${service.id}-${item.price}`} tone={item.rule ? 'success' : 'warning'}>
             <MoneyText amount={item.price} currency="VND" />
@@ -29,7 +30,7 @@ export function ServicePriceLadderCoverageSection({ service }: ServicePriceLadde
             )}
           </StatusBadge>
         ))}
-      </div>
+      </AdminFilterChipGroup>
     </>
   );
 }

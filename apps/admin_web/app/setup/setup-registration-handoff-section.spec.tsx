@@ -8,9 +8,11 @@ describe('SetupRegistrationHandoffSection', () => {
     const source = readFileSync(new URL('./setup-registration-handoff-section.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${item.statusClass}`}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{item.owner}</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${item.id}-${name}`}>');
