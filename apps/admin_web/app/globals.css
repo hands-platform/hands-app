@@ -11455,7 +11455,7 @@ a.action-button-card:hover {
   border-color: var(--admin-border-strong);
 }
 
-.coupon-management-section .admin-card-header,
+.coupon-management-section > .admin-card-header,
 .coupon-window-copy {
   align-items: start;
   gap: 16px;

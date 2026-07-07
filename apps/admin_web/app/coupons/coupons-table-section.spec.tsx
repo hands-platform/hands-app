@@ -90,6 +90,7 @@ describe('CouponsTableSection', () => {
   });
 
   it('scopes coupon card typography to direct Vuexy card slots', () => {
+    expect(globalCss).toContain('.coupon-management-section > .admin-card-header,');
     expect(globalCss).toContain('.coupon-code-line > strong');
     expect(globalCss).toContain('.coupon-discount-summary > .admin-mini-metric');
     expect(globalCss).toContain('.coupon-discount-summary > .admin-mini-metric > span');
@@ -97,6 +98,7 @@ describe('CouponsTableSection', () => {
     expect(globalCss).toContain('.coupon-section-footer > span');
     expect(globalCss).toContain('.coupon-section-footer > span:first-child');
 
+    expect(globalCss).not.toContain('.coupon-management-section .admin-card-header,');
     expect(globalCss).not.toContain('.coupon-code-line strong {');
     expect(globalCss).not.toContain('.coupon-discount-summary .admin-mini-metric {');
     expect(globalCss).not.toContain('.coupon-discount-summary .admin-mini-metric span {');
