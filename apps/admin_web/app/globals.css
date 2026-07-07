@@ -13729,14 +13729,21 @@ a.ops-task-card {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.setup-page .ops-section-header > div {
+.setup-page > .ops-section-header > div,
+.setup-page > .card > .ops-section-header > div,
+.setup-page > .detail-grid > .card > .ops-section-header > div,
+.setup-page > .stack > .card > .ops-section-header > div {
   min-width: 0;
 }
 
-.setup-page .ops-section-header > .signal,
-.setup-page .ops-section-header > .pill,
-.setup-page .toolbar .actions > .signal,
-.setup-page .toolbar .actions > .pill {
+.setup-page > .ops-section-header > .signal,
+.setup-page > .ops-section-header > .pill,
+.setup-page > .card > .ops-section-header > .signal,
+.setup-page > .card > .ops-section-header > .pill,
+.setup-page > .detail-grid > .card > .ops-section-header > .signal,
+.setup-page > .detail-grid > .card > .ops-section-header > .pill,
+.setup-page > .stack > .card > .ops-section-header > .signal,
+.setup-page > .stack > .card > .ops-section-header > .pill {
   flex: 0 0 auto;
   white-space: nowrap;
 }
@@ -13752,7 +13759,10 @@ a.ops-task-card {
   scrollbar-gutter: stable;
 }
 
-.setup-page .ops-section-header {
+.setup-page > .ops-section-header,
+.setup-page > .card > .ops-section-header,
+.setup-page > .detail-grid > .card > .ops-section-header,
+.setup-page > .stack > .card > .ops-section-header {
   border-bottom: 1px solid var(--admin-border);
   padding-bottom: 14px;
 }

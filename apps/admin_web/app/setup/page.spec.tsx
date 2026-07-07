@@ -17,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedApiGet = vi.mocked(apiGet);
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('SetupPage', () => {
   beforeEach(() => {
@@ -42,5 +43,17 @@ describe('SetupPage', () => {
     expect(markup).toContain('External setup');
     expect(markup).toContain('Setup group details');
     expect(markup).toContain('class="setup-page"');
+  });
+
+  it('scopes setup header rules to root, direct cards, detail-grid cards, and stack cards', () => {
+    expect(globalCss).toContain('.setup-page > .ops-section-header > div,');
+    expect(globalCss).toContain('.setup-page > .card > .ops-section-header > div,');
+    expect(globalCss).toContain('.setup-page > .detail-grid > .card > .ops-section-header > div,');
+    expect(globalCss).toContain('.setup-page > .stack > .card > .ops-section-header > div {');
+    expect(globalCss).toContain('.setup-page > .ops-section-header,');
+    expect(globalCss).toContain('.setup-page > .stack > .card > .ops-section-header {');
+    expect(globalCss).not.toContain('.setup-page .ops-section-header > div');
+    expect(globalCss).not.toContain('.setup-page .toolbar .actions');
+    expect(globalCss).not.toContain('.setup-page .ops-section-header {');
   });
 });
