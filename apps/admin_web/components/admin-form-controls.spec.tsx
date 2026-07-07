@@ -406,7 +406,7 @@ describe('Admin form controls', () => {
       value: 'true',
     });
 
-    expect(checkbox.props.className).toBe('admin-form-checkbox service-enabled-toggle');
+    expect(checkbox.props.className).toBe('admin-form-checkbox admin-form-control-labeled service-enabled-toggle');
     expect(textContent(checkbox)).toContain('Enabled');
     expect(checkbox.props.children[0].props).toMatchObject({
       className: 'admin-form-checkbox-input',

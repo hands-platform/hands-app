@@ -508,7 +508,7 @@ export function AdminFormCheckbox({
   value,
 }: AdminFormCheckboxProps) {
   return (
-    <label className={joinClassNames('admin-form-checkbox', className)}>
+    <label className={joinClassNames('admin-form-checkbox admin-form-control-labeled', className)}>
       <input
         aria-label={children ? undefined : label}
         checked={checked}
