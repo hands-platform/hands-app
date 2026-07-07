@@ -169,11 +169,11 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         resultTone={summary.count > 0 ? 'info' : 'warning'}
         title="Earnings date range"
       >
-        <div className="participant-list admin-mb-12">
+        <AdminFilterChipGroup ariaLabel="Earnings related navigation" className="admin-mb-12">
           <AdminTextLink href="/finance-closeout">
             Open finance closeout
           </AdminTextLink>
-        </div>
+        </AdminFilterChipGroup>
         <AdminFilterChipGroup ariaLabel="Earnings date range" className="admin-mt-12">
           {[
             { href: '/earnings?range=all', label: 'All dates', range: 'all' },

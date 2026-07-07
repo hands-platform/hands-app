@@ -1,6 +1,7 @@
 import { Settings2 } from 'lucide-react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
@@ -57,7 +58,7 @@ export function NotificationChannelPolicySection({
       title="Partner alert routing policy"
     >
       {isCompact ? (
-        <div className="participant-list admin-mt-10">
+        <AdminFilterChipGroup className="admin-mt-10">
           <StatusBadge tone="info">Partner alerts {partnerAlertCount}</StatusBadge>
           <StatusBadge tone="success">In-app {inAppDeliveries}</StatusBadge>
           <StatusBadge tone={fcmDeliveries ? 'warning' : 'neutral'}>
@@ -69,7 +70,7 @@ export function NotificationChannelPolicySection({
           <StatusBadgeLink href="/notifications?diagnostics=full" tone="neutral">
             Show FCM diagnostics
           </StatusBadgeLink>
-        </div>
+        </AdminFilterChipGroup>
       ) : (
         <AdminTaskGrid>
           <AdminTaskCard
@@ -133,7 +134,7 @@ export function NotificationChannelPolicySection({
               </p>
             ) : null}
             {shouldShowFcmDiagnosis || shouldShowAuditEvidence ? (
-              <div className="participant-list admin-mt-6" aria-label="FCM diagnosis links">
+              <AdminFilterChipGroup ariaLabel="FCM diagnosis links" className="admin-mt-6">
                 {shouldShowFcmDiagnosis ? (
                   <>
                     <StatusBadgeLink href="/setup#notifications" tone="info">
@@ -160,7 +161,7 @@ export function NotificationChannelPolicySection({
                     Audit evidence
                   </StatusBadgeLink>
                 ) : null}
-              </div>
+              </AdminFilterChipGroup>
             ) : null}
             {shouldShowFcmDiagnosis ? (
               <>

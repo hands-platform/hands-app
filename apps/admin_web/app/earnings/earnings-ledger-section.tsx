@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlButton, AdminFormInput, AdminFormShell } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -124,16 +125,16 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
                   {row.statusLabel}
                 </AdminSignal>
                 {row.cancellationDecisionLabel ? (
-                  <div className="participant-list admin-mt-6">
-                    <StatusBadgeFromPillClass pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>
-                      {row.cancellationDecisionLabel}
-                    </StatusBadgeFromPillClass>
+                <AdminFilterChipGroup className="admin-mt-6">
+                  <StatusBadgeFromPillClass pillClass={row.cancellationDecisionTone ?? 'pill-neutral'}>
+                    {row.cancellationDecisionLabel}
+                  </StatusBadgeFromPillClass>
                     {row.cancellationFeeLabel ? (
                       <StatusBadgeFromPillClass pillClass={row.cancellationFeeTone ?? 'pill-neutral'}>
                         {row.cancellationFeeLabel}
                       </StatusBadgeFromPillClass>
                     ) : null}
-                  </div>
+                  </AdminFilterChipGroup>
                 ) : null}
                 <div className="muted admin-mt-6">{row.statusHint}</div>
               </td>

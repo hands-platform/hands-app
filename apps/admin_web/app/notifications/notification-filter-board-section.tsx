@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
@@ -106,7 +107,7 @@ export function NotificationFilterBoardSection({
               </p>
             </div>
           ) : null}
-          <div className="participant-list">
+          <AdminFilterChipGroup>
             {isFiltered ? (
               <StatusBadgeLink href={clearHref} tone="success">
                 Clear filter
@@ -123,7 +124,7 @@ export function NotificationFilterBoardSection({
                 {link.label}
               </StatusBadgeLink>
             ))}
-          </div>
+          </AdminFilterChipGroup>
         </>
       }
     />

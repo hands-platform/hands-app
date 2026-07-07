@@ -176,7 +176,9 @@ describe('EarningsPage', () => {
   });
 
   it('uses shared status links for earnings range filters', () => {
+    expect(pageSource).toContain('AdminFilterChipGroup');
     expect(pageSource).toContain('StatusBadgeLink');
+    expect(pageSource).not.toContain('<div className="participant-list');
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
 

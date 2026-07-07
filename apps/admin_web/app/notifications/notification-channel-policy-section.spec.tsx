@@ -169,10 +169,12 @@ describe('NotificationChannelPolicySection', () => {
 
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminTaskGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeLink');
     expect(source).toContain('fcmSmokeReadinessTone');
     expect(source).not.toContain('<div className="ops-task-card"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-info">Partner alerts {partnerAlertCount}</span>');
     expect(source).not.toContain('<span className="pill pill-success">In-app {inAppDeliveries}</span>');
     expect(source).not.toContain('<span className="pill pill-info">Partner booking alerts</span>');
