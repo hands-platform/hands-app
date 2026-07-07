@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -67,7 +68,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
             <p className="muted admin-mt-8">
               {card.operatorAction}
             </p>
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${card.title} samples`} className="admin-mt-10">
               {card.samples.length > 0 ? (
                 card.samples.map((sample) => (
                   <StatusBadge key={sample} tone="neutral">
@@ -77,7 +78,7 @@ export function PartnerKycReviewBoardSection({ board }: PartnerKycReviewBoardSec
               ) : (
                 <StatusBadge tone="success">No immediate queue</StatusBadge>
               )}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminDetailGrid>

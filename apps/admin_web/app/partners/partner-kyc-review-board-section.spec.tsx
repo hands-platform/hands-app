@@ -10,11 +10,13 @@ describe('PartnerKycReviewBoardSection', () => {
     const source = readFileSync('app/partners/partner-kyc-review-board-section.tsx', 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('AdminStageItem');
     expect(source).toContain('AdminStageList');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<div className="grid admin-mt-12">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<div className="setup-stage-list admin-mt-14">');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="setup-stage-item"');

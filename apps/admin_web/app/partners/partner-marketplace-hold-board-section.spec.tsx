@@ -10,8 +10,10 @@ describe('PartnerMarketplaceHoldBoardSection', () => {
     const source = readFileSync('app/partners/partner-marketplace-hold-board-section.tsx', 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<div className="grid admin-mt-12">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={`pill ${board.hardBlocked > 0 ? \'pill-danger\' : \'pill-success\'}`}>');
     expect(source).not.toContain('<span className="pill pill-info">{board.eligibleNow} direct-ready</span>');

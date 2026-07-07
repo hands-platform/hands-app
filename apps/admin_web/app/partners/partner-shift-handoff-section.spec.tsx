@@ -10,6 +10,7 @@ describe('PartnerShiftHandoffSection', () => {
     const source = readFileSync('app/partners/partner-shift-handoff-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSignal');
@@ -19,6 +20,7 @@ describe('PartnerShiftHandoffSection', () => {
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).toContain('AdminActionCard');
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-14">');
     expect(source).not.toContain('actions={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}');

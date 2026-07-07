@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import {
   AdminActionCard,
@@ -72,7 +73,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             title={item.title}
             variant="ops-task"
           >
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${item.title} samples`} className="admin-mt-10">
               {item.samples.length ? (
                 item.samples.map((sample) => (
                   <StatusBadge key={`${item.title}-${sample}`} tone="neutral">
@@ -82,7 +83,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
               ) : (
                 <StatusBadge tone="success">No immediate partner sample</StatusBadge>
               )}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminTaskGrid>

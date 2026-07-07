@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -57,7 +58,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
             <p className="muted admin-mt-8">
               {card.operatorAction}
             </p>
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${card.title} samples`} className="admin-mt-10">
               {card.samples.length > 0 ? (
                 card.samples.map((sample) => (
                   <StatusBadge key={sample} tone="neutral">
@@ -67,7 +68,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
               ) : (
                 <StatusBadge tone="success">No immediate queue</StatusBadge>
               )}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminDetailGrid>

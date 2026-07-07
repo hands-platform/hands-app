@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -35,13 +36,13 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
             title={lane.title}
             value={lane.status}
           >
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${lane.title} metrics`} className="admin-mt-10">
               {lane.metrics.map((item) => (
                 <StatusBadge key={item.label} tone="neutral">
                   {item.label}: {item.value}
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminDetailGrid>

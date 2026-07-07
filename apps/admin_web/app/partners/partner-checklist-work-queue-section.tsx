@@ -1,5 +1,6 @@
 import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -40,12 +41,12 @@ export function PartnerChecklistWorkQueueSection({
       resultTone={queue.urgentCount ? 'danger' : 'success'}
       title="Partner checklist work queue"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Partner checklist queue counters" className="admin-mb-12">
         <StatusBadge tone={queue.blockedCount ? 'warning' : 'success'}>
           {queue.blockedCount} blocked
         </StatusBadge>
         <StatusBadge tone="info">{queue.dispatchReadyCount} dispatch-ready</StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table vuexy-partner-table service-trace"
