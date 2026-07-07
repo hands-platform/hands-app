@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -56,7 +57,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
 
   return (
     <>
-      <div className="participant-list admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Marketplace participant ledger summary" className="admin-mt-12">
         {marketplaceLedgerPills.map((pill) => (
           <StatusBadgeFromPillClass pillClass={pill.tone} key={pill.label}>
             {pill.label}
@@ -65,7 +66,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
         {marketplaceLedgerPills.length === 0 && (
           <StatusBadge tone="neutral">Participant evidence</StatusBadge>
         )}
-      </div>
+      </AdminFilterChipGroup>
       <AdminTaskGrid className="admin-mt-14">
         {visibleMarketplaceOperationsCards.map((card) => (
           <AdminActionCard
@@ -163,14 +164,17 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                   <StatusBadgeFromPillClass pillClass={row.choiceTone} title={row.choiceReason}>
                     {row.choiceLabel}
                   </StatusBadgeFromPillClass>
-                  <div className="participant-list admin-mt-6">
+                  <AdminFilterChipGroup
+                    ariaLabel={`${row.partnerLabel} customer choice handoff`}
+                    className="admin-mt-6"
+                  >
                     <StatusBadgeFromPillClass
                       pillClass={row.chatHandoffTone}
                       title={row.choiceNextStep}
                     >
                       {row.chatHandoffLabel}
                     </StatusBadgeFromPillClass>
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
               </tr>
             ))}

@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -53,11 +54,11 @@ export function BookingMonitorMarketplaceCoverageSection({
       scrollable
       title="Marketplace booking coverage board"
     >
-      <div className="participant-list admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Marketplace booking coverage summary" className="admin-mt-12">
         <StatusBadge tone="neutral">
           Final Partner selected {marketplaceBookingCoverageSummary.selected}
         </StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       {marketplaceBookingCoverageRows.length === 0 ? (
         <AdminEmptyState
           className="admin-mt-14"

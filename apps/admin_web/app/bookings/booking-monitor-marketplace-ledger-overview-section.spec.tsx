@@ -8,12 +8,14 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
     const source = readFileSync('app/bookings/booking-monitor-marketplace-ledger-overview-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('<div className="ops-task-card">');

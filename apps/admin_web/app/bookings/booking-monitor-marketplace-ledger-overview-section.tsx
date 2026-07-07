@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminActionCard, AdminSection, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -51,12 +52,12 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             title={item.title}
             variant="ops-task"
           >
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel={`${item.title} ledger status`}>
               <StatusBadgeFromPillClass pillClass={stagePillClass(item.tone)}>
                 {item.status}
               </StatusBadgeFromPillClass>
               <StatusBadge tone="neutral">{item.value}</StatusBadge>
-            </div>
+            </AdminFilterChipGroup>
             {item.bookings.length > 0 && (
               <div className="stack admin-mt-10">
                 {item.bookings.slice(0, 3).map((booking) => (

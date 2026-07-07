@@ -205,6 +205,8 @@ describe('BookingMonitorFiltersSection', () => {
     );
 
     expect(source).not.toContain('<button\n                  key={option.view}');
+    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<section className="booking-monitor-view-category"');
     expect(source).toContain('<fieldset className="booking-monitor-view-category"');
     expect(source).toContain('<legend className="booking-monitor-view-category-heading">');

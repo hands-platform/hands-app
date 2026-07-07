@@ -1,4 +1,5 @@
 import { AdminFormControlButton, AdminFormDate, AdminFormShell } from '../../components/admin-form-controls';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
@@ -195,7 +196,7 @@ export function BookingMonitorFiltersSection({
               <span>{category.title}</span>
               <p>{category.description}</p>
             </legend>
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel={`${category.title} booking views`}>
               {options.map((option) => (
                 <AdminFormControlButton
                   className={[
@@ -211,7 +212,7 @@ export function BookingMonitorFiltersSection({
                   {option.label} ({viewCounts.get(option.view) ?? 0})
                 </AdminFormControlButton>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           </fieldset>
         ))}
       </div>
