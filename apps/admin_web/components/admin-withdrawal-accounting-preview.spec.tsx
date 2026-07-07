@@ -30,6 +30,15 @@ describe('AdminWithdrawalAccountingPreview', () => {
       'Cr Partner wallet liability 75.000 VND',
     ]);
   });
+
+  it('scopes mini ledger typography to direct ledger rows', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.admin-mini-ledger > span');
+    expect(css).toContain('.admin-mini-ledger > small');
+    expect(css).not.toContain('.admin-mini-ledger span {');
+    expect(css).not.toContain('.admin-mini-ledger small {');
+  });
 });
 
 function withdrawalRequest(
