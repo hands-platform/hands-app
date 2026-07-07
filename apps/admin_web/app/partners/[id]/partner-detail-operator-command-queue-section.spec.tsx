@@ -21,12 +21,14 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
   it('uses shared Vuexy badge atoms for command shortcuts and owners', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operator-command-queue-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadgeLinkFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('PillClassBadgeLink');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('className={`pill ${pillClassForTone(command.tone)}`}');
     expect(source).not.toContain('<span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>');

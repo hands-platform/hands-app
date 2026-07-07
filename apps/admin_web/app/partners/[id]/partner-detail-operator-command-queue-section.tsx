@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeFromPillClass, StatusBadgeLinkFromPillClass } from '../../../components/status-badge';
@@ -99,7 +100,7 @@ export function PartnerDetailOperatorCommandQueueSection({
       ) : null}
       {shortcutCommands.length > 0 ? (
         <div className="partner-command-shortcuts admin-mt-12">
-          <div className="participant-list">
+          <AdminFilterChipGroup ariaLabel="Partner command decision shortcuts">
             <span className="muted">Decision shortcuts</span>
             {shortcutCommands.map((command) => (
               <StatusBadgeLinkFromPillClass
@@ -110,7 +111,7 @@ export function PartnerDetailOperatorCommandQueueSection({
                 {command.action.label}
               </StatusBadgeLinkFromPillClass>
             ))}
-          </div>
+          </AdminFilterChipGroup>
           <p className="muted admin-mt-8">
             Hold and reject actions open a confirmation step with a required reason for the Partner app and audit trail.
           </p>

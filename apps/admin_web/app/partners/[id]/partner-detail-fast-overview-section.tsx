@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
@@ -95,13 +96,13 @@ export function PartnerDetailFastOverviewSection({
               {marketplaceDisplayText(note)}
             </p>
           ))}
-          <div className="participant-list">
+          <AdminFilterChipGroup ariaLabel="Next operator action links">
             {nextOperatorActionLinks.map((link) => (
               <StatusBadgeLink href={link.href} key={link.href} tone="info">
                 {link.label}
               </StatusBadgeLink>
             ))}
-          </div>
+          </AdminFilterChipGroup>
         </AdminSection>
       </AdminDetailGrid>
     </AdminPageTemplate>

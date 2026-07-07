@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -112,20 +113,20 @@ export function PartnerDetailCashDebtOriginSection({
                   </p>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${row.bookingLabel} cash debt fees`}>
                     <StatusBadge tone="danger">HANDS fee {row.handsFeeLabel}</StatusBadge>
                     <StatusBadge tone="warning">Tax {row.taxLabel}</StatusBadge>
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   <p className="muted">
                     Settlement rule: once deposit reference or admin offset clears this debt, final
                     acceptance, service start, and payout release can resume.
                   </p>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${row.bookingLabel} cash debt evidence`}>
                     <StatusBadge tone="info">{row.evidenceLabel}</StatusBadge>
                     <StatusBadge tone="info">Direct first-pick not wallet-blocked</StatusBadge>
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   <div className="button-row">

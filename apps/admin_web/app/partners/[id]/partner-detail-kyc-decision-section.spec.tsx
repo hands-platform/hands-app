@@ -20,12 +20,14 @@ describe('PartnerDetailKycDecisionSection', () => {
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-kyc-decision-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<strong>No records found</strong>');
     expect(source).not.toContain("<span className={`pill ${item.ok ? 'pill-success' : 'pill-danger'}`}>");
     expect(source).not.toContain('<span className={`pill ${kycEvidencePill(row.status)}`}>{row.status}</span>');

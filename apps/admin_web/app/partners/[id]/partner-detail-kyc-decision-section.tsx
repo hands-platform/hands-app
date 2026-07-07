@@ -2,6 +2,7 @@ import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu
 import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -65,11 +66,11 @@ export function PartnerDetailKycDecisionSection({
       resultTone={kycDecisionPanelTone(status)}
       title="KYC decision"
     >
-      <div className="participant-list admin-mb-10">
+      <AdminFilterChipGroup ariaLabel="KYC evidence completion" className="admin-mb-10">
         <StatusBadge tone={evidence.allRequiredApproved ? 'success' : 'danger'}>
           {evidence.allRequiredApproved ? 'Evidence complete' : 'Evidence incomplete'}
         </StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted">CCCD last 4: {cccdNumberLast4 ? `****${cccdNumberLast4}` : 'Missing'}</p>
       <p className="muted">Submitted: {submittedLabel}</p>
       <p className="muted">Reviewed: {reviewedLabel}</p>

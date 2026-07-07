@@ -17,10 +17,12 @@ describe('PartnerDetailOperationsDigestSection', () => {
   it('uses the shared Vuexy badge atom for digest evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operations-digest-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${row.tone}`}');
     expect(source).not.toContain('formatLatestAt');
   });

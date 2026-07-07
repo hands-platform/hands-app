@@ -14,7 +14,9 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-cash-debt-origin-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-danger">HANDS fee');
     expect(source).not.toContain('<span className="pill pill-warn">Tax');
     expect(source).not.toContain('<span className="pill pill-info">{row.evidenceLabel}</span>');

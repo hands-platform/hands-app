@@ -1,6 +1,7 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
@@ -59,13 +60,13 @@ export function PartnerDetailOperationsDigestSection({
                   <p className="muted">{row.detailNode ?? row.detail}</p>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${row.lane} digest evidence`}>
                     {row.evidence.map((item) => (
                       <StatusBadgeFromPillClass key={item} pillClass={row.tone}>
                         {item}
                       </StatusBadgeFromPillClass>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   <small>
