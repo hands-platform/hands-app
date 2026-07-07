@@ -223,6 +223,7 @@ describe('Admin form controls', () => {
       'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled finance-period',
     );
     expect(month.props.children[1].props).toMatchObject({
+      className: 'admin-form-date-input',
       defaultValue: '2026-07',
       name: 'period',
       required: true,
@@ -268,6 +269,7 @@ describe('Admin form controls', () => {
     expect(input.props.className).toBe(
       'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
     );
+    expect(input.props.children[1].props.className).toBe('admin-form-date-input');
     expect(input.props.children[1].props.type).toBe('datetime-local');
 
     const monthInput = AdminFormInput({
@@ -280,6 +282,7 @@ describe('Admin form controls', () => {
     expect(monthInput.props.className).toBe(
       'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
     );
+    expect(monthInput.props.children[1].props.className).toBe('admin-form-date-input');
     expect(monthInput.props.children[1].props.type).toBe('month');
   });
 
@@ -298,6 +301,7 @@ describe('Admin form controls', () => {
     );
     expect(textContent(dateTime)).toContain('Paid at');
     expect(dateTime.props.children[1].props).toMatchObject({
+      className: 'admin-form-date-input',
       defaultValue: '2026-07-03T14:30',
       name: 'paidAt',
       required: true,
@@ -314,6 +318,7 @@ describe('Admin form controls', () => {
       'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled"',
     );
     expect(markup).toContain('class="admin-form-label">Starts');
+    expect(markup).toContain('class="admin-form-date-input"');
     expect(markup).toContain('aria-label="Starts"');
     expect(markup).toContain('readOnly=""');
     expect(markup).toContain('value="03 Jul 2026, 10:00"');

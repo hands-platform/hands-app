@@ -317,6 +317,7 @@ export function AdminFormDate({
     >
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
+        className="admin-form-date-input"
         defaultValue={defaultValue}
         disabled={disabled}
         name={name}
@@ -352,6 +353,7 @@ export function AdminFormDateTime({
     >
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
+        className="admin-form-date-input"
         defaultValue={defaultValue}
         disabled={disabled}
         name={name}
@@ -379,6 +381,7 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
         <span className="admin-form-label">{label}</span>
         <input
           aria-label={label}
+          className="admin-form-date-input"
           disabled={disabled}
           onClick={onClick}
           readOnly
@@ -421,6 +424,7 @@ export function AdminFormInput({
       <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
         autoComplete={autoComplete}
+        className={dateTimeNativeInputClass(type)}
         defaultValue={defaultValue}
         disabled={disabled}
         max={max}
@@ -650,4 +654,8 @@ function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type'])
   return type === 'date' || type === 'datetime-local' || type === 'month' || type === 'time'
     ? 'admin-form-date-picker admin-form-input-date-picker'
     : undefined;
+}
+
+function dateTimeNativeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {
+  return dateTimeInputClass(type) ? 'admin-form-date-input' : undefined;
 }
