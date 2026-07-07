@@ -384,6 +384,22 @@ describe('Admin form control CSS', () => {
     expect(selectArrowBlock).toContain('bottom: 15px');
   });
 
+  it('hides native date input indicators behind the shared Vuexy calendar icon', () => {
+    const dateIconIndex = globalsCss.indexOf('.admin-form-date::after,');
+    const dateIconBlock = cssRuleBlockAt(dateIconIndex);
+    const nativeIndicatorIndex = globalsCss.indexOf('.admin-form-date input::-webkit-calendar-picker-indicator,');
+    const nativeIndicatorBlock = cssRuleBlockAt(nativeIndicatorIndex);
+
+    expect(dateIconIndex).toBeGreaterThan(-1);
+    expect(nativeIndicatorIndex).toBeGreaterThan(dateIconIndex);
+    expect(dateIconBlock).toContain('pointer-events: none');
+    expect(dateIconBlock).toContain('mask: url("data:image/svg+xml');
+    expect(nativeIndicatorBlock).toContain('background: transparent');
+    expect(nativeIndicatorBlock).toContain('color: transparent');
+    expect(nativeIndicatorBlock).toContain('opacity: 0');
+    expect(nativeIndicatorBlock).toContain('width: 38px');
+  });
+
   it('keeps late compact input resets from stripping visible-label field borders', () => {
     const visibleFieldIndex = globalsCss.lastIndexOf(
       '.admin-form-date.admin-form-control-labeled input,\n' +
