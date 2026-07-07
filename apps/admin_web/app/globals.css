@@ -3004,13 +3004,13 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.admin-operator-control-card h3,
-.admin-operator-permission-item strong {
+.admin-operator-control-card > div > h3,
+.admin-operator-permission-item > div > strong {
   margin: 0;
 }
 
-.admin-operator-control-card p,
-.admin-operator-permission-item p {
+.admin-operator-control-card > div > p,
+.admin-operator-permission-item > div > p {
   margin: 4px 0 0;
 }
 
@@ -3050,7 +3050,7 @@ a.action-button-card:hover {
   padding: 0 10px;
 }
 
-.admin-operator-permission-item small {
+.admin-operator-permission-item > small {
   color: var(--admin-muted);
   font-weight: 600;
 }

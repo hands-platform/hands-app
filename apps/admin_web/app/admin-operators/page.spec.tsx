@@ -189,4 +189,19 @@ describe('AdminOperatorsPage', () => {
     expect(source).not.toContain("'No recent session'");
     expect(source).not.toContain("<div className=\"muted\">{user.appSessions?.[0]?.platform ?? 'No platform'}</div>");
   });
+
+  it('scopes operator control and permission typography to direct card slots', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    expect(css).toContain('.admin-operator-control-card > div > h3');
+    expect(css).toContain('.admin-operator-control-card > div > p');
+    expect(css).toContain('.admin-operator-permission-item > div > strong');
+    expect(css).toContain('.admin-operator-permission-item > div > p');
+    expect(css).toContain('.admin-operator-permission-item > small');
+    expect(css).not.toContain('.admin-operator-control-card h3');
+    expect(css).not.toContain('.admin-operator-control-card p');
+    expect(css).not.toContain('.admin-operator-permission-item strong');
+    expect(css).not.toContain('.admin-operator-permission-item p');
+    expect(css).not.toContain('.admin-operator-permission-item small');
+  });
 });
