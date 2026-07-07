@@ -1090,7 +1090,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           totalCount={provider.verificationLogs?.length ?? 0}
         />
         <PartnerDetailDossierCluster
-          helper="Name, public profile, service setup, required documents, and KYC evidence used for Level 2 approval."
+          helper="Name, public profile, service options, required documents, and KYC evidence used for Level 2 approval."
           label="Required approval evidence"
           status="5 cards"
         >
@@ -1792,7 +1792,7 @@ function buildPartnerOperatorCommandQueue({
       {
         label: 'Services',
         value: `${providerServicePricing.readyCount} ready`,
-        helper: providerServicePricing.readyCount > 0 ? 'Bookable service setup exists.' : 'Add one bookable service option.',
+        helper: providerServicePricing.readyCount > 0 ? 'Bookable service option is ready.' : 'Add one bookable service option.',
       },
     ],
     commands: commands.slice(0, 10),
@@ -3134,7 +3134,7 @@ function buildPartnerAcceptanceRepairCommand(
   if (providerHasFirstRevenueSignal(provider) && payoutOps.status !== 'UNLOCKED') {
     steps.push({
       owner: 'Finance',
-      blocker: 'Payout-only withdrawal setup',
+      blocker: 'Payout-only withdrawal profile',
       reason:
         payoutOps.blockers[0] ??
         'First earning exists, so address, agreements, bank details, and payout holds must be reviewed before withdrawal.',
@@ -3382,15 +3382,15 @@ function buildPartnerAcceptanceUnblockPlaybook(
       id: 'tax-after-first-earning',
       step: '7',
       owner: 'Finance',
-      title: 'Review withdrawal setup when requested',
+      title: 'Review withdrawal profile when requested',
       status: payoutGateOpen ? (hasFirstRevenue ? 'PAYOUT READY' : 'DEFERRED') : 'PAYOUT GATE',
       detail: hasFirstRevenue
         ? (payoutOps.blockers[0] ??
           'Wallet payout follow-up is active; verify withdrawal address, payout agreements, bank details, and payout holds.')
-        : 'Do not force bank or tax setup during initial signup. Collect withdrawal details when wallet withdrawal/deposit is requested.',
+        : 'Do not force bank or tax profile during initial signup. Collect withdrawal details when wallet withdrawal/deposit is requested.',
       bookingImpact: 'This should not block the partner from receiving the first booking.',
       payoutImpact: payoutGateOpen
-        ? 'No withdrawal setup blocker is currently visible.'
+        ? 'No withdrawal profile blocker is currently visible.'
         : 'Blocks manual withdrawal/deposit release until address, bank, required agreements, and holds are complete.',
       action: hasFirstRevenue ? 'Open payout gate' : 'Review payout policy',
       href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/cash-settlements',
@@ -3915,7 +3915,7 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
         : 'Bank account is collected and approved when the Partner requests wallet withdrawal.',
     },
     {
-      label: 'Withdrawal setup',
+      label: 'Withdrawal profile',
       ok: !hasFirstRevenue || (Boolean(provider.residentialAddress?.trim()) && (provider.agreements?.length ?? 0) >= 5),
       status: !hasFirstRevenue
         ? 'DEFERRED'

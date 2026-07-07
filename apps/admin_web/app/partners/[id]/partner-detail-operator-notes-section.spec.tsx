@@ -8,6 +8,8 @@ describe('PartnerDetailOperatorNotesSection', () => {
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('service context');
+    expect(source).not.toContain('service setup');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('<div className="ops-section-header">');

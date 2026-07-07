@@ -33,7 +33,7 @@ export function PartnerDetailOperatingChecklistSection({
   return (
     <PartnerDetailVuexyTablePanel
       className="admin-mb-16"
-      description="Compact active-work checklist for account hold, Level 2 approval, booking participation, service setup, and app connection. Finance and withdrawal evidence stays in the dedicated wallet sections."
+      description="Compact active-work checklist for account hold, Level 2 approval, booking participation, service options, and app connection. Finance and withdrawal evidence stays in the dedicated wallet sections."
       id="partner-operating-checklist"
       resultLabel={`${rows.length} check(s)`}
       title="Partner active-work checklist"

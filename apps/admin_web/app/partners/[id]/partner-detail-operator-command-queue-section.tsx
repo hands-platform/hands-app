@@ -61,7 +61,7 @@ export function PartnerDetailOperatorCommandQueueSection({
   return (
     <PartnerDetailVuexyTablePanel
       className="admin-mb-16"
-      description="Same-shift approval queue for account holds, KYC, public profile review, and service setup. Settlement, location, and app reachability evidence stays in the dedicated sections below."
+      description="Same-shift approval queue for account holds, KYC, public profile review, and service options. Settlement, location, and app reachability evidence stays in the dedicated sections below."
       id="partner-operator-command-queue"
       resultLabel={queue.status}
       resultTone={partnerOpsStatusBadgeTone(queue.tone)}

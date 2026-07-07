@@ -54,7 +54,7 @@ export function PartnerDetailOperatorNotesSection({
     <AdminCard className="ops-note-panel admin-mb-16" id="partner-operator-notes">
       <AdminSectionHeader
         actions={<StatusBadge tone="info">{totalCount} note(s)</StatusBadge>}
-        description="Manual handoff notes for partner operations. Use this for factual contact, onboarding, settlement, service setup, and dispatch context that should appear in the audit log."
+        description="Manual handoff notes for partner operations. Use this for factual contact, onboarding, settlement, service context, and dispatch context that should appear in the audit log."
         title="Partner operator notes"
       />
       <div className="ops-note-history">

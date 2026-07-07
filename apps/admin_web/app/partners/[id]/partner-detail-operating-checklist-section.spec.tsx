@@ -7,6 +7,8 @@ describe('PartnerDetailOperatingChecklistSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-operating-checklist-section.tsx', 'utf8');
 
     expect(source).toContain('PartnerDetailVuexyTablePanel');
+    expect(source).toContain('service options');
+    expect(source).not.toContain('service setup');
     expect(source).not.toContain('AdminFilterPanel');
     expect(source).not.toContain('partnerDetailReviewCardClassName');
   });

@@ -125,6 +125,16 @@ describe('ProviderDetailPage data loading', () => {
       providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
     );
   });
+
+  it('uses operator-facing profile wording instead of setup labels on partner detail', () => {
+    expect(providerDetailSource).not.toContain('service setup');
+    expect(providerDetailSource).not.toContain('Bookable service setup exists.');
+    expect(providerDetailSource).not.toContain('Payout-only withdrawal setup');
+    expect(providerDetailSource).not.toContain('Review withdrawal setup');
+    expect(providerDetailSource).not.toContain('tax setup');
+    expect(providerDetailSource).not.toContain('withdrawal setup blocker');
+    expect(providerDetailSource).not.toContain("label: 'Withdrawal setup'");
+  });
 });
 
 function partnerDetail(): AdminProvider {
