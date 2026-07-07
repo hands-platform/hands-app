@@ -2906,8 +2906,8 @@ a.action-button-card:hover {
   padding: 16px;
 }
 
-.partner-report-command-grid h3,
-.partner-report-command-grid p {
+.partner-report-command-grid > div > h3,
+.partner-report-command-grid > div > p {
   margin: 0;
 }
 

@@ -12,6 +12,15 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(source).not.toContain('partnerDetailReviewCardClassName');
   });
 
+  it('scopes report command typography to the direct command copy slot', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-report-command-grid > div > h3');
+    expect(css).toContain('.partner-report-command-grid > div > p');
+    expect(css).not.toContain('.partner-report-command-grid h3');
+    expect(css).not.toContain('.partner-report-command-grid p');
+  });
+
   it('uses the shared Vuexy empty-state atom', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-reports-controls-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
@@ -148,7 +157,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       ]),
     );
     expect(classNames.filter((className) => className.startsWith('admin-form-select'))).toHaveLength(8);
-    expect(classNames.filter((className) => className.startsWith('admin-form-date'))).toHaveLength(1);
+    expect(classNames.filter((className) => className.startsWith('admin-form-date'))).toHaveLength(2);
     expect(classNames.filter((className) => className.startsWith('admin-form-input'))).toHaveLength(5);
     expect(classNames.filter((className) => className.includes('partner-report-form-field'))).toEqual([]);
     expect(classNames.filter((className) => className === 'admin-form-control-button button button-primary')).toHaveLength(4);
