@@ -8895,7 +8895,7 @@ a.action-button-card:hover {
   width: 44px;
 }
 
-.usage-overview-command-card.is-primary .usage-overview-command-icon {
+.usage-overview-command-card.is-primary > .usage-overview-command-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
@@ -8905,7 +8905,7 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
-.partner-overview-command-card.is-primary .partner-overview-command-icon {
+.partner-overview-command-card.is-primary > .partner-overview-command-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
@@ -8915,12 +8915,12 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
-.finance-overview-command-card.is-primary .finance-overview-command-icon {
+.finance-overview-command-card.is-primary > .finance-overview-command-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
-.usage-overview-command-card.is-info .usage-overview-command-icon {
+.usage-overview-command-card.is-info > .usage-overview-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8930,7 +8930,7 @@ a.action-button-card:hover {
   color: var(--admin-info-text);
 }
 
-.partner-overview-command-card.is-info .partner-overview-command-icon {
+.partner-overview-command-card.is-info > .partner-overview-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8940,12 +8940,12 @@ a.action-button-card:hover {
   color: var(--admin-info-text);
 }
 
-.finance-overview-command-card.is-info .finance-overview-command-icon {
+.finance-overview-command-card.is-info > .finance-overview-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.usage-overview-command-card.is-success .usage-overview-command-icon {
+.usage-overview-command-card.is-success > .usage-overview-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
@@ -8955,7 +8955,7 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
-.partner-overview-command-card.is-success .partner-overview-command-icon {
+.partner-overview-command-card.is-success > .partner-overview-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
@@ -8965,12 +8965,12 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
-.finance-overview-command-card.is-success .finance-overview-command-icon {
+.finance-overview-command-card.is-success > .finance-overview-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.usage-overview-command-card.is-warning .usage-overview-command-icon {
+.usage-overview-command-card.is-warning > .usage-overview-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
@@ -8980,7 +8980,7 @@ a.action-button-card:hover {
   color: var(--admin-warning-text);
 }
 
-.partner-overview-command-card.is-warning .partner-overview-command-icon {
+.partner-overview-command-card.is-warning > .partner-overview-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
@@ -8990,12 +8990,12 @@ a.action-button-card:hover {
   color: var(--admin-warning-text);
 }
 
-.finance-overview-command-card.is-warning .finance-overview-command-icon {
+.finance-overview-command-card.is-warning > .finance-overview-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.usage-overview-command-card.is-danger .usage-overview-command-icon {
+.usage-overview-command-card.is-danger > .usage-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9005,7 +9005,7 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.partner-overview-command-card.is-danger .partner-overview-command-icon {
+.partner-overview-command-card.is-danger > .partner-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9015,7 +9015,7 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.finance-overview-command-card.is-danger .finance-overview-command-icon {
+.finance-overview-command-card.is-danger > .finance-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9278,29 +9278,21 @@ a.action-button-card:hover {
   line-height: 17px;
 }
 
-.finance-overview-principle-card.is-primary .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-primary .finance-overview-command-icon,
 .finance-overview-kpi-card.is-primary > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
-.finance-overview-principle-card.is-success .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-success .finance-overview-command-icon,
 .finance-overview-kpi-card.is-success > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.finance-overview-principle-card.is-warning .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-warning .finance-overview-command-icon,
 .finance-overview-kpi-card.is-warning > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.finance-overview-principle-card.is-info .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-info .finance-overview-command-icon,
 .finance-overview-kpi-card.is-info > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);

@@ -125,6 +125,15 @@ describe('UsageOverviewPage', () => {
     }
   });
 
+  it('scopes usage command icon tones to direct command-card icon slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    for (const tone of ['primary', 'info', 'success', 'warning', 'danger']) {
+      expect(css).toContain(`.usage-overview-command-card.is-${tone} > .usage-overview-command-icon`);
+      expect(css).not.toContain(`.usage-overview-command-card.is-${tone} .usage-overview-command-icon`);
+    }
+  });
+
   it('scopes mini metric typography and tones to direct metric children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 

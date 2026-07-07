@@ -313,6 +313,17 @@ describe('FinanceOverviewPage', () => {
     }
   });
 
+  it('scopes finance command icon tones to direct command-card icon slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    for (const tone of ['primary', 'info', 'success', 'warning', 'danger']) {
+      expect(css).toContain(`.finance-overview-command-card.is-${tone} > .finance-overview-command-icon`);
+      expect(css).not.toContain(`.finance-overview-command-card.is-${tone} .finance-overview-command-icon`);
+      expect(css).not.toContain(`.finance-overview-principle-card.is-${tone} .finance-overview-command-icon`);
+      expect(css).not.toContain(`.finance-overview-kpi-grid .is-${tone} .finance-overview-command-icon`);
+    }
+  });
+
   it('scopes principle card typography to direct command-card text children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 

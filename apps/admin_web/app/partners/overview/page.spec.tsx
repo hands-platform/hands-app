@@ -277,6 +277,15 @@ describe('PartnerOverviewPage', () => {
     }
   });
 
+  it('scopes partner command icon tones to direct command-card icon slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    for (const tone of ['primary', 'info', 'success', 'warning', 'danger']) {
+      expect(css).toContain(`.partner-overview-command-card.is-${tone} > .partner-overview-command-icon`);
+      expect(css).not.toContain(`.partner-overview-command-card.is-${tone} .partner-overview-command-icon`);
+    }
+  });
+
   it('scopes operating status typography to direct command-card children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
