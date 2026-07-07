@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -25,6 +26,7 @@ import { AdminTopbarSearchInput } from './admin-topbar-search-input';
 import { AdminAttentionBadge } from './status-badge';
 
 type AdminWorkspaceHeaderProps = {
+  readonly navigationToggle?: ReactNode;
   readonly sections: readonly AdminNavSection[];
 };
 
@@ -44,7 +46,7 @@ function titleFromPath(pathname: string) {
     .join(' ');
 }
 
-export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
+export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorkspaceHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -88,6 +90,7 @@ export function AdminWorkspaceHeader({ sections }: AdminWorkspaceHeaderProps) {
 
   return (
     <header className="topbar vuexy-navbar" aria-label="Admin workspace">
+      {navigationToggle ? <div className="topbar-mobile-nav-slot">{navigationToggle}</div> : null}
       <div className="workspace-heading">
         <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
           <Link href="/">HANDS</Link>

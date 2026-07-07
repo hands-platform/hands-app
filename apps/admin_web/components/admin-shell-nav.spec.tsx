@@ -105,6 +105,26 @@ describe('admin shell navigation', () => {
     expect(firstSubmenu.props.children.map((link) => link.key)).toEqual(['/finance-tax-0', '/finance-tax-1']);
   });
 
+  it('passes mobile drawer close callbacks to navigation links', () => {
+    const onNavigate = vi.fn();
+    const nav = AdminShellNav({
+      onNavigate,
+      sections: [
+        {
+          label: 'Command',
+          description: 'Live work.',
+          links: [{ href: '/', label: 'Start Shift', description: 'Open dashboard.' }],
+        },
+      ],
+    });
+    const section = (nav.props.children as Array<{ props: { children: unknown[] } }>)[0];
+    const submenu = section.props.children[1] as { props: { children: Array<{ props: { onClick?: () => void } }> } };
+
+    submenu.props.children[0].props.onClick?.();
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
   it('renders workspace breadcrumbs and active page header from the active route', () => {
     const html = renderToStaticMarkup(<AdminWorkspaceHeader sections={adminNavSections} />);
 

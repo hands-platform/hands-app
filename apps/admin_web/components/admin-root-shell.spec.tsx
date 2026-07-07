@@ -24,7 +24,13 @@ describe('AdminRootShell', () => {
 
     expect(markup).toContain('class="shell"');
     expect(markup).toContain('class="sidebar"');
+    expect(markup).toContain('id="admin-mobile-sidebar"');
     expect(markup).toContain('aria-label="Admin navigation"');
+    expect(markup).toContain('class="sidebar-backdrop"');
+    expect(markup).toContain('class="sidebar-close-button"');
+    expect(markup).toContain('topbar-mobile-menu-button');
+    expect(markup).toContain('aria-controls="admin-mobile-sidebar"');
+    expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('Workspace content');
   });
 

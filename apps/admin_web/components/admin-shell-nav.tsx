@@ -95,6 +95,7 @@ const iconByLabel = {
 } as const;
 
 type AdminShellNavProps = {
+  readonly onNavigate?: () => void;
   readonly sections: readonly AdminNavSection[];
 };
 
@@ -131,7 +132,7 @@ function SectionIcon({ label }: { readonly label: string }) {
   return createElement(Icon, { 'aria-hidden': true, size: 18, strokeWidth: 2 });
 }
 
-export function AdminShellNav({ sections }: AdminShellNavProps) {
+export function AdminShellNav({ onNavigate, sections }: AdminShellNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -175,6 +176,7 @@ export function AdminShellNav({ sections }: AdminShellNavProps) {
                     data-active={active ? 'true' : undefined}
                     href={link.href}
                     key={`${link.href}-${linkIndex}`}
+                    onClick={onNavigate}
                     title={link.description}
                   >
                     <NavIcon label={link.label} />

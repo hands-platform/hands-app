@@ -13,7 +13,15 @@ describe('Admin responsive shell CSS', () => {
     expect(responsiveBlock).toContain('.auth-shell');
     expect(responsiveBlock).toContain('min-width: 0');
     expect(responsiveBlock).toContain('.sidebar {');
-    expect(responsiveBlock).toContain('display: none');
+    expect(responsiveBlock).toContain('display: block');
+    expect(responsiveBlock).toContain('transform: translateX(-100%)');
+    expect(responsiveBlock).toContain(".shell[data-mobile-nav-open='true'] .sidebar");
+    expect(responsiveBlock).toContain('transform: translateX(0)');
+    expect(responsiveBlock).toContain('.sidebar-backdrop {');
+    expect(responsiveBlock).toContain(".shell[data-mobile-nav-open='true'] .sidebar-backdrop");
+    expect(responsiveBlock).toContain('.topbar-mobile-menu-button {');
+    expect(responsiveBlock).toContain('display: inline-flex');
+    expect(responsiveBlock).toContain('.sidebar-close-button {');
     expect(responsiveBlock).toContain('.content {');
     expect(responsiveBlock).toContain('margin-left: 0');
     expect(responsiveBlock).toContain('padding: 16px');
