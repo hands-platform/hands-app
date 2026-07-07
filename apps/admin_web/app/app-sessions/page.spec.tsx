@@ -17,6 +17,7 @@ vi.mock('../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const globalCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('AppSessionsPage', () => {
   beforeEach(() => {
@@ -96,5 +97,16 @@ describe('AppSessionsPage', () => {
 
     expect(source).toContain('AdminFormControlLink');
     expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
+  it('scopes app session and file section headers to direct page cards', () => {
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header,');
+    expect(globalCss).toContain('.files-page > .card > .ops-section-header {');
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > div,');
+    expect(globalCss).toContain('.files-page > .card > .ops-section-header > div {');
+    expect(globalCss).toContain('.app-sessions-page > .card > .ops-section-header > .participant-list,');
+    expect(globalCss).toContain('.files-page > .card > .ops-section-header > .participant-list {');
+    expect(globalCss).not.toContain('.app-sessions-page .ops-section-header,');
+    expect(globalCss).not.toContain('.files-page .ops-section-header {');
   });
 });

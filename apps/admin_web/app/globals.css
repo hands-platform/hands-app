@@ -10755,19 +10755,19 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
-.app-sessions-page .ops-section-header,
-.files-page .ops-section-header {
+.app-sessions-page > .card > .ops-section-header,
+.files-page > .card > .ops-section-header {
   border-bottom: 1px solid var(--admin-border);
   padding-bottom: 14px;
 }
 
-.app-sessions-page .ops-section-header > div,
-.files-page .ops-section-header > div {
+.app-sessions-page > .card > .ops-section-header > div,
+.files-page > .card > .ops-section-header > div {
   min-width: 0;
 }
 
-.app-sessions-page .ops-section-header > .participant-list,
-.files-page .ops-section-header > .participant-list {
+.app-sessions-page > .card > .ops-section-header > .participant-list,
+.files-page > .card > .ops-section-header > .participant-list {
   flex: 0 0 auto;
   justify-content: flex-end;
   margin-top: 0;
