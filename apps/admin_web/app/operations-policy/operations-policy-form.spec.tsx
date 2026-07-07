@@ -65,6 +65,41 @@ describe('OperationsPolicyForm', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings?view=customer-choice']));
   });
 
+  it('keeps related booking diagnostics out of summary mode policy forms', () => {
+    const setting = {
+      category: 'Matching',
+      description: 'Controls how customer fallback choice is handled.',
+      enforced: true,
+      key: 'matching.preferred_accept_mode',
+      label: 'Preferred accept mode',
+      options: [
+        {
+          label: 'Customer final confirm after accept',
+          tradeoff: 'Customer chooses from accepted Partners.',
+          value: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+        },
+      ],
+      recommendedValue: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+      value: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+    } as AdminOperationalPolicySetting;
+
+    const section = OperationsPolicyForm({
+      setting,
+      bookings: [] as AdminBooking[],
+      diagnosticsMode: 'summary',
+    });
+    const rendered = normalizedTextContent(section);
+
+    expect(rendered).toContain('Preferred accept mode');
+    expect(rendered).toContain('Current');
+    expect(rendered).toContain('Recommended');
+    expect(rendered).toContain('Impact');
+    expect(rendered).not.toContain('Related booking records');
+    expect(rendered).not.toContain('Customer fallback-choice records');
+    expect(rendered).not.toContain('Before saving this policy');
+    expect(hrefsIn(section)).not.toContain('/bookings?view=customer-choice');
+  });
+
   it('uses shared admin form atoms for editable controls', () => {
     const setting = {
       category: 'Matching',

@@ -29,14 +29,20 @@ import { policyDisplayValue } from './policy-value-display';
 type OperationsPolicyFormProps = {
   readonly setting: AdminOperationalPolicySetting;
   readonly bookings: readonly AdminBooking[];
+  readonly diagnosticsMode?: 'summary' | 'full';
 };
 
-export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyFormProps) {
+export function OperationsPolicyForm({
+  setting,
+  bookings,
+  diagnosticsMode = 'full',
+}: OperationsPolicyFormProps) {
   const valueType = typeof setting.value;
   const isNumber = valueType === 'number';
   const recommended = policyDisplayValue(setting, true);
   const impact = policyImpactDetails(setting.key);
-  const relatedBookings = policyRelatedBookingRecords(setting.key, bookings);
+  const showDiagnostics = diagnosticsMode === 'full';
+  const relatedBookings = showDiagnostics ? policyRelatedBookingRecords(setting.key, bookings) : null;
 
   return (
     <AdminFormCard
@@ -56,71 +62,83 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
         title={displayOperationalWording(setting.label)}
       />
       <AdminTraceSummary
-        metrics={[
-          { label: 'Current', value: policyDisplayValue(setting) },
-          { label: 'Recommended', value: recommended },
-          { label: 'Impact', value: impact.area },
-          { label: 'Related booking records', value: relatedBookings.recordCount },
-        ]}
+        metrics={
+          showDiagnostics && relatedBookings
+            ? [
+                { label: 'Current', value: policyDisplayValue(setting) },
+                { label: 'Recommended', value: recommended },
+                { label: 'Impact', value: impact.area },
+                { label: 'Related booking records', value: relatedBookings.recordCount },
+              ]
+            : [
+                { label: 'Current', value: policyDisplayValue(setting) },
+                { label: 'Recommended', value: recommended },
+                { label: 'Impact', value: impact.area },
+              ]
+        }
       />
-      <AdminNotePanel className="admin-mt-12">
-        <div className="ops-row">
-          <div>
-            <strong>{impact.title}</strong>
-            <p className="muted">{impact.detail}</p>
-          </div>
-          <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
-            {setting.enforced ? 'Live behavior' : 'Decision log'}
-          </StatusBadge>
-        </div>
-      </AdminNotePanel>
-      <AdminNotePanel className="admin-mt-12">
-        <div className="ops-row">
-          <div>
-            <strong>{relatedBookings.title}</strong>
-            <p className="muted">{relatedBookings.helper}</p>
-          </div>
-          <AdminFormControlLink className="button-secondary" href={relatedBookings.href}>
-            <ExternalLink size={16} aria-hidden="true" />
-            Open records
-          </AdminFormControlLink>
-        </div>
-        <div className="booking-radar admin-mt-12">
-          {relatedBookings.rows.map((row) => (
-            <AdminInsightLinkCard href={row.href} key={`${setting.key}-${row.id}`}>
-              <strong>{row.title}</strong>
-              <p className="muted">{row.subtitle}</p>
-              <AdminFilterChipGroup>
-                {row.pills.map((pill) => (
-                  <StatusBadgeFromPillClass pillClass={pill.className} key={`${row.id}-${pill.label}`}>
-                    {pill.label}
-                  </StatusBadgeFromPillClass>
-                ))}
-              </AdminFilterChipGroup>
-            </AdminInsightLinkCard>
-          ))}
-          {relatedBookings.rows.length === 0 ? (
-            <AdminInsightCard>
-              <AdminEmptyState message={relatedBookings.emptyText} title="No sampled record" />
-            </AdminInsightCard>
-          ) : null}
-        </div>
-      </AdminNotePanel>
-      <AdminNotePanel className="admin-mt-12">
-        <strong>Before saving this policy</strong>
-        <p className="muted">
-          Review these operating surfaces first, then write the reason so the shift team can trace why the
-          behavior changed.
-        </p>
-        <div className="booking-radar admin-mt-12">
-          {impact.saveChecks.map((check) => (
-            <AdminInsightLinkCard href={check.href} key={`${setting.key}-${check.label}`}>
-              <strong>{check.label}</strong>
-              <p className="muted">{check.detail}</p>
-            </AdminInsightLinkCard>
-          ))}
-        </div>
-      </AdminNotePanel>
+      {showDiagnostics && relatedBookings ? (
+        <>
+          <AdminNotePanel className="admin-mt-12">
+            <div className="ops-row">
+              <div>
+                <strong>{impact.title}</strong>
+                <p className="muted">{impact.detail}</p>
+              </div>
+              <StatusBadge tone={setting.enforced ? 'success' : 'warning'}>
+                {setting.enforced ? 'Live behavior' : 'Decision log'}
+              </StatusBadge>
+            </div>
+          </AdminNotePanel>
+          <AdminNotePanel className="admin-mt-12">
+            <div className="ops-row">
+              <div>
+                <strong>{relatedBookings.title}</strong>
+                <p className="muted">{relatedBookings.helper}</p>
+              </div>
+              <AdminFormControlLink className="button-secondary" href={relatedBookings.href}>
+                <ExternalLink size={16} aria-hidden="true" />
+                Open records
+              </AdminFormControlLink>
+            </div>
+            <div className="booking-radar admin-mt-12">
+              {relatedBookings.rows.map((row) => (
+                <AdminInsightLinkCard href={row.href} key={`${setting.key}-${row.id}`}>
+                  <strong>{row.title}</strong>
+                  <p className="muted">{row.subtitle}</p>
+                  <AdminFilterChipGroup>
+                    {row.pills.map((pill) => (
+                      <StatusBadgeFromPillClass pillClass={pill.className} key={`${row.id}-${pill.label}`}>
+                        {pill.label}
+                      </StatusBadgeFromPillClass>
+                    ))}
+                  </AdminFilterChipGroup>
+                </AdminInsightLinkCard>
+              ))}
+              {relatedBookings.rows.length === 0 ? (
+                <AdminInsightCard>
+                  <AdminEmptyState message={relatedBookings.emptyText} title="No sampled record" />
+                </AdminInsightCard>
+              ) : null}
+            </div>
+          </AdminNotePanel>
+          <AdminNotePanel className="admin-mt-12">
+            <strong>Before saving this policy</strong>
+            <p className="muted">
+              Review these operating surfaces first, then write the reason so the shift team can trace why the
+              behavior changed.
+            </p>
+            <div className="booking-radar admin-mt-12">
+              {impact.saveChecks.map((check) => (
+                <AdminInsightLinkCard href={check.href} key={`${setting.key}-${check.label}`}>
+                  <strong>{check.label}</strong>
+                  <p className="muted">{check.detail}</p>
+                </AdminInsightLinkCard>
+              ))}
+            </div>
+          </AdminNotePanel>
+        </>
+      ) : null}
       {setting.options?.length ? (
         <>
           <AdminFormSelect
@@ -135,12 +153,14 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             }))}
           />
           <div className="booking-radar admin-mt-12">
-            {setting.options.map((option) => (
-              <AdminInsightCard key={option.value}>
-                <strong>{displayOperationalWording(option.label)}</strong>
-                <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-              </AdminInsightCard>
-            ))}
+            {showDiagnostics
+              ? setting.options.map((option) => (
+                  <AdminInsightCard key={option.value}>
+                    <strong>{displayOperationalWording(option.label)}</strong>
+                    <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
+                  </AdminInsightCard>
+                ))
+              : null}
           </div>
         </>
       ) : (

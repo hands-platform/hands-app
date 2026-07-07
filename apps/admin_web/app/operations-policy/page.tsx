@@ -184,7 +184,12 @@ export default async function OperationsPolicyPage({
       >
         <AdminDetailGrid>
           {matchingSettings.map((setting) => (
-            <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
+            <OperationsPolicyForm
+              key={setting.key}
+              setting={setting}
+              bookings={bookings}
+              diagnosticsMode={shouldRenderFullDiagnostics ? 'full' : 'summary'}
+            />
           ))}
           {matchingSettings.length === 0 ? (
             <AdminNotePanel className="admin-m-0">
@@ -245,7 +250,12 @@ export default async function OperationsPolicyPage({
         {shouldRenderDecisionEditor ? (
           <AdminDetailGrid>
             {decisionSettings.map((setting) => (
-              <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
+              <OperationsPolicyForm
+                key={setting.key}
+                setting={setting}
+                bookings={bookings}
+                diagnosticsMode="full"
+              />
             ))}
           </AdminDetailGrid>
         ) : (

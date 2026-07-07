@@ -79,6 +79,8 @@ describe('OperationsPolicyPage', () => {
     expect(markup).not.toContain('First-pick acceptance contract');
     expect(markup).toContain('Load decision editor');
     expect(markup).toContain('/operations-policy?details=all');
+    expect(markup).not.toContain('Related booking records');
+    expect(markup).not.toContain('Before saving this policy');
     expect((markup.match(/<form/g) ?? []).length).toBe(1);
   });
 
