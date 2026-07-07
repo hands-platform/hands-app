@@ -5846,7 +5846,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-realtime-signal-label i {
+.vietnam-realtime-signal-label > i {
   background: var(--admin-accent);
   border-radius: 999px;
   display: block;
@@ -5878,7 +5878,7 @@ a.action-button-card:hover {
   overflow: hidden;
 }
 
-.vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-track > i {
   background: var(--admin-accent);
   border-radius: inherit;
   display: block;
@@ -5886,33 +5886,33 @@ a.action-button-card:hover {
   min-width: 10px;
 }
 
-.vietnam-realtime-signal-row.is-active .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-active .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-active > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-active > .vietnam-realtime-signal-track > i {
   background: var(--admin-info);
 }
 
-.vietnam-realtime-signal-row.is-customers .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-customers .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-customers > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-customers > .vietnam-realtime-signal-track > i {
   background: var(--admin-accent);
 }
 
-.vietnam-realtime-signal-row.is-online .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-online .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-online > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-online > .vietnam-realtime-signal-track > i {
   background: var(--admin-success);
 }
 
-.vietnam-realtime-signal-row.is-stale-partners .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-stale-partners .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-stale-partners > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-stale-partners > .vietnam-realtime-signal-track > i {
   background: var(--admin-danger);
 }
 
-.vietnam-realtime-signal-row.is-offline-partners .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-offline-partners .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-offline-partners > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-offline-partners > .vietnam-realtime-signal-track > i {
   background: #808390;
 }
 
-.vietnam-realtime-signal-row.is-bookings .vietnam-realtime-signal-label i,
-.vietnam-realtime-signal-row.is-bookings .vietnam-realtime-signal-track i {
+.vietnam-realtime-signal-row.is-bookings > .vietnam-realtime-signal-label > i,
+.vietnam-realtime-signal-row.is-bookings > .vietnam-realtime-signal-track > i {
   background: var(--admin-warning);
 }
 

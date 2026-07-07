@@ -320,6 +320,22 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-overview-region-insight-card small {');
     expect(css).not.toContain('.vietnam-region-number-cell strong {');
   });
+
+  it('scopes realtime signal dot and track tones to direct slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-realtime-signal-label > i');
+    expect(css).toContain('.vietnam-realtime-signal-track > i');
+    expect(css).not.toContain('.vietnam-realtime-signal-label i {');
+    expect(css).not.toContain('.vietnam-realtime-signal-track i {');
+
+    for (const tone of ['active', 'customers', 'online', 'stale-partners', 'offline-partners', 'bookings']) {
+      expect(css).toContain(`.vietnam-realtime-signal-row.is-${tone} > .vietnam-realtime-signal-label > i`);
+      expect(css).toContain(`.vietnam-realtime-signal-row.is-${tone} > .vietnam-realtime-signal-track > i`);
+      expect(css).not.toContain(`.vietnam-realtime-signal-row.is-${tone} .vietnam-realtime-signal-label i`);
+      expect(css).not.toContain(`.vietnam-realtime-signal-row.is-${tone} .vietnam-realtime-signal-track i`);
+    }
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
