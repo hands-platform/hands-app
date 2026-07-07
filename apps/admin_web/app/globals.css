@@ -9876,13 +9876,13 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
-.partner-overview-action-card .admin-card-header {
+.partner-overview-action-card > .admin-card-header {
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
 }
 
-.partner-overview-action-card .admin-card-header h3 {
+.partner-overview-action-card > .admin-card-header > div > h3 {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 650;
@@ -9890,7 +9890,7 @@ a.action-button-card:hover {
   margin: 0;
 }
 
-.partner-overview-action-card .admin-card-header .muted,
+.partner-overview-action-card > .admin-card-header > div > .muted,
 .partner-overview-action-identity > small,
 .partner-overview-action-reason > small {
   color: var(--admin-muted);
