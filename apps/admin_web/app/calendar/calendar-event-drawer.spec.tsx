@@ -75,4 +75,11 @@ describe('CalendarEventDrawer', () => {
     expect(source).not.toContain('<button\n                className="calendar-icon-button calendar-icon-button-danger"');
     expect(source).not.toContain('<button\n              aria-label="Close event drawer"');
   });
+
+  it('scopes drawer author typography to the direct author label slot', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    expect(css).toContain('.calendar-drawer-author > strong');
+    expect(css).not.toContain('.calendar-drawer-author strong {');
+  });
 });

@@ -2373,7 +2373,7 @@ a {
   margin: 8px 0 0;
 }
 
-.calendar-drawer-author strong {
+.calendar-drawer-author > strong {
   color: var(--admin-text);
   font-weight: 600;
 }
