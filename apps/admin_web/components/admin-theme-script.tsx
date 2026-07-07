@@ -1,5 +1,4 @@
 import { ADMIN_THEME_STORAGE_KEY } from '../lib/admin-theme';
-import Script from 'next/script';
 
 const themeInitScript = `
 (() => {
@@ -19,10 +18,9 @@ const themeInitScript = `
 
 export function AdminThemeScript() {
   return (
-    <Script
+    <script
       dangerouslySetInnerHTML={{ __html: themeInitScript }}
       id="admin-theme-bootstrap"
-      strategy="beforeInteractive"
     />
   );
 }
