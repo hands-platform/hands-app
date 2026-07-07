@@ -45,6 +45,7 @@ describe('partner review mode content', () => {
     expect(shouldRenderPartnerDeepOpsSections('')).toBe(false);
     expect(shouldRenderPartnerDeepOpsSections('unapproved')).toBe(false);
     expect(shouldRenderPartnerDeepOpsSections('unsettled')).toBe(false);
+    expect(shouldRenderPartnerDeepOpsSections('marketplace-ready')).toBe(false);
     expect(shouldRenderPartnerDeepOpsSections('kyc')).toBe(true);
   });
 
@@ -52,6 +53,7 @@ describe('partner review mode content', () => {
     expect(shouldRenderPartnerOperationsList('')).toBe(false);
     expect(shouldRenderPartnerOperationsList('unapproved')).toBe(false);
     expect(shouldRenderPartnerOperationsList('unsettled')).toBe(false);
+    expect(shouldRenderPartnerOperationsList('marketplace-ready')).toBe(false);
     expect(shouldRenderPartnerOperationsList('kyc')).toBe(true);
   });
 });

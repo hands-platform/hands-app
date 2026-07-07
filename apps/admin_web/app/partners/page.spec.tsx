@@ -115,4 +115,30 @@ describe('ProvidersPage', () => {
     expect(markup).toContain('metric-card');
     expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
   });
+
+  it('keeps marketplace-ready drilldowns on the compact partner list shell', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
+      }
+
+      if (href.startsWith('/admin/partners/list-providers')) {
+        return [];
+      }
+
+      if (href.startsWith('/admin/operational-policy?keys=')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'marketplace-ready' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).not.toContain('Current filter summary');
+    expect(markup).not.toContain('partner-deep-summary-grid');
+    expect(markup).not.toContain('Partner operations list');
+    expect(markup).toContain('Marketplace ready');
+  });
 });

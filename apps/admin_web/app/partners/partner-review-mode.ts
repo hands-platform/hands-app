@@ -8,7 +8,7 @@ export type PartnerReviewModeContent = {
 
 export type PartnerPrimaryListMode = 'partners' | 'unapproved' | 'unsettled';
 
-const PRIMARY_PARTNER_LIST_REVIEWS = new Set(['', 'unapproved', 'unsettled']);
+const PRIMARY_PARTNER_LIST_REVIEWS = new Set(['', 'unapproved', 'unsettled', 'marketplace-ready']);
 
 export function partnerPrimaryListMode(review: string): PartnerPrimaryListMode {
   if (review === 'unapproved' || review === 'unsettled') {
