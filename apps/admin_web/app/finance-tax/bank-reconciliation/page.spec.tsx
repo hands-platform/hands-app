@@ -17,6 +17,7 @@ vi.mock('../../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
+const globalCss = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('BankReconciliationPage', () => {
   beforeEach(() => {
@@ -96,5 +97,17 @@ describe('BankReconciliationPage', () => {
     expect(markup).toContain('finance-reconciliation-import-disclosure');
     expect(markup).toContain('Bank import form');
     expect(markup).not.toContain('<details class="admin-disclosure finance-reconciliation-import-disclosure" open="">');
+  });
+
+  it('scopes reconciliation disclosure and match heading typography to direct slots', () => {
+    expect(globalCss).toContain('.finance-reconciliation-import-disclosure > summary > span');
+    expect(globalCss).toContain('.finance-reconciliation-import-disclosure > summary > small');
+    expect(globalCss).toContain('.finance-reconciliation-match-heading > div > strong');
+    expect(globalCss).toContain('.finance-reconciliation-match-heading > div > span:not(.pill)');
+
+    expect(globalCss).not.toContain('.finance-reconciliation-import-disclosure > summary span {');
+    expect(globalCss).not.toContain('.finance-reconciliation-import-disclosure > summary small {');
+    expect(globalCss).not.toContain('.finance-reconciliation-match-heading strong {');
+    expect(globalCss).not.toContain('.finance-reconciliation-match-heading span:not(.pill),');
   });
 });

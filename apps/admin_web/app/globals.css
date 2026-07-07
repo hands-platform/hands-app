@@ -9437,14 +9437,14 @@ a.action-button-card:hover {
   content: '-';
 }
 
-.finance-reconciliation-import-disclosure > summary span {
+.finance-reconciliation-import-disclosure > summary > span {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 650;
   line-height: 20px;
 }
 
-.finance-reconciliation-import-disclosure > summary small {
+.finance-reconciliation-import-disclosure > summary > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 500;
@@ -9479,14 +9479,14 @@ a.action-button-card:hover {
   gap: 3px;
 }
 
-.finance-reconciliation-match-heading strong {
+.finance-reconciliation-match-heading > div > strong {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 700;
   line-height: 21px;
 }
 
-.finance-reconciliation-match-heading span:not(.pill),
+.finance-reconciliation-match-heading > div > span:not(.pill),
 .finance-reconciliation-form-actions .muted {
   color: var(--admin-muted);
   font-size: 12px;
