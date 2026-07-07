@@ -366,8 +366,12 @@ describe('FinanceOverviewPage', () => {
 
   it('scopes priority card amount chips to the command-card trailing slot', () => {
     const css = readFileSync('app/globals.css', 'utf8');
+    const priorityTrailingBlock = cssRuleBlockAt(css.indexOf('.finance-overview-priority-card > em {'));
 
     expect(css).toContain('.finance-overview-priority-card > em');
+    expect(priorityTrailingBlock).toContain('grid-column: 2');
+    expect(priorityTrailingBlock).toContain('max-inline-size: 100%');
+    expect(priorityTrailingBlock).toContain('white-space: normal');
     expect(css).not.toContain('.finance-overview-priority-card em {');
   });
 
@@ -389,3 +393,13 @@ describe('FinanceOverviewPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledTimes(1);
   });
 });
+
+function cssRuleBlockAt(index: number) {
+  if (index < 0) {
+    return '';
+  }
+
+  const css = readFileSync('app/globals.css', 'utf8');
+  const endIndex = css.indexOf('}', index);
+  return css.slice(index, endIndex + 1);
+}

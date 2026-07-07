@@ -9347,8 +9347,11 @@ a.action-button-card:hover {
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
+  grid-column: 2;
   line-height: 17px;
   margin-top: 4px;
+  max-inline-size: 100%;
+  white-space: normal;
 }
 
 .finance-overview-principle-grid {
