@@ -22,7 +22,7 @@ type FinancePeriodFilterFormProps = {
   readonly submitLabel?: string;
 };
 
-const DEFAULT_ROW_OPTIONS = [25, 50, 75, 100] as const;
+const DEFAULT_ROW_OPTIONS = [10, 25, 50] as const;
 
 export function FinancePeriodFilterForm({
   action,

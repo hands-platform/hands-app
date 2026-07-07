@@ -51,6 +51,17 @@ describe('FinancePeriodFilterForm', () => {
     expect(controlBlock).toContain('min-inline-size: 180px');
     expect(buttonBlock).toContain('align-self: end');
   });
+
+  it('offers the lightweight default finance page size before heavier options', () => {
+    const markup = renderToStaticMarkup(
+      <FinancePeriodFilterForm period="2026-07" rows={{ value: 10 }} />,
+    );
+
+    expect(markup.indexOf('value="10" selected=""')).toBeGreaterThan(-1);
+    expect(markup.indexOf('value="25"')).toBeGreaterThan(markup.indexOf('value="10"'));
+    expect(markup).not.toContain('value="75"');
+    expect(markup).not.toContain('value="100"');
+  });
 });
 
 function cssRuleBlockAt(index: number) {
