@@ -113,6 +113,11 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('actions={<span className="pill">{rows.length} shown</span>}');
   });
 
+  it('keeps cashout filter forms on the shared AdminFormGrid shell without page-local form classes', () => {
+    expect(cashoutQueueSource).toContain('AdminFormGrid');
+    expect(cashoutQueueSource).not.toContain('className="admin-filter-form"');
+  });
+
   it('uses the shared Vuexy action dropdown surface for cashout decision forms', () => {
     expect(cashoutQueueSource).toContain('ActionMenuDropdownSurface');
     expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');

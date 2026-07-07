@@ -128,7 +128,7 @@ export function ReferralCashoutQueuePage({
         resultTone="info"
         title="Referral cashout filters"
       >
-        <AdminFormGrid className="admin-filter-form" method="get">
+        <AdminFormGrid method="get">
           <AdminFormSearch defaultValue={filters.q} label="Search cashouts" name="q" placeholder="Search parent, referred, booking, reward" />
           <AdminFormSelect
             defaultValue={filters.audience}
