@@ -322,6 +322,13 @@ describe('FinanceOverviewPage', () => {
     expect(css).not.toContain('.finance-overview-row div {');
   });
 
+  it('scopes priority card amount chips to the command-card trailing slot', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.finance-overview-priority-card > em');
+    expect(css).not.toContain('.finance-overview-priority-card em {');
+  });
+
   it('uses shared Vuexy badge atoms for page header status chips', () => {
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');

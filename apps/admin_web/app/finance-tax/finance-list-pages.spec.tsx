@@ -459,6 +459,19 @@ describe('finance list pages', () => {
     expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
   });
 
+  it('scopes finance command card metric overrides to the shared KPI card slots', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    expect(css).toContain('.finance-list-command-card > .metric-card {');
+    expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-icon {');
+    expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-content > h2 {');
+    expect(css).toContain('.finance-list-command-card > .metric-card > .metric-card-content > small {');
+    expect(css).not.toContain('.finance-list-command-card .metric-card {');
+    expect(css).not.toContain('.finance-list-command-card .metric-card-icon {');
+    expect(css).not.toContain('.finance-list-command-card .metric-card h2 {');
+    expect(css).not.toContain('.finance-list-command-card .metric-card small {');
+  });
+
   it('uses shared badge atoms for bank reconciliation status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 
