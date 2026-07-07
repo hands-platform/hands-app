@@ -116,6 +116,15 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('aria-label="Customer usage segments"><div class="card admin-card usage-overview-command-card');
   });
 
+  it('scopes usage KPI icon tones to direct MetricCard icon slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    for (const tone of ['primary', 'info', 'success', 'warning', 'danger', 'neutral']) {
+      expect(css).toContain(`.usage-overview-kpi-card.is-${tone} > .metric-card > .metric-card-icon`);
+      expect(css).not.toContain(`.usage-overview-kpi-card.is-${tone} .metric-card-icon`);
+    }
+  });
+
   it('scopes mini metric typography and tones to direct metric children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 

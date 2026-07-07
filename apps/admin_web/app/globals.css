@@ -8900,7 +8900,7 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
-.usage-overview-kpi-card.is-primary .metric-card-icon {
+.usage-overview-kpi-card.is-primary > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
@@ -8910,7 +8910,7 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
-.partner-overview-kpi-card.is-primary .metric-card-icon {
+.partner-overview-kpi-card.is-primary > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
@@ -8925,7 +8925,7 @@ a.action-button-card:hover {
   color: var(--admin-info-text);
 }
 
-.usage-overview-kpi-card.is-info .metric-card-icon {
+.usage-overview-kpi-card.is-info > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8935,7 +8935,7 @@ a.action-button-card:hover {
   color: var(--admin-info-text);
 }
 
-.partner-overview-kpi-card.is-info .metric-card-icon {
+.partner-overview-kpi-card.is-info > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
@@ -8950,7 +8950,7 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
-.usage-overview-kpi-card.is-success .metric-card-icon {
+.usage-overview-kpi-card.is-success > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
@@ -8960,7 +8960,7 @@ a.action-button-card:hover {
   color: var(--admin-success-text);
 }
 
-.partner-overview-kpi-card.is-success .metric-card-icon {
+.partner-overview-kpi-card.is-success > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
@@ -8975,7 +8975,7 @@ a.action-button-card:hover {
   color: var(--admin-warning-text);
 }
 
-.usage-overview-kpi-card.is-warning .metric-card-icon {
+.usage-overview-kpi-card.is-warning > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
@@ -8985,7 +8985,7 @@ a.action-button-card:hover {
   color: var(--admin-warning-text);
 }
 
-.partner-overview-kpi-card.is-warning .metric-card-icon {
+.partner-overview-kpi-card.is-warning > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
@@ -9000,7 +9000,7 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.usage-overview-kpi-card.is-danger .metric-card-icon {
+.usage-overview-kpi-card.is-danger > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9010,7 +9010,7 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.partner-overview-kpi-card.is-danger .metric-card-icon {
+.partner-overview-kpi-card.is-danger > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9020,12 +9020,12 @@ a.action-button-card:hover {
   color: var(--admin-danger-text);
 }
 
-.partner-overview-kpi-card.is-neutral .metric-card-icon {
+.partner-overview-kpi-card.is-neutral > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-main-channel) / 0.07);
   color: var(--admin-muted);
 }
 
-.usage-overview-kpi-card.is-neutral .metric-card-icon {
+.usage-overview-kpi-card.is-neutral > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-main-channel) / 0.07);
   color: var(--admin-muted);
 }
