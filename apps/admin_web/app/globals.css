@@ -9030,22 +9030,22 @@ a.action-button-card:hover {
   color: var(--admin-muted);
 }
 
-.finance-overview-action-item.is-info .finance-overview-action-icon {
+.finance-overview-action-item.is-info > .finance-overview-action-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.finance-overview-action-item.is-success .finance-overview-action-icon {
+.finance-overview-action-item.is-success > .finance-overview-action-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.finance-overview-action-item.is-warning .finance-overview-action-icon {
+.finance-overview-action-item.is-warning > .finance-overview-action-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.finance-overview-action-item.is-danger .finance-overview-action-icon {
+.finance-overview-action-item.is-danger > .finance-overview-action-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
@@ -9186,22 +9186,22 @@ a.action-button-card:hover {
   line-height: 17px;
 }
 
-.finance-overview-control-card.is-success .finance-overview-command-icon {
+.finance-overview-control-card.is-success > .finance-overview-command-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.finance-overview-control-card.is-info .finance-overview-command-icon {
+.finance-overview-control-card.is-info > .finance-overview-command-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.finance-overview-control-card.is-warning .finance-overview-command-icon {
+.finance-overview-control-card.is-warning > .finance-overview-command-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.finance-overview-control-card.is-danger .finance-overview-command-icon {
+.finance-overview-control-card.is-danger > .finance-overview-command-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
