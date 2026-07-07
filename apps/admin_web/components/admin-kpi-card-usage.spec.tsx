@@ -31,6 +31,17 @@ describe('Admin KPI card usage', () => {
     expect(css).not.toContain('.marketing-analytics-metric small,');
     expect(css).not.toContain('.vietnam-overview-metric small');
   });
+
+  it('keeps overview KPI icon tones scoped to direct MetricCard icon slots', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    for (const tone of ['primary', 'success', 'warning', 'danger', 'info']) {
+      expect(css).toContain(`.marketing-analytics-metric.is-${tone} > .metric-card > .metric-card-icon`);
+      expect(css).toContain(`.vietnam-overview-metric.is-${tone} > .metric-card > .metric-card-icon`);
+      expect(css).not.toContain(`.marketing-analytics-metric.is-${tone} .metric-card-icon`);
+      expect(css).not.toContain(`.vietnam-overview-metric.is-${tone} .metric-card-icon`);
+    }
+  });
 });
 
 const allowedMetricCardImports = new Set(['components/admin-surface.tsx', 'components/metric-card.tsx']);

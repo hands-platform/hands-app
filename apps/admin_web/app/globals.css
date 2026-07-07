@@ -6095,32 +6095,32 @@ a.action-button-card:hover {
   overflow-wrap: anywhere;
 }
 
-.marketing-analytics-metric.is-primary .metric-card-icon,
-.vietnam-overview-metric.is-primary .metric-card-icon {
+.marketing-analytics-metric.is-primary > .metric-card > .metric-card-icon,
+.vietnam-overview-metric.is-primary > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
-.marketing-analytics-metric.is-success .metric-card-icon,
-.vietnam-overview-metric.is-success .metric-card-icon {
+.marketing-analytics-metric.is-success > .metric-card > .metric-card-icon,
+.vietnam-overview-metric.is-success > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.marketing-analytics-metric.is-warning .metric-card-icon,
-.vietnam-overview-metric.is-warning .metric-card-icon {
+.marketing-analytics-metric.is-warning > .metric-card > .metric-card-icon,
+.vietnam-overview-metric.is-warning > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.marketing-analytics-metric.is-danger .metric-card-icon,
-.vietnam-overview-metric.is-danger .metric-card-icon {
+.marketing-analytics-metric.is-danger > .metric-card > .metric-card-icon,
+.vietnam-overview-metric.is-danger > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
 
-.marketing-analytics-metric.is-info .metric-card-icon,
-.vietnam-overview-metric.is-info .metric-card-icon {
+.marketing-analytics-metric.is-info > .metric-card > .metric-card-icon,
+.vietnam-overview-metric.is-info > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
