@@ -9313,7 +9313,7 @@ a.action-button-card:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.finance-overview-kpi-grid .finance-overview-kpi-card {
+.finance-overview-kpi-grid > .finance-overview-kpi-card {
   min-height: 154px;
 }
 

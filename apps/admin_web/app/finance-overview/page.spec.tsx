@@ -298,6 +298,8 @@ describe('FinanceOverviewPage', () => {
   it('scopes finance KPI value typography to the direct shared metric-card slot', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
+    expect(css).toContain('.finance-overview-kpi-grid > .finance-overview-kpi-card');
+    expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-kpi-card {');
     expect(css).toContain(
       '.finance-overview-kpi-grid > .finance-overview-kpi-card > .metric-card > .metric-card-content > h2',
     );
