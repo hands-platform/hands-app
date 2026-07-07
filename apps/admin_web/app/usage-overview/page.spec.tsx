@@ -154,4 +154,32 @@ describe('UsageOverviewPage', () => {
     expect(css).not.toContain('.usage-overview-service-main small {');
     expect(css).not.toContain('.usage-overview-service-metrics strong {');
   });
+
+  it('scopes discovery, ranking, region, and hourly row typography to direct Vuexy slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-discovery-rates > span');
+    expect(css).toContain('.usage-overview-discovery-metrics .admin-mini-metric > strong');
+    expect(css).toContain('.usage-overview-discovery-row > time');
+    expect(css).toContain('.usage-overview-group-heading > span');
+    expect(css).toContain('.usage-overview-group-heading > strong');
+    expect(css).toContain('.usage-overview-row-value > strong');
+    expect(css).toContain('.usage-overview-row-value > span');
+    expect(css).toContain('.usage-overview-ranking-row > time');
+    expect(css).toContain('.usage-overview-region-metrics .admin-mini-metric > strong');
+    expect(css).toContain('.usage-overview-hour-row > div:first-child > strong');
+    expect(css).toContain('.usage-overview-hour-row > div:first-child > span');
+
+    expect(css).not.toContain('.usage-overview-discovery-rates span {');
+    expect(css).not.toContain('.usage-overview-discovery-metrics strong {');
+    expect(css).not.toContain('.usage-overview-discovery-row time {');
+    expect(css).not.toContain('.usage-overview-group-heading span {');
+    expect(css).not.toContain('.usage-overview-group-heading strong {');
+    expect(css).not.toContain('.usage-overview-row-value strong {');
+    expect(css).not.toContain('.usage-overview-row-value span,');
+    expect(css).not.toContain('.usage-overview-ranking-row time {');
+    expect(css).not.toContain('.usage-overview-region-metrics strong {');
+    expect(css).not.toContain('.usage-overview-hour-row > div:first-child strong {');
+    expect(css).not.toContain('.usage-overview-hour-row > div:first-child span {');
+  });
 });

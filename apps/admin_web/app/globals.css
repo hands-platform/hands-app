@@ -8790,7 +8790,7 @@ a.action-button-card:hover {
 }
 
 .usage-overview-discovery-metrics .admin-mini-metric,
-.usage-overview-discovery-rates span {
+.usage-overview-discovery-rates > span {
   background: rgb(var(--admin-surface-channel) / 0.7);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
@@ -8804,22 +8804,22 @@ a.action-button-card:hover {
   padding: 7px 9px;
 }
 
-.usage-overview-discovery-metrics strong {
+.usage-overview-discovery-metrics .admin-mini-metric > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 800;
   line-height: 18px;
 }
 
-.usage-overview-discovery-rates span:first-child {
+.usage-overview-discovery-rates > span:first-child {
   color: var(--admin-accent-strong);
 }
 
-.usage-overview-discovery-rates span:last-child {
+.usage-overview-discovery-rates > span:last-child {
   color: var(--admin-success-text);
 }
 
-.usage-overview-discovery-row time {
+.usage-overview-discovery-row > time {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 650;
@@ -10077,7 +10077,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-group-heading span {
+.usage-overview-group-heading > span {
   color: var(--admin-accent-strong);
   font-size: 12px;
   font-weight: 900;
@@ -10086,7 +10086,7 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.usage-overview-group-heading strong {
+.usage-overview-group-heading > strong {
   color: var(--admin-text);
   font-size: 18px;
   font-weight: 600;
@@ -10134,15 +10134,15 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-row-value strong {
+.usage-overview-row-value > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 800;
   line-height: 18px;
 }
 
-.usage-overview-row-value span,
-.usage-overview-ranking-row time {
+.usage-overview-row-value > span,
+.usage-overview-ranking-row > time {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 650;
@@ -10179,7 +10179,7 @@ a.action-button-card:hover {
   padding: 8px;
 }
 
-.usage-overview-region-metrics strong {
+.usage-overview-region-metrics .admin-mini-metric > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 800;
@@ -10407,14 +10407,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.usage-overview-hour-row > div:first-child strong {
+.usage-overview-hour-row > div:first-child > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 800;
   line-height: 18px;
 }
 
-.usage-overview-hour-row > div:first-child span {
+.usage-overview-hour-row > div:first-child > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
@@ -10550,7 +10550,7 @@ a.action-button-card:hover {
   }
 
   .usage-overview-row-value,
-  .usage-overview-ranking-row time {
+  .usage-overview-ranking-row > time {
     grid-column: 2;
     justify-items: start;
   }
@@ -10575,11 +10575,11 @@ a.action-button-card:hover {
 
   .usage-overview-discovery-metrics,
   .usage-overview-discovery-rates,
-  .usage-overview-discovery-row time {
+  .usage-overview-discovery-row > time {
     grid-column: 2;
   }
 
-  .usage-overview-discovery-row time {
+  .usage-overview-discovery-row > time {
     text-align: left;
   }
 
