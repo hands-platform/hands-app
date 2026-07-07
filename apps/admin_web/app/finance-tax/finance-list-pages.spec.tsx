@@ -291,8 +291,9 @@ describe('finance list pages', () => {
     expect(markup).toContain(detailHref);
     expect(markup).toContain('finance-list-command-board admin-mb-16');
     expect(markup).not.toContain('usage-overview-command-grid finance-list-command-board');
-    expect(markup).toContain('card admin-card finance-list-command-card is-');
-    expect(markup).toContain('finance-list-command-icon');
+    expect(markup).toContain('card admin-kpi-card finance-list-command-card is-');
+    expect(markup).toContain('metric-card-icon');
+    expect(markup).not.toContain('finance-list-command-icon');
     expect(markup).not.toContain('usage-overview-command-card finance-list-command-card');
     expect(markup).not.toContain('usage-overview-command-icon');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
@@ -443,14 +444,17 @@ describe('finance list pages', () => {
     expect(source).not.toContain('className="vuexy-booking-table"');
   });
 
-  it('uses the shared overview command card surface for finance command cards', () => {
+  it('uses the shared KPI card surface for finance command cards', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-list-command-card.tsx'), 'utf8');
 
-    expect(source).toContain('AdminOverviewCommandCard');
-    expect(source).toContain('baseClassName={financeListCommandCardClassName}');
-    expect(source).toContain('iconClassName={financeListCommandIconClassName}');
+    expect(source).toContain('AdminKpiCard');
+    expect(source).toContain('className={`finance-list-command-card is-${tone}`}');
+    expect(source).toContain('icon={Icon}');
+    expect(source).toContain('iconSize={18}');
     expect(source).toContain('baseClassName={financeListCommandBoardClassName}');
     expect(source).not.toContain('AdminLinkCard');
+    expect(source).not.toContain('AdminOverviewCommandCard');
+    expect(source).not.toContain('financeListCommandIconClassName');
     expect(source).not.toContain('usage-overview-command-icon');
     expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
   });

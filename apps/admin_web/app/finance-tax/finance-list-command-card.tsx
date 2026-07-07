@@ -1,14 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
+import { AdminOverviewCommandGrid } from '../../components/admin-overview-card';
+import { AdminKpiCard } from '../../components/admin-surface';
 
 export type FinanceListCommandTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
 const financeListCommandBoardClassName = 'finance-list-command-board';
 const financeListCommandCardClassName = 'finance-list-command-card';
-const financeListCommandIconClassName = 'finance-list-command-icon';
-
 export function FinanceListCommandBoard({
   ariaLabel,
   children,
@@ -38,18 +37,17 @@ export function FinanceListCommandCard({
   readonly detail: ReactNode;
   readonly href: string;
   readonly icon: LucideIcon;
-  readonly label: ReactNode;
+  readonly label: string;
   readonly tone: FinanceListCommandTone;
   readonly value: ReactNode;
 }) {
   return (
-    <AdminOverviewCommandCard
-      baseClassName={financeListCommandCardClassName}
-      className={`is-${tone}`}
-      detail={detail}
+    <AdminKpiCard
+      className={`finance-list-command-card is-${tone}`}
+      helper={detail}
       href={href}
-      icon={<Icon size={18} aria-hidden="true" />}
-      iconClassName={financeListCommandIconClassName}
+      icon={Icon}
+      iconSize={18}
       label={label}
       value={value}
     />
