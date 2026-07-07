@@ -1,6 +1,6 @@
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSection } from '../../components/admin-surface';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
 
 type SetupRegistrationHandoffItem = {
   readonly id: string;
@@ -16,21 +16,38 @@ type SetupRegistrationHandoffItem = {
 
 type SetupRegistrationHandoffSectionProps = {
   readonly registrationPlan: readonly SetupRegistrationHandoffItem[];
+  readonly visibleLimit?: number;
 };
 
 export function SetupRegistrationHandoffSection({
   registrationPlan,
+  visibleLimit,
 }: SetupRegistrationHandoffSectionProps) {
+  const visibleItems = visibleLimit ? registrationPlan.slice(0, visibleLimit) : registrationPlan;
+  const hiddenCount = Math.max(registrationPlan.length - visibleItems.length, 0);
+
   return (
     <AdminSection
       bodyClassName="setup-backlog"
       className="admin-mb-16"
       description="Account ownership, service consoles, and credential status in one place. Secret values are never printed here; this page only shows whether each integration is ready, deferred, or needs a human setup step."
-      statusLabel={`${registrationPlan.length} services tracked`}
+      footer={
+        hiddenCount > 0 ? (
+          <StatusBadgeLink href="/setup?details=all#external-registration-handoff" tone="info">
+            Open full setup details
+          </StatusBadgeLink>
+        ) : null
+      }
+      id="external-registration-handoff"
+      statusLabel={
+        hiddenCount > 0
+          ? `Showing ${visibleItems.length} of ${registrationPlan.length} services`
+          : `${registrationPlan.length} services tracked`
+      }
       statusTone="info"
       title="External registration handoff"
     >
-      {registrationPlan.map((item) => (
+      {visibleItems.map((item) => (
         <a className="setup-backlog-item" href={`#${item.groupId}`} key={item.id}>
           <span>{item.provider}</span>
           <strong>{item.title}</strong>

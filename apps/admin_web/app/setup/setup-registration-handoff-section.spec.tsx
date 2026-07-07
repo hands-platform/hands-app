@@ -52,4 +52,36 @@ describe('SetupRegistrationHandoffSection', () => {
     expect(rendered).toContain('SUPABASE_URL');
     expect(hrefsIn(section)).toContain('#supabase-auth');
   });
+
+  it('keeps the default registration handoff compact when a visible limit is provided', () => {
+    const section = SetupRegistrationHandoffSection({
+      registrationPlan: [
+        handoffItem('maps', 'Maps'),
+        handoffItem('sms', 'SMS'),
+        handoffItem('push', 'Push'),
+      ],
+      visibleLimit: 2,
+    });
+    const rendered = textContent(section);
+
+    expect(rendered).toContain('Maps');
+    expect(rendered).toContain('SMS');
+    expect(rendered).not.toContain('Push');
+    expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 2 of 3 services');
+    expect(rendered).toContain('Open full setup details');
+  });
 });
+
+function handoffItem(id: string, provider: string) {
+  return {
+    id,
+    provider,
+    title: `${provider} service`,
+    detail: 'Configure credentials outside Git.',
+    groupId: id,
+    status: 'Ready',
+    statusClass: 'pill-success',
+    owner: 'Operator',
+    env: [`${provider.toUpperCase()}_KEY`],
+  };
+}

@@ -30,6 +30,7 @@ import { SetupRegistrationHandoffSection } from './setup-registration-handoff-se
 
 type SetupPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const DEFAULT_SETUP_BACKLOG_LIMIT = 8;
+const DEFAULT_SETUP_REGISTRATION_LIMIT = 8;
 
 export default async function SetupPage({ searchParams }: { searchParams?: SetupPageSearchParams }) {
   const params = (await searchParams) ?? {};
@@ -75,7 +76,10 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
         showCommandDetails={showSetupDetails}
       />
 
-      <SetupRegistrationHandoffSection registrationPlan={registrationPlan} />
+      <SetupRegistrationHandoffSection
+        registrationPlan={registrationPlan}
+        visibleLimit={showSetupDetails ? undefined : DEFAULT_SETUP_REGISTRATION_LIMIT}
+      />
 
       <AdminDetailGrid ariaLabel="Setup operator actions and migration runway" className="admin-mb-16">
         <SetupOperatorActionsSection
