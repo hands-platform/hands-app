@@ -274,12 +274,13 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
+  const includeDeveloperDiagnostics = shouldLoadBookingDetailDeveloperDiagnostics(detailSearchParams);
   const {
     booking,
     operationalPolicies,
     providers,
     rawNotifications,
-  } = await loadBookingDetailPageData(id);
+  } = await loadBookingDetailPageData(id, includeDeveloperDiagnostics);
 
   if (!booking) {
     notFound();
@@ -913,15 +914,25 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   );
 }
 
-async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
+function shouldLoadBookingDetailDeveloperDiagnostics(params: Record<string, string | string[] | undefined>) {
+  const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
+  return rawSection === 'full' || rawSection === 'diagnostics';
+}
+
+async function loadBookingDetailPageData(
+  id: string,
+  includeDeveloperDiagnostics: boolean,
+): Promise<BookingDetailPageData> {
   const encodedId = encodeURIComponent(id);
   const [booking, operationalPolicies, rawNotifications] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${encodedId}`, null),
     adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
-    adminGet<AdminNotification[]>(
-      `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
-      [],
-    ),
+    includeDeveloperDiagnostics
+      ? adminGet<AdminNotification[]>(
+          `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
+          [],
+        )
+      : Promise.resolve([]),
   ]);
   const providers = shouldLoadBookingDetailMarketplaceProviders(booking)
     ? await adminGet<AdminProvider[]>(
