@@ -9670,7 +9670,7 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.partner-overview-selection-toolbar strong {
+.partner-overview-selection-toolbar > div > strong {
   color: var(--admin-muted);
   display: block;
   font-size: 12px;
@@ -9739,7 +9739,7 @@ a.action-button-card:hover {
   line-height: 17px;
 }
 
-.partner-overview-operating-card em {
+.partner-overview-operating-card > div > em {
   align-items: center;
   color: rgb(var(--admin-primary-channel) / 0.92);
   display: inline-flex;
@@ -9795,7 +9795,7 @@ a.action-button-card:hover {
   transform: translateY(-2px);
 }
 
-.partner-overview-priority-card em {
+.partner-overview-priority-card > div > em {
   align-items: center;
   color: var(--admin-accent-strong);
   display: inline-flex;

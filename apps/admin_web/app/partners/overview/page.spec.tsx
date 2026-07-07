@@ -274,9 +274,15 @@ describe('PartnerOverviewPage', () => {
     expect(css).toContain('.partner-overview-operating-card > div > span');
     expect(css).toContain('.partner-overview-operating-card > div > strong');
     expect(css).toContain('.partner-overview-operating-card > div > small');
+    expect(css).toContain('.partner-overview-operating-card > div > em');
+    expect(css).toContain('.partner-overview-priority-card > div > em');
+    expect(css).toContain('.partner-overview-selection-toolbar > div > strong');
     expect(css).not.toContain('.partner-overview-operating-card span {');
     expect(css).not.toContain('.partner-overview-operating-card strong {');
     expect(css).not.toContain('.partner-overview-operating-card small {');
+    expect(css).not.toContain('.partner-overview-operating-card em {');
+    expect(css).not.toContain('.partner-overview-priority-card em {');
+    expect(css).not.toContain('.partner-overview-selection-toolbar strong {');
   });
 
   it('scopes partner overview typography to direct Vuexy card slots', () => {
