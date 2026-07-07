@@ -72,8 +72,9 @@ describe('bookingOperatingSnapshot', () => {
       value: 'CARD / CAPTURED',
     });
     expect(snapshot.facts.find((fact) => fact.label === 'Confirmed address')).toMatchObject({
-      helper: 'Service address snapshot saved / customer_confirmation / 14 Jun 2026, 08:10',
+      helper: 'Confirmed service address saved / customer_confirmation / 14 Jun 2026, 08:10',
     });
+    expect(JSON.stringify(snapshot)).not.toMatch(/source of truth|service address snapshot/i);
     expect(JSON.stringify(snapshot)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 

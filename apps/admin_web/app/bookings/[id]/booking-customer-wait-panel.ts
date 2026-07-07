@@ -163,12 +163,12 @@ export function bookingCustomerWaitPanel(
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
         ? `${marketplaceSupply.eligibleCount} eligible marketplace Partner(s) can participate under current/saved policy.`
-        : 'Marketplace participation is not currently open for this saved policy snapshot.',
+        : 'Marketplace participation is not currently open for this saved policy.',
       action: firstPickRejected
         ? 'First-pick declined, so marketplace recovery should be active.'
         : backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'Policy allows marketplace Partners during the first-pick window.'
-          : 'Saved policy snapshot delays marketplace visibility while first-pick is deciding.',
+          : 'Saved policy holds marketplace visibility while first-pick is deciding.',
       className: backupWindowOpen ? 'ops-task-done' : 'ops-task-pending',
       pillClass: backupWindowOpen ? 'pill-success' : 'pill-info',
     },

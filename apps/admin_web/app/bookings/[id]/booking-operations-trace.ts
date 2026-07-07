@@ -35,7 +35,7 @@ export function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminA
       : policyLogsAfterOpen.length > 0
         ? 'Policy changed'
         : hasSavedMatchingPolicy
-          ? 'Snapshot saved'
+          ? 'Policy saved'
           : 'Live policy default';
   const statusTone =
     manualLogs.length > 0 || policyLogsAfterOpen.length > 0
@@ -49,16 +49,16 @@ export function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminA
       : policyLogsAfterOpen.length > 0
         ? 'Current policy changed after this booking opened'
         : hasSavedMatchingPolicy
-          ? 'Booking has its own matching policy snapshot'
+          ? 'Booking has its own matching policy record'
           : 'Booking is using live policy default';
   const detail =
     manualLogs.length > 0
-      ? 'This booking has operator actions in the audit log. Check notes, payment actions, no-show, expiry, or closeout before making another change.'
-      : policyLogsAfterOpen.length > 0
-        ? 'Matching uses the saved booking snapshot where available. Compare policy changes below before explaining behavior to customers or partners.'
+        ? 'This booking has operator actions in the audit log. Check notes, payment actions, no-show, expiry, or closeout before making another change.'
+        : policyLogsAfterOpen.length > 0
+        ? 'Matching uses the saved booking policy where available. Compare policy changes below before explaining behavior to customers or partners.'
         : hasSavedMatchingPolicy
           ? 'The saved response window, radius, accept mode, marketplace mode, and travel buffer are preserved for this booking.'
-          : 'Older or seeded bookings may not have a stored policy snapshot; operators should use the live policy panel above.';
+          : 'Older or seeded bookings may not have a stored policy record; operators should use the live policy panel above.';
 
   return {
     status,
@@ -88,8 +88,8 @@ export function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminA
         helper: 'Relevant operations policy updates after this booking was created.',
       },
       {
-        label: 'Policy source',
-        value: hasSavedMatchingPolicy ? 'Saved snapshot' : 'Live policy default',
+        label: 'Policy basis',
+        value: hasSavedMatchingPolicy ? 'Saved policy' : 'Live policy default',
         helper: hasSavedMatchingPolicy
           ? 'Booking behavior is explainable from saved metadata.'
           : 'Use live policy with extra caution.',
@@ -123,7 +123,7 @@ function bookingOperationsTraceRow(log: AdminAuditLog, bookingId: string) {
     detail: matchAudit
       ? matchAudit.detail
       : isPolicy
-        ? `${policyKey ?? 'Operational policy'} changed after booking open; existing matching behavior should still follow the saved booking snapshot when present.`
+        ? `${policyKey ?? 'Operational policy'} changed after booking open; existing matching behavior should still follow the saved booking policy when present.`
         : `${log.target}${targetBookingId && targetBookingId !== bookingId ? ` / booking ${shortId(targetBookingId)}` : ''}`,
     meta: [formatDate(log.createdAt), bookingMatchAuditSummary(log) || auditMetadataSummary(log.metadata)]
       .filter(Boolean)

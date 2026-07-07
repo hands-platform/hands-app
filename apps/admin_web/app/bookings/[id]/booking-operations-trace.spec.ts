@@ -22,6 +22,19 @@ describe('bookingOperationsTrace', () => {
     });
     expect(trace.rows[0]?.meta).toContain('Partner partner-1');
   });
+
+  it('uses operator-facing policy wording for saved booking policy records', () => {
+    const trace = bookingOperationsTrace(booking(), []);
+
+    expect(trace).toMatchObject({
+      status: 'Policy saved',
+      title: 'Booking has its own matching policy record',
+    });
+    expect(trace.metrics.find((metric) => metric.label === 'Policy basis')).toMatchObject({
+      value: 'Saved policy',
+    });
+    expect(JSON.stringify(trace)).not.toMatch(/Saved snapshot|booking snapshot|policy snapshot/i);
+  });
 });
 
 function booking(): AdminBookingDetail {

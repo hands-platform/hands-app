@@ -83,7 +83,7 @@ export function bookingOperatingSnapshot({
         value: compactActivityText(finalPartnerLabel, 34),
         helper: booking.selectedProvider
           ? 'Customer-selected final Partner is recorded.'
-          : 'Customer choice remains the source of truth.',
+          : 'Customer choice remains the final handoff record.',
       },
       {
         label: 'Preferred Partner',
@@ -119,5 +119,5 @@ function serviceAddressSnapshotStateLabel(addressPin: string) {
     return serviceAddressAreaLabel(address);
   }
 
-  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
+  return addressPin === 'No pin' ? 'No service address location' : 'Confirmed service address saved';
 }

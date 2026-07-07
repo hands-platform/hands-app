@@ -117,8 +117,10 @@ describe('bookingOperatingBaseTimelineItems', () => {
       detail: 'Selected Partner is the final customer-selected Partner.',
     });
     expect(items.find((item) => item.id === 'address-address-snapshot-1')).toMatchObject({
-      detail: 'District 2 address / service address snapshot saved',
+      detail: 'District 2 address / confirmed service address saved',
+      title: 'Confirmed address locked',
     });
+    expect(JSON.stringify(items)).not.toMatch(/service address snapshot/i);
     expect(JSON.stringify(items)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 

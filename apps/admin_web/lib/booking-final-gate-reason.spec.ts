@@ -33,17 +33,18 @@ describe('bookingFinalGateReason', () => {
     expect(result.detail).toContain('final acceptance, service start, and payout release wait');
   });
 
-  it('requires booking address snapshot before radius-based dispatch evidence', () => {
+  it('requires confirmed service address before radius-based dispatch evidence', () => {
     const result = bookingFinalGateReason({
       ...baseInput,
       hasAddressSnapshot: false,
     });
 
     expect(result).toMatchObject({
-      title: 'Address snapshot gate',
+      title: 'Confirmed address gate',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     });
+    expect(JSON.stringify(result)).not.toMatch(/snapshot|source of truth/i);
   });
 
   it('keeps first-pick visible while the preferred Partner response window is active', () => {
@@ -107,6 +108,7 @@ describe('bookingFinalGateReason', () => {
       className: 'ops-task-done',
       pillClass: 'pill-success',
     });
+    expect(result.operatorRule).toBe('Use the retained booking record for operations follow-up.');
   });
 
   it('builds admin presentation links from final gate titles', () => {

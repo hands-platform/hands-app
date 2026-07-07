@@ -84,4 +84,37 @@ describe('booking customer wait panel', () => {
       detail: 'API evidence reports chat is ready, but room details are not loaded in this response.',
     });
   });
+
+  it('uses operator-facing saved policy wording when marketplace participation is held', () => {
+    const panel = bookingCustomerWaitPanel(
+      booking({
+        expiresAt: '2099-06-10T09:00:00.000Z',
+        metadata: {
+          matchingPolicy: {
+            backupOpenMode: 'AFTER_FIRST_PICK_DELAY',
+            preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+            providerResponseWindowMinutes: 10,
+          },
+        },
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Pick Partner',
+        },
+      }),
+      {
+        eligibleCount: 2,
+        decisionDetail: '2 eligible marketplace Partners.',
+      },
+      [],
+    );
+
+    const marketplaceCard = panel.cards.find((card) => card.title === 'Marketplace participation');
+
+    expect(marketplaceCard).toMatchObject({
+      action: 'Saved policy holds marketplace visibility while first-pick is deciding.',
+      detail: 'Marketplace participation is not currently open for this saved policy.',
+      status: 'Held',
+    });
+    expect(JSON.stringify(marketplaceCard)).not.toMatch(/snapshot/i);
+  });
 });

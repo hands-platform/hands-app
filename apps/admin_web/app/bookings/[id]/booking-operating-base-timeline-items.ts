@@ -39,7 +39,7 @@ export function bookingOperatingBaseTimelineItems({
     {
       id: `address-${booking.addressSnapshot?.id ?? booking.id}`,
       type: 'ADDR',
-      title: booking.addressSnapshot ? 'Address snapshot locked' : 'Address snapshot missing',
+      title: booking.addressSnapshot ? 'Confirmed address locked' : 'Confirmed address missing',
       detail: booking.addressSnapshot
         ? `${compactActivityText(addressLine, 84)} / ${addressSnapshotStateLabel(addressPin)}`
         : 'This booking is still using older address data. Confirm before dispatch.',
@@ -185,7 +185,7 @@ export function bookingOperatingBaseTimelineItems({
 }
 
 function addressSnapshotStateLabel(addressPin: string) {
-  return readAddressText(addressPin) ? serviceAddressAreaLabel(addressPin) : 'service address snapshot saved';
+  return readAddressText(addressPin) ? serviceAddressAreaLabel(addressPin) : 'confirmed service address saved';
 }
 
 function latestLocationLabel(latestLocation: AdminLocationSnapshot) {

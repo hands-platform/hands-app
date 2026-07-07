@@ -40,7 +40,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
 
   if (!input.hasAddressSnapshot) {
     return {
-      title: 'Address snapshot gate',
+      title: 'Confirmed address gate',
       detail:
         'Confirmed service address is missing. Marketplace radius and dispatch evidence should use the booked service address, not a moving customer GPS point.',
       operatorRule: 'Repair or verify the confirmed service address before relying on distance-based dispatch decisions.',
@@ -102,7 +102,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
       title: 'Final Partner locked',
       detail:
         'Customer final choice is complete. Continue monitoring chat, Partner location handoff, and service progress.',
-      operatorRule: 'Use the retained booking record as source of truth for operations follow-up.',
+      operatorRule: 'Use the retained booking record for operations follow-up.',
       className: 'ops-task-done',
       pillClass: 'pill-success',
     };
@@ -137,7 +137,7 @@ function bookingFinalGateReasonHref(title: string, bookingId: string) {
   if (title === 'Wallet debt gate') {
     return '/cash-settlements';
   }
-  if (title === 'Address snapshot gate') {
+  if (title === 'Confirmed address gate') {
     return '/bookings?view=address';
   }
   if (title === 'First-pick window') {

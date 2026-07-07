@@ -72,11 +72,11 @@ export function bookingDetailMatchingRuleSnapshot({
   return {
     status,
     tone,
-    summary: `${hasSavedPolicy ? 'Saved booking policy snapshot' : 'Live MVP default'} is being used for this evidence readout. ${nextAction}`,
+    summary: `${hasSavedPolicy ? 'Saved booking policy' : 'Live MVP default'} is being used for this evidence readout. ${nextAction}`,
     rows: [
       {
-        label: 'Policy source',
-        value: hasSavedPolicy ? 'Saved snapshot' : 'Live default',
+        label: 'Policy basis',
+        value: hasSavedPolicy ? 'Saved policy' : 'Live default',
         helper: hasSavedPolicy
           ? 'This booking carries matching policy metadata captured at creation/open time.'
           : 'Older or seeded bookings may fall back to the current operations policy.',
@@ -109,7 +109,7 @@ export function bookingDetailMatchingRuleSnapshot({
         label: 'Chat handoff',
         value: booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} message(s)` : 'Not ready',
         helper: booking.chatRoom
-          ? 'Admin keeps the chat archive even after mobile hides completed-service chats.'
+          ? 'Admin keeps the chat record even after mobile hides completed-service chats.'
           : 'Matched bookings should create a chat room before service coordination.',
       },
       {
