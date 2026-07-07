@@ -170,6 +170,63 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-realtime-region-row small {');
     expect(css).not.toContain('.vietnam-realtime-region-row em {');
   });
+
+  it('scopes map legend and cluster drawer typography to direct children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-map-dot-legend-header > div');
+    expect(css).toContain('.vietnam-map-dot-legend-header > div > strong');
+    expect(css).toContain('.vietnam-map-dot-legend-header > div > span');
+    expect(css).toContain('.vietnam-map-dot-legend-header > small');
+    expect(css).toContain('.vietnam-map-signal-filter-copy > span');
+    expect(css).toContain('.vietnam-map-signal-filter-copy > small');
+    expect(css).toContain('.vietnam-map-signal-filter > strong');
+    expect(css).toContain('.vietnam-map-cluster-operator-read > span');
+    expect(css).toContain('.vietnam-map-cluster-operator-read > strong');
+    expect(css).toContain('.vietnam-map-cluster-operator-read > small');
+    expect(css).toContain('.vietnam-map-cluster-latest > div');
+    expect(css).toContain('.vietnam-map-cluster-latest > div > small');
+    expect(css).toContain('.vietnam-map-cluster-latest > div > strong');
+    expect(css).toContain('.vietnam-map-cluster-latest > div > span');
+    expect(css).toContain('.vietnam-map-cluster-summary-card > span');
+    expect(css).toContain('.vietnam-map-cluster-summary-card > strong');
+    expect(css).toContain('.vietnam-map-cluster-events-header > div');
+    expect(css).toContain('.vietnam-map-cluster-events-header > div > strong');
+    expect(css).toContain('.vietnam-map-cluster-events-header > div > span');
+    expect(css).toContain('.vietnam-map-cluster-events-header > small');
+    expect(css).toContain('.vietnam-map-cluster-event > div');
+    expect(css).toContain('.vietnam-map-cluster-event > div > strong');
+    expect(css).toContain('.vietnam-map-cluster-event > div > span');
+    expect(css).toContain('.vietnam-map-cluster-event > div > small');
+    expect(css).toContain('.vietnam-map-cluster-event > div > p');
+    expect(css).toContain('.vietnam-map-cluster-event-meta > span');
+
+    expect(css).not.toContain('.vietnam-map-dot-legend-header div {');
+    expect(css).not.toContain('.vietnam-map-dot-legend-header strong {');
+    expect(css).not.toContain('.vietnam-map-dot-legend-header span,');
+    expect(css).not.toContain('.vietnam-map-dot-legend-header small {');
+    expect(css).not.toContain('.vietnam-map-signal-filter-copy span {');
+    expect(css).not.toContain('.vietnam-map-signal-filter-copy small {');
+    expect(css).not.toContain('.vietnam-map-signal-filter strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-operator-read span {');
+    expect(css).not.toContain('.vietnam-map-cluster-operator-read strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-operator-read small {');
+    expect(css).not.toContain('.vietnam-map-cluster-latest div {');
+    expect(css).not.toContain('.vietnam-map-cluster-latest strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-latest span {');
+    expect(css).not.toContain('.vietnam-map-cluster-summary-card span {');
+    expect(css).not.toContain('.vietnam-map-cluster-summary-card strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-events-header div {');
+    expect(css).not.toContain('.vietnam-map-cluster-events-header strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-events-header span,');
+    expect(css).not.toContain('.vietnam-map-cluster-events-header small {');
+    expect(css).not.toContain('.vietnam-map-cluster-event div {');
+    expect(css).not.toContain('.vietnam-map-cluster-event strong {');
+    expect(css).not.toContain('.vietnam-map-cluster-event span {');
+    expect(css).not.toContain('.vietnam-map-cluster-event small {');
+    expect(css).not.toContain('.vietnam-map-cluster-event p {');
+    expect(css).not.toContain('.vietnam-map-cluster-event-meta span {');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
