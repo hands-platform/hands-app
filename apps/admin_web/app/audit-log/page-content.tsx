@@ -5,6 +5,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-pa
 import { AdminSection } from '../../components/admin-surface';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   AdminFormControlButton,
@@ -188,11 +189,11 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
         <AdminTableSection
           bodyClassName="admin-table-section-body"
           status={
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel="Audit record table status">
               <StatusBadge tone="success">Newest first</StatusBadge>
               <StatusBadge tone="info">Action grouped</StatusBadge>
               <StatusBadge tone="warning">Metadata preview</StatusBadge>
-            </div>
+            </AdminFilterChipGroup>
           }
           title="Audit records"
         >

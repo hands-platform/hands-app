@@ -1,5 +1,6 @@
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { DateTimeText } from '../../components/date-time-text';
 import {
   AdminSignal,
@@ -83,13 +84,13 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
           </td>
           <td>
             {row.metadataHighlights.length > 0 ? (
-              <div className="participant-list admin-mb-8">
+              <AdminFilterChipGroup ariaLabel={`${row.id} metadata highlights`} className="admin-mb-8">
                 {row.metadataHighlights.map((item, index) => (
                   <StatusBadge tone={item.tone} key={`${item.label}-${index}`}>
                     {item.label}
                   </StatusBadge>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             ) : null}
             <pre className="admin-pre-wrap">{row.metadataPreview}</pre>
           </td>

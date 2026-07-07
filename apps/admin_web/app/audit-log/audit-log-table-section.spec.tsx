@@ -39,8 +39,10 @@ describe('AuditLogTableSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/audit-log/audit-log-table-section.tsx'), 'utf8');
 
     expect(source).toContain('ActionMenu');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="participant-list admin-mb-8">');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<Link className="pill pill-info" href={row.relatedBoardHref}>');

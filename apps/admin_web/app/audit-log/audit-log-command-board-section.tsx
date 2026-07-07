@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 
@@ -51,10 +52,10 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
           title={item.title}
           variant="ops-task"
         >
-          <div className="participant-list">
+          <AdminFilterChipGroup ariaLabel={`${item.title} audit status`}>
             <StatusBadge tone="neutral">{item.status}</StatusBadge>
             <StatusBadge tone="neutral">{item.logs.length} event(s)</StatusBadge>
-          </div>
+          </AdminFilterChipGroup>
           {item.logs.length > 0 ? (
             <div className="stack">
               {item.logs.slice(0, 3).map((log) => (

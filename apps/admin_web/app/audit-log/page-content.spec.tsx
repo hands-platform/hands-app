@@ -5,7 +5,9 @@ describe('audit log page content', () => {
   const source = readFileSync(join(process.cwd(), 'app/audit-log/page-content.tsx'), 'utf8');
 
   it('uses the shared StatusBadge atom for audit record status chips', () => {
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="participant-list">');
     expect(source).not.toContain('<span className="pill pill-success">Newest first</span>');
     expect(source).not.toContain('<span className="pill pill-info">Action grouped</span>');
     expect(source).not.toContain('<span className="pill pill-warn">Metadata preview</span>');
