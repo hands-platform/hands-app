@@ -123,6 +123,7 @@ export default async function OperationsPolicyPage({
     shouldRenderFullDiagnostics && supplySensitivity
       ? buildOwnerDecisionPressure(bookings, providers, supplySensitivity, acceptanceMatrix)
       : null;
+  const shouldRenderDecisionEditor = shouldRenderFullDiagnostics;
 
   return (
     <AdminPageTemplate
@@ -241,11 +242,27 @@ export default async function OperationsPolicyPage({
         statusTone="warning"
         title="Operator decisions"
       >
-        <AdminDetailGrid>
-          {decisionSettings.map((setting) => (
-            <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
-          ))}
-        </AdminDetailGrid>
+        {shouldRenderDecisionEditor ? (
+          <AdminDetailGrid>
+            {decisionSettings.map((setting) => (
+              <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
+            ))}
+          </AdminDetailGrid>
+        ) : (
+          <AdminNotePanel className="admin-m-0">
+            <AdminSectionHeader
+              description="Decision policy editors are available in the full diagnostics view so the default page stays focused on live matching edits and booking gates."
+              status={<StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>}
+              title="Decision editor is loaded on demand"
+            />
+            <AdminFormControlLink
+              className="button-secondary admin-mt-12"
+              href={buildOperationsPolicyDetailsHref('all')}
+            >
+              Load decision editor
+            </AdminFormControlLink>
+          </AdminNotePanel>
+        )}
       </AdminSection>
 
       {shouldRenderFullDiagnostics && ownerDecisionBacklog && ownerDecisionPressure ? (

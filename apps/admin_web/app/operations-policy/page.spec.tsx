@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import { adminGet } from '../../lib/admin-api';
+import { adminGet, type AdminOperationalPolicySetting } from '../../lib/admin-api';
 import OperationsPolicyPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -43,6 +43,82 @@ describe('OperationsPolicyPage', () => {
     );
   });
 
+  it('keeps decision policy editors out of the compact summary payload', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/operational-policy') {
+        return [
+          operationPolicySetting({
+            category: 'Matching',
+            key: 'matching.provider_response_window_minutes',
+            label: 'First-pick Partner response window',
+            value: 10,
+          }),
+          operationPolicySetting({
+            category: 'Decision',
+            key: 'matching.preferred_accept_mode',
+            label: 'First-pick acceptance contract',
+            options: [
+              {
+                label: 'Preferred first',
+                tradeoff: 'Keep preferred partner priority before marketplace fallback.',
+                value: 'preferred_first',
+              },
+            ],
+            value: 'preferred_first',
+          }),
+        ] satisfies AdminOperationalPolicySetting[];
+      }
+
+      return fallback;
+    });
+
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('First-pick Partner response window');
+    expect(markup).not.toContain('First-pick acceptance contract');
+    expect(markup).toContain('Load decision editor');
+    expect(markup).toContain('/operations-policy?details=all');
+    expect((markup.match(/<form/g) ?? []).length).toBe(1);
+  });
+
+  it('renders decision policy editors in full diagnostics mode', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/operational-policy') {
+        return [
+          operationPolicySetting({
+            category: 'Matching',
+            key: 'matching.provider_response_window_minutes',
+            label: 'First-pick Partner response window',
+            value: 10,
+          }),
+          operationPolicySetting({
+            category: 'Decision',
+            key: 'matching.preferred_accept_mode',
+            label: 'First-pick acceptance contract',
+            options: [
+              {
+                label: 'Preferred first',
+                tradeoff: 'Keep preferred partner priority before marketplace fallback.',
+                value: 'preferred_first',
+              },
+            ],
+            value: 'preferred_first',
+          }),
+        ] satisfies AdminOperationalPolicySetting[];
+      }
+
+      return fallback;
+    });
+
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'all' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('First-pick Partner response window');
+    expect(markup).toContain('First-pick acceptance contract');
+    expect((markup.match(/<form/g) ?? []).length).toBe(2);
+  });
+
   it('uses shared Vuexy badge atoms for page header counters', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('StatusBadge');
@@ -80,3 +156,23 @@ describe('OperationsPolicyPage', () => {
     expect(globalCss).not.toContain('.operations-policy-page .ops-section-header > .signal,');
   });
 });
+
+function operationPolicySetting(
+  overrides: Partial<AdminOperationalPolicySetting> & Pick<AdminOperationalPolicySetting, 'category' | 'key' | 'label'>,
+): AdminOperationalPolicySetting {
+  return {
+    category: overrides.category,
+    description: `${overrides.label} description`,
+    enforced: true,
+    key: overrides.key,
+    label: overrides.label,
+    max: null,
+    min: null,
+    options: overrides.options ?? null,
+    recommendedValue: overrides.recommendedValue ?? overrides.value ?? 10,
+    unit: null,
+    updatedAt: null,
+    updatedBy: null,
+    value: overrides.value ?? 10,
+  };
+}

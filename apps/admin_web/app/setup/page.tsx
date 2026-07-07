@@ -1,8 +1,8 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
-import { StatusBadgeLink } from '../../components/status-badge';
+import { AdminDetailGrid } from '../../components/admin-surface';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
+import { SetupGroupDetailSummaryLink } from './setup-group-detail-summary-link';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
 import { SetupOverviewSection } from './setup-overview-section';
@@ -107,19 +107,4 @@ function readSetupCommandMode(value: string | string[] | undefined): 'full' | 's
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
-}
-
-export function SetupGroupDetailSummaryLink({ groupCount }: { readonly groupCount: number }) {
-  return (
-    <AdminSection
-      actions={
-        <StatusBadgeLink tone="neutral" href="/setup?details=all">
-          Show {groupCount} setup group(s)
-        </StatusBadgeLink>
-      }
-      className="admin-mt-16"
-      description="Full environment notes and command packs are kept out of the default setup payload."
-      title="Setup group details"
-    />
-  );
 }

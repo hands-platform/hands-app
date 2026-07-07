@@ -1,14 +1,16 @@
 import { readFileSync } from 'node:fs';
 
 import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
-import { SetupGroupDetailSummaryLink } from './page';
+import { SetupGroupDetailSummaryLink } from './setup-group-detail-summary-link';
 
 describe('SetupGroupDetailSummaryLink', () => {
   it('uses a shared badge link atom instead of a raw pill anchor', () => {
-    const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+    const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('./setup-group-detail-summary-link.tsx', import.meta.url), 'utf8');
 
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('<a className="pill pill-neutral" href="/setup?details=all">');
+    expect(pageSource).not.toContain('export function SetupGroupDetailSummaryLink');
   });
 
   it('renders the collapsed setup group details link as a shared section surface', () => {
