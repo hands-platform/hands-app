@@ -10,4 +10,9 @@ describe('GeneralLedgerPage Vuexy links', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain("import Link from 'next/link';");
   });
+
+  it('keeps the ledger queue compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Ledger command board">');
+    expect(source).not.toContain('metrics={[');
+  });
 });

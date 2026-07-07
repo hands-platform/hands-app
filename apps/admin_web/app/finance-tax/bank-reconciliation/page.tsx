@@ -95,28 +95,6 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         />
       }
       description="Company bank transaction lookup for manual reconciliation against payments, withdrawals, payout batches, and accounting evidence."
-      metrics={[
-        {
-          helper: 'Bank transactions matching the current filters.',
-          label: 'Transactions',
-          value: summary.count,
-        },
-        {
-          helper: 'Transactions that still need matching.',
-          label: 'Unmatched',
-          value: summary.unmatchedCount,
-        },
-        {
-          helper: 'Transactions already matched to accounting evidence.',
-          label: 'Matched',
-          value: summary.matchedCount,
-        },
-        {
-          helper: 'Total amount in the selected bank transaction scope.',
-          label: 'Amount',
-          value: <MoneyText amount={summary.amount} currency={summary.currency} />,
-        },
-      ]}
       title="Bank Reconciliation"
     >
       <FinanceListCommandBoard ariaLabel="Bank command board">

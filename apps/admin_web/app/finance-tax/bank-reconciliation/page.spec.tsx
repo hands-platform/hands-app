@@ -57,6 +57,11 @@ describe('BankReconciliationPage', () => {
     expect(source).not.toContain("import Link from 'next/link';");
   });
 
+  it('keeps the bank reconciliation list compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Bank command board">');
+    expect(source).not.toContain('metrics={[');
+  });
+
   it('keeps manual import bounded and shows validation failures without overlapping raw inputs', async () => {
     const page = await BankReconciliationPage({
       searchParams: Promise.resolve({ bankImportError: 'invalid', range: 'today' }),

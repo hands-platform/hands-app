@@ -71,16 +71,6 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
         />
       }
       description="Payment clearing entries connect customer capture, booking settlement posting, refunds, payment fees, and coupon offsets without loading full booking details."
-      metrics={[
-        { helper: 'Clearing rows matching the current filters.', label: 'Entries', value: summary.count },
-        { helper: 'Rows still waiting for clearing or reconciliation.', label: 'Open', value: summary.openCount },
-        { helper: 'Rows cleared against finance evidence.', label: 'Cleared', value: summary.clearedCount },
-        {
-          helper: 'Total amount in the selected clearing scope.',
-          label: 'Amount',
-          value: <MoneyText amount={summary.amount} currency={summary.currency} />,
-        },
-      ]}
       title="Booking Payment Clearing"
     >
       <FinanceListCommandBoard ariaLabel="Clearing command board">

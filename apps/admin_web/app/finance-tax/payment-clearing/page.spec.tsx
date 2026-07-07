@@ -10,4 +10,9 @@ describe('PaymentClearingPage Vuexy links', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain("import Link from 'next/link';");
   });
+
+  it('keeps the finance list compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Clearing command board">');
+    expect(source).not.toContain('metrics={[');
+  });
 });

@@ -72,21 +72,6 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
         />
       }
       description="Bounded journal batch lookup for booking settlement, reversal, manual adjustment, refund, payout, and bank reconciliation evidence."
-      metrics={[
-        { helper: 'Journal batches matching the current filters.', label: 'Batches', value: summary.count },
-        { helper: 'Posted journal batches.', label: 'Posted', value: summary.postedCount },
-        { helper: 'Reversed journal batches.', label: 'Reversed', value: summary.reversedCount },
-        {
-          helper: 'Total debits in the selected scope.',
-          label: 'Debits',
-          value: <MoneyText amount={summary.totalDebit} currency={summary.currency} />,
-        },
-        {
-          helper: 'Total credits in the selected scope.',
-          label: 'Credits',
-          value: <MoneyText amount={summary.totalCredit} currency={summary.currency} />,
-        },
-      ]}
       title="General Ledger"
     >
       <FinanceListCommandBoard ariaLabel="Ledger command board">
