@@ -11227,7 +11227,7 @@ a.action-button-card:hover {
 }
 
 .dashboard-page .ops-row > div,
-.dashboard-page .ops-section-header > div {
+.dashboard-page :is(.card, .admin-card) > .ops-section-header > div {
   min-width: 0;
 }
 

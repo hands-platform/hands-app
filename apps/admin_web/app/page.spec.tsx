@@ -28,6 +28,7 @@ vi.mock('../lib/admin-api', async () => {
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedApiGet = vi.mocked(apiGet);
 const dashboardSource = readFileSync('app/page.tsx', 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('DashboardPage', () => {
   beforeEach(() => {
@@ -378,6 +379,11 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('className={`ops-task-card');
     expect(dashboardSource).not.toContain('className={`ops-task-breakdown-item');
     expect(dashboardSource).not.toContain('className="ops-task-card-action"');
+  });
+
+  it('scopes dashboard header overflow rules to card-level section headers', () => {
+    expect(globalCss).toContain('.dashboard-page :is(.card, .admin-card) > .ops-section-header > div {');
+    expect(globalCss).not.toContain('.dashboard-page .ops-section-header > div');
   });
 
   it('uses the shared detail grid surface for dashboard multi-panel groups', () => {
