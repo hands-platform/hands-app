@@ -49,7 +49,7 @@ export function partnerReviewModeContent(review: string): PartnerReviewModeConte
       badge: 'Negative wallet',
       description: 'Partners in this view have a negative wallet balance from unpaid HANDS commission.',
       detailFocus:
-        'Open the Partner detail page, check cash booking origins, fee debt, wallet ledger, payout impact, and settlement notes before final acceptance, service start, or payout release resumes.',
+        'Open the Partner detail page, check cash booking origins, fee debt, wallet impact, payout impact, and settlement notes before final acceptance, service start, or payout release resumes.',
       steps: [
         'Check the negative wallet amount and the booking or cash collection records that created it.',
         'Confirm whether settlement is pending, partially paid, disputed, or ready to clear.',

@@ -137,7 +137,7 @@ describe('cash settlement page model', () => {
       'Confirm cash collection',
       'Attach settlement reference',
       'Settle wallet debt',
-      'Ledger trace',
+      'Wallet evidence',
       'Aging follow-up',
     ]);
   });

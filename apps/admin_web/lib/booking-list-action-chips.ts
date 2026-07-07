@@ -55,7 +55,7 @@ export function bookingListActionChipsFromFacts(
     },
     {
       detail: input.closeoutNeedsOps
-        ? 'Completed booking needs payment, earning, tax, fee, or wallet ledger closeout.'
+        ? 'Completed booking needs payment, earning, tax, fee, or wallet impact closeout.'
         : 'No completed closeout blocker is visible.',
       href: '/bookings?view=closeout',
       label: input.closeoutNeedsOps ? 'Closeout check' : 'Closeout clear',

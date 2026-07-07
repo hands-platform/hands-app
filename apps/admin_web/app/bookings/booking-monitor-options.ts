@@ -118,9 +118,9 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
   {
     view: 'closeout',
     label: 'Closeout ops',
-    description: 'completed bookings missing capture, earning, tax, platform fee, or wallet ledger records.',
+    description: 'completed bookings missing capture, earning, tax, platform fee, or wallet impact records.',
     operatorHint:
-      'Use this after service completion to reconcile payment capture, Partner earning, tax logs, and wallet ledger entries.',
+      'Use this after service completion to reconcile payment capture, Partner earning, tax logs, and wallet impact entries.',
   },
   {
     view: 'pricing',

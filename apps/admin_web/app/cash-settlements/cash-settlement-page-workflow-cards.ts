@@ -53,7 +53,7 @@ export function buildWalletRecoverySteps(
           )
         : 'There is no open row waiting for confirmation.',
       operatorRule:
-        'Submitting the settlement form marks the negative earning paid and creates the wallet ledger trace.',
+        'Submitting the settlement form marks the negative earning paid and creates the wallet impact evidence.',
       pillClass: hasOpenDebt ? 'pill-warn' : 'pill-success',
       status: hasOpenDebt ? 'Action needed' : 'No action',
       title: '3. Confirm deposit / offset on the row',
@@ -116,7 +116,7 @@ export function buildCashSettlementHandoffMap(
       className: missingReferenceRows.length ? 'ops-task-pending' : 'ops-task-done',
       detail: missingReferenceRows.length
         ? 'Finance still needs a bank deposit reference or an approved admin offset memo.'
-        : `${rowsWithLedgerRefs.length} row(s) already have a settlement or wallet ledger reference.`,
+        : `${rowsWithLedgerRefs.length} row(s) already have a settlement or wallet impact reference.`,
       href: '/cash-settlements?queue=missing-ref',
       operatorRule: 'The settlement action must keep booking, payment, earning, and wallet references aligned.',
       pillClass: missingReferenceRows.length ? 'pill-warn' : 'pill-success',
@@ -195,12 +195,12 @@ export function buildCashSettlementEvidenceChecklist(
     },
     {
       className: rowsWithRefs.length === rows.length ? 'ops-task-done' : 'ops-task-pending',
-      detail: 'Existing wallet ledger references should match the booking, payment, and earning row.',
+      detail: 'Existing wallet impact references should match the booking, payment, and earning row.',
       href: '/audit-log?bucket=Finance%2FCloseout',
       operatorRule: 'If a reference is missing, leave the row open until finance has evidence.',
       pillClass: rowsWithRefs.length === rows.length ? 'pill-success' : 'pill-info',
       status: `${rowsWithRefs.length} ref(s)`,
-      title: 'Ledger trace',
+      title: 'Wallet evidence',
     },
   ];
 }

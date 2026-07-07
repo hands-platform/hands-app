@@ -105,7 +105,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
       severity: 'medium',
       title: 'Cash debt ledger may be stale',
       detail: 'The earning is negative but visible wallet entries are not negative.',
-      action: 'Check wallet ledger entries and settlement status.',
+      action: 'Check wallet impact entries and settlement status.',
     });
   }
 

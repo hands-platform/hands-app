@@ -151,7 +151,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         title: 'Address evidence',
         detail: input.hasAddressSnapshot
           ? `Locked address snapshot: ${addressSnapshotLabel}.`
-          : 'No immutable address snapshot is attached yet.',
+          : 'No confirmed service address is attached yet.',
         evidence: input.hasAddressSnapshot
           ? ['Address snapshot', addressEvidenceLabel].join(' ')
           : 'Stored-address fallback or missing booking address needs operator review.',

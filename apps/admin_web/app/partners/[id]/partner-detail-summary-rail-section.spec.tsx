@@ -133,7 +133,7 @@ function buildItems(): PartnerDetailSummaryRailItem[] {
 
 function buildUsageSummary(): PartnerDetailUsageRegionSummary {
   return {
-    helper: 'Built from stored app sessions and booking address snapshots. No live GPS polling.',
+    helper: 'Built from saved app activity, booking service addresses, and Partner location timestamps. No live GPS polling.',
     items: [
       {
         detailDateTimePrefix: 'Latest ',

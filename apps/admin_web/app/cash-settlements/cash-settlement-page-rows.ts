@@ -182,13 +182,13 @@ export function cashSettlementActionExecutionMap(
       status: row.debtAmount > 0 ? 'Debt open' : 'Clear',
     },
     {
-      action: 'Ledger trace',
-      operatorRule: 'Keep the booking, payment, earning, and wallet ledger references aligned.',
+      action: 'Wallet evidence',
+      operatorRule: 'Keep the booking, payment, earning, and wallet impact references aligned.',
       pillClass: hasLedgerReference ? 'pill-info' : 'pill-neutral',
       reason: hasLedgerReference
-        ? `Last wallet ledger reference is ${row.lastLedgerRef}.`
-        : 'No wallet ledger reference has been recorded yet for this row.',
-      status: hasLedgerReference ? 'Trace exists' : 'No prior trace',
+        ? `Last wallet impact reference is ${row.lastLedgerRef}.`
+        : 'No wallet impact reference has been recorded yet for this row.',
+      status: hasLedgerReference ? 'Evidence exists' : 'No prior evidence',
     },
     {
       action: 'Aging follow-up',

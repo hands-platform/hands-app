@@ -283,7 +283,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
 
       <AdminFilterPanel
         className="admin-mt-16"
-        description="The preview below is returned by the NestJS Admin API. Create writes a wallet ledger entry plus admin audit log."
+        description="Preview the balance, approval, accounting impact, and audit evidence before saving this adjustment."
         resultLabel={preview ? 'No direct DB write' : 'Waiting'}
         resultTone={preview ? 'success' : 'info'}
         title="Accounting preview"
@@ -711,7 +711,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'failed') {
     return {
       badge: 'Blocked',
-      detail: 'No wallet ledger was written. Check owner id, approval id, attachment, and closed-period rules.',
+      detail: 'No wallet impact record was saved. Check owner id, approval id, attachment, and closed-period rules.',
       title: 'Manual adjustment was not saved',
       tone: 'danger' as const,
     };
@@ -720,7 +720,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'approval-required') {
     return {
       badge: 'Approval',
-      detail: 'No wallet ledger was written. Every manual wallet adjustment needs an approval id.',
+      detail: 'No wallet impact record was saved. Every manual wallet adjustment needs an approval id.',
       title: 'Approval id is required',
       tone: 'danger' as const,
     };
@@ -729,7 +729,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'approval-admin-required') {
     return {
       badge: 'Approval',
-      detail: 'No wallet ledger was written. A different approving admin id is required.',
+      detail: 'No wallet impact record was saved. A different approving admin id is required.',
       title: 'Approving admin id is required',
       tone: 'danger' as const,
     };
@@ -739,7 +739,7 @@ function walletAdjustmentNotice(notice: string) {
     return {
       badge: 'Evidence',
       detail:
-        'No wallet ledger was written. High amount adjustments and receivable write-offs need an attachment URL.',
+        'No wallet impact record was saved. High amount adjustments and receivable write-offs need an attachment URL.',
       title: 'Attachment evidence is required',
       tone: 'danger' as const,
     };
@@ -748,7 +748,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'attachment-invalid') {
     return {
       badge: 'Evidence',
-      detail: 'No wallet ledger was written. Attachment evidence must be a valid http or https URL.',
+      detail: 'No wallet impact record was saved. Attachment evidence must be a valid http or https URL.',
       title: 'Attachment URL is invalid',
       tone: 'danger' as const,
     };
@@ -757,7 +757,7 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'monthly-period-invalid') {
     return {
       badge: 'Period',
-      detail: 'No wallet ledger was written. Monthly period must use YYYY-MM before the wallet ledger can be written.',
+      detail: 'No wallet impact record was saved. Monthly period must use YYYY-MM before finance can save it.',
       title: 'Monthly period is invalid',
       tone: 'danger' as const,
     };
@@ -767,7 +767,7 @@ function walletAdjustmentNotice(notice: string) {
     return {
       badge: 'Settlement',
       detail:
-        'No wallet ledger was written. Cash booking deductions must use booking settlement logic so revenue and tax are calculated correctly.',
+        'No wallet impact record was saved. Cash booking deductions must use booking settlement logic so revenue and tax are calculated correctly.',
       title: 'Use booking settlement instead',
       tone: 'danger' as const,
     };

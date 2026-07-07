@@ -29,7 +29,7 @@ export function emptyBookingMessage(view: BookingPageView) {
     return 'Blocked booking create attempts are listed above. No booking row exists because payment and matching did not start.';
   }
   if (view === 'address') {
-    return 'No booking is missing an immutable address snapshot.';
+    return 'No booking is missing a confirmed service address.';
   }
   if (view === 'manual-decision') {
     return 'No manual-decision bookings need review. Cancellation, no-show, refund/release, cash debt, and completed closeout queues are clear.';

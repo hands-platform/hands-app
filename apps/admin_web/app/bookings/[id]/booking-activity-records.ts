@@ -250,7 +250,7 @@ export function buildBookingActivityRecords({
       id: entry.id,
       type: 'WALLET',
       at: entry.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-      title: `${entry.type} wallet ledger`,
+      title: `${entry.type} wallet impact`,
       detail: `${money(entry.amount, entry.currency)} / ${entry.notes ?? entry.reference ?? entry.sourceKey}`,
       href: '/earnings',
     });
@@ -399,7 +399,7 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
     {
       label: 'Finance',
       value: count((record) => financeTypes.has(record.type)).toString(),
-      helper: 'Payment, refund, earning, tax, fee, and wallet ledger rows.',
+      helper: 'Payment, refund, earning, tax, fee, and wallet impact rows.',
     },
     {
       label: 'Ops and alerts',

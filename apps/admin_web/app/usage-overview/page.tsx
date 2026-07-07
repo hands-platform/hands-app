@@ -836,7 +836,7 @@ function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[
       actions={<MapPinned size={18} aria-hidden="true" />}
       bodyClassName={activeRows.length > 0 ? 'usage-overview-region-list' : 'usage-overview-empty-state'}
       className="usage-overview-ranking-card usage-overview-region-card"
-      description="RegionCode aggregate from stored customer login address and booking address snapshots. It intentionally excludes individual location points."
+      description="Regional usage from saved customer addresses and booking service addresses. Individual location points stay out of this overview."
       title="Region usage"
     >
       {activeRows.length > 0 ? (

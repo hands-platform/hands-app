@@ -22,7 +22,7 @@ export function buildCashSettlementExecutionDesk(
             moneyText(missingReferenceRows.reduce((sum, row) => sum + row.debtAmount, 0), summary.currency),
             ' still needs a bank deposit reference or an approved admin offset memo.',
           )
-        : 'Visible rows already have settlement or wallet ledger references for finance review.',
+        : 'Visible rows already have settlement or wallet impact references for finance review.',
       pillClass: missingReferenceRows.length ? 'pill-warn' : 'pill-success',
       status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Refs ready',
       title: 'Deposit or offset evidence',

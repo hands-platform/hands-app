@@ -64,8 +64,8 @@ export function bookingCustomerProtectionBoardFromFacts<TBooking>(
       tone: facts.completedCloseout.length ? 'danger' : 'ok',
       detail:
         facts.completedCloseout.length > 0
-          ? 'Completed bookings are missing capture, earning, tax, platform fee, or wallet ledger records.'
-          : 'Completed bookings are reconciled against payment and ledger requirements.',
+          ? 'Completed bookings are missing capture, earning, tax, platform fee, or wallet impact records.'
+          : 'Completed bookings are reconciled against payment and wallet requirements.',
       operatorAction: 'Run or inspect closeout before payout, tax, and review workflows continue.',
       href: '/bookings?view=closeout',
       bookings: facts.completedCloseout,

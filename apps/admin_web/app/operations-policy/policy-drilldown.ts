@@ -42,10 +42,10 @@ export function buildPolicyDrilldown(
       key: 'wallet-gate',
       title: 'Wallet gate queue',
       helper:
-        'Partners with negative recent wallet ledger entries that may hold final acceptance, service start, or payout release.',
+        'Partners with negative recent wallet impact entries that may hold final acceptance, service start, or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
-      emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
+      emptyText: 'No negative recent wallet impact was found in the current booking sample.',
       rows: walletRows,
     },
   ];

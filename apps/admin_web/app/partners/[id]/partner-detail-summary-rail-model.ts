@@ -170,7 +170,7 @@ export function buildPartnerUsageRegionSummary({
   const normalizedLocationCount = Math.max(0, locationSnapshotCount);
 
   return {
-    helper: 'Built from stored app sessions, booking address snapshots, and Partner location timestamps. No live GPS polling.',
+    helper: 'Built from saved app activity, booking service addresses, and Partner location timestamps. No live GPS polling.',
     items: [
       {
         detail: latestSessionAt

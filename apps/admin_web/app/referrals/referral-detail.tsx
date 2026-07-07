@@ -116,7 +116,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     {
       label: 'Credited rewards',
       value: <MoneyText amount={numberOrZero(props.row.totals.rewardedRewardAmount)} fallback="0 VND" />,
-      helper: 'Rewards already posted to wallet ledger entries.',
+      helper: 'Rewards already posted to wallet credit records.',
     },
     {
       label: 'Pending / held',
@@ -782,7 +782,7 @@ function referralRewardDecisionEvidence(reward: AdminReferralReward) {
   const evidenceItems: ReferralRewardEvidenceItem[] = [
     {
       id: 'wallet-ledger',
-      node: reward.walletLedgerReference ? `Ledger ${reward.walletLedgerReference}` : 'No wallet ledger yet',
+      node: reward.walletLedgerReference ? `Wallet credit ${reward.walletLedgerReference}` : 'No wallet credit yet',
     },
   ];
 

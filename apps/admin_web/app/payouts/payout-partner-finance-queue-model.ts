@@ -105,7 +105,7 @@ function payoutPartnerFinanceRows(batch: AdminPayoutBatch): PayoutPartnerFinance
       batchId: batch.id,
       currency,
       detail:
-        'Recent partner wallet ledger evidence is negative. Confirm deposit or admin offset before payout release.',
+        'Recent partner wallet impact evidence is negative. Confirm deposit or admin offset before payout release.',
       evidenceLabel: `Recent wallet movement ${formatMoney(recentWalletMovement, batch.currency)}`,
       href: '/cash-settlements',
       id: `${batch.id}-wallet-negative`,

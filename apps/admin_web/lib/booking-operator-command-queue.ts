@@ -189,7 +189,7 @@ export function bookingOperatorCommandQueue(
       label: 'CLOSE',
       title: 'Reconcile completed booking',
       detail:
-        'Ensure capture, earning, tax, platform fee, and wallet ledger records exist before leaving the booking.',
+        'Ensure capture, earning, tax, platform fee, and wallet impact records exist before leaving the booking.',
       owner: 'Finance operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#completed-closeout', label: 'Open closeout' },

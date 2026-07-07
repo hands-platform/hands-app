@@ -128,7 +128,7 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
       detail:
         'Cash bookings need confirmation that the Partner collected customer cash and the wallet debt is recorded.',
       action: reconciliation.cashPendingCount
-        ? 'Confirm cash rows and wallet ledger.'
+        ? 'Confirm cash rows and wallet impact.'
         : 'No pending cash collection.',
       href: '/payments?review=cash',
       className: reconciliation.cashPendingCount ? 'ops-task-pending' : 'ops-task-done',

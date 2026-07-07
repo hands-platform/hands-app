@@ -51,7 +51,7 @@ export function bookingOperatingNextAction(
   if (booking.status === 'COMPLETED') {
     return {
       title: 'Reconcile completed booking',
-      detail: 'Confirm payment capture, wallet ledger, tax/fee logs, review state, and closeout notes.',
+      detail: 'Confirm payment capture, wallet impact, tax/fee logs, review state, and closeout notes.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };

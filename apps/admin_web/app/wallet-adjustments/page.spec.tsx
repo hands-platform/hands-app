@@ -63,7 +63,7 @@ describe('WalletAdjustmentsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Monthly period is invalid');
-    expect(markup).toContain('Monthly period must use YYYY-MM before the wallet ledger can be written.');
+    expect(markup).toContain('Monthly period must use YYYY-MM before finance can save it.');
   });
 
   it('renders the accounting preview returned by the Admin API', async () => {

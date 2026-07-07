@@ -389,7 +389,7 @@ export function BookingServicePricingSnapshotSection({
       className="admin-mb-16"
       description="Booking price, payout, fee, and tax evidence."
       id="service-pricing-snapshot"
-      title="Service pricing snapshot"
+      title="Service pricing evidence"
     >
       <SummaryCardTrace cards={servicePricingSnapshotRows} />
     </AdminSection>

@@ -379,7 +379,7 @@ export default async function MarketingAnalyticsPage({
             />
             <MarketingTable
               title="Region performance"
-              description="RegionCode rollups from saved addresses and booking address snapshots."
+              description="Regional rollups from saved addresses and booking service addresses."
               emptyMessage="No regional marketing aggregate loaded."
               filters={filters}
               page={dimensionPages.region}

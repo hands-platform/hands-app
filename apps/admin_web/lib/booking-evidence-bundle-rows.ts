@@ -104,7 +104,7 @@ export function bookingEvidenceBundleRows(
       status: input.addressReady ? 'Locked' : 'Repair needed',
       tone: input.addressReady ? 'pill-success' : 'pill-danger',
       evidence: `${input.addressLabel} / ${input.addressSourceLabel}`,
-      operatorUse: 'Use this immutable address snapshot for Partner radius checks and service evidence.',
+      operatorUse: 'Use this confirmed service address for Partner radius checks and service evidence.',
       href: '#address-radius-contract',
     },
     {

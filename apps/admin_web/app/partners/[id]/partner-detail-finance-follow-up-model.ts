@@ -99,7 +99,7 @@ export function buildPartnerFinanceFollowUpRows({
       amountLabel: formatCurrency(walletSummary.manualBankDeposits, walletSummary.currency),
       currency: walletSummary.currency,
       detail:
-        'Manual partner bank deposit evidence is visible in the wallet ledger. Check bank reference, allocation to negative wallet, and prepaid balance.',
+        'Manual partner bank deposit evidence is visible in wallet impact records. Check bank reference, allocation to negative wallet, and prepaid balance.',
       evidenceLabel: `${depositRowCount} deposit row(s)`,
       href: '#partner-wallet-detail',
       id: 'manual-bank-deposit-history',

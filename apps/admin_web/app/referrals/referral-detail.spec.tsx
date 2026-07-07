@@ -157,7 +157,7 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('class="admin-disclosure referral-reward-evidence-details"');
     expect(markup).toContain('<summary>Decision evidence</summary>');
     expect(markup).toContain('Decision evidence');
-    expect(markup).toContain('Ledger wallet-ledger-1');
+    expect(markup).toContain('Wallet credit wallet-ledger-1');
     expect(markup).toContain('Booking booking-1');
     expect(markup).toContain('Latest decision Credit by Ops Admin');
     expect(markup).toContain('Reason manual payout check');
@@ -234,7 +234,7 @@ describe('Referral detail presentation', () => {
     );
 
     expect(markup).toContain('Credited rewards');
-    expect(markup).toContain('Rewards already posted to wallet ledger entries.');
+    expect(markup).toContain('Rewards already posted to wallet credit records.');
     expect(markup).toContain('25.000 VND');
   });
 
@@ -375,7 +375,7 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('placeholder="Operator decision reason"');
     expect(markup).toContain('admin-form-input referral-reward-action-reason-input');
     expect(markup).toContain('Reward decision reason');
-    expect(markup).toContain('No wallet ledger yet');
+    expect(markup).toContain('No wallet credit yet');
     expect(markup).toContain('Operator reason required for next action');
     expect(markup).not.toContain('Credit ready referral reward to wallet after detail review.');
   });

@@ -55,7 +55,7 @@ export function referralRewardCreditState(reward: AdminReferralReward): Referral
 
   if (reward.status === 'AVAILABLE') {
     return {
-      helper: 'Ready for wallet credit; no wallet ledger exists yet.',
+      helper: 'Ready for wallet credit; no wallet credit record exists yet.',
       label: 'Ready for credit',
       tone: 'info',
     };

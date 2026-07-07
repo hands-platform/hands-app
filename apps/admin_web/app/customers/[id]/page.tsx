@@ -2025,7 +2025,7 @@ function buildCustomerUsageSummary({
             {primaryRegion.count} booking row(s) / latest <DateTimeText value={primaryRegion.latestAt} />
           </>
         ) : (
-          'Stored booking address snapshots will populate this.'
+          'Stored booking service addresses will populate this.'
         ),
         label: 'Primary booking region',
         value: primaryRegion?.label ?? 'No booking region',
@@ -2352,7 +2352,7 @@ function buildCustomerActivityRecords(
         id: ledger.id,
         type: 'PAYMENT',
         at: ledger.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${ledger.type} wallet ledger`,
+        title: `${ledger.type} wallet impact`,
         detail: `${formatMoney(Number(ledger.amount ?? 0), ledger.currency ?? 'VND')} / ${
           ledger.notes ?? ledger.reference ?? ledger.sourceKey
         }`,

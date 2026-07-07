@@ -109,7 +109,7 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     expect(markup.match(/class="card admin-section/g)).toHaveLength(6);
     expect(markup).toContain('Booking alert trace');
     expect(markup).toContain('Finance command center');
-    expect(markup).toContain('Service pricing snapshot');
+    expect(markup).toContain('Service pricing evidence');
     expect(markup).toContain('No active attention checks. Continue normal monitoring from the timeline.');
     expect(markup).toContain('class="empty-state');
   });

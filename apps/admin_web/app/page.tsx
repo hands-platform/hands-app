@@ -641,7 +641,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Closeout checks',
       bookingOps.completedCloseoutChecks.toString(),
-      `${selectedRangeLabel} completed bookings missing capture, earning, tax, fee, or wallet ledger records.`,
+      `${selectedRangeLabel} completed bookings missing capture, earning, tax, fee, or wallet impact records.`,
     ],
     [
       'Blocked create attempts',
@@ -5264,7 +5264,7 @@ function bookingFlags(booking: AdminBooking) {
       severity: 'high',
       priority: 97,
       recommendedAction:
-        'Run completed booking closeout: captured payment, earning, tax, fee, and wallet ledgers.',
+        'Run completed booking closeout: captured payment, earning, tax, fee, and wallet impact records.',
     });
   }
   if (booking.status === 'OPEN_MATCHING' && expired) {

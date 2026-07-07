@@ -111,7 +111,7 @@ export function bookingCashFeeSettlementPath(
           ? 'Block final acceptance, service start, and payout release until deposit or approved offset is recorded.'
           : walletEntries.length
             ? 'Keep the wallet row as settlement evidence.'
-            : 'Create or inspect wallet ledger generation during completed closeout.',
+            : 'Create or inspect wallet impact records during completed closeout.',
       },
       {
         lane: 'Unblock path',

@@ -24,7 +24,7 @@ describe('partner review mode content', () => {
     const content = partnerReviewModeContent('unsettled');
 
     expect(content?.title).toBe('Unsettled Partners');
-    expect(content?.detailFocus).toContain('wallet ledger');
+    expect(content?.detailFocus).toContain('wallet impact');
     expect(content?.detailFocus).toContain('final acceptance');
     expect(content?.steps.join(' ')).toContain('warning state');
   });

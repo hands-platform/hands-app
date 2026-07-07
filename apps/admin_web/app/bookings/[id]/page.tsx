@@ -239,7 +239,7 @@ const bookingDetailAuthoritySourceMarkers = [
   'Chat lifecycle and retention',
   'All customer chats',
   'All Partner chats',
-  'Service pricing snapshot',
+  'Service pricing evidence',
 ] as const;
 
 const BOOKING_DETAIL_CHAT_PREVIEW_LIMIT = 12;
@@ -860,7 +860,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
                 <StatusBadge tone="warning">History</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Operating movement and audit trail</strong>
-                  <small>Movement ledger, notifications, audit rows, and activity export.</small>
+                  <small>Movement history, notifications, audit rows, and activity export.</small>
                 </span>
               </div>
               <BookingOperatingLedgerSection {...operatingLedgerProps} />
@@ -882,7 +882,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
                 <StatusBadge tone="neutral">Settlement</StatusBadge>
                 <span className="booking-detail-advanced-heading-copy">
                   <strong>Wallet, payout, pricing, and full records</strong>
-                  <small>Wallet evidence, payout eligibility, pricing, and raw record detail.</small>
+                  <small>Wallet evidence, payout eligibility, pricing, and full record detail.</small>
                 </span>
               </div>
               <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />

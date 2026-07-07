@@ -98,7 +98,7 @@ export function PartnerDetailWalletSummarySection({
             emptyMessage={
               <AdminEmptyState
                 framed
-                message="No recent partner wallet ledger row is loaded for this detail page."
+                message="No recent partner wallet impact row is loaded for this detail page."
               />
             }
             headers={walletHeaders}

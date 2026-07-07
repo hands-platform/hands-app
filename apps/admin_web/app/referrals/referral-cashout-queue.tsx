@@ -244,7 +244,7 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         {row.walletLedgerReference ? (
           <div className="muted">{row.walletLedgerReference}</div>
         ) : (
-          <AdminInlineFallback className="admin-mt-6">No wallet ledger yet</AdminInlineFallback>
+          <AdminInlineFallback className="admin-mt-6">No wallet credit yet</AdminInlineFallback>
         )}
       </td>
       <td>

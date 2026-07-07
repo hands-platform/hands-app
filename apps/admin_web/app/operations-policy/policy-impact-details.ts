@@ -276,7 +276,7 @@ const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
     area: 'Payout settlement',
     title: 'Controls positive earning payout cadence',
     detail:
-      'Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet ledger evidence.',
+      'Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet impact evidence.',
     saveChecks: [
       {
         label: 'Payout batches',

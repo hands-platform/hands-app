@@ -29,7 +29,7 @@ describe('referralRewardCreditState', () => {
 
   it('keeps available rewards distinct from actual wallet credit', () => {
     expect(referralRewardCreditState({ ...baseReward, status: 'AVAILABLE' })).toMatchObject({
-      helper: 'Ready for wallet credit; no wallet ledger exists yet.',
+      helper: 'Ready for wallet credit; no wallet credit record exists yet.',
       label: 'Ready for credit',
       tone: 'info',
     });
