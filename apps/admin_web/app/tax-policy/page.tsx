@@ -12,7 +12,7 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminCard, AdminDetailGrid, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
@@ -99,21 +99,22 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
           </StatusBadgeFromPillClass>
         }
-        bodyClassName="setup-stage-list"
         className="admin-mb-16 tax-policy-checklist-card"
         description="Keep exactly one active policy with a default rule. Every earning stores the selected rule snapshot, so changing future policy does not rewrite tax history."
         title="Policy checklist"
       >
-        {healthItems.map((item) => (
-          <AdminStageItem key={item.label}>
-            <span>{item.ok ? 'OK' : 'CHECK'}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <small>{item.value}</small>
-          </AdminStageItem>
-        ))}
+        <AdminStageList>
+          {healthItems.map((item) => (
+            <AdminStageItem key={item.label}>
+              <span>{item.ok ? 'OK' : 'CHECK'}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.value}</small>
+            </AdminStageItem>
+          ))}
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection
@@ -149,7 +150,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             Preview withholding
           </AdminFormControlButton>
         </AdminFormGrid>
-        <div className="setup-stage-list admin-mt-12">
+        <AdminStageList className="admin-mt-12">
           <AdminStageItem>
             <span>{preview.policy ? 'POLICY' : 'MISSING'}</span>
             <div>
@@ -196,7 +197,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </div>
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
           </AdminStageItem>
-        </div>
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection
@@ -316,7 +317,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               DEFAULT is the fallback. SERVICE_TYPE requires a service type. AMOUNT_BAND requires min or
               max amount, and min cannot be greater than max.
             </p>
-            <div className="setup-stage-list admin-mb-12">
+            <AdminStageList className="admin-mb-12">
               {(policy.rules ?? []).map((rule) => (
                 <AdminStageItem key={rule.id}>
                   <span>{rule.active ? 'ON' : 'OFF'}</span>
@@ -410,7 +411,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                 </AdminStageItem>
               ))}
               {(policy.rules ?? []).length === 0 ? <AdminInlineFallback>No rules yet.</AdminInlineFallback> : null}
-            </div>
+            </AdminStageList>
 
             <AdminFormGrid action={createTaxRule} className="compact-form">
               <input type="hidden" name="policyId" value={policy.id} />
@@ -482,38 +483,39 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <StatusBadge tone="neutral">{auditSummary.ruleChangeCount} rule</StatusBadge>
           </>
         }
-        bodyClassName="setup-stage-list"
         className="admin-mt-16 tax-policy-audit-summary-card"
         description="Recent policy and rule changes. Use the full audit log only when an operator needs deeper evidence."
         title="Tax policy audit summary"
       >
-        {auditSummary.rows.map((row) => (
-          <AdminStageItem key={row.id}>
-            <StatusBadgeFromPillClass pillClass={row.toneClassName}>
-              {row.actionLabel.split(' ')[0].toUpperCase()}
-            </StatusBadgeFromPillClass>
-            <div>
-              <strong>{row.actionLabel}</strong>
-              <p className="muted">
-                {row.detail} / {row.actorLabel} /{' '}
-                <DateTimeText fallback="Unknown time" value={row.createdAt} />
-              </p>
-            </div>
-            <small>{row.targetLabel}</small>
-          </AdminStageItem>
-        ))}
-        {auditSummary.rows.length === 0 ? (
-          <AdminStageItem>
-            <span>EMPTY</span>
-            <div>
-              <AdminEmptyState
-                message="Create or update a policy/rule to populate this operator summary."
-                title="No recent tax policy audit entries"
-              />
-            </div>
-            <small>-</small>
-          </AdminStageItem>
-        ) : null}
+        <AdminStageList>
+          {auditSummary.rows.map((row) => (
+            <AdminStageItem key={row.id}>
+              <StatusBadgeFromPillClass pillClass={row.toneClassName}>
+                {row.actionLabel.split(' ')[0].toUpperCase()}
+              </StatusBadgeFromPillClass>
+              <div>
+                <strong>{row.actionLabel}</strong>
+                <p className="muted">
+                  {row.detail} / {row.actorLabel} /{' '}
+                  <DateTimeText fallback="Unknown time" value={row.createdAt} />
+                </p>
+              </div>
+              <small>{row.targetLabel}</small>
+            </AdminStageItem>
+          ))}
+          {auditSummary.rows.length === 0 ? (
+            <AdminStageItem>
+              <span>EMPTY</span>
+              <div>
+                <AdminEmptyState
+                  message="Create or update a policy/rule to populate this operator summary."
+                  title="No recent tax policy audit entries"
+                />
+              </div>
+              <small>-</small>
+            </AdminStageItem>
+          ) : null}
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection
@@ -526,49 +528,50 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </StatusBadgeFromPillClass>
           </>
         }
-        bodyClassName="setup-stage-list"
         className="admin-mt-16 tax-policy-snapshot-consistency-card"
         description="Recent 30-day earning sample. This does not recalculate tax; it checks whether immutable earning withholding and retained tax log snapshots still line up."
         title="Settlement snapshot consistency"
       >
-        {snapshotConsistency.rows.map((row) => (
-          <AdminStageItem key={row.id}>
-            <StatusBadgeFromPillClass pillClass={row.toneClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
-            <div>
-              <strong>
-                <AdminTextLink href={row.bookingHref}>
-                  {row.bookingLabel}
-                </AdminTextLink>{' '}
-                / {row.providerLabel}
-              </strong>
-              <p className="muted">
-                Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
-                {row.taxLogLabel} / delta {row.deltaLabel}
-              </p>
-              <div className="actions admin-mt-8">
-                <AdminTextLink href={row.earningHref}>
-                  Open earning
-                </AdminTextLink>
-                <AdminTextLink href={row.financeTraceHref}>
-                  Finance trace
-                </AdminTextLink>
+        <AdminStageList>
+          {snapshotConsistency.rows.map((row) => (
+            <AdminStageItem key={row.id}>
+              <StatusBadgeFromPillClass pillClass={row.toneClassName}>{row.statusLabel}</StatusBadgeFromPillClass>
+              <div>
+                <strong>
+                  <AdminTextLink href={row.bookingHref}>
+                    {row.bookingLabel}
+                  </AdminTextLink>{' '}
+                  / {row.providerLabel}
+                </strong>
+                <p className="muted">
+                  Gross {row.grossAmountLabel} / earning tax {row.earningTaxLabel} / tax log{' '}
+                  {row.taxLogLabel} / delta {row.deltaLabel}
+                </p>
+                <div className="actions admin-mt-8">
+                  <AdminTextLink href={row.earningHref}>
+                    Open earning
+                  </AdminTextLink>
+                  <AdminTextLink href={row.financeTraceHref}>
+                    Finance trace
+                  </AdminTextLink>
+                </div>
               </div>
-            </div>
-            <small>{row.snapshotLabel}</small>
-          </AdminStageItem>
-        ))}
-        {snapshotConsistency.rows.length === 0 ? (
-          <AdminStageItem>
-            <span>EMPTY</span>
-            <div>
-              <AdminEmptyState
-                message="Completed earnings will appear here after the API returns recent rows."
-                title="No recent earning tax snapshots"
-              />
-            </div>
-            <small>30d</small>
-          </AdminStageItem>
-        ) : null}
+              <small>{row.snapshotLabel}</small>
+            </AdminStageItem>
+          ))}
+          {snapshotConsistency.rows.length === 0 ? (
+            <AdminStageItem>
+              <span>EMPTY</span>
+              <div>
+                <AdminEmptyState
+                  message="Completed earnings will appear here after the API returns recent rows."
+                  title="No recent earning tax snapshots"
+                />
+              </div>
+              <small>30d</small>
+            </AdminStageItem>
+          ) : null}
+        </AdminStageList>
       </AdminSection>
     </AdminPageTemplate>
   );

@@ -134,6 +134,9 @@ describe('TaxPolicyPage', () => {
 
   it('uses the shared Vuexy stage item atom for tax policy row surfaces', () => {
     expect(pageSource).toContain('AdminStageItem');
+    expect(pageSource).toContain('AdminStageList');
+    expect(pageSource).not.toContain('<div className="setup-stage-list');
+    expect(pageSource).not.toContain('bodyClassName="setup-stage-list');
     expect(pageSource).not.toContain('className="setup-stage-item"');
   });
 

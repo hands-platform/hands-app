@@ -22,10 +22,10 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
 
     expect(section.type.name).toBe('AdminSection');
     expect(section.props).toMatchObject({
-      bodyClassName: 'setup-stage-list admin-mt-12',
       className: 'admin-mb-16',
       title: 'Shift close action map',
     });
+    expect(section.props).not.toHaveProperty('bodyClassName');
     expect(rendered).toContain('Shift close action map');
     expect(rendered).toContain('Payment close');
     expect(rendered).toContain('1 open');
@@ -70,10 +70,12 @@ describe('FinanceCloseoutShiftActionMapSection', () => {
 
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('AdminStageList');
     expect(source).toContain('AdminStageItemLink');
     expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
     expect(source).toContain('<AdminTextLink');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('bodyClassName="setup-stage-list');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('className="text-link"');
   });
