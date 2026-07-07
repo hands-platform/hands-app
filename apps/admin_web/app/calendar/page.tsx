@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { adminGet, type AdminCalendarEvent } from '../../lib/admin-api';
 import { getAdminWebSession } from '../../lib/admin-session';
 
@@ -12,7 +13,11 @@ export default async function CalendarPage() {
   const operatorName = displayOperatorName(operatorId);
   const initialEvents = await adminGet<AdminCalendarEvent[]>('/admin/calendar-events?take=200', []);
 
-  return <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} initialEvents={initialEvents} />;
+  return (
+    <AdminPageTemplate title="Calendar">
+      <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} initialEvents={initialEvents} />
+    </AdminPageTemplate>
+  );
 }
 
 function displayOperatorName(identity: string) {

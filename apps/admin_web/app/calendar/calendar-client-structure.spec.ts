@@ -67,7 +67,8 @@ describe('calendar client structure', () => {
   it('renders the Vuexy calendar app surface without a duplicate page title card', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/calendar/page.tsx'), 'utf8');
 
-    expect(pageSource).not.toContain('AdminPageTemplate');
+    expect(pageSource).toContain('AdminPageTemplate');
+    expect(pageSource).toContain('title="Calendar"');
     expect(pageSource).toContain('<CalendarClient');
   });
 });
