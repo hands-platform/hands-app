@@ -75,7 +75,7 @@ export function EarningsLedgerSection({ pagination }: EarningsLedgerSectionProps
 
   return (
     <AdminTablePanel
-      description="Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash fee settlement correction."
+      description="Earning rows remain visible for booking review, tax audit, payout batching, and cash fee settlement correction."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'info' : 'warning'}
       title="Recent earnings ledger"

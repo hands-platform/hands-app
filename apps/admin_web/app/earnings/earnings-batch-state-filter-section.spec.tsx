@@ -28,6 +28,13 @@ describe('EarningsBatchStateFilterSection', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('keeps batch filter copy operator-facing', () => {
+    const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
+
+    expect(source).toContain('Filter earning rows by payout state.');
+    expect(source).not.toContain('raw earning ledger');
+  });
+
   it('renders filter cards and selected state', () => {
     const section = EarningsBatchStateFilterSection({
       activeState: 'ready',

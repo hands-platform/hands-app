@@ -42,6 +42,14 @@ describe('EarningsLedgerSection', () => {
     );
   });
 
+  it('keeps ledger section description operator-facing', () => {
+    const source = readFileSync('app/earnings/earnings-ledger-section.tsx', 'utf8');
+
+    expect(source).toContain('Earning rows remain visible for booking review');
+    expect(source).not.toContain('Raw earning rows');
+    expect(source).not.toContain('booking traceability');
+  });
+
   it('renders recent earning ledger rows and available actions', () => {
     const section = EarningsLedgerSection({
       pagination: pagination(

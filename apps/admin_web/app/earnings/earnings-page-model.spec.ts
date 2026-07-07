@@ -236,10 +236,17 @@ describe('earnings page model', () => {
     expect(
       buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals).map((card) => card.label),
     ).toEqual(['Customer charge', 'Partner payout', 'HANDS fee', 'Tax withheld', 'Company net', 'Cash debt']);
+    const bookingServiceLinkCheck = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue).find(
+      (check) => check.title === 'Booking service link',
+    );
     const cashJobLockCheck = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue).find(
       (check) => check.title === 'Cash job lock',
     );
 
+    expect(bookingServiceLinkCheck).toMatchObject({
+      action: 'Service option links are ready for finance review.',
+      detail: 'Every visible earning is connected to a service option or fallback row.',
+    });
     expect(cashJobLockCheck).toMatchObject({
       pillClass: 'pill-danger',
       title: 'Cash job lock',

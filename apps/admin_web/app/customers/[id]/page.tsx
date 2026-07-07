@@ -474,7 +474,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </>
         }
         className="admin-mb-16"
-        description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support and setup checks."
+        description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support checks."
         id="customer-booking-create-gates"
         title="Customer blocked create attempts"
       >
@@ -850,7 +850,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               }
               description="Customer notification delivery and audit rows for support review."
               id="notifications"
-              title="Notification and audit trace"
+              title="Notification and audit records"
             >
               <AdminSectionHeader
                 actions={<StatusBadge tone="info">{filteredNotifications.length} rows</StatusBadge>}
@@ -919,7 +919,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             }
             description="Chat, notification, and audit rows stay available on this customer detail page, but the default view keeps the record archive collapsed."
             id="customer-record-archive-summary"
-            title="Record archive loaded on demand"
+            title="Record archive summary"
           >
             <AdminTraceSummary
               className="admin-mt-12"
@@ -2032,7 +2032,7 @@ function buildCustomerUsageSummary({
       },
       {
         helper: `${selectedLocationCount} saved selected location row(s).`,
-        label: 'Address snapshots',
+        label: 'Saved service addresses',
         value: `${addressSnapshotCount}/${bookings.length}`,
       },
       {
@@ -2580,7 +2580,7 @@ function buildCustomerBookingGateAttemptRows(
           : null,
       ].filter(Boolean);
       const detailParts = [
-        addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
+        addressText ? `Address: ${addressText}` : 'Readable service address not saved',
         currentLocationRecordedAt
           ? `Optional GPS evidence: ${formatDate(currentLocationRecordedAt)}`
           : 'No optional GPS timestamp',

@@ -84,6 +84,18 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('No chat rooms matched this date filter.');
   });
 
+  it('keeps customer archive and support copy operator-facing', () => {
+    expect(customerDetailSource).toContain('support checks');
+    expect(customerDetailSource).toContain('Notification and audit records');
+    expect(customerDetailSource).toContain('Record archive summary');
+    expect(customerDetailSource).toContain('Saved service addresses');
+    expect(customerDetailSource).not.toContain('setup checks');
+    expect(customerDetailSource).not.toContain('Notification and audit trace');
+    expect(customerDetailSource).not.toContain('Record archive loaded on demand');
+    expect(customerDetailSource).not.toContain('Address snapshot metadata missing');
+    expect(customerDetailSource).not.toContain("label: 'Address snapshots'");
+  });
+
   it('uses shared Vuexy status badge atoms instead of raw customer detail pill markup', () => {
     expect(customerDetailSource).toContain('AdminTraceSummary');
     expect(customerDetailSource).toContain("from '../../../components/status-badge'");

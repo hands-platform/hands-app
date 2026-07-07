@@ -564,10 +564,10 @@ export function buildEarningsMoneyFlowChecks(
       status: `${unlinkedOptions.length} UNLINKED`,
       detail: unlinkedOptions.length
         ? 'Some earning rows still do not point to a configured service duration option.'
-        : 'Every visible earning can be traced to a service option or fallback row.',
+        : 'Every visible earning is connected to a service option or fallback row.',
       action: unlinkedOptions.length
         ? 'Open service pricing and reconnect missing booking service references.'
-        : 'Service option trace is ready for finance review.',
+        : 'Service option links are ready for finance review.',
       className: unlinkedOptions.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: unlinkedOptions.length ? 'pill-danger' : 'pill-success',
     },

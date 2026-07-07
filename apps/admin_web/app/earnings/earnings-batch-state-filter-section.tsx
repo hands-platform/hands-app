@@ -27,7 +27,7 @@ export function EarningsBatchStateFilterSection({
 }: EarningsBatchStateFilterSectionProps) {
   return (
     <AdminTablePanel
-      description="Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue stay based on the selected date range."
+      description="Filter earning rows by payout state. Totals, finance queue, and cash debt queue stay based on the selected date range."
       resultLabel={`${ledgerCount} ledger row(s)`}
       resultTone={ledgerCount > 0 ? 'info' : 'warning'}
       title="Earning batch state filters"
