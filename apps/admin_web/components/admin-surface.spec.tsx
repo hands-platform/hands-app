@@ -25,6 +25,7 @@ import {
   AdminRowItem,
   AdminRowLink,
   AdminSection,
+  AdminSurfaceBlock,
   AdminTaskCard,
   AdminTaskBreakdown,
   AdminTaskGrid,
@@ -134,6 +135,20 @@ describe('Admin surface components', () => {
     expect(grid.props).toMatchObject({
       'aria-label': 'Session breakdown',
       className: 'detail-grid admin-mb-16',
+    });
+  });
+
+  it('renders a shared non-card block surface for grouped content inside cards', () => {
+    const block = AdminSurfaceBlock({
+      ariaLabelledBy: 'review-block-title',
+      children: <p>Review records</p>,
+      className: 'admin-review-records-block',
+    });
+
+    expect(block.type).toBe('section');
+    expect(block.props).toMatchObject({
+      'aria-labelledby': 'review-block-title',
+      className: 'admin-review-records-block',
     });
   });
 

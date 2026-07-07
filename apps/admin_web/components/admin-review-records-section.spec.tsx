@@ -251,8 +251,15 @@ describe('AdminReviewRecordsSection', () => {
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminSurfaceBlock');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTextLink');
+    expect(source).not.toContain(
+      '<section aria-labelledby={`${id}-customer-reviews-title`} className="admin-review-records-block">',
+    );
+    expect(source).not.toContain(
+      '<section aria-labelledby={`${id}-partner-evaluations-title`} className="admin-review-records-block">',
+    );
     expect(source).not.toContain('import Link from \'next/link\';');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain(

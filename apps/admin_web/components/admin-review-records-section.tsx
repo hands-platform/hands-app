@@ -8,6 +8,7 @@ import {
 import { AdminInlineFallback } from './admin-inline-fallback';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminPersonCell, adminPersonInitials } from './admin-person-cell';
+import { AdminSurfaceBlock } from './admin-surface';
 import { AdminTablePanel } from './admin-table-panel';
 import { AdminTextLink } from './admin-text-link';
 import { DateTimeText } from './date-time-text';
@@ -82,7 +83,10 @@ export function AdminReviewRecordsSection({
       title={title}
     >
       <div className="admin-review-records-grid">
-        <section aria-labelledby={`${id}-customer-reviews-title`} className="admin-review-records-block">
+        <AdminSurfaceBlock
+          ariaLabelledBy={`${id}-customer-reviews-title`}
+          className="admin-review-records-block"
+        >
           <AdminSectionHeader
             className="admin-review-records-heading"
             description="Customer-facing review content. Moderation stays on the Reviews page."
@@ -132,9 +136,12 @@ export function AdminReviewRecordsSection({
             visibleFrom={customerPagination.from}
             visibleTo={customerPagination.to}
           />
-        </section>
+        </AdminSurfaceBlock>
 
-        <section aria-labelledby={`${id}-partner-evaluations-title`} className="admin-review-records-block">
+        <AdminSurfaceBlock
+          ariaLabelledBy={`${id}-partner-evaluations-title`}
+          className="admin-review-records-block"
+        >
           <AdminSectionHeader
             className="admin-review-records-heading"
             description="Read-only internal records. These do not publish to the customer app."
@@ -178,7 +185,7 @@ export function AdminReviewRecordsSection({
             visibleFrom={partnerPagination.from}
             visibleTo={partnerPagination.to}
           />
-        </section>
+        </AdminSurfaceBlock>
       </div>
     </AdminTablePanel>
   );

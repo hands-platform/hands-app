@@ -22,6 +22,14 @@ type AdminDetailGridProps = {
   readonly className?: string;
 };
 
+type AdminSurfaceBlockProps = {
+  readonly ariaLabel?: string;
+  readonly ariaLabelledBy?: string;
+  readonly children: ReactNode;
+  readonly className?: string;
+  readonly id?: string;
+};
+
 type AdminCardHeaderProps = {
   readonly actions?: ReactNode;
   readonly className?: string;
@@ -240,6 +248,20 @@ export function AdminDetailGrid({ ariaLabel, ariaLabelledBy, children, className
       aria-labelledby={ariaLabelledBy}
       className={joinClassNames('detail-grid', className)}
     >
+      {children}
+    </section>
+  );
+}
+
+export function AdminSurfaceBlock({
+  ariaLabel,
+  ariaLabelledBy,
+  children,
+  className,
+  id,
+}: AdminSurfaceBlockProps) {
+  return (
+    <section aria-label={ariaLabel} aria-labelledby={ariaLabelledBy} className={className} id={id}>
       {children}
     </section>
   );
