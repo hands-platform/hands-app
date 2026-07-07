@@ -2987,6 +2987,12 @@ a.action-button-card:hover {
   margin: 0;
 }
 
+.admin-card-grid {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
 .admin-operator-control-grid {
   align-items: stretch;
   display: grid;

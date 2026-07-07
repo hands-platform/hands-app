@@ -3,6 +3,16 @@ import { readFileSync } from 'node:fs';
 const globalsCss = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
 describe('Admin surface CSS', () => {
+  it('keeps AdminCardGrid on the Vuexy card group rhythm', () => {
+    const gridIndex = globalsCss.indexOf('.admin-card-grid {');
+    const gridBlock = cssRuleBlockAt(gridIndex);
+
+    expect(gridIndex).toBeGreaterThan(-1);
+    expect(gridBlock).toContain('display: grid');
+    expect(gridBlock).toContain('gap: 14px');
+    expect(gridBlock).toContain('min-width: 0');
+  });
+
   it('keeps AdminSection footers on the Vuexy CardActions row rhythm', () => {
     const footerIndex = globalsCss.indexOf('.admin-section-footer {');
     const footerBlock = cssRuleBlockAt(footerIndex);
