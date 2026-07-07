@@ -34,6 +34,7 @@ describe('ProvidersPage', () => {
 
     expect(source).toContain('AdminMetricGrid');
     expect(source).toContain('AdminTraceSummary');
+    expect(source).not.toContain('A factual snapshot of the partner rows');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
     expect(source).not.toContain('<div className="grid admin-mb-16 partner-deep-summary-grid">');
     expect(source).not.toContain('<AdminKpiCard helper="Current filtered partner set"');

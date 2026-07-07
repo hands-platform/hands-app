@@ -121,7 +121,7 @@ export default async function PartnerOverviewPage({
         </>
       }
       contentClassName="partner-overview-page"
-      description="Supply health, Partner readiness, booking quality, wallet risk, and action queues from stored operational records."
+      description="Supply status, Partner activation, booking quality, wallet risk, and action queues from stored operational records."
       title="Partner Overview"
     >
 
@@ -220,7 +220,7 @@ export default async function PartnerOverviewPage({
 
       <PartnerPriorityBoard filters={filters} overview={overview} range={range} />
 
-      <AdminOverviewGrid ariaLabel="Supply health" className="partner-overview-supply-grid" variant="insight">
+      <AdminOverviewGrid ariaLabel="Supply status" className="partner-overview-supply-grid" variant="insight">
         <SupplyAreaCard rows={overview.supplyHealth.areas} rangeLabel={overview.rangeLabel} />
         <SupplyServiceCard rows={overview.supplyHealth.services} rangeLabel={overview.rangeLabel} />
       </AdminOverviewGrid>
@@ -228,9 +228,9 @@ export default async function PartnerOverviewPage({
       <AdminSection
         bodyClassName="partner-overview-funnel-steps"
         className="partner-overview-section-card"
-        description="From signup to approved supply, request activity, completed work, and payout readiness."
+        description="From signup to approved supply, request activity, completed work, and payout profile completion."
         statusLabel={overview.rangeLabel}
-        title="Partner readiness funnel"
+        title="Partner activation funnel"
       >
         {overview.funnel.steps.map((step) => (
           <PartnerFunnelStep key={step.key} step={step} />
@@ -537,7 +537,7 @@ function SupplyAreaCard({
     <AdminSection
       className="partner-overview-table-card"
       description={`Partner coverage and open demand by area · ${rangeLabel}`}
-      title="Area supply health"
+      title="Area supply status"
     >
       <AdminTableScroll className="partner-overview-table-wrap">
         <AdminDataTable
@@ -594,7 +594,7 @@ function SupplyServiceCard({
     <AdminSection
       className="partner-overview-table-card"
       description={`Supply by service duration and open work · ${rangeLabel}`}
-      title="Service supply health"
+      title="Service supply status"
     >
       <AdminTableScroll className="partner-overview-table-wrap">
         <AdminDataTable

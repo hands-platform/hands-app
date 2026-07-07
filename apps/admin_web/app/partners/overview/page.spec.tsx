@@ -110,6 +110,10 @@ describe('PartnerOverviewPage', () => {
     expect(pageSource).not.toContain('className="usage-overview-table-card"');
     expect(pageSource).not.toContain('className="usage-overview-table-wrap"');
     expect(pageSource).not.toContain('className="usage-overview-table"');
+    expect(pageSource).not.toContain('Supply health');
+    expect(pageSource).not.toContain('Partner readiness funnel');
+    expect(pageSource).not.toContain('Area supply health');
+    expect(pageSource).not.toContain('Service supply health');
     expect(pageSource).not.toContain('<a\n      aria-label={`${row.partnerName}');
     expect(pageSource).not.toContain('<a aria-label={`${row.recommendedAction} for ${row.partnerName}`}');
     expect(pageSource).not.toContain('<a aria-label={`Open ${list.title}`} className="button button-secondary"');

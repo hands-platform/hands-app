@@ -314,7 +314,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <AdminSection
             actions={<StatusBadge tone="info">{partnerSortLabel(filters.sort)}</StatusBadge>}
             className="admin-mb-16 partner-current-filter-summary-card"
-            description="A factual snapshot of the partner rows currently loaded on this page before export, review, dispatch checks, or account follow-up."
+            description="Current partner rows loaded on this page before export, review, dispatch checks, or account follow-up."
             title="Current filter summary"
           >
             <AdminTraceSummary
