@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
@@ -497,7 +498,7 @@ function PillBadgeList({
   showDetailTitle = false,
 }: PillBadgeListProps) {
   return (
-    <div className="participant-list admin-mt-8">
+    <AdminFilterChipGroup ariaLabel="Policy supply badges" className="admin-mt-8">
       {badges.map((badge) => (
         <StatusBadgeFromPillClass
           key={badge.label}
@@ -507,7 +508,7 @@ function PillBadgeList({
           {badge.label}
         </StatusBadgeFromPillClass>
       ))}
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 

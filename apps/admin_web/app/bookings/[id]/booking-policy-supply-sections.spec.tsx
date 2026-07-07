@@ -51,11 +51,13 @@ describe('booking policy supply sections', () => {
     const source = readFileSync('app/bookings/[id]/booking-policy-supply-sections.tsx', 'utf8');
 
     expect(source).toContain('AdminTextLink');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('actions={<span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>}');
     expect(source).not.toContain('actions={<span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>}');
     expect(source).not.toContain('<span className={`pill ${policySnapshot.decisionTone}`}>{policySnapshot.decisionStatus}</span>');

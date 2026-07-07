@@ -1,4 +1,5 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminCard, AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
@@ -329,13 +330,13 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
 function ParticipantBoundary({ boundary }: ParticipantBoundaryProps) {
   return (
     <>
-      <div className="participant-list admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Participant ledger boundary" className="admin-mt-12">
         {boundary.pills.map((pill, index) => (
           <StatusBadgeFromPillClass pillClass={getParticipantBoundaryPillClass(index)} key={pill}>
             {pill}
           </StatusBadgeFromPillClass>
         ))}
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mt-10">{boundary.helper}</p>
     </>
   );
