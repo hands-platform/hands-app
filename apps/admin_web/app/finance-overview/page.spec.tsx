@@ -295,6 +295,17 @@ describe('FinanceOverviewPage', () => {
     expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-command-card');
   });
 
+  it('scopes principle card typography to direct command-card text children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.finance-overview-principle-card > div > span:not(.finance-overview-command-icon)');
+    expect(css).toContain('.finance-overview-principle-card > div > strong');
+    expect(css).toContain('.finance-overview-principle-card > div > small');
+    expect(css).not.toContain('.finance-overview-principle-card strong {');
+    expect(css).not.toContain('.finance-overview-principle-card small {');
+    expect(css).not.toContain('.finance-overview-principle-card span:not(.finance-overview-command-icon) {');
+  });
+
   it('uses the shared money atom for finance section row amounts', () => {
     expect(pageSource).toContain('FinanceOverviewSectionRowValue');
     expect(pageSource).not.toContain('<span>{row.value}</span>');

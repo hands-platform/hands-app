@@ -9254,14 +9254,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.finance-overview-principle-card span:not(.finance-overview-command-icon) {
+.finance-overview-principle-card > div > span:not(.finance-overview-command-icon) {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
 }
 
-.finance-overview-principle-card strong {
+.finance-overview-principle-card > div > strong {
   color: var(--admin-text);
   font-size: 23px;
   font-weight: 600;
@@ -9271,7 +9271,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.finance-overview-principle-card small {
+.finance-overview-principle-card > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 500;
