@@ -312,6 +312,9 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).toContain('AdminTablePanel');
     expect(pageSource).toContain('AdminInlineFallback');
     expect(pageSource).toContain('AdminStageItem');
+    expect(pageSource).toContain('AdminStageList');
+    expect(pageSource).not.toContain('<div className="setup-stage-list">');
+    expect(pageSource).not.toContain('<div className="setup-stage-list admin-mt-16"');
     expect(pageSource).not.toContain('className="setup-stage-item"');
     expect(pageSource).not.toContain(
       'className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',

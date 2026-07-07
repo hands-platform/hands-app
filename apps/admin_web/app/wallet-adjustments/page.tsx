@@ -12,7 +12,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminNoticeCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
@@ -288,7 +288,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         title="Accounting preview"
       >
         {preview ? (
-          <div className="setup-stage-list">
+          <AdminStageList>
             <PreviewFact
               helper={
                 <>
@@ -328,7 +328,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               label="Approval gate"
               value={preview.requiresAttachment ? 'Attachment required' : 'Attachment optional'}
             />
-          </div>
+          </AdminStageList>
         ) : (
           <p className="muted">Preview an adjustment to see before/after balance, ledger allocation, tax, revenue, and attachment gates.</p>
         )}
@@ -376,7 +376,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
 
 function AdjustmentPolicyChecklist() {
   return (
-    <div className="setup-stage-list admin-mt-16" aria-label="Manual wallet adjustment policy gates">
+    <AdminStageList className="admin-mt-16" aria-label="Manual wallet adjustment policy gates">
       <PreviewFact
         helper="Approval id and a different approving admin id are required for every creation"
         icon={<ShieldCheck aria-hidden="true" size={18} />}
@@ -395,7 +395,7 @@ function AdjustmentPolicyChecklist() {
         label="Tax-sensitive adjustment"
         value="Evidence"
       />
-    </div>
+    </AdminStageList>
   );
 }
 
