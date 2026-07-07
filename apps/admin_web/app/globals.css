@@ -11410,12 +11410,12 @@ a.action-button-card:hover {
   margin: 0 24px 14px;
 }
 
-.coupon-create-notice strong {
+.coupon-create-notice .admin-inline-notice-message > strong {
   color: inherit;
   font-size: 13px;
 }
 
-.coupon-create-notice span {
+.coupon-create-notice .admin-inline-notice-message > span {
   color: inherit;
   font-size: 12px;
   opacity: 0.84;

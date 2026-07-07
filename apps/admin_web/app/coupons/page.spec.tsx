@@ -16,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('CouponsPage', () => {
   beforeEach(() => {
@@ -90,5 +91,13 @@ describe('CouponsPage', () => {
     expect(pageSource).toContain('ariaLabel="Coupon list pagination"');
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
+  });
+
+  it('scopes coupon creation notice copy to the shared inline notice message slot', () => {
+    expect(globalCss).toContain('.coupon-create-notice .admin-inline-notice-message > strong');
+    expect(globalCss).toContain('.coupon-create-notice .admin-inline-notice-message > span');
+
+    expect(globalCss).not.toContain('.coupon-create-notice strong {');
+    expect(globalCss).not.toContain('.coupon-create-notice span {');
   });
 });
