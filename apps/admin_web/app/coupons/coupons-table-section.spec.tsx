@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { CouponsTableSection, type CouponTableRow } from './coupons-table-section';
 
 const sectionSource = readFileSync(new URL('./coupons-table-section.tsx', import.meta.url), 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('CouponsTableSection', () => {
   it('renders coupon cards with edit fields and booking usage', () => {
@@ -86,6 +87,22 @@ describe('CouponsTableSection', () => {
 
     expect(textContent(section)).toContain('No coupons in this state.');
     expect(classNamesIn(section)).toContain('empty-state');
+  });
+
+  it('scopes coupon card typography to direct Vuexy card slots', () => {
+    expect(globalCss).toContain('.coupon-code-line > strong');
+    expect(globalCss).toContain('.coupon-discount-summary > .admin-mini-metric');
+    expect(globalCss).toContain('.coupon-discount-summary > .admin-mini-metric > span');
+    expect(globalCss).toContain('.coupon-discount-summary > .admin-mini-metric > strong');
+    expect(globalCss).toContain('.coupon-section-footer > span');
+    expect(globalCss).toContain('.coupon-section-footer > span:first-child');
+
+    expect(globalCss).not.toContain('.coupon-code-line strong {');
+    expect(globalCss).not.toContain('.coupon-discount-summary .admin-mini-metric {');
+    expect(globalCss).not.toContain('.coupon-discount-summary .admin-mini-metric span {');
+    expect(globalCss).not.toContain('.coupon-discount-summary strong {');
+    expect(globalCss).not.toContain('.coupon-section-footer span {');
+    expect(globalCss).not.toContain('.coupon-section-footer span:first-child {');
   });
 });
 

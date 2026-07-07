@@ -11483,7 +11483,7 @@ a.action-button-card:hover {
   gap: 10px 12px;
 }
 
-.coupon-code-line strong {
+.coupon-code-line > strong {
   color: var(--admin-heading);
   font-size: 20px;
   line-height: 1.28;
@@ -11520,14 +11520,14 @@ a.action-button-card:hover {
   justify-items: end;
 }
 
-.coupon-discount-summary .admin-mini-metric {
+.coupon-discount-summary > .admin-mini-metric {
   display: grid;
   gap: 2px;
   justify-items: end;
   text-align: right;
 }
 
-.coupon-discount-summary .admin-mini-metric span {
+.coupon-discount-summary > .admin-mini-metric > span {
   color: var(--admin-muted);
   font-size: 12px;
   line-height: 18px;
@@ -11539,7 +11539,7 @@ a.action-button-card:hover {
   text-align: left;
 }
 
-.coupon-discount-summary strong {
+.coupon-discount-summary > .admin-mini-metric > strong {
   color: var(--admin-heading);
   font-size: 16px;
 }
@@ -11559,14 +11559,14 @@ a.action-button-card:hover {
   padding: 10px 14px;
 }
 
-.coupon-section-footer span {
+.coupon-section-footer > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.coupon-section-footer span:first-child {
+.coupon-section-footer > span:first-child {
   color: var(--admin-heading);
   font-weight: 700;
 }
