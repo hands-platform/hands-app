@@ -87,6 +87,8 @@ describe('partner list summary', () => {
     expect(summary['Push needs review']).toBe('1');
     expect(summary['Wallet debt']).toBe('1');
     expect(summary['Location needs review']).toBe('1');
+    expect(summary['First earning profile']).toBeDefined();
+    expect(summary['First earning setup']).toBeUndefined();
   });
 
   it('builds filter summary cards for visible rows and current policy gates', () => {
@@ -150,6 +152,10 @@ describe('partner list summary', () => {
     expect(review.items.find((item) => item.label === 'Withdrawal detail review')?.detail).toContain(
       'not Level 2 matching approval',
     );
+    expect(review.items.find((item) => item.label === 'First earning payout profile')?.detail).toContain(
+      'payout profile',
+    );
+    expect(review.items.find((item) => item.label === 'First earning payout setup')).toBeUndefined();
     expect(review.items.find((item) => item.label === 'Tax profile optional')?.detail).toContain(
       'not required for Vietnam MVP',
     );

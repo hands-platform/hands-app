@@ -73,7 +73,7 @@ describe('partner command center', () => {
     expect(lanes).toHaveLength(4);
     expect(lanes[0]).toMatchObject({ title: 'Onboarding pipeline', status: 'Review needed' });
     expect(lanes[1]).toMatchObject({ title: 'Dispatch readiness', status: '1/3 ready' });
-    expect(lanes[2]).toMatchObject({ title: 'Withdrawal setup', status: 'Finance action', tone: 'danger' });
+    expect(lanes[2]).toMatchObject({ title: 'Withdrawal profile', status: 'Finance action', tone: 'danger' });
     expect(lanes[3]).toMatchObject({ title: 'Reports and devices' });
   });
 });

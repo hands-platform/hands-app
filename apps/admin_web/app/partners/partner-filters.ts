@@ -344,7 +344,7 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Withdrawal detail review highlights bank details submitted for wallet withdrawal or manual settlement, not Level 2 matching approval.';
   }
   if (kind === 'review' && value === 'payout-setup') {
-    return 'First earning payout setup highlights partners who have earned revenue but still need withdrawal address or payout agreement follow-up.';
+    return 'First earning payout profile highlights partners who have earned revenue but still need withdrawal address or payout agreement follow-up.';
   }
   if (kind === 'review' && value === 'cash-debt') {
     return 'Cash fee debt highlights Partners whose final acceptance, service start, and payout release wait for HANDS commission settlement.';
@@ -414,7 +414,7 @@ export function partnerReviewFilterLabel(review: string) {
     documents: 'Document review',
     'public-media': 'Public media review',
     bank: 'Withdrawal detail review',
-    'payout-setup': 'First earning payout setup',
+    'payout-setup': 'First earning payout profile',
     'cash-debt': 'Cash fee debt',
     tax: 'Tax profile optional',
     security: 'Device/session check',

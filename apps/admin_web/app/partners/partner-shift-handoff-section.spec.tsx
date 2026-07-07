@@ -42,6 +42,8 @@ describe('PartnerShiftHandoffSection', () => {
 
     expect(rendered).toContain('Partner shift handoff');
     expect(rendered).toContain('The first operator read for this partner queue.');
+    expect(rendered).toContain('payout profile');
+    expect(rendered).not.toContain('payout setup');
     expect(rendered).toContain('Immediate check');
     expect(rendered).toContain('Next best partner move');
     expect(rendered).toContain('Collect cash-fee debt before more bookings');

@@ -321,4 +321,10 @@ describe('partner filters', () => {
     expect(partnerReviewFilterLabel('bank')).toBe('Withdrawal detail review');
     expect(partnerReviewFilterLabel('tax')).toBe('Tax profile optional');
   });
+
+  it('uses payout profile wording for first earning payout review lanes', () => {
+    expect(partnerReviewFilterLabel('payout-setup')).toBe('First earning payout profile');
+    expect(providerFilterDescription('review', 'payout-setup')).toContain('payout profile');
+    expect(providerFilterDescription('review', 'payout-setup')).not.toContain('payout setup');
+  });
 });

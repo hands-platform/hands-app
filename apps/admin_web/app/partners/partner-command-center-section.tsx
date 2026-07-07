@@ -22,7 +22,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
     <AdminSection
       actions={<StatusBadge tone="info">Daily control view</StatusBadge>}
       className="admin-mb-16 partner-command-center-card"
-      description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
+      description="Operator overview across onboarding, dispatch readiness, withdrawal profile, and report follow-up."
       title="Partner command center"
     >
       <AdminDetailGrid className="admin-mt-12">

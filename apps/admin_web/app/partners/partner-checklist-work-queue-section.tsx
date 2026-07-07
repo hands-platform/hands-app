@@ -35,7 +35,7 @@ export function PartnerChecklistWorkQueueSection({
   return (
     <AdminTablePanel
       className="vuexy-partner-table-card admin-mb-16"
-      description="Compact follow-up list for the current partner filter. It groups acceptance holds, withdrawal setup, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
+      description="Compact follow-up list for the current partner filter. It groups acceptance holds, withdrawal profile, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
       id="partner-checklist-work-queue"
       resultLabel={`${queue.urgentCount} urgent`}
       resultTone={queue.urgentCount ? 'danger' : 'success'}

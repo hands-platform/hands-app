@@ -88,7 +88,7 @@ export function buildPartnerCommandCenter(
       ],
     },
     {
-      title: 'Withdrawal setup',
+      title: 'Withdrawal profile',
       status: walletDebt > 0 || payoutSetupReview > 0 ? 'Finance action' : 'Stable',
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:

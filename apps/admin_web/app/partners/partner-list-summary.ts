@@ -82,7 +82,7 @@ export function buildPartnerSummary(
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
     ['Public media review', publicMediaReview.toString()],
-    ['First earning setup', payoutSetupReview.toString()],
+    ['First earning profile', payoutSetupReview.toString()],
     ['Wallet debt', walletDebt.toString()],
     ['Open reports', openControlItems.toString()],
     ['Device checks', deviceFollowUp.toString()],
@@ -233,11 +233,11 @@ export function buildPartnerReviewQueue(
       detail: 'Bank details are reviewed for wallet withdrawal or manual settlement requests, not Level 2 matching approval.',
     },
     {
-      label: 'First earning payout setup',
+      label: 'First earning payout profile',
       count: payoutSetupNeedsReview,
       href: '/partners?review=payout-setup',
       detail:
-        'Partners with first revenue who still need withdrawal address or payout agreement follow-up.',
+        'Partners with first revenue who still need withdrawal address or payout profile follow-up.',
     },
     {
       label: 'Cash fee debt',

@@ -27,6 +27,8 @@ describe('PartnerCommandCenterSection', () => {
 
     expect(rendered).toContain('Partner command center');
     expect(rendered).toContain('Operator overview across onboarding, dispatch readiness');
+    expect(rendered).toContain('withdrawal profile');
+    expect(rendered).not.toContain('withdrawal setup');
     expect(rendered).toContain('Daily control view');
     expect(rendered).toContain('Onboarding pipeline');
     expect(rendered).toContain('Review needed');

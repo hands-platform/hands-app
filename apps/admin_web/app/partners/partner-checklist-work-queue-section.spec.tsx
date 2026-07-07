@@ -47,6 +47,8 @@ describe('PartnerChecklistWorkQueueSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Partner checklist work queue');
+    expect(rendered).toContain('withdrawal profile');
+    expect(rendered).not.toContain('withdrawal setup');
     expect(rendered).toContain('2 urgent');
     expect(rendered).toContain('1 blocked');
     expect(rendered).toContain('3 dispatch-ready');

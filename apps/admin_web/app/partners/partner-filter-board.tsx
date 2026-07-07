@@ -263,7 +263,7 @@ const partnerReviewLaneFilterOptions = [
   { label: 'Document review', value: 'documents' },
   { label: 'Public media review', value: 'public-media' },
   { label: 'Withdrawal detail review', value: 'bank' },
-  { label: 'First earning payout setup', value: 'payout-setup' },
+  { label: 'First earning payout profile', value: 'payout-setup' },
   { label: 'Cash fee debt', value: 'cash-debt' },
   { label: 'Device/session check', value: 'security' },
   { label: 'Reports/controls', value: 'reports' },

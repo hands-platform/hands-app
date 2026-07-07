@@ -31,7 +31,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
     <AdminSection
       actions={<AdminSignal tone={partnerCommandSignalTone(handoff.tone)}>{handoff.label}</AdminSignal>}
       className="admin-mb-16 partner-shift-handoff-card"
-      description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
+      description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout profile into a practical work order."
       title="Partner shift handoff"
     >
       <AdminNotePanel className="admin-mt-14">
