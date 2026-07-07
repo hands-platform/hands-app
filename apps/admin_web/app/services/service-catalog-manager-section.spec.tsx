@@ -19,6 +19,20 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).not.toContain('formatMoney(');
   });
 
+  it('scopes service catalog card typography to direct component slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.service-menu-card > .admin-card-header > div > h3');
+    expect(css).toContain('.service-menu-language-list > span');
+    expect(css).toContain('.service-menu-language-list > span > strong');
+    expect(css).toContain('.service-menu-duration-panel > div:first-child > strong');
+    expect(css).toContain('.service-menu-duration-panel.is-empty > strong');
+    expect(css).not.toContain('.service-menu-card h3');
+    expect(css).not.toContain('.service-menu-language-list span');
+    expect(css).not.toContain('.service-menu-language-list strong');
+    expect(css).not.toContain('.service-menu-duration-panel strong');
+  });
+
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {
     const section = ServiceCatalogManagerSection({
       dialogMode: 'new',

@@ -12174,7 +12174,7 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.service-menu-card h3 {
+.service-menu-card > .admin-card-header > div > h3 {
   color: var(--admin-heading);
   font-size: 18px;
   line-height: 1.28;
@@ -12187,7 +12187,7 @@ a.action-button-card:hover {
   gap: 6px;
 }
 
-.service-menu-language-list span {
+.service-menu-language-list > span {
   align-items: center;
   background: var(--admin-action-hover);
   border: 1px solid var(--admin-border);
@@ -12201,7 +12201,7 @@ a.action-button-card:hover {
   padding: 0 10px;
 }
 
-.service-menu-language-list strong {
+.service-menu-language-list > span > strong {
   color: var(--admin-heading);
   font-size: 11px;
   letter-spacing: 0;
@@ -12230,7 +12230,8 @@ a.action-button-card:hover {
   justify-content: space-between;
 }
 
-.service-menu-duration-panel strong {
+.service-menu-duration-panel > div:first-child > strong,
+.service-menu-duration-panel.is-empty > strong {
   color: var(--admin-heading);
 }
 
