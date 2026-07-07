@@ -15,11 +15,17 @@ describe('Admin KPI card usage', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('keeps page-specific KPI CSS scoped to MetricCard internals', () => {
+  it('keeps page-specific KPI CSS scoped to direct MetricCard content slots', () => {
     const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
 
-    expect(css).toContain('.marketing-analytics-metric .metric-card h2');
-    expect(css).toContain('.vietnam-overview-metric .metric-card h2');
+    expect(css).toContain('.marketing-analytics-metric > .metric-card > .metric-card-content > h2');
+    expect(css).toContain('.marketing-analytics-metric > .metric-card > .metric-card-content > small');
+    expect(css).toContain('.vietnam-overview-metric > .metric-card > .metric-card-content > h2');
+    expect(css).toContain('.vietnam-overview-metric > .metric-card > .metric-card-content > small');
+    expect(css).not.toContain('.marketing-analytics-metric .metric-card h2,');
+    expect(css).not.toContain('.marketing-analytics-metric .metric-card small,');
+    expect(css).not.toContain('.vietnam-overview-metric .metric-card h2,');
+    expect(css).not.toContain('.vietnam-overview-metric .metric-card small');
     expect(css).not.toContain('.marketing-analytics-metric h2,');
     expect(css).not.toContain('.vietnam-overview-metric h2,');
     expect(css).not.toContain('.marketing-analytics-metric small,');
