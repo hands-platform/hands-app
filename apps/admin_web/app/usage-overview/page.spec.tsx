@@ -134,6 +134,18 @@ describe('UsageOverviewPage', () => {
     }
   });
 
+  it('scopes usage funnel meter tones to direct bar slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-funnel-bar > i');
+    expect(css).not.toContain('.usage-overview-funnel-bar i {');
+
+    for (const tone of ['info', 'success', 'warning']) {
+      expect(css).toContain(`.usage-overview-funnel-step.is-${tone} > .usage-overview-funnel-bar > i`);
+      expect(css).not.toContain(`.usage-overview-funnel-step.is-${tone} .usage-overview-funnel-bar i`);
+    }
+  });
+
   it('scopes mini metric typography and tones to direct metric children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 

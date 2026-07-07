@@ -323,6 +323,18 @@ describe('PartnerOverviewPage', () => {
     expect(css).not.toContain('.partner-overview-action-row strong {');
     expect(css).not.toContain('.partner-overview-action-row small {');
   });
+
+  it('scopes partner funnel meter tones to direct bar slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-overview-funnel-bar > i');
+    expect(css).not.toContain('.partner-overview-funnel-bar i {');
+
+    for (const tone of ['info', 'success', 'warning']) {
+      expect(css).toContain(`.partner-overview-funnel-step.is-${tone} > .partner-overview-funnel-bar > i`);
+      expect(css).not.toContain(`.partner-overview-funnel-step.is-${tone} .partner-overview-funnel-bar i`);
+    }
+  });
 });
 
 const partnerOverviewFixture: AdminPartnerOverview = {
