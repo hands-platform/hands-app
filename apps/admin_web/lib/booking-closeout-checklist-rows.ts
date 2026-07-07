@@ -64,7 +64,7 @@ export function bookingCloseoutChecklistRows(
 
   return [
     {
-      title: 'Address snapshot',
+      title: 'Confirmed service address',
       status: input.addressReady ? 'Ready' : 'Repair needed',
       detail: input.addressReady
         ? `${input.addressLabel} is locked for Partner distance and evidence review.`
@@ -99,7 +99,7 @@ export function bookingCloseoutChecklistRows(
           : 'pill-info',
     },
     {
-      title: 'Chat archive',
+      title: 'Chat record',
       status: input.chatReady ? 'Archived' : input.chatNeeded ? 'Repair needed' : 'Locked',
       detail: input.chatReady
         ? `Room ${input.chatRoomShortId ?? 'missing'} keeps ${input.chatMessageCount} message(s); latest`

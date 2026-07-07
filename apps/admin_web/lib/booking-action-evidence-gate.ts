@@ -77,7 +77,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
           : 'Locked',
       evidence:
         input.paymentStatus === 'AUTHORIZED'
-          ? `${input.bookingStatus} / ${input.hasChatArchive ? 'chat archived' : 'chat missing'} / ${
+          ? `${input.bookingStatus} / ${input.hasChatArchive ? 'retained chat ready' : 'retained chat missing'} / ${
               input.closeoutStatus
             }`
           : `Payment status is ${input.paymentStatus}. Capture is only relevant for active authorization.`,
@@ -157,7 +157,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
         ? input.expiresAtLabel
         : `Expire unavailable for ${input.bookingStatus}.`,
       evidenceDateTimePrefix: input.expireAvailable
-        ? `${input.hasAddressSnapshot ? 'Address snapshot ready' : 'Address snapshot missing'} / expires `
+        ? `${input.hasAddressSnapshot ? 'Confirmed address ready' : 'Confirmed address missing'} / expires `
         : undefined,
       evidenceDateTimeValue: input.expireAvailable ? input.expiresAtValue : null,
       operatorRule:

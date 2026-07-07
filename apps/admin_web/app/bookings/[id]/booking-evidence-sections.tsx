@@ -269,7 +269,7 @@ export function BookingEvidenceSections({
       <AdminSection
         actions={<StatusBadge tone="info">{bookingEvidenceBundleRows.length} evidence lane(s)</StatusBadge>}
         className="admin-mb-16"
-        description="Single booking command view that ties the customer, Partner, address snapshot, chat archive, payment, earning, wallet, location, alerts, and operator notes into one factual bundle."
+        description="Single booking command view that ties the customer, Partner, confirmed service address, chat record, payment, earning, wallet, location, alerts, and operator notes into one factual bundle."
         id="booking-full-evidence-bundle"
         title="Booking full evidence bundle"
       >

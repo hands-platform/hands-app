@@ -44,12 +44,13 @@ describe('bookingActionEvidenceGate', () => {
     ]);
   });
 
-  it('marks payment capture as evidence ready only after completed work and chat archive', () => {
+  it('marks payment capture as evidence ready only after completed work and retained chat', () => {
     const result = bookingActionEvidenceGate(baseInput);
 
     expect(result.rows[1]).toMatchObject({
       action: 'Payment capture',
       status: 'Evidence ready',
+      evidence: 'COMPLETED / retained chat ready / Ready',
       className: 'ops-task-done',
       pillClass: 'pill-success',
     });
@@ -74,6 +75,7 @@ describe('bookingActionEvidenceGate', () => {
     expect(result.tone).toBe('pill-warn');
     expect(result.rows[1]).toMatchObject({
       status: 'Review first',
+      evidence: 'MATCHED / retained chat missing / Ready',
       className: 'ops-task-warning',
     });
     expect(result.rows[2]).toMatchObject({
@@ -115,7 +117,7 @@ describe('bookingActionEvidenceGate', () => {
     expect(result.rows[5]).toMatchObject({
       action: 'Expire matching',
       evidence: '07 Jun 2026 10:45',
-      evidenceDateTimePrefix: 'Address snapshot missing / expires ',
+      evidenceDateTimePrefix: 'Confirmed address missing / expires ',
       evidenceDateTimeValue: '2026-06-07T03:45:00.000Z',
       status: 'Needs address',
       className: 'ops-task-warning',

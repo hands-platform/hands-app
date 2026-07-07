@@ -181,7 +181,7 @@ export function BookingDetailToolbar({
           href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
         >
           <MessageSquareText aria-hidden="true" size={14} />
-          Open chat archive
+          Open chat record
         </AdminFormControlLink>
       )}
       {paymentId && (
@@ -255,7 +255,7 @@ export function BookingMatchingRuleSnapshotSection({
       className="admin-mb-16"
       description="Current matching rule state and the linked policy actions for this booking."
       id="matching-rule-snapshot"
-      title="Matching rule snapshot"
+      title="Matching rule status"
     >
       <p className="muted admin-mt-8">
         {matchingRuleSnapshot.summary}
@@ -287,7 +287,7 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
         </AdminFormControlLink>
       }
       className="admin-mb-16"
-      description="Authority source check for the booking decisions shown on this page."
+      description="Decision authority check for the booking decisions shown on this page."
       id="mvp-authority-contract"
       title="MVP authority contract"
     >

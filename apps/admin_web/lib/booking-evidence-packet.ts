@@ -40,7 +40,7 @@ type EvidenceTone = 'pill-success' | 'pill-warn';
 const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
 
 function safeAddressSnapshotLabel(label: string) {
-  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Service address snapshot saved' : label;
+  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Confirmed service address saved' : label;
 }
 
 function safePartnerLocationEvidenceLabel(label: string) {
@@ -150,10 +150,10 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Address',
         title: 'Address evidence',
         detail: input.hasAddressSnapshot
-          ? `Locked address snapshot: ${addressSnapshotLabel}.`
+          ? `Confirmed service address: ${addressSnapshotLabel}.`
           : 'No confirmed service address is attached yet.',
         evidence: input.hasAddressSnapshot
-          ? ['Address snapshot', addressEvidenceLabel].join(' ')
+          ? ['Confirmed service address', addressEvidenceLabel].join(' ')
           : 'Stored-address fallback or missing booking address needs operator review.',
         href: '#address-radius-contract',
       },

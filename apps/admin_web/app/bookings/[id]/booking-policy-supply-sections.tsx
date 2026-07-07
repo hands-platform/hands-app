@@ -146,7 +146,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
       className="admin-mb-16"
       description="Current stage, blocking signal, and next operator action for this booking."
       id="alerts"
-      title="Booking stage snapshot"
+      title="Booking stage status"
     >
       <SummaryCardGrid cards={stageSnapshot.metrics} />
       <AdminNotePanel className={`${stageSnapshot.noteClassName} admin-mt-14`}>
@@ -283,7 +283,7 @@ export function BookingAddressRadiusContractSection({
         </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
-      description="The immutable booking address snapshot is the source of truth for 10km marketplace eligibility."
+      description="Confirmed service address is the booking record used for 10km marketplace eligibility."
       id="address-radius-contract"
       title="Booking address radius contract"
     >

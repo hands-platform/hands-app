@@ -139,10 +139,10 @@ describe('bookingEvidencePacket', () => {
       'audit-evidence',
     ]);
     expect(packet.records[0].detail).toBe(
-      'Locked address snapshot: District 1, Ho Chi Minh City.',
+      'Confirmed service address: District 1, Ho Chi Minh City.',
     );
     expect(packet.records[0].evidence).toBe(
-      'Address snapshot District 1, Ho Chi Minh City',
+      'Confirmed service address District 1, Ho Chi Minh City',
     );
     expect(packet.records[2].detail).toBe(
       'Latest Partner location is District 1, Ho Chi Minh City.',
@@ -178,7 +178,7 @@ describe('bookingEvidencePacket', () => {
       latestLocationAtLabel: '07 Jun 2026 10:30',
     });
 
-    expect(packet.records[0].evidence).toBe('Address snapshot Service address snapshot saved');
+    expect(packet.records[0].evidence).toBe('Confirmed service address Confirmed service address saved');
     expect(packet.records[2].detail).toBe('Latest Partner location is saved for dispatch checks.');
     expect(JSON.stringify(packet.records)).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
   });

@@ -181,8 +181,14 @@ describe('booking policy supply sections', () => {
 
     const classNames = sections.flatMap(classNamesIn);
 
-    expect(normalizedText(sections)).toContain('Booking stage snapshot');
+    expect(normalizedText(sections)).toContain('Booking stage status');
+    expect(normalizedText(sections)).not.toContain('Booking stage snapshot');
     expect(normalizedText(sections)).toContain('Booking address radius contract');
+    expect(normalizedText(sections)).toContain(
+      'Confirmed service address is the booking record used for 10km marketplace eligibility.',
+    );
+    expect(normalizedText(sections)).not.toContain('immutable booking address snapshot');
+    expect(normalizedText(sections)).not.toContain('source of truth');
     expect(classNames.filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(6);
   });
 });

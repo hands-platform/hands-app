@@ -116,7 +116,7 @@ describe('Booking evidence sections', () => {
         ],
         records: [
           {
-            detail: 'Booking address snapshot is loaded.',
+            detail: 'Booking address record is loaded.',
             evidence: '14 Jun 2026 09:00',
             evidenceDateTimePrefix: 'Latest message: ',
             evidenceDateTimeValue: '2026-06-14T02:00:00.000Z',
@@ -151,6 +151,11 @@ describe('Booking evidence sections', () => {
     expect(rendered).toContain('Chat evidence decision board');
     expect(rendered).toContain('Manual outcome decision readiness');
     expect(rendered).toContain('Booking full evidence bundle');
+    expect(rendered).toContain(
+      'Single booking command view that ties the customer, Partner, confirmed service address, chat record, payment, earning, wallet, location, alerts, and operator notes into one factual bundle.',
+    );
+    expect(rendered).not.toContain('address snapshot');
+    expect(rendered).not.toContain('chat archive');
     expect(rendered).toContain('Finance guardrail');
     expect(rendered).toContain('Partner left a cancellation reason.');
     expect(rendered).toContain('No-show evidence and chat context are loaded.');

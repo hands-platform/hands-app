@@ -33,6 +33,8 @@ describe('BookingMvpAuthorityContractSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('MVP authority contract');
+    expect(rendered).toContain('Decision authority check for the booking decisions shown on this page.');
+    expect(rendered).not.toContain('Authority source check');
     expect(rendered).toContain('Vietnam-only service boundary');
     expect(rendered).toContain('Booking address is inside supported service area.');
     expect(rendered).toContain('Use this before approving booking creation disputes.');
@@ -123,6 +125,8 @@ describe('BookingCommandBriefingSections', () => {
 
     expect(markup).toContain('Back to booking monitor');
     expect(markup).toContain('Open customer');
+    expect(markup).toContain('Open chat record');
+    expect(markup).not.toContain('Open chat archive');
     expect(markup).not.toContain('toolbar admin-page-header');
     expect(source).not.toContain('AdminPageTemplate');
   });
@@ -208,6 +212,8 @@ describe('BookingCommandBriefingSections', () => {
       sections.length,
     );
     expect(normalizedText(sections)).toContain('Booking command decision strip');
+    expect(normalizedText(sections)).toContain('Matching rule status');
+    expect(normalizedText(sections)).not.toContain('Matching rule snapshot');
     expect(normalizedText(sections)).toContain('Booking priority briefing');
   });
 });

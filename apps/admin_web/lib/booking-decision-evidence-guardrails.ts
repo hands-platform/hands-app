@@ -56,7 +56,7 @@ const CHAT_REQUIRED_STATUSES = new Set([
 const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
 
 function safeAddressPinEvidence(label: string) {
-  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Service address snapshot saved' : label;
+  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Confirmed service address saved' : label;
 }
 
 export function bookingDecisionEvidenceGuardrails(
@@ -75,7 +75,7 @@ export function bookingDecisionEvidenceGuardrails(
     {
       id: 'required-address',
       title: 'Required: confirmed service address',
-      scope: 'Booking address is the source of truth for marketplace distance and support review.',
+      scope: 'Use the confirmed booking address for marketplace distance and support review.',
       status: input.hasAddressSnapshot ? 'Ready' : 'Needs repair',
       tone: input.hasAddressSnapshot ? 'pill-success' : 'pill-danger',
       evidence: input.hasAddressSnapshot

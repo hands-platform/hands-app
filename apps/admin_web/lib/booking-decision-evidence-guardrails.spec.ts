@@ -32,7 +32,7 @@ const baseInput = {
 };
 
 describe('bookingDecisionEvidenceGuardrails', () => {
-  it('requires an immutable address snapshot for booking operations', () => {
+  it('requires a confirmed service address for booking operations', () => {
     const rows = bookingDecisionEvidenceGuardrails({
       ...baseInput,
       hasAddressSnapshot: false,
@@ -46,6 +46,7 @@ describe('bookingDecisionEvidenceGuardrails', () => {
       tone: 'pill-danger',
       evidence: 'No confirmed service address is attached.',
     });
+    expect(rows[0].scope).not.toContain('source of truth');
   });
 
   it('does not echo raw coordinate labels in required address evidence', () => {
@@ -57,7 +58,7 @@ describe('bookingDecisionEvidenceGuardrails', () => {
 
     expect(rows[0]).toMatchObject({
       id: 'required-address',
-      evidence: 'District 1, Ho Chi Minh City / Service address snapshot saved',
+      evidence: 'District 1, Ho Chi Minh City / Confirmed service address saved',
     });
     expect(JSON.stringify(rows[0])).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
   });

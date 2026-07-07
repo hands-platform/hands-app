@@ -42,9 +42,9 @@ describe('bookingCloseoutChecklistRows', () => {
     const rows = bookingCloseoutChecklistRows(baseInput);
 
     expect(rows.map((row) => row.title)).toEqual([
-      'Address snapshot',
+      'Confirmed service address',
       'Customer final Partner choice',
-      'Chat archive',
+      'Chat record',
       'Money and wallet gate',
       'Manual outcome evidence',
       'Finance closeout',
@@ -52,7 +52,7 @@ describe('bookingCloseoutChecklistRows', () => {
     ]);
   });
 
-  it('blocks closeout when the address snapshot or required chat archive is missing', () => {
+  it('blocks closeout when the confirmed service address or required chat record is missing', () => {
     const rows = bookingCloseoutChecklistRows({
       ...baseInput,
       addressReady: false,
@@ -66,7 +66,7 @@ describe('bookingCloseoutChecklistRows', () => {
     });
 
     expect(rows[0]).toMatchObject({
-      title: 'Address snapshot',
+      title: 'Confirmed service address',
       status: 'Repair needed',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
@@ -77,7 +77,7 @@ describe('bookingCloseoutChecklistRows', () => {
       className: 'ops-task-blocked',
     });
     expect(rows[2]).toMatchObject({
-      title: 'Chat archive',
+      title: 'Chat record',
       status: 'Repair needed',
       href: '/chat-archive?status=missing-room',
     });
@@ -108,7 +108,7 @@ describe('bookingCloseoutChecklistRows', () => {
     const rows = bookingCloseoutChecklistRows(baseInput);
 
     expect(rows[2]).toMatchObject({
-      title: 'Chat archive',
+      title: 'Chat record',
       detail: 'Room room_123 keeps 3 message(s); latest',
       detailDateTimeFallback: '07 Jun 2026 10:30',
       detailDateTimeSuffix: '.',
