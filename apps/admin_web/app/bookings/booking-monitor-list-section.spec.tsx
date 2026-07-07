@@ -62,6 +62,15 @@ describe('BookingMonitorListSection', () => {
     expect(source).not.toContain('<button\n            aria-label="Close chat evidence"');
   });
 
+  it('scopes post-match chat dialog header typography to the direct copy slot', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-chat-dialog-header > div > h3');
+    expect(css).toContain('.booking-chat-dialog-header > div > p');
+    expect(css).not.toContain('.booking-chat-dialog-header h3');
+    expect(css).not.toContain('.booking-chat-dialog-header p');
+  });
+
   it('uses the shared table pagination footer for booking status groups', () => {
     const source = readFileSync('app/bookings/booking-monitor-list-section.tsx', 'utf8');
 

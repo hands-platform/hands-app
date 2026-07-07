@@ -3846,19 +3846,19 @@ a.action-button-card:hover {
   padding: 20px 22px;
 }
 
-.booking-chat-dialog-header h3,
-.booking-chat-dialog-header p {
+.booking-chat-dialog-header > div > h3,
+.booking-chat-dialog-header > div > p {
   margin: 0;
 }
 
-.booking-chat-dialog-header h3 {
+.booking-chat-dialog-header > div > h3 {
   font-size: 18px;
   font-weight: 500;
   line-height: 28px;
   margin-top: 8px;
 }
 
-.booking-chat-dialog-header p {
+.booking-chat-dialog-header > div > p {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
