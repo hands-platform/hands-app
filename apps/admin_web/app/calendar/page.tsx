@@ -14,10 +14,7 @@ export default async function CalendarPage() {
   const initialEvents = await adminGet<AdminCalendarEvent[]>('/admin/calendar-events?take=200', []);
 
   return (
-    <AdminPageTemplate
-      title="Operations Calendar"
-      description="Vuexy-style shared calendar for operator planning, booking watch blocks, Partner review windows, customer follow-up, and finance closeout reminders."
-    >
+    <AdminPageTemplate title="Operations Calendar">
       <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} initialEvents={initialEvents} />
     </AdminPageTemplate>
   );

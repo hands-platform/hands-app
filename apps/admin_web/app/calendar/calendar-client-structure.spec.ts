@@ -56,4 +56,11 @@ describe('calendar client structure', () => {
     expect(clientSource).toContain("calendarEventRequest(`/api/admin/calendar-events/${encodeURIComponent(id)}`");
     expect(clientSource).not.toMatch(/\b(?:localStorage|sessionStorage)\b/);
   });
+
+  it('does not render implementation explainer copy above the Vuexy calendar app surface', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/calendar/page.tsx'), 'utf8');
+
+    expect(pageSource).not.toContain('Vuexy-style shared calendar');
+    expect(pageSource).not.toContain('description=');
+  });
 });

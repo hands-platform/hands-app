@@ -9,6 +9,7 @@ import { AdminWorkspaceHeader } from './admin-workspace-header';
 const workspaceHeaderSource = readFileSync('components/admin-workspace-header.tsx', 'utf8');
 const topbarSearchInputSourcePath = 'components/admin-topbar-search-input.tsx';
 const themeToggleSource = readFileSync('components/admin-theme-toggle.tsx', 'utf8');
+const globalsCss = readFileSync('app/globals.css', 'utf8');
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/partners',
@@ -78,6 +79,16 @@ describe('admin shell navigation', () => {
 
     expect(html).toContain('3 items need review');
     expect(html).toContain('>3<');
+  });
+
+  it('does not reserve badge width for sidebar sections without operation counts', () => {
+    const countSlotBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-count-slot {'));
+    const emptyCountSlotBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-count-slot:empty {'));
+    const summaryBlock = cssRuleBlockAt(globalsCss.indexOf('.nav-section-summary {'));
+
+    expect(summaryBlock).toContain('grid-template-columns: 18px minmax(0, 1fr) auto 16px');
+    expect(countSlotBlock).toContain('min-width: 0');
+    expect(emptyCountSlotBlock).toContain('inline-size: 0');
   });
 
   it('keeps duplicate section labels and link hrefs on unique React keys during menu migrations', () => {
@@ -199,3 +210,12 @@ describe('admin shell navigation', () => {
     expect(workspaceHeaderSource).not.toContain('key={section.label}');
   });
 });
+
+function cssRuleBlockAt(index: number) {
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = globalsCss.indexOf('}', index);
+  return globalsCss.slice(index, endIndex + 1);
+}
