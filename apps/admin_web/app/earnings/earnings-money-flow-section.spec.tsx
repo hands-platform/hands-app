@@ -73,6 +73,7 @@ describe('EarningsMoneyFlowSection', () => {
   it('keeps finance check task cards on the shared Vuexy task surface', () => {
     const source = readFileSync(join(process.cwd(), 'app/earnings/earnings-money-flow-section.tsx'), 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTablePanel');
@@ -81,6 +82,7 @@ describe('EarningsMoneyFlowSection', () => {
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('<div className="service-trace-summary">');
+    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');

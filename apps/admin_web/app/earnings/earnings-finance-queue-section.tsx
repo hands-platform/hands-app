@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -24,11 +25,11 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
       resultTone={signals.length > 0 ? 'info' : 'warning'}
       title="Finance queue"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Earnings finance queue links" className="admin-mb-12">
         <AdminTextLink href="/payouts">
           Open payout batches
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTaskGrid>
         {signals.map((signal) => (
           <AdminTaskCard

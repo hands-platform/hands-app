@@ -6,8 +6,10 @@ describe('EarningsServiceBridgeSection', () => {
   it('uses the shared Vuexy trace summary atom for service bridge totals', () => {
     const source = readFileSync('app/earnings/earnings-service-bridge-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTraceSummary');
     expect(source).not.toContain('<div className="service-trace-summary">');
+    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('function ServiceBridgeMetric');
   });
 

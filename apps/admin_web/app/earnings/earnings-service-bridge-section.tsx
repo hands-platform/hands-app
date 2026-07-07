@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -40,11 +41,11 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
       resultTone={items.length > 0 ? 'info' : 'warning'}
       title="Service to earnings bridge"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Earnings service bridge links" className="admin-mb-12">
         <AdminTextLink href="/services">
           Review service pricing
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTraceSummary
         metrics={[
           { label: 'Service options', value: String(items.length) },

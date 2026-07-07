@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -34,11 +35,11 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
       resultTone={checks.length > 0 ? 'warning' : 'success'}
       title="Money flow command center"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Earnings money flow links" className="admin-mb-12">
         <AdminTextLink href="/bookings">
           Trace bookings
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTraceSummary
         metrics={cards.map((card) => ({
           detail: card.detail,
