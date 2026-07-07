@@ -17899,7 +17899,7 @@ textarea:focus-visible {
   padding: 10px 12px;
 }
 
-.notification-push-preview-summary strong {
+.notification-push-preview-summary > div > strong {
   font-size: 20px;
 }
 
@@ -17917,8 +17917,8 @@ textarea:focus-visible {
   padding: 10px 12px;
 }
 
-.notification-push-recipient strong,
-.notification-push-recipient span {
+.notification-push-recipient > strong,
+.notification-push-recipient > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

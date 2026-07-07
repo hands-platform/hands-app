@@ -20,6 +20,7 @@ vi.mock('../../../lib/admin-api', async () => {
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedAdminPost = vi.mocked(adminPost);
 const pageSource = readFileSync('app/notifications/push-send/page.tsx', 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('PushSendPage', () => {
   beforeEach(() => {
@@ -99,5 +100,15 @@ describe('PushSendPage', () => {
       '<span className="muted">{formatDateTime(campaign.sentAt ?? campaign.createdAt)}</span>',
     );
     expect(pageSource).not.toContain('formatDateTime(campaigns[0].sentAt ?? campaigns[0].createdAt)');
+  });
+
+  it('scopes push preview typography to direct Vuexy preview slots', () => {
+    expect(globalCss).toContain('.notification-push-preview-summary > div > strong');
+    expect(globalCss).toContain('.notification-push-recipient > strong,');
+    expect(globalCss).toContain('.notification-push-recipient > span');
+
+    expect(globalCss).not.toContain('.notification-push-preview-summary strong {');
+    expect(globalCss).not.toContain('.notification-push-recipient strong,');
+    expect(globalCss).not.toContain('.notification-push-recipient span {');
   });
 });
