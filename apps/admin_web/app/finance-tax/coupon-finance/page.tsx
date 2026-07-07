@@ -135,7 +135,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
         <FinanceListFilterLinks
           groups={[
             {
-              className: 'participant-list admin-mt-12',
+              className: 'admin-mt-12',
               id: 'range',
               links: FINANCE_LIST_DATE_RANGE_LINKS.map(([label, range]) => ({
                 active: filters.range === range,

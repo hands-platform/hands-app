@@ -1,6 +1,7 @@
 import {
   StatusBadgeLinkFromPillClass,
 } from '../../components/status-badge';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 
 export const FINANCE_LIST_DATE_RANGE_LINKS = [
   ['Today', 'today'],
@@ -41,7 +42,11 @@ export function FinanceListFilterLinks({ groups }: { readonly groups: readonly F
   return (
     <>
       {groups.map((group, index) => (
-        <div className={group.className ?? `participant-list${index > 0 ? ' admin-mt-10' : ''}`} key={group.id}>
+        <AdminFilterChipGroup
+          ariaLabel={`${group.id} finance filters`}
+          className={group.className ?? (index > 0 ? 'admin-mt-10' : undefined)}
+          key={group.id}
+        >
           {group.links.map((link) => (
             <StatusBadgeLinkFromPillClass
               href={link.href}
@@ -51,7 +56,7 @@ export function FinanceListFilterLinks({ groups }: { readonly groups: readonly F
               {link.label}
             </StatusBadgeLinkFromPillClass>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       ))}
     </>
   );

@@ -14,11 +14,25 @@ describe('FinanceListFilterLinks', () => {
   it('renders through shared StatusBadgeLink atoms instead of direct link class assembly', () => {
     const source = readFileSync('app/finance-tax/finance-list-filter-links.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeLinkFromPillClass');
+    expect(source).not.toContain('<div className={group.className');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain("import Link from 'next/link'");
     expect(source).not.toContain('pillClassBadgeClassName');
     expect(source).not.toContain('className={financeListFilterLinkClassName(link)}');
+  });
+
+  it('keeps finance list pages from passing raw participant-list wrappers', () => {
+    const financeListPages = [
+      'app/finance-tax/booking-settlement-audit/page.tsx',
+      'app/finance-tax/coupon-finance/page.tsx',
+      'app/finance-tax/settlement-reversals/page.tsx',
+    ];
+
+    for (const pagePath of financeListPages) {
+      expect(readFileSync(pagePath, 'utf8')).not.toContain("className: 'participant-list");
+    }
   });
 
   it('renders filter links with shared pill classes', () => {
