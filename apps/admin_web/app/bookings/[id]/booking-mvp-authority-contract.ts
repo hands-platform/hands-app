@@ -88,9 +88,9 @@ export function bookingMvpAuthorityContract({
       href: '#operator-action-availability',
     },
     {
-      contract: 'Booking address snapshot',
+      contract: 'Confirmed service address',
       scope: 'Required dispatch pin',
-      status: addressSnapshotReady ? 'Snapshot ready' : pinReady ? 'Stored pin only' : 'Missing pin',
+      status: addressSnapshotReady ? 'Address ready' : pinReady ? 'Stored pin only' : 'Missing pin',
       tone: addressSnapshotReady ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
       evidence: `${bookingAddressSnapshotLabel(booking)} / ${marketplaceSupply.policyPin.label}`,
       operatorUse: 'Marketplace distance and evidence review should use the immutable booking address.',
@@ -138,8 +138,8 @@ export function bookingMvpAuthorityContract({
     },
     {
       contract: 'Chat lifecycle',
-      scope: 'Created after match, retained for admin',
-      status: chatReady ? 'Chat archived' : selectedPartner ? 'Repair needed' : 'Locked until match',
+      scope: 'Created after match, retained for Admin',
+      status: chatReady ? 'Chat record ready' : selectedPartner ? 'Repair needed' : 'Locked until match',
       tone: chatReady ? 'pill-success' : selectedPartner ? 'pill-danger' : 'pill-info',
       evidence: chatReady
         ? `Room ${shortId(booking.chatRoom?.id ?? '')} / ${messageCount} message(s).`

@@ -197,7 +197,7 @@ describe('booking participant ledger', () => {
       notificationTrace,
     );
 
-    expect(ledger.cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+    expect(ledger.cards.find((card) => card.label === 'Chat record')).toMatchObject({
       value: 'Not opened',
       helper: 'Chat opens after first-pick match or customer final selection and service handoff.',
     });
@@ -304,9 +304,9 @@ describe('booking participant ledger', () => {
       notificationTrace,
     );
 
-    expect(ledger.cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+    expect(ledger.cards.find((card) => card.label === 'Chat record')).toMatchObject({
       value: 'Missing',
-      helper: 'Matched bookings should create a retained chat archive for operations evidence.',
+      helper: 'Matched bookings should create a retained chat record for operations evidence.',
     });
     expect(ledger.lifecycleRows.find((row) => row.stage === '4. Chat and service handoff')).toMatchObject({
       status: 'Chat missing',

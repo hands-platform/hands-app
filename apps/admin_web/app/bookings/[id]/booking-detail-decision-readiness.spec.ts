@@ -96,7 +96,7 @@ describe('bookingDetailDecisionReadiness', () => {
       tone: 'pill-success',
     });
     expect(result.decisionEvidenceGuardrails.find((row) => row.id === 'required-address')).toMatchObject({
-      evidence: 'District service address / service address snapshot saved',
+      evidence: 'District service address / confirmed service address saved',
       status: 'Ready',
       tone: 'pill-success',
     });
@@ -105,6 +105,7 @@ describe('bookingDetailDecisionReadiness', () => {
       evidence: 'Selected Partner',
       status: 'Final Partner saved',
     });
+    expect(JSON.stringify(result.decisionEvidenceGuardrails)).not.toMatch(/\bsnapshot\b|archive/i);
     expect(result.decisionEvidenceGuardrails.find((row) => row.id === 'supporting-context')).toMatchObject({
       evidence: '14 Jun 2026, 08:10',
       evidenceDateTimePrefix: '2 message(s) / location ',

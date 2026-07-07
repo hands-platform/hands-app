@@ -78,7 +78,7 @@ export function bookingCloseoutReadiness({
           : 'Customer/address needs review',
       detail: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
         booking.customerProfile?.user?.phone ?? 'No phone'
-      } / ${hasAddress ? bookingAddressSnapshotLabel(booking) : 'No service address snapshot'}`,
+      } / ${hasAddress ? bookingAddressSnapshotLabel(booking) : 'No confirmed service address'}`,
       owner: 'Support',
       href: '#customer',
       ready: Boolean(booking.customerProfile?.id && hasAddress),
@@ -95,11 +95,11 @@ export function bookingCloseoutReadiness({
       ready: partnerChoiceReady,
     },
     {
-      id: 'chat-archive',
+      id: 'chat-record',
       label: 'Chat',
-      status: chatReady ? 'Chat archive state valid' : 'Chat room missing',
+      status: chatReady ? 'Chat record valid' : 'Chat record missing',
       detail: booking.chatRoom
-        ? `${messageCount} retained message(s). Admin archive remains after mobile chat is hidden.`
+        ? `${messageCount} retained message(s). Chat record remains available after mobile chat is hidden.`
         : 'Matched, active, or closed service records should keep the admin transcript.',
       owner: 'Support',
       href: '#chat',

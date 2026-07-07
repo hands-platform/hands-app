@@ -144,7 +144,7 @@ export function bookingMarketplaceWalletEvidence({
       },
       {
         lane: 'Marketplace reach',
-        scope: 'Booking address is the source of truth for distance-based participation.',
+        scope: 'Confirmed service address controls distance-based participation.',
         status: `${marketplaceSupply.eligibleCount} eligible`,
         tone: marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn',
         record: `${formatDistanceMeters(marketplaceSupply.radiusMeters)} radius / ${

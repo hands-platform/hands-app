@@ -69,4 +69,15 @@ describe('booking marketplace wallet evidence', () => {
     expect(walletRow?.operatorUse).toContain('final acceptance');
     expect(walletRow?.operatorUse).toContain('service start');
   });
+
+  it('describes marketplace reach with operator-facing address wording', () => {
+    const evidence = bookingMarketplaceWalletEvidence(baseInput());
+    const reachRow = evidence.rows.find((row) => row.lane === 'Marketplace reach');
+
+    expect(reachRow).toMatchObject({
+      scope: 'Confirmed service address controls distance-based participation.',
+      status: '2 eligible',
+    });
+    expect(JSON.stringify(reachRow)).not.toMatch(/source of truth|snapshot|trace/i);
+  });
 });

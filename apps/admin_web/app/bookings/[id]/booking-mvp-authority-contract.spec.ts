@@ -40,6 +40,36 @@ function financeTrace(
 }
 
 describe('booking MVP authority contract', () => {
+  it('uses operator-facing address and chat record labels', () => {
+    const rows = bookingMvpAuthorityContract({
+      booking: booking({
+        addressSnapshot: {
+          addressText: 'District 1 address',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        } as AdminBookingDetail['addressSnapshot'],
+        chatRoom: { id: 'chat-room-retained' } as AdminBookingDetail['chatRoom'],
+        status: 'MATCHED',
+      }),
+      operationalPolicies: [],
+      marketplaceSupply: marketplaceSupply(),
+      messageCount: 3,
+      financeTrace: financeTrace(),
+      walletDebt: false,
+      terminal: false,
+    });
+
+    expect(rows.find((row) => row.contract === 'Confirmed service address')).toMatchObject({
+      status: 'Address ready',
+      scope: 'Required dispatch pin',
+    });
+    expect(rows.find((row) => row.contract === 'Chat lifecycle')).toMatchObject({
+      status: 'Chat record ready',
+      scope: 'Created after match, retained for Admin',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\bBooking address snapshot\b|\bSnapshot ready\b|Chat archived|archive/i);
+  });
+
   it('uses first-pick matching evidence as a valid final Partner connection', () => {
     const rows = bookingMvpAuthorityContract({
       booking: booking({

@@ -72,7 +72,7 @@ describe('bookingDetailRecordIndexCards', () => {
     expect(cards.map((card) => card.label)).toEqual([
       'Customer',
       'Partners',
-      'Chat archive',
+      'Chat record',
       'Payment and wallet',
       'Finance evidence',
       'Earnings ledger',
@@ -89,7 +89,7 @@ describe('bookingDetailRecordIndexCards', () => {
       helper: 'Mai Customer',
       value: '+84000000001',
     });
-    expect(cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+    expect(cards.find((card) => card.label === 'Chat record')).toMatchObject({
       helper: 'Room chat-roo',
       value: '2',
     });
@@ -121,7 +121,7 @@ describe('bookingDetailRecordIndexCards', () => {
       helper: 'Customer profile',
       value: 'No phone',
     });
-    expect(cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+    expect(cards.find((card) => card.label === 'Chat record')).toMatchObject({
       helper: 'No chat room yet',
     });
     expect(cards.find((card) => card.label === 'Cash settlement desk')).toMatchObject({

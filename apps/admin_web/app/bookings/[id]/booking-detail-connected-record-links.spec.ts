@@ -61,8 +61,8 @@ describe('bookingDetailConnectedRecordLinks', () => {
       'Customer record',
       'Preferred Partner',
       'Final Partner',
-      'Chat archive',
-      'Notification trace',
+      'Chat record',
+      'Notifications',
       'Payment queue',
       'Refund queue',
       'Cash settlement',
@@ -76,10 +76,12 @@ describe('bookingDetailConnectedRecordLinks', () => {
       href: '/partners/partner-selected',
       value: 'Linh Partner',
     });
-    expect(links.find((link) => link.label === 'Chat archive')).toMatchObject({
+    expect(links.find((link) => link.label === 'Chat record')).toMatchObject({
       href: '/chat-archive?q=booking-detail-connected-record-links',
       value: '4 message(s)',
     });
+    expect(links.find((link) => link.label === 'Chat record')?.detail).not.toMatch(/archive|trace/i);
+    expect(links.find((link) => link.label === 'Notifications')?.detail).not.toMatch(/trace|retry/i);
     expect(links.find((link) => link.label === 'Refund queue')).toMatchObject({
       detail: 'Queue empty.',
       value: '0 refund row(s)',
@@ -114,7 +116,7 @@ describe('bookingDetailConnectedRecordLinks', () => {
       tone: 'pill-warn',
       value: 'Profile missing',
     });
-    expect(links.find((link) => link.label === 'Notification trace')).toMatchObject({
+    expect(links.find((link) => link.label === 'Notifications')).toMatchObject({
       tone: 'pill-neutral',
       value: '0 alert(s)',
     });

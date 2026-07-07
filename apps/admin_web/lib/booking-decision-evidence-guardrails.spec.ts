@@ -92,6 +92,10 @@ describe('bookingDecisionEvidenceGuardrails', () => {
       tone: 'pill-danger',
       evidence: 'Matched or service-stage booking has no retained room.',
     });
+    expect(rows[2]).toMatchObject({
+      scope: 'Matched bookings need customer-Partner chat; admin keeps the record after mobile closeout.',
+      status: 'Repair needed',
+    });
   });
 
   it('blocks cash fee debt until settlement is recorded', () => {

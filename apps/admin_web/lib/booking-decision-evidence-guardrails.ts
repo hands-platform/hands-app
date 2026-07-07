@@ -107,8 +107,8 @@ export function bookingDecisionEvidenceGuardrails(
     {
       id: 'required-chat',
       title: 'Required after match: retained chat',
-      scope: 'Matched bookings need customer-Partner chat; admin keeps the archive after mobile closeout.',
-      status: input.hasChatRoom ? 'Archived' : chatRequired ? 'Repair needed' : 'Locked until match',
+      scope: 'Matched bookings need customer-Partner chat; admin keeps the record after mobile closeout.',
+      status: input.hasChatRoom ? 'Chat record ready' : chatRequired ? 'Repair needed' : 'Locked until match',
       tone: input.hasChatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
       evidence: input.hasChatRoom
         ? `Room ${input.chatRoomShortId ?? 'missing'} / ${input.messageCount} message(s)`

@@ -54,7 +54,7 @@ export function readBookingGateSnapshot(booking: AdminBookingDetail) {
 
   const customerDistanceLabel =
     customerDistance === null
-      ? 'No optional GPS snapshot'
+      ? 'No optional customer GPS evidence'
       : `${distanceLabel(Math.round(customerDistance))} / historical support limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
   const preferredPartnerDistanceLabel =
     preferredDistance === null

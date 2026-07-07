@@ -118,12 +118,12 @@ export function bookingParticipantLedger(
         href: '#marketplace-supply',
       },
       {
-        label: 'Chat archive',
+        label: 'Chat record',
         value: booking.chatRoom ? `${chatMessageCount} message(s)` : chatRequired ? 'Missing' : 'Not opened',
         helper: booking.chatRoom
-          ? 'Admin retains the booking chat even after mobile hides completed-service chat.'
+          ? 'Admin retains the booking chat record even after mobile hides completed-service chat.'
           : chatRequired
-            ? 'Matched bookings should create a retained chat archive for operations evidence.'
+            ? 'Matched bookings should create a retained chat record for operations evidence.'
             : 'Chat opens after first-pick match or customer final selection and service handoff.',
         href: '#chat',
       },

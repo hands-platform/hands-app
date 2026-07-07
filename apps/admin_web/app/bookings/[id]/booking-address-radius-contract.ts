@@ -21,11 +21,11 @@ export function bookingAddressRadiusContract(
   const pinReady = Number.isFinite(pin.lat) && Number.isFinite(pin.lng);
 
   return {
-    status: snapshotLocked && driftOk ? 'Snapshot locked' : pinReady ? 'Review pin' : 'Missing pin',
+    status: snapshotLocked && driftOk ? 'Confirmed address locked' : pinReady ? 'Review pin' : 'Missing pin',
     tone: snapshotLocked && driftOk ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
     metrics: [
       {
-        label: 'Policy pin source',
+        label: 'Distance pin source',
         value: bookingAddressRadiusSourceLabel(pin.source),
         helper: snapshotLocked
           ? 'Marketplace distance is measured from the confirmed service address.'
@@ -45,8 +45,8 @@ export function bookingAddressRadiusContract(
         label: 'Stored coordinate drift',
         value: driftLabel,
         helper: driftOk
-          ? 'Snapshot and stored coordinates are aligned.'
-          : 'Snapshot and stored coordinates differ.',
+          ? 'Confirmed address and stored coordinates are aligned.'
+          : 'Confirmed address and stored coordinates differ.',
       },
       {
         label: 'Optional customer GPS evidence',
@@ -68,7 +68,7 @@ export function bookingAddressRadiusContract(
           : 'Create or repair the confirmed service address before relying on Partner radius decisions.',
         action: booking.addressSnapshot?.createdAt
           ? `Created ${formatDate(booking.addressSnapshot.createdAt)}`
-          : 'No snapshot creation time available.',
+          : 'No confirmed address creation time available.',
         className: snapshotLocked ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: snapshotLocked ? 'pill-success' : 'pill-danger',
       },

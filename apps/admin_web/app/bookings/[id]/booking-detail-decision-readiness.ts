@@ -107,7 +107,7 @@ export function bookingDetailDecisionReadiness({
 }
 
 function bookingAddressSnapshotEvidenceState(booking: AdminBookingDetail) {
-  return booking.addressSnapshot ? 'service address snapshot saved' : 'No service address snapshot';
+  return booking.addressSnapshot ? 'confirmed service address saved' : 'No confirmed service address';
 }
 
 function bookingManualDecisionEvidenceSummary({

@@ -64,7 +64,7 @@ export function bookingDetailRecordIndexCards({
     },
     {
       href: '#chat',
-      label: 'Chat archive',
+      label: 'Chat record',
       value: `${messageCount}`,
       helper: booking.chatRoom ? `Room ${shortId(booking.chatRoom.id)}` : 'No chat room yet',
     },

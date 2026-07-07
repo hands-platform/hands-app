@@ -59,6 +59,11 @@ describe('booking closeout readiness', () => {
     expect(readiness.items.find((item) => item.id === 'location-signal')?.detail).toMatch(
       /^Location recorded without readable address \//,
     );
+    expect(readiness.items.find((item) => item.id === 'chat-record')).toMatchObject({
+      label: 'Chat',
+      status: 'Chat record valid',
+      detail: '2 retained message(s). Chat record remains available after mobile chat is hidden.',
+    });
     expect(JSON.stringify(readiness)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 
@@ -86,6 +91,10 @@ describe('booking closeout readiness', () => {
       'Location',
       'Audit',
     ]);
+    expect(readiness.items.find((item) => item.id === 'customer-record')?.detail).toContain(
+      'No confirmed service address',
+    );
+    expect(readiness.items.find((item) => item.id === 'chat-record')?.status).toBe('Chat record missing');
   });
 
   it('raises finance tone when ledger or cash settlement blocks remain', () => {
