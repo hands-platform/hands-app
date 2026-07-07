@@ -84,6 +84,24 @@ describe('MonthlyTaxClosingPage', () => {
     expect(markup).not.toContain('class="form-input"');
   });
 
+  it('keeps the top monthly closing KPI wall focused on four Vuexy cards', async () => {
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const metricGridStart = markup.indexOf('admin-metric-grid');
+    const commandBoardStart = markup.indexOf('Closeout command board');
+    const metricGridMarkup = markup.slice(metricGridStart, commandBoardStart);
+
+    expect(metricGridMarkup.match(/class="metric-card"/g)?.length).toBe(4);
+    expect(metricGridMarkup).toContain('Period status');
+    expect(metricGridMarkup).toContain('Settlements');
+    expect(metricGridMarkup).toContain('Company output VAT');
+    expect(metricGridMarkup).toContain('Partner withholding');
+    expect(metricGridMarkup).not.toContain('Coupon expense');
+    expect(metricGridMarkup).not.toContain('Net revenue delta');
+  });
+
   it('shows retained remittance evidence on the command board and stored closing row', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {

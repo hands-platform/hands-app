@@ -127,39 +127,14 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           value: summary.settlementCount,
         },
         {
-          helper: 'Customer payment total. This is not company revenue.',
-          label: 'Customer paid',
-          value: <MoneyText amount={summary.customerPaymentAmountTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Partner VAT plus PIT withheld for the month.',
-          label: 'Partner withholding',
-          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
-        },
-        {
           helper: 'Company VAT payable from platform fee gross.',
           label: 'Company output VAT',
           value: <MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />,
         },
         {
-          helper: 'Processing fees tracked separately from tax.',
-          label: 'Payment fees',
-          value: <MoneyText amount={summary.paymentProcessingFeeTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Company-funded coupon expense for this period. It does not reduce platform revenue or VAT.',
-          label: 'Coupon expense',
-          value: <MoneyText amount={summary.companyCouponExpenseTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Customer payment minus payout, withholding, payment fees, and platform fee gross.',
-          label: 'Formula delta',
-          value: <MoneyText amount={summary.reconciliationDelta} currency={summary.currency} />,
-        },
-        {
-          helper: 'Platform fee gross minus company output VAT and net revenue.',
-          label: 'Net revenue delta',
-          value: <MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />,
+          helper: 'Partner VAT plus PIT withheld for the month.',
+          label: 'Partner withholding',
+          value: <MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />,
         },
       ]}
       title="Monthly Tax Closing"
