@@ -10,7 +10,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminInlineForm } from '../../components/admin-inline-action-form';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminNotePanel } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -162,7 +162,7 @@ export function CashSettlementOpenDebtTableSection({
               {showOperationsEvidence ? (
                 <AdminNotePanel className="admin-mt-10">
                   <strong>Cash settlement action execution map</strong>
-                  <div className="setup-stage-list admin-mt-8">
+                  <AdminStageList className="admin-mt-8">
                     {row.actionRows.map((item) => (
                       <AdminStageItem key={`${row.earningId}-${item.action}`}>
                         <StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>
@@ -173,7 +173,7 @@ export function CashSettlementOpenDebtTableSection({
                         </div>
                       </AdminStageItem>
                     ))}
-                  </div>
+                  </AdminStageList>
                 </AdminNotePanel>
               ) : null}
             </td>

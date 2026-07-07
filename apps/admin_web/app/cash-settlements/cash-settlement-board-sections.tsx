@@ -1,6 +1,6 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -121,7 +121,7 @@ export function CashSettlementWorkflowSections({
             Open Partner controls
           </AdminTextLink>
         </div>
-        <div className="setup-stage-list admin-mt-12">
+        <AdminStageList className="admin-mt-12">
           {recoverySteps.map((step) => (
             <AdminStageItem key={step.title}>
               <StatusBadgeFromPillClass pillClass={step.pillClass}>{step.status}</StatusBadgeFromPillClass>
@@ -132,7 +132,7 @@ export function CashSettlementWorkflowSections({
               </div>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       </AdminTablePanel>
       <LinkedCardSection
         description="Follow a cash booking from customer payment evidence to Partner wallet reopening and payout release. Marketplace viewing attempts are not tracked; actual marketplace participants remain on the booking record."
