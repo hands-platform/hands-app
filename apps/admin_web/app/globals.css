@@ -11277,8 +11277,8 @@ a.action-button-card:hover {
 }
 
 .tax-policy-page .setup-stage-item > div,
-.tax-policy-page .ops-section-header > div,
-.tax-policy-page .toolbar > div {
+.tax-policy-page > .card > .ops-section-header > div,
+.tax-policy-page .tax-policy-version-card > .ops-section-header > div {
   min-width: 0;
 }
 

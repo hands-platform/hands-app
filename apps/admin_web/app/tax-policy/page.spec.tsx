@@ -16,6 +16,7 @@ vi.mock('../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync('app/tax-policy/page.tsx', 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('TaxPolicyPage', () => {
   beforeEach(() => {
@@ -138,6 +139,13 @@ describe('TaxPolicyPage', () => {
     expect(pageSource).not.toContain('<div className="setup-stage-list');
     expect(pageSource).not.toContain('bodyClassName="setup-stage-list');
     expect(pageSource).not.toContain('className="setup-stage-item"');
+  });
+
+  it('scopes tax policy header overflow rules to concrete page surfaces', () => {
+    expect(globalCss).toContain('.tax-policy-page > .card > .ops-section-header > div,');
+    expect(globalCss).toContain('.tax-policy-page .tax-policy-version-card > .ops-section-header > div {');
+    expect(globalCss).not.toContain('.tax-policy-page .ops-section-header > div,');
+    expect(globalCss).not.toContain('.tax-policy-page .toolbar > div');
   });
 
   it('uses the shared DateTimeText atom for visible tax policy timestamps', () => {
