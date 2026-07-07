@@ -5,6 +5,8 @@ describe('ServicePricingHealthSection source', () => {
     const source = readFileSync('app/services/service-pricing-health-section.tsx', 'utf8');
 
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
+    expect(source).not.toContain('bodyClassName="setup-stage-list"');
     expect(source).not.toContain('className="setup-stage-item"');
   });
 });

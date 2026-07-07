@@ -3,7 +3,7 @@ import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provi
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminStageItem } from '../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminCard } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -44,7 +44,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
         </StatusBadge>
       </div>
       {impact.rows.length ? (
-        <div className="setup-stage-list">
+        <AdminStageList>
           {impact.rows.slice(0, 6).map((row) => (
             <AdminStageItem key={row.id}>
               <span>{row.state === 'bookable' ? 'SHOW' : 'HIDE'}</span>
@@ -72,7 +72,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
               <small>{row.providerStatus}</small>
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       ) : (
         <AdminEmptyState framed message="No Partner has configured a price for this duration yet." />
       )}
