@@ -10657,25 +10657,25 @@ a.action-button-card:hover {
   width: 10px;
 }
 
-.marketing-funnel-step div {
+.marketing-funnel-step > div {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.marketing-funnel-step strong {
+.marketing-funnel-step > div > strong {
   color: var(--admin-text);
   font-size: 14px;
 }
 
-.marketing-funnel-step small {
+.marketing-funnel-step > div > small {
   color: var(--admin-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.marketing-funnel-step span:not(.marketing-funnel-dot) {
+.marketing-funnel-step > span:not(.marketing-funnel-dot) {
   color: var(--admin-text);
   font-weight: 800;
   text-align: right;
@@ -10693,7 +10693,7 @@ a.action-button-card:hover {
   gap: 10px;
 }
 
-.marketing-insight-list p {
+.marketing-insight-list > p {
   background: rgb(var(--admin-primary-channel) / 0.08);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
   border-radius: var(--admin-radius-md);
@@ -10708,7 +10708,7 @@ a.action-button-card:hover {
   gap: 8px;
 }
 
-.marketing-data-gap-list span {
+.marketing-data-gap-list > span {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border-subtle);
   border-radius: 999px;

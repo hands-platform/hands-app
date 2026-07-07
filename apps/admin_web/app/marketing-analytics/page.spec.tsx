@@ -130,6 +130,23 @@ describe('MarketingAnalyticsPage', () => {
     expect(pageSource).not.toContain('<span className="pill pill-info">');
   });
 
+  it('scopes marketing funnel typography to direct row slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.marketing-funnel-step > div');
+    expect(css).toContain('.marketing-funnel-step > div > strong');
+    expect(css).toContain('.marketing-funnel-step > div > small');
+    expect(css).toContain('.marketing-funnel-step > span:not(.marketing-funnel-dot)');
+    expect(css).toContain('.marketing-insight-list > p');
+    expect(css).toContain('.marketing-data-gap-list > span');
+
+    expect(css).not.toContain('.marketing-funnel-step div {');
+    expect(css).not.toContain('.marketing-funnel-step strong {');
+    expect(css).not.toContain('.marketing-funnel-step small {');
+    expect(css).not.toContain('.marketing-insight-list p {');
+    expect(css).not.toContain('.marketing-data-gap-list span {');
+  });
+
   it('renders breakdown tables with shared Vuexy table atoms when requested', async () => {
     const page = await MarketingAnalyticsPage({
       searchParams: Promise.resolve({
