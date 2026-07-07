@@ -1,5 +1,6 @@
 import { AdminBoundedTableFooter, AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
@@ -48,10 +49,10 @@ export function PartnerOperationsListSection({
       resultLabel={`${totalPartnerCount} partner(s)`}
       title="Partner operations list"
     >
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Partner operations summary counters" className="admin-mb-12">
         <StatusBadge tone="success">{directReadyCount} can receive direct requests</StatusBadge>
         <StatusBadge tone="warning">{settlementWarningCount} settlement warning</StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table vuexy-partner-table service-trace"
@@ -71,15 +72,15 @@ export function PartnerOperationsListSection({
                   label={row.name}
                   linkClassName="table-link"
                 />
-                <div className="participant-list admin-mt-6">
+                <AdminFilterChipGroup ariaLabel={`${row.name} profile status`} className="admin-mt-6">
                   <StatusBadge tone="info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</StatusBadge>
                   <StatusBadge tone={row.provider.blockedAt ? 'danger' : 'success'}>
                     {row.provider.blockedAt ? 'Account blocked' : 'Account open'}
                   </StatusBadge>
-                </div>
+                </AdminFilterChipGroup>
               </td>
               <td>
-                <div className="participant-list">
+                <AdminFilterChipGroup ariaLabel={`${row.name} approval checklist`}>
                   {row.checklist.map((item) => (
                     <StatusBadgeFromPillClass
                       key={item.label}
@@ -88,7 +89,7 @@ export function PartnerOperationsListSection({
                       {item.label}: {item.status}
                     </StatusBadgeFromPillClass>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
               </td>
               <td>
                 <AdminSignal tone={partnerOperationSignalTone(row.acceptanceTone)}>
@@ -102,7 +103,7 @@ export function PartnerOperationsListSection({
                 {row.marketplacePartnerAppMessage ? (
                   <p className="muted admin-mt-8">Partner app message: {row.marketplacePartnerAppMessage}</p>
                 ) : null}
-                <div className="participant-list admin-mt-8">
+                <AdminFilterChipGroup ariaLabel={`${row.name} matching flow`} className="admin-mt-8">
                   {row.matchingFlow.map((item) => (
                     <StatusBadgeFromPillClass
                       key={item.label}
@@ -111,7 +112,7 @@ export function PartnerOperationsListSection({
                       {item.label}: {item.status}
                     </StatusBadgeFromPillClass>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
                 <p className="muted admin-mt-8">{row.matchingFlowDetail}</p>
               </td>
               <td>
