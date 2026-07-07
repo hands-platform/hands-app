@@ -7,6 +7,7 @@ import {
   AdminTableScroll,
 } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminReviewRecordsSection,
@@ -491,21 +492,21 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     <strong>{attempt.reasonLabel}</strong>
                   </AdminTextLink>
                   <p className="muted">{attempt.detail}</p>
-                  <div className="participant-list admin-mt-8">
+                  <AdminFilterChipGroup className="admin-mt-8">
                     <StatusBadgeFromPillClass pillClass={attempt.tone}>
                       {attempt.gateLabel}
                     </StatusBadgeFromPillClass>
                     <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
                     <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
-                  </div>
-                  <div className="participant-list admin-mt-8">
+                  </AdminFilterChipGroup>
+                  <AdminFilterChipGroup className="admin-mt-8">
                     <AdminTextLink href={attempt.bookingMonitorHref}>
                       Booking gate queue
                     </AdminTextLink>
                     <AdminTextLink href={attempt.auditHref}>
                       Audit evidence
                     </AdminTextLink>
-                  </div>
+                  </AdminFilterChipGroup>
                 </div>
                 <small>
                   <DateTimeText value={attempt.at} />
@@ -632,7 +633,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <div>
               <strong>{activityPlan.headline}</strong>
               <p className="muted">{activityPlan.detail}</p>
-              <div className="participant-list admin-mt-8">
+              <AdminFilterChipGroup className="admin-mt-8">
                 {activityPlan.badges.map((badge) => (
                   <StatusBadgeFromPillClass
                     key={badge.label}
@@ -641,7 +642,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     {badge.label}
                   </StatusBadgeFromPillClass>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             </div>
             <AdminTextLink href={activityPlan.primaryHref}>
               {activityPlan.primaryAction}

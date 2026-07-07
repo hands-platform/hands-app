@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminProfileOverviewCard, AdminSummaryCardGrid } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
@@ -88,13 +89,13 @@ export function CustomerDetailOverviewShell({
           </div>
         </div>
 
-        <div className="participant-list customer-detail-badges">
+        <AdminFilterChipGroup className="customer-detail-badges">
           {statusBadges.map((badge) => (
             <StatusBadge tone="info" key={badge}>
               {badge}
             </StatusBadge>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       </div>
 
       <AdminSummaryCardGrid

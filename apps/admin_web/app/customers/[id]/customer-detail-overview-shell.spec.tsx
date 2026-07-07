@@ -17,11 +17,13 @@ describe('CustomerDetailOverviewShell', () => {
     expect(source).toContain('AdminProfileOverviewCard');
     expect(source).toContain('AdminSummaryCardGrid');
     expect(source).toContain("import { AdminCard } from '../../../components/admin-surface';");
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).not.toContain('<AdminCard className="customer-detail-overview-card">');
     expect(source).not.toContain('<section className="customer-detail-usage-summary">');
     expect(source).not.toContain('<section className="customer-detail-partner-rail"');
     expect(source).not.toContain('<div className="customer-detail-highlight-grid">');
     expect(source).not.toContain('<div className="customer-detail-usage-summary-grid">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-info" key={badge}>');
     expect(source).not.toContain('<p className="customer-detail-partner-empty">{rail.emptyMessage}</p>');
   });
