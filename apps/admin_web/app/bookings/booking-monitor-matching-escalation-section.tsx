@@ -1,4 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
@@ -143,13 +144,13 @@ export function BookingMonitorMatchingEscalationSection({
                   <div className="muted">{lane.status}</div>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${lane.title} metrics`}>
                     {lane.metrics.map((metricItem) => (
                       <StatusBadge tone="neutral" key={`${lane.title}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
                       </StatusBadge>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   {lane.bookings.length > 0 ? (
@@ -199,13 +200,13 @@ export function BookingMonitorMatchingEscalationSection({
                   <div className="muted">{step.status}</div>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${step.stage} metrics`}>
                     {step.metrics.map((metricItem) => (
                       <StatusBadge tone="neutral" key={`${step.stage}-${metricItem.label}`}>
                         {metricItem.label}: {metricItem.value}
                       </StatusBadge>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   {step.bookings.length > 0 ? (
@@ -293,13 +294,13 @@ export function BookingMonitorMatchingEscalationSection({
                   </td>
                   <td>{item.operatorAction}</td>
                   <td>
-                    <div className="participant-list">
+                    <AdminFilterChipGroup ariaLabel={`${shortId(item.booking.id)} evidence tags`}>
                       {item.tags.map((tag) => (
                         <StatusBadge tone="neutral" key={`${item.booking.id}-${tag}`}>
                           {tag}
                         </StatusBadge>
                       ))}
-                    </div>
+                    </AdminFilterChipGroup>
                   </td>
                 </tr>
               ))}

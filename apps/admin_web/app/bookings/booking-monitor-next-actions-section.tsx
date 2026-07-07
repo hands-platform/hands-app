@@ -1,4 +1,5 @@
-import { AdminActionCard, AdminSection } from '../../components/admin-surface';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
@@ -36,7 +37,7 @@ export function BookingMonitorNextActionsSection({
       description="Flagged bookings that need operator review now; normal active bookings stay in the table."
       title="Next operator actions"
     >
-      <div className="participant-list admin-mt-12">
+      <AdminTaskGrid className="admin-mt-12">
         {nextActions.map((item) => (
           <AdminActionCard
             detail={compactNextActionDetail(item.detail)}
@@ -55,7 +56,7 @@ export function BookingMonitorNextActionsSection({
             <p className="muted">
               {getCustomerLabel(item.booking)} / {marketplaceDisplayText(getProviderLabel(item.booking))}
             </p>
-            <div className="participant-list admin-mt-10">
+            <AdminFilterChipGroup ariaLabel={`${item.title} action tags`} className="admin-mt-10">
               <StatusBadge tone="neutral">{item.booking.status}</StatusBadge>
               <StatusBadge tone="neutral">{item.owner}</StatusBadge>
               <StatusBadge tone="neutral">{actionOrderLabel(item.priority)}</StatusBadge>
@@ -65,10 +66,10 @@ export function BookingMonitorNextActionsSection({
                   {tag}
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
-      </div>
+      </AdminTaskGrid>
     </AdminSection>
   );
 }

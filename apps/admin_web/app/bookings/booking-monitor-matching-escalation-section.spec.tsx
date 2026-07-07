@@ -8,11 +8,13 @@ describe('BookingMonitorMatchingEscalationSection', () => {
     const source = readFileSync('app/bookings/booking-monitor-matching-escalation-section.tsx', 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<span className="muted">No sample bookings</span>');
     expect(source).not.toContain('<span className={`signal ${commandToneClass(lane.tone)}`}>');

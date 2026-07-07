@@ -7,8 +7,10 @@ describe('BookingMonitorNextActionsSection', () => {
   it('uses shared Vuexy badge atoms for action count, status, owner, priority, age, and tags', () => {
     const source = readFileSync('app/bookings/booking-monitor-next-actions-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('actions={<span className="pill pill-warn">{nextActions.length} action(s)</span>}');
     expect(source).not.toContain('<span className="pill">{item.booking.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.owner}</span>');
