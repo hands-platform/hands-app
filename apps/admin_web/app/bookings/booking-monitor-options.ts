@@ -83,7 +83,7 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     label: 'Blocked create',
     description: 'booking create attempts rejected before payment authorization and matching.',
     operatorHint:
-      'Use this to debug optional GPS evidence, service address, and first-pick Partner distance gates before support follow-up.',
+      'Review optional GPS evidence, service address, and first-pick Partner distance gates before support follow-up.',
   },
   {
     view: 'address',

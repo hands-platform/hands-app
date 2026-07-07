@@ -176,6 +176,14 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
+  it('keeps payout service evidence copy operator-facing', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('Service option links are ready for finance review.');
+    expect(source).not.toContain('Service trace is ready for finance review.');
+    expect(source).not.toContain('Payout batches are traceable to service duration options');
+  });
+
   it('uses shared money atoms for payout summary KPI amounts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 

@@ -105,4 +105,11 @@ describe('booking monitor options', () => {
     );
     expect(bookingMonitorPagePathForView('no-show')).toBe('/bookings/post-match-cancellations');
   });
+
+  it('keeps blocked-create operator hint support-facing instead of debug-facing', () => {
+    const blockedCreate = bookingViewOptions.find((option) => option.view === 'blocked-create');
+
+    expect(blockedCreate?.operatorHint).toContain('Review optional GPS evidence');
+    expect(blockedCreate?.operatorHint).not.toContain('debug');
+  });
 });

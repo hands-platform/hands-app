@@ -721,10 +721,10 @@ function buildPayoutMoneyFlowChecks(
       status: missingServiceEvidence ? 'MISSING' : `${serviceEvidence.length} OPTION(S)`,
       detail: missingServiceEvidence
         ? 'At least one payout batch has earnings but no service evidence was generated.'
-        : 'Payout batches are traceable to service duration options where available.',
+        : 'Payout batches are connected to service duration options where available.',
       action: missingServiceEvidence
         ? 'Check booking service links before approving payout.'
-        : 'Service trace is ready for finance review.',
+        : 'Service option links are ready for finance review.',
       className: missingServiceEvidence ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: missingServiceEvidence ? 'pill-danger' : 'pill-success',
     },
