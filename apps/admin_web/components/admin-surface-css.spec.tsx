@@ -48,14 +48,16 @@ describe('Admin surface CSS', () => {
   });
 
   it('keeps AdminState panels on the Vuexy Alert rhythm', () => {
-    const stateIndex = globalsCss.indexOf('.admin-state {');
-    const stateBlock = cssRuleBlockAt(stateIndex);
-    const stateIconIndex = globalsCss.indexOf('.admin-state-icon {');
-    const stateIconBlock = cssRuleBlockAt(stateIconIndex);
-    const infoIndex = globalsCss.indexOf('.admin-state-info {');
-    const infoBlock = cssRuleBlockAt(infoIndex);
-    const dangerIndex = globalsCss.indexOf('.admin-state-danger {');
-    const dangerBlock = cssRuleBlockAt(dangerIndex);
+    const stateIndex = cssRuleIndex('.admin-state {');
+    const stateBlock = cssRuleBlock('.admin-state {');
+    const stateIconIndex = cssRuleIndex('.admin-state-icon {');
+    const stateIconBlock = cssRuleBlock('.admin-state-icon {');
+    const stateTitleBlock = cssRuleBlock('.admin-state-copy > h3 {');
+    const stateMessageBlock = cssRuleBlock('.admin-state-copy > p {');
+    const infoIndex = cssRuleIndex('.admin-state-info {');
+    const infoBlock = cssRuleBlock('.admin-state-info {');
+    const dangerIndex = cssRuleIndex('.admin-state-danger {');
+    const dangerBlock = cssRuleBlock('.admin-state-danger {');
 
     expect(stateIndex).toBeGreaterThan(-1);
     expect(stateBlock).toContain('gap: 16px');
@@ -68,6 +70,10 @@ describe('Admin surface CSS', () => {
     expect(stateIconBlock).toContain('width: 30px');
     expect(stateIconBlock).not.toContain('height: 40px');
     expect(stateIconBlock).not.toContain('width: 40px');
+    expect(stateTitleBlock).toContain('font-size: 1rem');
+    expect(stateMessageBlock).toContain('margin: 0');
+    expect(cssRuleBlock('.admin-state h3 {')).toBe('');
+    expect(cssRuleBlock('.admin-state p {')).toBe('');
     expect(infoIndex).toBeGreaterThan(stateIconIndex);
     expect(infoBlock).toContain('background: var(--admin-info-soft)');
     expect(infoBlock).toContain('border-color: rgb(var(--admin-info-channel) / 0.24)');
@@ -110,12 +116,12 @@ describe('Admin surface CSS', () => {
   });
 
   it('keeps framed empty states on the Vuexy raised surface rhythm', () => {
-    const emptyIndex = globalsCss.indexOf('.empty-state {');
-    const emptyBlock = cssRuleBlockAt(emptyIndex);
-    const titleIndex = globalsCss.indexOf('.empty-state strong {');
-    const titleBlock = cssRuleBlockAt(titleIndex);
-    const messageIndex = globalsCss.indexOf('.empty-state .muted {');
-    const messageBlock = cssRuleBlockAt(messageIndex);
+    const emptyIndex = cssRuleIndex('.empty-state {');
+    const emptyBlock = cssRuleBlock('.empty-state {');
+    const titleIndex = cssRuleIndex('.empty-state > strong {');
+    const titleBlock = cssRuleBlock('.empty-state > strong {');
+    const messageIndex = cssRuleIndex('.empty-state > .muted {');
+    const messageBlock = cssRuleBlock('.empty-state > .muted {');
 
     expect(emptyIndex).toBeGreaterThan(-1);
     expect(emptyBlock).toContain('background: var(--admin-surface-raised)');
@@ -135,6 +141,8 @@ describe('Admin surface CSS', () => {
     expect(messageBlock).toContain('font-size: 0.8125rem');
     expect(messageBlock).toContain('line-height: 1.45');
     expect(messageBlock).toContain('margin: 0');
+    expect(cssRuleBlock('.empty-state strong {')).toBe('');
+    expect(cssRuleBlock('.empty-state .muted {')).toBe('');
   });
 
   it('keeps shared disclosures on the Vuexy Accordion rhythm', () => {
@@ -166,4 +174,15 @@ function cssRuleBlockAt(index: number) {
 
   const endIndex = globalsCss.indexOf('}', index);
   return globalsCss.slice(index, endIndex + 1);
+}
+
+function cssRuleIndex(selector: string) {
+  const selectorWithLineStart = `\n${selector}`;
+  const index = globalsCss.indexOf(selectorWithLineStart);
+
+  return index === -1 ? -1 : index + 1;
+}
+
+function cssRuleBlock(selector: string) {
+  return cssRuleBlockAt(cssRuleIndex(selector));
 }

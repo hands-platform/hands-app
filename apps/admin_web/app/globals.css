@@ -2622,13 +2622,13 @@ a {
   min-width: 0;
 }
 
-.admin-state h3 {
+.admin-state-copy > h3 {
   font-size: 1rem;
   line-height: 1.35;
   margin: 0 0 4px;
 }
 
-.admin-state p {
+.admin-state-copy > p {
   margin: 0;
 }
 
@@ -2674,13 +2674,13 @@ a {
   padding: 16px;
 }
 
-.empty-state strong {
+.empty-state > strong {
   color: var(--admin-text);
   font-size: 0.9375rem;
   line-height: 1.35;
 }
 
-.empty-state .muted {
+.empty-state > .muted {
   font-size: 0.8125rem;
   line-height: 1.45;
   margin: 0;
