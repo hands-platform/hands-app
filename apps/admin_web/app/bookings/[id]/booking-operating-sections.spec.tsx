@@ -322,7 +322,7 @@ describe('Booking operating sections', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Closeout readiness');
+    expect(rendered).toContain('Closeout status');
     expect(rendered).toContain('Closeout focus');
     expect(rendered).toContain('Payment: Payment closeout pending');
     expect(rendered).toContain('Clear before the next handoff.');
@@ -380,7 +380,7 @@ describe('Booking operating sections', () => {
 
     const classNames = sections.flatMap(classNamesIn);
 
-    expect(normalizedText(sections)).toContain('Booking operating snapshot');
+    expect(normalizedText(sections)).toContain('Booking operating status');
     expect(normalizedText(sections)).toContain('Booking handoff checklist');
     expect(classNames.filter((className) => className === 'card admin-section admin-mb-16')).toHaveLength(2);
   });

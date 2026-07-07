@@ -49,7 +49,7 @@ describe('bookingOutcomeReviewPanel', () => {
       'Closure record',
       'Chat evidence',
       'Operator notes',
-      'Closeout readiness',
+      'Closeout status',
       'Outcome time',
     ]);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
@@ -61,7 +61,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.rows.find((row) => row.label === 'Operator notes')).toMatchObject({
       helper: 'Operator note attached.',
     });
-    expect(review.rows.find((row) => row.label === 'Closeout readiness')).toMatchObject({
+    expect(review.rows.find((row) => row.label === 'Closeout status')).toMatchObject({
       helper: 'No closeout exceptions.',
     });
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
@@ -121,7 +121,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       tone: 'pill-warn',
     });
-    expect(review.rows.find((row) => row.label === 'Closeout readiness')).toMatchObject({
+    expect(review.rows.find((row) => row.label === 'Closeout status')).toMatchObject({
       helper: 'Open closeout items need review.',
       value: '2 open items',
       tone: 'pill-warn',

@@ -112,7 +112,7 @@ export function bookingOutcomeReviewPanel({
         href: '#operator-notes',
       },
       {
-        label: 'Closeout readiness',
+        label: 'Closeout status',
         value: closeoutOpenItemCount > 0 ? countLabel(closeoutOpenItemCount, 'open item') : 'Ready',
         helper:
           closeoutOpenItemCount > 0

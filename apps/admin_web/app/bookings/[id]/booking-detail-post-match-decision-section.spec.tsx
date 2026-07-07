@@ -60,7 +60,7 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(rendered).toContain('3 messages');
     expect(rendered).toContain('Operator notes');
     expect(rendered).toContain('1 note');
-    expect(rendered).toContain('Closeout readiness');
+    expect(rendered).toContain('Closeout status');
     expect(rendered).toContain('Ready');
     expect(rendered).toContain('Approve restores the eligible Partner fee impact.');
     expect(rendered).toContain('Hold keeps the existing Partner fee deduction');
@@ -181,7 +181,7 @@ function outcomeReview(input: Partial<BookingOutcomeReviewPanel> = {}): BookingO
       {
         helper: 'No closeout exception is visible for this booking stage.',
         href: '#booking-closeout-readiness',
-        label: 'Closeout readiness',
+        label: 'Closeout status',
         tone: 'pill-success',
         value: 'Ready',
       },

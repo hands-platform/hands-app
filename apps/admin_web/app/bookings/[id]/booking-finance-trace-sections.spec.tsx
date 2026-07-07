@@ -47,7 +47,7 @@ describe('BookingPayoutBatchEligibilitySection', () => {
               className: 'ops-task-warning',
               detail: 'Booking closeout still has one review item.',
               href: '#booking-closeout-readiness',
-              label: 'Closeout readiness',
+              label: 'Closeout status',
               operatorRule: 'Use retained booking evidence before including the earning in settlement batches.',
               pillClass: 'pill-warn',
               status: '1 item',
@@ -60,7 +60,7 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     expect(markup).toContain('Payout batch eligibility');
     expect(markup).toContain('booking-settlement-ledger');
     expect(markup).toContain('aria-label="Payout batch eligibility rows"');
-    expect(markup).toContain('Closeout readiness');
+    expect(markup).toContain('Closeout status');
     expect(markup).toContain('href="#booking-closeout-readiness"');
     expect(markup).not.toContain('ops-task-card');
   });
@@ -107,7 +107,10 @@ describe('BookingPayoutBatchEligibilitySection', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup.match(/class="card admin-section/g)).toHaveLength(6);
-    expect(markup).toContain('Booking alert trace');
+    expect(markup).toContain('Booking alert records');
+    expect(markup).not.toContain('Booking alert trace');
+    expect(markup).toContain('Operations audit records');
+    expect(markup).not.toContain('Operations audit trace');
     expect(markup).toContain('Finance command center');
     expect(markup).toContain('Service pricing evidence');
     expect(markup).toContain('No active attention checks. Continue normal monitoring from the timeline.');

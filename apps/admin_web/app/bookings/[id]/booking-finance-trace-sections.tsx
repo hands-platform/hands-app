@@ -137,7 +137,7 @@ export function BookingAlertTraceSection({
       }
       className="admin-mb-16"
       description="Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and disabled device checks."
-      title="Booking alert trace"
+      title="Booking alert records"
     >
       <SummaryCardTrace cards={notificationTrace.metrics} />
       {notificationTrace.backupBatches.length > 0 ? (
@@ -218,7 +218,7 @@ export function BookingOperationsAuditTraceSection({
       }
       className="admin-mb-16"
       description="Booking-specific operator actions plus policy updates that happened after this request opened."
-      title="Operations audit trace"
+      title="Operations audit records"
     >
       <SummaryCardTrace cards={operationsTrace.metrics} />
       <AdminNotePanel className="admin-mt-14">
@@ -347,7 +347,7 @@ export function BookingPayoutBatchEligibilitySection({
         </StatusBadgeFromPillClass>
       }
       className="admin-mb-16"
-      description="Booking readiness for Partner settlement batches."
+      description="Booking status for Partner settlement batches."
       id="payout-batch-eligibility"
       title="Payout batch eligibility"
     >

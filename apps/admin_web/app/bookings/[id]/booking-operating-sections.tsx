@@ -230,7 +230,7 @@ export function BookingCloseoutReadinessSection({
       className="admin-mb-16"
       description="Factual completeness check for booking closeout."
       id="booking-closeout-readiness"
-      title="Closeout readiness"
+      title="Closeout status"
     >
       <p className="muted admin-mt-8">
         {closeoutReadiness.helper}
@@ -295,7 +295,7 @@ export function BookingOperatingSnapshotSection({
       className="admin-mb-16"
       description="Same-shift control view for the confirmed address, customer choice, Partner participation, chat, payment, wallet, and next operator action."
       id="operating-snapshot"
-      title="Booking operating snapshot"
+      title="Booking operating status"
     >
       <SummaryCardTrace cards={operatingSnapshot.facts} />
       <AdminNotePanel className={`${operatingSnapshot.noteClassName} admin-mt-14`}>
