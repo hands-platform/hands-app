@@ -56,8 +56,8 @@ const adjustmentTypeOptions: Array<{ label: string; value: AdminManualWalletAdju
   { label: 'Manual reversal', value: 'MANUAL_REVERSAL' },
   { label: 'Cash booking deduction - blocked here', value: 'CASH_BOOKING_DEDUCTION' },
 ];
-const WALLET_ADJUSTMENT_HISTORY_TAKE = 25;
-const WALLET_ADJUSTMENT_HISTORY_MAX_TAKE = 100;
+const WALLET_ADJUSTMENT_HISTORY_TAKE = 10;
+const WALLET_ADJUSTMENT_HISTORY_MAX_TAKE = 50;
 
 export default async function WalletAdjustmentsPage({ searchParams }: WalletAdjustmentsPageProps) {
   const params = searchParams ? await searchParams : {};

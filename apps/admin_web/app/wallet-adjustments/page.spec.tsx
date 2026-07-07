@@ -290,7 +290,7 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
+      '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=10',
       [],
     );
     expect(mockedAdminGet).toHaveBeenCalledWith(
@@ -383,5 +383,16 @@ describe('WalletAdjustmentsPage', () => {
     );
     expect(markup).toMatch(/Showing\s+0\s+to\s+0\s+of\s+62\s+entries/);
     expect(markup).toContain('/wallet-adjustments?pageSize=20&amp;page=4');
+  });
+
+  it('caps manual wallet adjustment history page size to protect the default admin payload', async () => {
+    mockedAdminGet.mockResolvedValueOnce([]);
+    mockedAdminGet.mockResolvedValueOnce({ total: 120 });
+
+    await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ pageSize: '500' }),
+    });
+
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments?take=50', []);
   });
 });
