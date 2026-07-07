@@ -809,7 +809,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat handoff, settlement gates, notifications, and setup."
+        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat handoff, settlement gates, notifications, and owner follow-up."
         id="dashboard-operations-command-board"
         title="Operations command board"
       >
@@ -850,7 +850,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         }
         className="admin-mt-20"
         description="Actual booking participant records only. Partners with negative wallets can see open booking requests, but final acceptance, service start, and payout release wait for settlement."
-        id="dashboard-marketplace-participant-snapshot"
+        id="dashboard-booking-participant-flow"
         title="Booking participant flow"
       >
         <DashboardTraceSummary
@@ -1015,7 +1015,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminTextLink>
         }
         className="admin-mt-20"
-        description="Direct routes into the booking monitor evidence filters. Use these when staff need the exact booking list behind address, Partner choice, chat archive, payment, wallet, location, alert, or closeout evidence."
+        description="Direct routes into the booking monitor evidence filters. Use these when staff need the exact booking list behind address, Partner choice, chat records, payment, wallet, location, alert, or closeout evidence."
         id="dashboard-booking-evidence-command-queue"
         title="Booking evidence command queue"
       >
@@ -1380,7 +1380,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-policy-card"
             description="Live dispatch rules and owner decisions currently guiding matching, marketplace participation, cancellation, no-show, and Partner alerts."
-            id="dashboard-operations-policy-snapshot"
+            id="dashboard-operations-policy-status"
             title="Operations policy status"
           >
             <DashboardTraceSummary
@@ -1590,7 +1590,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <AdminSection
               actions={
                 <AdminTextLink href="/services">
-                  Pricing setup
+                  Service pricing
                 </AdminTextLink>
               }
               description="Which services and payment methods created operational load in the selected dashboard date range."
@@ -1792,7 +1792,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminTextLink>
               }
               description="Current operational capacity, app presence, location freshness, and finance blockers."
-              id="dashboard-partner-supply-snapshot"
+              id="dashboard-partner-supply-status"
               title="Partner supply status"
             >
               <DashboardTraceSummary
@@ -1840,7 +1840,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminTextLink>
               }
               description="Funnel view for signup, KYC, banking, first revenue tax review, and optional profile review."
-              id="dashboard-partner-readiness-funnel"
+              id="dashboard-partner-approval-funnel"
               title="Partner approval funnel"
             >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
@@ -1862,7 +1862,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <InfoRow
                   label="First revenue Partners"
                   value={partnerSupply.firstRevenue.toString()}
-                  detail="Partners who can request wallet payout setup after earning revenue."
+                  detail="Partners who can request wallet payout review after earning revenue."
                 />
                 <InfoRow
                   label="Withdrawal profile ready"
@@ -1929,7 +1929,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   helper: 'Marketplace or account control held',
                 },
                 {
-                  label: 'Needs payout setup',
+                  label: 'Needs payout profile',
                   value: fullDashboardData.partnerOpsQueue.payoutSetup,
                   helper: 'First revenue follow-up',
                 },
@@ -1954,7 +1954,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminTextLink>
             }
             className="admin-mt-20"
-            description="First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a post-first-earning payout gate, not an initial marketplace gate."
+            description="First-screen sequence for clearing Partner marketplace holds. Tax review stays as a post-first-earning payout gate, not an initial marketplace gate."
             id="dashboard-marketplace-unblock-quick-order"
             title="Marketplace unblock quick order"
           >
@@ -1996,7 +1996,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminSignal>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card"
-            description="High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and setup."
+            description="High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and owner follow-up."
             id="dashboard-today-command-lanes"
             title="Today command lanes"
           >
@@ -2137,7 +2137,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               description="Gross earnings, platform fee, pending net, and paid net from the selected earnings window."
-              id="dashboard-finance-snapshot"
+              id="dashboard-finance-closeout-status"
               title="Finance closeout status"
             >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
@@ -2549,13 +2549,13 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
           ? 'Matching policy is performing in the current sample'
           : stats.sampleCount
             ? 'Policy outcomes need operator review'
-            : 'Policy outcome sample is not ready yet',
+            : 'Policy outcomes need more booking data',
         detail: stats.sampleCount
           ? `${dashboardPercentLabel(stats.matchedCount, stats.sampleCount)} matched, ${dashboardPercentLabel(
               stats.failedOutcomeCount,
               stats.sampleCount,
             )} failed outcome, ${avgInvites} marketplace alert(s).`
-          : 'Create measured bookings after policy setup so the dashboard can compare policy to outcomes.',
+          : 'Create measured bookings after the policy is active so the dashboard can compare policy to outcomes.',
         operatorAction: outcomeHealthy
           ? 'Keep current policy stable while collecting more district and time-band results.'
           : stats.sampleCount
@@ -2578,8 +2578,8 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
             : 'Marketplace timing needs policy review before rollout.',
         operatorAction:
           lowBackupInviteCount > 0
-            ? `${lowBackupInviteCount} open matching booking(s) have no marketplace alert trace yet.`
-            : 'Marketplace exposure is traceable in the current measured sample.',
+            ? `${lowBackupInviteCount} open matching booking(s) have no marketplace alert delivery record yet.`
+            : 'Marketplace exposure is recorded in the current measured sample.',
         href: lowBackupInviteCount > 0 ? '/bookings?view=matching' : '/operations-policy',
         className: lowBackupInviteCount > 0 ? 'ops-task-pending' : 'ops-task-done',
         pillClass: lowBackupInviteCount > 0 ? 'pill-warn' : 'pill-success',
@@ -2970,13 +2970,13 @@ function buildOperationsCommandBoard(input: {
       detail:
         chatHandoffRows > 0
           ? 'Matched work must have chat available during service and retained for admin decisions after completion.'
-          : 'Matched chat and admin archive checks are clear in the loaded data.',
+          : 'Matched chat and retained message checks are clear in the loaded data.',
       href: chatHandoffRows ? '/bookings?view=chat-repair' : '/chat-archive',
       tone: chatHandoffRows ? 'warn' : 'ok',
       checks: [
         `${input.bookingDeepDive.matchedWithoutChat} missing room`,
         `${input.bookingDeepDive.quietActiveChats} quiet room`,
-        'Archive retained',
+        'Chat record retained',
       ],
     },
     {
@@ -3082,7 +3082,7 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${partnerChoiceChecks} wait`,
       detail:
         partnerChoiceChecks > 0
-          ? 'Open rows need a preferred Partner decision, marketplace participant, or customer final selection trace.'
+          ? 'Open rows need a preferred Partner decision, marketplace participant, or customer final selection record.'
           : 'Partner choice rows are clear for the loaded operations set.',
       href: '/bookings?view=matching&evidence=partner',
       tone: evidenceTone(partnerChoiceChecks, 2, 6),
@@ -3092,7 +3092,7 @@ function buildBookingEvidenceCommandQueue(input: {
       sample: bookingEvidenceSample(partnerChoiceRows, 'Partner choice sample'),
     },
     {
-      lane: 'Chat archive evidence',
+      lane: 'Chat record evidence',
       owner: 'Support',
       status: evidenceStatus(chatChecks),
       value: `${chatChecks} room`,
@@ -3103,7 +3103,7 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=chat',
       tone: evidenceTone(chatChecks, 1, 4),
       checks: ['Room exists', 'Messages retained', 'Review ready'],
-      operatorAction: chatChecks > 0 ? 'Open chat evidence queue' : 'Keep chat archive monitor',
+      operatorAction: chatChecks > 0 ? 'Open chat evidence queue' : 'Keep chat record monitor',
       sample: bookingEvidenceSample(chatRows, 'Chat sample'),
     },
     {
@@ -3930,12 +3930,12 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       id: 'dashboard-acceptance-tax-payout',
       step: '6',
       owner: 'Finance',
-      title: 'Review withdrawal setup after first earning',
+      title: 'Review withdrawal profile after first earning',
       detail:
         'Bank, address, and payout agreement review happens after revenue exists or when withdrawal is requested.',
       metricLabel: 'Payout gates',
       metricValue: withdrawalSetupGate.toString(),
-      action: 'Open payout setup',
+      action: 'Open payout profile',
       href: '/partners?review=payout-setup',
       blockerCount: withdrawalSetupGate,
       warnOnly: true,
@@ -4026,10 +4026,10 @@ function buildPartnerOpsQueueItem(
     return {
       id: `${partner.id}-first-revenue-setup`,
       name,
-      status: 'First revenue setup',
+      status: 'First revenue review',
       detail:
         'Partner has earned money. Review residential address and payout agreement before payout release.',
-      action: 'Open payout setup',
+      action: 'Open payout profile',
       href,
       className: 'ops-task-pending',
       priority: 85,

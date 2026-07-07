@@ -287,10 +287,10 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
     );
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-marketplace-participant-snapshot"',
+      'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-marketplace-participant-snapshot-title">Booking participant flow</h2>',
+      '<h2 id="dashboard-booking-participant-flow-title">Booking participant flow</h2>',
     );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
@@ -319,6 +319,10 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('Finance snapshot');
     expect(markup).not.toContain('earnings snapshot');
     expect(markup).not.toContain('current snapshot');
+    expect(markup).not.toContain('marketplace alert trace');
+    expect(markup).not.toContain('traceable');
+    expect(markup).not.toContain('final selection trace');
+    expect(markup).not.toContain('Chat archive evidence');
     expect(markup).not.toContain('source of truth');
     expect(markup).not.toContain('app sessions');
     expect(markup).not.toContain('Partner readiness funnel');
@@ -337,6 +341,17 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('Retry log');
     expect(dashboardSource).not.toContain('generated from');
     expect(dashboardSource).not.toContain('latest admin snapshot');
+    expect(dashboardSource).not.toContain('marketplace alert trace');
+    expect(dashboardSource).not.toContain('Marketplace exposure is traceable');
+    expect(dashboardSource).not.toContain('customer final selection trace');
+    expect(dashboardSource).not.toContain('Chat archive evidence');
+    expect(dashboardSource).not.toContain('after policy setup');
+    expect(dashboardSource).not.toContain('Pricing setup');
+    expect(dashboardSource).not.toContain('Needs payout setup');
+    expect(dashboardSource).not.toContain('Tax setup');
+    expect(dashboardSource).not.toContain('Review withdrawal setup');
+    expect(dashboardSource).not.toContain('Open payout setup');
+    expect(dashboardSource).not.toContain('First revenue setup');
   });
 
   it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {
@@ -461,10 +476,10 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-matching-control-room-title">Matching control room</h2>',
     );
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-policy-card" id="dashboard-operations-policy-snapshot"',
+      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-policy-card" id="dashboard-operations-policy-status"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-operations-policy-snapshot-title">Operations policy status</h2>',
+      '<h2 id="dashboard-operations-policy-status-title">Operations policy status</h2>',
     );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card" id="dashboard-partner-dispatch-control"',
@@ -521,16 +536,16 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-regional-booking-demand-title">Regional booking demand</h2>',
     );
     expect(markup).toContain(
-      'class="card admin-section" id="dashboard-partner-supply-snapshot"',
+      'class="card admin-section" id="dashboard-partner-supply-status"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-partner-supply-snapshot-title">Partner supply status</h2>',
+      '<h2 id="dashboard-partner-supply-status-title">Partner supply status</h2>',
     );
     expect(markup).toContain(
-      'class="card admin-section" id="dashboard-partner-readiness-funnel"',
+      'class="card admin-section" id="dashboard-partner-approval-funnel"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-partner-readiness-funnel-title">Partner approval funnel</h2>',
+      '<h2 id="dashboard-partner-approval-funnel-title">Partner approval funnel</h2>',
     );
     expect(markup).toContain(
       'class="card admin-section dashboard-card-scroll dashboard-checklist-card" id="dashboard-operations-checklist-queue"',
@@ -556,10 +571,10 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('payout readiness');
     expect(markup).not.toContain('onboarding readiness');
     expect(markup).toContain(
-      'class="card admin-section" id="dashboard-finance-snapshot"',
+      'class="card admin-section" id="dashboard-finance-closeout-status"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-finance-snapshot-title">Finance closeout status</h2>',
+      '<h2 id="dashboard-finance-closeout-status-title">Finance closeout status</h2>',
     );
   });
 });
