@@ -19,6 +19,7 @@ import { readSearchParam } from '../../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -227,13 +228,13 @@ export default async function PartnerControlsPage({
                   <strong>{action.title}</strong>
                   <p className="muted">{action.detail}</p>
                   <p className="muted">{action.operatorAction}</p>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup>
                     {action.tags.map((tag) => (
                       <StatusBadgeFromPillClass key={`${action.id}-${tag.label}`} pillClass={tag.tone}>
                         {tag.label}
                       </StatusBadgeFromPillClass>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </div>
                 <AdminTextLink href={action.href}>
                   Open
@@ -290,7 +291,7 @@ export default async function PartnerControlsPage({
                     provider={item.provider}
                   />
                   <p className="muted">{item.operatorAction}</p>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup>
                     {item.controls.map((control) => (
                       <StatusBadgeFromPillClass
                         key={`${item.provider.id}-${control.label}`}
@@ -299,7 +300,7 @@ export default async function PartnerControlsPage({
                         {control.label}
                       </StatusBadgeFromPillClass>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </div>
                 <div className="actions">
                   <AdminTextLink href={item.actionHref}>
@@ -358,13 +359,13 @@ export default async function PartnerControlsPage({
                 }))}
               />
               {item.partnerSamples.length ? (
-                <div className="participant-list admin-mt-10">
+                <AdminFilterChipGroup className="admin-mt-10">
                   {item.partnerSamples.map((partner) => (
                     <StatusBadge key={`${item.id}-${partner}`} tone="info">
                       {partner}
                     </StatusBadge>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
               ) : null}
             </AdminActionCard>
           ))}
@@ -402,7 +403,7 @@ export default async function PartnerControlsPage({
                 <p className="muted">
                   <strong>Customer impact:</strong> {step.customerImpact}
                 </p>
-                <div className="participant-list">
+                <AdminFilterChipGroup>
                   <StatusBadgeFromPillClass pillClass={step.pillClass}>{step.status}</StatusBadgeFromPillClass>
                   <StatusBadge tone="info">{step.owner}</StatusBadge>
                   {step.partnerSamples.map((partner) => (
@@ -410,7 +411,7 @@ export default async function PartnerControlsPage({
                       {partner}
                     </StatusBadge>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
               </div>
               <AdminTextLink href={step.href}>
                 {step.action}
@@ -440,10 +441,10 @@ export default async function PartnerControlsPage({
                   <strong>{block.title}</strong>
                   <p className="muted">{block.reason}</p>
                   <p className="muted">{block.operatorAction}</p>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup>
                     <StatusBadgeFromPillClass pillClass={block.tone}>{block.severity}</StatusBadgeFromPillClass>
                     <StatusBadge tone="info">{block.partner}</StatusBadge>
-                  </div>
+                  </AdminFilterChipGroup>
                 </div>
                 <div className="actions">
                   <AdminTextLink href={block.href}>
@@ -547,14 +548,14 @@ export default async function PartnerControlsPage({
             </AdminFormControlLink>
           </AdminFormActionRow>
           {activeFilters.length > 0 ? (
-            <div className="participant-list full-span">
+            <AdminFilterChipGroup className="full-span">
               <StatusBadge tone="info">Active filters</StatusBadge>
               {activeFilters.map((filter) => (
                 <StatusBadge key={`${filter.kind}-${filter.value}`} tone="warning">
                   {filter.label}
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           ) : null}
         </AdminFormGrid>
       </AdminSection>
@@ -581,13 +582,13 @@ export default async function PartnerControlsPage({
                   </StatusBadgeFromPillClass>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup>
                     {item.signals.map((signal) => (
                       <StatusBadgeFromPillClass key={signal.label} pillClass={watchSignalPill(signal.kind)}>
                         {signal.label}
                       </StatusBadgeFromPillClass>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                   <p className="muted">{item.detail}</p>
                 </td>
                 <td>
