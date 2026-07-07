@@ -30,4 +30,13 @@ describe('ServiceProviderPriceImpact source', () => {
     expect(source).toContain('MoneyText');
     expect(source).not.toContain('formatMoney(');
   });
+
+  it('scopes service impact header styles to direct card children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.service-catalog-page .service-impact-card > .ops-section-header {');
+    expect(css).toContain('.service-catalog-page .service-impact-card > .ops-section-header .pill {');
+    expect(css).not.toContain('.service-catalog-page .service-impact-card .ops-section-header {');
+    expect(css).not.toContain('.service-catalog-page .service-impact-card .ops-section-header .pill {');
+  });
 });

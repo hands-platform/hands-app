@@ -11941,11 +11941,11 @@ a.action-button-card:hover {
   justify-self: flex-start;
 }
 
-.service-catalog-page .service-impact-card .ops-section-header {
+.service-catalog-page .service-impact-card > .ops-section-header {
   grid-template-columns: 1fr;
 }
 
-.service-catalog-page .service-impact-card .ops-section-header .pill {
+.service-catalog-page .service-impact-card > .ops-section-header .pill {
   justify-self: flex-start;
   white-space: nowrap;
 }
