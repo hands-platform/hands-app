@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
@@ -18,6 +19,7 @@ const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf8');
 const figmaSourcePath =
   'C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/design-files/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig';
 const repoFigmaMirrorPath = resolve(repoRoot, 'design/figma/vuexy-figma-dashboard-ui-kit-and-builder-v4.fig');
+const figmaSourceSha256 = '1599EFBB4CF7AFBFFD685010F6E6898762168EDBD0E06A3110EA9131A77F19BD';
 const vuexyTemplatePath =
   'C:/dev/themeforest-moDpEy2l-vuexy-vuejs-html-laravel-admin-dashboard-template/vuexy-admin-v10.11.1/nextjs-version/typescript-version/full-version';
 const vuexyTemplateAnchors = [
@@ -59,6 +61,16 @@ describe('Admin Vuexy source documentation', () => {
     expect(comparisonDoc).toContain('Do not commit copied `.fig` files');
   });
 
+  it('documents the verified SHA256 identity for the source Figma package and workspace mirror', () => {
+    const sourceHash = sha256File(figmaSourcePath);
+    const mirrorHash = sha256File(repoFigmaMirrorPath);
+
+    expect(sourceHash).toBe(figmaSourceSha256);
+    expect(mirrorHash).toBe(figmaSourceSha256);
+    expect(figmaReadme).toContain(figmaSourceSha256);
+    expect(comparisonDoc).toContain(figmaSourceSha256);
+  });
+
   it('documents the verified Figma package metadata and the local Vuexy implementation anchors', () => {
     const meta = readFigmaMeta();
 
@@ -86,4 +98,8 @@ function readFigmaMeta(): { readonly file_name?: string } {
   } finally {
     rmSync(tempDir, { force: true, recursive: true });
   }
+}
+
+function sha256File(filePath: string) {
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex').toUpperCase();
 }

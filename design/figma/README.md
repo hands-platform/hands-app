@@ -15,6 +15,12 @@ Current workspace mirror:
 C:\dev\massage-on-demand-vn\design\figma\vuexy-figma-dashboard-ui-kit-and-builder-v4.fig
 ```
 
+Verified SHA256 for both paths:
+
+```text
+1599EFBB4CF7AFBFFD685010F6E6898762168EDBD0E06A3110EA9131A77F19BD
+```
+
 The workspace mirror is useful for local Codex design checks, but it remains
 gitignored with other `.fig` binaries.
 
