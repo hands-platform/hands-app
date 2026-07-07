@@ -17787,7 +17787,7 @@ textarea:focus-visible {
   padding: 16px;
 }
 
-.notification-template-card .admin-card-header,
+.notification-template-card > .admin-card-header,
 .notification-template-copy-form-header,
 .notification-push-preview-summary {
   align-items: center;
@@ -17796,8 +17796,8 @@ textarea:focus-visible {
   justify-content: space-between;
 }
 
-.notification-template-card .admin-card-header h3,
-.notification-template-copy-form-header h4 {
+.notification-template-card > .admin-card-header > div > h3,
+.notification-template-copy-form-header > h4 {
   margin: 0;
 }
 

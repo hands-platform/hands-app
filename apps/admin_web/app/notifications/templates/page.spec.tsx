@@ -16,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 
 const mockedAdminGet = vi.mocked(adminGet);
 const pageSource = readFileSync('app/notifications/templates/page.tsx', 'utf8');
+const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('NotificationTemplatesPage', () => {
   beforeEach(() => {
@@ -54,5 +55,15 @@ describe('NotificationTemplatesPage', () => {
   it('uses the shared Vuexy card grid atom for template cards', () => {
     expect(pageSource).toContain('AdminCardGrid');
     expect(pageSource).not.toContain('<div className="notification-template-grid">');
+  });
+
+  it('scopes template header typography to direct Vuexy card slots', () => {
+    expect(globalCss).toContain('.notification-template-card > .admin-card-header,');
+    expect(globalCss).toContain('.notification-template-card > .admin-card-header > div > h3,');
+    expect(globalCss).toContain('.notification-template-copy-form-header > h4');
+
+    expect(globalCss).not.toContain('.notification-template-card .admin-card-header,');
+    expect(globalCss).not.toContain('.notification-template-card .admin-card-header h3,');
+    expect(globalCss).not.toContain('.notification-template-copy-form-header h4');
   });
 });
