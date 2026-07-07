@@ -285,12 +285,14 @@ describe('FinanceOverviewPage', () => {
       searchParams: Promise.resolve({ range: '7d' }),
     });
     const markup = renderToStaticMarkup(page);
+    const css = readFileSync('app/globals.css', 'utf8');
 
     expect(pageSource).toContain('AdminKpiCard');
     expect(pageSource).toContain('<AdminKpiCard');
     expect(markup).toContain('card admin-kpi-card finance-overview-kpi-card');
     expect(markup).not.toContain('finance-overview-kpi-grid"><a class="card admin-card finance-overview-command-card');
     expect(markup).not.toContain('finance-overview-kpi-grid"><div class="card admin-card finance-overview-command-card');
+    expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-command-card');
   });
 
   it('uses the shared money atom for finance section row amounts', () => {
