@@ -8,6 +8,7 @@ import {
   ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT,
   ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT,
   adminCustomerDetailSelect,
+  adminCustomerDetailWithoutDiagnosticsSelect,
   adminCustomerNotificationSelect,
 } from './admin-customer-selects';
 
@@ -138,5 +139,22 @@ describe('admin customer selects', () => {
     expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('expiresAt');
     expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('createdAt');
     expect(adminCustomerDetailSelect.user.select.appSessions.select).not.toHaveProperty('updatedAt');
+  });
+
+  it('keeps customer detail diagnostics removable from the default operator payload', () => {
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user).toMatchObject({
+      select: expect.objectContaining({
+        id: true,
+        phone: true,
+        fullName: true,
+      }),
+    });
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('appSessions');
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('pushDevices');
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.user.select).not.toHaveProperty('notifications');
+    expect(adminCustomerDetailWithoutDiagnosticsSelect.bookings).toMatchObject({
+      take: ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT,
+      select: adminCustomerDetailBookingSelect,
+    });
   });
 });

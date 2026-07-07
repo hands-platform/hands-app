@@ -13,6 +13,7 @@ describe('AdminController notification and push actions', () => {
     fileReviewSummary: vi.fn(),
     getMarketingOverview: vi.fn(),
     getPartnerOverview: vi.fn(),
+    getCustomerDetail: vi.fn(),
     getProviderDetail: vi.fn(),
     getProviderOverview: vi.fn(),
     listMarketingDimensionRows: vi.fn(),
@@ -1869,6 +1870,20 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.getProviderDetail).toHaveBeenNthCalledWith(1, 'partner-1', { includeDiagnostics: true });
     expect(admin.getProviderDetail).toHaveBeenNthCalledWith(2, 'partner-1', { includeDiagnostics: false });
+  });
+
+  it('passes customer detail diagnostics intent to the service while preserving default compatibility', async () => {
+    admin.getCustomerDetail.mockResolvedValue({ id: 'customer-1' });
+
+    await expect(controller.customerDetail('customer-1', undefined)).resolves.toEqual({ id: 'customer-1' });
+    await expect(controller.customerDetail('customer-1', 'false')).resolves.toEqual({ id: 'customer-1' });
+
+    expect(routeMetadata('customerDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customers/:id',
+    });
+    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(1, 'customer-1', { includeDiagnostics: true });
+    expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(2, 'customer-1', { includeDiagnostics: false });
   });
 
   it('exposes marketing overview as a separate aggregate GET endpoint', async () => {

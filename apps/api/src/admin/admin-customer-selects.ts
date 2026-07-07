@@ -91,29 +91,35 @@ const adminCustomerDetailProviderReviewSelect = {
   booking: { select: adminCustomerDetailReviewBookingSelect },
 } satisfies Prisma.ProviderCustomerReviewSelect;
 
+const adminCustomerDetailUserSelect = {
+  ...adminUserSummarySelect,
+  appSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 10,
+    select: adminCustomerDetailAppSessionSelect,
+  },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
+    select: adminPushDeviceSummarySelect,
+  },
+  notifications: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
+    select: adminCustomerNotificationSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+const adminCustomerDetailUserWithoutDiagnosticsSelect = {
+  ...adminUserSummarySelect,
+} satisfies Prisma.UserSelect;
+
 export const adminCustomerDetailSelect = {
   id: true,
   userId: true,
   addresses: true,
   user: {
-    select: {
-      ...adminUserSummarySelect,
-      appSessions: {
-        orderBy: { lastSeenAt: 'desc' },
-        take: 10,
-        select: adminCustomerDetailAppSessionSelect,
-      },
-      pushDevices: {
-        orderBy: { updatedAt: 'desc' },
-        take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
-        select: adminPushDeviceSummarySelect,
-      },
-      notifications: {
-        orderBy: { createdAt: 'desc' },
-        take: ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT,
-        select: adminCustomerNotificationSelect,
-      },
-    },
+    select: adminCustomerDetailUserSelect,
   },
   selectedLocations: {
     orderBy: { createdAt: 'desc' },
@@ -162,5 +168,12 @@ export const adminCustomerDetailSelect = {
       viewCount: true,
       providerProfile: { select: adminProviderBookingListSummarySelect },
     },
+  },
+} satisfies Prisma.CustomerProfileSelect;
+
+export const adminCustomerDetailWithoutDiagnosticsSelect = {
+  ...adminCustomerDetailSelect,
+  user: {
+    select: adminCustomerDetailUserWithoutDiagnosticsSelect,
   },
 } satisfies Prisma.CustomerProfileSelect;

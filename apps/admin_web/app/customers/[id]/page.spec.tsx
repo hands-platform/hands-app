@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
 import type { AdminCustomerDetail } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import CustomerDetailPage from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
@@ -15,13 +16,27 @@ vi.mock('../../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 const customerDetailSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
 
 describe('CustomerDetailPage', () => {
   beforeEach(() => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/customers/customer-1') {
+      if (href === '/admin/customers/customer-1' || href === '/admin/customers/customer-1?includeDiagnostics=true') {
         return customerDetail();
       }
 
@@ -56,6 +71,46 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('Load record archive');
     expect(markup).not.toContain('No chat rooms matched this date filter.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('requests customer detail without diagnostics for ordinary operators', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['CUSTOMERS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (
+        href === '/admin/customers/customer-no-diagnostics' ||
+        href === '/admin/customers/customer-no-diagnostics?includeDiagnostics=false'
+      ) {
+        return customerDetail();
+      }
+
+      return fallback;
+    });
+
+    const page = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-no-diagnostics' }),
+      searchParams: Promise.resolve({ records: 'all' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/customers/customer-no-diagnostics?includeDiagnostics=false',
+      null,
+    );
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/customers/customer-no-diagnostics?includeDiagnostics=true',
+      null,
+    );
+    expect(markup).not.toContain('No app session');
+    expect(markup).not.toContain('No push device');
+    expect(markup).not.toContain('App sessions');
   });
 
   it('keeps customer chat and audit archive rows collapsed by default', async () => {

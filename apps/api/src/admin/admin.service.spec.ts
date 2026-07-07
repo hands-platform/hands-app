@@ -1616,6 +1616,40 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('skips customer diagnostics selects and audit trail query when diagnostics are excluded', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'customer-1',
+          userId: 'user-1',
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getCustomerDetail('customer-1', { includeDiagnostics: false })).resolves.toEqual({
+      id: 'customer-1',
+      userId: 'user-1',
+    });
+
+    expect(prisma.customerProfile.findUnique).toHaveBeenCalledWith({
+      where: { id: 'customer-1' },
+      select: expect.objectContaining({
+        user: expect.objectContaining({
+          select: expect.not.objectContaining({
+            appSessions: expect.anything(),
+            notifications: expect.anything(),
+            pushDevices: expect.anything(),
+          }),
+        }),
+      }),
+    });
+    expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
+  });
+
   it('keeps provider report lists bounded for operations pages', async () => {
     const prisma = {
       providerReport: {

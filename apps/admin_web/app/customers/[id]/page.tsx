@@ -35,6 +35,7 @@ import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
+import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
   AdminAppSession,
@@ -70,6 +71,7 @@ import {
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readAddressText, serviceAddressAreaLabel } from '../../bookings/booking-address-readers';
 import { addCustomerOpsNote } from './actions';
@@ -142,8 +144,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
   const shouldRenderRecordArchive = readCustomerRecordArchiveMode(detailSearchParams) === 'all';
+  const canLoadCustomerDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const [customer, customerManualAdjustmentRows] = await Promise.all([
-    adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null),
+    adminGet<AdminCustomerDetail | null>(
+      `/admin/customers/${id}?includeDiagnostics=${canLoadCustomerDiagnostics ? 'true' : 'false'}`,
+      null,
+    ),
     adminGet<AdminManualWalletAdjustmentRow[]>(
       `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
         id,
@@ -252,6 +258,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     addresses,
     bookings,
     customer,
+    diagnosticsLoaded: canLoadCustomerDiagnostics,
     notificationCount: notifications.length,
     pushDevices,
   });
@@ -260,6 +267,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     bookings,
     addresses,
     latestSession,
+    diagnosticsLoaded: canLoadCustomerDiagnostics,
     pushDevices,
     notifications,
     currentTimeMs,
@@ -287,17 +295,22 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     appSessions,
     bookings,
     customer,
+    diagnosticsLoaded: canLoadCustomerDiagnostics,
     favoriteProviders: customer.favoriteProviders ?? [],
     viewedProviders: customer.viewedProviders ?? [],
   });
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
-    pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
-    latestSession
-      ? currentTimeMs - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
-        ? 'In app now'
-        : 'Recent session saved'
-      : 'No app session',
+    ...(canLoadCustomerDiagnostics
+      ? [
+          pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
+          latestSession
+            ? currentTimeMs - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
+              ? 'In app now'
+              : 'Recent session saved'
+            : 'No app session',
+        ]
+      : []),
   ];
   const overviewHighlights: CustomerDetailOverviewHighlight[] = [
     {
@@ -336,14 +349,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   ];
   const overviewFacts: CustomerDetailOverviewFact[] = [
     {
-      label: 'Country',
-      value: customerCountry.fullLabel,
-      helper:
-        customerCountry.sourceLabel === 'Unknown'
-          ? 'No device language loaded.'
-          : customerCountry.sourceLabel,
-    },
-    {
       label: 'Gender',
       value: readCustomerGenderLabel(customer),
       helper: 'Customer profile gender value from admin API when available.',
@@ -361,22 +366,36 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         'No account update timestamp loaded.'
       ),
     },
-    {
-      label: 'Last Login Date',
-      value: 'No session',
-      valueDateTimeFallback: 'No session',
-      valueDateTimeValue: latestSession?.lastSeenAt,
-      helper: latestSession
-        ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
-        : 'No app session loaded.',
-    },
-    {
-      label: 'Last Login Address',
-      value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
-      helper: latestSession?.ipAddress
-        ? `IP ${latestSession.ipAddress}`
-        : 'No login location evidence loaded.',
-    },
+    ...(canLoadCustomerDiagnostics
+      ? [
+          {
+            label: 'Country',
+            value: customerCountry.fullLabel,
+            helper:
+              customerCountry.sourceLabel === 'Unknown'
+                ? 'No device language loaded.'
+                : customerCountry.sourceLabel,
+          },
+          {
+            label: 'Last Login Date',
+            value: 'No session',
+            valueDateTimeFallback: 'No session',
+            valueDateTimeValue: latestSession?.lastSeenAt,
+            helper: latestSession
+              ? `${latestSession.platform ?? 'Unknown platform'} / ${
+                  latestSession.appVersion ?? 'No app version'
+                }`
+              : 'No app session loaded.',
+          },
+          {
+            label: 'Last Login Address',
+            value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
+            helper: latestSession?.ipAddress
+              ? `IP ${latestSession.ipAddress}`
+              : 'No login location evidence loaded.',
+          },
+        ]
+      : []),
     {
       label: 'Total Work Completed',
       value: `${bookingStats.completed}`,
@@ -694,13 +713,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           actions={
             <>
               <StatusBadge tone="info">{accountFacts.length} field(s)</StatusBadge>
-              <StatusBadge tone={pushDevices.some((device) => device.enabled) ? 'success' : 'neutral'}>
-                {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
-              </StatusBadge>
+              {canLoadCustomerDiagnostics ? (
+                <StatusBadge tone={pushDevices.some((device) => device.enabled) ? 'success' : 'neutral'}>
+                  {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
+                </StatusBadge>
+              ) : null}
             </>
           }
           className="admin-mb-16"
-          description="Contact, device, booking, payment, and support evidence that is not already repeated in the profile overview. Missing values are shown plainly instead of guessed."
+          description="Contact, booking, payment, and support evidence that is not already repeated in the profile overview. Missing values are shown plainly instead of guessed."
           id="customer-account-evidence"
           title="Customer contact and evidence"
         >
@@ -1429,6 +1450,7 @@ function buildCustomerOperatorCommandQueue({
   bookings,
   addresses,
   latestSession,
+  diagnosticsLoaded,
   pushDevices,
   notifications,
   currentTimeMs,
@@ -1437,6 +1459,7 @@ function buildCustomerOperatorCommandQueue({
   bookings: AdminBookingDetail[];
   addresses: CustomerAddressRow[];
   latestSession?: AdminAppSession;
+  diagnosticsLoaded: boolean;
   pushDevices: CustomerPushDevice[];
   notifications: AdminNotification[];
   currentTimeMs: number;
@@ -1565,7 +1588,7 @@ function buildCustomerOperatorCommandQueue({
     });
   }
 
-  if (enabledPushDevices.length === 0) {
+  if (diagnosticsLoaded && enabledPushDevices.length === 0) {
     commands.push({
       id: 'push-unreachable',
       label: 'App reachability',
@@ -1578,7 +1601,7 @@ function buildCustomerOperatorCommandQueue({
     });
   }
 
-  if (staleSession) {
+  if (diagnosticsLoaded && staleSession) {
     commands.push({
       id: 'session-stale',
       label: 'App session',
@@ -1604,7 +1627,7 @@ function buildCustomerOperatorCommandQueue({
     });
   }
 
-  if (unreadNotifications.length > 0) {
+  if (diagnosticsLoaded && unreadNotifications.length > 0) {
     commands.push({
       id: 'unread-notifications',
       label: 'Notifications',
@@ -1646,12 +1669,14 @@ function buildCustomerAccountFacts({
   addresses,
   bookings,
   customer,
+  diagnosticsLoaded,
   notificationCount,
   pushDevices,
 }: {
   addresses: CustomerAddressRow[];
   bookings: AdminBookingDetail[];
   customer: AdminCustomerDetail;
+  diagnosticsLoaded: boolean;
   notificationCount: number;
   pushDevices: CustomerPushDevice[];
 }) {
@@ -1699,11 +1724,15 @@ function buildCustomerAccountFacts({
       value: customer.user?.phone ? 'Phone OTP' : 'Not captured',
       helper: 'Phone auth remains the primary customer login method',
     },
-    {
-      label: 'Devices',
-      value: `${sessions.length} session(s) / ${pushDevices.length} push device(s)`,
-      helper: `${pushDevices.filter((device) => device.enabled).length} enabled push device(s)`,
-    },
+    ...(diagnosticsLoaded
+      ? [
+          {
+            label: 'Devices',
+            value: `${sessions.length} session(s) / ${pushDevices.length} push device(s)`,
+            helper: `${pushDevices.filter((device) => device.enabled).length} enabled push device(s)`,
+          },
+        ]
+      : []),
     {
       label: 'Bookings',
       value: `${bookings.length} total`,
@@ -1975,6 +2004,7 @@ type CustomerUsageSummaryInput = {
   readonly appSessions: readonly AdminAppSession[];
   readonly bookings: readonly AdminBookingDetail[];
   readonly customer: AdminCustomerDetail;
+  readonly diagnosticsLoaded: boolean;
   readonly favoriteProviders: NonNullable<AdminCustomerDetail['favoriteProviders']>;
   readonly viewedProviders: NonNullable<AdminCustomerDetail['viewedProviders']>;
 };
@@ -1989,6 +2019,7 @@ function buildCustomerUsageSummary({
   appSessions,
   bookings,
   customer,
+  diagnosticsLoaded,
   favoriteProviders,
   viewedProviders,
 }: CustomerUsageSummaryInput): CustomerDetailUsageSummary {
@@ -2007,18 +2038,22 @@ function buildCustomerUsageSummary({
     title: 'Usage and region summary',
     helper: 'Built from stored sessions, service addresses, and Partner links. No live GPS polling.',
     items: [
-      {
-        helper: latestSession ? (
-          <>
-            Latest <DateTimeText value={latestSession.lastSeenAt} /> /{' '}
-            {latestSession.platform ?? 'Unknown platform'}
-          </>
-        ) : (
-          'No app session loaded.'
-        ),
-        label: 'App sessions',
-        value: String(appSessions.length),
-      },
+      ...(diagnosticsLoaded
+        ? [
+            {
+              helper: latestSession ? (
+                <>
+                  Latest <DateTimeText value={latestSession.lastSeenAt} /> /{' '}
+                  {latestSession.platform ?? 'Unknown platform'}
+                </>
+              ) : (
+                'No app session loaded.'
+              ),
+              label: 'App sessions',
+              value: String(appSessions.length),
+            },
+          ]
+        : []),
       {
         helper: primaryRegion ? (
           <>

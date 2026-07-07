@@ -115,7 +115,10 @@ import {
   adminPaymentSummarySelect,
   adminRefundListSelect,
 } from './admin-payment-selects';
-import { adminCustomerDetailSelect } from './admin-customer-selects';
+import {
+  adminCustomerDetailSelect,
+  adminCustomerDetailWithoutDiagnosticsSelect,
+} from './admin-customer-selects';
 import {
   bookingAuditLogWhere,
   bulkServicePayoutRuleAuditMetadata,
@@ -2442,24 +2445,30 @@ export class AdminService {
     };
   }
 
-  async getCustomerDetail(customerProfileId: string) {
+  async getCustomerDetail(
+    customerProfileId: string,
+    options: { includeDiagnostics?: boolean } = {},
+  ) {
+    const includeDiagnostics = options.includeDiagnostics !== false;
     const customer = await this.prisma.customerProfile.findUnique({
       where: { id: customerProfileId },
-      select: adminCustomerDetailSelect,
+      select: includeDiagnostics ? adminCustomerDetailSelect : adminCustomerDetailWithoutDiagnosticsSelect,
     });
 
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
 
-    const auditLogs = await this.prisma.adminAuditLog.findMany({
-      where: customerAuditLogWhere(customerProfileId, customer.userId),
-      orderBy: { createdAt: 'desc' },
-      take: ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT,
-      select: adminAuditLogSelect,
-    });
+    const auditLogs = includeDiagnostics
+      ? await this.prisma.adminAuditLog.findMany({
+          where: customerAuditLogWhere(customerProfileId, customer.userId),
+          orderBy: { createdAt: 'desc' },
+          take: ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT,
+          select: adminAuditLogSelect,
+        })
+      : undefined;
 
-    return { ...customer, auditLogs };
+    return includeDiagnostics ? { ...customer, auditLogs } : customer;
   }
 
   async addCustomerOpsNote(

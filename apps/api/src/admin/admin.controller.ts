@@ -215,8 +215,13 @@ export class AdminController {
   }
 
   @Get('customers/:id')
-  customerDetail(@Param('id') customerProfileId: string) {
-    return this.admin.getCustomerDetail(customerProfileId);
+  customerDetail(
+    @Param('id') customerProfileId: string,
+    @Query('includeDiagnostics') includeDiagnostics?: string,
+  ) {
+    return this.admin.getCustomerDetail(customerProfileId, {
+      includeDiagnostics: includeDiagnostics !== 'false',
+    });
   }
 
   @Post('customers/:id/ops-note')
