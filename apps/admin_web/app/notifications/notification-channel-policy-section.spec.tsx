@@ -5,6 +5,8 @@ import { NotificationChannelPolicySection } from './notification-channel-policy-
 import { classNamesIn, hrefsIn, normalizedText } from './notification-section-test-utils';
 import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 
+const globalCss = readFileSync('app/globals.css', 'utf8');
+
 describe('NotificationChannelPolicySection', () => {
   it('renders partner alert routing policy and channel counts', () => {
     const section = NotificationChannelPolicySection({
@@ -193,6 +195,16 @@ describe('NotificationChannelPolicySection', () => {
 
     expect(source).toContain('AdminFormControlLink');
     expect(source).not.toContain('<Link className="button button-secondary"');
+  });
+
+  it('scopes notification monitor toolbar styles to direct AdminSection slots', () => {
+    expect(globalCss).toContain('.notification-monitor > .card > .toolbar .pill,');
+    expect(globalCss).toContain('.notification-monitor > .card > .toolbar {');
+    expect(globalCss).toContain('.notification-monitor > .card > .toolbar h3');
+    expect(globalCss).toContain('.notification-monitor > .card > .toolbar > div');
+    expect(globalCss).toContain('.notification-monitor > .card > .toolbar > .button,');
+
+    expect(globalCss).not.toContain('.notification-monitor .card .toolbar');
   });
 });
 

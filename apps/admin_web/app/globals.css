@@ -4499,7 +4499,7 @@ a.action-button-card:hover {
 }
 
 .notification-monitor > .toolbar .pill,
-.notification-monitor .card .toolbar .pill,
+.notification-monitor > .card > .toolbar .pill,
 .notification-monitor .participant-list .pill {
   white-space: nowrap;
 }
@@ -4511,26 +4511,26 @@ a.action-button-card:hover {
   box-shadow: var(--admin-shadow-md);
 }
 
-.notification-monitor .card .toolbar {
+.notification-monitor > .card > .toolbar {
   background: transparent;
   border-bottom: 1px solid var(--admin-border);
   margin-bottom: 14px;
   padding-bottom: 14px;
 }
 
-.notification-monitor .card .toolbar h3 {
+.notification-monitor > .card > .toolbar h3 {
   font-size: 18px;
   line-height: 1.24;
   margin-bottom: 6px;
 }
 
-.notification-monitor .card .toolbar > div {
+.notification-monitor > .card > .toolbar > div {
   min-width: 0;
 }
 
-.notification-monitor .card .toolbar > .button,
-.notification-monitor .card .toolbar > .pill,
-.notification-monitor .card .toolbar > .signal {
+.notification-monitor > .card > .toolbar > .button,
+.notification-monitor > .card > .toolbar > .pill,
+.notification-monitor > .card > .toolbar > .signal {
   flex: 0 0 auto;
 }
 
