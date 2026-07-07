@@ -123,4 +123,11 @@ describe('booking monitor options', () => {
     expect(addressView?.description).not.toContain('snapshot');
     expect(addressView?.operatorHint).not.toContain('snapshot');
   });
+
+  it('uses retained chat wording in evidence filters instead of archive wording', () => {
+    const evidenceChatFilter = bookingEvidenceFilterOptions.find((option) => option.value === 'chat');
+
+    expect(evidenceChatFilter?.label).toBe('Chat record check');
+    expect(evidenceChatFilter?.label).not.toContain('archive');
+  });
 });

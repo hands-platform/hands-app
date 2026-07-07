@@ -22,7 +22,7 @@ describe('booking gate rejections', () => {
     expect(bookingGateReasonCode(auditLog({ metadata: { reasonCode: '   ', code: null } }))).toBe('UNKNOWN');
   });
 
-  it('builds service-area rejection evidence from the booking address snapshot', () => {
+  it('builds service-area rejection evidence from the confirmed booking address', () => {
     const info = bookingGateRejectionInfo(
       auditLog({
         metadata: {
@@ -43,6 +43,8 @@ describe('booking gate rejections', () => {
     expect(info.bookingAddressLabel).toBe('16.0471, 108.2062');
     expect(info.addressText).toBe('Da Nang service address');
     expect(info.customerHref).toBe('/customers/customer-1');
+    expect(info.operatorAction).toContain('requested address');
+    expect(info.operatorAction).not.toContain('address snapshot');
   });
 
   it('builds distance evidence labels from supported metadata aliases', () => {
@@ -62,5 +64,18 @@ describe('booking gate rejections', () => {
     expect(info.preferredPartnerDistanceLabel).toBe('First-pick Partner: 12.5 km / limit 10 km');
     expect(info.customerDistanceLabel).toBe('Optional customer GPS: 3 km / limit 20 km');
     expect(info.customerHref).toBe('/customers/customer-from-target');
+  });
+
+  it('uses confirmed booking address wording for stale optional GPS timestamp follow-up', () => {
+    const info = bookingGateRejectionInfo(
+      auditLog({
+        metadata: {
+          reasonCode: 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
+        },
+      }),
+    );
+
+    expect(info.operatorAction).toContain('confirmed booking address');
+    expect(info.operatorAction).not.toContain('address snapshot');
   });
 });

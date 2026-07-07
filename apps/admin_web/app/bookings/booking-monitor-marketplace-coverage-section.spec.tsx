@@ -84,6 +84,8 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Marketplace booking coverage board');
+    expect(rendered).toContain('10 km alert delivery');
+    expect(rendered).not.toContain('10 km alert trace');
     expect(rendered).toContain('Bookings with participant history 1');
     expect(rendered).toContain('Final Partner selected 1');
     expect(rendered).toContain('Customer A');

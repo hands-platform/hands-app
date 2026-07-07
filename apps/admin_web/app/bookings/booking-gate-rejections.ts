@@ -112,10 +112,10 @@ function bookingGateOperatorAction(reasonCode: string) {
     return 'Treat this as historical optional GPS evidence. Current booking creation should not require customer GPS when the service address is confirmed.';
   }
   if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing) {
-    return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
+    return 'Treat this as historical optional GPS evidence. Use the confirmed booking address before support follow-up.';
   }
   if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid) {
-    return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
+    return 'Treat this as historical optional GPS evidence. Use the confirmed booking address before support follow-up.';
   }
   return 'Review the audit metadata and customer address before support follow-up.';
 }

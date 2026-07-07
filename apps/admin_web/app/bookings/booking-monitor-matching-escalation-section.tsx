@@ -97,7 +97,7 @@ export function BookingMonitorMatchingEscalationSection({
     >
       <AdminSectionHeader
         className="admin-mt-14"
-        description="Live Admin policy values used as the default when a booking does not carry its own saved matching snapshot."
+        description="Live Admin policy values used as the default when a booking does not carry its own saved matching policy."
         status={<StatusBadge tone="info">Live policy default</StatusBadge>}
         title="Applied operations policy"
       />

@@ -14,7 +14,7 @@ export const bookingEvidenceFilterOptions: readonly {
   { value: 'all', label: 'All evidence' },
   { value: 'address', label: 'Address check' },
   { value: 'partner', label: 'Partner selection check' },
-  { value: 'chat', label: 'Chat archive check' },
+  { value: 'chat', label: 'Chat record check' },
   { value: 'money', label: 'Payment / wallet check' },
   { value: 'location', label: 'Location check' },
   { value: 'alerts', label: 'Alert delivery check' },

@@ -26,7 +26,7 @@ const MARKETPLACE_COVERAGE_HEADERS = [
   'First-pick window',
   'Participant history',
   'Customer choice',
-  '10 km alert trace',
+  '10 km alert delivery',
   'Wallet gate',
   'Next action',
 ] as const;

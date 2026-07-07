@@ -74,6 +74,8 @@ describe('bookingCustomerProtectionBoardFromFacts', () => {
     expect(lanes.every((lane) => lane.status === 'Clear')).toBe(true);
     expect(lanes.every((lane) => lane.tone === 'ok')).toBe(true);
     expect(lanes[0]?.detail).toContain('no unresolved payment hold');
+    expect(lanes[0]?.detail).not.toContain('current snapshot');
+    expect(lanes[2]?.detail).not.toContain('current snapshot');
     expect(lanes[4]?.detail).toContain('No cash booking');
   });
 });

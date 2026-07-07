@@ -105,6 +105,10 @@ describe('BookingMonitorMatchingEscalationSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Matching escalation board');
+    expect(rendered).toContain(
+      'Live Admin policy values used as the default when a booking does not carry its own saved matching policy.',
+    );
+    expect(rendered).not.toContain('saved matching snapshot');
     expect(rendered).toContain('First-pick window');
     expect(rendered).toContain('First-pick response window');
     expect(rendered).toContain('Matching flow timeline');

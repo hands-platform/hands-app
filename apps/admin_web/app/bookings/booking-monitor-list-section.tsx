@@ -623,7 +623,7 @@ export function BookingPostMatchCancellationChatLayer({
             <X aria-hidden="true" size={18} />
           </AdminFormControlButton>
         </div>
-        <div className="booking-chat-evidence-grid" aria-label="Cancellation evidence snapshot">
+        <div className="booking-chat-evidence-grid" aria-label="Cancellation evidence record">
           {evidenceRows.map((item) => (
             <div className="booking-chat-evidence-item" key={item.label}>
               <span>{item.label}</span>

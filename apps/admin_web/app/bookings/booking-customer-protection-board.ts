@@ -29,7 +29,7 @@ export function bookingCustomerProtectionBoardFromFacts<TBooking>(
       detail:
         facts.cancelledUnresolved.length > 0
           ? 'Customer cancelled, but the linked payment is not released or refunded yet.'
-          : 'Cancelled bookings have no unresolved payment hold in the current snapshot.',
+          : 'Cancelled bookings have no unresolved payment hold in the current list.',
       operatorAction: 'Open payment queue and close customer money movement before support follow-up.',
       href: '/bookings?view=payment',
       bookings: facts.cancelledUnresolved,
@@ -53,7 +53,7 @@ export function bookingCustomerProtectionBoardFromFacts<TBooking>(
       detail:
         facts.noShowUnresolved.length > 0
           ? 'No-show bookings still need a payment, fee, or customer support decision.'
-          : 'No-show bookings have no unresolved payment in the current snapshot.',
+          : 'No-show bookings have no unresolved payment in the current list.',
       operatorAction: 'Review chat, arrival/location evidence, customer response, then decide payment handling.',
       href: '/bookings?view=no-show',
       bookings: facts.noShowUnresolved,

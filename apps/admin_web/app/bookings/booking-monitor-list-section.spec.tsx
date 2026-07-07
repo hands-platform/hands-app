@@ -678,7 +678,8 @@ describe('BookingMonitorListSection', () => {
     );
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Cancellation evidence snapshot');
+    expect(rendered).toContain('Cancellation evidence record');
+    expect(rendered).not.toContain('Cancellation evidence snapshot');
     expect(rendered).toContain('Review state');
     expect(rendered).toContain('Pending admin decision');
     expect(rendered).toContain('30m after match / Fee held');
