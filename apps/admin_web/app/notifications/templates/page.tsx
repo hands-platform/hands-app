@@ -10,7 +10,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminCardHeader, AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminCardHeader, AdminNoticeCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { compactValue } from '../../../lib/admin-format';
 import { updateNotificationTemplate } from './actions';
@@ -76,7 +76,7 @@ export default async function NotificationTemplatesPage({
         resultLabel={`${templates.length} templates`}
         title="Template catalog"
       >
-        <div className="notification-template-grid">
+        <AdminCardGrid ariaLabel="Notification template cards" className="notification-template-grid">
           {templates.map((template) => (
             <AdminCard
               className="notification-template-card"
@@ -152,7 +152,7 @@ export default async function NotificationTemplatesPage({
               </div>
             </AdminCard>
           ))}
-        </div>
+        </AdminCardGrid>
       </AdminFilterPanel>
     </AdminPageTemplate>
   );

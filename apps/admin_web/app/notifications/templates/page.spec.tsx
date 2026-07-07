@@ -50,4 +50,9 @@ describe('NotificationTemplatesPage', () => {
     expect(pageSource).not.toContain('<section\n              className="notification-template-card"');
     expect(pageSource).not.toContain('<div className="notification-template-card-header">');
   });
+
+  it('uses the shared Vuexy card grid atom for template cards', () => {
+    expect(pageSource).toContain('AdminCardGrid');
+    expect(pageSource).not.toContain('<div className="notification-template-grid">');
+  });
 });
