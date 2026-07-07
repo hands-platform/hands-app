@@ -103,6 +103,39 @@ describe('BookingDetailPage data loading', () => {
       '/admin/bookings/booking-ordinary-full-load/notifications?take=12',
       [],
     );
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-ordinary-full-load?includeDiagnostics=false',
+      null,
+    );
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/bookings/booking-ordinary-full-load?includeDiagnostics=true',
+      null,
+    );
+  });
+
+  it('loads booking diagnostics through the detail API only for Master Admins', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    await expect(
+      BookingDetailPage({
+        params: Promise.resolve({ id: 'booking-master-full-load' }),
+        searchParams: Promise.resolve({ section: 'full' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-master-full-load?includeDiagnostics=true',
+      null,
+    );
   });
 
   it('loads marketplace provider candidates only for non-terminal booking details', () => {

@@ -7233,7 +7233,8 @@ export class AdminService {
     };
   }
 
-  async getBookingDetail(id: string) {
+  async getBookingDetail(id: string, options: { includeDiagnostics?: boolean } = {}) {
+    const includeDiagnostics = options.includeDiagnostics !== false;
     const booking = await this.prisma.booking.findUnique({
       where: { id },
       select: adminBookingDetailSelect,
@@ -7242,14 +7243,18 @@ export class AdminService {
       throw new NotFoundException('Booking not found');
     }
 
-    const auditLogs = await this.prisma.adminAuditLog.findMany({
-      where: bookingAuditLogWhere(id, booking.createdAt),
-      orderBy: { createdAt: 'desc' },
-      take: ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT,
-      select: adminAuditLogSelect,
-    });
+    const auditLogs = includeDiagnostics
+      ? await this.prisma.adminAuditLog.findMany({
+          where: bookingAuditLogWhere(id, booking.createdAt),
+          orderBy: { createdAt: 'desc' },
+          take: ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT,
+          select: adminAuditLogSelect,
+        })
+      : undefined;
 
-    return withAdminBookingListMetadata(withAdminBookingMatchingEvidence({ ...booking, auditLogs }));
+    return withAdminBookingListMetadata(
+      withAdminBookingMatchingEvidence(includeDiagnostics ? { ...booking, auditLogs } : booking),
+    );
   }
 
   listBookingNotifications(bookingId: string, options: AdminBookingDetailPreviewQuery = {}) {

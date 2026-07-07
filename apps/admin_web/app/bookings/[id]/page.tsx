@@ -934,7 +934,10 @@ async function loadBookingDetailPageData(
 ): Promise<BookingDetailPageData> {
   const encodedId = encodeURIComponent(id);
   const [booking, operationalPolicies, rawNotifications] = await Promise.all([
-    adminGet<AdminBookingDetail | null>(`/admin/bookings/${encodedId}`, null),
+    adminGet<AdminBookingDetail | null>(
+      `/admin/bookings/${encodedId}?includeDiagnostics=${includeDeveloperDiagnostics ? 'true' : 'false'}`,
+      null,
+    ),
     adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
     includeDeveloperDiagnostics
       ? adminGet<AdminNotification[]>(

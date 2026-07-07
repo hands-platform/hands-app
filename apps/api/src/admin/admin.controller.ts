@@ -766,8 +766,10 @@ export class AdminController {
   }
 
   @Get('bookings/:id')
-  bookingDetail(@Param('id') id: string) {
-    return this.admin.getBookingDetail(id);
+  bookingDetail(@Param('id') id: string, @Query('includeDiagnostics') includeDiagnostics?: string) {
+    return this.admin.getBookingDetail(id, {
+      includeDiagnostics: includeDiagnostics !== 'false',
+    });
   }
 
   @Post('bookings/:id/ops-note')

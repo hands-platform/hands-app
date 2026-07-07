@@ -22,6 +22,7 @@ describe('AdminController notification and push actions', () => {
     getVietnamOverview: vi.fn(),
     getVietnamOverviewRealtimePoints: vi.fn(),
     getVietnamOverviewSummary: vi.fn(),
+    getBookingDetail: vi.fn(),
     getCustomerReferralParent: vi.fn(),
     getPartnerReferralParent: vi.fn(),
     listReferralCashoutQueue: vi.fn(),
@@ -1884,6 +1885,20 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(1, 'customer-1', { includeDiagnostics: true });
     expect(admin.getCustomerDetail).toHaveBeenNthCalledWith(2, 'customer-1', { includeDiagnostics: false });
+  });
+
+  it('passes booking detail diagnostics intent to the service while preserving default compatibility', async () => {
+    admin.getBookingDetail.mockResolvedValue({ id: 'booking-1' });
+
+    await expect(controller.bookingDetail('booking-1', undefined)).resolves.toEqual({ id: 'booking-1' });
+    await expect(controller.bookingDetail('booking-1', 'false')).resolves.toEqual({ id: 'booking-1' });
+
+    expect(routeMetadata('bookingDetail')).toEqual({
+      method: RequestMethod.GET,
+      path: 'bookings/:id',
+    });
+    expect(admin.getBookingDetail).toHaveBeenNthCalledWith(1, 'booking-1', { includeDiagnostics: true });
+    expect(admin.getBookingDetail).toHaveBeenNthCalledWith(2, 'booking-1', { includeDiagnostics: false });
   });
 
   it('exposes marketing overview as a separate aggregate GET endpoint', async () => {

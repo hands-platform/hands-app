@@ -2813,6 +2813,34 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('skips booking audit diagnostics query when diagnostics are excluded', async () => {
+    const createdAt = new Date('2026-06-10T09:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CREATED,
+          createdAt,
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'audit-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getBookingDetail('booking-1', { includeDiagnostics: false })).resolves.toEqual(
+      expect.objectContaining({
+        id: 'booking-1',
+        matchingEvidence: expect.objectContaining({
+          stage: 'CREATED',
+        }),
+      }),
+    );
+
+    expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
+  });
+
   it('maps every booking status to an Admin matching evidence stage', async () => {
     const rows = [
       [BookingStatus.CREATED, 'CREATED'],
