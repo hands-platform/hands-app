@@ -9217,27 +9217,36 @@ a.action-button-card:hover {
 }
 
 .finance-overview-principle-card.is-primary .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-primary .finance-overview-command-icon {
+.finance-overview-kpi-grid .is-primary .finance-overview-command-icon,
+.finance-overview-kpi-card.is-primary .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
 .finance-overview-principle-card.is-success .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-success .finance-overview-command-icon {
+.finance-overview-kpi-grid .is-success .finance-overview-command-icon,
+.finance-overview-kpi-card.is-success .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
 .finance-overview-principle-card.is-warning .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-warning .finance-overview-command-icon {
+.finance-overview-kpi-grid .is-warning .finance-overview-command-icon,
+.finance-overview-kpi-card.is-warning .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
 .finance-overview-principle-card.is-info .finance-overview-command-icon,
-.finance-overview-kpi-grid .is-info .finance-overview-command-icon {
+.finance-overview-kpi-grid .is-info .finance-overview-command-icon,
+.finance-overview-kpi-card.is-info .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
+}
+
+.finance-overview-kpi-card.is-danger .metric-card-icon {
+  background: rgb(var(--admin-danger-channel) / 0.14);
+  color: var(--admin-danger-text);
 }
 
 .finance-overview-kpi-section {
@@ -9250,11 +9259,13 @@ a.action-button-card:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.finance-overview-kpi-grid .finance-overview-command-card {
+.finance-overview-kpi-grid .finance-overview-command-card,
+.finance-overview-kpi-grid .finance-overview-kpi-card {
   min-height: 154px;
 }
 
-.finance-overview-kpi-grid .finance-overview-command-card > div > strong {
+.finance-overview-kpi-grid .finance-overview-command-card > div > strong,
+.finance-overview-kpi-grid .finance-overview-kpi-card .metric-card h2 {
   font-size: 23px;
   line-height: 30px;
 }

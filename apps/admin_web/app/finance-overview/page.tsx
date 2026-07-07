@@ -18,7 +18,7 @@ import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../compon
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminRowItem, AdminRowLink, AdminSection } from '../../components/admin-surface';
+import { AdminKpiCard, AdminRowItem, AdminRowLink, AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
 import { FinancePeriodFilterForm } from '../finance-tax/finance-period-filter-form';
 import {
@@ -267,13 +267,12 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
   const Icon = financeKpiIcons[kpi.label] ?? CircleDollarSign;
 
   return (
-    <AdminOverviewCommandCard
-      baseClassName={financeOverviewCommandCardClassName}
-      className={`is-${kpi.tone}`}
-      detail={kpi.detail}
+    <AdminKpiCard
+      className={`finance-overview-kpi-card is-${kpi.tone}`}
       href={kpi.href}
-      icon={<Icon size={18} aria-hidden="true" />}
-      iconClassName={financeOverviewCommandIconClassName}
+      helper={kpi.detail}
+      icon={Icon}
+      iconSize={18}
       label={kpi.label}
       value={<FinanceOverviewMetricValue metric={kpi} />}
     />
