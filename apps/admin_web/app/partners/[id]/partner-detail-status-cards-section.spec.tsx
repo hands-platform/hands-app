@@ -24,11 +24,17 @@ describe('PartnerDetailStatusCardsSection', () => {
     expect(textContent(section)).toContain('450.000 VND');
   });
 
-  it('scopes partner status CSS to MetricCard internals instead of legacy direct spans', () => {
+  it('scopes partner status CSS to direct MetricCard slots instead of legacy direct spans', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.partner-detail-metric-card .metric-card-icon');
-    expect(css).toContain('.partner-detail-metric-card .metric-card h2');
+    expect(css).toContain('.partner-detail-metric-card > .metric-card');
+    expect(css).toContain('.partner-detail-metric-card > .metric-card > .metric-card-icon');
+    expect(css).toContain('.partner-detail-metric-card > .metric-card > .metric-card-content > p');
+    expect(css).toContain('.partner-detail-metric-card > .metric-card > .metric-card-content > h2');
+    expect(css).not.toContain('.partner-detail-metric-card .metric-card {');
+    expect(css).not.toContain('.partner-detail-metric-card .metric-card-icon {');
+    expect(css).not.toContain('.partner-detail-metric-card .metric-card p {');
+    expect(css).not.toContain('.partner-detail-metric-card .metric-card h2 {');
     expect(css).not.toContain('.partner-detail-metric-card span {');
     expect(css).not.toContain('.partner-detail-metric-card h2 {');
   });
