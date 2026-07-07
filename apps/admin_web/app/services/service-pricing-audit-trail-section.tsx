@@ -22,7 +22,7 @@ const SERVICE_PRICING_AUDIT_HEADERS = [
   'Actor',
   'Target',
   'Changed fields',
-  'Pricing snapshot',
+  'Pricing record',
 ] as const;
 
 export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTrailSectionProps) {

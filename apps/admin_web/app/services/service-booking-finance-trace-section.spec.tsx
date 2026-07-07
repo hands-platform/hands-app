@@ -54,11 +54,14 @@ describe('ServiceBookingFinanceTraceSection', () => {
     expect(section.props).toMatchObject({
       className: 'admin-mb-16',
       scrollable: true,
-      statusLabel: '1 trace row(s)',
+      statusLabel: '1 record row(s)',
       statusTone: 'info',
-      title: 'Recent booking finance trace',
+      title: 'Recent booking finance records',
     });
-    expect(rendered).toContain('Recent booking finance trace');
+    expect(rendered).toContain('Recent booking finance records');
+    expect(rendered).not.toContain('Recent booking finance trace');
+    expect(rendered).not.toContain('Trace status');
+    expect(rendered).not.toContain('Missing trace');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Open booking');
     expect(rendered).toContain('Complete');

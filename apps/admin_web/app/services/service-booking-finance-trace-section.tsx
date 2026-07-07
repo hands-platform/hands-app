@@ -29,7 +29,7 @@ const SERVICE_BOOKING_FINANCE_TRACE_HEADERS = [
   'Earning',
   'Tax / fee logs',
   'Wallet movement',
-  'Trace status',
+  'Record status',
 ] as const;
 
 export function ServiceBookingFinanceTraceSection({
@@ -41,9 +41,9 @@ export function ServiceBookingFinanceTraceSection({
       className="admin-mb-16"
       description="Links service pricing to booking payment, Partner earning, tax log, platform fee log, and wallet movement. Use this after changing a price policy to confirm real bookings are producing the expected finance records."
       scrollable
-      statusLabel={`${rows.length} trace row(s)`}
+      statusLabel={`${rows.length} record row(s)`}
       statusTone="info"
-      title="Recent booking finance trace"
+      title="Recent booking finance records"
     >
       <AdminTraceSummary
         metrics={[
@@ -67,7 +67,7 @@ export function ServiceBookingFinanceTraceSection({
             label: 'Wallet movement',
             value: <MoneyText amount={summary.walletAmount} currency={summary.currency} />,
           },
-          { label: 'Missing trace', value: `${summary.missingTraceCount} row(s)` },
+          { label: 'Missing records', value: `${summary.missingTraceCount} row(s)` },
         ]}
       />
       {rows.length ? (

@@ -42,7 +42,7 @@ export function ServiceBookingExposureGuardSection({
         metrics={[
           { label: 'Active duration options', value: activeServiceCount },
           { label: 'Rules configured', value: payoutRuleCount },
-          { label: 'Trace gaps', value: traceGapCount },
+          { label: 'Record gaps', value: traceGapCount },
           { label: 'Projected policy checks', value: policyCheckCount },
         ]}
       />

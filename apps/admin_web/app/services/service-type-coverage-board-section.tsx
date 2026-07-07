@@ -29,7 +29,7 @@ const SERVICE_TYPE_COVERAGE_HEADERS = [
   'Duration coverage',
   'Payout coverage',
   'Partner price visibility',
-  'Finance snapshot',
+  'Finance record',
   'Next action',
 ] as const;
 

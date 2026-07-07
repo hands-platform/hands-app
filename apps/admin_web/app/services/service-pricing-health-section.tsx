@@ -15,7 +15,7 @@ export function ServicePricingHealthSection({ items }: ServicePricingHealthSecti
       description="Partners can charge the minimum price or higher, but every configured customer price should have a payout rule so finance can separate Partner payout, VAT, withholding, and actual commission."
       statusLabel={isReady ? 'Ready' : 'Review'}
       statusTone={isReady ? 'success' : 'warning'}
-      title="Pricing health"
+      title="Pricing status"
     >
       <AdminStageList>
         {items.map((item) => (
