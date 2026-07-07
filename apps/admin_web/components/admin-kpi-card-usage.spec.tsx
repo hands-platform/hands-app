@@ -14,6 +14,17 @@ describe('Admin KPI card usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps page-specific KPI CSS scoped to MetricCard internals', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    expect(css).toContain('.marketing-analytics-metric .metric-card h2');
+    expect(css).toContain('.vietnam-overview-metric .metric-card h2');
+    expect(css).not.toContain('.marketing-analytics-metric h2,');
+    expect(css).not.toContain('.vietnam-overview-metric h2,');
+    expect(css).not.toContain('.marketing-analytics-metric small,');
+    expect(css).not.toContain('.vietnam-overview-metric small');
+  });
 });
 
 const allowedMetricCardImports = new Set(['components/admin-surface.tsx', 'components/metric-card.tsx']);

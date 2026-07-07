@@ -6088,10 +6088,10 @@ a.action-button-card:hover {
   min-height: 132px;
 }
 
-.marketing-analytics-metric h2,
-.marketing-analytics-metric small,
-.vietnam-overview-metric h2,
-.vietnam-overview-metric small {
+.marketing-analytics-metric .metric-card h2,
+.marketing-analytics-metric .metric-card small,
+.vietnam-overview-metric .metric-card h2,
+.vietnam-overview-metric .metric-card small {
   overflow-wrap: anywhere;
 }
 
