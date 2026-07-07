@@ -307,7 +307,7 @@ export function buildFinanceOverviewControlMetrics(
         input.monthlyClosingSummary.currency,
       )}.`,
       href: '/finance-tax/monthly-tax-closing',
-      label: 'Monthly close readiness',
+      label: 'Monthly close status',
       tone:
         input.monthlyClosingSummary.status === 'CLOSED'
           ? 'success'
@@ -339,7 +339,7 @@ export function buildFinanceOverviewKpis(input: FinanceOverviewSummaryInput): Fi
     },
     {
       ...financeOverviewMoneyValue(input.settlementSummary.platformFeeNetRevenue, currency),
-      detail: `Actual company revenue snapshot. Gross platform fee: ${formatMoney(
+      detail: `Actual company revenue record. Gross platform fee: ${formatMoney(
         input.settlementSummary.platformFeeGross,
         currency,
       )}.`,
@@ -514,7 +514,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           ...financeOverviewMoneyValue(input.settlementSummary.paymentProcessingFee, currency),
           label: 'Payment processing fee',
-          detail: 'Gateway or payment fee cost stored in settlement snapshots.',
+          detail: 'Gateway or payment fee cost stored in settlement records.',
           href: '/finance-tax/payment-fees',
         },
         {
@@ -526,7 +526,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
           ...financeOverviewMoneyValue(averagePlatformFee, currency),
           label: 'Average platform fee',
           value: averagePlatformFee === null ? '—' : undefined,
-          detail: `${input.settlementSummary.count} settlement snapshot row(s).`,
+          detail: `${input.settlementSummary.count} settlement record row(s).`,
         },
         {
           label: 'Platform fee rate',
@@ -536,8 +536,8 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       ],
     },
     {
-      title: 'Payment Method Health',
-      description: 'Payment and gateway health with method-level processing fee snapshots when available.',
+      title: 'Payment Method Status',
+      description: 'Payment and gateway status with method-level processing fee records when available.',
       href: '/payments',
       tone: 'primary',
       rows: [
@@ -582,7 +582,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           ...financeOverviewMoneyValue(input.settlementSummary.partnerPayoutAmount, currency),
           label: 'Partner payout amount',
-          detail: 'Partner payout from immutable settlement snapshots.',
+          detail: 'Partner payout from immutable settlement records.',
         },
         {
           ...financeOverviewMoneyValue(input.earningsSummary?.pendingNetAmount ?? 0, currency),
@@ -677,7 +677,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
     },
     {
       title: 'Refund & Dispute',
-      description: 'Refund queue health without mixing refund amounts into platform fee revenue.',
+      description: 'Refund queue status without mixing refund amounts into platform fee revenue.',
       href: '/refunds',
       tone: 'warning',
       rows: [
@@ -707,7 +707,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           ...financeOverviewMoneyValue(input.settlementSummary.companyOutputVat, currency),
           label: 'Company output VAT',
-          detail: 'Company VAT payable from platform fee snapshots.',
+          detail: 'Company VAT payable from platform fee records.',
           href: '/finance-tax/platform-vat',
         },
         {
@@ -725,7 +725,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
     },
     {
       title: 'Reconciliation',
-      description: 'Booking settlement, payment clearing, bank matching, and monthly formula health.',
+      description: 'Booking settlement, payment clearing, bank matching, and monthly formula status.',
       href: '/finance-tax/payment-clearing',
       tone: 'danger',
       rows: [
@@ -753,7 +753,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         {
           label: 'Journal batches',
           value: 'Open GL',
-          detail: 'Use General Ledger for debit/credit equality and source evidence.',
+          detail: 'Use General Ledger for debit/credit equality and record evidence.',
           href: '/finance-tax/general-ledger',
         },
       ],

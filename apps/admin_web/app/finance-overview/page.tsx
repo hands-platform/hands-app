@@ -399,7 +399,7 @@ const financeKpiIcons: Record<string, typeof CircleDollarSign> = {
 };
 
 const financeControlMetricIcons: Record<string, typeof CircleDollarSign> = {
-  'Monthly close readiness': ShieldCheck,
+  'Monthly close status': ShieldCheck,
   'Open finance risks': AlertTriangle,
   'Revenue separation': ReceiptText,
   'Wallet exposure': WalletCards,
@@ -408,7 +408,7 @@ const financeControlMetricIcons: Record<string, typeof CircleDollarSign> = {
 const financeSectionIcons: Record<string, typeof CircleDollarSign> = {
   'Cash Payment / Receivable': Banknote,
   'Partner Settlement': WalletCards,
-  'Payment Method Health': CreditCard,
+  'Payment Method Status': CreditCard,
   Reconciliation: FileWarning,
   'Refund & Dispute': AlertTriangle,
   'Revenue & Platform Fee': ReceiptText,

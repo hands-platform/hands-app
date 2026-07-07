@@ -266,7 +266,7 @@ describe('finance-overview-model', () => {
       'Revenue separation',
       'Wallet exposure',
       'Open finance risks',
-      'Monthly close readiness',
+      'Monthly close status',
     ]);
     expect(metrics.find((metric) => metric.label === 'Revenue separation')?.value).toBe('22%');
     expect(metrics.find((metric) => metric.label === 'Wallet exposure')).toMatchObject({
@@ -276,7 +276,27 @@ describe('finance-overview-model', () => {
     expect(metrics.find((metric) => metric.label === 'Wallet exposure')?.value).toBeUndefined();
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.value).toBe('10');
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.detail).toContain('coupon');
-    expect(metrics.find((metric) => metric.label === 'Monthly close readiness')?.value).toBe('DRAFT');
+    expect(metrics.find((metric) => metric.label === 'Monthly close status')?.value).toBe('DRAFT');
+  });
+
+  it('keeps Finance Overview copy focused on operator decisions instead of internal diagnostics', () => {
+    const summaries = emptyFinanceOverviewSummaries('2026-07');
+    const metrics = buildFinanceOverviewControlMetrics(summaries);
+    const kpis = buildFinanceOverviewKpis(summaries);
+    const sections = buildFinanceOverviewSections(summaries);
+    const visibleCopy = [
+      ...metrics.flatMap((metric) => [metric.label, metric.detail]),
+      ...kpis.flatMap((kpi) => [kpi.label, kpi.detail]),
+      ...sections.flatMap((section) => [
+        section.title,
+        section.description,
+        ...section.rows.flatMap((row) => [row.label, row.detail]),
+      ]),
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    expect(visibleCopy).not.toMatch(/\b(readiness|snapshot|snapshots|health|source evidence)\b/i);
   });
 
   it('prioritizes finance action queues from summary counts', () => {
