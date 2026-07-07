@@ -8,7 +8,9 @@ describe('PayoutBatchTable', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
     expect(source).toContain('AdminNotePanel');
+    expect(source).not.toContain('<div className="setup-stage-list admin-mt-8">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('<div className="ops-task-note admin-mb-10">');
   });
