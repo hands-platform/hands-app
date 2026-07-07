@@ -65,4 +65,17 @@ describe('BookingDetailPage data loading', () => {
     expect(source).not.toContain('<span className="pill pill-warn">History</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">Settlement</span>');
   });
+
+  it('keeps deep diagnostic booking records behind the Developer/System section gate', () => {
+    const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('AdminDeveloperSystemSection');
+    expect(source).toContain('<AdminDeveloperSystemSection>');
+    expect(source.indexOf('<AdminDeveloperSystemSection>')).toBeLessThan(
+      source.indexOf('<BookingOperatingLedgerSection'),
+    );
+    expect(source.indexOf('<AdminDeveloperSystemSection>')).toBeLessThan(
+      source.indexOf('<BookingRecordDetailSections'),
+    );
+  });
 });

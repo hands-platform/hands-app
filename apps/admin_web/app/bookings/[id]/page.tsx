@@ -141,6 +141,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
+import { AdminDeveloperSystemSection } from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
@@ -757,14 +758,17 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     hasSelectedPartner: Boolean(booking.selectedProviderId || booking.selectedProvider),
     status: booking.status,
   });
-  const showAdvancedRecordsDisclosure =
+  const showOperatorAdvancedRecordsDisclosure =
     sectionVisibility.showDispatchDisclosure ||
-    sectionVisibility.showEvidenceDisclosure ||
+    sectionVisibility.showEvidenceDisclosure;
+  const showDeveloperDiagnosticsDisclosure =
     sectionVisibility.showHistoryDisclosure ||
     sectionVisibility.showSettlementDisclosure;
-  const advancedRecordSummaryItems = [
+  const operatorAdvancedRecordSummaryItems = [
     sectionVisibility.showEvidenceDisclosure ? { label: 'Evidence', tone: 'pill-info' } : null,
     sectionVisibility.showDispatchDisclosure ? { label: 'Dispatch', tone: 'pill-success' } : null,
+  ].filter((item): item is { label: string; tone: string } => Boolean(item));
+  const developerDiagnosticSummaryItems = [
     sectionVisibility.showHistoryDisclosure ? { label: 'History', tone: 'pill-warn' } : null,
     sectionVisibility.showSettlementDisclosure ? { label: 'Settlement', tone: 'pill-neutral' } : null,
   ].filter((item): item is { label: string; tone: string } => Boolean(item));
@@ -811,12 +815,12 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
       )}
 
-      {showAdvancedRecordsDisclosure && (
+      {showOperatorAdvancedRecordsDisclosure && (
         <BookingDetailDisclosureGroup
-          helper="Open only when an operator needs deep evidence, dispatch, history, or settlement records."
-          label="Advanced"
-          summaryItems={advancedRecordSummaryItems}
-          title="Booking records"
+          helper="Open only when an operator needs evidence or dispatch records for the booking."
+          label="Records"
+          summaryItems={operatorAdvancedRecordSummaryItems}
+          title="Operational records"
         >
           {sectionVisibility.showEvidenceDisclosure && (
             <div className="booking-detail-advanced-section">
@@ -853,7 +857,17 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
               <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
             </div>
           )}
+        </BookingDetailDisclosureGroup>
+      )}
 
+      {showDeveloperDiagnosticsDisclosure && (
+        <AdminDeveloperSystemSection>
+          <BookingDetailDisclosureGroup
+            helper="Visible to Master Admin and Developer/System operators for history, audit, trace, and full record review."
+            label="Diagnostics"
+            summaryItems={developerDiagnosticSummaryItems}
+            title="Developer/System records"
+          >
           {sectionVisibility.showHistoryDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
@@ -892,7 +906,8 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
               <BookingRecordDetailSections {...recordDetailSectionsProps} />
             </div>
           )}
-        </BookingDetailDisclosureGroup>
+          </BookingDetailDisclosureGroup>
+        </AdminDeveloperSystemSection>
       )}
     </AdminPageTemplate>
   );
