@@ -143,10 +143,7 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
-import {
-  AdminDeveloperSystemSection,
-  canViewAdminDeveloperSystem,
-} from '../../../components/admin-developer-system-section';
+import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
@@ -871,13 +868,12 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
       )}
 
       {showDeveloperDiagnosticsDisclosure && (
-        <AdminDeveloperSystemSection>
-          <BookingDetailDisclosureGroup
-            helper="Visible to Master Admin and Developer/System operators for history, audit, trace, and full record review."
-            label="Diagnostics"
-            summaryItems={developerDiagnosticSummaryItems}
-            title="Developer/System records"
-          >
+        <BookingDetailDisclosureGroup
+          helper="Visible to Master Admin and Developer/System operators for history, audit, trace, and full record review."
+          label="Diagnostics"
+          summaryItems={developerDiagnosticSummaryItems}
+          title="Developer/System records"
+        >
           {sectionVisibility.showHistoryDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
@@ -916,8 +912,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
               <BookingRecordDetailSections {...recordDetailSectionsProps} />
             </div>
           )}
-          </BookingDetailDisclosureGroup>
-        </AdminDeveloperSystemSection>
+        </BookingDetailDisclosureGroup>
       )}
     </AdminPageTemplate>
   );
