@@ -42,6 +42,19 @@ describe('PartnerDetailSectionGroup', () => {
     expect(source).not.toContain('<section className="partner-detail-section-band partner-detail-section-group"');
   });
 
+  it('scopes partner detail section and dossier typography to direct header slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-detail-section-band-header > div > h2');
+    expect(css).toContain('.partner-detail-section-band-header > div > p');
+    expect(css).toContain('.partner-detail-dossier-cluster-header > div > strong');
+    expect(css).toContain('.partner-detail-dossier-cluster-header > div > small');
+    expect(css).not.toContain('.partner-detail-section-band-header h2');
+    expect(css).not.toContain('.partner-detail-section-band-header p');
+    expect(css).not.toContain('.partner-detail-dossier-cluster-header strong');
+    expect(css).not.toContain('.partner-detail-dossier-cluster-header small');
+  });
+
   it('renders collapsible reference details for secondary summaries', () => {
     const section = PartnerDetailReferenceDetails({
       children: <div>Reference ledger</div>,

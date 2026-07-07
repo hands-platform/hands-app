@@ -4937,14 +4937,14 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.partner-detail-section-band-header h2 {
+.partner-detail-section-band-header > div > h2 {
   color: var(--admin-text);
   font-size: 24px;
   line-height: 1.25;
   margin: 0;
 }
 
-.partner-detail-section-band-header p {
+.partner-detail-section-band-header > div > p {
   color: var(--admin-muted);
   margin: 10px 0 0;
   max-width: 820px;
@@ -5000,14 +5000,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.partner-detail-dossier-cluster-header strong {
+.partner-detail-dossier-cluster-header > div > strong {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
 }
 
-.partner-detail-dossier-cluster-header small {
+.partner-detail-dossier-cluster-header > div > small {
   color: var(--admin-text-muted);
   font-size: 13px;
   line-height: 1.45;
