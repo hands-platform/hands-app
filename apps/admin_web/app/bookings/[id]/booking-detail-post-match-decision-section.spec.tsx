@@ -17,6 +17,15 @@ describe('BookingDetailPostMatchDecisionSection', () => {
     expect(source).not.toContain('className="card admin-card booking-outcome-decision-panel"');
   });
 
+  it('scopes post-match evidence card typography to direct summary-card slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-post-match-detail-evidence-card > strong');
+    expect(css).toContain('.booking-post-match-detail-evidence-card > small');
+    expect(css).not.toContain('.booking-post-match-detail-evidence-card strong');
+    expect(css).not.toContain('.booking-post-match-detail-evidence-card small');
+  });
+
   it('uses shared Vuexy badge atoms instead of raw post-match decision pill spans', () => {
     const source = readFileSync('app/bookings/[id]/booking-detail-post-match-decision-section.tsx', 'utf8');
 

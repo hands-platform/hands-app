@@ -4306,13 +4306,13 @@ a.action-button-card:hover {
   text-decoration: none;
 }
 
-.booking-post-match-detail-evidence-card strong {
+.booking-post-match-detail-evidence-card > strong {
   color: var(--admin-text);
   font-size: 17px;
   line-height: 24px;
 }
 
-.booking-post-match-detail-evidence-card small {
+.booking-post-match-detail-evidence-card > small {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
@@ -4323,7 +4323,7 @@ a.action-button-card:hover {
   box-shadow: var(--admin-shadow-soft);
 }
 
-.booking-post-match-operator-note span {
+.booking-post-match-operator-note > span {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;

@@ -1,8 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { normalizedText } from './booking-section-test-utils';
 import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';
 
 describe('BookingCompletedCloseoutSection', () => {
+  it('scopes completed closeout operator note copy to the direct note slot', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-post-match-operator-note > span');
+    expect(css).not.toContain('.booking-post-match-operator-note span');
+  });
+
   it('renders completed booking closeout guidance', () => {
     const markup = renderToStaticMarkup(<BookingCompletedCloseoutSection />);
     const rendered = normalizedText(markup);
