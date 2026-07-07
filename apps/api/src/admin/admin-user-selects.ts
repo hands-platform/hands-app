@@ -203,3 +203,17 @@ export const adminUserListSelect = {
     select: adminUserListPushDeviceSelect,
   },
 } satisfies Prisma.UserSelect;
+
+export const adminFinanceApproverDirectoryUserSelect = {
+  ...adminUserSummarySelect,
+  appSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 1,
+    select: adminUserListSessionSelect,
+  },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: 3,
+    select: adminUserListPushDeviceSelect,
+  },
+} satisfies Prisma.UserSelect;

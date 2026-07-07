@@ -2274,15 +2274,19 @@ describe('AdminController notification and push actions', () => {
   it('exposes admin users as a bounded list', async () => {
     admin.listUsers.mockResolvedValue([{ id: 'user-1' }]);
 
-    await expect(controller.users('50', '100')).resolves.toEqual([{ id: 'user-1' }]);
+    await expect(controller.users('50', '100', 'ADMIN', 'finance-approver-directory')).resolves.toEqual([
+      { id: 'user-1' },
+    ]);
 
     expect(routeMetadata('users')).toEqual({
       method: RequestMethod.GET,
       path: 'users',
     });
     expect(admin.listUsers).toHaveBeenCalledWith({
+      role: 'ADMIN',
       skip: '100',
       take: '50',
+      view: 'finance-approver-directory',
     });
   });
 

@@ -31,7 +31,7 @@ type FinanceApproversPageProps = {
 
 export default async function FinanceApproversPage({ searchParams }: FinanceApproversPageProps) {
   const params = searchParams ? await searchParams : {};
-  const users = await adminGet<AdminUser[]>('/admin/users?take=100', []);
+  const users = await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []);
   const adminUsers = users.filter((user) => user.roles.includes(ADMIN_OPERATOR_BASE_ROLE));
   const approverCount = adminUsers.filter((user) => isFinanceApprover(user)).length;
   const nonApproverCount = Math.max(adminUsers.length - approverCount, 0);

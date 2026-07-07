@@ -51,7 +51,10 @@ describe('FinanceApproversPage', () => {
     const page = await FinanceApproversPage({ searchParams: Promise.resolve({ roleNotice: 'updated' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+      [],
+    );
     expect(markup).toContain('Finance approver role was updated');
     expect(markup).toContain('Approver command board');
     expect(markup).toContain('Approver coverage');

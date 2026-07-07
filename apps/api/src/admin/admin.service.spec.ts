@@ -1077,6 +1077,40 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('uses an admin-only lightweight projection for finance approver directories', async () => {
+    const prisma = {
+      user: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listUsers({ role: Role.ADMIN, take: '50', view: 'finance-approver-directory' }),
+    ).resolves.toEqual([]);
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        where: { roles: { has: Role.ADMIN } },
+      }),
+    );
+    const select = prisma.user.findMany.mock.calls[0][0].select;
+    expect(select).toMatchObject({
+      id: true,
+      phone: true,
+      email: true,
+      fullName: true,
+      roles: true,
+      appSessions: expect.objectContaining({ take: 1 }),
+      pushDevices: expect.objectContaining({ take: 3 }),
+    });
+    expect(select).not.toHaveProperty('adminOperatorPermission');
+    expect(select).not.toHaveProperty('customerProfile');
+    expect(select).not.toHaveProperty('providerProfile');
+  });
+
   it('grants finance approver role only to admin users and audits the change', async () => {
     const tx = {
       user: {

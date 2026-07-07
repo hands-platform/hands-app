@@ -64,8 +64,13 @@ export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
   @Get('users')
-  users(@Query('take') take?: string, @Query('skip') skip?: string) {
-    return this.admin.listUsers({ skip, take });
+  users(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('role') role?: string,
+    @Query('view') view?: string,
+  ) {
+    return this.admin.listUsers({ role, skip, take, view });
   }
 
   @Get('users/admin-operator-access')

@@ -165,6 +165,7 @@ import {
 import {
   adminAppSessionListSelect,
   adminAppSessionSummarySelect,
+  adminFinanceApproverDirectoryUserSelect,
   adminNotificationBoardListSelect,
   adminNotificationListSelect,
   adminPushDeviceSummarySelect,
@@ -1296,8 +1297,10 @@ const ADMIN_PAYMENT_DETAIL_AUDIT_LOG_LIMIT = 20;
 const ADMIN_PAYMENT_DETAIL_CALLBACK_ATTEMPT_LIMIT = 25;
 
 type AdminUserListOptions = {
+  role?: Role | string | null;
   skip?: number | string | null;
   take?: number | string | null;
+  view?: string | null;
 };
 
 type AdminAuditLogListOptions = {
@@ -1763,12 +1766,14 @@ export class AdminService {
 
   listUsers(options: AdminUserListOptions = {}) {
     const skip = adminUserListSkip(options.skip);
+    const role = normalizeAdminUserListRole(options.role);
 
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
+      ...(role ? { where: { roles: { has: role } } } : {}),
       ...(skip > 0 ? { skip } : {}),
       take: adminUserListTake(options.take),
-      select: adminUserListSelect,
+      select: adminUserListSelectForView(options.view),
     });
   }
 
@@ -15719,6 +15724,21 @@ function adminUserListSkip(value: number | string | null | undefined) {
   }
 
   return Math.min(Math.trunc(parsed), 10_000);
+}
+
+function normalizeAdminUserListRole(value: Role | string | null | undefined) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const normalized = String(value).trim().toUpperCase();
+  return Object.values(Role).includes(normalized as Role) ? (normalized as Role) : null;
+}
+
+function adminUserListSelectForView(value: string | null | undefined) {
+  return value === 'finance-approver-directory'
+    ? adminFinanceApproverDirectoryUserSelect
+    : adminUserListSelect;
 }
 
 function adminCustomerDirectoryTake(value: number | string | null | undefined) {
