@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
@@ -51,7 +52,7 @@ export function RefundFilterBoardSection({
           Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
         </p>
       ) : null}
-      <div className="participant-list admin-mb-12">
+      <AdminFilterChipGroup ariaLabel="Refund date range filters" className="admin-mb-12">
         {rangeLinks.map((item) => (
           <StatusBadgeLink
             ariaCurrent={activeRange === item.range ? 'page' : undefined}
@@ -62,8 +63,8 @@ export function RefundFilterBoardSection({
             {item.label}
           </StatusBadgeLink>
         ))}
-      </div>
-      <div className="participant-list">
+      </AdminFilterChipGroup>
+      <AdminFilterChipGroup ariaLabel="Refund review filters">
         {isFiltered ? (
           <StatusBadgeLink href="/refunds?range=all&review=all" tone="success">
             Clear filters
@@ -79,7 +80,7 @@ export function RefundFilterBoardSection({
             {item.label}
           </StatusBadgeLink>
         ))}
-      </div>
+      </AdminFilterChipGroup>
     </AdminTablePanel>
   );
 }
