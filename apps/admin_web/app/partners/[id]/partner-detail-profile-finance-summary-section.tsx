@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
@@ -224,7 +225,7 @@ export function PartnerDetailLocationActivityCard({
             </td>
             <td>
               {snapshots.length ? (
-                <div className="participant-list">
+                <AdminFilterChipGroup ariaLabel="Recent location snapshots">
                   {snapshots.map((snapshot) => (
                     <StatusBadge key={snapshot.id} tone="neutral">
                       {snapshot.recordedAt ? (
@@ -234,7 +235,7 @@ export function PartnerDetailLocationActivityCard({
                       )}
                     </StatusBadge>
                   ))}
-                </div>
+                </AdminFilterChipGroup>
               ) : (
                 <AdminInlineFallback>Missing</AdminInlineFallback>
               )}

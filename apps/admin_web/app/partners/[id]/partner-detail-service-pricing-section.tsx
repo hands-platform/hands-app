@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { StatusBadge } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
@@ -82,10 +83,10 @@ export function PartnerDetailServicePricingSection({
             <tr key={row.id}>
               <td>
                 <strong>{row.name}</strong>
-                <div className="participant-list admin-mt-6">
+                <AdminFilterChipGroup ariaLabel={`${row.name} pricing status`} className="admin-mt-6">
                   <StatusBadge tone="info">{row.durationLabel}</StatusBadge>
                   <StatusBadge tone="info">{row.payoutRuleLabel}</StatusBadge>
-                </div>
+                </AdminFilterChipGroup>
               </td>
               <td>
                 <strong>{row.priceLine}</strong>

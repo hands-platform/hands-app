@@ -7,6 +7,7 @@ import {
   AdminFormGrid,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminCard } from '../../../components/admin-surface';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
@@ -52,11 +53,11 @@ export function PartnerDetailRecordDateFilterSection({
     <AdminCard className="admin-mb-16" id="record-date-filter">
       <AdminSectionHeader
         actions={(
-          <div className="participant-list">
+          <AdminFilterChipGroup ariaLabel="Active record date filters">
             <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
             <StatusBadge tone="neutral">{activityTypeLabel}</StatusBadge>
             <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
-          </div>
+          </AdminFilterChipGroup>
         )}
         description="Narrow booking, chat, app, location, payout, and verification records without changing partner data."
         title="Record date filter"

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -82,7 +83,7 @@ export function PartnerDetailReadinessSnapshotSection({
       resultTone={partnerOpsStatusBadgeTone(snapshot.tone)}
       title="Partner readiness snapshot"
     >
-      <div className="participant-list admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Partner readiness status badges" className="admin-mt-12">
         {snapshot.badges.map((badge) => (
           <StatusBadgeFromPillClass
             key={badge.label}
@@ -93,7 +94,7 @@ export function PartnerDetailReadinessSnapshotSection({
             {badge.detailNode ? <span className="sr-only">{badge.detailNode}</span> : null}
           </StatusBadgeFromPillClass>
         ))}
-      </div>
+      </AdminFilterChipGroup>
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable

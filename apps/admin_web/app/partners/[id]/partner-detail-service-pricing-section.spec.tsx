@@ -28,7 +28,9 @@ describe('PartnerDetailServicePricingSection', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-service-pricing-section.tsx', 'utf8');
     const pageSource = readFileSync('app/partners/[id]/page.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('<StatusBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).toContain("import type { ReactNode } from 'react';");
     expect(source).toContain('readonly priceLine: ReactNode;');
     expect(pageSource).toContain('Customer <MoneyText amount={row.customerPrice} />');

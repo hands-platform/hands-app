@@ -12,7 +12,9 @@ describe('PartnerDetailWalletSummarySection', () => {
   it('uses shared Vuexy status badges for wallet allocation chips', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-wallet-summary-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('<StatusBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-success">');
     expect(source).not.toContain('<span className="pill pill-info">');
   });

@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminCard } from '../../../components/admin-surface';
@@ -217,7 +218,7 @@ export function PartnerDetailReviewControlPanelSection({
           value: metric.value,
         }))}
       />
-      <div className="participant-list admin-mt-12" aria-label="Current approval issues">
+      <AdminFilterChipGroup ariaLabel="Current approval issues" className="admin-mt-12">
         <span className="muted">Current approval issues</span>
         <StatusBadge tone={panel.reviewIssues.length ? 'warning' : 'success'}>
           {panel.reviewIssues.length ? `${panel.reviewIssues.length} approval need(s)` : 'Approval clear'}
@@ -230,7 +231,7 @@ export function PartnerDetailReviewControlPanelSection({
         {panel.reviewIssues.length > 5 ? (
           <StatusBadge tone="neutral">+{panel.reviewIssues.length - 5} more</StatusBadge>
         ) : null}
-      </div>
+      </AdminFilterChipGroup>
       <div className="partner-review-correction-loop" aria-label="Partner correction loop">
         {correctionLoopItems.map(({ fallback, item, label }) => (
           <AdminCard className="partner-review-correction-card" key={label}>

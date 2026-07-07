@@ -25,6 +25,7 @@ describe('partner detail profile and location sections', () => {
     );
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('DateTimeText');
@@ -32,6 +33,7 @@ describe('partner detail profile and location sections', () => {
     expect(source).not.toContain('<span className="muted">Missing</span>');
     expect(source).not.toContain('<span className="pill pill-success">ACCEPTED</span>');
     expect(source).not.toContain('<span className="pill pill-neutral" key={snapshot.id}>');
+    expect(source).not.toContain('<div className="participant-list');
   });
 
   it('renders the basic profile as a compact evidence table', () => {

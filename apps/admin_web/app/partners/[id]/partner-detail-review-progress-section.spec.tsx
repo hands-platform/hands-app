@@ -30,6 +30,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
 
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminInlineFallback');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadge');
@@ -37,6 +38,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<strong>No records found</strong>');
     expect(source).not.toContain("<span className=\"muted\">{row.preview ?? 'No preview'}</span>");
     expect(source).not.toContain('<span className={`pill ${row.tone}`}>{row.status}</span>');

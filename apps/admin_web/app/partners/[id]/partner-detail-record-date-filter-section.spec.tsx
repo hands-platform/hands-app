@@ -20,7 +20,9 @@ describe('PartnerDetailRecordDateFilterSection', () => {
   it('uses shared Vuexy badge atoms for active filter chips', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-record-date-filter-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className="pill pill-info">{dateFilters.label}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{activityTypeLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>');

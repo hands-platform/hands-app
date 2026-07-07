@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -118,7 +119,7 @@ export function PartnerDetailWalletSummarySection({
                   </p>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${walletLedgerLabel(row.type)} allocation summary`}>
                     {row.type === 'PARTNER_BANK_DEPOSIT_RECEIVED' ? (
                       <>
                         <StatusBadge tone="success">
@@ -131,7 +132,7 @@ export function PartnerDetailWalletSummarySection({
                     ) : (
                       <StatusBadge tone="info">Cash-service wallet movement</StatusBadge>
                     )}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   {row.reference ? (
