@@ -145,6 +145,31 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-overview-filter-summary-card strong {');
     expect(css).not.toContain('.vietnam-overview-filter-summary-card small {');
   });
+
+  it('scopes realtime dashboard typography to direct Vuexy card slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-realtime-widget-copy > span');
+    expect(css).toContain('.vietnam-realtime-widget-copy > strong');
+    expect(css).toContain('.vietnam-realtime-widget-copy > small');
+    expect(css).toContain('.vietnam-realtime-signal-label > span');
+    expect(css).toContain('.vietnam-realtime-signal-label > strong');
+    expect(css).toContain('.vietnam-realtime-region-row > span');
+    expect(css).toContain('.vietnam-realtime-region-row > div');
+    expect(css).toContain('.vietnam-realtime-region-row > div > strong');
+    expect(css).toContain('.vietnam-realtime-region-row > div > small');
+    expect(css).toContain('.vietnam-realtime-region-row > em');
+    expect(css).not.toContain('.vietnam-realtime-widget-copy span {');
+    expect(css).not.toContain('.vietnam-realtime-widget-copy strong {');
+    expect(css).not.toContain('.vietnam-realtime-widget-copy small {');
+    expect(css).not.toContain('.vietnam-realtime-signal-label span {');
+    expect(css).not.toContain('.vietnam-realtime-signal-label strong {');
+    expect(css).not.toContain('.vietnam-realtime-region-row span {');
+    expect(css).not.toContain('.vietnam-realtime-region-row div {');
+    expect(css).not.toContain('.vietnam-realtime-region-row strong {');
+    expect(css).not.toContain('.vietnam-realtime-region-row small {');
+    expect(css).not.toContain('.vietnam-realtime-region-row em {');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {

@@ -5687,14 +5687,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-realtime-widget-copy span {
+.vietnam-realtime-widget-copy > span {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 500;
   line-height: 20px;
 }
 
-.vietnam-realtime-widget-copy strong {
+.vietnam-realtime-widget-copy > strong {
   color: var(--admin-text);
   font-size: 28px;
   font-weight: 500;
@@ -5704,7 +5704,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-realtime-widget-copy small {
+.vietnam-realtime-widget-copy > small {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 500;
@@ -5854,7 +5854,7 @@ a.action-button-card:hover {
   width: 10px;
 }
 
-.vietnam-realtime-signal-label span {
+.vietnam-realtime-signal-label > span {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 500;
@@ -5864,7 +5864,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-realtime-signal-label strong {
+.vietnam-realtime-signal-label > strong {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 600;
@@ -5947,13 +5947,13 @@ a.action-button-card:hover {
   justify-content: center;
 }
 
-.vietnam-realtime-region-row div {
+.vietnam-realtime-region-row > div {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.vietnam-realtime-region-row strong {
+.vietnam-realtime-region-row > div > strong {
   color: var(--admin-text);
   font-size: 15px;
   font-weight: 500;
@@ -5963,7 +5963,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-realtime-region-row small {
+.vietnam-realtime-region-row > div > small {
   color: var(--admin-muted);
   font-size: 13px;
   font-weight: 400;
@@ -5989,7 +5989,7 @@ a.action-button-card:hover {
   min-width: 8px;
 }
 
-.vietnam-realtime-region-row em {
+.vietnam-realtime-region-row > em {
   color: var(--admin-muted);
   font-size: 13px;
   font-style: normal;
@@ -6039,7 +6039,7 @@ a.action-button-card:hover {
     grid-template-columns: 42px minmax(0, 1fr);
   }
 
-  .vietnam-realtime-region-row em {
+  .vietnam-realtime-region-row > em {
     grid-column: 2;
   }
 }
