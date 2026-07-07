@@ -31,6 +31,18 @@ describe('Calendar sidebar CSS', () => {
     expect(globalsCss).not.toContain('.calendar-vuexy-datepicker .react-datepicker__navigation-icon {');
     expect(globalsCss).not.toContain('.calendar-vuexy-datepicker .react-datepicker__navigation::before');
   });
+
+  it('keeps Vuexy time picker focus styling separate from selected styling', () => {
+    expect(globalsCss).not.toContain(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected,\n' +
+        '.calendar-vuexy-datepicker .react-datepicker__time-list-item:focus',
+    );
+    expect(globalsCss).toContain('.calendar-vuexy-datepicker .react-datepicker__time-list-item:focus {');
+    expect(globalsCss).toContain(
+      '.calendar-vuexy-datepicker .react-datepicker__time-list-item:focus:not(.react-datepicker__time-list-item--selected) {',
+    );
+    expect(globalsCss).toContain('.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected {');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

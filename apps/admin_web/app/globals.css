@@ -1872,8 +1872,15 @@ a {
   background: var(--admin-action-hover) !important;
 }
 
-.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected,
 .calendar-vuexy-datepicker .react-datepicker__time-list-item:focus {
+  outline: 0;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list-item:focus:not(.react-datepicker__time-list-item--selected) {
+  background: var(--admin-action-hover) !important;
+}
+
+.calendar-vuexy-datepicker .react-datepicker__time-list-item--selected {
   background: var(--admin-accent) !important;
   color: var(--admin-inverse-text) !important;
   box-shadow: var(--admin-shadow-xs);
