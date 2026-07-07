@@ -21,6 +21,7 @@ import {
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { AdminStageList } from '../../components/admin-stage-item';
 import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import {
@@ -519,7 +520,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         statusTone="info"
         title="Chat window previews"
       >
-        <div className="setup-stage-list admin-mt-16 chat-transcript-list">
+        <AdminStageList className="admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
             <AdminDisclosureCard
               className="chat-transcript-room admin-chat-transcript-disclosure"
@@ -549,7 +550,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               />
             </AdminDisclosureCard>
           ))}
-        </div>
+        </AdminStageList>
       </AdminSection>
     </AdminPageTemplate>
   );

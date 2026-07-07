@@ -129,6 +129,8 @@ describe('ChatArchivePage', () => {
   it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {
     expect(pageSource).toContain('AdminFormControlLink');
     expect(pageSource).toContain('AdminDisclosureCard');
+    expect(pageSource).toContain('AdminStageList');
+    expect(pageSource).not.toContain('<div className="setup-stage-list');
     expect(pageSource).not.toContain('<Link className="button button-secondary"');
     expect(pageSource).not.toContain('className="button button-secondary chat-inline-action"');
     expect(pageSource).not.toContain('<details className="card admin-disclosure');
