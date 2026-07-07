@@ -5722,7 +5722,7 @@ a.action-button-card:hover {
   overflow: hidden;
 }
 
-.vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget-meter > i {
   background: var(--admin-accent);
   border-radius: inherit;
   display: block;
@@ -5730,48 +5730,48 @@ a.action-button-card:hover {
   min-width: 8px;
 }
 
-.vietnam-realtime-widget.is-success .vietnam-realtime-widget-icon {
+.vietnam-realtime-widget.is-success > .vietnam-realtime-widget-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.vietnam-realtime-widget.is-success .vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget.is-success > .vietnam-realtime-widget-meter > i {
   background: var(--admin-success);
 }
 
-.vietnam-realtime-widget.is-warning .vietnam-realtime-widget-icon {
+.vietnam-realtime-widget.is-warning > .vietnam-realtime-widget-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.vietnam-realtime-widget.is-warning .vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget.is-warning > .vietnam-realtime-widget-meter > i {
   background: var(--admin-warning);
 }
 
-.vietnam-realtime-widget.is-danger .vietnam-realtime-widget-icon {
+.vietnam-realtime-widget.is-danger > .vietnam-realtime-widget-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
 
-.vietnam-realtime-widget.is-danger .vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget.is-danger > .vietnam-realtime-widget-meter > i {
   background: var(--admin-danger);
 }
 
-.vietnam-realtime-widget.is-info .vietnam-realtime-widget-icon {
+.vietnam-realtime-widget.is-info > .vietnam-realtime-widget-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.vietnam-realtime-widget.is-info .vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget.is-info > .vietnam-realtime-widget-meter > i {
   background: var(--admin-info);
 }
 
-.vietnam-realtime-widget.is-neutral .vietnam-realtime-widget-icon {
+.vietnam-realtime-widget.is-neutral > .vietnam-realtime-widget-icon {
   background: rgb(var(--admin-main-channel) / 0.08);
   color: var(--admin-muted);
 }
 
-.vietnam-realtime-widget.is-neutral .vietnam-realtime-widget-meter i {
+.vietnam-realtime-widget.is-neutral > .vietnam-realtime-widget-meter > i {
   background: rgb(var(--admin-main-channel) / 0.24);
 }
 

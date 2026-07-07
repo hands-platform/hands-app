@@ -171,6 +171,20 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-realtime-region-row em {');
   });
 
+  it('scopes realtime widget tones to direct icon and meter slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-realtime-widget-meter > i');
+    expect(css).not.toContain('.vietnam-realtime-widget-meter i {');
+
+    for (const tone of ['success', 'warning', 'danger', 'info', 'neutral']) {
+      expect(css).toContain(`.vietnam-realtime-widget.is-${tone} > .vietnam-realtime-widget-icon`);
+      expect(css).toContain(`.vietnam-realtime-widget.is-${tone} > .vietnam-realtime-widget-meter > i`);
+      expect(css).not.toContain(`.vietnam-realtime-widget.is-${tone} .vietnam-realtime-widget-icon`);
+      expect(css).not.toContain(`.vietnam-realtime-widget.is-${tone} .vietnam-realtime-widget-meter i`);
+    }
+  });
+
   it('scopes map legend and cluster drawer typography to direct children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
