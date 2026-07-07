@@ -297,6 +297,29 @@ describe('VietnamOverviewPage', () => {
       expect(css).not.toContain(`.vietnam-region-signal-row .is-${tone} i`);
     }
   });
+
+  it('scopes region focus and insight card typography to direct slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-region-focus-summary-group-label > strong');
+    expect(css).toContain('.vietnam-region-focus-summary-group-label > span');
+    expect(css).toContain('.vietnam-region-focus-summary-item > small');
+    expect(css).toContain('.vietnam-region-focus-summary-item > strong');
+    expect(css).toContain('.vietnam-region-focus-summary-item > span');
+    expect(css).toContain('.vietnam-overview-region-insight-card > span');
+    expect(css).toContain('.vietnam-overview-region-insight-card > strong');
+    expect(css).toContain('.vietnam-overview-region-insight-card > small');
+    expect(css).toContain('.vietnam-region-number-cell > strong');
+    expect(css).not.toContain('.vietnam-region-focus-summary-group-label strong {');
+    expect(css).not.toContain('.vietnam-region-focus-summary-group-label span {');
+    expect(css).not.toContain('.vietnam-region-focus-summary-item small {');
+    expect(css).not.toContain('.vietnam-region-focus-summary-item strong {');
+    expect(css).not.toContain('.vietnam-region-focus-summary-item span {');
+    expect(css).not.toContain('.vietnam-overview-region-insight-card span {');
+    expect(css).not.toContain('.vietnam-overview-region-insight-card strong {');
+    expect(css).not.toContain('.vietnam-overview-region-insight-card small {');
+    expect(css).not.toContain('.vietnam-region-number-cell strong {');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {

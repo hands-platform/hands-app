@@ -6305,14 +6305,14 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-region-focus-summary-group-label strong {
+.vietnam-region-focus-summary-group-label > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 900;
   line-height: 18px;
 }
 
-.vietnam-region-focus-summary-group-label span {
+.vietnam-region-focus-summary-group-label > span {
   color: var(--admin-muted);
   flex: 0 0 auto;
   font-size: 11px;
@@ -6343,7 +6343,7 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.vietnam-region-focus-summary-item small {
+.vietnam-region-focus-summary-item > small {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 800;
@@ -6354,7 +6354,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-region-focus-summary-item strong {
+.vietnam-region-focus-summary-item > strong {
   color: var(--admin-text);
   font-size: 18px;
   font-weight: 800;
@@ -6364,7 +6364,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-region-focus-summary-item span {
+.vietnam-region-focus-summary-item > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
@@ -8085,7 +8085,7 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.vietnam-overview-region-insight-card span {
+.vietnam-overview-region-insight-card > span {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 900;
@@ -8094,7 +8094,7 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.vietnam-overview-region-insight-card strong {
+.vietnam-overview-region-insight-card > strong {
   color: var(--admin-text);
   font-size: 18px;
   font-weight: 900;
@@ -8104,7 +8104,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-overview-region-insight-card small {
+.vietnam-overview-region-insight-card > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 650;
@@ -8275,7 +8275,7 @@ a.action-button-card:hover {
   padding: 5px 8px;
 }
 
-.vietnam-region-number-cell strong {
+.vietnam-region-number-cell > strong {
   color: inherit;
   font-size: 13px;
   font-weight: 700;
