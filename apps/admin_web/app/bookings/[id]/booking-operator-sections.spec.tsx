@@ -58,6 +58,8 @@ describe('BookingOperatorQueueSections', () => {
     const source = readFileSync('app/bookings/[id]/booking-operator-sections.tsx', 'utf8');
 
     expect(source).toContain('AdminStageItem');
+    expect(source).toContain('AdminStageList');
+    expect(source).not.toContain('<div className="setup-stage-list admin-mt-12">');
     expect(source).not.toContain('className="setup-stage-item"');
   });
 

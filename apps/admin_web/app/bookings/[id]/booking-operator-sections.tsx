@@ -2,7 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminStageItem } from '../../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import {
   AdminActionCard,
   AdminNotePanel,
@@ -131,7 +131,7 @@ export function BookingOperatorQueueSections({
             value: label.value,
           }))}
         />
-        <div className="setup-stage-list admin-mt-12">
+        <AdminStageList className="admin-mt-12">
           {operatorCommandQueue.commands.map((command) => (
             <AdminStageItem key={command.id}>
               <span>{command.label}</span>
@@ -143,7 +143,7 @@ export function BookingOperatorQueueSections({
               <OperatorCommandAction bookingId={bookingId} command={command} />
             </AdminStageItem>
           ))}
-        </div>
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection

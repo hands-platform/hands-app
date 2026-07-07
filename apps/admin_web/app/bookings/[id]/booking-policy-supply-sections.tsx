@@ -1,7 +1,7 @@
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
-import { AdminStageItem } from '../../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import {
   AdminNoteCard,
   AdminNotePanel,
@@ -328,7 +328,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             Closest eligible Partners under the booking pin, radius, online, verification, and location freshness
             gates.
           </p>
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {marketplaceSupply.topCandidates.map((row) => (
               <AdminStageItem key={`candidate-${row.id}`}>
                 <span>GO</span>
@@ -359,7 +359,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                 </AdminTextLink>
               </AdminStageItem>
             ) : null}
-          </div>
+          </AdminStageList>
         </AdminNoteCard>
         <AdminNoteCard className="booking-supply-panel">
           <h3>Operational supply blockers</h3>
@@ -367,7 +367,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             Non-wallet supply repair groups for this booking pin. Wallet debt repair is handled outside the
             booking candidate list.
           </p>
-          <div className="setup-stage-list admin-mt-12">
+          <AdminStageList className="admin-mt-12">
             {marketplaceSupply.excludedGroups.map((group) => (
               <AdminStageItem key={group.label}>
                 <span>{group.count ? 'FIX' : 'OK'}</span>
@@ -381,7 +381,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                 </AdminTextLink>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         </AdminNoteCard>
       </div>
     </AdminSection>

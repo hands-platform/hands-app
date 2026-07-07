@@ -3,7 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminMetricGrid } from '../../../components/admin-page-template';
-import { AdminStageItem } from '../../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -338,7 +338,7 @@ export function BookingRecentOperationsTimelineSection({
       id="booking-recent-operations-timeline"
       title="Booking recent operations timeline"
     >
-      <div className="setup-stage-list admin-mt-12">
+      <AdminStageList className="admin-mt-12">
         {operatingTimeline.slice(0, 8).map((item) => (
           <AdminStageItem key={`recent-${item.id}`}>
             <span>{item.type}</span>
@@ -351,7 +351,7 @@ export function BookingRecentOperationsTimelineSection({
             </small>
           </AdminStageItem>
         ))}
-      </div>
+      </AdminStageList>
     </AdminSection>
   );
 }
@@ -376,7 +376,7 @@ export function BookingPriorityBriefingSection({
       title="Booking priority briefing"
     >
       <SummaryMetricGrid rows={operatorPriorityBriefing.rows} />
-      <div className="setup-stage-list admin-mt-12">
+      <AdminStageList className="admin-mt-12">
         {operatorPriorityBriefing.steps.map((step) => (
           <AdminStageItem key={step.id}>
             <span>{step.label}</span>
@@ -390,7 +390,7 @@ export function BookingPriorityBriefingSection({
             </AdminFormControlLink>
           </AdminStageItem>
         ))}
-      </div>
+      </AdminStageList>
     </AdminSection>
   );
 }
