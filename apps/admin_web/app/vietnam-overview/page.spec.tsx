@@ -134,6 +134,17 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).not.toContain('function formatCurrency(value: number, currency: string)');
     expect(pageSource).not.toContain('value={formatCurrency(region.revenueAmount, region.currency)}');
   });
+
+  it('scopes filter summary typography to direct summary-card children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-overview-filter-summary-card > span');
+    expect(css).toContain('.vietnam-overview-filter-summary-card > strong');
+    expect(css).toContain('.vietnam-overview-filter-summary-card > small');
+    expect(css).not.toContain('.vietnam-overview-filter-summary-card span {');
+    expect(css).not.toContain('.vietnam-overview-filter-summary-card strong {');
+    expect(css).not.toContain('.vietnam-overview-filter-summary-card small {');
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {

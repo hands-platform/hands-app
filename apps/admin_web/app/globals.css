@@ -6175,7 +6175,7 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.vietnam-overview-filter-summary-card span {
+.vietnam-overview-filter-summary-card > span {
   color: var(--admin-muted);
   font-size: 11px;
   font-weight: 900;
@@ -6184,7 +6184,7 @@ a.action-button-card:hover {
   text-transform: uppercase;
 }
 
-.vietnam-overview-filter-summary-card strong {
+.vietnam-overview-filter-summary-card > strong {
   color: var(--admin-text);
   font-size: 14px;
   font-weight: 900;
@@ -6194,7 +6194,7 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vietnam-overview-filter-summary-card small {
+.vietnam-overview-filter-summary-card > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 650;
