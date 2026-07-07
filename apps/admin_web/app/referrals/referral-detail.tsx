@@ -42,10 +42,12 @@ import { ReferralStoreSetupStatus } from './referral-store-setup-status';
 type ReferralParentDetailPageProps =
   | {
       readonly audience: 'customer';
+      readonly canViewDeveloperSetup?: boolean;
       readonly row: AdminCustomerReferralParent;
     }
   | {
       readonly audience: 'partner';
+      readonly canViewDeveloperSetup?: boolean;
       readonly row: AdminPartnerReferralParent;
     };
 
@@ -194,7 +196,10 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   <AdminTextLink href={referralShareUrl(props.audience, props.row.referralCode.code)}>
                     Open referral link
                   </AdminTextLink>
-                  <ReferralStoreSetupStatus audience={props.audience} />
+                  <ReferralStoreSetupStatus
+                    audience={props.audience}
+                    canViewDeveloperSetup={props.canViewDeveloperSetup ?? false}
+                  />
                 </>
               ) : null,
             },

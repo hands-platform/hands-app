@@ -74,6 +74,7 @@ type ReferralDashboardProps =
       readonly audience: 'customer';
       readonly filters?: ReferralDashboardFilters;
       readonly currentPage?: number;
+      readonly canViewDeveloperSetup?: boolean;
       readonly pageSize?: number;
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
@@ -85,6 +86,7 @@ type ReferralDashboardProps =
       readonly audience: 'partner';
       readonly filters?: ReferralDashboardFilters;
       readonly currentPage?: number;
+      readonly canViewDeveloperSetup?: boolean;
       readonly pageSize?: number;
       readonly policy: AdminReferralPolicy;
       readonly rewardQueueSummaries?: readonly ReferralRewardQueueSummary[];
@@ -181,7 +183,10 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />
       <ReferralAccountingGuardrailsPanel />
-      <ReferralLinkReadinessPanel audience={props.audience} />
+      <ReferralLinkReadinessPanel
+        audience={props.audience}
+        canViewDeveloperSetup={props.canViewDeveloperSetup ?? false}
+      />
       <ReferralListFilterPanel
         audience={props.audience}
         filteredCount={props.rows.length}
@@ -252,7 +257,13 @@ function ReferralAccountingGuardrailsPanel() {
   );
 }
 
-function ReferralLinkReadinessPanel({ audience }: { readonly audience: ReferralAudienceSlug }) {
+function ReferralLinkReadinessPanel({
+  audience,
+  canViewDeveloperSetup,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly canViewDeveloperSetup: boolean;
+}) {
   const audienceLabel = referralAudienceLabel(audience);
 
   return (
@@ -280,7 +291,7 @@ function ReferralLinkReadinessPanel({ audience }: { readonly audience: ReferralA
             key: 'setup-status',
             label: 'Setup status',
             value: 'Environment check',
-            action: <ReferralStoreSetupStatus audience={audience} />,
+            action: <ReferralStoreSetupStatus audience={audience} canViewDeveloperSetup={canViewDeveloperSetup} />,
           },
         ]}
       />

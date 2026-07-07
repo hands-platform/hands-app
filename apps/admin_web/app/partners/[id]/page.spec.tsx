@@ -199,6 +199,10 @@ describe('ProviderDetailPage data loading', () => {
     );
   });
 
+  it('does not send ordinary partner detail repair actions to app session diagnostics', () => {
+    expect(providerDetailSource).not.toContain('/app-sessions?role=PROVIDER');
+  });
+
   it('uses operator-facing profile wording instead of setup labels on partner detail', () => {
     expect(providerDetailSource).not.toContain('service setup');
     expect(providerDetailSource).not.toContain('Bookable service setup exists.');

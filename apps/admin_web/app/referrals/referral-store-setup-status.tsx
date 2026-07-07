@@ -3,7 +3,13 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge } from '../../components/status-badge';
 import { referralStoreSetupState, type ReferralAudienceSlug } from '../../lib/referral-links';
 
-export function ReferralStoreSetupStatus({ audience }: { readonly audience: ReferralAudienceSlug }) {
+export function ReferralStoreSetupStatus({
+  audience,
+  canViewDeveloperSetup = false,
+}: {
+  readonly audience: ReferralAudienceSlug;
+  readonly canViewDeveloperSetup?: boolean;
+}) {
   const storeSetup = referralStoreSetupState(audience);
   const missingEnvKeys = referralStoreMissingEnvKeys(audience, storeSetup);
   const hasMissingSetup = missingEnvKeys.length > 0;
@@ -24,9 +30,11 @@ export function ReferralStoreSetupStatus({ audience }: { readonly audience: Refe
       {hasMissingSetup ? (
         <>
           <p className="muted admin-mt-8">Missing setup: {missingEnvKeys.join(', ')}</p>
-          <AdminTextLink className="admin-mt-8" href="/setup#referrals">
-            Configure store URLs
-          </AdminTextLink>
+          {canViewDeveloperSetup ? (
+            <AdminTextLink className="admin-mt-8" href="/setup#referrals">
+              Configure store URLs
+            </AdminTextLink>
+          ) : null}
         </>
       ) : null}
     </>

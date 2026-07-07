@@ -3,7 +3,9 @@ import type {
   AdminReferralParentSummary,
   AdminReferralPolicies,
 } from '../../../lib/admin-api';
+import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { adminGet } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import {
   ReferralDashboard,
   buildReferralDashboardFilters,
@@ -27,7 +29,8 @@ export default async function PartnerReferralsPage({
   const currentPage = buildReferralDashboardPage(resolvedSearchParams);
   const rowsHref = buildReferralParentApiHref('partner', filters, currentPage);
   const summaryHref = buildReferralParentSummaryApiHref('partner', filters);
-  const [policies, rows, summary] = await Promise.all([
+  const [operatorAccess, policies, rows, summary] = await Promise.all([
+    getCurrentAdminOperatorAccess(),
     adminGet<AdminReferralPolicies>('/admin/referrals/policies', {
       customer: referralPolicyFallback('customer'),
       partner: referralPolicyFallback('partner'),
@@ -44,6 +47,7 @@ export default async function PartnerReferralsPage({
   return (
     <ReferralDashboard
       audience="partner"
+      canViewDeveloperSetup={canViewAdminDeveloperSystem(operatorAccess)}
       currentPage={currentPage}
       filters={filters}
       policy={policies.partner}

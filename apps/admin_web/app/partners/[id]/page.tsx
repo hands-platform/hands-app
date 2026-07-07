@@ -3194,8 +3194,8 @@ function partnerAcceptanceRepairStep(
     },
     'Online and reachable': {
       owner: 'Ops',
-      href: `/app-sessions?role=PROVIDER&q=${encodeURIComponent(provider.user?.phone ?? provider.id)}`,
-      actionLabel: 'Open sessions',
+      href: `/partners/${provider.id}?section=full#partner-access-section`,
+      actionLabel: 'Open app activity',
       tone: 'pending',
     },
     'Location freshness': {
@@ -3355,8 +3355,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
         ? 'Partner should receive direct booking alerts during the response window.'
         : 'Partner may miss the 10 minute first-pick window or marketplace invite.',
       payoutImpact: 'No direct payout impact.',
-      action: reachableGate?.ok ? 'Open app sessions' : 'Check devices and sessions',
-      href: `/app-sessions?role=PROVIDER&q=${encodeURIComponent(provider.user?.phone ?? provider.id)}`,
+      action: reachableGate?.ok ? 'Open app activity' : 'Check app activity',
+      href: `/partners/${provider.id}?section=full#partner-access-section`,
       tone: reachableGate?.ok ? 'done' : 'pending',
       bookingBlocked: !reachableGate?.ok,
     },

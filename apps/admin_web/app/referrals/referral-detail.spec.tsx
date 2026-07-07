@@ -212,6 +212,19 @@ describe('Referral detail presentation', () => {
     expect(markup).toContain('Public link base missing');
     expect(markup).toContain('Android store ready');
     expect(markup).toContain('iOS store missing');
+    expect(markup).not.toContain('Configure store URLs');
+    expect(markup).not.toContain('href="/setup#referrals"');
+  });
+
+  it('keeps referral detail setup links behind Developer/System access', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralParentDetailPage
+        audience="customer"
+        canViewDeveloperSetup
+        row={customerReferralParent}
+      />,
+    ).replace(/\s+/g, ' ');
+
     expect(markup).toContain('Configure store URLs');
     expect(markup).toContain('href="/setup#referrals"');
   });

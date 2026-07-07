@@ -128,4 +128,33 @@ describe('PartnerControlsPage', () => {
     expect(partnerControlsSource).not.toContain('<AdminTableFooter');
     expect(partnerControlsSource).not.toContain('partnerControlPagedListFooterLabel(');
   });
+
+  it('does not link ordinary Partner control tasks to Developer/System app session diagnostics', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners')) {
+        return [
+          {
+            id: 'partner-device-gap',
+            displayName: 'Device Gap Partner',
+            user: {
+              fullName: 'Device Gap Partner',
+              phone: '+84000000001',
+              pushDevices: [],
+            },
+            activitySummary: {
+              walletBalance: 0,
+            },
+          },
+        ];
+      }
+
+      return fallback;
+    });
+
+    const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Push/contact readiness');
+    expect(markup).not.toContain('href="/app-sessions');
+  });
 });
