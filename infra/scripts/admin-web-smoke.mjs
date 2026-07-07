@@ -18,7 +18,6 @@ const criticalSmokePaths = [
   '/marketing-analytics',
   '/operations-policy',
   '/operations-policy?details=all',
-  '/setup',
 ];
 const budgetSmokePaths = [
   '/',
@@ -43,7 +42,6 @@ const budgetSmokePaths = [
   '/finance-tax/partner-withholding-tax',
   '/finance-tax/finance-approvers',
   '/operations-policy',
-  '/setup',
   '/cash-settlements',
   '/finance-closeout',
   '/wallet-adjustments',
