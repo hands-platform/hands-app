@@ -95,6 +95,17 @@ describe('CustomerDetailSectionShell', () => {
     expect(source).toContain('headerClassName="customer-detail-section-band-header"');
     expect(source).not.toContain('<section className="customer-detail-section-band admin-mb-16"');
   });
+
+  it('scopes customer detail section typography to direct header slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.customer-detail-section-band-header > div > span');
+    expect(css).toContain('.customer-detail-section-band-header > div > h2');
+    expect(css).toContain('.customer-detail-section-band-header > div > p');
+    expect(css).not.toContain('.customer-detail-section-band-header span');
+    expect(css).not.toContain('.customer-detail-section-band-header h2');
+    expect(css).not.toContain('.customer-detail-section-band-header p');
+  });
 });
 
 function textContent(value: unknown): string {

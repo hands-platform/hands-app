@@ -16049,13 +16049,13 @@ textarea:focus-visible {
 }
 
 .customer-detail-shortcut-link strong,
-.customer-detail-section-band-header h2 {
+.customer-detail-section-band-header > div > h2 {
   color: var(--admin-text);
 }
 
 .customer-detail-shortcut-link small,
-.customer-detail-section-band-header span,
-.customer-detail-section-band-header p {
+.customer-detail-section-band-header > div > span,
+.customer-detail-section-band-header > div > p {
   color: var(--admin-muted);
 }
 
@@ -16097,13 +16097,13 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
-.customer-detail-section-band-header h2 {
+.customer-detail-section-band-header > div > h2 {
   font-size: 24px;
   line-height: 1.25;
   margin: 0;
 }
 
-.customer-detail-section-band-header p {
+.customer-detail-section-band-header > div > p {
   margin: 10px 0 0;
   max-width: 760px;
 }
