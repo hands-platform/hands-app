@@ -13,6 +13,7 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
   it('uses the shared Vuexy badge atoms for gate evidence pills', () => {
     const source = readFileSync('app/partners/[id]/partner-detail-booking-gate-evidence-section.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
@@ -22,6 +23,7 @@ describe('PartnerDetailBookingGateEvidenceSection', () => {
     expect(source).toContain('detailDateTimeValue: latestAttempt?.at');
     expect(source).not.toContain('detail: <DateTimeText fallback="No gate row" value={latestAttempt?.at} />');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{attempt.addressLabel}</span>');
     expect(source).not.toContain('readonly formatDate: (value?: string | null) => string;');

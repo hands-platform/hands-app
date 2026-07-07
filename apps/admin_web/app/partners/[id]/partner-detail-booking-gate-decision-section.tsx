@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -86,14 +87,14 @@ export function PartnerDetailBookingGateDecisionSection({
           },
         ]}
       />
-      <div className="participant-list admin-mt-12">
+      <AdminFilterChipGroup ariaLabel="Marketplace booking gate policy" className="admin-mt-12">
         <StatusBadge tone="info">First response window: {decision.responseWindowLabel}</StatusBadge>
         <StatusBadge tone="info">Marketplace radius: {decision.backupRadiusLabel}</StatusBadge>
         <StatusBadge tone="info">Marketplace location: {decision.locationFreshnessLabel} fresh</StatusBadge>
         <AdminTextLink href="/operations-policy">
           Edit matching policy
         </AdminTextLink>
-      </div>
+      </AdminFilterChipGroup>
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}

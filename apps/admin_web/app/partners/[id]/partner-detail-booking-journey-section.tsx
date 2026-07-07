@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
@@ -78,13 +79,13 @@ export function PartnerDetailBookingJourneySection({
                   <p className="muted">{row.detailNode ?? row.detail}</p>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${row.heading} journey steps`}>
                     {row.steps.map((step) => (
                       <StatusBadgeFromPillClass key={`${row.id}-${step.label}`} pillClass={step.tone}>
                         {step.label}: {step.value}
                       </StatusBadgeFromPillClass>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   <small>
@@ -92,13 +93,13 @@ export function PartnerDetailBookingJourneySection({
                   </small>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${row.heading} journey links`}>
                     {row.links.map((link) => (
                       <AdminTextLink href={link.href} key={link.label}>
                         {link.label}
                       </AdminTextLink>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
               </tr>
             ))}

@@ -14,11 +14,13 @@ describe('PartnerDetailBookingJourneySection', () => {
   });
 
   it('uses the shared Vuexy badge atom for journey steps', () => {
+    expect(sectionSource).toContain('AdminFilterChipGroup');
     expect(sectionSource).toContain('StatusBadgeFromPillClass');
     expect(sectionSource).not.toContain('statusBadgeToneFromPillClass');
     expect(sectionSource).toContain('DateTimeText');
     expect(sectionSource).toContain('readonly value: ReactNode;');
     expect(sectionSource).not.toContain('PillClassBadge');
+    expect(sectionSource).not.toContain('<div className="participant-list');
     expect(sectionSource).not.toContain('<span className={`pill ${step.tone}`}');
     expect(sectionSource).not.toContain('formatLatestAt');
   });

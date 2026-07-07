@@ -6,6 +6,7 @@ import {
 } from '../../../components/admin-chat-window';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminDisclosure, AdminNotePanel } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge } from '../../../components/status-badge';
@@ -115,7 +116,7 @@ export function PartnerDetailBookingChatRecordsSection({
                 )}
               </td>
               <td>
-                <div className="participant-list">
+                <AdminFilterChipGroup ariaLabel={`${row.heading} record actions`}>
                   <AdminTextLink href={row.bookingHref}>
                     Open booking
                   </AdminTextLink>
@@ -129,7 +130,7 @@ export function PartnerDetailBookingChatRecordsSection({
                       Open chat archive
                     </AdminTextLink>
                   ) : null}
-                </div>
+                </AdminFilterChipGroup>
               </td>
             </tr>
           ))}

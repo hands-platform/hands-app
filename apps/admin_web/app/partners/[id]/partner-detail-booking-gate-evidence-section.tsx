@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -108,14 +109,14 @@ export function PartnerDetailBookingGateEvidenceSection({
                 </span>
               </td>
               <td>
-                <div className="participant-list">
+                <AdminFilterChipGroup ariaLabel={`${attempt.reasonLabel} evidence actions`}>
                   <AdminTextLink href={attempt.bookingMonitorHref}>
                     Booking gate queue
                   </AdminTextLink>
                   <AdminTextLink href={attempt.auditHref}>
                     Audit evidence
                   </AdminTextLink>
-                </div>
+                </AdminFilterChipGroup>
               </td>
             </tr>
           ))}

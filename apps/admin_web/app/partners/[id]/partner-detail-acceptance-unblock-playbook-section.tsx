@@ -1,5 +1,6 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import {
@@ -76,12 +77,12 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
                   <span className="muted">{step.bookingImpact}</span>
                 </td>
                 <td>
-                  <div className="participant-list">
+                  <AdminFilterChipGroup ariaLabel={`${step.title} repair status`}>
                     <StatusBadgeFromPillClass pillClass={pillClassForTone(step.tone)}>
                       {step.status}
                     </StatusBadgeFromPillClass>
                     <StatusBadge tone="info">{step.owner}</StatusBadge>
-                  </div>
+                  </AdminFilterChipGroup>
                 </td>
                 <td>
                   <AdminTextLink href={step.href}>
