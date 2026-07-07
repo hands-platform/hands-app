@@ -304,7 +304,7 @@ function ClusterDetailPanel({
           },
           {
             detail: latestSignalSource.detail,
-            label: 'Source',
+            label: 'Record type',
             value: latestSignalSource.label,
           },
           {
@@ -533,7 +533,7 @@ function signalOperatorRead(point: VietnamOverviewMapPoint) {
 
   return {
     label: 'Stored operating signal',
-    detail: 'Review the event source and linked record before acting.',
+    detail: 'Review the linked record before acting.',
   };
 }
 

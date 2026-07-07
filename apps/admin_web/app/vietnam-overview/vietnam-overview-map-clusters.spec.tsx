@@ -63,4 +63,13 @@ describe('VietnamOverviewMapClusters', () => {
     expect(source).not.toContain("detail: <>Latest {item.latestPoint ? <DateTimeText value={item.latestPoint.occurredAt} /> : 'pending'}</>");
     expect(source).not.toContain('{formatDateTime(point.occurredAt)}');
   });
+
+  it('keeps map cluster copy operator-facing instead of exposing source/debug wording', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-map-clusters.tsx', 'utf8');
+
+    expect(source).toContain("label: 'Record type'");
+    expect(source).toContain('Review the linked record before acting.');
+    expect(source).not.toContain("label: 'Source'");
+    expect(source).not.toContain('Review the event source and linked record before acting.');
+  });
 });
