@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -33,10 +34,10 @@ export function OperationsHandoffFinanceActionSection({
             title={item.title}
             variant="ops-task"
           >
-            <div className="participant-list">
-              <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
-              <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-            </div>
+          <AdminFilterChipGroup>
+            <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
+            <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+          </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminTaskGrid>

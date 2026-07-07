@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import {
   AdminNotePanel,
@@ -80,16 +81,16 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
                 {row.title}
               </AdminFormControlLink>
               <p className="muted admin-my-6">{row.subtitle}</p>
-              <div className="participant-list">
-                {row.pills.map((pill) => (
-                  <StatusBadgeFromPillClass
-                    key={`${row.id}-${pill.label}`}
-                    pillClass={pill.className}
+            <AdminFilterChipGroup>
+              {row.pills.map((pill) => (
+                <StatusBadgeFromPillClass
+                  key={`${row.id}-${pill.label}`}
+                  pillClass={pill.className}
                   >
-                    {pill.label}
-                  </StatusBadgeFromPillClass>
-                ))}
-              </div>
+                  {pill.label}
+                </StatusBadgeFromPillClass>
+              ))}
+            </AdminFilterChipGroup>
               <small>{row.operatorAction}</small>
             </AdminNotePanel>
           ))}

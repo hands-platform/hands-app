@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminSectionHeader } from '../../components/admin-page-template';
@@ -73,13 +74,13 @@ export function OperationsPolicyLiveSimulatorSection({
                 <span>{step.step}</span>
                 <strong>{step.title}</strong>
                 <p>{step.detail}</p>
-                <div className="participant-list">
-                  {step.tags.map((tag) => (
-                    <StatusBadgeFromPillClass pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
-                      {tag.label}
-                    </StatusBadgeFromPillClass>
-                  ))}
-                </div>
+              <AdminFilterChipGroup>
+                {step.tags.map((tag) => (
+                  <StatusBadgeFromPillClass pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
+                    {tag.label}
+                  </StatusBadgeFromPillClass>
+                ))}
+              </AdminFilterChipGroup>
               </div>
             ))}
           </div>

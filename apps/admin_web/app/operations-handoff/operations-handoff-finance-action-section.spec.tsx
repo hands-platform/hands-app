@@ -8,6 +8,7 @@ describe('OperationsHandoffFinanceActionSection', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-finance-action-section.tsx', 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTextLink');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
@@ -16,6 +17,7 @@ describe('OperationsHandoffFinanceActionSection', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('<Link className="ops-task-card"');
     expect(source).not.toContain('<div className="ops-task-grid"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
   });

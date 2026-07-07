@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { MatchingPlaybookItem } from './matching-playbook';
@@ -23,13 +24,13 @@ export function OperationsPolicyMatchingPlaybookSection({
           <span>{step.step}</span>
           <strong>{step.title}</strong>
           <p>{step.detail}</p>
-          <div className="participant-list">
+          <AdminFilterChipGroup>
             {step.tags.map((tag) => (
               <StatusBadgeFromPillClass pillClass={tag.tone} key={`${step.title}-${tag.label}`}>
                 {tag.label}
               </StatusBadgeFromPillClass>
             ))}
-          </div>
+          </AdminFilterChipGroup>
         </div>
       ))}
     </AdminSection>

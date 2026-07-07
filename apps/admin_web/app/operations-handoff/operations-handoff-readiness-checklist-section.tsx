@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 
@@ -41,10 +42,10 @@ export function OperationsHandoffReadinessChecklistSection({
           title={item.title}
           variant="ops-task"
         >
-          <div className="participant-list">
-            <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-            <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
-          </div>
+        <AdminFilterChipGroup>
+          <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+          <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
+        </AdminFilterChipGroup>
         </AdminActionCard>
       ))}
     </AdminSection>

@@ -1,4 +1,5 @@
 import { ExternalLink, Save } from 'lucide-react';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -89,13 +90,13 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             <AdminInsightLinkCard href={row.href} key={`${setting.key}-${row.id}`}>
               <strong>{row.title}</strong>
               <p className="muted">{row.subtitle}</p>
-              <div className="participant-list">
+              <AdminFilterChipGroup>
                 {row.pills.map((pill) => (
                   <StatusBadgeFromPillClass pillClass={pill.className} key={`${row.id}-${pill.label}`}>
                     {pill.label}
                   </StatusBadgeFromPillClass>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             </AdminInsightLinkCard>
           ))}
           {relatedBookings.rows.length === 0 ? (

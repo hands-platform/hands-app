@@ -9,12 +9,14 @@ describe('OperationsPolicyDrilldownSection', () => {
 
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminTaskBreakdown');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminFormControlLink');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="ops-task-breakdown">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<div className="ops-task-note"');
     expect(source).not.toContain('<a className="button button-secondary policy-inline-action"');
     expect(source).not.toContain('<p className="muted admin-m-0">{list.emptyText}</p>');

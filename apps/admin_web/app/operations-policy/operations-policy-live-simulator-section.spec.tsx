@@ -8,6 +8,7 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
     const source = readFileSync('app/operations-policy/operations-policy-live-simulator-section.tsx', 'utf8');
 
     expect(source).toContain('AdminDetailGrid');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminNotePanel');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTraceSummary');
@@ -15,6 +16,7 @@ describe('OperationsPolicyLiveSimulatorSection', () => {
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<div className="detail-grid admin-mt-14">');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(source).not.toContain('<div className="ops-task-note">');
     expect(source).not.toContain('<div className="ops-section-header">');

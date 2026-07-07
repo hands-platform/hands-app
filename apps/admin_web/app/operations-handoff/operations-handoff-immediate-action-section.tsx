@@ -1,3 +1,4 @@
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { ImmediateActionQueueRow } from './operations-handoff-immediate-actions';
@@ -36,10 +37,10 @@ export function OperationsHandoffImmediateActionSection({
             title={item.title}
             variant="ops-task"
           >
-            <div className="participant-list">
-              <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-              <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
-            </div>
+          <AdminFilterChipGroup>
+            <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={item.statusClass}>{item.status}</StatusBadgeFromPillClass>
+          </AdminFilterChipGroup>
           </AdminActionCard>
         ))}
       </AdminTaskGrid>
