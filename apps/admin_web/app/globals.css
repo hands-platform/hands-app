@@ -1083,35 +1083,35 @@ a {
   box-shadow: var(--admin-shadow-sm);
 }
 
-.payout-wallet-withdrawal-summary-card span {
+.payout-wallet-withdrawal-summary-card > span {
   color: var(--admin-muted);
   font-size: 0.8125rem;
   font-weight: 600;
 }
 
-.payout-wallet-withdrawal-summary-card strong {
+.payout-wallet-withdrawal-summary-card > strong {
   color: var(--admin-text);
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.1;
 }
 
-.payout-wallet-withdrawal-summary-card small {
+.payout-wallet-withdrawal-summary-card > small {
   color: var(--admin-muted);
   font-size: 0.75rem;
   font-weight: 500;
 }
 
-.payout-wallet-withdrawal-summary-card.is-active small,
-.payout-wallet-withdrawal-summary-card.is-info strong {
+.payout-wallet-withdrawal-summary-card.is-active > small,
+.payout-wallet-withdrawal-summary-card.is-info > strong {
   color: var(--admin-accent-strong);
 }
 
-.payout-wallet-withdrawal-summary-card.is-warning strong {
+.payout-wallet-withdrawal-summary-card.is-warning > strong {
   color: var(--admin-warning);
 }
 
-.payout-wallet-withdrawal-summary-card.is-audit strong {
+.payout-wallet-withdrawal-summary-card.is-audit > strong {
   color: var(--admin-success);
 }
 

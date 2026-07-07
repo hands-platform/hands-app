@@ -259,6 +259,17 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain("'card admin-card payout-wallet-withdrawal-summary-card'");
   });
 
+  it('scopes withdrawal summary typography to direct summary-card children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.payout-wallet-withdrawal-summary-card > span');
+    expect(css).toContain('.payout-wallet-withdrawal-summary-card > strong');
+    expect(css).toContain('.payout-wallet-withdrawal-summary-card > small');
+    expect(css).not.toContain('.payout-wallet-withdrawal-summary-card span {');
+    expect(css).not.toContain('.payout-wallet-withdrawal-summary-card strong {');
+    expect(css).not.toContain('.payout-wallet-withdrawal-summary-card small {');
+  });
+
   it('uses the shared empty-state atom for no-row messaging', () => {
     expect(sectionSource).toContain('AdminTablePanel');
     expect(sectionSource).toContain('AdminEmptyState');
