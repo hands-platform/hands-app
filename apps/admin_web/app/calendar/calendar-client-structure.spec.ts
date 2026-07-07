@@ -63,4 +63,11 @@ describe('calendar client structure', () => {
     expect(pageSource).not.toContain('Vuexy-style shared calendar');
     expect(pageSource).not.toContain('description=');
   });
+
+  it('renders the Vuexy calendar app surface without a duplicate page title card', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/calendar/page.tsx'), 'utf8');
+
+    expect(pageSource).not.toContain('AdminPageTemplate');
+    expect(pageSource).toContain('<CalendarClient');
+  });
 });
