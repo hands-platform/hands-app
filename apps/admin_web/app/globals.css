@@ -3192,15 +3192,16 @@ a.action-button-card:hover {
   overflow: visible;
 }
 
-.booking-monitor .ops-section-header {
+.booking-monitor:is(.card, .admin-card, .admin-section) > .ops-section-header,
+.booking-monitor :is(.card, .admin-card, .admin-section) > .ops-section-header {
   align-items: flex-start;
   border-bottom: 1px solid var(--admin-border);
   gap: 12px;
   padding-bottom: 14px;
 }
 
-.booking-monitor .ops-section-header h2,
-.booking-monitor .ops-section-header h3 {
+.booking-monitor:is(.card, .admin-card, .admin-section) > .ops-section-header :is(h2, h3),
+.booking-monitor :is(.card, .admin-card, .admin-section) > .ops-section-header :is(h2, h3) {
   color: var(--admin-text);
   line-height: 1.2;
   margin-bottom: 6px;
