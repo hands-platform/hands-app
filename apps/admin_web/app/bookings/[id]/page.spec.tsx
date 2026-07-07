@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
 import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
 import BookingDetailPage from './page';
@@ -20,11 +21,17 @@ vi.mock('../../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('BookingDetailPage data loading', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockReset();
   });
 
   it('requests only the operations policy keys needed by the booking detail readout', async () => {
@@ -50,6 +57,15 @@ describe('BookingDetailPage data loading', () => {
 
   it('loads notification diagnostics only when the full booking detail view is requested', async () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
 
     await expect(
       BookingDetailPage({
@@ -60,6 +76,31 @@ describe('BookingDetailPage data loading', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/bookings/booking-diagnostics-load/notifications?take=12',
+      [],
+    );
+  });
+
+  it('does not load notification diagnostics for ordinary operators even when full detail is requested', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['BOOKINGS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+
+    await expect(
+      BookingDetailPage({
+        params: Promise.resolve({ id: 'booking-ordinary-full-load' }),
+        searchParams: Promise.resolve({ section: 'full' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/bookings/booking-ordinary-full-load/notifications?take=12',
       [],
     );
   });

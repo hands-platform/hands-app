@@ -143,7 +143,10 @@ import {
   AdminReviewRecordsSection,
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
-import { AdminDeveloperSystemSection } from '../../../components/admin-developer-system-section';
+import {
+  AdminDeveloperSystemSection,
+  canViewAdminDeveloperSystem,
+} from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
@@ -192,6 +195,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
@@ -276,7 +280,10 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
-  const includeDeveloperDiagnostics = shouldLoadBookingDetailDeveloperDiagnostics(detailSearchParams);
+  const developerDiagnosticsRequested = shouldLoadBookingDetailDeveloperDiagnostics(detailSearchParams);
+  const includeDeveloperDiagnostics =
+    developerDiagnosticsRequested &&
+    canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const {
     booking,
     operationalPolicies,
