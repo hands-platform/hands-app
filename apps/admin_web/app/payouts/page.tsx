@@ -181,11 +181,11 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         resultTone={summary.total > 0 ? 'info' : 'warning'}
         title="Payout date range"
       >
-        <div className="participant-list admin-mb-12">
+        <AdminFilterChipGroup ariaLabel="Payout closeout links" className="admin-mb-12">
           <AdminTextLink href="/finance-closeout">
             Open finance closeout
           </AdminTextLink>
-        </div>
+        </AdminFilterChipGroup>
         <AdminFilterChipGroup ariaLabel="Payout date range" className="admin-mt-12">
           {[
             { href: '/payouts?range=all', label: 'All dates', range: 'all' },
@@ -211,11 +211,11 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
         title="Payout batch release policy desk"
       >
-        <div className="participant-list admin-mb-12">
+        <AdminFilterChipGroup ariaLabel="Payout release policy links" className="admin-mb-12">
           <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
             Batch policy
           </AdminTextLink>
-        </div>
+        </AdminFilterChipGroup>
         <AdminSectionHeader
           className="admin-mt-14"
           description="Live Admin policy values used by finance before payout release, cash-fee clearance, and final acceptance, service start, and payout release reopening."

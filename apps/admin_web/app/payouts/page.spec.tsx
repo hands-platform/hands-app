@@ -143,6 +143,7 @@ describe('PayoutsPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminActionCard');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSectionHeader');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTaskCard');
@@ -155,6 +156,7 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
     expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card"');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card"');
     expect(source).not.toContain('PillClassBadge');

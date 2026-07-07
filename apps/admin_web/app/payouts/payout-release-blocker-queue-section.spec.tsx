@@ -8,12 +8,14 @@ describe('PayoutReleaseBlockerQueueSection', () => {
 
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminStageItem');
     expect(source).toContain('AdminStageList');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="text-link"');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<div className="setup-stage-list">');
     expect(source).not.toContain('className="setup-stage-item"');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');

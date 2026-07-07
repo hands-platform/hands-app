@@ -218,12 +218,14 @@ describe('PayoutBatchTable', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/payout-batch-table.tsx'), 'utf8');
 
     expect(source).toContain('AdminInlineFallback');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSignal');
     expect(source).toContain('adminSignalToneFromClassName(row.opsSignalClassName)');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<span className={row.opsSignalClassName}>{row.opsSignal}</span>');
     expect(source).not.toContain('<span className="pill pill-danger">Payout hold</span>');

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
@@ -138,7 +139,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             </div>
           </td>
           <td>
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel={`Blocking reasons for ${row.shortId}`}>
               {row.blockingReasons.length ? (
                 row.blockingReasons.map((reason) => (
                   <StatusBadgeFromPillClass
@@ -152,7 +153,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               ) : (
                 <StatusBadge tone="success">Clear</StatusBadge>
               )}
-            </div>
+            </AdminFilterChipGroup>
             <div className="muted admin-mt-6">
               {row.blockingActionSummary}
             </div>
@@ -164,22 +165,22 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
           <td>
             <div>{row.earningCount} item(s)</div>
             <div className="muted">{row.earningsHint}</div>
-            <div className="participant-list admin-mt-8">
+            <AdminFilterChipGroup ariaLabel={`Service evidence for ${row.shortId}`} className="admin-mt-8">
               {row.serviceEvidencePills.map((item) => (
                 <StatusBadge key={`${row.id}-${item.key}`} tone="info">
                   {item.label}: <MoneyText amount={item.amount} currency={item.currency} />
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
           </td>
           <td>
-            <div className="participant-list">
+            <AdminFilterChipGroup ariaLabel={`Readiness checklist for ${row.shortId}`}>
               {row.checklist.map((item) => (
                 <StatusBadge key={item.label} title={item.detail} tone={item.ok ? 'success' : 'warning'}>
                   {item.label}
                 </StatusBadge>
               ))}
-            </div>
+            </AdminFilterChipGroup>
             <div className="muted admin-mt-6">
               {row.readinessSummary}
             </div>

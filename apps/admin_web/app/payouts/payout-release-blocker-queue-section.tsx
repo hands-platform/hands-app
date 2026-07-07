@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
@@ -48,13 +49,13 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
                 {item.label}: {item.detail}
               </p>
               <p className="muted">{item.action}</p>
-              <div className="participant-list admin-mt-8">
+              <AdminFilterChipGroup ariaLabel={`Release blocker reasons for ${item.id}`} className="admin-mt-8">
                 {item.blockingReasons.map((reason) => (
                   <StatusBadgeFromPillClass key={reason.label} pillClass={reason.pillClass}>
                     {reason.label}
                   </StatusBadgeFromPillClass>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             </div>
             <AdminTextLink href={`#${item.id}`}>
               Row
