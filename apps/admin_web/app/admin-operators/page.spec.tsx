@@ -157,6 +157,7 @@ describe('AdminOperatorsPage', () => {
     expect(source).toContain('AdminCard');
     expect(source).toContain('AdminCardGrid');
     expect(source).toContain('AdminFormCard');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
@@ -170,6 +171,7 @@ describe('AdminOperatorsPage', () => {
     expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${user.id}:${label}`}>');
     expect(source).not.toContain('<span className={operatorRolePillClassName(role)} key={role}>');
+    expect(source).not.toContain('<div className="participant-list">');
   });
 
   it('uses the shared DateTimeText atom for visible operator timestamps', () => {

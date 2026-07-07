@@ -3,6 +3,7 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -180,13 +181,13 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
                     <div className="muted">{user.id}</div>
                   </td>
                   <td>
-                    <div className="participant-list">
+                    <AdminFilterChipGroup ariaLabel={`${user.id} role badges`}>
                       {user.roles.map((role) => (
                         <StatusBadgeFromPillClass key={role} pillClass={operatorRolePillClassName(role)}>
                           {role}
                         </StatusBadgeFromPillClass>
                       ))}
-                    </div>
+                    </AdminFilterChipGroup>
                   </td>
                   <td>
                     <strong>
