@@ -42,20 +42,46 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('id="record-date-filter"');
     expect(markup).toContain('id="customer-account-evidence"');
     expect(markup).toContain('id="customer-account-operations"');
-    expect(markup).toContain('id="notifications"');
+    expect(markup).toContain('id="customer-record-archive-summary"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-booking-create-gates"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-operator-command-queue"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="record-date-filter"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-evidence"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-operations"');
-    expect(markup).toContain('class="card admin-section" id="notifications"');
     expect(markup).not.toContain('<button type="submit">Add address note</button>');
     expect(markup).toContain(
       'class="admin-form-control-button button button-primary" type="submit">Add address note</button>',
     );
     expect(markup).toContain('No saved address yet.');
-    expect(markup).toContain('No chat rooms matched this date filter.');
+    expect(markup).toContain('Load record archive');
+    expect(markup).not.toContain('No chat rooms matched this date filter.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('keeps customer chat and audit archive rows collapsed by default', async () => {
+    const page = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-1' }),
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('id="customer-record-archive-summary"');
+    expect(markup).toContain('Load record archive');
+    expect(markup).toContain('/customers/customer-1?records=all#chat-history');
+    expect(markup).not.toContain('customer-chat-history-section');
+    expect(markup).not.toContain('id="notifications"');
+  });
+
+  it('renders customer chat and audit archive rows when records=all is requested', async () => {
+    const page = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-1' }),
+      searchParams: Promise.resolve({ records: 'all' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('customer-chat-history-section');
+    expect(markup).toContain('id="notifications"');
+    expect(markup).toContain('No chat rooms matched this date filter.');
   });
 
   it('uses shared Vuexy status badge atoms instead of raw customer detail pill markup', () => {
@@ -75,9 +101,13 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).not.toContain('<div className="setup-stage-list');
     expect(customerDetailSource).not.toContain('<div className="ops-section-header');
     expect(customerDetailSource).not.toContain('<div className={`ops-task-note');
-    expect(customerDetailSource).not.toContain('<div className="ops-task-note ops-task-pending admin-mt-14">');
+    expect(customerDetailSource).not.toContain(
+      '<div className="ops-task-note ops-task-pending admin-mt-14">',
+    );
     expect(customerDetailSource).not.toContain('<div className="ops-task-note ops-task-info">');
-    expect(customerDetailSource).not.toContain('<div className="ops-task-note ops-task-info" id="addresses">');
+    expect(customerDetailSource).not.toContain(
+      '<div className="ops-task-note ops-task-info" id="addresses">',
+    );
     expect(customerDetailSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
     expect(customerDetailSource).not.toContain('<span className="pill');
     expect(customerDetailSource).not.toContain('<span className={`pill');
@@ -112,9 +142,13 @@ describe('CustomerDetailPage', () => {
     expect(customerDetailSource).toContain('valueDateTimeValue: customer.user?.createdAt');
     expect(customerDetailSource).toContain("valueDateTimeFallback: 'No session'");
     expect(customerDetailSource).toContain('valueDateTimeValue: latestSession?.lastSeenAt');
-    expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />');
+    expect(customerDetailSource).toContain(
+      '<DateTimeText value={bookingLatestActivityAt(lastCompletedBooking)} />',
+    );
     expect(customerDetailSource).toContain('<DateTimeText value={bookingLatestActivityAt(latestBooking)} />');
-    expect(customerDetailSource).not.toContain('value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />');
+    expect(customerDetailSource).not.toContain(
+      'value: <DateTimeText fallback="Unknown" value={customer.user?.createdAt} />',
+    );
     expect(customerDetailSource).not.toContain(
       'value: <DateTimeText fallback="No session" value={latestSession?.lastSeenAt} />',
     );
@@ -131,16 +165,24 @@ describe('CustomerDetailPage', () => {
     expect(overviewSource).toContain('readonly helper: ReactNode;');
     expect(customerDetailSource).toContain('Saved <DateTimeText value={favorite.createdAt} />');
     expect(customerDetailSource).toContain('Last viewed <DateTimeText value={view.lastViewedAt} />');
-    expect(customerDetailSource).toContain('Latest completed <DateTimeText value={bookingLatestActivityAt(booking)} />');
+    expect(customerDetailSource).toContain(
+      'Latest completed <DateTimeText value={bookingLatestActivityAt(booking)} />',
+    );
     expect(customerDetailSource).not.toContain('helper: `Saved ${formatDate(favorite.createdAt)}`');
-    expect(customerDetailSource).not.toContain('helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`');
+    expect(customerDetailSource).not.toContain(
+      'helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`',
+    );
   });
 
   it('uses the shared DateTimeText atom for selected location address labels', () => {
     expect(customerDetailSource).toContain('labelNode?: ReactNode;');
     expect(customerDetailSource).toContain('{address.labelNode ?? address.label}');
-    expect(customerDetailSource).toContain('Selected service address <DateTimeText value={location.createdAt} />');
-    expect(customerDetailSource).not.toContain('label: `Selected service address ${formatDate(location.createdAt)}`');
+    expect(customerDetailSource).toContain(
+      'Selected service address <DateTimeText value={location.createdAt} />',
+    );
+    expect(customerDetailSource).not.toContain(
+      'label: `Selected service address ${formatDate(location.createdAt)}`',
+    );
   });
 
   it('uses the shared table pagination footer for customer chat history', () => {
