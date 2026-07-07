@@ -13,6 +13,7 @@ const comparisonDoc = readFileSync(
   resolve(repoRoot, 'docs/codex/vuexy-figma-template-comparison.md'),
   'utf8',
 );
+const designGoalDoc = readFileSync(resolve(repoRoot, 'docs/codex/vuexy-admin-design-goal.md'), 'utf8');
 const figmaReadme = readFileSync(resolve(repoRoot, 'design/figma/README.md'), 'utf8');
 const gitignore = readFileSync(resolve(repoRoot, '.gitignore'), 'utf8');
 
@@ -81,6 +82,21 @@ describe('Admin Vuexy source documentation', () => {
       expect(existsSync(`${vuexyTemplatePath}/${anchor}`)).toBe(true);
       expect(architectureDoc).toContain(anchor);
       expect(comparisonDoc).toContain(anchor);
+    }
+  });
+
+  it('documents the current Vuexy acceptance guard tests that prove shared surfaces stay enforced', () => {
+    const guardFiles = [
+      'app/admin-page-shell-inventory.spec.ts',
+      'components/admin-page-surface-usage.spec.tsx',
+      'components/admin-form-control-usage.spec.tsx',
+      'components/admin-form-controls-css.spec.tsx',
+      'components/admin-kpi-card-usage.spec.tsx',
+    ] as const;
+
+    for (const guardFile of guardFiles) {
+      expect(existsSync(resolve(repoRoot, 'apps/admin_web', guardFile)), `${guardFile} should exist`).toBe(true);
+      expect(designGoalDoc).toContain(guardFile);
     }
   });
 });

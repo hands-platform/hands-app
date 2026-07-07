@@ -119,7 +119,37 @@ Before editing individual pages, prefer these shared surfaces:
   typecheck, and visual/browser checks for edited pages when the dev server is
   available.
 
+## Current Automated Guard Evidence
+
+These guard tests are the current source-of-truth checks for shared Vuexy
+surface enforcement. They do not replace visual QA against the Figma/template
+references, but they prevent the largest regressions while page-by-page design
+work continues.
+
+| Guard | Enforces |
+| ----- | -------- |
+| `app/admin-page-shell-inventory.spec.ts` | Concrete Admin pages use `AdminPageTemplate`, redirect, auth shell exception, or a documented shared renderer delegate. |
+| `components/admin-page-surface-usage.spec.tsx` | Admin pages and delegated route renderers use shared Vuexy page, section, table, card, status, money, date, empty, loading, or error surfaces. |
+| `components/admin-form-control-usage.spec.tsx` | Visible inputs, selects, textareas, date controls, buttons, forms, table shells, disclosures, segmented controls, and raw table elements stay inside shared atoms. |
+| `components/admin-form-controls-css.spec.tsx` | Shared form controls, datepicker skin, checkbox mark layer, button sizing, and segmented controls keep Vuexy/Figma token rhythm. |
+| `components/admin-kpi-card-usage.spec.tsx` | KPI metric cards route through `AdminKpiCard`/shared metric-card implementation instead of page-local card shells. |
+
 ## Progress Notes
 
 Use small, reviewable changes. Move repeated page-specific markup into shared
 components only when the change makes multiple pages more consistent.
+
+2026-07-07 checks:
+
+- Direct production `setup-stage-list` usage under `apps/admin_web/app` is clear;
+  stage lists now route through shared `AdminStageList` surfaces.
+- Direct production `<table>` usage is limited to `components/admin-data-table.tsx`;
+  page rows render through `AdminDataTable`.
+- Direct visible production input/select/textarea/button usage is limited to
+  shared form/action atoms, with hidden form inputs allowed where server actions
+  need stable metadata.
+- The local Figma mirror and ThemeForest source `.fig` package match SHA256
+  `1599EFBB4CF7AFBFFD685010F6E6898762168EDBD0E06A3110EA9131A77F19BD`.
+- Remaining work is primarily page-by-page visual QA and targeted refinement
+  against the Vuexy template/Figma references, especially dense overview and
+  finance/customer/partner detail pages.
