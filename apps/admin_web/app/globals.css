@@ -11736,12 +11736,12 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
-.service-catalog-page .ops-section-header {
+.service-catalog-page > .card > .ops-section-header {
   border-bottom: 1px solid var(--admin-border);
   padding-bottom: 14px;
 }
 
-.service-catalog-page .ops-section-header h2 {
+.service-catalog-page > .card > .ops-section-header h2 {
   line-height: 1.2;
   margin-bottom: 6px;
 }
