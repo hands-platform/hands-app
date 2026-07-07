@@ -155,6 +155,7 @@ describe('AdminOperatorsPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/admin-operators/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminCard');
+    expect(source).toContain('AdminCardGrid');
     expect(source).toContain('AdminFormCard');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('StatusBadge');
@@ -163,6 +164,8 @@ describe('AdminOperatorsPage', () => {
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadge');
     expect(source).not.toContain('<form action={createAdminOperator} className="admin-operator-control-card"');
+    expect(source).not.toContain('<div className="admin-operator-control-grid">');
+    expect(source).not.toContain('<div className="admin-operator-permission-grid">');
     expect(source).not.toContain('<span className="pill pill-neutral">{category.group}</span>');
     expect(source).not.toContain('<span className="pill pill-primary">All categories</span>');
     expect(source).not.toContain('<span className="pill pill-info" key={`${user.id}:${label}`}>');

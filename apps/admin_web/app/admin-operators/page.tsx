@@ -6,7 +6,7 @@ import { AdminInlineActionForm } from '../../components/admin-inline-action-form
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminCard, AdminFormCard } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminFormCard } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -75,7 +75,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
         resultTone="info"
         title="Master admin control"
       >
-        <div className="admin-operator-control-grid">
+        <AdminCardGrid ariaLabel="Operator account controls" className="admin-operator-control-grid">
           <AdminFormCard action={createAdminOperator} className="admin-operator-control-card" ariaLabel="Add operator">
             <div>
               <h3>Add operator</h3>
@@ -97,7 +97,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
               Add operator
             </AdminFormControlButton>
           </AdminFormCard>
-        </div>
+        </AdminCardGrid>
       </AdminFilterPanel>
 
       <AdminFilterPanel
@@ -107,7 +107,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
         resultTone="info"
         title="Category permissions"
       >
-        <div className="admin-operator-permission-grid">
+        <AdminCardGrid ariaLabel="Operator permission categories" className="admin-operator-permission-grid">
           {adminOperatorPermissionCategoryDefinitions.map((category) => (
             <AdminCard className="admin-operator-permission-item" key={category.key}>
               <div>
@@ -118,7 +118,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
               <small>{category.defaultOwner}</small>
             </AdminCard>
           ))}
-        </div>
+        </AdminCardGrid>
       </AdminFilterPanel>
 
       <AdminTablePanel

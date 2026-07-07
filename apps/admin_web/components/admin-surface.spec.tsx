@@ -6,6 +6,7 @@ import {
   AdminAsideCard,
   AdminBasicTimeline,
   AdminCard,
+  AdminCardGrid,
   AdminCardHeader,
   AdminDisclosure,
   AdminDialogCard,
@@ -52,6 +53,20 @@ describe('Admin surface components', () => {
       'aria-labelledby': 'finance-title',
       className: 'card admin-card finance-card',
       id: 'finance-card',
+    });
+  });
+
+  it('renders a reusable Vuexy card grid wrapper without losing page hooks', () => {
+    const grid = AdminCardGrid({
+      ariaLabel: 'Operator category cards',
+      children: <AdminCard>Operator card</AdminCard>,
+      className: 'admin-operator-permission-grid',
+    });
+
+    expect(grid.type).toBe('div');
+    expect(grid.props).toMatchObject({
+      'aria-label': 'Operator category cards',
+      className: 'admin-card-grid admin-operator-permission-grid',
     });
   });
 
