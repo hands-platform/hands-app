@@ -149,6 +149,8 @@ describe('VietnamOverviewPage', () => {
   it('scopes realtime dashboard typography to direct Vuexy card slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
+    expect(css).toContain('.vietnam-realtime-chart-header > div > h2');
+    expect(css).toContain('.vietnam-realtime-chart-header > div > p');
     expect(css).toContain('.vietnam-realtime-widget-copy > span');
     expect(css).toContain('.vietnam-realtime-widget-copy > strong');
     expect(css).toContain('.vietnam-realtime-widget-copy > small');
@@ -159,6 +161,8 @@ describe('VietnamOverviewPage', () => {
     expect(css).toContain('.vietnam-realtime-region-row > div > strong');
     expect(css).toContain('.vietnam-realtime-region-row > div > small');
     expect(css).toContain('.vietnam-realtime-region-row > em');
+    expect(css).not.toContain('.vietnam-realtime-chart-header h2');
+    expect(css).not.toContain('.vietnam-realtime-chart-header p');
     expect(css).not.toContain('.vietnam-realtime-widget-copy span {');
     expect(css).not.toContain('.vietnam-realtime-widget-copy strong {');
     expect(css).not.toContain('.vietnam-realtime-widget-copy small {');
