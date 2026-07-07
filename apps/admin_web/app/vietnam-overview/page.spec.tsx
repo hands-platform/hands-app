@@ -42,6 +42,10 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('card admin-card vietnam-realtime-widget');
     expect(markup).not.toContain('<article class="vietnam-realtime-widget');
+    expect(pageSource).toContain('AdminOverviewGrid');
+    expect(pageSource).not.toContain(
+      '<section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">',
+    );
     expect(markup).toContain('card admin-section vietnam-overview-map-card');
     expect(markup).toContain('card admin-section vietnam-overview-filter-panel');
     expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-filter-summary-card');

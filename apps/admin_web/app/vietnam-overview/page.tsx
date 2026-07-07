@@ -27,7 +27,7 @@ import {
 import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
+import { AdminOverviewGrid, AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminKpiCard, AdminRowLink, AdminSection } from '../../components/admin-surface';
@@ -399,8 +399,11 @@ export default async function VietnamOverviewPage({
       description="Realtime operating map for saved customer addresses, active customers, ready Partners, offline Partners, 7-day inactive Partners, and active bookings across Vietnam. Period metrics are summarized below without paid map lookup."
       title="Vietnam Overview"
     >
-
-      <section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">
+      <AdminOverviewGrid
+        ariaLabel="Realtime Vietnam operations dashboard"
+        baseClassName="vietnam-realtime-dashboard"
+        variant="content"
+      >
         <div className="vietnam-realtime-widget-grid">
           {realtimeOperatorCards.map(({ label, value, detail, icon: Icon, tone, progress }) => (
             <AdminCard key={label} className={`vietnam-realtime-widget is-${tone}`}>
@@ -480,7 +483,7 @@ export default async function VietnamOverviewPage({
             ) : null}
           </AdminSection>
         </div>
-      </section>
+      </AdminOverviewGrid>
 
       <AdminSection
         actions={
