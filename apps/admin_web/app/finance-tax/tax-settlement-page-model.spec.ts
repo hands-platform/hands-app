@@ -392,7 +392,7 @@ describe('tax settlement page model', () => {
     expect(links).toEqual([
       {
         href: '/finance-tax/booking-settlement-audit/settlement-1',
-        label: 'Settlement snapshot',
+        label: 'Settlement record',
         value: 'settleme',
       },
       {

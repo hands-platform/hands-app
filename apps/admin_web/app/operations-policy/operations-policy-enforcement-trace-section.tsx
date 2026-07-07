@@ -16,7 +16,7 @@ export function OperationsPolicyEnforcementTraceSection({
       description="Shows where each operating decision is enforced today, so operators know whether a policy change affects customer matching, Partner acceptance, notifications, or finance gates."
       statusLabel={`${trace.length} enforced lane(s)`}
       statusTone="info"
-      title="Policy enforcement trace"
+      title="Policy enforcement evidence"
     >
       <AdminTaskGrid className="admin-mt-14">
         {trace.map((item) => (

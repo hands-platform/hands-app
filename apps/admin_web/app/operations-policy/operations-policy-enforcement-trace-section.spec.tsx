@@ -28,7 +28,7 @@ describe('OperationsPolicyEnforcementTraceSection', () => {
     const rendered = normalizedTextContent(section);
 
     expect(classNamesIn(section)).toContain('card admin-section admin-mb-16');
-    expect(rendered).toContain('Policy enforcement trace');
+    expect(rendered).toContain('Policy enforcement evidence');
     expect(rendered).toContain('1 enforced lane(s)');
     expect(rendered).toContain('Marketplace participation');
     expect(rendered).toContain('API touchpoint: Partner open-request list endpoint');

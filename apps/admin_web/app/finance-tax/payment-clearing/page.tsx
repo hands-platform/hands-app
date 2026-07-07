@@ -99,7 +99,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           value={<MoneyText amount={summary.amount} currency={summary.currency} />}
         />
         <FinanceListCommandCard
-          detail="Open detail from the table when source, payment, settlement, or bank evidence needs review."
+          detail="Open detail from the table when linked payment, settlement, or bank evidence needs review."
           href={summary.openCount > 0 ? paymentClearingHref({ ...filters, page: 1, review: 'open' }) : '/finance-overview'}
           icon={AlertTriangle}
           label="Review queue"

@@ -36,7 +36,7 @@ export const intentionallyUnlistedPageRoutes = {
   '/finance-tax/booking-settlement-audit/[id]': {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/finance-tax/booking-settlement-audit', '/finance-tax/settlement-reversals'],
-    reason: 'Settlement snapshot detail opens from audit and reversal evidence links.',
+    reason: 'Settlement record detail opens from audit and reversal evidence links.',
   },
   '/finance-tax/general-ledger/[id]': {
     kind: 'DETAIL_PAGE',

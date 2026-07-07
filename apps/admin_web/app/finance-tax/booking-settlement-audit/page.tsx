@@ -82,12 +82,12 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
-      description="Immutable booking settlement snapshots for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
+      description="Posted booking settlement records for customer payment, Partner payout, VAT/PIT, payment fee, and company VAT audit."
       title="Booking Settlement Audit"
     >
       <FinanceListCommandBoard ariaLabel="Settlement audit command board">
         <FinanceListCommandCard
-          detail={`${summary.openTaxCount} snapshot row(s) still need declaration, payment, closeout, or reversal review.`}
+          detail={`${summary.openTaxCount} settlement record(s) still need declaration, payment, closeout, or reversal review.`}
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' })}
           icon={AlertTriangle}
           label="Open tax ratio"
@@ -95,7 +95,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           value={openTaxRatio}
         />
         <FinanceListCommandCard
-          detail={`${summary.paidTaxCount} snapshot row(s) already marked paid or closed for the selected range.`}
+          detail={`${summary.paidTaxCount} settlement record(s) already marked paid or closed for the selected range.`}
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'paid' })}
           icon={CheckCircle2}
           label="Paid tax ratio"
@@ -103,7 +103,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           value={paidTaxRatio}
         />
         <FinanceListCommandCard
-          detail="Partner VAT/PIT withheld by posted settlement snapshots in this audit scope."
+          detail="Partner VAT/PIT withheld by posted settlement records in this audit scope."
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'posted' })}
           icon={ShieldCheck}
           label="Withholding evidence"
@@ -169,10 +169,10 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
         description="Open the booking detail only when evidence is needed; the list stays intentionally compact."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
-        title="Booking settlement snapshot rows"
+        title="Booking settlement records"
       >
         <FinanceDataTable
-            emptyMessage="No settlement snapshots match the current filters."
+            emptyMessage="No settlement records match the current filters."
             headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon evidence', 'Partner tax', 'HANDS fee', 'Status', 'Evidence']}
             rowCount={tableRows.length}
           >
@@ -184,7 +184,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     </AdminTextLink>
                     <div>
                       <AdminTextLink href={bookingSettlementAuditDetailHref(snapshot.id)}>
-                        Snapshot {shortId(snapshot.id)}
+                        Settlement record {shortId(snapshot.id)}
                       </AdminTextLink>
                     </div>
                     <div className="muted">
@@ -223,7 +223,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                   </td>
                   <td>
                     <AdminTextLink href={bookingSettlementAuditDetailHref(snapshot.id)}>
-                      View coupon snapshot
+                      View coupon record
                     </AdminTextLink>
                     <div className="muted">Discount, expense, and funding source are loaded on detail.</div>
                   </td>
@@ -268,7 +268,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                       ]}
                       label={`Booking settlement evidence actions for ${snapshot.id}`}
                     />
-                    <div className="muted">Snapshot {shortId(snapshot.id)}</div>
+                    <div className="muted">Record {shortId(snapshot.id)}</div>
                     <div className="muted">
                       Posted <DateTimeText value={snapshot.postedAt} />
                     </div>

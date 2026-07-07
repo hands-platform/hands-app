@@ -123,7 +123,7 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Quick route from this journal batch back to the finance record, settlement snapshot, clearing row, and bank evidence."
+        description="Quick route from this journal batch back to the finance record, settlement record, clearing row, and bank evidence."
         resultLabel={balanceDelta === 0 ? 'Balanced' : 'Unbalanced'}
         resultTone={balanceDelta === 0 ? 'success' : 'danger'}
         title="Journal evidence hub"
@@ -375,7 +375,7 @@ function paymentFeePolicyInfo(
     fixedAmount: settlement?.paymentFeeFixedAmount ?? 0,
     method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
     payer: settlement?.paymentFeePayer ?? '-',
-    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
+    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy record missing'),
     rateBps: settlement?.paymentFeeRateBps ?? 0,
     treatment: settlement?.paymentFeeTreatment ?? '-',
     currency: settlement?.currency ?? fallbackCurrency,

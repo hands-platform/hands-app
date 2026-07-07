@@ -56,7 +56,7 @@ export default async function BookingSettlementAuditDetailPage({
           Back to audit
         </AdminFormControlLink>
       }
-      description="Single immutable booking settlement snapshot for finance, tax, payment fee, coupon, and payout audit evidence."
+      description="Single posted booking settlement record for finance, tax, payment fee, coupon, and payout audit evidence."
       metrics={[
         { helper: 'Booking settlement state.', label: 'Settlement', value: snapshot.settlementStatus },
         { helper: 'Tax closeout state.', label: 'Tax status', value: snapshot.taxStatus },
@@ -76,13 +76,13 @@ export default async function BookingSettlementAuditDetailPage({
       <FinanceTablePanel
         description={
           <>
-            Snapshot {shortId(snapshot.id)} · Posted <DateTimeText value={snapshot.postedAt} /> · Period{' '}
+            Settlement record {shortId(snapshot.id)} · Posted <DateTimeText value={snapshot.postedAt} /> · Period{' '}
             {snapshot.monthlyPeriod}
           </>
         }
         resultLabel={snapshot.taxStatus}
         resultTone={financeTaxCloseoutStatusTone(snapshot.taxStatus)}
-        title="Settlement snapshot overview"
+        title="Settlement record overview"
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem
@@ -129,7 +129,7 @@ export default async function BookingSettlementAuditDetailPage({
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Follow the posted journal, payment clearing, and refund reversal evidence linked to this immutable snapshot."
+        description="Follow the posted journal, payment clearing, and refund reversal evidence linked to this posted settlement record."
         resultLabel={evidenceStatus.label}
         resultTone={evidenceStatus.tone}
         title="Settlement evidence hub"
@@ -232,7 +232,7 @@ export default async function BookingSettlementAuditDetailPage({
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Payment provider fee evidence is copied to the settlement snapshot so method-specific CARD, MOMO, or VNPAY rules can be audited later."
+        description="Payment provider fee evidence is copied to the settlement record so method-specific CARD, MOMO, or VNPAY rules can be audited later."
         resultLabel={<MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />}
         resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
         title="Payment fee policy evidence"
@@ -252,9 +252,9 @@ export default async function BookingSettlementAuditDetailPage({
 
       <FinanceTablePanel
         description="Coupon values are copied from the booking settlement metadata so later coupon edits do not rewrite historical finance evidence."
-        resultLabel={coupon.reviewFlag ?? 'Snapshot OK'}
+        resultLabel={coupon.reviewFlag ?? 'Policy record OK'}
         resultTone={coupon.reviewFlag ? 'warning' : 'success'}
-        title="Coupon and policy snapshot"
+        title="Coupon and policy record"
       >
         <FinanceDetailGrid>
           <FinanceDetailInfoItem label="Coupon code" value={coupon.code} />
@@ -442,7 +442,7 @@ function paymentFeePolicyInfo(snapshot: AdminBookingSettlementSnapshot) {
     method: stringValue(ruleSnapshot?.method) ?? snapshot.paymentMethod,
     payer: snapshot.paymentFeePayer ?? '-',
     policyName: stringValue(ruleSnapshot?.policyName) ?? (hasPolicySnapshot ? '-' : 'Legacy/manual fee evidence'),
-    policyVersionId: snapshot.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
+    policyVersionId: snapshot.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy record missing'),
     rateBps: snapshot.paymentFeeRateBps ?? 0,
     treatment: snapshot.paymentFeeTreatment ?? '-',
   };

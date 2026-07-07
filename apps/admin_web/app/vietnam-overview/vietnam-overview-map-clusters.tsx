@@ -499,7 +499,7 @@ function signalSourceCopy(point: VietnamOverviewMapPoint) {
   if (point.kind === 'bookings') {
     return {
       label: 'Active booking address',
-      detail: 'Uses the immutable booking address snapshot for active request and work states.',
+      detail: 'Uses the confirmed booking service address for active request and work states.',
     };
   }
 
@@ -527,7 +527,7 @@ function signalOperatorRead(point: VietnamOverviewMapPoint) {
   if (point.kind === 'bookings') {
     return {
       label: 'Booking work is in progress',
-      detail: 'This dot uses the immutable booking address snapshot for active work.',
+      detail: 'This dot uses the confirmed booking service address for active work.',
     };
   }
 

@@ -92,7 +92,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           value={formatFinancePercent(summary.cashCount, summary.count)}
         />
         <FinanceListCommandCard
-          detail={`${summary.nonCashCount} non-cash reversal row(s) should trace to refund, clearing, and bank reconciliation evidence.`}
+          detail={`${summary.nonCashCount} non-cash reversal row(s) should link to refund, clearing, and bank reconciliation evidence.`}
           href={bookingSettlementReversalHref({ ...filters, page: 1, review: 'non-cash' })}
           icon={CreditCard}
           label="Non-cash share"
@@ -192,7 +192,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
                   <td>
                     <strong>{reversal.originalMonthlyPeriod}</strong>
                     <div className="muted">Closing {shortId(reversal.originalMonthlyClosingId)}</div>
-                    <div className="muted">Snapshot {shortId(reversal.originalSettlementSnapshotId)}</div>
+                    <div className="muted">Original record {shortId(reversal.originalSettlementSnapshotId)}</div>
                   </td>
                   <td>
                     <strong>{financePersonName(reversal.originalSettlementSnapshot?.customerProfile?.user, 'Unknown customer')}</strong>

@@ -155,7 +155,7 @@ describe('finance detail pages', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/booking-settlement-snapshots/settlement-1', null);
     expect(markup).toContain('Booking Settlement Audit Detail');
-    expect(markup).toContain('Settlement snapshot overview');
+    expect(markup).toContain('Settlement record overview');
     expect(markup).toContain('Settlement evidence hub');
     expect(markup).toContain('Booking settlement operating path');
     expect(markup).toContain('Customer payment');
@@ -177,7 +177,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Balanced');
     expect(markup).toContain('Delta');
     expect(markup).toContain('0 VND');
-    expect(markup).toContain('Coupon and policy snapshot');
+    expect(markup).toContain('Coupon and policy record');
     expect(markup).toContain('Settlement journal');
     expect(markup).toContain('Payment clearing');
     expect(markup).toContain('Refund after payout reversal');
@@ -354,7 +354,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Record key');
     expect(markup).not.toContain('Source key');
     expect(markup).toContain(
-      'Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot.',
+      'Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and original settlement record.',
     );
     expect(markup).toContain('Reversal accounting impact');
     expect(markup).toContain('Reversal allocation check');
@@ -547,7 +547,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Settlement payment fee');
     expect(markup).toContain('12.000 VND');
     expect(markup).toContain('CARD · legacy/manual fee evidence');
-    expect(markup).toContain('Policy snapshot missing');
+    expect(markup).toContain('Policy record missing');
     expect(markup).toContain('HANDS / OPERATING_EXPENSE');
     expect(markup).toContain('Payment clearing operating path');
     expect(markup).toContain('Match bank transaction');

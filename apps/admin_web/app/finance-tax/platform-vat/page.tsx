@@ -85,7 +85,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           value={<MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />}
         />
         <FinanceListCommandCard
-          detail="VAT rate buckets from immutable booking settlement snapshots."
+          detail="VAT rate buckets from posted booking settlement records."
           href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
           icon={ShieldCheck}
           label="VAT buckets"
@@ -96,7 +96,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${summary.period}. Showing VAT rate buckets from immutable booking settlement snapshots.`}
+        description={`Period ${summary.period}. Showing VAT rate buckets from posted booking settlement records.`}
         resultLabel={summary.currency}
         resultTone="info"
         title="Platform VAT period"

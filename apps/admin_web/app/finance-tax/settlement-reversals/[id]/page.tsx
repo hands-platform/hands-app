@@ -247,7 +247,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Amounts below are the reversal entry values. They should offset the original posted settlement through journal and clearing evidence, not by editing the closed snapshot."
+        description="Amounts below are the reversal entry values. They should offset the original posted settlement through journal and clearing evidence, not by editing the closed record."
         resultLabel={<MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />}
         resultTone="warning"
         title="Reversal accounting impact"
@@ -374,7 +374,7 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
 
       <FinanceTablePanel
         grouped
-        description="Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and immutable original settlement snapshot."
+        description="Open each evidence record to compare the original monthly close, reversal monthly close, journal, clearing, bank match, and original settlement record."
         resultLabel={`${evidenceLinks.length} link(s)`}
         resultTone="info"
         title="Reversal evidence links"

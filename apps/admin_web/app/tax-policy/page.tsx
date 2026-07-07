@@ -529,8 +529,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </>
         }
         className="admin-mt-16 tax-policy-snapshot-consistency-card"
-        description="Recent 30-day earning sample. This does not recalculate tax; it checks whether immutable earning withholding and retained tax log snapshots still line up."
-        title="Settlement snapshot consistency"
+        description="Recent 30-day earning sample. This does not recalculate tax; it checks whether retained earning withholding and tax records still line up."
+        title="Settlement record consistency"
       >
         <AdminStageList>
           {snapshotConsistency.rows.map((row) => (

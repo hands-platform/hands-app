@@ -103,7 +103,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           value={formatFinancePercent(summary.postedCount, summary.count)}
         />
         <FinanceListCommandCard
-          detail={`${summary.reversedCount} reversed batch(es) requiring source/reversal trace review.`}
+          detail={`${summary.reversedCount} reversed batch(es) requiring reversal evidence trail review.`}
           href={generalLedgerHref({ ...filters, page: 1, review: 'reversed' })}
           icon={AlertTriangle}
           label="Reversal queue"
@@ -111,7 +111,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           value={String(summary.reversedCount)}
         />
         <FinanceListCommandCard
-          detail="Open detail only when debit/credit entries or source evidence are needed."
+          detail="Open detail only when debit/credit entries or linked evidence are needed."
           href={generalLedgerHref({ ...filters, page: 1 })}
           icon={ReceiptText}
           label="Journal evidence"
@@ -165,7 +165,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
 
       <FinanceTablePanel
         grouped
-        description="This list intentionally shows journal batches and entry counts only. Open source records when entry-level evidence is required."
+        description="This list intentionally shows journal batches and entry counts only. Open linked records when entry-level evidence is required."
         resultLabel={`${pagination.totalRows} batch(es)`}
         resultTone="info"
         title="Journal batches"

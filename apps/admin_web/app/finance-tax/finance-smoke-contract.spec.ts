@@ -31,7 +31,7 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('/finance-tax/finance-approvers');
     expect(scriptSource).toContain('Finance approver directory');
     expect(scriptSource).toContain('Dual-control guard');
-    expect(scriptSource).toContain('Booking settlement snapshot rows');
+    expect(scriptSource).toContain('Booking settlement records');
     expect(scriptSource).toContain('Coupon settlement rows');
     expect(scriptSource).toContain('Settlement reversal rows');
     expect(scriptSource).toContain('Stored monthly closing rows');
@@ -50,7 +50,7 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain("smokePath: '/finance-tax/settlement-reversals'");
     expect(scriptSource).toContain("listPath: '/finance-tax/settlement-reversals?range=all'");
     expect(scriptSource).toContain('shouldRunDeepSection(target.smokePath ?? target.listPath)');
-    expect(scriptSource).toContain('Settlement snapshot overview');
+    expect(scriptSource).toContain('Settlement record overview');
     expect(scriptSource).toContain('Settlement evidence hub');
     expect(scriptSource).toContain('Accounting amount breakdown');
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/payment-clearing'), 'finance-tax/payment-clearing')");

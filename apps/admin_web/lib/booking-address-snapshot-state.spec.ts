@@ -23,7 +23,7 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
     ).toEqual({
       label: 'Address locked',
       detail: '12 Nguyen Hue, District 1',
-      pin: 'Service address snapshot saved',
+      pin: 'Confirmed service address saved',
       tone: 'pill-success',
     });
   });
@@ -38,7 +38,7 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
     ).toEqual({
       label: 'Pin locked',
       detail: 'Customer confirmed this map pin without a text address.',
-      pin: 'Service address snapshot saved',
+      pin: 'Confirmed service address saved',
       tone: 'pill-success',
     });
   });
@@ -85,7 +85,7 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
   it('returns missing state when neither snapshot nor legacy address is available', () => {
     expect(bookingAddressSnapshotStateFromFacts(baseInput)).toEqual({
       label: 'Address missing',
-      detail: 'No immutable booking address snapshot is attached.',
+      detail: 'No confirmed service address record is attached.',
       pin: 'Ask customer support to confirm the service address before dispatch.',
       tone: 'pill-danger',
     });

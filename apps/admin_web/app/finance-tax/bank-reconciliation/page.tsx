@@ -99,7 +99,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
     >
       <FinanceListCommandBoard ariaLabel="Bank command board">
         <FinanceListCommandCard
-          detail={`${summary.unmatchedCount} bank transaction(s) still need source evidence matching.`}
+          detail={`${summary.unmatchedCount} bank transaction(s) still need linked evidence matching.`}
           href={bankReconciliationHref({ ...filters, page: 1, review: 'unmatched' })}
           icon={AlertTriangle}
           label="Unmatched ratio"

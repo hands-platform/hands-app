@@ -157,7 +157,7 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       </FinanceTablePanel>
 
       <FinanceTablePanel
-        description="Quick links from this clearing row to the payment record, settlement snapshot, journal, and bank match evidence."
+        description="Quick links from this clearing row to the payment record, settlement record, journal, and bank match evidence."
         resultLabel={remainingAmount > 0 ? 'Needs match' : 'Fully matched'}
         resultTone={remainingAmount > 0 ? 'warning' : 'success'}
         title="Clearing evidence hub"
@@ -376,7 +376,7 @@ function paymentFeePolicyInfo(
     method: stringValue(ruleSnapshot?.method) ?? settlement?.paymentMethod ?? '-',
     payer: settlement?.paymentFeePayer ?? '-',
     policyName: stringValue(ruleSnapshot?.policyName) ?? (hasPolicySnapshot ? '-' : 'Legacy/manual fee evidence'),
-    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy snapshot missing'),
+    policyVersionId: settlement?.paymentFeePolicyVersionId ?? (hasPolicySnapshot ? '-' : 'Policy record missing'),
     rateBps: settlement?.paymentFeeRateBps ?? 0,
     treatment: settlement?.paymentFeeTreatment ?? '-',
     currency: settlement?.currency ?? fallbackCurrency,

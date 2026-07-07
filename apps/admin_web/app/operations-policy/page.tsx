@@ -65,7 +65,7 @@ type OperationsPolicySearchParams = Promise<Record<string, string | string[] | u
 // Final partner choice control matrix
 // Current partner acceptance impact
 // Matching stage impact preview
-// Policy enforcement trace
+// Policy enforcement evidence
 // operationalPolicyAnchor(setting.key)
 // id={operationalPolicyAnchor(setting.key)}
 // OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes

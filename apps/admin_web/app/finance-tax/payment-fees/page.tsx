@@ -62,7 +62,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
     >
       <FinanceListCommandBoard ariaLabel="Fee command board">
         <FinanceListCommandCard
-          detail="Payment processing fee cost from immutable settlement snapshots."
+          detail="Payment processing fee cost from posted settlement records."
           href={paymentFeeHref(filters)}
           icon={CreditCard}
           label="Processing fee"
@@ -105,7 +105,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${summary.period}. Fee totals are grouped from immutable settlement snapshots; no booking list is loaded here.`}
+        description={`Period ${summary.period}. Fee totals are grouped from posted settlement records; no booking list is loaded here.`}
         resultLabel={summary.currency}
         resultTone="info"
         title="Payment fee period"

@@ -73,7 +73,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
           </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
-      description="Company-funded coupon expense and coupon settlement policy snapshots from immutable booking settlements."
+      description="Company-funded coupon expense and coupon settlement policy records from posted booking settlements."
       metrics={[
         {
           helper: 'Coupon discount amount applied to customer payment in the current bounded queue.',
@@ -161,7 +161,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
 
       <FinanceTablePanel
         grouped
-        description="Coupon policy values are historical settlement snapshots. Changing coupon settings later must not rewrite these rows."
+        description="Coupon policy values are historical settlement records. Changing coupon settings later must not rewrite these rows."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
         title="Coupon settlement rows"
@@ -246,7 +246,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
                   </td>
                   <td>
                     <StatusBadge tone={coupon.reviewFlag ? 'warning' : 'success'}>
-                      {coupon.reviewFlag ?? 'Snapshot OK'}
+                      {coupon.reviewFlag ?? 'Policy record OK'}
                     </StatusBadge>
                     <div className="muted admin-mt-8">{snapshot.settlementStatus}</div>
                     <div className="muted">{snapshot.taxStatus}</div>

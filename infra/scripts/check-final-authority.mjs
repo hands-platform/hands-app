@@ -573,14 +573,13 @@ function checkBookingDetailIsSourceOfTruth() {
   const requiredBookingDetailMarkers = [
     'MVP authority contract',
     'NestJS business authority',
-    'BookingAddressSnapshot',
     'customer fallback partner choice',
     'wallet gate',
     'Connected operations records',
     'Operator action availability',
     'Booking gate reason',
     'Booking full record index',
-    'Finance trace',
+    'Finance evidence',
     'Cash settlement desk',
     'Tax policy',
     'Location trail',
@@ -588,7 +587,7 @@ function checkBookingDetailIsSourceOfTruth() {
     'Chat lifecycle and retention',
     'All customer chats',
     'All Partner chats',
-    'Service pricing snapshot',
+    'Service pricing evidence',
   ];
 
   requireMarkers('apps/admin_web/app/bookings/[id]/page.tsx', bookingDetail, requiredBookingDetailMarkers);
@@ -618,7 +617,7 @@ function checkOperationsPolicyControlPlane() {
     'Final partner choice control matrix',
     'Current partner acceptance impact',
     'Matching stage impact preview',
-    'Policy enforcement trace',
+    'Policy enforcement evidence',
     'operationalPolicyAnchor(setting.key)',
     'id={operationalPolicyAnchor(setting.key)}',
     'OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes',
@@ -660,7 +659,7 @@ function checkOperationsPolicyControlPlane() {
     'Final partner choice control matrix',
     'Current partner acceptance impact',
     'Matching stage impact preview',
-    'Policy enforcement trace',
+    'Policy enforcement evidence',
   ]);
 }
 

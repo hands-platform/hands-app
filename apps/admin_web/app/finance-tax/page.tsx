@@ -132,10 +132,10 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           })}
         />
       }
-      description="Tax, fee, VAT, PIT, payment fee, and immutable booking settlement snapshot control view."
+      description="Tax, fee, VAT, PIT, payment fee, and posted booking settlement record control view."
       metrics={[
         {
-          helper: 'Immutable booking settlement snapshots matching the active queue.',
+          helper: 'Posted booking settlement records matching the active queue.',
           href: '/finance-tax/booking-settlement-audit',
           label: 'Snapshot rows',
           value: settlementSummary.count,
@@ -147,7 +147,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           value: settlementSummary.openTaxCount,
         },
         {
-          helper: 'Customer payment amount captured by settlement snapshots.',
+          helper: 'Customer payment amount captured by posted settlement records.',
           label: 'Customer paid',
           value: <MoneyText amount={settlementSummary.customerPaymentAmount} currency={currency} />,
         },
@@ -163,12 +163,12 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           value: <MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency || currency} />,
         },
         {
-          helper: 'Output VAT component from HANDS platform fee snapshots.',
+          helper: 'Output VAT component from HANDS platform fee records.',
           label: 'Company VAT',
           value: <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />,
         },
         {
-          helper: 'Payment processing fee cost recorded on settlement snapshots.',
+          helper: 'Payment processing fee cost recorded on settlement records.',
           label: 'Payment fees',
           value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
         },
@@ -229,7 +229,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               helper:
                 'Completed booking settlement stores customer payment, Partner payout, VAT/PIT, payment fee, and company VAT values at posting time.',
               key: 'booking-snapshot',
-              label: 'Booking snapshot is immutable',
+              label: 'Booking settlement record is immutable',
               signal: '1',
               value: `${settlementSummary.count} rows`,
             },
@@ -249,7 +249,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 </>
               ),
               key: 'snapshot-totals',
-              label: 'Finance uses snapshot totals',
+              label: 'Finance uses posted totals',
               signal: '3',
               value: (
                 <>
@@ -292,7 +292,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         <>
           <AdminFilterPanel
             className="admin-mb-16"
-            description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads settlement snapshot metadata only."
+            description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads posted settlement record metadata only."
             resultLabel="Coupon summary API"
             resultTone="info"
             title="Coupon finance summary"
@@ -322,7 +322,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                   value: <MoneyText amount={couponFinanceSummary.customerPaidAmount} currency={couponFinanceSummary.currency} />,
                 },
                 {
-                  helper: 'Pre-coupon service amount used for Partner payout, withholding, and platform fee snapshots.',
+                  helper: 'Pre-coupon service amount used for Partner payout, withholding, and platform fee records.',
                   key: 'settlement-base',
                   label: 'Settlement base',
                   signal: 'BASE',
@@ -412,7 +412,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         <FinanceStageList
           items={[
             {
-              helper: 'Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed snapshots.',
+              helper: 'Today/needs-action by default. Review posted, cash, non-cash, declared, paid, and reversed records.',
               href: bookingSettlementAuditHref(settlementFilters),
               key: 'booking-settlement-audit',
               label: 'Booking Settlement Audit',
@@ -476,7 +476,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
               value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
             },
             {
-              helper: 'Configure versioned tax rules. Historical settlement snapshots keep their own tax values.',
+              helper: 'Configure versioned tax rules. Historical settlement records keep their own tax values.',
               href: '/tax-policy',
               key: 'tax-policy',
               label: 'Tax Policy',

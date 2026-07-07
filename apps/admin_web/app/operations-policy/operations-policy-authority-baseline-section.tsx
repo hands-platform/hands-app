@@ -18,7 +18,7 @@ export function OperationsPolicyAuthorityBaselineSection() {
           title="Confirmed service address required"
         >
           <p>
-            Every booking must keep an immutable service address snapshot before distance matching,
+            Every booking must keep a confirmed service address record before distance matching,
             marketplace participation, payment evidence, and dispute review.
           </p>
         </AdminTaskCard>

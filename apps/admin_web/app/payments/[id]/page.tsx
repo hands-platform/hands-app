@@ -587,7 +587,7 @@ function bookingCoordinateLabel(payment: AdminPaymentDetail) {
     snapshot?.longitude !== undefined &&
     snapshot.longitude !== null
   ) {
-    return 'Service address snapshot saved';
+    return 'Confirmed service address saved';
   }
   if (
     payment.booking?.lat !== undefined &&

@@ -28,7 +28,7 @@ describe('finance list pages', () => {
   });
 
   it.each([
-    ['booking settlement audit', BookingSettlementAuditPage, 'Settlement audit filters', 'Booking settlement snapshot rows'],
+    ['booking settlement audit', BookingSettlementAuditPage, 'Settlement audit filters', 'Booking settlement records'],
     ['coupon finance', CouponFinancePage, 'Coupon finance filters', 'Coupon settlement rows'],
     ['settlement reversals', SettlementReversalsPage, 'Settlement reversal filters', 'Settlement reversal rows'],
   ] as const)('renders %s filters and rows with Vuexy table panels', async (_name, Page, filterTitle, tableTitle) => {

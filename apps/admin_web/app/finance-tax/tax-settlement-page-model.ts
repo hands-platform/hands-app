@@ -592,7 +592,7 @@ export function buildFinanceSettlementTraceLinks(record: {
   if (record.settlementSnapshotId) {
     links.push({
       href: bookingSettlementAuditDetailHref(record.settlementSnapshotId),
-      label: 'Settlement snapshot',
+      label: 'Settlement record',
       value: shortId(record.settlementSnapshotId),
     });
   }
@@ -859,7 +859,7 @@ export function buildFinanceOperationsPriorityLinks({
       amountSuffix: null,
       count: settlementSummary.openTaxCount,
       label: 'Today needs action',
-      helper: 'Settlement snapshots waiting for declaration, payment, or closeout review in the active range.',
+      helper: 'Settlement records waiting for declaration, payment, or closeout review in the active range.',
       href: bookingSettlementAuditHref({ ...settlementFilters, page: 1, review: 'open' }),
       signal: 'Needs action',
     },
@@ -924,7 +924,7 @@ export function buildTaxFinanceMetrics(
     {
       label: 'Snapshot rows',
       value: settlementSummary.count,
-      helper: 'Immutable booking settlement snapshots matching the active queue.',
+      helper: 'Posted booking settlement records matching the active queue.',
       href: '/finance-tax/booking-settlement-audit',
     },
     {
@@ -936,7 +936,7 @@ export function buildTaxFinanceMetrics(
     {
       label: 'Customer paid',
       value: formatMoney(settlementSummary.customerPaymentAmount, currency),
-      helper: 'Customer payment amount captured by settlement snapshots.',
+      helper: 'Customer payment amount captured by posted settlement records.',
     },
     {
       label: 'Partner payout',
@@ -956,12 +956,12 @@ export function buildTaxFinanceMetrics(
     {
       label: 'Company VAT',
       value: formatMoney(settlementSummary.companyOutputVat, currency),
-      helper: 'Output VAT component from HANDS platform fee snapshots.',
+      helper: 'Output VAT component from HANDS platform fee records.',
     },
     {
       label: 'Payment fees',
       value: formatMoney(settlementSummary.paymentProcessingFee, currency),
-      helper: 'Payment processing fee cost recorded on settlement snapshots.',
+      helper: 'Payment processing fee cost recorded on settlement records.',
     },
     {
       label: 'Partners with revenue',
@@ -1138,7 +1138,7 @@ export function buildMonthlyTaxClosingMetrics(summary: AdminMonthlyTaxClosingSum
     {
       label: 'Settlements',
       value: summary.settlementCount,
-      helper: 'Settlement snapshots included in this monthly tax period.',
+      helper: 'Settlement records included in this monthly tax period.',
     },
     {
       label: 'Customer paid',
@@ -1323,7 +1323,7 @@ export function buildPlatformVatMetrics(summary: AdminPlatformVatSummary) {
     {
       label: 'Settlements',
       value: summary.settlementCount,
-      helper: 'Settlement snapshots included in this platform VAT period.',
+      helper: 'Settlement records included in this platform VAT period.',
     },
     {
       label: 'Platform fee gross',
@@ -1353,7 +1353,7 @@ export function buildPaymentFeeMetrics(summary: AdminPaymentFeeSummary) {
     {
       label: 'Settlements',
       value: summary.settlementCount,
-      helper: 'Settlement snapshots included in this payment fee period.',
+      helper: 'Settlement records included in this payment fee period.',
     },
     {
       label: 'Customer paid',

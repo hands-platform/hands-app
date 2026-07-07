@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 // MVP authority contract markers kept for static authority guard only:
-// BookingAddressSnapshot, Finance trace, Service pricing snapshot.
+// Confirmed service address record, Finance evidence, Service pricing evidence.
 import {
   BookingActivityPanel,
   type BookingActivityPanelProps,

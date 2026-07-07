@@ -122,7 +122,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
           value: summary.status,
         },
         {
-          helper: 'Settlement snapshots included in this monthly tax period.',
+          helper: 'Settlement records included in this monthly tax period.',
           label: 'Settlements',
           value: summary.settlementCount,
         },
@@ -176,7 +176,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Period ${summary.period}. The preview is calculated from immutable settlement snapshots; stored closing rows only add status and closeout timestamps.`}
+        description={`Period ${summary.period}. The preview is calculated from posted settlement records; stored closing rows only add status and closeout timestamps.`}
         resultLabel={summary.status}
         resultTone={financeMonthlyTaxClosingStatusTone(summary.status)}
         title="Monthly closing period"
@@ -325,7 +325,7 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
 
       <FinanceTablePanel
         grouped
-        description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement snapshots."
+        description="Stored closing rows. If no row exists yet, the cards above still show a draft preview from settlement records."
         resultLabel={`${pagination.totalRows} row(s)`}
         resultTone="info"
         title="Stored monthly closing rows"

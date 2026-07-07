@@ -76,7 +76,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           </StatusBadgeLink>
         </TaxFinanceWorkflowActions>
       }
-      description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."
+      description="Monthly Partner VAT/PIT withholding totals grouped by Partner from posted booking settlement records."
       title="Partner Withholding Tax"
     >
       <FinanceListCommandBoard ariaLabel="Withholding command board">
