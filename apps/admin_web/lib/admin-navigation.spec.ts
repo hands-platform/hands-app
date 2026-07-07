@@ -115,6 +115,16 @@ describe('admin navigation', () => {
     expect(developerSections.map((section) => section.label)).toContain('Developer / System');
   });
 
+  it('keeps developer/system wording out of operation-facing sidebar descriptions', () => {
+    const operatorDescriptions = adminNavSections.flatMap((section) => [
+      `${section.label}: ${section.description}`,
+      ...section.links.map((link) => `${section.label}: ${link.label}: ${link.description}`),
+    ]);
+    const developerTerms = /\b(readiness|snapshots?|setup|trace|debug|raw|diagnostics|health)\b/iu;
+
+    expect(operatorDescriptions.filter((description) => developerTerms.test(description))).toEqual([]);
+  });
+
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
     const bookingSection = adminNavSections.find((section) => section.label === 'Bookings');
 

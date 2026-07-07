@@ -106,7 +106,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/partners/overview',
         label: 'Partner Overview',
-        description: 'Supply health, readiness funnel, quality risk, wallet exposure, and action queues.',
+        description: 'Supply status, approval funnel, quality risk, wallet exposure, and action queues.',
       },
       {
         href: '/partners',
@@ -138,7 +138,7 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     label: 'Analytics',
-    description: 'Regional operating picture without individual diagnostics.',
+    description: 'Regional operating picture for operator review.',
     links: [
       {
         href: '/vietnam-overview',
@@ -243,7 +243,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/finance-tax',
         label: 'Tax Overview',
-        description: 'Tax, fee, VAT, PIT, payment fee, and settlement snapshot command view.',
+        description: 'Tax, fee, VAT, PIT, payment fee, and settlement record command view.',
       },
       {
         href: '/finance-tax/general-ledger',
@@ -264,7 +264,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/finance-tax/booking-settlement-audit',
         label: 'Booking Settlement Audit',
-        description: 'Immutable booking settlement snapshots for tax and finance audit review.',
+        description: 'Immutable booking settlement records for tax and finance audit review.',
       },
       {
         href: '/finance-tax/coupon-finance',
@@ -294,7 +294,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/finance-tax/payment-fees',
         label: 'Payment Fees',
-        description: 'Payment processing fees by method, payer, and treatment from settlement snapshots.',
+        description: 'Payment processing fees by method, payer, and treatment from settlement records.',
       },
       {
         href: '/tax-policy',
@@ -331,7 +331,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/finance-tax/finance-approvers',
         label: 'Finance Approvers',
-        description: 'Finance action approver setup for role separation and dual-control closeout.',
+        description: 'Finance action approver policy for role separation and dual-control closeout.',
       },
       {
         href: '/audit-log',
