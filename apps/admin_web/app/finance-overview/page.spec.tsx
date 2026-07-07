@@ -311,6 +311,17 @@ describe('FinanceOverviewPage', () => {
     expect(pageSource).not.toContain('<span>{row.value}</span>');
   });
 
+  it('scopes finance section row typography to direct row copy slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.finance-overview-row > div > strong');
+    expect(css).toContain('.finance-overview-row > div > small');
+    expect(css).toContain('.finance-overview-row > span');
+    expect(css).not.toContain('.finance-overview-row strong {');
+    expect(css).not.toContain('.finance-overview-row small {');
+    expect(css).not.toContain('.finance-overview-row div {');
+  });
+
   it('uses shared Vuexy badge atoms for page header status chips', () => {
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).not.toContain('<span className="pill pill-success">Read-only</span>');

@@ -9365,20 +9365,20 @@ a.action-button-card:hover {
   border-color: rgb(var(--admin-primary-channel) / 0.35);
 }
 
-.finance-overview-row div {
+.finance-overview-row > div {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.finance-overview-row strong {
+.finance-overview-row > div > strong {
   color: var(--admin-text);
   font-size: 13px;
   font-weight: 600;
   line-height: 18px;
 }
 
-.finance-overview-row small {
+.finance-overview-row > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 500;
