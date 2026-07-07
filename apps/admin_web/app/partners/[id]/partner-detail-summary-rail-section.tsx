@@ -1,5 +1,5 @@
 import { AdminSummaryCardGrid, AdminTraceSummary } from '../../../components/admin-overview-card';
-import { AdminSection } from '../../../components/admin-surface';
+import { AdminCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import type {
@@ -45,7 +45,7 @@ export function PartnerDetailSummaryRailSection({
         }))}
       />
       {usageSummary ? (
-        <section className="partner-detail-usage-summary admin-mt-12">
+        <AdminCard className="partner-detail-usage-summary admin-mt-12">
           <div className="partner-detail-usage-summary-header">
             <div>
               <span>{usageSummary.title}</span>
@@ -74,7 +74,7 @@ export function PartnerDetailSummaryRailSection({
               </div>
             ))}
           </div>
-        </section>
+        </AdminCard>
       ) : null}
     </AdminSection>
   );

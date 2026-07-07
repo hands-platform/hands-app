@@ -4,6 +4,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { DateTimeText } from '../../../components/date-time-text';
 import { AdminProfileOverviewCard, AdminSummaryCardGrid } from '../../../components/admin-overview-card';
 import { AdminAvatar } from '../../../components/admin-person-cell';
+import { AdminCard } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -116,7 +117,7 @@ export function CustomerDetailOverviewShell({
       </div>
 
       {usageSummary ? (
-        <section className="customer-detail-usage-summary">
+        <AdminCard className="customer-detail-usage-summary">
           <div className="customer-detail-usage-summary-header">
             <div>
               <span>{usageSummary.title}</span>
@@ -141,7 +142,7 @@ export function CustomerDetailOverviewShell({
               </div>
             ))}
           </div>
-        </section>
+        </AdminCard>
       ) : null}
 
       {partnerRails.length > 0 ? (
@@ -152,7 +153,7 @@ export function CustomerDetailOverviewShell({
               totalCount > rail.partners.length ? `${rail.partners.length}/${totalCount}` : String(totalCount);
 
             return (
-              <section className="customer-detail-partner-rail" key={rail.title}>
+              <AdminCard className="customer-detail-partner-rail" key={rail.title}>
                 <div className="customer-detail-partner-rail-header">
                   <div>
                     <span>{rail.title}</span>
@@ -191,7 +192,7 @@ export function CustomerDetailOverviewShell({
                     title={null}
                   />
                 )}
-              </section>
+              </AdminCard>
             );
           })}
         </div>

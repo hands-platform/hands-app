@@ -16,14 +16,16 @@ describe('PartnerDetailSummaryRailSection', () => {
 
     expect(source).toContain('AdminTraceSummary');
     expect(source).toContain('AdminSummaryCardGrid');
+    expect(source).toContain("import { AdminCard, AdminSection } from '../../../components/admin-surface';");
     expect(source).not.toContain('<div className="service-trace-summary partner-detail-summary-rail-grid">');
     expect(source).not.toContain('<div className="partner-detail-usage-summary-grid">');
+    expect(source).not.toContain('<section className="partner-detail-usage-summary admin-mt-12">');
   });
 
   it('builds the summary rail on the shared Vuexy AdminSection surface', () => {
     const source = readFileSync(__filename.replace('.spec.tsx', '.tsx'), 'utf8');
 
-    expect(source).toContain("import { AdminSection } from '../../../components/admin-surface';");
+    expect(source).toContain("import { AdminCard, AdminSection } from '../../../components/admin-surface';");
     expect(source).toContain('<AdminSection');
     expect(source).toContain('className="partner-detail-section-band admin-mb-16"');
     expect(source).toContain('bodyClassName="partner-detail-section-band-body"');
@@ -59,7 +61,7 @@ describe('PartnerDetailSummaryRailSection', () => {
       'card admin-section partner-detail-section-band admin-mb-16',
       'ops-section-header admin-section-header partner-detail-section-band-header',
       'admin-section-body partner-detail-section-band-body',
-      'partner-detail-usage-summary admin-mt-12',
+      'card admin-card partner-detail-usage-summary admin-mt-12',
       'admin-summary-card-grid partner-detail-usage-summary-grid',
       'card admin-card admin-summary-card',
       'partner-detail-usage-region-list',

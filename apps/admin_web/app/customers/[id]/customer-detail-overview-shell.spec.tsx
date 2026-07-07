@@ -16,7 +16,10 @@ describe('CustomerDetailOverviewShell', () => {
     expect(source).toContain('AdminEmptyState');
     expect(source).toContain('AdminProfileOverviewCard');
     expect(source).toContain('AdminSummaryCardGrid');
+    expect(source).toContain("import { AdminCard } from '../../../components/admin-surface';");
     expect(source).not.toContain('<AdminCard className="customer-detail-overview-card">');
+    expect(source).not.toContain('<section className="customer-detail-usage-summary">');
+    expect(source).not.toContain('<section className="customer-detail-partner-rail"');
     expect(source).not.toContain('<div className="customer-detail-highlight-grid">');
     expect(source).not.toContain('<div className="customer-detail-usage-summary-grid">');
     expect(source).not.toContain('<span className="pill pill-info" key={badge}>');
@@ -97,10 +100,11 @@ describe('CustomerDetailOverviewShell', () => {
         'admin-summary-card-grid customer-detail-highlight-grid',
         'card admin-card admin-summary-card',
         'vuexy-booking-avatar customer-detail-avatar',
-        'customer-detail-usage-summary',
+        'card admin-card customer-detail-usage-summary',
         'admin-summary-card-grid customer-detail-usage-summary-grid',
         'customer-detail-usage-region-list',
         'customer-detail-partner-rail-grid',
+        'card admin-card customer-detail-partner-rail',
         'empty-state customer-detail-partner-empty',
         'vuexy-booking-avatar is-partner',
       ]),
