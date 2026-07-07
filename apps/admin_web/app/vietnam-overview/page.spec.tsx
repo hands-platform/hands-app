@@ -277,6 +277,26 @@ describe('VietnamOverviewPage', () => {
     expect(css).not.toContain('.vietnam-map-empty-stats strong {');
     expect(css).not.toContain('.vietnam-map-empty-stats span,');
   });
+
+  it('scopes regional table signal chips to direct slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.vietnam-region-signal-row > span');
+    expect(css).toContain('.vietnam-region-signal-row > span > strong');
+    expect(css).toContain('.vietnam-region-signal-row > span > small');
+    expect(css).toContain('.vietnam-region-signal-row > span > i');
+    expect(css).not.toContain('.vietnam-region-signal-row span {');
+    expect(css).not.toContain('.vietnam-region-signal-row strong {');
+    expect(css).not.toContain('.vietnam-region-signal-row small {');
+    expect(css).not.toContain('.vietnam-region-signal-row i {');
+
+    for (const tone of ['active', 'online', 'bookings']) {
+      expect(css).toContain(`.vietnam-region-signal-row > .is-${tone}`);
+      expect(css).toContain(`.vietnam-region-signal-row > .is-${tone} > i`);
+      expect(css).not.toContain(`.vietnam-region-signal-row .is-${tone} {`);
+      expect(css).not.toContain(`.vietnam-region-signal-row .is-${tone} i`);
+    }
+  });
 });
 
 const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {

@@ -7959,7 +7959,7 @@ a.action-button-card:hover {
   margin-top: 2px;
 }
 
-.vietnam-region-signal-row span {
+.vietnam-region-signal-row > span {
   align-items: center;
   border-radius: 999px;
   display: inline-flex;
@@ -7970,14 +7970,14 @@ a.action-button-card:hover {
   padding: 3px 7px;
 }
 
-.vietnam-region-signal-row strong {
+.vietnam-region-signal-row > span > strong {
   color: inherit;
   font-size: 11px;
   font-weight: 800;
   line-height: 14px;
 }
 
-.vietnam-region-signal-row small {
+.vietnam-region-signal-row > span > small {
   color: inherit;
   font-size: 10px;
   font-weight: 700;
@@ -7985,37 +7985,37 @@ a.action-button-card:hover {
   opacity: 0.78;
 }
 
-.vietnam-region-signal-row i {
+.vietnam-region-signal-row > span > i {
   border-radius: 999px;
   display: block;
   height: 7px;
   width: 7px;
 }
 
-.vietnam-region-signal-row .is-active {
+.vietnam-region-signal-row > .is-active {
   background: rgb(var(--admin-info-channel) / 0.11);
   color: var(--admin-info-strong);
 }
 
-.vietnam-region-signal-row .is-active i {
+.vietnam-region-signal-row > .is-active > i {
   background: var(--admin-info);
 }
 
-.vietnam-region-signal-row .is-online {
+.vietnam-region-signal-row > .is-online {
   background: rgb(var(--admin-success-channel) / 0.11);
   color: var(--admin-success-strong);
 }
 
-.vietnam-region-signal-row .is-online i {
+.vietnam-region-signal-row > .is-online > i {
   background: var(--admin-success);
 }
 
-.vietnam-region-signal-row .is-bookings {
+.vietnam-region-signal-row > .is-bookings {
   background: rgb(var(--admin-warning-channel) / 0.13);
   color: var(--admin-warning-strong);
 }
 
-.vietnam-region-signal-row .is-bookings i {
+.vietnam-region-signal-row > .is-bookings > i {
   background: var(--admin-warning);
 }
 
