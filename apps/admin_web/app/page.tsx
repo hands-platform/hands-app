@@ -657,7 +657,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Customers in app',
       appPresence.liveAppCustomers.toString(),
-      'Customer app sessions seen within the active session window.',
+      'Customers with recent app activity in the active window.',
     ],
     [
       'Live matching customers',
@@ -667,7 +667,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Partners in app',
       appPresence.liveAppPartners.toString(),
-      'Partner app sessions seen within the active session window.',
+      'Partners with recent app activity in the active window.',
     ],
     [
       'Active customers',
@@ -767,7 +767,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </>
       }
       contentClassName="dashboard-page"
-      description="Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and payout readiness."
+      description="Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and payout follow-up."
       title="HANDS Operations"
     >
       <AdminSection
@@ -851,7 +851,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         className="admin-mt-20"
         description="Actual booking participant records only. Partners with negative wallets can see open booking requests, but final acceptance, service start, and payout release wait for settlement."
         id="dashboard-marketplace-participant-snapshot"
-        title="Booking participant snapshot"
+        title="Booking participant flow"
       >
         <DashboardTraceSummary
           className="admin-mt-12"
@@ -1061,7 +1061,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         description={
           <>
             Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
-            closeout checks, and notification history use this window. Live queues and app sessions stay
+            closeout checks, and notification history use this window. Live queues and app activity stay
             current so urgent work is never hidden.
           </>
         }
@@ -1301,7 +1301,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminFilterChipGroup>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-matching-card"
-            description="Live view of open matching demand. Existing bookings use their saved policy snapshot; new bookings use the current policy."
+            description="Live view of open matching demand. Existing bookings keep their saved matching rules; new bookings use the current policy."
             id="dashboard-matching-control-room"
             title="Matching control room"
           >
@@ -1381,7 +1381,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             className="admin-mt-20 dashboard-card-scroll dashboard-policy-card"
             description="Live dispatch rules and owner decisions currently guiding matching, marketplace participation, cancellation, no-show, and Partner alerts."
             id="dashboard-operations-policy-snapshot"
-            title="Operations policy snapshot"
+            title="Operations policy status"
           >
             <DashboardTraceSummary
               className="admin-mt-12"
@@ -1678,7 +1678,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <InfoRow
                   label="Live app customers"
                   value={appPresence.liveAppCustomers.toString()}
-                  detail="Customer app sessions with an unexpired heartbeat."
+                  detail="Customers with recent app activity."
                 />
                 <InfoRow
                   label="Live matching customers"
@@ -1693,7 +1693,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <InfoRow
                   label="Live app Partners"
                   value={appPresence.liveAppPartners.toString()}
-                  detail="Partner app sessions with an unexpired heartbeat."
+                  detail="Partners with recent app activity."
                 />
                 <InfoRow
                   label="Recent customer sessions"
@@ -1793,7 +1793,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               }
               description="Current operational capacity, app presence, location freshness, and finance blockers."
               id="dashboard-partner-supply-snapshot"
-              title="Partner supply snapshot"
+              title="Partner supply status"
             >
               <DashboardTraceSummary
                 metrics={[
@@ -1839,9 +1839,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Review queue
                 </AdminTextLink>
               }
-              description="Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile review."
+              description="Funnel view for signup, KYC, banking, first revenue tax review, and optional profile review."
               id="dashboard-partner-readiness-funnel"
-              title="Partner readiness funnel"
+              title="Partner approval funnel"
             >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
                 <InfoRow
@@ -1885,7 +1885,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminTextLink>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card"
-            description="Partner checklist queue for marketplace blockers, location readiness, first-revenue payout requirements, and app contactability."
+            description="Partner checklist queue for marketplace blockers, location updates, first-revenue payout follow-up, and app contactability."
             id="dashboard-partner-dispatch-control"
             title="Partner dispatch control"
           >
@@ -1914,7 +1914,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <AdminNotePanel>
                   <AdminEmptyState
                     framed
-                    message="Verified Partners, wallet debt, location freshness, payout readiness, and app contactability are clear in the current snapshot."
+                    message="Verified Partners, wallet debt, location freshness, payout follow-up, and app contactability are clear in the current view."
                     title="No Partner blocker is currently visible."
                   />
                 </AdminNotePanel>
@@ -1941,7 +1941,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 {
                   label: 'Not contactable',
                   value: fullDashboardData.partnerOpsQueue.contactIssue,
-                  helper: 'No app session or push',
+                  helper: 'No recent app activity or push',
                 },
               ]}
             />
@@ -2136,9 +2136,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminDetailGrid className="admin-mt-20">
             <AdminSection
-              description="Gross earnings, platform fee, pending net, and paid net from the earnings snapshot."
+              description="Gross earnings, platform fee, pending net, and paid net from the selected earnings window."
               id="dashboard-finance-snapshot"
-              title="Finance snapshot"
+              title="Finance closeout status"
             >
               <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
                 <InfoRow
@@ -2173,7 +2173,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminFormControlLink>
           }
           className="admin-mt-20"
-          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, partner readiness, queue, and finance detail sections."
+          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, Partner review, queue, and finance detail sections."
           id="dashboard-on-demand-detail"
           title="More operating detail"
         />
@@ -2379,7 +2379,7 @@ function buildMatchingControlRoom(
       {
         label: 'Policy timer',
         value: `${responseWindowMinutes} min live`,
-        helper: 'New bookings use this value; open rows prefer each saved booking snapshot.',
+        helper: 'New bookings use this value; open rows keep their saved matching rules.',
       },
       {
         label: 'Marketplace radius',
@@ -2399,9 +2399,9 @@ function buildMatchingControlRoom(
           : 'New bookings hold marketplace Partners unless first-pick declines or the window expires.',
       },
       {
-        label: 'Saved snapshots',
+        label: 'Saved rules',
         value: `${openMatchingWithPolicySnapshot.length}/${openMatching.length}`,
-        helper: 'Open bookings with metadata.matchingPolicy stored for audit-safe dispatch decisions.',
+        helper: 'Open bookings with stored matchingPolicy metadata for audit-safe dispatch decisions.',
       },
       {
         label: 'Fresh online supply',
@@ -2441,15 +2441,15 @@ function buildMatchingControlRoom(
           openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
             ? 'Traceable'
             : 'Live policy default',
-        title: 'Open booking policy snapshots',
+        title: 'Open booking policy records',
         detail:
           openMatching.length === 0
-            ? 'No open matching booking needs snapshot review right now.'
+            ? 'No open matching booking needs policy record review right now.'
             : `${openMatchingWithPolicySnapshot.length}/${openMatching.length} open matching booking(s) have saved matching policy.`,
         operatorAction:
           openMatchingWithPolicySnapshot.length === openMatching.length
-            ? 'Use each booking row and detail page as the source of truth for manual dispatch.'
-            : 'Older open bookings without snapshots should be reviewed against current policy and audit notes.',
+            ? 'Use each booking row and detail page for manual dispatch decisions.'
+            : 'Older open bookings without saved rules should be reviewed against current policy and audit notes.',
         className:
           openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
             ? 'ops-task-done'
@@ -2514,7 +2514,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
       {
         label: 'Measured bookings',
         value: String(stats.sampleCount),
-        helper: 'Bookings with saved matching policy snapshots.',
+        helper: 'Bookings with saved matching policy records.',
       },
       {
         label: 'Matched rate',
@@ -2593,7 +2593,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
           ? `${driftCount} measured booking(s) differ from the current live policy. This is normal after admin changes, but should be visible before manual action.`
           : 'No measured booking currently differs from live matching policy values.',
         operatorAction: driftCount
-          ? 'Use booking detail snapshots before expiring, extending, or manually matching those requests.'
+          ? 'Use booking detail policy records before expiring, extending, or manually matching those requests.'
           : 'Manual dispatch can use the current policy view with lower ambiguity.',
         href: driftCount ? '/operations-policy' : '/bookings?view=matching',
         className: driftCount ? 'ops-task-pending' : 'ops-task-done',
@@ -2925,7 +2925,7 @@ function buildOperationsCommandBoard(input: {
       checks: [
         `${input.bookingDeepDive.openWithoutParticipants} without Partner`,
         `${input.bookingDeepDive.expiredOpenMatching} expired timer(s)`,
-        'Booking address snapshot',
+        'Confirmed address record',
       ],
     },
     {
@@ -2987,7 +2987,7 @@ function buildOperationsCommandBoard(input: {
       detail:
         input.partnerSupply.onlineAvailable > 0
           ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
-          : 'No online available Partner is visible; check app sessions, location update, and onboarding readiness.',
+          : 'No online available Partner is visible; check app activity, location update, and onboarding review.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
@@ -2995,7 +2995,7 @@ function buildOperationsCommandBoard(input: {
           : 'ok'
         : 'warn',
       checks: [
-        `${input.partnerSupply.liveSessions} app session(s)`,
+        `${input.partnerSupply.liveSessions} recent app activity`,
         `${input.partnerSupply.noLocation} missing pin`,
         `${input.partnerSupply.pendingVerification} KYC waiting`,
       ],
@@ -3088,7 +3088,7 @@ function buildBookingEvidenceCommandQueue(input: {
       tone: evidenceTone(partnerChoiceChecks, 2, 6),
       checks: ['First-pick window', '10km marketplace', 'Customer final choice'],
       operatorAction:
-        partnerChoiceChecks > 0 ? 'Check customer final-choice readiness' : 'Watch first-pick flow',
+        partnerChoiceChecks > 0 ? 'Check customer final-choice handoff' : 'Watch first-pick flow',
       sample: bookingEvidenceSample(partnerChoiceRows, 'Partner choice sample'),
     },
     {
@@ -3431,7 +3431,7 @@ function buildLiveOperationsRadar(input: {
       detail:
         input.partnerSupply.onlineAvailable > 0
           ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
-          : 'No online available Partner is visible; check app sessions, location update, and onboarding readiness.',
+          : 'No online available Partner is visible; check app activity, location update, and onboarding review.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
@@ -3439,7 +3439,7 @@ function buildLiveOperationsRadar(input: {
           : 'ok'
         : 'warn',
       checks: [
-        `${input.partnerSupply.liveSessions} app session(s)`,
+        `${input.partnerSupply.liveSessions} recent app activity`,
         `${input.partnerSupply.noLocation} missing pin`,
         `${input.partnerSupply.pendingVerification} KYC waiting`,
       ],
@@ -3918,7 +3918,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '5',
       owner: 'Ops',
       title: 'Confirm app contactability',
-      detail: 'Recent app session and enabled device state reduce missed 10 minute reply windows.',
+      detail: 'Recent app activity and enabled device state reduce missed 10 minute reply windows.',
       metricLabel: 'Contact gaps',
       metricValue: input.partnerOpsQueue.contactIssue.toString(),
       action: 'Open Partner review',
@@ -4087,7 +4087,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Contact weak',
       detail:
-        'Partner appears online but app session or push readiness is weak. Booking alerts may not arrive.',
+        'Partner appears online but app activity or push contactability is weak. Booking alerts may not arrive.',
       action: 'Open push/session review',
       href: '/partners?review=push',
       className: 'ops-task-pending',
@@ -4475,7 +4475,7 @@ function buildDashboardCommandSignals(input: {
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
         ? 'Partner verification, reports, account controls, or KYC needs admin attention.'
-        : 'No Partner review blocker in the current snapshot.',
+        : 'No Partner review blocker in the current view.',
       action: 'Open Partners',
       href: '/partners',
       priority:
@@ -5022,7 +5022,7 @@ function buildShiftCommandBriefing(input: {
     detail:
       firstQueueItem?.recommendedAction ??
       firstSignal?.detail ??
-      'The current snapshot has no critical blocker. Keep the dispatch and finance lanes under observation.',
+      'The current view has no critical blocker. Keep the dispatch and finance lanes under observation.',
     primaryAction: {
       label: firstQueueItem
         ? 'Open checklist item'
