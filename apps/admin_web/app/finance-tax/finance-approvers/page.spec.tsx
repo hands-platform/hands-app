@@ -73,6 +73,13 @@ describe('FinanceApproversPage', () => {
     expect(markup).not.toContain('class="form-input"');
   });
 
+  it('keeps the approver directory compact by avoiding duplicated page-template metrics', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
+
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Approver command board">');
+    expect(source).not.toContain('metrics={[');
+  });
+
   it('uses the shared status badge for role chips', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/finance-approvers/page.tsx'), 'utf8');
 

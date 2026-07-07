@@ -77,38 +77,6 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         </TaxFinanceWorkflowActions>
       }
       description="Monthly Partner VAT/PIT withholding totals grouped by Partner from immutable booking settlement snapshots."
-      metrics={[
-        {
-          helper: 'Partners with taxable revenue in this monthly period.',
-          label: 'Partners',
-          value: summary.partnerCountWithRevenue,
-        },
-        {
-          helper: 'Completed booking settlement rows included in this period.',
-          label: 'Taxable bookings',
-          value: summary.taxableBookingCount,
-        },
-        {
-          helper: 'Customer payment total for this period.',
-          label: 'Gross service revenue',
-          value: <MoneyText amount={summary.grossServiceRevenue} currency={summary.currency} />,
-        },
-        {
-          helper: 'Partner payout total before payout batch execution.',
-          label: 'Partner payout',
-          value: <MoneyText amount={summary.partnerPayoutTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Partner VAT withholding total.',
-          label: 'VAT withheld',
-          value: <MoneyText amount={summary.partnerVatWithheldTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Partner PIT withholding total.',
-          label: 'PIT withheld',
-          value: <MoneyText amount={summary.partnerPitWithheldTotal} currency={summary.currency} />,
-        },
-      ]}
       title="Partner Withholding Tax"
     >
       <FinanceListCommandBoard ariaLabel="Withholding command board">

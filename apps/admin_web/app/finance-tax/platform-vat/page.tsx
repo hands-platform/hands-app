@@ -57,33 +57,6 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         </TaxFinanceWorkflowActions>
       }
       description="Company output VAT from HANDS platform fee. Customer payment amount is not company revenue."
-      metrics={[
-        {
-          helper: 'Settlement snapshots included in this platform VAT period.',
-          label: 'Settlements',
-          value: summary.settlementCount,
-        },
-        {
-          helper: 'HANDS platform fee including company output VAT.',
-          label: 'Platform fee gross',
-          value: <MoneyText amount={summary.platformFeeGrossTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'VAT payable from HANDS platform fee gross.',
-          label: 'Company output VAT',
-          value: <MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Company revenue after removing output VAT.',
-          label: 'Net revenue',
-          value: <MoneyText amount={summary.platformFeeNetRevenueTotal} currency={summary.currency} />,
-        },
-        {
-          helper: 'Platform fee gross minus output VAT and net revenue.',
-          label: 'Formula delta',
-          value: <MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />,
-        },
-      ]}
       title="Platform VAT"
     >
       <FinanceListCommandBoard ariaLabel="VAT command board">

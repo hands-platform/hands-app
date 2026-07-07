@@ -51,6 +51,11 @@ describe('PartnerWithholdingTaxPage', () => {
     expect(source).not.toContain("import Link from 'next/link';");
   });
 
+  it('keeps the withholding list compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="Withholding command board">');
+    expect(source).not.toContain('metrics={[');
+  });
+
   it('shows monthly remittance status from the tax closing summary', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/partner-withholding-tax/summary?period=2026-06') {

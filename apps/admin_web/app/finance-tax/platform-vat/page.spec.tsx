@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
@@ -14,6 +16,7 @@ vi.mock('../../../lib/admin-api', async () => {
 });
 
 const mockedAdminGet = vi.mocked(adminGet);
+const source = readFileSync(join(__dirname, 'page.tsx'), 'utf8');
 
 describe('PlatformVatPage', () => {
   beforeEach(() => {
@@ -40,5 +43,10 @@ describe('PlatformVatPage', () => {
     expect(markup).toContain('admin-form-control-button');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
+  });
+
+  it('keeps the platform VAT period compact by avoiding duplicated page-template metrics', () => {
+    expect(source).toContain('<FinanceListCommandBoard ariaLabel="VAT command board">');
+    expect(source).not.toContain('metrics={[');
   });
 });

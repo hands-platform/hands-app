@@ -55,23 +55,6 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
         />
       }
       description="Grant or revoke the second finance approval role used by settlement, payout, withdrawal, bank, and wallet money actions."
-      metrics={[
-        {
-          helper: 'Admin users returned by the bounded admin user API.',
-          label: 'Admin users',
-          value: adminUsers.length,
-        },
-        {
-          helper: 'Users allowed to approve finance money actions after maker submission.',
-          label: 'Finance approvers',
-          value: approverCount,
-        },
-        {
-          helper: 'System keeps at least one finance approver and blocks self role changes.',
-          label: 'Guard status',
-          value: 'Protected',
-        },
-      ]}
       title="Finance Approvers"
     >
       <FinanceListCommandBoard ariaLabel="Approver command board">
