@@ -267,6 +267,17 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('aria-label="Partner supply summary"><div class="card admin-card partner-overview-command-card');
     expect(markup).not.toContain('aria-label="Partner activity and retention"><div class="card admin-card partner-overview-command-card');
   });
+
+  it('scopes operating status typography to direct command-card children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.partner-overview-operating-card > div > span');
+    expect(css).toContain('.partner-overview-operating-card > div > strong');
+    expect(css).toContain('.partner-overview-operating-card > div > small');
+    expect(css).not.toContain('.partner-overview-operating-card span {');
+    expect(css).not.toContain('.partner-overview-operating-card strong {');
+    expect(css).not.toContain('.partner-overview-operating-card small {');
+  });
 });
 
 const partnerOverviewFixture: AdminPartnerOverview = {

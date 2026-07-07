@@ -9718,21 +9718,21 @@ a.action-button-card:hover {
   transform: translateY(-1px);
 }
 
-.partner-overview-operating-card span {
+.partner-overview-operating-card > div > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 750;
   line-height: 16px;
 }
 
-.partner-overview-operating-card strong {
+.partner-overview-operating-card > div > strong {
   color: var(--admin-text);
   font-size: 28px;
   font-weight: 700;
   line-height: 32px;
 }
 
-.partner-overview-operating-card small {
+.partner-overview-operating-card > div > small {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 600;
