@@ -9,9 +9,11 @@ describe('PartnerLocationCell', () => {
     const source = readFileSync('app/partners/partner-location-cell.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${providerLocationPillClass(status)}`}>');
     expect(source).not.toContain('<p className="muted">No saved location yet.</p>');
   });

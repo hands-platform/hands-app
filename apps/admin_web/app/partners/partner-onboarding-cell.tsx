@@ -1,4 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -62,7 +63,7 @@ export function PartnerOnboardingCell({
 
   return (
     <div>
-      <div className="participant-list admin-mb-8">
+      <AdminFilterChipGroup ariaLabel="Partner onboarding status" className="admin-mb-8">
         <StatusBadge tone="info">{provider.level ?? 'LEVEL_1_SIGNUP'}</StatusBadge>
         <StatusBadge tone={provider.kyc?.status === 'APPROVED' ? 'success' : 'warning'}>
           KYC {provider.kyc?.status ?? 'DRAFT'}
@@ -73,12 +74,12 @@ export function PartnerOnboardingCell({
         <StatusBadgeFromPillClass pillClass={partnerTaxPillClass(provider)}>
           Tax optional {taxStatus}
         </StatusBadgeFromPillClass>
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mb-8">
         {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
         {provider.kyc?.cccdNumberLast4 ? ` / CCCD ****${provider.kyc.cccdNumberLast4}` : ''}
       </p>
-      <div className="participant-list admin-mb-8">
+      <AdminFilterChipGroup ariaLabel="Required KYC document status" className="admin-mb-8">
         {ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((documentType) => {
           const documentStatus = providerKycDocumentStatus(provider, documentType);
           return (
@@ -87,7 +88,7 @@ export function PartnerOnboardingCell({
             </StatusBadgeFromPillClass>
           );
         })}
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mb-8">
         {kycState.operatorAction}
       </p>
@@ -123,12 +124,12 @@ export function PartnerOnboardingCell({
           </p>
           {documents.map((document) => (
             <div key={document.id} className="provider-file-row">
-              <div className="participant-list admin-mb-6">
+              <AdminFilterChipGroup ariaLabel={`${providerDocumentLabel(document.type)} document status`} className="admin-mb-6">
                 <StatusBadge tone="info">{providerDocumentLabel(document.type)}</StatusBadge>
                 <StatusBadge tone={document.status === 'APPROVED' ? 'success' : 'warning'}>
                   {document.status}
                 </StatusBadge>
-              </div>
+              </AdminFilterChipGroup>
               <p className="muted admin-mb-6">
                 {providerDocumentReviewHint(document.type)}
               </p>

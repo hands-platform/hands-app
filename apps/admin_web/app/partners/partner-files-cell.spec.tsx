@@ -12,6 +12,7 @@ describe('PartnerFilesCell', () => {
     const source = readFileSync('app/partners/partner-files-cell.tsx', 'utf8');
 
     expect(source).toContain('AdminEmptyState');
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
@@ -20,6 +21,7 @@ describe('PartnerFilesCell', () => {
     expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain("` / uploaded ${formatDateTime(file.uploadedAt)}`");
     expect(source).not.toContain('<span className="pill pill-info">{file.purpose ?? \'Partner verification\'}</span>');
     expect(source).not.toContain('<span className={`pill ${file.uploadStatus === \'UPLOADED\' ? \'pill-success\' : \'pill-warn\'}`}>');

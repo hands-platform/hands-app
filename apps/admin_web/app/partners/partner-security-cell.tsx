@@ -1,5 +1,6 @@
 import { ShieldCheck } from 'lucide-react';
 
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -26,11 +27,11 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
 
   return (
     <div>
-      <div className="participant-list admin-mb-8">
+      <AdminFilterChipGroup ariaLabel="Partner security status" className="admin-mb-8">
         <StatusBadgeFromPillClass pillClass={partnerSecurityPillClass(status)}>
           {providerSecurityLabel(status)}
         </StatusBadgeFromPillClass>
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mb-4">
         {latestDevice
           ? `Last app device: ${maskToken(latestDevice.deviceId)} / ${latestDevice.platform ?? 'unknown'}`

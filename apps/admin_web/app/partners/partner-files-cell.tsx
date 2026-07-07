@@ -1,5 +1,6 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -34,12 +35,12 @@ export function PartnerFilesCell({
       {provider.verification?.files?.length ? (
         provider.verification.files.map((file) => (
           <div key={file.id} className="provider-file-row">
-            <div className="participant-list admin-mb-6">
+            <AdminFilterChipGroup ariaLabel="Private verification file status" className="admin-mb-6">
               <StatusBadge tone="info">{file.purpose ?? 'Partner verification'}</StatusBadge>
               <StatusBadge tone={file.uploadStatus === 'UPLOADED' ? 'success' : 'warning'}>
                 {file.uploadStatus ?? 'PENDING'}
               </StatusBadge>
-            </div>
+            </AdminFilterChipGroup>
             <p className="muted">
               {file.contentType}
               {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
@@ -88,12 +89,12 @@ function PartnerPublicMediaQueue({
       </p>
       {media.slice(0, 4).map((file) => (
         <div key={file.id} className="provider-file-row">
-          <div className="participant-list admin-mb-6">
+          <AdminFilterChipGroup ariaLabel="Public media review status" className="admin-mb-6">
             <StatusBadge tone="info">{file.purpose}</StatusBadge>
             <StatusBadgeFromPillClass pillClass={publicMediaReviewPillClass(file.reviewStatus)}>
               {file.reviewStatus ?? 'PENDING_REVIEW'}
             </StatusBadgeFromPillClass>
-          </div>
+          </AdminFilterChipGroup>
           <p className="muted admin-mb-6">
             {file.contentType}
             {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}

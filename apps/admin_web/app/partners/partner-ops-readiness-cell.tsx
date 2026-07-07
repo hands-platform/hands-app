@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminCard } from '../../components/admin-surface';
@@ -64,11 +65,11 @@ export function PartnerOpsReadinessCell({
 function PartnerNextActionSummary({ action }: { readonly action: ProviderListAction }) {
   return (
     <div className="admin-mb-10">
-      <div className="participant-list admin-mb-6">
+      <AdminFilterChipGroup ariaLabel="Partner next action status" className="admin-mb-6">
         <StatusBadgeFromPillClass pillClass={partnerListActionPillClass(action.tone)}>
           {action.status}
         </StatusBadgeFromPillClass>
-      </div>
+      </AdminFilterChipGroup>
       <p className="muted admin-mb-4">
         {action.detail}
       </p>
@@ -81,7 +82,7 @@ function PartnerNextActionSummary({ action }: { readonly action: ProviderListAct
 
 function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsBadge[] }) {
   return (
-    <div className="participant-list admin-mb-8">
+    <AdminFilterChipGroup ariaLabel="Partner operations readiness badges" className="admin-mb-8">
       {badges.map((badge) => (
         <StatusBadgeFromPillClass
           key={badge.label}
@@ -91,28 +92,28 @@ function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsB
           {badge.label}
         </StatusBadgeFromPillClass>
       ))}
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 
 function PartnerIssuePills({ issues }: { readonly issues: readonly PartnerOpsReadinessIssue[] }) {
   if (!issues.length) {
     return (
-      <div className="participant-list admin-mb-8">
+      <AdminFilterChipGroup ariaLabel="Partner operations issues" className="admin-mb-8">
         <StatusBadge tone="success">No blocking issues</StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
     );
   }
 
   return (
-    <div className="participant-list admin-mb-8">
+    <AdminFilterChipGroup ariaLabel="Partner operations issues" className="admin-mb-8">
       {issues.slice(0, 5).map((issue) => (
         <StatusBadge key={issue.label} tone={issue.severity === 'high' ? 'danger' : 'warning'}>
           {issue.label}
         </StatusBadge>
       ))}
       {issues.length > 5 ? <StatusBadge tone="info">+{issues.length - 5} more</StatusBadge> : null}
-    </div>
+    </AdminFilterChipGroup>
   );
 }
 
@@ -134,19 +135,19 @@ function PartnerBackupEligibilityCard({
         description={eligibility.detail}
         title="Marketplace participation eligibility"
       />
-      <div className="participant-list admin-mt-8">
+      <AdminFilterChipGroup ariaLabel="Marketplace policy thresholds" className="admin-mt-8">
         <StatusBadge tone="info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</StatusBadge>
         <StatusBadge tone="info">First window: {opsPolicy.responseWindowMinutes}m</StatusBadge>
         <StatusBadge tone="info">Location: {opsPolicy.staleLocationMinutes}m fresh</StatusBadge>
-      </div>
+      </AdminFilterChipGroup>
       {eligibility.blockers.length ? (
-        <div className="participant-list admin-mt-8">
+        <AdminFilterChipGroup ariaLabel="Marketplace eligibility blockers" className="admin-mt-8">
           {eligibility.blockers.map((blocker) => (
             <StatusBadge key={blocker.label} tone={blocker.severity === 'hard' ? 'danger' : 'warning'}>
               {blocker.label}
             </StatusBadge>
           ))}
-        </div>
+        </AdminFilterChipGroup>
       ) : null}
       <p className="muted admin-mt-8">
         {eligibility.operatorAction}

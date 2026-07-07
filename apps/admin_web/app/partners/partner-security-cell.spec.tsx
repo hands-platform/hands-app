@@ -7,10 +7,12 @@ describe('PartnerSecurityCell', () => {
   it('uses the shared Vuexy badge atom for account security state', () => {
     const source = readFileSync('app/partners/partner-security-cell.tsx', 'utf8');
 
+    expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('StatusBadgeFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).toContain('DateTimeText');
     expect(source).not.toContain('PillClassBadge');
+    expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<span className={`pill ${partnerSecurityPillClass(status)}`}>');
     expect(source).not.toContain('formatDate(provider.blockedAt)');
     expect(source).not.toContain('formatDate(latestSession.lastSeenAt)');
