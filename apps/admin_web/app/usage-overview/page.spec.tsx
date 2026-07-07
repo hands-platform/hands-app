@@ -115,4 +115,17 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('aria-label="Usage command summary"><div class="card admin-card usage-overview-command-card');
     expect(markup).not.toContain('aria-label="Customer usage segments"><div class="card admin-card usage-overview-command-card');
   });
+
+  it('scopes mini metric typography and tones to direct metric children', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-mini-metric > span');
+    expect(css).toContain('.usage-overview-mini-metric > strong');
+    expect(css).toContain('.usage-overview-mini-metric.is-primary > strong');
+    expect(css).toContain('.usage-overview-mini-metric.is-danger > strong');
+    expect(css).not.toContain('.usage-overview-mini-metric span {');
+    expect(css).not.toContain('.usage-overview-mini-metric strong {');
+    expect(css).not.toContain('.usage-overview-mini-metric.is-primary strong');
+    expect(css).not.toContain('.usage-overview-mini-metric.is-danger strong');
+  });
 });

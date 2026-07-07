@@ -10231,37 +10231,37 @@ a.action-button-card:hover {
   padding: 10px;
 }
 
-.usage-overview-mini-metric span {
+.usage-overview-mini-metric > span {
   color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
   line-height: 16px;
 }
 
-.usage-overview-mini-metric strong {
+.usage-overview-mini-metric > strong {
   color: var(--admin-text);
   font-size: 18px;
   font-weight: 700;
   line-height: 24px;
 }
 
-.usage-overview-mini-metric.is-primary strong {
+.usage-overview-mini-metric.is-primary > strong {
   color: var(--admin-accent-strong);
 }
 
-.usage-overview-mini-metric.is-info strong {
+.usage-overview-mini-metric.is-info > strong {
   color: var(--admin-info-text);
 }
 
-.usage-overview-mini-metric.is-success strong {
+.usage-overview-mini-metric.is-success > strong {
   color: var(--admin-success-text);
 }
 
-.usage-overview-mini-metric.is-warning strong {
+.usage-overview-mini-metric.is-warning > strong {
   color: var(--admin-warning-text);
 }
 
-.usage-overview-mini-metric.is-danger strong {
+.usage-overview-mini-metric.is-danger > strong {
   color: var(--admin-danger-text);
 }
 
