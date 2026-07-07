@@ -15,9 +15,11 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
@@ -71,6 +73,7 @@ export default async function OperationsHandoffPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const filters = buildOperationsHandoffFilters(resolvedSearchParams);
   const dataHrefs = buildOperationsHandoffDataHrefs(resolvedSearchParams);
+  const canViewAppSessionDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const [
     bookings,
     customers,
@@ -203,6 +206,7 @@ export default async function OperationsHandoffPage({
         activeBookingCount={activeBookings.length}
         matchingBookingCount={matchingBookings.length}
         inServiceBookingCount={inServiceBookings.length}
+        canViewAppSessionDiagnostics={canViewAppSessionDiagnostics}
         cashSummary={cashSummary}
         presence={presence}
         chatSignals={chatSignals}

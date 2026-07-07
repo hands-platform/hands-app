@@ -6,6 +6,7 @@ type OperationsHandoffMetricGridSectionProps = {
   readonly activeBookingCount: number;
   readonly matchingBookingCount: number;
   readonly inServiceBookingCount: number;
+  readonly canViewAppSessionDiagnostics?: boolean;
   readonly cashSummary: AdminCashSettlementSummary;
   readonly presence: {
     readonly customerLive: number;
@@ -29,6 +30,7 @@ export function OperationsHandoffMetricGridSection({
   activeBookingCount,
   matchingBookingCount,
   inServiceBookingCount,
+  canViewAppSessionDiagnostics = false,
   cashSummary,
   presence,
   chatSignals,
@@ -72,13 +74,13 @@ export function OperationsHandoffMetricGridSection({
           label: 'Customer app online',
           value: presence.customerLive,
           helper: `${presence.customerRecent} customer session(s) seen recently`,
-          href: '/app-sessions?role=CUSTOMER&state=live',
+          href: canViewAppSessionDiagnostics ? '/app-sessions?role=CUSTOMER&state=live' : undefined,
         },
         {
           label: 'Partner app online',
           value: presence.partnerLive,
           helper: `${presence.partnerRecent} Partner session(s) seen recently`,
-          href: '/app-sessions?role=PROVIDER&state=live',
+          href: canViewAppSessionDiagnostics ? '/app-sessions?role=PROVIDER&state=live' : undefined,
         },
         {
           label: 'Chat rooms',

@@ -68,6 +68,53 @@ describe('OperationsHandoffMetricGridSection', () => {
         '/notifications?review=fcm#notification-1',
       ]),
     );
+    expect(hrefs).not.toContain('/app-sessions?role=CUSTOMER&state=live');
+    expect(hrefs).not.toContain('/app-sessions?role=PROVIDER&state=live');
+  });
+
+  it('keeps app session diagnostics links only when Developer/System access is allowed', () => {
+    const section = OperationsHandoffMetricGridSection({
+      activeBookingCount: 0,
+      matchingBookingCount: 0,
+      inServiceBookingCount: 0,
+      canViewAppSessionDiagnostics: true,
+      cashSummary: {
+        generatedAt: new Date(0).toISOString(),
+        currency: 'VND',
+        rowCount: 0,
+        providerCount: 0,
+        totalDebtAmount: 0,
+        totalCompanyCouponOffset: 0,
+        totalPlatformFee: 0,
+        totalTaxAmount: 0,
+        oldestOpenAt: null,
+        oldestOpenAgeMinutes: 0,
+        staleDebtRowCount: 0,
+        highDebtProviderCount: 0,
+        missingPaymentEvidenceCount: 0,
+        cashPaymentRowCount: 0,
+        topProviderGroups: [],
+      },
+      presence: {
+        customerLive: 2,
+        customerRecent: 4,
+        partnerLive: 3,
+        partnerRecent: 5,
+      },
+      chatSignals: {
+        roomCount: 0,
+        recentMessageCount: 0,
+      },
+      failedNotificationCount: 0,
+      latestFcmSent: null,
+    });
+
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/app-sessions?role=CUSTOMER&state=live',
+        '/app-sessions?role=PROVIDER&state=live',
+      ]),
+    );
   });
 
   it('renders the FCM empty state when no sent delivery is available', () => {
