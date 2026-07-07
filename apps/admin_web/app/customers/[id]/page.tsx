@@ -31,7 +31,7 @@ import {
   type AdminChatWindowMessageRole,
 } from '../../../components/admin-chat-window';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminStageItem } from '../../../components/admin-stage-item';
+import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminCard, AdminNotePanel, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
@@ -482,7 +482,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             No booking create gate attempt matched this date filter.
           </p>
         ) : (
-          <div className="setup-stage-list admin-mt-14">
+          <AdminStageList className="admin-mt-14">
             {filteredBookingCreateGateAttempts.slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT).map((attempt) => (
               <AdminStageItem key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
@@ -512,7 +512,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 </small>
               </AdminStageItem>
             ))}
-          </div>
+          </AdminStageList>
         )}
       </AdminSection>
 
@@ -527,7 +527,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         }
         title="Customer operator command queue"
       >
-        <div className="setup-stage-list admin-mt-14">
+        <AdminStageList className="admin-mt-14">
           {customerOperatorCommandQueue.commands.map((command) => (
             <AdminNotePanel className={`ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
@@ -543,7 +543,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               </div>
             </AdminNotePanel>
           ))}
-        </div>
+        </AdminStageList>
       </AdminSection>
 
       <AdminSection
@@ -733,7 +733,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         id="customer-account-operations"
         title="Customer account operations"
       >
-        <div className="setup-stage-list admin-mt-12">
+        <AdminStageList className="admin-mt-12">
           <AdminNotePanel className="ops-task-info">
             <AdminSectionHeader
               actions={
@@ -782,7 +782,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <AdminEmptyState framed message="No saved address yet." title={null} />
             )}
           </AdminNotePanel>
-        </div>
+        </AdminStageList>
       </AdminSection>
       <AdminManualWalletAdjustmentHistory
         rows={customerManualAdjustmentRows}
@@ -809,7 +809,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         resultTone="info"
         title="Chat history"
       >
-        <div className="setup-stage-list customer-chat-history-list">
+        <AdminStageList className="customer-chat-history-list">
           {visibleChatBookings.length > 0 ? (
             visibleChatBookings.map((booking) => (
               <CustomerChatHistoryRoomCard
@@ -821,7 +821,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           ) : (
             <AdminEmptyState framed message="No chat rooms matched this date filter." title={null} />
           )}
-        </div>
+        </AdminStageList>
         <AdminTablePaginationFooter
           activePage={chatHistoryActivePage}
           ariaLabel="Customer chat history pages"
