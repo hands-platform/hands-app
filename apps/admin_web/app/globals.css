@@ -406,6 +406,68 @@ a {
   width: 100%;
 }
 
+@media (max-width: 1023px) {
+  body,
+  .shell,
+  .auth-shell {
+    min-width: 0;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .content {
+    margin-left: 0;
+    padding: 16px;
+    width: 100%;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 12px;
+    top: 8px;
+  }
+
+  .topbar-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .topbar-chip {
+    display: none;
+  }
+
+  .workspace-page-title {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 599px) {
+  .content {
+    padding: 12px;
+  }
+
+  .topbar-search-trigger {
+    justify-content: center;
+    min-width: 38px;
+    padding-inline: 0;
+    width: 38px;
+  }
+
+  .topbar-search-trigger span {
+    font-size: 0;
+  }
+
+  .topbar-search-trigger kbd {
+    display: none;
+  }
+}
+
 .admin-auth-page {
   background: var(--admin-bg);
   display: grid;
@@ -498,6 +560,22 @@ a {
 
 .admin-auth-notice {
   margin: 0;
+}
+
+@media (max-width: 599px) {
+  .admin-auth-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-auth-visual {
+    display: none;
+  }
+
+  .card.admin-auth-card {
+    border-left: 0;
+    box-shadow: none;
+    padding: 40px 24px;
+  }
 }
 
 .admin-inline-notice {
