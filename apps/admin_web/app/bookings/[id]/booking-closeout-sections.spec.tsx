@@ -89,4 +89,17 @@ describe('BookingCloseoutSections', () => {
     expect(markup).toContain('1 links');
     expect(markup).toContain('href="#booking-activity"');
   });
+
+  it('scopes booking finance metric CSS to direct MetricCard slots', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card');
+    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-icon');
+    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > h2');
+    expect(css).toContain('.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > small');
+    expect(css).not.toContain('.booking-detail-page #finance .metric-card {');
+    expect(css).not.toContain('.booking-detail-page #finance .metric-card-icon {');
+    expect(css).not.toContain('.booking-detail-page #finance .metric-card h2 {');
+    expect(css).not.toContain('.booking-detail-page #finance .metric-card small {');
+  });
 });

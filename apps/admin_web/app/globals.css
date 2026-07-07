@@ -13147,22 +13147,22 @@ a.action-button-card:hover {
   padding: 12px;
 }
 
-.booking-detail-page #finance .metric-card {
+.booking-detail-page #finance .admin-kpi-card > .metric-card {
   gap: 10px;
   grid-template-columns: 36px minmax(0, 1fr);
 }
 
-.booking-detail-page #finance .metric-card-icon {
+.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-icon {
   height: 36px;
   width: 36px;
 }
 
-.booking-detail-page #finance .metric-card h2 {
+.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > h2 {
   font-size: 1.25rem;
   margin: 3px 0;
 }
 
-.booking-detail-page #finance .metric-card small {
+.booking-detail-page #finance .admin-kpi-card > .metric-card > .metric-card-content > small {
   line-height: 1.3;
 }
 
