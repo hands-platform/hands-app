@@ -215,7 +215,7 @@ describe('audit log page model', () => {
       bucketLabel: 'Notification',
       opsDetail:
         'Device recovery events should line up with a fresh token or operator-confirmed delivery recovery.',
-      opsHint: 'Check push token freshness and delivery health before re-enabling alerts.',
+      opsHint: 'Check push token freshness and alert delivery status before re-enabling alerts.',
       relatedBoardHref: '/notifications?review=disabled-device',
       relatedBoardLabel: 'Notification board',
     });

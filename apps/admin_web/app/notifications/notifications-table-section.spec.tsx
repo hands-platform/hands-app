@@ -186,7 +186,7 @@ describe('NotificationsTableSection', () => {
               failureReasonLabel: 'temporary provider error for [masked]',
               id: 'delivery-2',
               platformLabel: 'Android',
-              recoveryHintLabel: 'Retry after Firebase service health and local worker health are confirmed.',
+              recoveryHintLabel: 'Retry after Firebase service status and local delivery workers are confirmed.',
             },
             {
               ...row.deliveryRows[0],
@@ -217,7 +217,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Failure messaging/internal-error');
     expect(rendered).toContain('Reason temporary provider error for [masked]');
     expect(rendered).toContain(
-      'Next Retry after Firebase service health and local worker health are confirmed.',
+      'Next Retry after Firebase service status and local delivery workers are confirmed.',
     );
     expect(rendered).not.toContain('Token hidden');
   });

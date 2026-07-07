@@ -13,7 +13,7 @@ import {
 } from './notification-section-test-utils';
 
 describe('NotificationFilterBoardSection', () => {
-  it('renders active queue, booking trace, and quick filter links', () => {
+  it('renders active queue, booking context, and quick filter links', () => {
     const section = NotificationFilterBoardSection({
       activeBookingLabel: 'book-1234',
       activeFilterDescription: 'latest delivery attempts that returned an FCM push failure.',
@@ -42,7 +42,8 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('Retry gate');
     expect(rendered).toContain('The latest send attempt failed.');
     expect(rendered).toContain('Next action: Open delivery evidence before retry.');
-    expect(rendered).toContain('Active booking trace: book-1234');
+    expect(rendered).toContain('Active booking context: book-1234');
+    expect(rendered).not.toContain('Active booking trace');
     expect(rendered).toContain('Showing 2 loaded row(s) of 10 total / Last 7 days');
     expect(rendered).toContain('Clear filter');
     expect(rendered).toContain('Booking book-1234');

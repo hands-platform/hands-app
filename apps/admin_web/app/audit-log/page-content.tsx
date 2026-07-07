@@ -166,7 +166,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 { label: 'All', value: '' },
                 { label: 'Review this first', value: '4' },
                 { label: 'Check before close', value: '3' },
-                { label: 'Trace related flow', value: '2' },
+                { label: 'Follow related flow', value: '2' },
                 { label: 'Reference event', value: '1' },
               ]}
             />
@@ -331,7 +331,7 @@ export function buildAuditCommandBoard(
       title: 'Dispatch and Partner actions',
       detail: 'Booking, matching, Partner status, and verification changes affect service delivery.',
       status: 'Dispatch',
-      operatorAction: 'Trace handoff problems from Booking detail back to the acting operator.',
+      operatorAction: 'Review handoff problems from Booking detail back to the acting operator.',
       href: withAuditRange('/audit-log?bucket=Dispatch', range),
       tone: dispatchLogs.length > 0 ? 'info' : 'ok',
       logs: buildAuditCommandLogPreviews(dispatchLogs),
@@ -1248,7 +1248,7 @@ function reviewPriorityLabel(action: string) {
     return 'Check before close';
   }
   if (priority >= 2) {
-    return 'Trace related flow';
+    return 'Follow related flow';
   }
   return 'Reference event';
 }
@@ -1265,22 +1265,22 @@ function opsHint(action: string, target: string) {
     return 'Structured booking handling status was updated by an operator.';
   }
   if (action.startsWith('booking.')) {
-    return 'Trace booking state changes and verify Customer/Partner handoff.';
+    return 'Review booking state changes and verify Customer/Partner handoff.';
   }
   if (action.startsWith('payment.')) {
     return 'Confirm the money state matches the booking state before closing the loop.';
   }
   if (isPayoutAction(action)) {
-    return 'Confirm transfer references, withholding logs, and Partner payout readiness before release.';
+    return 'Confirm transfer references, withholding logs, and Partner payout release checks before release.';
   }
   if (isFinanceCloseoutAction(action)) {
-    return 'Trace this row through Finance Closeout before ending the shift.';
+    return 'Review this row through Finance Closeout before ending the shift.';
   }
   if (action.startsWith('notification.')) {
-    return 'Check retry or delivery health if the Customer or Partner missed an alert.';
+    return 'Check alert delivery status if the Customer or Partner missed an alert.';
   }
   if (isPushDeviceAction(action)) {
-    return 'Check push token freshness and delivery health before re-enabling alerts.';
+    return 'Check push token freshness and alert delivery status before re-enabling alerts.';
   }
   if (action.startsWith('operational_policy.')) {
     return 'Confirm the policy change matches the current owner decision and active booking controls.';
@@ -1289,7 +1289,7 @@ function opsHint(action: string, target: string) {
     return 'Review service price, Partner payout, VAT, costs, and before/after changes.';
   }
   if (action.startsWith('provider.')) {
-    return 'Review Partner readiness, moderation, or queue movement.';
+    return 'Review Partner approval status, moderation, or queue movement.';
   }
   return `Audit trail for ${target || 'system'} activity.`;
 }

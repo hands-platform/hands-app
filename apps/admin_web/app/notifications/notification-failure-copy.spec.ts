@@ -22,10 +22,10 @@ describe('notification failure copy', () => {
 
   it('keeps retry guidance for temporary Firebase service failures', () => {
     expect(notificationFailureRecoveryHint('messaging/internal-error')).toBe(
-      'Retry after Firebase service health and local worker health are confirmed.',
+      'Retry after Firebase service status and local delivery workers are confirmed.',
     );
     expect(notificationFailureRecoveryActionLabel('messaging/server-unavailable')).toBe(
-      'Next retry after Firebase health check',
+      'Next retry after Firebase status check',
     );
   });
 });

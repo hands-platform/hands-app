@@ -42,7 +42,7 @@ export function notificationFailureRecoveryHint(failureCode: string | null | und
     return 'Ask the user to reopen the app so it can register a fresh FCM token before retrying.';
   }
   if (failureCode === 'messaging/internal-error' || failureCode === 'messaging/server-unavailable') {
-    return 'Retry after Firebase service health and local worker health are confirmed.';
+    return 'Retry after Firebase service status and local delivery workers are confirmed.';
   }
 
   return null;
@@ -66,7 +66,7 @@ export function notificationFailureRecoveryActionLabel(failureCode: string | nul
     return 'Next refresh app token';
   }
   if (failureCode === 'messaging/internal-error' || failureCode === 'messaging/server-unavailable') {
-    return 'Next retry after Firebase health check';
+    return 'Next retry after Firebase status check';
   }
 
   return null;

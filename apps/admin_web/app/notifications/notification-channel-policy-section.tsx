@@ -13,6 +13,7 @@ import type {
 import { FCM_TOKEN_RECOVERY_SMOKE_COMMAND } from './fcm-smoke-commands';
 
 type NotificationChannelPolicySectionProps = {
+  readonly canViewDiagnostics?: boolean;
   readonly density?: 'compact' | 'full';
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
@@ -25,6 +26,7 @@ type NotificationChannelPolicySectionProps = {
 };
 
 export function NotificationChannelPolicySection({
+  canViewDiagnostics = false,
   density = 'full',
   inAppDeliveries,
   fcmDeliveries,
@@ -38,7 +40,7 @@ export function NotificationChannelPolicySection({
   const shouldShowFcmDiagnosis =
     fcmSmokeReadiness.status !== 'ready' || Boolean(fcmSmokeReadiness.deviceWarningLabel);
   const shouldShowAuditEvidence = Boolean(fcmSmokeReadiness.selectedNotificationId);
-  const isCompact = density === 'compact';
+  const isCompact = !canViewDiagnostics || density === 'compact';
 
   return (
     <AdminSection
@@ -67,9 +69,11 @@ export function NotificationChannelPolicySection({
           <StatusBadge tone={fcmSmokeReadinessTone(fcmSmokeReadiness.status)}>
             {fcmSmokeReadiness.statusLabel}
           </StatusBadge>
-          <StatusBadgeLink href="/notifications?diagnostics=full" tone="neutral">
-            Show FCM diagnostics
-          </StatusBadgeLink>
+          {canViewDiagnostics ? (
+            <StatusBadgeLink href="/notifications?diagnostics=full" tone="neutral">
+              Show FCM diagnostics
+            </StatusBadgeLink>
+          ) : null}
         </AdminFilterChipGroup>
       ) : (
         <AdminTaskGrid>

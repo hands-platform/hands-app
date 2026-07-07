@@ -2,6 +2,7 @@ import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationActionConfirmation,
   enablePushDeviceConfirmHref,
+  filterNotificationActionConfirmationSupportingLinks,
   readNotificationConfirmationAction,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
@@ -202,7 +203,7 @@ describe('notification action confirmation', () => {
       tone: 'warning',
     });
     expect(confirmation?.description).toContain(
-      'latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying.',
+      'latest delivery used an old FCM token timestamp. Ask the user to reopen the app or complete token recovery before retrying.',
     );
     expect(confirmation?.description).toContain('30+ day token timestamp');
     expect(confirmation?.description).toContain('Runbook: Token freshness gate.');
@@ -388,7 +389,7 @@ describe('notification action confirmation', () => {
     });
 
     expect(confirmation?.description).toContain(
-      'Runbook: Device recovery gate. Ask the customer or Partner to reopen the app, run token recovery smoke when needed, then re-enable only after the token path is current.',
+      'Runbook: Device recovery gate. Ask the customer or Partner to reopen the app, complete token recovery when needed, then re-enable only after the token path is current.',
     );
     expect(confirmation?.supportingLinks).toEqual(
       expect.arrayContaining([
@@ -431,7 +432,7 @@ describe('notification action confirmation', () => {
 
     expect(confirmation?.cancelHref).toBe('/notifications?review=fcm');
     expect(confirmation?.description).toContain(
-      'Runbook: FCM route gate. Check the live preflight candidate, run token recovery smoke when app devices changed, then retry only after the notification and device path are valid.',
+      'Runbook: FCM route gate. Check the live preflight candidate, complete token recovery when app devices changed, then retry only after the notification and device path are valid.',
     );
     expect(confirmation?.supportingLinks).toEqual(
       expect.arrayContaining([
@@ -442,5 +443,34 @@ describe('notification action confirmation', () => {
         },
       ]),
     );
+  });
+
+  it('filters setup links from confirmation support for ordinary operators', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      notificationId: notification.id,
+      pushDeviceId: '',
+      review: 'failed',
+    });
+
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ href: '/setup#notifications', label: 'FCM setup' }),
+      ]),
+    );
+
+    const filtered = filterNotificationActionConfirmationSupportingLinks(confirmation, false);
+    const unfiltered = filterNotificationActionConfirmationSupportingLinks(confirmation, true);
+
+    expect(filtered?.supportingLinks).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({ href: '/setup#notifications', label: 'FCM setup' }),
+      ]),
+    );
+    expect(filtered?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all' }),
+      ]),
+    );
+    expect(unfiltered?.supportingLinks).toEqual(confirmation?.supportingLinks);
   });
 });

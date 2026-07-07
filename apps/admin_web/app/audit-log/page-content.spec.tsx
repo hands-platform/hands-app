@@ -27,4 +27,18 @@ describe('audit log page content', () => {
     expect(source).not.toContain('import { AdminRoundedPagination }');
     expect(source).not.toContain('<AdminRoundedPagination');
   });
+
+  it('uses operator-facing audit copy instead of developer trace or health wording', () => {
+    expect(source).toContain('Follow related flow');
+    expect(source).toContain('Review handoff problems');
+    expect(source).toContain('Check alert delivery status');
+    expect(source).toContain('Partner payout release checks');
+    expect(source).toContain('Partner approval status');
+    expect(source).not.toContain('Trace related flow');
+    expect(source).not.toContain('Trace handoff problems');
+    expect(source).not.toContain('Trace booking state changes');
+    expect(source).not.toContain('Trace this row');
+    expect(source).not.toContain('delivery health');
+    expect(source).not.toMatch(/\breadiness\b/i);
+  });
 });

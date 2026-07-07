@@ -71,8 +71,8 @@ export function NotificationFilterBoardSection({
           {activeBookingLabel ? (
             <>
               <br />
-              Active booking trace: <strong>{activeBookingLabel}</strong>. Showing only notifications tied to
-              this booking id.
+              Active booking context: <strong>{activeBookingLabel}</strong>. Showing only notifications tied
+              to this booking id.
             </>
           ) : null}
         </>

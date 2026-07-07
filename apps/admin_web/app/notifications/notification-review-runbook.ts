@@ -9,7 +9,7 @@ const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunb
     detail:
       'A push device on this queue is disabled. Recovery should come from a fresh app token, not from blindly reusing the old token.',
     primaryAction:
-      'Ask the customer or Partner to reopen the app, run token recovery smoke when needed, then re-enable only after the token path is current.',
+      'Ask the customer or Partner to reopen the app, complete token recovery when needed, then re-enable only after the token path is current.',
     title: 'Device recovery gate',
   },
   failed: {
@@ -21,9 +21,9 @@ const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunb
   },
   fcm: {
     detail:
-      'These rows already attempted FCM delivery. Use this queue to confirm route readiness, token freshness, and Firebase project alignment before broad push.',
+      'These rows already attempted FCM delivery. Use this queue to confirm delivery route status, token freshness, and Firebase project alignment before broad push.',
     primaryAction:
-      'Check the live preflight candidate, run token recovery smoke when app devices changed, then retry only after the notification and device path are valid.',
+      'Check the live preflight candidate, complete token recovery when app devices changed, then retry only after the notification and device path are valid.',
     title: 'FCM route gate',
   },
   'needs-retry': {
@@ -44,7 +44,7 @@ const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunb
     detail:
       'The latest delivery used an old push token timestamp. A successful FCM response here does not prove the user has a fresh app token.',
     primaryAction:
-      'Ask the user to reopen the app so the token refreshes, then prefer token recovery smoke before relying on another retry.',
+      'Ask the user to reopen the app so the token refreshes, then prefer token recovery review before relying on another retry.',
     title: 'Token freshness gate',
   },
 };

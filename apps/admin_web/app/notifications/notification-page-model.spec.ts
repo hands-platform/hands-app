@@ -1200,7 +1200,7 @@ describe('notification page model', () => {
       deviceFreshnessLabel: '30+ day token timestamp',
       deviceStateLabel: 'Device enabled',
       recoveryHintLabel:
-        'Ask the user to reopen the app so the token refreshes, then prefer token recovery smoke before retrying.',
+        'Ask the user to reopen the app so the token refreshes, then prefer token recovery review before retrying.',
       status: 'SENT',
       statusClassName: 'pill pill-success',
     });

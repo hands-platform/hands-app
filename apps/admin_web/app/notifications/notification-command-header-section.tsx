@@ -1,7 +1,13 @@
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 
-export function NotificationCommandHeaderSection() {
+type NotificationCommandHeaderSectionProps = {
+  readonly canViewDiagnostics?: boolean;
+};
+
+export function NotificationCommandHeaderSection({
+  canViewDiagnostics = false,
+}: NotificationCommandHeaderSectionProps = {}) {
   return (
     <AdminSectionHeader
       description="Delivery board for push retries, disabled devices, and last-mile alert confidence."
@@ -9,10 +15,12 @@ export function NotificationCommandHeaderSection() {
         <>
           <StatusBadge tone="success">Current failures first</StatusBadge>
           <StatusBadge tone="info">Delivery signal</StatusBadge>
-          <StatusBadge tone="warning">Retry readiness</StatusBadge>
-          <StatusBadgeLink href="/setup#notifications" tone="neutral">
-            FCM setup
-          </StatusBadgeLink>
+          <StatusBadge tone="warning">Retry checks</StatusBadge>
+          {canViewDiagnostics ? (
+            <StatusBadgeLink href="/setup#notifications" tone="neutral">
+              FCM setup
+            </StatusBadgeLink>
+          ) : null}
         </>
       }
       title="Notification delivery command"

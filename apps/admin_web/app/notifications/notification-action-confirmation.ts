@@ -99,6 +99,24 @@ export function buildNotificationActionConfirmation(
   return buildEnableDeviceConfirmation(notifications, values);
 }
 
+export function filterNotificationActionConfirmationSupportingLinks(
+  confirmation: NotificationActionConfirmation | null,
+  canViewDiagnostics: boolean,
+): NotificationActionConfirmation | null {
+  if (!confirmation || canViewDiagnostics) {
+    return confirmation;
+  }
+
+  const supportingLinks = confirmation.supportingLinks?.filter(
+    (link) => link.href !== FCM_SETUP_SUPPORTING_LINK.href,
+  );
+
+  return {
+    ...confirmation,
+    supportingLinks: supportingLinks?.length ? supportingLinks : undefined,
+  };
+}
+
 function buildRetryConfirmation(
   notifications: readonly AdminNotification[],
   values: NotificationConfirmationValues,
@@ -174,7 +192,7 @@ function retryConfirmationCopy(
   if (isStaleNotificationPushDeviceDelivery(latestDelivery)) {
     return {
       confirmLabel: 'Retry after token refresh',
-      description: `Notification ${id} latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying. ${evidence}${reviewGuidance}`,
+      description: `Notification ${id} latest delivery used an old FCM token timestamp. Ask the user to reopen the app or complete token recovery before retrying. ${evidence}${reviewGuidance}`,
       tone: 'warning',
     };
   }

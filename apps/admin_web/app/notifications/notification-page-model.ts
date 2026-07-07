@@ -1005,7 +1005,7 @@ function deliveryRecoveryHintLabel(delivery: AdminNotificationDelivery) {
     return 'Ask the customer or Partner to reopen the app, then re-enable only after the token path is current.';
   }
   if (isStaleNotificationPushDeviceDelivery(delivery)) {
-    return 'Ask the user to reopen the app so the token refreshes, then prefer token recovery smoke before retrying.';
+    return 'Ask the user to reopen the app so the token refreshes, then prefer token recovery review before retrying.';
   }
   return notificationDeliveryRecoveryHint(delivery);
 }

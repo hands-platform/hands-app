@@ -7,11 +7,14 @@ import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { shortId } from '../../lib/admin-format';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
+import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { enablePushDevice, retryNotification } from './actions';
 import { NotificationChannelPolicySection } from './notification-channel-policy-section';
 import { NotificationCommandHeaderSection } from './notification-command-header-section';
 import { NotificationDeliveryOpsQueueSection } from './notification-delivery-ops-queue-section';
 import { NotificationFilterBoardSection } from './notification-filter-board-section';
+import { filterNotificationActionConfirmationSupportingLinks } from './notification-action-confirmation';
 import {
   emptyNotificationMessage,
   buildNotificationApiHref,
@@ -39,13 +42,21 @@ export default async function NotificationsPage({
     adminGet<AdminNotificationBoardSummary | null>(buildNotificationSummaryApiHref(params), null),
     adminGet<AdminOperationalPolicySetting[]>(buildNotificationPolicyApiHref(), []),
   ]);
-  const diagnosticsMode = readSearchParam(params.diagnostics) === 'full' ? 'full' : 'compact';
+  const operatorAccess = await getCurrentAdminOperatorAccess();
+  const canViewDiagnostics = canViewAdminDeveloperSystem(operatorAccess);
+  const requestedDiagnosticsMode = readSearchParam(params.diagnostics);
+  const diagnosticsMode =
+    requestedDiagnosticsMode === 'full' && canViewDiagnostics ? 'full' : 'compact';
   const model = buildNotificationPageModel({
     notificationSummary,
     notifications: rawNotifications,
     operationalPolicies,
     params,
   });
+  const confirmation = filterNotificationActionConfirmationSupportingLinks(
+    model.confirmation,
+    canViewDiagnostics,
+  );
 
   return (
     <AdminPageTemplate
@@ -53,24 +64,25 @@ export default async function NotificationsPage({
       metrics={model.metrics}
       title="Notifications"
     >
-      {model.confirmation ? (
+      {confirmation ? (
         <ConfirmDialog
-          action={model.confirmation.action === 'retry' ? retryNotification : enablePushDevice}
-          cancelHref={model.confirmation.cancelHref}
-          confirmLabel={model.confirmation.confirmLabel}
-          description={model.confirmation.description}
-          hiddenInputs={model.confirmation.hiddenInputs}
-          id={`notification-action-${model.confirmation.action}-${model.confirmation.id}`}
-          supportingLinks={model.confirmation.supportingLinks}
-          title={model.confirmation.title}
-          tone={model.confirmation.tone}
+          action={confirmation.action === 'retry' ? retryNotification : enablePushDevice}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={confirmation.hiddenInputs}
+          id={`notification-action-${confirmation.action}-${confirmation.id}`}
+          supportingLinks={confirmation.supportingLinks}
+          title={confirmation.title}
+          tone={confirmation.tone}
         />
       ) : null}
 
       <div className="stack notification-monitor">
-        <NotificationCommandHeaderSection />
+        <NotificationCommandHeaderSection canViewDiagnostics={canViewDiagnostics} />
 
         <NotificationChannelPolicySection
+          canViewDiagnostics={canViewDiagnostics}
           density={diagnosticsMode}
           inAppDeliveries={model.channelSummary.inAppDeliveries}
           fcmDeliveries={model.channelSummary.fcmDeliveries}

@@ -10,6 +10,7 @@ const globalCss = readFileSync('app/globals.css', 'utf8');
 describe('NotificationChannelPolicySection', () => {
   it('renders partner alert routing policy and channel counts', () => {
     const section = NotificationChannelPolicySection({
+      canViewDiagnostics: true,
       inAppDeliveries: 7,
       fcmDeliveries: 2,
       fcmSmokeReadiness: fcmSmokeReadiness(),
@@ -67,6 +68,7 @@ describe('NotificationChannelPolicySection', () => {
 
   it('uses a neutral FCM badge when no FCM push deliveries exist', () => {
     const section = NotificationChannelPolicySection({
+      canViewDiagnostics: true,
       inAppDeliveries: 3,
       fcmDeliveries: 0,
       fcmSmokeReadiness: fcmSmokeReadiness({
@@ -103,6 +105,7 @@ describe('NotificationChannelPolicySection', () => {
 
   it('shows the suggested standard notification smoke id when partner-alert policy blocks FCM', () => {
     const section = NotificationChannelPolicySection({
+      canViewDiagnostics: true,
       inAppDeliveries: 4,
       fcmDeliveries: 3,
       fcmSmokeReadiness: fcmSmokeReadiness(),
@@ -142,6 +145,7 @@ describe('NotificationChannelPolicySection', () => {
 
   it('renders an FCM device warning when the reusable device is not the newest app device', () => {
     const section = NotificationChannelPolicySection({
+      canViewDiagnostics: true,
       inAppDeliveries: 1,
       fcmDeliveries: 4,
       fcmSmokeReadiness: fcmSmokeReadiness({
@@ -185,6 +189,46 @@ describe('NotificationChannelPolicySection', () => {
     expect(source).not.toContain('<Link className="pill pill-info" href="/setup#notifications">');
     expect(source).not.toContain('<span className="pill pill-warn">FCM smoke fallback</span>');
     expect(source).not.toContain('<div className="ops-task-grid"');
+  });
+
+  it('hides FCM diagnostics links from the compact operator view by default', () => {
+    const section = NotificationChannelPolicySection({
+      density: 'compact',
+      inAppDeliveries: 7,
+      fcmDeliveries: 2,
+      fcmSmokeReadiness: fcmSmokeReadiness(),
+      latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Service Completed notifica / device push-dev',
+      partnerAlertCount: 5,
+      partnerAlertSmokeFallback: null,
+      policyLabel: 'In-app first',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Partner alerts 5');
+    expect(rendered).not.toContain('Show FCM diagnostics');
+    expect(hrefsIn(section)).not.toContain('/notifications?diagnostics=full');
+  });
+
+  it('shows FCM diagnostics links in compact mode for Developer/System viewers', () => {
+    const section = NotificationChannelPolicySection({
+      canViewDiagnostics: true,
+      density: 'compact',
+      inAppDeliveries: 7,
+      fcmDeliveries: 2,
+      fcmSmokeReadiness: fcmSmokeReadiness(),
+      latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Service Completed notifica / device push-dev',
+      partnerAlertCount: 5,
+      partnerAlertSmokeFallback: null,
+      policyLabel: 'In-app first',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Show FCM diagnostics');
+    expect(hrefsIn(section)).toContain('/notifications?diagnostics=full');
   });
 
   it('uses the shared AdminFormControlLink atom for policy actions', () => {
