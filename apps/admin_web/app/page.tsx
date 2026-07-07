@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../components/admin-form-controls';
 import { AdminTraceSummary } from '../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
@@ -854,13 +855,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             >
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
-              <div className="participant-list admin-mt-10">
+              <AdminFilterChipGroup className="admin-mt-10">
                 {item.checks.map((check) => (
                   <StatusBadge key={check} tone="neutral">
                     {check}
                   </StatusBadge>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             </AdminActionCard>
           ))}
         </AdminTaskGrid>
@@ -1067,13 +1068,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <p className="muted">{item.sample.detail}</p>
                 </AdminNotePanel>
               ) : null}
-              <div className="participant-list admin-mt-10">
+              <AdminFilterChipGroup className="admin-mt-10">
                 {item.checks.map((check) => (
                   <StatusBadge key={check} tone="neutral">
                     {check}
                   </StatusBadge>
                 ))}
-              </div>
+              </AdminFilterChipGroup>
             </AdminActionCard>
           ))}
         </AdminTaskGrid>
@@ -1160,14 +1161,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   title={item.title}
                   variant="ops-task"
                 >
-                  <div className="participant-list admin-mt-10">
+                  <AdminFilterChipGroup className="admin-mt-10">
                     <StatusBadge tone="neutral">{item.value}</StatusBadge>
                     {item.checks.slice(0, 3).map((check) => (
                       <StatusBadge key={check} tone="info">
                         {check}
                       </StatusBadge>
                     ))}
-                  </div>
+                  </AdminFilterChipGroup>
                 </AdminActionCard>
               ))}
             </AdminTaskGrid>
@@ -1313,7 +1314,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
           <AdminSection
             actions={
-              <div className="participant-list">
+              <AdminFilterChipGroup>
                 <AdminFormControlLink href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
                   Open matching timeline
@@ -1322,7 +1323,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <Settings2 size={16} aria-hidden="true" />
                   Simulate policy
                 </AdminFormControlLink>
-              </div>
+              </AdminFilterChipGroup>
             }
             className="admin-mt-20 dashboard-card-scroll dashboard-matching-card"
             description="Live view of open matching demand. Existing bookings use their saved policy snapshot; new bookings use the current policy."
@@ -1349,11 +1350,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                           {row.title}
                         </AdminTextLink>
                         <p className="muted">{row.detail}</p>
-                        <div className="participant-list admin-mt-8">
+                        <AdminFilterChipGroup className="admin-mt-8">
                           <StatusBadgeFromPillClass pillClass={row.customerPillClass}>{row.customerState}</StatusBadgeFromPillClass>
                           <StatusBadgeFromPillClass pillClass={row.backupPillClass}>{row.backupState}</StatusBadgeFromPillClass>
                           <StatusBadgeFromPillClass pillClass={row.supplyPillClass}>{row.supplyState}</StatusBadgeFromPillClass>
-                        </div>
+                        </AdminFilterChipGroup>
                         <p className="muted admin-mt-6">Next: {row.nextAction}</p>
                       </div>
                       <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.status}</StatusBadgeFromPillClass>
@@ -1550,7 +1551,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               id="dashboard-booking-attention-cockpit"
               title="Booking attention cockpit"
             >
-              <div className="participant-list admin-mt-8">
+              <AdminFilterChipGroup className="admin-mt-8">
                 <AdminFormControlLink href="/bookings?view=matching">
                   <BellRing size={16} aria-hidden="true" />
                   Matching ops
@@ -1559,7 +1560,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   <BellRing size={16} aria-hidden="true" />
                   Attention bookings
                 </AdminFormControlLink>
-              </div>
+              </AdminFilterChipGroup>
               <DashboardTraceSummary
                 metrics={[
                   {

@@ -330,6 +330,7 @@ describe('DashboardPage', () => {
 
   it('uses shared Vuexy status badge atoms instead of raw dashboard pill markup', () => {
     expect(dashboardSource).toContain("from '../components/status-badge'");
+    expect(dashboardSource).toContain('AdminFilterChipGroup');
     expect(dashboardSource).toContain('AdminSectionHeader');
     expect(dashboardSource).toContain('StatusBadge');
     expect(dashboardSource).toContain('StatusBadgeFromPillClass');
@@ -345,6 +346,7 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('<span className={`signal');
     expect(dashboardSource).not.toContain('<Link className="pill');
     expect(dashboardSource).not.toContain('<Link\n                          className={`pill');
+    expect(dashboardSource).not.toContain('<div className="participant-list');
     expect(dashboardSource).not.toContain('<div className="ops-section-header">');
   });
 
