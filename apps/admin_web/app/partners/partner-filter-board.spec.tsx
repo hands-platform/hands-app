@@ -12,6 +12,12 @@ describe('PartnerFilterBoard', () => {
     expect(source).not.toContain('<span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>');
   });
 
+  it('does not keep stale partner filter card selectors in global CSS', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).not.toContain('.partners-page .partner-filter-card');
+  });
+
   it('renders a compact Vuexy-style partner filter panel', () => {
     const filters = providerFilters({
       providerStatus: 'ONLINE_AVAILABLE',

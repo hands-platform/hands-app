@@ -4785,27 +4785,6 @@ a.action-button-card:hover {
   padding-right: 4px;
 }
 
-.partners-page .partner-filter-card .ops-section-header {
-  margin-bottom: 14px;
-}
-
-.partners-page .partner-filter-card .form-grid {
-  align-items: end;
-  background: var(--admin-action-hover);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  gap: 14px;
-  grid-template-columns: minmax(240px, 1.4fr) repeat(4, minmax(0, 1fr));
-  padding: 16px;
-}
-
-.partners-page .partner-filter-card .form-grid label {
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
 .partners-page .partner-advanced-filter-group {
   background: var(--admin-surface);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
@@ -4837,26 +4816,6 @@ a.action-button-card:hover {
   gap: 12px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 12px;
-}
-
-.partners-page .partner-filter-card .form-grid .actions.full-span {
-  align-items: center;
-  background: var(--admin-surface);
-  border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-xs);
-  gap: 10px;
-  padding: 12px;
-}
-
-.partners-page .partner-filter-card .form-grid .actions.full-span .button {
-  box-shadow: none;
-  min-height: 36px;
-  white-space: nowrap;
-}
-
-.partners-page .partner-filter-card .form-grid .actions.full-span .muted {
-  margin-left: auto;
 }
 
 .operations-policy-page .service-trace-summary,
