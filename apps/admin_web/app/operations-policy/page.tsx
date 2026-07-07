@@ -198,13 +198,15 @@ export default async function OperationsPolicyPage({
           {matchingSettings.length === 0 ? (
             <AdminNotePanel className="admin-m-0">
               <AdminEmptyState
-                message="Seed operational policies from the API setup before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
+                message="Seed operational policies before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
                 title="No matching policies loaded"
               />
-              <AdminFormControlLink className="button-secondary" href="/setup">
-                <Settings size={16} aria-hidden="true" />
-                Open setup checks
-              </AdminFormControlLink>
+              {canLoadFullDiagnostics ? (
+                <AdminFormControlLink className="button-secondary" href="/setup">
+                  <Settings size={16} aria-hidden="true" />
+                  Open setup checks
+                </AdminFormControlLink>
+              ) : null}
             </AdminNotePanel>
           ) : null}
         </AdminDetailGrid>

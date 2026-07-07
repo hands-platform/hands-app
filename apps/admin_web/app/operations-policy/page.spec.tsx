@@ -92,6 +92,34 @@ describe('OperationsPolicyPage', () => {
     expect((markup.match(/<form/g) ?? []).length).toBe(1);
   });
 
+  it('does not expose the Developer/System setup route to ordinary operators when policies are missing', async () => {
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('No matching policies loaded');
+    expect(markup).not.toContain('/setup');
+    expect(markup).not.toContain('Open setup checks');
+    expect(markup).not.toContain('API setup');
+  });
+
+  it('keeps setup checks available to Master Admins when policies are missing', async () => {
+    mockedGetAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('/setup');
+    expect(markup).toContain('Open setup checks');
+  });
+
   it('renders decision policy editors in full diagnostics mode', async () => {
     mockedGetAccess.mockResolvedValue({
       categories: [],
