@@ -15027,7 +15027,7 @@ textarea:focus-visible {
 
 .vuexy-customer-filter-card .admin-filter-panel-header h2,
 .vuexy-partner-filter-card .admin-filter-panel-header h2,
-.customer-detail-overview-card h2 {
+.customer-detail-identity-copy h2 {
   color: var(--admin-text);
   font-size: 22px;
   line-height: 1.3;
@@ -15036,7 +15036,7 @@ textarea:focus-visible {
 
 .vuexy-customer-filter-card .admin-filter-panel-header p,
 .vuexy-partner-filter-card .admin-filter-panel-header p,
-.customer-detail-overview-card p {
+.customer-detail-identity-copy p {
   color: var(--admin-muted);
   margin: 8px 0 0;
   max-width: 760px;
@@ -15879,8 +15879,12 @@ textarea:focus-visible {
 .vuexy-partner-person small,
 .vuexy-partner-stack span,
 .vuexy-partner-stack small,
-.customer-detail-overview-card span,
-.customer-detail-overview-card small,
+.customer-detail-fact-list span,
+.customer-detail-fact-list small,
+.customer-detail-usage-summary-header small,
+.customer-detail-usage-region-list span,
+.customer-detail-usage-region-list small,
+.customer-detail-partner-rail-header small,
 .customer-detail-nav-list small {
   color: var(--admin-muted);
   display: block;
@@ -15891,7 +15895,10 @@ textarea:focus-visible {
 .vuexy-customer-stack small,
 .vuexy-partner-person small,
 .vuexy-partner-stack small,
-.customer-detail-overview-card small,
+.customer-detail-fact-list small,
+.customer-detail-usage-summary-header small,
+.customer-detail-usage-region-list small,
+.customer-detail-partner-rail-header small,
 .customer-detail-nav-list small {
   font-size: 12px;
 }

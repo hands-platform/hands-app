@@ -28,6 +28,19 @@ describe('CustomerDetailOverviewShell', () => {
     expect(source).not.toContain('<p className="customer-detail-partner-empty">{rail.emptyMessage}</p>');
   });
 
+  it('scopes customer overview typography CSS to local content blocks', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.customer-detail-identity-copy h2');
+    expect(css).toContain('.customer-detail-identity-copy p');
+    expect(css).toContain('.customer-detail-fact-list span');
+    expect(css).not.toContain('.customer-detail-overview-card h2');
+    expect(css).not.toContain('.customer-detail-overview-card p');
+    expect(css).not.toContain('.customer-detail-overview-card span,');
+    expect(css).not.toContain('.customer-detail-overview-card small,');
+    expect(css).not.toContain('.customer-detail-overview-card small');
+  });
+
   it('accepts shared date atoms for usage summary helper copy', () => {
     const source = readFileSync('app/customers/[id]/customer-detail-overview-shell.tsx', 'utf8');
     const pageSource = readFileSync('app/customers/[id]/page.tsx', 'utf8');
