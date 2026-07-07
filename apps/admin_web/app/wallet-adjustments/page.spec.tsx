@@ -351,6 +351,11 @@ describe('WalletAdjustmentsPage', () => {
     expect(pageSource).not.toContain('<form className="filter-grid" method="get">');
   });
 
+  it('uses the shared chip group atom for create adjustment action status badges', () => {
+    expect(pageSource).toContain('AdminFilterChipGroup');
+    expect(pageSource).not.toContain('<AdminFormShell action={createManualWalletAdjustment} className="participant-list">');
+  });
+
   it('uses the shared table pagination footer for adjustment history', () => {
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).not.toContain('<AdminTableFooter>');

@@ -2,6 +2,7 @@ import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import {
   AdminFormControlButton,
   AdminFormGrid,
@@ -440,20 +441,22 @@ function CreateAdjustmentForm({
     preview.affects.bankCash;
 
   return (
-    <AdminFormShell action={createManualWalletAdjustment} className="participant-list">
+    <AdminFormShell action={createManualWalletAdjustment}>
       <HiddenAdjustmentInputs formState={formState} />
-      {blockedAccountingImpact ? (
-        <StatusBadge tone="danger">Blocked accounting impact</StatusBadge>
-      ) : null}
-      {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
-      {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
-      {missingApproval ? <StatusBadge tone="warning">Approval id required</StatusBadge> : null}
-      {missingApprovalAdmin ? <StatusBadge tone="warning">Approving admin id required</StatusBadge> : null}
-      <AdminFormControlButton
-        disabled={missingApproval || missingApprovalAdmin || missingRequiredAttachment || blockedAccountingImpact}
-      >
-        Create manual adjustment
-      </AdminFormControlButton>
+      <AdminFilterChipGroup ariaLabel="Create manual wallet adjustment gates">
+        {blockedAccountingImpact ? (
+          <StatusBadge tone="danger">Blocked accounting impact</StatusBadge>
+        ) : null}
+        {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
+        {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
+        {missingApproval ? <StatusBadge tone="warning">Approval id required</StatusBadge> : null}
+        {missingApprovalAdmin ? <StatusBadge tone="warning">Approving admin id required</StatusBadge> : null}
+        <AdminFormControlButton
+          disabled={missingApproval || missingApprovalAdmin || missingRequiredAttachment || blockedAccountingImpact}
+        >
+          Create manual adjustment
+        </AdminFormControlButton>
+      </AdminFilterChipGroup>
     </AdminFormShell>
   );
 }
