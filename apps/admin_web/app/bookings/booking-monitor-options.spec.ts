@@ -112,4 +112,15 @@ describe('booking monitor options', () => {
     expect(blockedCreate?.operatorHint).toContain('Review optional GPS evidence');
     expect(blockedCreate?.operatorHint).not.toContain('debug');
   });
+
+  it('keeps address view copy operator-facing instead of snapshot-facing', () => {
+    const addressView = bookingViewOptions.find((option) => option.view === 'address');
+    const evidenceAddressFilter = bookingEvidenceFilterOptions.find((option) => option.value === 'address');
+
+    expect(evidenceAddressFilter?.label).toBe('Address check');
+    expect(addressView?.description).toContain('confirmed customer service address');
+    expect(addressView?.operatorHint).toContain('A confirmed service address protects');
+    expect(addressView?.description).not.toContain('snapshot');
+    expect(addressView?.operatorHint).not.toContain('snapshot');
+  });
 });

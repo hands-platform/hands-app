@@ -12,7 +12,7 @@ export const bookingEvidenceFilterOptions: readonly {
   readonly value: BookingEvidenceFilter;
 }[] = [
   { value: 'all', label: 'All evidence' },
-  { value: 'address', label: 'Address snapshot check' },
+  { value: 'address', label: 'Address check' },
   { value: 'partner', label: 'Partner selection check' },
   { value: 'chat', label: 'Chat archive check' },
   { value: 'money', label: 'Payment / wallet check' },
@@ -88,9 +88,9 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
   {
     view: 'address',
     label: 'Address check',
-    description: 'bookings missing the immutable customer service address snapshot.',
+    description: 'bookings missing the confirmed customer service address.',
     operatorHint:
-      'Use this before dispatch. A confirmed address snapshot protects customer, Partner, and admin records.',
+      'Use this before dispatch. A confirmed service address protects customer, Partner, and admin records.',
   },
   {
     view: 'manual-decision',

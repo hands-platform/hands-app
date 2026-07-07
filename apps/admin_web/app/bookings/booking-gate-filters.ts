@@ -41,7 +41,7 @@ export const bookingGateFilterOptions: BookingGateFilterOption[] = [
     value: 'customer-gps',
     label: 'Optional GPS evidence',
     operatorHint:
-      'Optional customer GPS evidence rows are retained as support context. Booking authority is the address snapshot.',
+      'Optional customer GPS evidence rows are retained as support context. Booking authority is the confirmed service address.',
   },
   {
     value: 'customer-distance',
@@ -57,7 +57,7 @@ export const bookingGateFilterOptions: BookingGateFilterOption[] = [
   {
     value: 'unknown',
     label: 'Unknown gate',
-    operatorHint: 'Audit metadata did not include a recognized reason code. Inspect the raw audit entry.',
+    operatorHint: 'Audit metadata did not include a recognized reason code. Open the audit row before support follow-up.',
   },
 ];
 

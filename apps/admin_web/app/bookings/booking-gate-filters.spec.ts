@@ -73,4 +73,14 @@ describe('booking gate filters', () => {
       tone: 'ok',
     });
   });
+
+  it('keeps gate filter hints operator-facing', () => {
+    const optionalGps = bookingGateFilterOptions.find((option) => option.value === 'customer-gps');
+    const unknownGate = bookingGateFilterOptions.find((option) => option.value === 'unknown');
+
+    expect(optionalGps?.operatorHint).toContain('confirmed service address');
+    expect(optionalGps?.operatorHint).not.toContain('address snapshot');
+    expect(unknownGate?.operatorHint).toContain('Open the audit row');
+    expect(unknownGate?.operatorHint).not.toContain('raw audit entry');
+  });
 });
