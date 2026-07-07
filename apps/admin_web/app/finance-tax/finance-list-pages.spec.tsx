@@ -472,6 +472,15 @@ describe('finance list pages', () => {
     expect(css).not.toContain('.finance-list-command-card .metric-card small {');
   });
 
+  it('scopes finance command card icon tones to direct KPI icon slots', () => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+
+    for (const tone of ['primary', 'info', 'success', 'warning', 'danger', 'neutral']) {
+      expect(css).toContain(`.finance-list-command-card.is-${tone} > .metric-card > .metric-card-icon`);
+      expect(css).not.toContain(`.finance-list-command-card.is-${tone} .metric-card-icon`);
+    }
+  });
+
   it('uses shared badge atoms for bank reconciliation status pills', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/bank-reconciliation/page.tsx'), 'utf8');
 

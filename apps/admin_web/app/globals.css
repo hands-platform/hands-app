@@ -1006,32 +1006,32 @@ a {
   line-height: 17px;
 }
 
-.finance-list-command-card.is-primary .metric-card-icon {
+.finance-list-command-card.is-primary > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-primary-channel) / 0.14);
   color: var(--admin-accent-strong);
 }
 
-.finance-list-command-card.is-info .metric-card-icon {
+.finance-list-command-card.is-info > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-info-channel) / 0.14);
   color: var(--admin-info-text);
 }
 
-.finance-list-command-card.is-success .metric-card-icon {
+.finance-list-command-card.is-success > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-success-channel) / 0.14);
   color: var(--admin-success-text);
 }
 
-.finance-list-command-card.is-warning .metric-card-icon {
+.finance-list-command-card.is-warning > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-warning-channel) / 0.16);
   color: var(--admin-warning-text);
 }
 
-.finance-list-command-card.is-danger .metric-card-icon {
+.finance-list-command-card.is-danger > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-danger-channel) / 0.14);
   color: var(--admin-danger-text);
 }
 
-.finance-list-command-card.is-neutral .metric-card-icon {
+.finance-list-command-card.is-neutral > .metric-card > .metric-card-icon {
   background: rgb(var(--admin-main-channel) / 0.07);
   color: var(--admin-muted);
 }
