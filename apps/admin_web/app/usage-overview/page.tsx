@@ -35,7 +35,7 @@ import {
 } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminCard, AdminSection } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -786,12 +786,12 @@ function PaymentCouponInsightCard({
         ]}
       />
       {rows.length > 0 ? (
-        <div className="usage-overview-payment-mix">
+        <AdminCardGrid ariaLabel="Payment method mix" className="usage-overview-payment-mix">
           {rows.map((row) => {
             const widthPercent = Math.max(6, Math.round((row.amount / maxAmount) * 100));
 
             return (
-              <div key={row.method} className="usage-overview-payment-row">
+              <AdminCard key={row.method} className="usage-overview-payment-row">
                 <div>
                   <span>
                     <CreditCard size={14} aria-hidden="true" />
@@ -803,10 +803,10 @@ function PaymentCouponInsightCard({
                   <i style={{ width: `${widthPercent}%` }} />
                 </div>
                 <small>{formatNumber(row.bookingCount)} completed bookings</small>
-              </div>
+              </AdminCard>
             );
           })}
-        </div>
+        </AdminCardGrid>
       ) : (
         <UsageOverviewEmptyState
           icon={BadgePercent}

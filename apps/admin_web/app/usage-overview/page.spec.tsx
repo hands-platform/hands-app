@@ -83,6 +83,9 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).not.toContain('<section className="usage-overview-insight-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-behavior-grid"');
     expect(pageSource).not.toContain('<section className="usage-overview-group"');
+    expect(pageSource).toContain('AdminCardGrid');
+    expect(pageSource).not.toContain('<div className="usage-overview-payment-mix"');
+    expect(pageSource).not.toContain('<div key={row.method} className="usage-overview-payment-row"');
     expect(pageSource).toContain('AdminOverviewGroup');
     expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('DateTimeText');
