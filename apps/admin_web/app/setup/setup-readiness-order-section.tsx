@@ -71,7 +71,7 @@ function ReadinessRow({
   const missing = check.missing.map(setupReadinessDisplayText);
   const invalid = (check.invalid ?? []).map(setupReadinessDisplayText);
   const allCommands = readinessCommands(check);
-  const commands = commandMode === 'summary' ? allCommands.slice(0, 1) : allCommands;
+  const commands = commandMode === 'summary' ? [] : allCommands;
   const isCurrentStage = check.scope === 'CURRENT_STAGE';
 
   return (
@@ -93,14 +93,14 @@ function ReadinessRow({
         {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
         {missing.length > 0 && <p className="muted">Missing: {missing.join(', ')}</p>}
         {invalid.length > 0 && <p className="muted">Invalid: {invalid.join(', ')}</p>}
-        {commands.length > 0 && (
+        {allCommands.length > 0 && (
           <div className="setup-command-list admin-mt-8">
             {commands.map((command) => (
               <CommandCopyRow command={command} key={`${check.category}-${command}`} />
             ))}
             {commandMode === 'summary' && allCommands.length > commands.length ? (
               <StatusBadgeLink tone="neutral" href={`/setup?commands=all#${setupAnchorForReadinessCheck(check)}`}>
-                Show {allCommands.length - commands.length} more command(s)
+                Show {allCommands.length - commands.length} command(s)
               </StatusBadgeLink>
             ) : null}
           </div>

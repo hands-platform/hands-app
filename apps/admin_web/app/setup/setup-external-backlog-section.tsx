@@ -15,12 +15,14 @@ type SetupExternalBacklogSectionProps = {
   readonly missingCount: number;
   readonly backlog: readonly SetupExternalBacklogItem[];
   readonly backlogLimit?: number;
+  readonly showCommands?: boolean;
 };
 
 export function SetupExternalBacklogSection({
   missingCount,
   backlog,
   backlogLimit,
+  showCommands = true,
 }: SetupExternalBacklogSectionProps) {
   const visibleBacklog =
     typeof backlogLimit === 'number' && backlogLimit > 0 ? backlog.slice(0, backlogLimit) : backlog;
@@ -46,7 +48,7 @@ export function SetupExternalBacklogSection({
               <ArrowRight size={16} aria-hidden="true" />
               Open setup group
             </AdminFormControlLink>
-            {item.commands && item.commands.length > 0 && (
+            {showCommands && item.commands && item.commands.length > 0 && (
               <div className="setup-command-list admin-mt-8">
                 {item.commands.slice(0, 2).map((command) => (
                   <CommandCopyRow command={command} key={`${item.groupId}-${item.name}-${command}`} />

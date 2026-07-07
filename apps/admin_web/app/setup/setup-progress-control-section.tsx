@@ -2,7 +2,7 @@ import { CommandCopyRow } from '../../components/command-copy-row';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { PathCopyRow } from '../../components/path-copy-row';
-import { AdminSignal } from '../../components/status-badge';
+import { AdminSignal, StatusBadgeLink } from '../../components/status-badge';
 
 type SetupProgressStep = {
   readonly phase: string;
@@ -14,11 +14,13 @@ type SetupProgressStep = {
 type SetupProgressControlSectionProps = {
   readonly sequence: readonly SetupProgressStep[];
   readonly verifiedBaseline: readonly string[];
+  readonly showCommandDetails?: boolean;
 };
 
 export function SetupProgressControlSection({
   sequence,
   verifiedBaseline,
+  showCommandDetails = true,
 }: SetupProgressControlSectionProps) {
   return (
     <AdminDetailGrid ariaLabel="Setup progress control" className="admin-mb-16">
@@ -44,26 +46,38 @@ export function SetupProgressControlSection({
         description="These checks were used to reset the project state before continuing. If one fails later, fix it before moving to the next feature."
         title="Verified baseline"
       >
-        <div className="setup-command-list">
-          {verifiedBaseline.map((item) => (
-            <CommandCopyRow
-              command={item}
-              copiedLabel="Baseline check copied"
-              failedLabel="Copy baseline check failed"
-              key={item}
-              label="Copy baseline check"
-            />
-          ))}
-        </div>
+        {showCommandDetails ? (
+          <div className="setup-command-list">
+            {verifiedBaseline.map((item) => (
+              <CommandCopyRow
+                command={item}
+                copiedLabel="Baseline check copied"
+                failedLabel="Copy baseline check failed"
+                key={item}
+                label="Copy baseline check"
+              />
+            ))}
+          </div>
+        ) : (
+          <StatusBadgeLink tone="neutral" href="/setup?details=all">
+            Show baseline commands
+          </StatusBadgeLink>
+        )}
         <div className="setup-command-block admin-mt-16">
           <h3>Single source of truth</h3>
           <p className="muted">
-            Update this file whenever a phase changes, a skipped item is resumed, or a new external dependency
-            becomes required.
+            Update the master progress roadmap whenever a phase changes, a skipped item is resumed, or a new
+            external dependency becomes required.
           </p>
-          <div className="setup-command-list">
-            <PathCopyRow path="docs\architecture\master-progress-roadmap.md" />
-          </div>
+          {showCommandDetails ? (
+            <div className="setup-command-list">
+              <PathCopyRow path="docs\architecture\master-progress-roadmap.md" />
+            </div>
+          ) : (
+            <StatusBadgeLink tone="neutral" href="/setup?details=all">
+              Show roadmap path
+            </StatusBadgeLink>
+          )}
         </div>
       </AdminSection>
     </AdminDetailGrid>

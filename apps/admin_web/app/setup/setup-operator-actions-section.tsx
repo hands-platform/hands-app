@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { CommandCopyRow } from '../../components/command-copy-row';
-import { AdminSignal } from '../../components/status-badge';
+import { AdminSignal, StatusBadgeLink } from '../../components/status-badge';
 
 type SetupOperatorAction = {
   readonly groupId: string;
@@ -14,11 +14,13 @@ type SetupOperatorAction = {
 type SetupOperatorActionsSectionProps = {
   readonly nextActions: readonly SetupOperatorAction[];
   readonly deferredActions: readonly SetupOperatorAction[];
+  readonly showCommandDetails?: boolean;
 };
 
 export function SetupOperatorActionsSection({
   nextActions,
   deferredActions,
+  showCommandDetails = true,
 }: SetupOperatorActionsSectionProps) {
   return (
     <AdminSection
@@ -49,7 +51,7 @@ export function SetupOperatorActionsSection({
             title={item.name}
             variant="ops-task"
           >
-            {item.commands.length > 0 && (
+            {showCommandDetails && item.commands.length > 0 && (
               <div className="setup-command-list admin-mt-8">
                 {item.commands.slice(0, 2).map((command) => (
                   <code key={`${item.groupId}-${item.name}-${command}`}>{command}</code>
@@ -65,7 +67,7 @@ export function SetupOperatorActionsSection({
           </p>
         )}
       </div>
-      {deferredActions.length > 0 && (
+      {deferredActions.length > 0 && showCommandDetails ? (
         <div className="setup-command-block admin-mt-16">
           <h3>Deferred production setup</h3>
           <p className="muted">
@@ -78,7 +80,19 @@ export function SetupOperatorActionsSection({
             ))}
           </div>
         </div>
-      )}
+      ) : null}
+      {deferredActions.length > 0 && !showCommandDetails ? (
+        <div className="setup-command-block admin-mt-16">
+          <h3>Deferred production setup</h3>
+          <p className="muted">
+            Deferred command packs are kept out of the default setup payload. Open the full setup view when
+            actively working external registration.
+          </p>
+          <StatusBadgeLink tone="neutral" href="/setup?details=all">
+            Show command details
+          </StatusBadgeLink>
+        </div>
+      ) : null}
     </AdminSection>
   );
 }

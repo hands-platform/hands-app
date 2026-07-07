@@ -109,6 +109,59 @@ describe('SetupReadinessOrderSection', () => {
     expect(rendered).not.toContain('npm.cmd run external:check:production');
   });
 
+  it('keeps command copy rows out of summary mode and links to the full command view', () => {
+    const section = SetupReadinessOrderSection({
+      commandMode: 'summary',
+      readinessChecks: [
+        {
+          category: 'push',
+          name: 'FCM push service',
+          status: 'BLOCKED',
+          configured: ['PUSH_PROVIDER'],
+          missing: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+          invalid: [],
+          detail: 'Current delivery is in-app only.',
+          scope: 'DEFERRED',
+          operatorAction: 'Add FCM credentials later for Android/iOS FCM push E2E.',
+          commands: ['npm.cmd run external:check:production'],
+          secretSafe: true,
+        },
+      ],
+      recommendedOrder: [],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).not.toContain('npm.cmd run external:check:push');
+    expect(rendered).toContain('Show 14 command(s)');
+    expect(hrefsIn(section)).toContain('/setup?commands=all#notifications');
+    expect(classNamesIn(section)).not.toContain('command-copy-row');
+  });
+
+  it('renders command copy rows when the full command view is requested', () => {
+    const section = SetupReadinessOrderSection({
+      commandMode: 'full',
+      readinessChecks: [
+        {
+          category: 'push',
+          name: 'FCM push service',
+          status: 'BLOCKED',
+          configured: ['PUSH_PROVIDER'],
+          missing: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+          invalid: [],
+          detail: 'Current delivery is in-app only.',
+          scope: 'DEFERRED',
+          commands: ['npm.cmd run external:check:production'],
+          secretSafe: true,
+        },
+      ],
+      recommendedOrder: [],
+    });
+
+    expect(textContent(section)).toContain('npm.cmd run external:check:push');
+    expect(classNamesIn(section)).toContain('command-copy-row');
+  });
+
   it('uses an info pill for partial readiness checks', () => {
     const section = SetupReadinessOrderSection({
       readinessChecks: [

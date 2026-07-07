@@ -49,4 +49,27 @@ describe('SetupProgressControlSection', () => {
     expect(classNamesIn(section)).toContain('command-copy-row');
     expect(rendered).toContain('docs\\architecture\\master-progress-roadmap.md');
   });
+
+  it('can keep verified baseline command rows out of the compact setup page', () => {
+    const section = SetupProgressControlSection({
+      showCommandDetails: false,
+      sequence: [
+        {
+          phase: 'Phase 1',
+          title: 'Stabilize core',
+          detail: 'Keep the current production path stable.',
+          status: 'In progress',
+        },
+      ],
+      verifiedBaseline: ['npm.cmd run typecheck', 'npm.cmd run test'],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('Verified baseline');
+    expect(rendered).toContain('2 checks');
+    expect(rendered).not.toContain('npm.cmd run typecheck');
+    expect(rendered).toContain('Show baseline commands');
+    expect(classNamesIn(section)).not.toContain('command-copy-row');
+  });
 });

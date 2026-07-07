@@ -62,6 +62,39 @@ describe('SetupOperatorActionsSection', () => {
     expect(hrefsIn(section)).toContain('#supabase');
   });
 
+  it('can hide command snippets for the compact setup page', () => {
+    const section = SetupOperatorActionsSection({
+      showCommandDetails: false,
+      nextActions: [
+        {
+          groupId: 'supabase',
+          name: 'Database credentials',
+          phase: 'Staging foundation',
+          action: 'Fill server-side Supabase credentials.',
+          commands: ['npm.cmd run external:check:supabase', 'npm.cmd run security:secrets'],
+        },
+      ],
+      deferredActions: [
+        {
+          groupId: 'payments',
+          name: 'Payment gateway',
+          phase: 'Deferred production setup',
+          action: 'Configure real payment gateway credentials.',
+          commands: ['npm.cmd run external:check:payments'],
+        },
+      ],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('Database credentials');
+    expect(rendered).not.toContain('npm.cmd run external:check:supabase');
+    expect(rendered).not.toContain('Payment gateway: Configure real payment gateway credentials.');
+    expect(rendered).toContain('Show command details');
+    expect(hrefsIn(section)).toContain('/setup?details=all');
+    expect(classNamesIn(section)).not.toContain('command-copy-row');
+  });
+
   it('renders a clear state when no current action is pending', () => {
     const section = SetupOperatorActionsSection({
       nextActions: [],

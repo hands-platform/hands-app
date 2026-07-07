@@ -52,12 +52,14 @@ describe('SetupExternalBacklogSection', () => {
     const section = SetupExternalBacklogSection({
       missingCount: 3,
       backlogLimit: 2,
+      showCommands: false,
       backlog: [
         {
           groupId: 'supabase',
           groupTitle: 'Supabase',
           name: 'SUPABASE_URL',
           reason: 'Needed for API checks.',
+          commands: ['npm.cmd run external:check:supabase'],
         },
         {
           groupId: 'maps',
@@ -79,8 +81,29 @@ describe('SetupExternalBacklogSection', () => {
     expect(rendered).toContain('SUPABASE_URL');
     expect(rendered).toContain('GEOAPIFY_API_KEY');
     expect(rendered).not.toContain('MOMO_ACCESS_KEY');
+    expect(rendered).not.toContain('npm.cmd run external:check:supabase');
     expect(rendered).toContain('1 more setup item is hidden from the default view.');
     expect(hrefsIn(section)).toContain('/setup?details=all');
+    expect(classNamesIn(section)).not.toContain('command-copy-row');
     expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary setup-card-action');
+  });
+
+  it('keeps command copy rows available for the full setup backlog view', () => {
+    const section = SetupExternalBacklogSection({
+      missingCount: 1,
+      showCommands: true,
+      backlog: [
+        {
+          groupId: 'notifications',
+          groupTitle: 'FCM push',
+          name: 'FIREBASE_PROJECT_ID',
+          reason: 'Required before push delivery smoke.',
+          commands: ['npm.cmd run external:check:push'],
+        },
+      ],
+    });
+
+    expect(textContent(section)).toContain('npm.cmd run external:check:push');
+    expect(classNamesIn(section)).toContain('command-copy-row');
   });
 });

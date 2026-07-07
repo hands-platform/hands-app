@@ -69,12 +69,20 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
         summary={summary}
       />
 
-      <SetupProgressControlSection sequence={projectControlSequence} verifiedBaseline={verifiedBaseline} />
+      <SetupProgressControlSection
+        sequence={projectControlSequence}
+        verifiedBaseline={verifiedBaseline}
+        showCommandDetails={showSetupDetails}
+      />
 
       <SetupRegistrationHandoffSection registrationPlan={registrationPlan} />
 
       <AdminDetailGrid ariaLabel="Setup operator actions and migration runway" className="admin-mb-16">
-        <SetupOperatorActionsSection nextActions={nextActions} deferredActions={deferredActions} />
+        <SetupOperatorActionsSection
+          nextActions={nextActions}
+          deferredActions={deferredActions}
+          showCommandDetails={showSetupDetails}
+        />
 
         <SetupMigrationRunwaySection groupStatuses={groupStatuses} />
       </AdminDetailGrid>
@@ -89,6 +97,7 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
         missingCount={summary.missing}
         backlog={externalBacklog}
         backlogLimit={showSetupDetails ? undefined : DEFAULT_SETUP_BACKLOG_LIMIT}
+        showCommands={showSetupDetails}
       />
 
       {showSetupDetails ? (
