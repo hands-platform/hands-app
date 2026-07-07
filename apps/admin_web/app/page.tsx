@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
-  Activity,
   BellRing,
   BookOpenCheck,
   CalendarClock,
-  ClipboardCheck,
   FileClock,
   HeartHandshake,
   Settings2,
@@ -44,7 +42,6 @@ import {
   AdminDashboardSummary,
   AdminEarning,
   AdminEarningSummary,
-  AdminExternalReadiness,
   AdminAppSession,
   AdminNotification,
   AdminNotificationBoardSummary,
@@ -57,7 +54,6 @@ import {
   AdminRefund,
   AdminRefundSummary,
   AdminUser,
-  apiGet,
   adminGet,
 } from '../lib/admin-api';
 import {
@@ -368,7 +364,6 @@ function buildFullDashboardData(input: {
   cashSettlementSummary: AdminCashSettlementSummary;
   earningRows: AdminEarning[];
   earnings: AdminEarningSummary;
-  externalReadiness: AdminExternalReadiness;
   failedNotifications: AdminNotification[];
   liveBookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   liveBookingOps: ReturnType<typeof buildBookingOpsInsights>;
@@ -396,7 +391,6 @@ function buildFullDashboardData(input: {
     earningRows: input.earningRows,
     cashSettlementSummary: input.cashSettlementSummary,
     payoutBatches: input.payoutBatches,
-    externalReadiness: input.externalReadiness,
   });
 
   return {
@@ -417,7 +411,6 @@ function buildFullDashboardData(input: {
       cashSettlementSummary: input.cashSettlementSummary,
       failedNotifications: input.failedNotifications,
       activePayoutBatches: input.activePayoutBatches,
-      externalReadiness: input.externalReadiness,
     }),
     operatorStartChecklist: buildOperatorStartChecklist({
       queue: input.queue,
@@ -428,7 +421,6 @@ function buildFullDashboardData(input: {
       failedNotifications: input.failedNotifications,
       cashSettlementSummary: input.cashSettlementSummary,
       activePayoutBatches: input.activePayoutBatches,
-      externalReadiness: input.externalReadiness,
     }),
     partnerOpsQueue,
     policyOutcome: buildDashboardPolicyOutcome(input.bookings, input.operationalPolicies),
@@ -475,7 +467,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     payoutBatchSummary,
     appSessions,
     auditLogs,
-    externalReadiness,
     cashSettlementSummary,
     operationalPolicies,
   ] = await Promise.all([
@@ -513,11 +504,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ? adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, [])
       : Promise.resolve([]),
     adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, []),
-    apiGet<AdminExternalReadiness>('/health/external', {
-      ok: false,
-      timestamp: new Date(0).toISOString(),
-      checks: [],
-    }),
     adminGet<AdminCashSettlementSummary>(
       dashboardDataHrefs.cashSettlementSummaryHref,
       emptyCashSettlementSummary(),
@@ -591,7 +577,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     failedNotificationCount,
     failedNotifications,
     activePayoutBatches,
-    externalReadiness,
   });
   const fullDashboardData = shouldRenderFullDashboard
     ? buildFullDashboardData({
@@ -604,7 +589,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         cashSettlementSummary,
         earningRows,
         earnings,
-        externalReadiness,
         failedNotifications,
         liveBookingDeepDive,
         liveBookingOps,
@@ -759,10 +743,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <Settings2 size={16} aria-hidden="true" />
             Operations policy
           </AdminFormControlLink>
-          <AdminFormControlLink href="/app-sessions">
-            <Activity size={16} aria-hidden="true" />
-            App sessions
-          </AdminFormControlLink>
           <AdminTextLink href="/cash-settlements">
             Cash settlements
           </AdminTextLink>
@@ -780,10 +760,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminTextLink href="/tax-policy">
             Tax policy
           </AdminTextLink>
-          <AdminFormControlLink href="/setup">
-            <ClipboardCheck size={16} aria-hidden="true" />
-            Setup
-          </AdminFormControlLink>
           <AdminFormControlLink href="/audit-log">
             <FileClock size={16} aria-hidden="true" />
             Audit log
@@ -816,10 +792,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <BookOpenCheck size={16} aria-hidden="true" />
             No-show evidence
           </AdminFormControlLink>
-          <AdminFormControlLink href="/app-sessions?role=CUSTOMER&state=live">
-            <Activity size={16} aria-hidden="true" />
-            Live customers
-          </AdminFormControlLink>
+          <AdminTextLink href="/usage-overview?segment=live-customers">
+            Live customer pattern
+          </AdminTextLink>
           <AdminTextLink href="/cash-settlements">
             Cash settlement gate
           </AdminTextLink>
@@ -1137,7 +1112,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminTextLink>
             }
             className="admin-mt-20"
-            description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat handoff, Partner supply, cash fee gates, payout batches, and setup readiness."
+            description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat handoff, Partner supply, cash fee gates, and payout batches."
             id="dashboard-live-operations-radar"
             title="Live operations radar"
           >
@@ -2076,7 +2051,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminSignal>
               }
               className="dashboard-card-scroll dashboard-checklist-card"
-              description="Generated from the latest admin API snapshot. It groups customer protection, Partner controls, payment release, cash debt, and payout recovery together."
+              description="Same-shift checklist actions grouped by customer protection, Partner controls, payment release, cash debt, and payout recovery."
               id="dashboard-operations-checklist-queue"
               title="Operations checklist queue"
             >
@@ -2157,67 +2132,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
             </AdminSection>
 
-            <AdminSection
-              actions={
-                <AdminSignal tone={externalReadiness.ok ? 'ok' : 'warn'}>
-                  {externalReadiness.ok ? 'Ready' : 'Needs setup'}
-                </AdminSignal>
-              }
-              className="dashboard-card-scroll dashboard-setup-card"
-              description="Live API environment check. Secrets are never shown, only configured/missing status."
-              id="dashboard-external-setup-readiness"
-              title="External setup readiness"
-            >
-              <p className="muted">
-                These are not code errors. They require console/account values before real E2E testing.
-              </p>
-              <div className="stack">
-                {externalReadiness.checks.map((check) => (
-                  <ExternalReadinessRow check={check} key={`${check.category}-${check.name}`} />
-                ))}
-                {externalReadiness.checks.length === 0 && (
-                  <div className="ops-row">
-                    <div>
-                      <strong>API external readiness unavailable</strong>
-                      <p className="muted">Start the HANDS API and refresh this dashboard.</p>
-                    </div>
-                    <StatusBadge tone="warning">BLOCKED</StatusBadge>
-                  </div>
-                )}
-              </div>
-            </AdminSection>
           </AdminDetailGrid>
 
           <AdminDetailGrid className="admin-mt-20">
-            <AdminSection
-              description="Matching, chat, Partner location, and payment hold signals from the current admin snapshot."
-              id="dashboard-realtime-flow-health"
-              title="Realtime flow health"
-            >
-              <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
-                <InfoRow
-                  label="Matching"
-                  value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
-                  detail="Direct request first, nearby marketplace Partners can participate when needed."
-                />
-                <InfoRow
-                  label="Chat"
-                  value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
-                  detail="Chat is expected after Partner selection/service start."
-                />
-                <InfoRow
-                  label="Partner locations"
-                  value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
-                  detail="MVP uses last-known location, not routing or live streaming."
-                />
-                <InfoRow
-                  label="Payment ops"
-                  value={`${payments.filter((payment) => payment.status === 'AUTHORIZED').length} holds`}
-                  detail="Capture after service completion, release/refund on cancellation."
-                />
-              </AdminDataTable>
-            </AdminSection>
-
             <AdminSection
               description="Gross earnings, platform fee, pending net, and paid net from the earnings snapshot."
               id="dashboard-finance-snapshot"
@@ -2256,13 +2173,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminFormControlLink>
           }
           className="admin-mt-20"
-          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, partner readiness, queue, setup, flow health, and finance detail sections."
+          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, partner readiness, queue, and finance detail sections."
           id="dashboard-on-demand-detail"
-          title="Detailed dashboard loaded on demand"
+          title="More operating detail"
         />
       )}
-
-      <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
     </AdminPageTemplate>
   );
 }
@@ -2271,66 +2186,6 @@ function buildDashboardFilters(params: Record<string, string | string[] | undefi
   return {
     range: buildDashboardRange(params),
   };
-}
-
-function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
-  const href = externalSetupHref(check.category);
-  const missing = [...check.missing, ...(check.invalid ?? [])].map(externalReadinessDisplayText);
-  const configured = check.configured.map(externalReadinessDisplayText);
-
-  return (
-    <div className="ops-row">
-      <div>
-        <strong>{externalReadinessDisplayText(check.name)}</strong>
-        <p className="muted">
-          {missing.length > 0 ? missing.join(', ') : externalReadinessDisplayText(check.detail)}
-        </p>
-        {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
-      </div>
-      <div className="actions">
-        <StatusBadgeFromPillClass pillClass={check.status === 'READY' ? 'pill-success' : 'pill-warn'}>
-          {check.status}
-        </StatusBadgeFromPillClass>
-        <AdminTextLink href={href}>
-          Related page
-        </AdminTextLink>
-      </div>
-    </div>
-  );
-}
-
-function externalReadinessDisplayText(value: string) {
-  return value
-    .replace(/\bCustomer and provider\b/g, 'Customer and Partner')
-    .replace(/\bcustomer and provider\b/g, 'customer and Partner')
-    .replace(/\bprovider Android\b/g, 'Partner Android')
-    .replace(/\bProvider Android\b/g, 'Partner Android')
-    .replace(/\bOS push provider\b/g, 'FCM push service')
-    .replace(/\bSMS provider\b/g, 'SMS service')
-    .replace(/\bprovider credentials\b/g, 'service credentials');
-}
-
-function externalSetupHref(category: string) {
-  if (category === 'supabase') {
-    return '/setup#supabase';
-  }
-  if (category === 'payments') {
-    return '/setup#payments';
-  }
-  if (category === 'push' || category === 'sms') {
-    return '/setup#notifications';
-  }
-  if (category === 'storage') {
-    return '/setup#storage';
-  }
-  if (category === 'maps') {
-    return '/setup#maps';
-  }
-  if (category === 'mobile-release') {
-    return '/setup#mobile-release';
-  }
-
-  return '/setup';
 }
 
 function buildMatchingControlRoom(
@@ -3037,7 +2892,6 @@ function buildOperationsCommandBoard(input: {
   failedNotificationCount: number;
   failedNotifications: AdminNotification[];
   activePayoutBatches: AdminPayoutBatch[];
-  externalReadiness: AdminExternalReadiness;
 }): OperationsCommandBoardItem[] {
   const openMatchingFollowUp = input.matchingControl.openRows.filter(
     (row) => row.expired || row.freshEligibleCount === 0,
@@ -3056,10 +2910,6 @@ function buildOperationsCommandBoard(input: {
     input.bookingOps.completedCloseoutChecks +
     input.cashSettlementSummary.rowCount +
     input.activePayoutBatches.length;
-  const setupOpen =
-    input.externalReadiness.currentStageOk === false
-      ? (input.externalReadiness.blockingCategories?.length ?? 0)
-      : 0;
 
   return [
     {
@@ -3179,18 +3029,6 @@ function buildOperationsCommandBoard(input: {
       href: input.failedNotificationCount ? '/notifications?review=failed' : '/notifications',
       tone: input.failedNotificationCount ? 'warn' : 'ok',
       checks: ['Delivery status', 'Disabled device', 'Retry log'],
-    },
-    {
-      lane: 'External setup',
-      owner: 'Setup',
-      status: setupOpen ? 'Open' : 'Ready',
-      value: `${setupOpen} setup`,
-      detail: setupOpen
-        ? 'Current-stage external setup still has blocking categories to complete before production use.'
-        : 'Current-stage external setup is usable; deferred production services stay tracked in Setup.',
-      href: '/setup',
-      tone: setupOpen ? 'warn' : 'ok',
-      checks: ['Supabase infra', 'MapTiler/Geoapify', 'NestJS authority'],
     },
   ];
 }
@@ -3473,7 +3311,6 @@ function buildLiveOperationsRadar(input: {
   cashSettlementSummary: AdminCashSettlementSummary;
   failedNotifications: AdminNotification[];
   activePayoutBatches: AdminPayoutBatch[];
-  externalReadiness: AdminExternalReadiness;
 }): LiveOperationsRadarItem[] {
   const openMatchingFollowUp = input.matchingControl.openRows.filter(
     (row) => row.expired || row.freshEligibleCount === 0,
@@ -3491,10 +3328,6 @@ function buildLiveOperationsRadar(input: {
     row.customerState.toLowerCase().includes('choose'),
   ).length;
   const chatHandoffRows = input.bookingDeepDive.matchedWithoutChat + input.bookingDeepDive.quietActiveChats;
-  const currentStageSetupBlocked =
-    input.externalReadiness.currentStageOk === false &&
-    (input.externalReadiness.blockingCategories ?? []).length > 0;
-
   return [
     {
       lane: 'Customer wait lane',
@@ -3631,23 +3464,6 @@ function buildLiveOperationsRadar(input: {
         `${input.activePayoutBatches.length} active payout batch(es)`,
         'Deferred FCM push tracked',
         'Finance audit retained',
-      ],
-    },
-    {
-      lane: 'Setup readiness lane',
-      owner: 'Setup',
-      title: 'Keep deferred integrations visible',
-      value: currentStageSetupBlocked ? 'blocked' : 'ready',
-      status: currentStageSetupBlocked ? 'Setup' : 'Ready',
-      detail: currentStageSetupBlocked
-        ? 'Current-stage external readiness has blocking categories. Keep production services tracked without hiding the issue.'
-        : 'Current-stage setup is usable; deferred SMS, FCM push, payment, and map services remain tracked for launch.',
-      href: '/setup',
-      tone: currentStageSetupBlocked ? 'danger' : 'ok',
-      checks: [
-        `${input.externalReadiness.checks?.length ?? 0} check(s)`,
-        `${input.externalReadiness.blockingCategories?.length ?? 0} blocking group(s)`,
-        'NestJS owns business authority',
       ],
     },
   ];
@@ -4105,8 +3921,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       detail: 'Recent app session and enabled device state reduce missed 10 minute reply windows.',
       metricLabel: 'Contact gaps',
       metricValue: input.partnerOpsQueue.contactIssue.toString(),
-      action: 'Open app sessions',
-      href: '/app-sessions',
+      action: 'Open Partner review',
+      href: '/partners?review=contactability',
       blockerCount: input.partnerOpsQueue.contactIssue,
       warnOnly: true,
     }),
@@ -4516,7 +4332,6 @@ function buildDashboardCommandSignals(input: {
   earningRows: AdminEarning[];
   cashSettlementSummary: AdminCashSettlementSummary;
   payoutBatches: AdminPayoutBatch[];
-  externalReadiness: AdminExternalReadiness;
 }): DashboardCommandSignal[] {
   const openMatching = input.bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const staleOpenMatching = openMatching.filter((booking) =>
@@ -4587,14 +4402,6 @@ function buildDashboardCommandSignals(input: {
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
   const setupBlocked = input.earnings.availableNetAmount > 0 && payoutReviews.length === 0;
-  const readinessUnavailable = !input.externalReadiness.ok && input.externalReadiness.checks.length === 0;
-  const blockedExternal = input.externalReadiness.checks.filter((check) => check.status === 'BLOCKED');
-  const partialExternal = input.externalReadiness.checks.filter((check) => check.status === 'PARTIAL');
-  const missingExternal = input.externalReadiness.checks.reduce(
-    (count, check) => count + check.missing.length + (check.invalid?.length ?? 0),
-    0,
-  );
-  const externalNeedsSetup = readinessUnavailable || blockedExternal.length > 0 || partialExternal.length > 0;
 
   const signals: DashboardCommandSignal[] = [
     {
@@ -4895,58 +4702,6 @@ function buildDashboardCommandSignals(input: {
           value: disabledPushProviders.length.toString(),
           tone: disabledPushProviders.length ? 'info' : 'ok',
           href: '/partners?review=push',
-        },
-      ],
-    },
-    {
-      title: 'Setup lane',
-      status: readinessUnavailable
-        ? 'API CHECK'
-        : blockedExternal.length
-          ? `${blockedExternal.length} BLOCKED`
-          : partialExternal.length
-            ? `${partialExternal.length} PARTIAL`
-            : 'READY',
-      detail: readinessUnavailable
-        ? 'The external readiness endpoint is unavailable, so setup state cannot be used yet.'
-        : externalNeedsSetup
-          ? 'External credentials or service registrations are still pending before real production-like E2E.'
-          : 'External readiness checks are green for the current environment.',
-      action: 'Open setup',
-      href: '/setup',
-      priority: readinessUnavailable || blockedExternal.length ? 88 : partialExternal.length ? 52 : 8,
-      severity:
-        readinessUnavailable || blockedExternal.length ? 'high' : partialExternal.length ? 'medium' : 'low',
-      className:
-        readinessUnavailable || blockedExternal.length
-          ? 'ops-task-blocked'
-          : partialExternal.length
-            ? 'ops-task-pending'
-            : 'ops-task-done',
-      pillClass:
-        readinessUnavailable || blockedExternal.length
-          ? 'pill-danger'
-          : partialExternal.length
-            ? 'pill-warn'
-            : 'pill-success',
-      breakdown: [
-        {
-          label: 'Blocked',
-          value: blockedExternal.length.toString(),
-          tone: blockedExternal.length ? 'danger' : 'ok',
-          href: '/setup',
-        },
-        {
-          label: 'Partial',
-          value: partialExternal.length.toString(),
-          tone: partialExternal.length ? 'warn' : 'ok',
-          href: '/setup',
-        },
-        {
-          label: 'Missing values',
-          value: missingExternal.toString(),
-          tone: missingExternal ? 'warn' : 'ok',
-          href: '/setup',
         },
       ],
     },
@@ -5289,7 +5044,7 @@ function buildShiftCommandBriefing(input: {
         value: input.appPresence.liveAppCustomers.toString(),
         helper: `${input.appPresence.liveOpenMatchingCustomers} live in matching, ${input.appPresence.liveActiveBookingCustomers} live in active work`,
         tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
-        href: '/app-sessions?role=CUSTOMER',
+        href: '/usage-overview?segment=live-customers',
       },
       {
         label: 'Partner supply',
@@ -5333,7 +5088,6 @@ function buildOperatorStartChecklist(input: {
   failedNotifications: AdminNotification[];
   cashSettlementSummary: AdminCashSettlementSummary;
   activePayoutBatches: AdminPayoutBatch[];
-  externalReadiness: AdminExternalReadiness;
 }): OperatorStartChecklistItem[] {
   const openMatchingFollowUp = input.matchingControl.openRows.filter(
     (row) => row.expired || row.freshEligibleCount === 0,
@@ -5344,12 +5098,6 @@ function buildOperatorStartChecklist(input: {
   const cashDebtPartners = input.cashSettlementSummary.providerCount;
   const notificationFailures = input.failedNotifications.length;
   const payoutWork = input.activePayoutBatches.length;
-  const deferredCategories = new Set(input.externalReadiness.deferredCategories ?? []);
-  const externalSetupNeedsReview =
-    input.externalReadiness.currentStageOk === false ||
-    input.externalReadiness.checks.some(
-      (check) => check.status === 'BLOCKED' && !deferredCategories.has(check.category),
-    );
 
   return [
     {
@@ -5388,8 +5136,8 @@ function buildOperatorStartChecklist(input: {
       status:
         notificationFailures || input.appPresence.disabledPushCustomers ? 'Reachability check' : 'Reachable',
       detail: `${input.appPresence.liveAppCustomers} live customer(s), ${input.appPresence.disabledPushCustomers} push-disabled customer(s), ${notificationFailures} failed notification row(s).`,
-      action: notificationFailures ? 'Open failed notifications' : 'Open app sessions',
-      href: notificationFailures ? '/notifications?review=failed' : '/app-sessions?role=CUSTOMER',
+      action: notificationFailures ? 'Open failed notifications' : 'Open usage overview',
+      href: notificationFailures ? '/notifications?review=failed' : '/usage-overview?segment=reachability',
       className: notificationFailures ? 'ops-task-pending' : 'ops-task-done',
       pillClass: notificationFailures ? 'pill-warn' : 'pill-success',
     },
@@ -5404,17 +5152,6 @@ function buildOperatorStartChecklist(input: {
       href: payoutWork ? '/payouts' : '/earnings',
       className: payoutWork ? 'ops-task-pending' : 'ops-task-done',
       pillClass: payoutWork ? 'pill-warn' : 'pill-success',
-    },
-    {
-      title: 'Verify external setup',
-      status: externalSetupNeedsReview ? 'Setup pending' : 'Ready enough',
-      detail: externalSetupNeedsReview
-        ? 'One or more required external integration checks still need account values or console work.'
-        : 'Current-stage external checks are clear; deferred production services stay tracked in Setup.',
-      action: 'Open setup',
-      href: '/setup',
-      className: externalSetupNeedsReview ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: externalSetupNeedsReview ? 'pill-warn' : 'pill-success',
     },
   ];
 }

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
+import { adminNavSections } from '../lib/admin-navigation';
 import { AdminRootShell } from './admin-root-shell';
 
 const mockUsePathname = vi.fn();
@@ -17,7 +18,7 @@ describe('AdminRootShell', () => {
 
   it('renders the operations shell for authenticated workspace pages', () => {
     const markup = renderToStaticMarkup(
-      <AdminRootShell>
+      <AdminRootShell sections={adminNavSections}>
         <div>Workspace content</div>
       </AdminRootShell>,
     );
@@ -38,7 +39,7 @@ describe('AdminRootShell', () => {
     mockUsePathname.mockReturnValue('/login');
 
     const markup = renderToStaticMarkup(
-      <AdminRootShell>
+      <AdminRootShell sections={adminNavSections}>
         <div>Login content</div>
       </AdminRootShell>,
     );

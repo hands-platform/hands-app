@@ -9,6 +9,8 @@ export type AdminOperatorPermissionCategory =
   | 'CUSTOMERS_DIRECTORY'
   | 'CUSTOMERS_DETAIL'
   | 'CUSTOMERS_REVIEWS'
+  | 'GROWTH'
+  | 'GROWTH_MARKETING'
   | 'PARTNERS'
   | 'PARTNERS_DIRECTORY'
   | 'PARTNERS_UNAPPROVED'
@@ -31,7 +33,12 @@ export type AdminOperatorPermissionCategory =
   | 'SYSTEM_ADMIN_OPERATORS'
   | 'SYSTEM_POLICY'
   | 'SYSTEM_AUDIT'
-  | 'SYSTEM_SETUP';
+  | 'SYSTEM_SETUP'
+  | 'DEVELOPER_SYSTEM'
+  | 'DEVELOPER_SETUP'
+  | 'DEVELOPER_HEALTH'
+  | 'DEVELOPER_APP_SESSIONS_DIAGNOSTICS'
+  | 'DEVELOPER_ROUTE_COMPAT';
 
 export type AdminOperatorAccessLike = {
   readonly categories: readonly string[];
@@ -48,7 +55,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'BOOKINGS_REALTIME',
-    prefixes: ['/', '/bookings', '/vietnam-overview', '/operations-handoff'],
+    prefixes: ['/', '/bookings', '/vietnam-overview', '/calendar', '/operations-handoff'],
   },
   {
     category: 'CUSTOMERS_DETAIL',
@@ -60,7 +67,11 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'CUSTOMERS_DIRECTORY',
-    prefixes: ['/customers'],
+    prefixes: ['/customers', '/usage-overview'],
+  },
+  {
+    category: 'GROWTH_MARKETING',
+    prefixes: ['/marketing-analytics'],
   },
   {
     category: 'PARTNERS_UNAPPROVED',
@@ -140,7 +151,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'SYSTEM_AUDIT',
-    prefixes: ['/audit-log', '/app-sessions', '/chat-archive'],
+    prefixes: ['/audit-log', '/chat-archive'],
   },
   {
     category: 'SYSTEM_POLICY',
@@ -155,8 +166,12 @@ const pageCategoryRules: Array<{
     prefixes: ['/coupons'],
   },
   {
-    category: 'SYSTEM_SETUP',
-    prefixes: ['/setup', '/usage-overview', '/marketing-analytics', '/calendar'],
+    category: 'DEVELOPER_SETUP',
+    prefixes: ['/setup'],
+  },
+  {
+    category: 'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
+    prefixes: ['/app-sessions'],
   },
 ];
 
@@ -170,7 +185,7 @@ const apiCategoryRules: Array<{
   },
   {
     category: 'BOOKINGS_REALTIME',
-    prefixes: ['/admin/operations-handoff'],
+    prefixes: ['/admin/operations-handoff', '/admin/calendar-events'],
   },
   {
     category: 'CUSTOMERS_REVIEWS',
@@ -243,6 +258,10 @@ const apiCategoryRules: Array<{
     prefixes: ['/admin/notifications', '/admin/push', '/admin/push-devices'],
   },
   {
+    category: 'GROWTH_MARKETING',
+    prefixes: ['/admin/marketing'],
+  },
+  {
     category: 'SYSTEM_AUDIT',
     prefixes: ['/admin/audit-logs'],
   },
@@ -265,10 +284,6 @@ const apiCategoryRules: Array<{
       '/admin/services',
     ],
   },
-  {
-    category: 'SYSTEM_SETUP',
-    prefixes: ['/admin/calendar-events', '/admin/marketing'],
-  },
 ];
 
 const parentCategories: Partial<Record<AdminOperatorPermissionCategory, AdminOperatorPermissionCategory>> = {
@@ -280,12 +295,17 @@ const parentCategories: Partial<Record<AdminOperatorPermissionCategory, AdminOpe
   CUSTOMERS_DIRECTORY: 'CUSTOMERS',
   CUSTOMERS_DETAIL: 'CUSTOMERS',
   CUSTOMERS_REVIEWS: 'CUSTOMERS',
+  DEVELOPER_APP_SESSIONS_DIAGNOSTICS: 'DEVELOPER_SYSTEM',
+  DEVELOPER_HEALTH: 'DEVELOPER_SYSTEM',
+  DEVELOPER_ROUTE_COMPAT: 'DEVELOPER_SYSTEM',
+  DEVELOPER_SETUP: 'DEVELOPER_SYSTEM',
   FINANCE_BANK_RECONCILIATION: 'FINANCE',
   FINANCE_GENERAL_LEDGER: 'FINANCE',
   FINANCE_PAYMENT_CLEARING: 'FINANCE',
   FINANCE_SETTLEMENTS: 'FINANCE',
   FINANCE_TAX: 'FINANCE',
   FINANCE_WALLET_ADJUSTMENTS: 'FINANCE',
+  GROWTH_MARKETING: 'GROWTH',
   NOTIFICATIONS_DELIVERY: 'NOTIFICATIONS',
   NOTIFICATIONS_PUSH: 'NOTIFICATIONS',
   NOTIFICATIONS_TEMPLATES: 'NOTIFICATIONS',
@@ -299,6 +319,10 @@ const parentCategories: Partial<Record<AdminOperatorPermissionCategory, AdminOpe
   SYSTEM_POLICY: 'SYSTEM',
   SYSTEM_SERVICES: 'SYSTEM',
   SYSTEM_SETUP: 'SYSTEM',
+};
+
+const legacyCategoryAliases: Partial<Record<AdminOperatorPermissionCategory, readonly AdminOperatorPermissionCategory[]>> = {
+  SYSTEM_SETUP: ['DEVELOPER_SETUP', 'DEVELOPER_HEALTH', 'DEVELOPER_ROUTE_COMPAT'],
 };
 
 const uncategorizedWriteApiAllowlist: Record<string, string> = {
@@ -336,7 +360,18 @@ export function hasAdminOperatorCategory(
   }
 
   const parentCategory = parentCategories[category];
-  return Boolean(access?.categories.includes(category) || (parentCategory && access?.categories.includes(parentCategory)));
+  return Boolean(
+    accessIncludesCategory(access?.categories ?? [], category) ||
+      (parentCategory && accessIncludesCategory(access?.categories ?? [], parentCategory)),
+  );
+}
+
+function accessIncludesCategory(categories: readonly string[], category: AdminOperatorPermissionCategory) {
+  return categories.some(
+    (candidate) =>
+      candidate === category ||
+      legacyCategoryAliases[candidate as AdminOperatorPermissionCategory]?.includes(category),
+  );
 }
 
 function categoryForPath(

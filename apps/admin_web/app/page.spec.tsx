@@ -310,8 +310,11 @@ describe('DashboardPage', () => {
       'class="card admin-section admin-mt-20" id="dashboard-on-demand-detail"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-on-demand-detail-title">Detailed dashboard loaded on demand</h2>',
+      '<h2 id="dashboard-on-demand-detail-title">More operating detail</h2>',
     );
+    expect(markup).not.toContain('Detailed dashboard loaded on demand');
+    expect(markup).not.toContain('API source:');
+    expect(markup).not.toContain('setup readiness');
   });
 
   it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {
@@ -513,18 +516,12 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-operations-checklist-queue-title">Operations checklist queue</h2>',
     );
-    expect(markup).toContain(
-      'class="card admin-section dashboard-card-scroll dashboard-setup-card" id="dashboard-external-setup-readiness"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-external-setup-readiness-title">External setup readiness</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-realtime-flow-health"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-realtime-flow-health-title">Realtime flow health</h2>',
-    );
+    expect(markup).not.toContain('dashboard-external-setup-readiness');
+    expect(markup).not.toContain('External setup readiness');
+    expect(markup).not.toContain('dashboard-realtime-flow-health');
+    expect(markup).not.toContain('Realtime flow health');
+    expect(markup).not.toContain('Generated from the latest admin API snapshot');
+    expect(markup).not.toContain('API source:');
     expect(markup).toContain(
       'class="card admin-section" id="dashboard-finance-snapshot"',
     );

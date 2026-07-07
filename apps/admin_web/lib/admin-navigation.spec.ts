@@ -6,25 +6,29 @@ import {
   adminHiddenRouteRoutes,
 } from './admin-hidden-route-policy';
 import { adminOperatorCategoryForPath } from './admin-operator-access-model';
-import { adminNavSections } from './admin-navigation';
+import {
+  adminNavSections,
+  adminNavSectionsForAccess,
+  allAdminNavSections,
+} from './admin-navigation';
 
 describe('admin navigation', () => {
   it('organizes the sidebar into operation-focused categories', () => {
     expect(adminNavSections.map((section) => section.label)).toEqual([
       'Command Center',
-      'Analytics',
       'Bookings',
-      'Users',
+      'Customers',
       'Partners',
+      'Analytics',
+      'Growth & Communications',
       'Finance',
       'Tax & Accounting',
-      'Communications',
-      'Policies & Setup',
+      'Policies',
       'Admin Control',
     ]);
   });
 
-  it('keeps all former shortcuts while moving them into clearer categories', () => {
+  it('keeps daily operator shortcuts in operation-facing categories', () => {
     const linksByHref = new Map(
       adminNavSections.flatMap((section) =>
         section.links.map((link) => [link.href, `${section.label}: ${link.label}`] as const),
@@ -33,18 +37,19 @@ describe('admin navigation', () => {
 
     expect(linksByHref.get('/')).toBe('Command Center: Start Shift');
     expect(linksByHref.get('/calendar')).toBe('Command Center: Calendar');
-    expect(linksByHref.get('/app-sessions')).toBe('Command Center: App Presence');
     expect(linksByHref.get('/operations-handoff')).toBe('Command Center: Handoff');
+    expect(linksByHref.get('/app-sessions')).toBeUndefined();
+    expect(linksByHref.get('/setup')).toBeUndefined();
 
     expect(linksByHref.get('/vietnam-overview')).toBe('Analytics: Vietnam Overview');
-    expect(linksByHref.get('/usage-overview')).toBe('Analytics: Usage Overview');
-    expect(linksByHref.get('/partners/overview')).toBe('Analytics: Partner Overview');
-    expect(linksByHref.get('/marketing-analytics')).toBe('Analytics: Marketing Analytics');
+    expect(linksByHref.get('/usage-overview')).toBe('Customers: Usage Overview');
+    expect(linksByHref.get('/partners/overview')).toBe('Partners: Partner Overview');
+    expect(linksByHref.get('/marketing-analytics')).toBe('Growth & Communications: Marketing Analytics');
 
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
-    expect(linksByHref.get('/customers')).toBe('Users: Customers');
-    expect(linksByHref.get('/reviews')).toBe('Users: Customer Reviews');
-    expect(linksByHref.get('/reviews/partner-customer-evaluations')).toBe('Users: Partner Evaluations');
+    expect(linksByHref.get('/customers')).toBe('Customers: Customers');
+    expect(linksByHref.get('/reviews')).toBe('Customers: Customer Reviews');
+    expect(linksByHref.get('/reviews/partner-customer-evaluations')).toBe('Customers: Partner Evaluations');
     expect(linksByHref.get('/partners')).toBe('Partners: Partners');
     expect(linksByHref.get('/files')).toBe('Partners: Files');
 
@@ -78,18 +83,36 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
     expect(linksByHref.get('/tax-policy')).toBe('Tax & Accounting: Tax Policy');
 
-    expect(linksByHref.get('/notifications')).toBe('Communications: Notifications');
-    expect(linksByHref.get('/notifications/templates')).toBe('Communications: Notification Templates');
-    expect(linksByHref.get('/notifications/push-send')).toBe('Communications: Push Send');
+    expect(linksByHref.get('/notifications')).toBe('Growth & Communications: Notifications');
+    expect(linksByHref.get('/notifications/templates')).toBe('Growth & Communications: Notification Templates');
+    expect(linksByHref.get('/notifications/push-send')).toBe('Growth & Communications: Push Send');
 
-    expect(linksByHref.get('/operations-policy')).toBe('Policies & Setup: Operations Policy');
-    expect(linksByHref.get('/services')).toBe('Policies & Setup: Service Catalog');
-    expect(linksByHref.get('/coupons')).toBe('Policies & Setup: Coupons');
-    expect(linksByHref.get('/setup')).toBe('Policies & Setup: Setup');
+    expect(linksByHref.get('/operations-policy')).toBe('Policies: Operations Policy');
+    expect(linksByHref.get('/services')).toBe('Policies: Service Catalog');
+    expect(linksByHref.get('/coupons')).toBe('Growth & Communications: Coupons');
 
     expect(linksByHref.get('/admin-operators')).toBe('Admin Control: Admin Operators');
     expect(linksByHref.get('/finance-tax/finance-approvers')).toBe('Admin Control: Finance Approvers');
     expect(linksByHref.get('/audit-log')).toBe('Admin Control: Audit Log');
+  });
+
+  it('keeps Developer/System diagnostics out of the default operator sidebar', () => {
+    const defaultLinks = adminNavSections.flatMap((section) => section.links.map((link) => link.href));
+    const masterSections = adminNavSectionsForAccess({ categories: [], roles: ['MASTER_ADMIN'] });
+    const developerSections = adminNavSectionsForAccess({
+      categories: ['DEVELOPER_APP_SESSIONS_DIAGNOSTICS'],
+      roles: ['ADMIN'],
+    });
+    const masterLinks = masterSections.flatMap((section) =>
+      section.links.map((link) => `${section.label}: ${link.label} -> ${link.href}`),
+    );
+
+    expect(defaultLinks).not.toContain('/setup');
+    expect(defaultLinks).not.toContain('/app-sessions');
+    expect(masterSections.map((section) => section.label)).toContain('Developer / System');
+    expect(masterLinks).toContain('Developer / System: Setup Readiness -> /setup');
+    expect(masterLinks).toContain('Developer / System: App Session Diagnostics -> /app-sessions');
+    expect(developerSections.map((section) => section.label)).toContain('Developer / System');
   });
 
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
@@ -126,18 +149,20 @@ describe('admin navigation', () => {
   });
 
   it('separates user records, partner operations, finance flow, and tax accounting', () => {
-    const userSection = adminNavSections.find((section) => section.label === 'Users');
+    const userSection = adminNavSections.find((section) => section.label === 'Customers');
     const partnerSection = adminNavSections.find((section) => section.label === 'Partners');
     const financeSection = adminNavSections.find((section) => section.label === 'Finance');
     const taxSection = adminNavSections.find((section) => section.label === 'Tax & Accounting');
 
     expect(userSection?.links.map((link) => link.href)).toEqual([
       '/customers',
+      '/usage-overview',
       '/referrals/customers',
       '/reviews',
       '/reviews/partner-customer-evaluations',
     ]);
     expect(partnerSection?.links.map((link) => link.href)).toEqual([
+      '/partners/overview',
       '/partners',
       '/partners?review=unapproved',
       '/partners?review=unsettled',
@@ -167,7 +192,7 @@ describe('admin navigation', () => {
   it('keeps every app page either in the sidebar menu or an intentional hidden route policy', () => {
     const pageRoutes = collectPageRoutes();
     const menuRoutes = new Set(
-      adminNavSections.flatMap((section) =>
+      allAdminNavSections.flatMap((section) =>
         section.links.map((link) => normalizeMenuRoute(link.href)),
       ),
     );
@@ -183,7 +208,7 @@ describe('admin navigation', () => {
   });
 
   it('keeps sidebar and hidden operating pages mapped to an operator permission category', () => {
-    const menuRoutes = adminNavSections.flatMap((section) =>
+    const menuRoutes = allAdminNavSections.flatMap((section) =>
       section.links.map((link) => normalizeMenuRoute(link.href)),
     );
     const hiddenOperatingRoutes = adminHiddenRouteRoutes().filter((route) => route !== '/login');

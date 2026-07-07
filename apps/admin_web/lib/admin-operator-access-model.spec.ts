@@ -26,9 +26,12 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/referrals/partners')).toBe('PARTNERS');
     expect(adminOperatorCategoryForPath('/referrals/cashouts')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
-    expect(adminOperatorCategoryForPath('/app-sessions')).toBe('SYSTEM_AUDIT');
+    expect(adminOperatorCategoryForPath('/app-sessions')).toBe('DEVELOPER_APP_SESSIONS_DIAGNOSTICS');
     expect(adminOperatorCategoryForPath('/chat-archive')).toBe('SYSTEM_AUDIT');
-    expect(adminOperatorCategoryForPath('/calendar')).toBe('SYSTEM_SETUP');
+    expect(adminOperatorCategoryForPath('/calendar')).toBe('BOOKINGS_REALTIME');
+    expect(adminOperatorCategoryForPath('/usage-overview')).toBe('CUSTOMERS_DIRECTORY');
+    expect(adminOperatorCategoryForPath('/marketing-analytics')).toBe('GROWTH_MARKETING');
+    expect(adminOperatorCategoryForPath('/setup')).toBe('DEVELOPER_SETUP');
     expect(adminOperatorCategoryForPath('/operations-handoff')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForPath('/admin-operators')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForPath('/vietnam-overview')).toBe('BOOKINGS_REALTIME');
@@ -51,7 +54,8 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/partner-bank-accounts/bank-1/reject')).toBe('PARTNERS_KYC');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/tax-policy-versions')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/service-payout-rules/rule-1')).toBe('SYSTEM_SERVICES');
-    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('SYSTEM_SETUP');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('GROWTH_MARKETING');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/calendar-events')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_DELIVERY');
   });
 
@@ -80,7 +84,9 @@ describe('admin operator access model', () => {
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS_DETAIL'] }, 'BOOKINGS_DETAIL')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: ['BOOKINGS'] }, 'FINANCE')).toBe(false);
-    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'SYSTEM_SETUP')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'DEVELOPER_SETUP')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['DEVELOPER_SYSTEM'] }, 'DEVELOPER_SETUP')).toBe(true);
+    expect(hasAdminOperatorCategory({ categories: ['GROWTH'] }, 'GROWTH_MARKETING')).toBe(true);
     expect(hasAdminOperatorCategory({ categories: [], roles: ['MASTER_ADMIN'] }, 'BOOKINGS_REALTIME')).toBe(true);
   });
 });

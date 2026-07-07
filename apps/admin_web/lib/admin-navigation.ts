@@ -1,3 +1,5 @@
+import type { AdminOperatorAccessLike } from './admin-operator-access-model';
+
 export type AdminNavLink = {
   href: string;
   label: string;
@@ -10,6 +12,15 @@ export type AdminNavSection = {
   attentionCount?: number;
   links: AdminNavLink[];
 };
+
+const developerSystemCategories = new Set([
+  'DEVELOPER_SYSTEM',
+  'DEVELOPER_SETUP',
+  'DEVELOPER_HEALTH',
+  'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
+  'DEVELOPER_ROUTE_COMPAT',
+  'SYSTEM_SETUP',
+]);
 
 export const adminNavSections: AdminNavSection[] = [
   {
@@ -27,40 +38,9 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Shared operations calendar for live planning and follow-up blocks.',
       },
       {
-        href: '/app-sessions',
-        label: 'App Presence',
-        description: 'Customers and Partners currently or recently active in the apps.',
-      },
-      {
         href: '/operations-handoff',
         label: 'Handoff',
         description: 'Leave a factual shift note for the next operator.',
-      },
-    ],
-  },
-  {
-    label: 'Analytics',
-    description: 'Regional, usage, Partner supply, and acquisition analytics.',
-    links: [
-      {
-        href: '/vietnam-overview',
-        label: 'Vietnam Overview',
-        description: 'Region aggregate operating picture without individual GPS points.',
-      },
-      {
-        href: '/usage-overview',
-        label: 'Usage Overview',
-        description: 'Stored app usage, Partner searches, requests, and completed-work rankings.',
-      },
-      {
-        href: '/partners/overview',
-        label: 'Partner Overview',
-        description: 'Supply health, readiness funnel, quality risk, wallet exposure, and action queues.',
-      },
-      {
-        href: '/marketing-analytics',
-        label: 'Marketing Analytics',
-        description: 'Acquisition source, campaign, region, signup, booking, and revenue funnel aggregates.',
       },
     ],
   },
@@ -89,13 +69,18 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Users',
-    description: 'Customer account, referral, review, and customer-evaluation records.',
+    label: 'Customers',
+    description: 'Customer accounts, usage, referrals, reviews, and customer-evaluation records.',
     links: [
       {
         href: '/customers',
         label: 'Customers',
         description: 'Customer account list with booking and payment facts.',
+      },
+      {
+        href: '/usage-overview',
+        label: 'Usage Overview',
+        description: 'Customer app usage, Partner searches, requests, and completed-work rankings.',
       },
       {
         href: '/referrals/customers',
@@ -116,8 +101,13 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     label: 'Partners',
-    description: 'Approved Partners, approval queues, and wallet settlement risk.',
+    description: 'Partner overview, approval queues, approved Partners, and wallet settlement risk.',
     links: [
+      {
+        href: '/partners/overview',
+        label: 'Partner Overview',
+        description: 'Supply health, readiness funnel, quality risk, wallet exposure, and action queues.',
+      },
       {
         href: '/partners',
         label: 'Partners',
@@ -143,6 +133,48 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/files',
         label: 'Files',
         description: 'Partner verification files and public media moderation.',
+      },
+    ],
+  },
+  {
+    label: 'Analytics',
+    description: 'Regional operating picture without individual diagnostics.',
+    links: [
+      {
+        href: '/vietnam-overview',
+        label: 'Vietnam Overview',
+        description: 'Region aggregate operating picture without individual GPS points.',
+      },
+    ],
+  },
+  {
+    label: 'Growth & Communications',
+    description: 'Acquisition, coupons, notification records, templates, and push-send operations.',
+    links: [
+      {
+        href: '/marketing-analytics',
+        label: 'Marketing Analytics',
+        description: 'Acquisition source, campaign, region, signup, booking, and revenue funnel aggregates.',
+      },
+      {
+        href: '/coupons',
+        label: 'Coupons',
+        description: 'Coupon codes and discount exposure.',
+      },
+      {
+        href: '/notifications',
+        label: 'Notifications',
+        description: 'In-app notification records and delivery status.',
+      },
+      {
+        href: '/notifications/templates',
+        label: 'Notification Templates',
+        description: 'Language-specific notification titles and message bodies.',
+      },
+      {
+        href: '/notifications/push-send',
+        label: 'Push Send',
+        description: 'Manual push send workspace with recipient preview.',
       },
     ],
   },
@@ -272,29 +304,8 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Communications',
-    description: 'Notification records, templates, and push-send operations.',
-    links: [
-      {
-        href: '/notifications',
-        label: 'Notifications',
-        description: 'In-app notification records and delivery status.',
-      },
-      {
-        href: '/notifications/templates',
-        label: 'Notification Templates',
-        description: 'Language-specific notification titles and message bodies.',
-      },
-      {
-        href: '/notifications/push-send',
-        label: 'Push Send',
-        description: 'Manual push send workspace with recipient preview.',
-      },
-    ],
-  },
-  {
-    label: 'Policies & Setup',
-    description: 'Operational rules, service catalog, coupons, and production readiness.',
+    label: 'Policies',
+    description: 'Operational rules and service catalog controls.',
     links: [
       {
         href: '/operations-policy',
@@ -306,21 +317,11 @@ export const adminNavSections: AdminNavSection[] = [
         label: 'Service Catalog',
         description: 'Service names, duration options, prices, and payout rules.',
       },
-      {
-        href: '/coupons',
-        label: 'Coupons',
-        description: 'Coupon codes and discount exposure.',
-      },
-      {
-        href: '/setup',
-        label: 'Setup',
-        description: 'External integration and production readiness checklist.',
-      },
     ],
   },
   {
     label: 'Admin Control',
-    description: 'Operator permissions and retained admin audit trail.',
+    description: 'Operator permissions, finance approvers, and retained admin audit trail.',
     links: [
       {
         href: '/admin-operators',
@@ -340,3 +341,41 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
 ];
+
+export const developerSystemNavSection: AdminNavSection = {
+  label: 'Developer / System',
+  description: 'Master-only technical readiness, integration health, and app session diagnostics.',
+  links: [
+    {
+      href: '/setup',
+      label: 'Setup Readiness',
+      description: 'External integration readiness, credentials, and production launch checks.',
+    },
+    {
+      href: '/app-sessions',
+      label: 'App Session Diagnostics',
+      description: 'Customer and Partner app session diagnostics for system investigation.',
+    },
+  ],
+};
+
+export const allAdminNavSections: AdminNavSection[] = [
+  ...adminNavSections,
+  developerSystemNavSection,
+];
+
+export function adminNavSectionsForAccess(access: AdminOperatorAccessLike): AdminNavSection[] {
+  if (canSeeDeveloperSystem(access)) {
+    return allAdminNavSections;
+  }
+
+  return adminNavSections;
+}
+
+function canSeeDeveloperSystem(access: AdminOperatorAccessLike) {
+  if (access?.roles?.includes('MASTER_ADMIN')) {
+    return true;
+  }
+
+  return Boolean(access?.categories.some((category) => developerSystemCategories.has(category)));
+}

@@ -5,16 +5,17 @@ import { Suspense, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 
-import { adminNavSections } from '../lib/admin-navigation';
+import type { AdminNavSection } from '../lib/admin-navigation';
 import { AdminIconButton } from './admin-icon-button';
 import { AdminShellNav } from './admin-shell-nav';
 import { AdminWorkspaceHeader } from './admin-workspace-header';
 
 type AdminRootShellProps = {
   readonly children: ReactNode;
+  readonly sections: readonly AdminNavSection[];
 };
 
-export function AdminRootShell({ children }: AdminRootShellProps) {
+export function AdminRootShell({ children, sections }: AdminRootShellProps) {
   const pathname = usePathname();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
@@ -45,7 +46,7 @@ export function AdminRootShell({ children }: AdminRootShellProps) {
           </button>
         </div>
         <Suspense fallback={<nav className="nav" aria-label="Admin navigation" />}>
-          <AdminShellNav onNavigate={() => setMobileNavigationOpen(false)} sections={adminNavSections} />
+          <AdminShellNav onNavigate={() => setMobileNavigationOpen(false)} sections={sections} />
         </Suspense>
       </aside>
       <main className="content">
@@ -62,7 +63,7 @@ export function AdminRootShell({ children }: AdminRootShellProps) {
                 <Menu aria-hidden="true" size={18} />
               </AdminIconButton>
             }
-            sections={adminNavSections}
+            sections={sections}
           />
         </Suspense>
         <div className="content-inner">{children}</div>

@@ -27,6 +27,7 @@ describe('admin operator permission catalog', () => {
       'FINANCE_WALLET_ADJUSTMENTS',
       'FINANCE_SETTLEMENTS',
       'FINANCE_TAX',
+      'GROWTH_MARKETING',
       'NOTIFICATIONS_TEMPLATES',
       'NOTIFICATIONS_PUSH',
       'NOTIFICATIONS_DELIVERY',
@@ -35,7 +36,10 @@ describe('admin operator permission catalog', () => {
       'SYSTEM_ADMIN_OPERATORS',
       'SYSTEM_POLICY',
       'SYSTEM_AUDIT',
-      'SYSTEM_SETUP',
+      'DEVELOPER_SETUP',
+      'DEVELOPER_HEALTH',
+      'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
+      'DEVELOPER_ROUTE_COMPAT',
     ]);
   });
 
@@ -43,13 +47,16 @@ describe('admin operator permission catalog', () => {
     expect(isAdminOperatorPermissionCategory('FINANCE')).toBe(true);
     expect(isAdminOperatorPermissionCategory('FINANCE_TAX')).toBe(true);
     expect(isAdminOperatorPermissionCategory('UNKNOWN')).toBe(false);
-    expect(expandLegacyAdminOperatorCategories(['FINANCE', 'SYSTEM_AUDIT', 'UNKNOWN'])).toEqual([
+    expect(expandLegacyAdminOperatorCategories(['FINANCE', 'SYSTEM_SETUP', 'SYSTEM_AUDIT', 'UNKNOWN'])).toEqual([
       'FINANCE_PAYMENT_CLEARING',
       'FINANCE_GENERAL_LEDGER',
       'FINANCE_BANK_RECONCILIATION',
       'FINANCE_WALLET_ADJUSTMENTS',
       'FINANCE_SETTLEMENTS',
       'FINANCE_TAX',
+      'DEVELOPER_SETUP',
+      'DEVELOPER_HEALTH',
+      'DEVELOPER_ROUTE_COMPAT',
       'SYSTEM_AUDIT',
       'UNKNOWN',
     ]);
