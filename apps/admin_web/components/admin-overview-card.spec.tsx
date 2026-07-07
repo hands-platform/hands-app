@@ -206,7 +206,8 @@ describe('AdminOverviewCommandCard', () => {
     const globals = readFileSync('app/globals.css', 'utf8');
     const gridBlock = cssRuleBlock(globals, '.admin-summary-card-grid {');
     const cardBlock = cssRuleBlock(globals, '.admin-summary-card {');
-    const valueBlock = cssRuleBlock(globals, '.admin-summary-card strong {');
+    const textBlock = cssRuleBlock(globals, '.admin-summary-card > span,');
+    const valueBlock = cssRuleBlock(globals, '.admin-summary-card > strong {');
 
     expect(gridBlock).toContain('display: grid;');
     expect(gridBlock).toContain('gap: 12px;');
@@ -214,8 +215,11 @@ describe('AdminOverviewCommandCard', () => {
     expect(cardBlock).toContain('display: grid;');
     expect(cardBlock).toContain('gap: 6px;');
     expect(cardBlock).toContain('min-width: 0;');
+    expect(textBlock).toContain('.admin-summary-card > small');
     expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
     expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
+    expect(globals).not.toContain('.admin-summary-card strong {');
+    expect(globals).not.toContain('.admin-summary-card span,\n.admin-summary-card small {');
   });
 
   it('renders summary card detail dates through the shared DateTimeText atom', () => {

@@ -1181,14 +1181,14 @@ a {
   min-width: 0;
 }
 
-.admin-summary-card span,
-.admin-summary-card small {
+.admin-summary-card > span,
+.admin-summary-card > small {
   color: var(--admin-muted);
   font-size: 12px;
   line-height: 1.35;
 }
 
-.admin-summary-card strong {
+.admin-summary-card > strong {
   color: var(--admin-text);
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
