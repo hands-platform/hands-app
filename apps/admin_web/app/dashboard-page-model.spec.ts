@@ -69,7 +69,7 @@ describe('dashboard page model', () => {
     expect(hrefs.payoutBatchesHref).toBeNull();
     expect(bookingUrl.pathname).toBe('/admin/bookings');
     expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
-    expect(bookingUrl.searchParams.get('take')).toBe('10');
+    expect(bookingUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.paymentSummaryHref).toBe('/admin/payments/summary?range=today');
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=today');
     expect(hrefs.refundsSummaryHref).toBe('/admin/refunds/summary?range=today');
