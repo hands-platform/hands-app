@@ -761,6 +761,39 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
   ];
 }
 
+export function buildFinanceOverviewVisibleSections(
+  sections: readonly FinanceOverviewSection[],
+): FinanceOverviewSection[] {
+  const visibleTitles = new Set([
+    'Revenue & Platform Fee',
+    'Payment Method Status',
+    'Partner Settlement',
+    'Wallet Liability',
+    'Tax Overview',
+    'Reconciliation',
+  ]);
+
+  return sections.filter((section) => visibleTitles.has(section.title)).map((section) => {
+    if (section.title === 'Reconciliation') {
+      return {
+        ...section,
+        rows: section.rows.filter((row) => row.href !== '/finance-tax/monthly-tax-closing').slice(0, 3),
+      };
+    }
+
+    return {
+      ...section,
+      rows: section.rows.slice(0, 3),
+    };
+  });
+}
+
+export function buildFinanceOverviewVisibleActionItems(
+  items: readonly FinanceOverviewActionItem[],
+): FinanceOverviewActionItem[] {
+  return items.slice(0, 5);
+}
+
 export function buildFinanceOverviewActionItems(
   input: Pick<
     FinanceOverviewSummaryInput,

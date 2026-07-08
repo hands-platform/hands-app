@@ -4,6 +4,8 @@ import {
   buildFinanceOverviewControlMetrics,
   buildFinanceOverviewKpis,
   buildFinanceOverviewPrimaryKpis,
+  buildFinanceOverviewVisibleActionItems,
+  buildFinanceOverviewVisibleSections,
   buildFinanceOverviewSections,
   emptyFinanceOverviewSummaries,
   financeOverviewHref,
@@ -367,6 +369,18 @@ describe('finance-overview-model', () => {
     expect(actions.find((action) => action.label === 'General ledger audit')?.amountLabel).toBe(
       'Debit / credit equality',
     );
+  });
+
+  it('keeps the rendered overview payload bounded for the operator-first page', () => {
+    const summaries = emptyFinanceOverviewSummaries('2026-07');
+    const sections = buildFinanceOverviewVisibleSections(buildFinanceOverviewSections(summaries));
+    const actions = buildFinanceOverviewVisibleActionItems(buildFinanceOverviewActionItems(summaries));
+
+    expect(sections).toHaveLength(6);
+    expect(sections.every((section) => section.rows.length <= 3)).toBe(true);
+    expect(actions).toHaveLength(5);
+    expect(sections.map((section) => section.title)).toContain('Revenue & Platform Fee');
+    expect(sections.map((section) => section.title)).toContain('Reconciliation');
   });
 
   it('preserves range in UI hrefs', () => {

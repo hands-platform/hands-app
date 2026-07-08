@@ -29,6 +29,8 @@ import {
   buildFinanceOverviewPrimaryKpis,
   buildFinanceOverviewRangeLabel,
   buildFinanceOverviewSections,
+  buildFinanceOverviewVisibleActionItems,
+  buildFinanceOverviewVisibleSections,
   emptyFinanceOverviewSummaries,
   financeOverviewSummaryInput,
   financeOverviewHref,
@@ -67,8 +69,9 @@ export default async function FinanceOverviewPage({
   const { couponSummary, settlementSummary } = overviewInput;
   const controlMetrics = buildFinanceOverviewControlMetrics(overviewInput);
   const primaryKpis = buildFinanceOverviewPrimaryKpis(overviewInput);
-  const sections = buildFinanceOverviewSections(overviewInput);
+  const sections = buildFinanceOverviewVisibleSections(buildFinanceOverviewSections(overviewInput));
   const actionItems = buildFinanceOverviewActionItems(overviewInput, filters.range);
+  const visibleActionItems = buildFinanceOverviewVisibleActionItems(actionItems);
   const priorityItems = actionItems.filter((item) => item.tone === 'danger' || item.tone === 'warning');
   const priorityDeskItems = priorityItems.length > 0 ? priorityItems.slice(0, 4) : actionItems.slice(0, 4);
   const netRevenueEstimate =
@@ -227,10 +230,11 @@ export default async function FinanceOverviewPage({
         actions={<AlertTriangle size={18} aria-hidden="true" />}
         bodyClassName="finance-overview-action-list"
         className="finance-overview-action-card"
-        description="Today-first finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
+        description="Top finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
+        statusLabel={`${visibleActionItems.length} queues`}
         title="Finance Action Lists"
       >
-        {actionItems.map((item) => (
+        {visibleActionItems.map((item) => (
           <FinanceActionItem key={item.label} item={item} />
         ))}
       </AdminSection>
