@@ -40,4 +40,13 @@ describe('CalendarClient', () => {
     expect(source).not.toContain("import listPlugin from '@fullcalendar/list'");
     expect(source).not.toContain("import timeGridPlugin from '@fullcalendar/timegrid'");
   });
+
+  it('loads the event drawer only after an operator opens it', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain('const CalendarEventDrawer = dynamic<CalendarEventDrawerProps>(');
+    expect(source).toContain("() => import('./calendar-event-drawer').then((module) => module.CalendarEventDrawer)");
+    expect(source).toContain('{drawerOpen ? (');
+    expect(source).not.toContain("import { CalendarEventDrawer } from './calendar-event-drawer'");
+  });
 });

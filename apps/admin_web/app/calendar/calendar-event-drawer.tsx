@@ -18,7 +18,7 @@ import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminDrawerSurface } from '../../components/admin-surface';
 import { calendarTagsToInputValue, parseCalendarTags, type CalendarEventDraft } from './calendar-model';
 
-type CalendarEventDrawerProps = {
+export type CalendarEventDrawerProps = {
   readonly draft: CalendarEventDraft;
   readonly isOpen: boolean;
   readonly mode: 'create' | 'edit';

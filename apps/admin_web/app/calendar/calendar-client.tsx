@@ -2,6 +2,7 @@
 
 import 'react-datepicker/dist/react-datepicker.css';
 
+import dynamic from 'next/dynamic';
 import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import FullCalendar from '@fullcalendar/react';
@@ -35,10 +36,18 @@ import {
   type CalendarOperator,
   type CalendarTagTone,
 } from './calendar-model';
-import { CalendarEventDrawer } from './calendar-event-drawer';
+import type { CalendarEventDrawerProps } from './calendar-event-drawer';
 
 type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listMonth';
 type LazyCalendarPluginName = 'timeGrid' | 'list';
+
+const CalendarEventDrawer = dynamic<CalendarEventDrawerProps>(
+  () => import('./calendar-event-drawer').then((module) => module.CalendarEventDrawer),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 type CalendarClientProps = {
   readonly currentOperator: CalendarOperator;
@@ -458,18 +467,20 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
         </AdminCard>
       </div>
 
-      <CalendarEventDrawer
-        draft={draft}
-        isOpen={drawerOpen}
-        mode={editingEventId ? 'edit' : 'create'}
-        onChange={setDraft}
-        onClose={closeDrawer}
-        onDelete={handleDelete}
-        onReset={handleReset}
-        onSubmit={handleSubmit}
-        canEdit={canEditSelectedEvent && !submitting}
-        currentOperatorName={currentOperator.name}
-      />
+      {drawerOpen ? (
+        <CalendarEventDrawer
+          draft={draft}
+          isOpen={drawerOpen}
+          mode={editingEventId ? 'edit' : 'create'}
+          onChange={setDraft}
+          onClose={closeDrawer}
+          onDelete={handleDelete}
+          onReset={handleReset}
+          onSubmit={handleSubmit}
+          canEdit={canEditSelectedEvent && !submitting}
+          currentOperatorName={currentOperator.name}
+        />
+      ) : null}
     </div>
   );
 }
