@@ -44,6 +44,17 @@ describe('BookingMonitor Vuexy shell', () => {
     expect(source).not.toContain("import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';");
   });
 
+  it('skips hidden route-specific board model builders on primary monitor renders', () => {
+    const source = readFileSync('app/bookings/booking-monitor.tsx', 'utf8');
+
+    expect(source).toContain('showPostMatchCancellationBoard ? buildBookingPostMatchCancellationBoard');
+    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingEscalationBoard');
+    expect(source).toContain('showMatchingEscalation ? buildBookingLiveMatchingPolicyCards');
+    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingEscalationRows');
+    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingFlowTimeline');
+    expect(source).toContain('showMatchingEscalation ? buildBookingDispatchPartnerShortcuts');
+  });
+
   it('scopes booking monitor header chrome to card-level section headers', () => {
     expect(globalCss).toContain(
       '.booking-monitor:is(.card, .admin-card, .admin-section) > .ops-section-header,',

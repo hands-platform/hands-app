@@ -183,28 +183,28 @@ export function BookingMonitor({
   );
 
   const postMatchCancellationBoard = useMemo(
-    () => buildBookingPostMatchCancellationBoard(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+    () => (showPostMatchCancellationBoard ? buildBookingPostMatchCancellationBoard(orderedBookings, currentTimeMs) : null),
+    [currentTimeMs, orderedBookings, showPostMatchCancellationBoard],
   );
   const matchingEscalationBoard = useMemo(
-    () => buildBookingMonitorMatchingEscalationBoard(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+    () => (showMatchingEscalation ? buildBookingMonitorMatchingEscalationBoard(orderedBookings, currentTimeMs) : []),
+    [currentTimeMs, orderedBookings, showMatchingEscalation],
   );
   const livePolicyCards = useMemo(
-    () => buildBookingLiveMatchingPolicyCards(liveOperationsPolicy),
-    [liveOperationsPolicy],
+    () => (showMatchingEscalation ? buildBookingLiveMatchingPolicyCards(liveOperationsPolicy) : []),
+    [liveOperationsPolicy, showMatchingEscalation],
   );
   const matchingEscalationRows = useMemo(
-    () => buildBookingMonitorMatchingEscalationRows(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+    () => (showMatchingEscalation ? buildBookingMonitorMatchingEscalationRows(orderedBookings, currentTimeMs) : []),
+    [currentTimeMs, orderedBookings, showMatchingEscalation],
   );
   const matchingFlowTimeline = useMemo(
-    () => buildBookingMonitorMatchingFlowTimeline(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+    () => (showMatchingEscalation ? buildBookingMonitorMatchingFlowTimeline(orderedBookings, currentTimeMs) : []),
+    [currentTimeMs, orderedBookings, showMatchingEscalation],
   );
   const dispatchPartnerShortcuts = useMemo(
-    () => buildBookingDispatchPartnerShortcuts(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+    () => (showMatchingEscalation ? buildBookingDispatchPartnerShortcuts(orderedBookings, currentTimeMs) : []),
+    [currentTimeMs, orderedBookings, showMatchingEscalation],
   );
 
   const visibleBookingModel = useMemo(
@@ -402,7 +402,7 @@ export function BookingMonitor({
         />
       )}
 
-      {showPostMatchCancellationBoard && (
+      {showPostMatchCancellationBoard && postMatchCancellationBoard && (
         <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
       )}
 
