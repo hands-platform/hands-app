@@ -1,4 +1,3 @@
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './globals.css';
 import type { ReactNode } from 'react';
 import { AdminOperatorAccessGate } from '../components/admin-operator-access-gate';
