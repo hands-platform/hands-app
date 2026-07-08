@@ -57,7 +57,8 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Compact admin list for ID, profile, contact');
     expect(rendered).toContain('12 visible row(s)');
     expect(rendered).toContain('Linh Wellness');
-    expect(rendered).toContain('0865907184 Linh Legal');
+    expect(rendered).toContain('Linh Legal');
+    expect(rendered).not.toContain('0865907184');
     expect(rendered).not.toContain('Partner ID');
     expect(rendered).not.toContain('Phone');
     expect(rendered).not.toContain('partner-1');

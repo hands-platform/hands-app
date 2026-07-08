@@ -171,7 +171,6 @@ function renderPartnerCell(row: PartnerMasterListSectionRow) {
 function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow }) {
   return (
     <div className="vuexy-partner-person-helper">
-      <span>{row.phone}</span>
       <small>{row.legalName}</small>
     </div>
   );
