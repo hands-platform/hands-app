@@ -299,6 +299,8 @@ describe('WalletAdjustmentsPage', () => {
     );
     expect(markup).toContain('Manual adjustment history');
     expect(markup).toContain('Smoke Partner');
+    expect(markup).not.toContain('+84222222222');
+    expect(markup).not.toContain('No owner phone');
     expect(markup).toContain('date-time-text');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-partner-1');

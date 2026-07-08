@@ -225,11 +225,6 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               <td>
                 <strong>{row.ownerLabel}</strong>
                 <p className="muted">{row.ownerType}</p>
-                {row.ownerPhone ? (
-                  <p className="muted">{row.ownerPhone}</p>
-                ) : (
-                  <AdminInlineFallback className="admin-mt-6">No owner phone</AdminInlineFallback>
-                )}
               </td>
               <td>
                 <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
