@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { readFileSync } from 'node:fs';
 
 import { getAdminOperatorPageAccess } from './admin-operator-access';
 import type { AdminOperatorAccess } from './admin-api';
@@ -115,5 +116,12 @@ describe('admin operator page access', () => {
         method: 'POST',
       }),
     );
+  });
+
+  it('wraps the current operator access lookup in the React server request cache', () => {
+    const source = readFileSync('lib/admin-operator-access.ts', 'utf8');
+
+    expect(source).toContain("import { cache } from 'react';");
+    expect(source).toContain('export const getCurrentAdminOperatorAccess = cache(async function getCurrentAdminOperatorAccess()');
   });
 });

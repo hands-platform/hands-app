@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 
 import {
   adminGet,
@@ -24,7 +25,7 @@ export type AdminOperatorPageAccess =
       category: AdminOperatorPermissionCategory | null;
     };
 
-export async function getCurrentAdminOperatorAccess() {
+export const getCurrentAdminOperatorAccess = cache(async function getCurrentAdminOperatorAccess() {
   const identity = await currentAdminWebSessionIdentity();
   if (!identity) {
     return null;
@@ -36,7 +37,7 @@ export async function getCurrentAdminOperatorAccess() {
   );
 
   return access ?? envMasterAdminAccessForIdentity(identity);
-}
+});
 
 export async function getAdminOperatorPageAccess(
   pathname: string,
