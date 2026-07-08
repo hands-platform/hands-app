@@ -20,7 +20,7 @@ import {
 } from './booking-gate-filters';
 import { bookingGateRejectionInfo } from './booking-gate-rejections';
 
-type BookingMonitorBlockedCreateSectionProps = {
+export type BookingMonitorBlockedCreateSectionProps = {
   readonly bookingGateTriage: readonly BookingGateTriageItem[];
   readonly gateFilter: BookingGateFilter;
   readonly onGateFilterChange: (value: BookingGateFilter) => void;

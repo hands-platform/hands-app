@@ -22,7 +22,7 @@ export type BookingMonitorDispatchPartnerShortcut = {
   readonly value: string;
 };
 
-type BookingMonitorMatchingEscalationSectionProps = {
+export type BookingMonitorMatchingEscalationSectionProps = {
   readonly dispatchPartnerShortcuts: readonly BookingMonitorDispatchPartnerShortcut[];
   readonly getCustomerLabel: (booking: AdminBooking) => string;
   readonly getMatchingWindowLabel: (booking: AdminBooking) => string;

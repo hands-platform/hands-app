@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import type { Socket } from 'socket.io-client';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -17,7 +18,7 @@ import { bookingTimestamp, formatBookingClockTime as formatClockTime } from './b
 import type { BookingGateFilter } from './booking-gate-filters';
 import { bookingViewOptions } from './booking-monitor-options';
 import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
-import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
+import type { BookingMonitorBlockedCreateSectionProps } from './booking-monitor-blocked-create-section';
 import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
 import { bookingMatchingWindowLabel } from './booking-matching-window';
 import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
@@ -27,7 +28,7 @@ import {
   BookingMonitorListSection,
   type BookingTableGroupKey,
 } from './booking-monitor-list-section';
-import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
+import type { BookingMonitorMatchingEscalationSectionProps } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
@@ -43,9 +44,8 @@ import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
-import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';
 import { buildBookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
-import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';
+import type { BookingPostMatchCancellationsSectionProps } from './booking-post-match-cancellations-section';
 
 type Props = {
   bookings: AdminBooking[];
@@ -72,6 +72,26 @@ type Props = {
 };
 
 type BookingView = BookingPageView;
+
+const BookingMonitorBlockedCreateSection = dynamic<BookingMonitorBlockedCreateSectionProps>(
+  () => import('./booking-monitor-blocked-create-section').then((module) => module.BookingMonitorBlockedCreateSection),
+  { loading: () => null, ssr: false },
+);
+
+const BookingMonitorMatchingEscalationSection = dynamic<BookingMonitorMatchingEscalationSectionProps>(
+  () => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationSection),
+  { loading: () => null, ssr: false },
+);
+
+const BookingPostMatchCancellationsSection = dynamic<BookingPostMatchCancellationsSectionProps>(
+  () => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationsSection),
+  { loading: () => null, ssr: false },
+);
+
+const BookingCompletedCloseoutSection = dynamic(
+  () => import('./booking-completed-closeout-section').then((module) => module.BookingCompletedCloseoutSection),
+  { loading: () => null, ssr: false },
+);
 
 export function BookingMonitor({
   bookings,

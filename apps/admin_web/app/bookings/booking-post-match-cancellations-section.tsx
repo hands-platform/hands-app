@@ -4,7 +4,7 @@ import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
-type BookingPostMatchCancellationsSectionProps = {
+export type BookingPostMatchCancellationsSectionProps = {
   readonly board: BookingPostMatchCancellationBoard;
 };
 

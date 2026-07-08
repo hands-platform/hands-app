@@ -21,6 +21,29 @@ describe('BookingMonitor Vuexy shell', () => {
     expect(source).not.toContain('description=');
   });
 
+  it('loads route-specific booking boards outside the primary monitor bundle', () => {
+    const source = readFileSync('app/bookings/booking-monitor.tsx', 'utf8');
+
+    expect(source).toContain('const BookingMonitorBlockedCreateSection = dynamic<BookingMonitorBlockedCreateSectionProps>(');
+    expect(source).toContain(
+      "() => import('./booking-monitor-blocked-create-section').then((module) => module.BookingMonitorBlockedCreateSection)",
+    );
+    expect(source).toContain(
+      "() => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationSection)",
+    );
+    expect(source).toContain(
+      "() => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationsSection)",
+    );
+    expect(source).toContain(
+      "() => import('./booking-completed-closeout-section').then((module) => module.BookingCompletedCloseoutSection)",
+    );
+    expect(source.match(/ssr: false/g)).toHaveLength(4);
+    expect(source).not.toContain("import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';");
+    expect(source).not.toContain("import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';");
+    expect(source).not.toContain("import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';");
+    expect(source).not.toContain("import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';");
+  });
+
   it('scopes booking monitor header chrome to card-level section headers', () => {
     expect(globalCss).toContain(
       '.booking-monitor:is(.card, .admin-card, .admin-section) > .ops-section-header,',
