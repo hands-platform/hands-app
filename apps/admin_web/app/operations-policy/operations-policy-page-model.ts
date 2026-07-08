@@ -2,7 +2,7 @@ import { readSearchParam } from '../../lib/date-range';
 
 export type OperationsPolicyDetailsMode = 'summary' | 'all';
 
-const SUMMARY_BOOKING_SAMPLE_TAKE = 10;
+const SUMMARY_BOOKING_SAMPLE_TAKE = 5;
 const SUMMARY_POLICY_AUDIT_TAKE = 5;
 const SUMMARY_BOOKING_GATE_AUDIT_TAKE = 5;
 
