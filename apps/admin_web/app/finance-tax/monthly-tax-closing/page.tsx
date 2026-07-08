@@ -33,11 +33,9 @@ import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingApiHref,
-  buildMonthlyTaxClosingAccountingJournalCsvHref,
+  buildMonthlyTaxClosingExportHref,
   buildMonthlyTaxClosingRemittanceEvidenceState,
   buildMonthlyTaxClosingRiskLinks,
-  buildMonthlyTaxClosingRowsCsvHref,
-  buildMonthlyTaxClosingSummaryCsvHref,
   buildMonthlyTaxClosingSummaryApiHref,
   buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
@@ -70,9 +68,9 @@ export default async function MonthlyTaxClosingPage({ searchParams }: MonthlyTax
   const pagination = buildTaxSettlementServerPagination(closings, filters, storedClosingTotal);
   const tableRows = pagination.rows;
   const returnTo = monthlyTaxClosingHref(filters);
-  const summaryCsvHref = buildMonthlyTaxClosingSummaryCsvHref(summary);
-  const closingRowsCsvHref = buildMonthlyTaxClosingRowsCsvHref(tableRows);
-  const accountingJournalCsvHref = buildMonthlyTaxClosingAccountingJournalCsvHref(summary);
+  const summaryCsvHref = buildMonthlyTaxClosingExportHref(filters, 'summary');
+  const closingRowsCsvHref = buildMonthlyTaxClosingExportHref(filters, 'rows');
+  const accountingJournalCsvHref = buildMonthlyTaxClosingExportHref(filters, 'accounting-journal');
   const nextStatusOptions = monthlyTaxClosingNextStatusOptions(summary.status);
   const closeoutRiskLinks = buildMonthlyTaxClosingRiskLinks(summary, settlementFilters, filters);
   const formulaDelta = Math.abs(summary.reconciliationDelta) + Math.abs(summary.netRevenueDelta);

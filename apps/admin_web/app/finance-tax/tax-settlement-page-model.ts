@@ -17,7 +17,7 @@ import type {
   AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
 import type { AdminDateRange } from '../../lib/date-range';
-import { buildCsvDataHref } from '../../lib/csv-export';
+import { buildCsvContent, buildCsvDataHref } from '../../lib/csv-export';
 import { formatMoney, shortId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
 
@@ -77,6 +77,8 @@ export type MonthlyTaxClosingStatusOption = {
   readonly label: string;
   readonly helper: string;
 };
+
+export type MonthlyTaxClosingExportKind = 'summary' | 'rows' | 'accounting-journal';
 
 export type MonthlyTaxClosingRemittanceEvidenceState = {
   readonly detail: string;
@@ -1470,39 +1472,44 @@ export function buildPaymentFeeSummaryCsvHref(summary: AdminPaymentFeeSummary) {
 }
 
 export function buildMonthlyTaxClosingSummaryCsvHref(summary: AdminMonthlyTaxClosingSummary) {
-  return buildCsvDataHref(
-    [
-      {
-        period: summary.period,
-        currency: summary.currency,
-        status: summary.status,
-        settlement_count: summary.settlementCount,
-        customer_payment_amount_total: summary.customerPaymentAmountTotal,
-        partner_payout_total: summary.partnerPayoutTotal,
-        platform_fee_gross_total: summary.platformFeeGrossTotal,
-        platform_fee_net_revenue_total: summary.platformFeeNetRevenueTotal,
-        company_output_vat_total: summary.companyOutputVatTotal,
-        partner_vat_withheld_total: summary.partnerVatWithheldTotal,
-        partner_pit_withheld_total: summary.partnerPitWithheldTotal,
-        partner_withholding_total: summary.partnerWithholdingTotal,
-        payment_processing_fee_total: summary.paymentProcessingFeeTotal,
-        coupon_settlement_count: summary.couponSettlementCount,
-        coupon_discount_amount_total: summary.couponDiscountAmountTotal,
-        company_coupon_expense_total: summary.companyCouponExpenseTotal,
-        partner_funded_coupon_amount_total: summary.partnerFundedCouponAmountTotal,
-        platform_fee_discount_amount_total: summary.platformFeeDiscountAmountTotal,
-        coupon_review_flag_count: summary.couponReviewFlagCount,
-        cash_debt_total: summary.cashDebtTotal,
-        non_cash_partner_payout_total: summary.nonCashPartnerPayoutTotal,
-        partner_count_with_revenue: summary.partnerCountWithRevenue,
-        open_tax_count: summary.openTaxCount,
-        paid_tax_count: summary.paidTaxCount,
-        reconciliation_delta: summary.reconciliationDelta,
-        net_revenue_delta: summary.netRevenueDelta,
-      },
-    ],
-    MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS,
-  );
+  return buildCsvDataHref(buildMonthlyTaxClosingSummaryCsvRows(summary), MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS);
+}
+
+export function buildMonthlyTaxClosingSummaryCsvContent(summary: AdminMonthlyTaxClosingSummary) {
+  return buildCsvContent(buildMonthlyTaxClosingSummaryCsvRows(summary), MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS);
+}
+
+function buildMonthlyTaxClosingSummaryCsvRows(summary: AdminMonthlyTaxClosingSummary) {
+  return [
+    {
+      period: summary.period,
+      currency: summary.currency,
+      status: summary.status,
+      settlement_count: summary.settlementCount,
+      customer_payment_amount_total: summary.customerPaymentAmountTotal,
+      partner_payout_total: summary.partnerPayoutTotal,
+      platform_fee_gross_total: summary.platformFeeGrossTotal,
+      platform_fee_net_revenue_total: summary.platformFeeNetRevenueTotal,
+      company_output_vat_total: summary.companyOutputVatTotal,
+      partner_vat_withheld_total: summary.partnerVatWithheldTotal,
+      partner_pit_withheld_total: summary.partnerPitWithheldTotal,
+      partner_withholding_total: summary.partnerWithholdingTotal,
+      payment_processing_fee_total: summary.paymentProcessingFeeTotal,
+      coupon_settlement_count: summary.couponSettlementCount,
+      coupon_discount_amount_total: summary.couponDiscountAmountTotal,
+      company_coupon_expense_total: summary.companyCouponExpenseTotal,
+      partner_funded_coupon_amount_total: summary.partnerFundedCouponAmountTotal,
+      platform_fee_discount_amount_total: summary.platformFeeDiscountAmountTotal,
+      coupon_review_flag_count: summary.couponReviewFlagCount,
+      cash_debt_total: summary.cashDebtTotal,
+      non_cash_partner_payout_total: summary.nonCashPartnerPayoutTotal,
+      partner_count_with_revenue: summary.partnerCountWithRevenue,
+      open_tax_count: summary.openTaxCount,
+      paid_tax_count: summary.paidTaxCount,
+      reconciliation_delta: summary.reconciliationDelta,
+      net_revenue_delta: summary.netRevenueDelta,
+    },
+  ];
 }
 
 export function buildPartnerWithholdingTaxRowsCsvHref(rows: readonly AdminPartnerWithholdingTaxRow[]) {
@@ -1560,7 +1567,17 @@ export function buildBookingSettlementSnapshotRowsCsvHref(rows: readonly AdminBo
 
 export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMonthlyTaxClosingSummary) {
   return buildCsvDataHref(
-    [
+    buildMonthlyTaxClosingAccountingJournalCsvRows(summary),
+    ACCOUNTING_JOURNAL_CSV_COLUMNS,
+  );
+}
+
+export function buildMonthlyTaxClosingAccountingJournalCsvContent(summary: AdminMonthlyTaxClosingSummary) {
+  return buildCsvContent(buildMonthlyTaxClosingAccountingJournalCsvRows(summary), ACCOUNTING_JOURNAL_CSV_COLUMNS);
+}
+
+function buildMonthlyTaxClosingAccountingJournalCsvRows(summary: AdminMonthlyTaxClosingSummary) {
+  return [
       {
         entry: 'customer_payment_clearing',
         period: summary.period,
@@ -1642,14 +1659,19 @@ export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMon
         amount: summary.cashDebtTotal,
         memo: 'Cash bookings create partner receivable when wallet is insufficient. Closed periods require reversal entries, not direct edits.',
       },
-    ],
-    ACCOUNTING_JOURNAL_CSV_COLUMNS,
-  );
+    ];
 }
 
 export function buildMonthlyTaxClosingRowsCsvHref(rows: readonly AdminMonthlyTaxClosing[]) {
-  return buildCsvDataHref(
-    rows.map((row) => ({
+  return buildCsvDataHref(buildMonthlyTaxClosingRowsCsvRows(rows), MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS);
+}
+
+export function buildMonthlyTaxClosingRowsCsvContent(rows: readonly AdminMonthlyTaxClosing[]) {
+  return buildCsvContent(buildMonthlyTaxClosingRowsCsvRows(rows), MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS);
+}
+
+function buildMonthlyTaxClosingRowsCsvRows(rows: readonly AdminMonthlyTaxClosing[]) {
+  return rows.map((row) => ({
       id: row.id,
       period: row.period,
       currency: row.currency,
@@ -1668,9 +1690,22 @@ export function buildMonthlyTaxClosingRowsCsvHref(rows: readonly AdminMonthlyTax
       paid_at: row.paidAt ?? '',
       closed_at: row.closedAt ?? '',
       notes: row.notes ?? '',
-    })),
-    MONTHLY_TAX_CLOSING_ROWS_CSV_COLUMNS,
-  );
+    }));
+}
+
+export function buildMonthlyTaxClosingExportHref(
+  filters: MonthlyTaxClosingFilters,
+  kind: MonthlyTaxClosingExportKind,
+) {
+  const params = new URLSearchParams({
+    kind,
+    period: filters.period,
+    take: String(filters.take),
+  });
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  return `/api/admin/finance-tax/monthly-tax-closing/export?${params.toString()}`;
 }
 
 const PLATFORM_VAT_CSV_COLUMNS = [

@@ -37,6 +37,11 @@ describe('MonthlyTaxClosingPage', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
     expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('buildMonthlyTaxClosingExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildMonthlyTaxClosingSummaryCsvHref');
+    expect(source).not.toContain('buildMonthlyTaxClosingRowsCsvHref');
+    expect(source).not.toContain('buildMonthlyTaxClosingAccountingJournalCsvHref');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<AdminFormControlLink');
     expect(source).not.toContain('className="pill pill-info"');
