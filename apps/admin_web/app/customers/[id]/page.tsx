@@ -163,6 +163,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     customer.providerReviews ?? [],
     customer.id,
   );
+  const shouldRenderReviewRecords =
+    customerReviewRecords.customerReviews.length + customerReviewRecords.partnerEvaluations.length > 0;
   const bookings = customer.bookings ?? [];
   const wallet = customerWalletSummary(bookings);
   const customerWalletAdjustmentHref = `/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(customer.id)}`;
@@ -441,15 +443,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         searchParams={detailSearchParams}
       />
 
-      <AdminReviewRecordsSection
-        basePath={`/customers/${id}`}
-        customerReviews={customerReviewRecords.customerReviews}
-        description="Customer review records and Partner-written internal evaluations connected to this customer."
-        id="customer-review-records"
-        partnerEvaluations={customerReviewRecords.partnerEvaluations}
-        searchParams={detailSearchParams}
-        title="Customer review records"
-      />
+      {shouldRenderReviewRecords ? (
+        <AdminReviewRecordsSection
+          basePath={`/customers/${id}`}
+          customerReviews={customerReviewRecords.customerReviews}
+          description="Customer review records and Partner-written internal evaluations connected to this customer."
+          id="customer-review-records"
+          partnerEvaluations={customerReviewRecords.partnerEvaluations}
+          searchParams={detailSearchParams}
+          title="Customer review records"
+        />
+      ) : null}
 
       <AdminSection
         actions={
