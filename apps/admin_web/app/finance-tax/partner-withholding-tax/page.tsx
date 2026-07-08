@@ -20,7 +20,7 @@ import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
   buildMonthlyTaxClosingSummaryApiHref,
   buildPartnerWithholdingTaxApiHref,
-  buildPartnerWithholdingTaxRowsCsvHref,
+  buildPartnerWithholdingTaxExportHref,
   buildPartnerWithholdingTaxSummaryApiHref,
   buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
@@ -54,7 +54,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   ]);
   const pagination = buildTaxSettlementServerPagination(rows, filters, summary.partnerCountWithRevenue);
   const tableRows = pagination.rows;
-  const csvHref = buildPartnerWithholdingTaxRowsCsvHref(tableRows);
+  const csvHref = buildPartnerWithholdingTaxExportHref(filters);
 
   return (
     <AdminPageTemplate

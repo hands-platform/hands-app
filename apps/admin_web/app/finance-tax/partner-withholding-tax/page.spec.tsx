@@ -56,6 +56,12 @@ describe('PartnerWithholdingTaxPage', () => {
     expect(source).not.toContain('metrics={[');
   });
 
+  it('keeps partner withholding CSV download off the page payload', () => {
+    expect(source).toContain('buildPartnerWithholdingTaxExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildPartnerWithholdingTaxRowsCsvHref');
+  });
+
   it('shows monthly remittance status from the tax closing summary', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/partner-withholding-tax/summary?period=2026-06') {

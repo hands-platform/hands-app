@@ -1532,8 +1532,15 @@ function buildMonthlyTaxClosingSummaryCsvRows(summary: AdminMonthlyTaxClosingSum
 }
 
 export function buildPartnerWithholdingTaxRowsCsvHref(rows: readonly AdminPartnerWithholdingTaxRow[]) {
-  return buildCsvDataHref(
-    rows.map((row) => ({
+  return buildCsvDataHref(buildPartnerWithholdingTaxRowsCsvRows(rows), PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS);
+}
+
+export function buildPartnerWithholdingTaxRowsCsvContent(rows: readonly AdminPartnerWithholdingTaxRow[]) {
+  return buildCsvContent(buildPartnerWithholdingTaxRowsCsvRows(rows), PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS);
+}
+
+function buildPartnerWithholdingTaxRowsCsvRows(rows: readonly AdminPartnerWithholdingTaxRow[]) {
+  return rows.map((row) => ({
       provider_profile_id: row.providerProfileId,
       period: row.period,
       currency: row.currency,
@@ -1545,9 +1552,18 @@ export function buildPartnerWithholdingTaxRowsCsvHref(rows: readonly AdminPartne
       partner_vat_withheld_total: row.partnerVatWithheldTotal,
       partner_pit_withheld_total: row.partnerPitWithheldTotal,
       total_partner_tax_withheld: row.totalPartnerTaxWithheld,
-    })),
-    PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS,
-  );
+    }));
+}
+
+export function buildPartnerWithholdingTaxExportHref(filters: PartnerWithholdingTaxFilters) {
+  const params = new URLSearchParams({
+    period: filters.period,
+    take: String(filters.take),
+  });
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  return `/api/admin/finance-tax/partner-withholding-tax/export?${params.toString()}`;
 }
 
 export function buildBookingSettlementSnapshotRowsCsvHref(rows: readonly AdminBookingSettlementSnapshot[]) {
