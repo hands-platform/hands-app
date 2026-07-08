@@ -159,6 +159,7 @@ npm.cmd run start --workspace @massage-vn/api *> '$apiLog'
 $adminCommand = if ($AdminProduction) {
 @"
 Set-Location '$RepoRoot'
+`$env:NODE_ENV='production'
 `$env:ADMIN_API_BASE_URL='http://localhost:$ApiPort/api'
 npm.cmd run build --workspace @massage-vn/admin-web *> '$adminLog'
 if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
@@ -180,6 +181,13 @@ $apiProcess = Start-Process powershell -ArgumentList @(
   "-Command",
   $apiCommand
 ) -WindowStyle Hidden -PassThru
+
+$apiHealthWaitedBeforeAdmin = $false
+if ($AdminProduction -and -not $SkipAdmin) {
+  # Production Admin starts after API health is ready to avoid concurrent API and Next build contention.
+  Wait-HttpReady -Url "http://localhost:$ApiPort/api/health" -TimeoutSeconds 90
+  $apiHealthWaitedBeforeAdmin = $true
+}
 
 $adminProcess = $null
 if (-not $SkipAdmin) {
@@ -206,7 +214,9 @@ $state = [pscustomobject]@{
 }
 $state | ConvertTo-Json | Set-Content -Path $statePath -Encoding utf8
 
-Wait-HttpReady -Url "http://localhost:$ApiPort/api/health" -TimeoutSeconds 90
+if (-not $apiHealthWaitedBeforeAdmin) {
+  Wait-HttpReady -Url "http://localhost:$ApiPort/api/health" -TimeoutSeconds 90
+}
 if (-not $SkipAdmin) {
   Wait-HttpReady -Url "http://localhost:$AdminPort" -TimeoutSeconds 90 -AllowedStatusCodes @(200, 307, 308, 404)
 }
