@@ -129,6 +129,7 @@ const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
 const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
 const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
 const CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT = 5;
+const CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT = 4;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
 
@@ -237,6 +238,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     filteredAuditLogs,
     customer.id,
   );
+  const shouldRenderBookingCreateGateAttempts = bookingCreateGateAttempts.length > 0;
   const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
   const accountFacts = buildCustomerAccountFacts({
     addresses,
@@ -455,55 +457,57 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
       ) : null}
 
-      <AdminSection
-        actions={
-          <>
-            <StatusBadge tone={filteredBookingCreateGateAttempts.length > 0 ? 'warning' : 'neutral'}>
-              {filteredBookingCreateGateAttempts.length} filtered
-            </StatusBadge>
-            <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
-            <AdminTextLink href="/bookings?view=blocked-create">Open gate queue</AdminTextLink>
-          </>
-        }
-        className="admin-mb-16"
-        description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support checks."
-        id="customer-booking-create-gates"
-        title="Customer blocked create attempts"
-      >
-        {filteredBookingCreateGateAttempts.length === 0 ? (
-          <p className="muted admin-mt-12">No booking create gate attempt matched this date filter.</p>
-        ) : (
-          <AdminStageList className="admin-mt-14">
-            {filteredBookingCreateGateAttempts
-              .slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT)
-              .map((attempt) => (
-                <AdminStageItem key={attempt.id}>
-                  <span>{attempt.gateLabel}</span>
-                  <div>
-                    <AdminTextLink href={attempt.bookingMonitorHref}>
-                      <strong>{attempt.reasonLabel}</strong>
-                    </AdminTextLink>
-                    <p className="muted">{attempt.detail}</p>
-                    <AdminFilterChipGroup className="admin-mt-8">
-                      <StatusBadgeFromPillClass pillClass={attempt.tone}>
-                        {attempt.gateLabel}
-                      </StatusBadgeFromPillClass>
-                      <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
-                      <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
-                    </AdminFilterChipGroup>
-                    <AdminFilterChipGroup className="admin-mt-8">
-                      <AdminTextLink href={attempt.bookingMonitorHref}>Booking gate queue</AdminTextLink>
-                      <AdminTextLink href={attempt.auditHref}>Audit evidence</AdminTextLink>
-                    </AdminFilterChipGroup>
-                  </div>
-                  <small>
-                    <DateTimeText value={attempt.at} />
-                  </small>
-                </AdminStageItem>
-              ))}
-          </AdminStageList>
-        )}
-      </AdminSection>
+      {shouldRenderBookingCreateGateAttempts ? (
+        <AdminSection
+          actions={
+            <>
+              <StatusBadge tone={filteredBookingCreateGateAttempts.length > 0 ? 'warning' : 'neutral'}>
+                {filteredBookingCreateGateAttempts.length} filtered
+              </StatusBadge>
+              <StatusBadge tone="neutral">{bookingCreateGateAttempts.length} total</StatusBadge>
+              <AdminTextLink href="/bookings?view=blocked-create">Open gate queue</AdminTextLink>
+            </>
+          }
+          className="admin-mb-16"
+          description="Booking creation attempts stopped before payment and matching. These rows show factual gate evidence for customer support checks."
+          id="customer-booking-create-gates"
+          title="Customer blocked create attempts"
+        >
+          {filteredBookingCreateGateAttempts.length === 0 ? (
+            <p className="muted admin-mt-12">No booking create gate attempt matched this date filter.</p>
+          ) : (
+            <AdminStageList className="admin-mt-14">
+              {filteredBookingCreateGateAttempts
+                .slice(0, CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT)
+                .map((attempt) => (
+                  <AdminStageItem key={attempt.id}>
+                    <span>{attempt.gateLabel}</span>
+                    <div>
+                      <AdminTextLink href={attempt.bookingMonitorHref}>
+                        <strong>{attempt.reasonLabel}</strong>
+                      </AdminTextLink>
+                      <p className="muted">{attempt.detail}</p>
+                      <AdminFilterChipGroup className="admin-mt-8">
+                        <StatusBadgeFromPillClass pillClass={attempt.tone}>
+                          {attempt.gateLabel}
+                        </StatusBadgeFromPillClass>
+                        <StatusBadge tone="neutral">{attempt.addressLabel}</StatusBadge>
+                        <StatusBadge tone="neutral">{attempt.distanceLabel}</StatusBadge>
+                      </AdminFilterChipGroup>
+                      <AdminFilterChipGroup className="admin-mt-8">
+                        <AdminTextLink href={attempt.bookingMonitorHref}>Booking gate queue</AdminTextLink>
+                        <AdminTextLink href={attempt.auditHref}>Audit evidence</AdminTextLink>
+                      </AdminFilterChipGroup>
+                    </div>
+                    <small>
+                      <DateTimeText value={attempt.at} />
+                    </small>
+                  </AdminStageItem>
+                ))}
+            </AdminStageList>
+          )}
+        </AdminSection>
+      ) : null}
 
       <AdminSection
         className="admin-mb-16"
@@ -2246,7 +2250,7 @@ function buildFavoritePartnerAvatars(
         status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
       };
     })
-    .slice(0, 8);
+    .slice(0, CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT);
 }
 
 function buildViewedPartnerAvatars(
@@ -2273,7 +2277,7 @@ function buildViewedPartnerAvatars(
         status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
       };
     })
-    .slice(0, 8);
+    .slice(0, CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT);
 }
 
 function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
@@ -2303,7 +2307,7 @@ function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerD
     });
   }
 
-  return [...partners.values()].slice(0, 8);
+  return [...partners.values()].slice(0, CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT);
 }
 
 function partnerAvatarStatusFromBooking(booking: AdminBookingDetail): AdminAvatarStatus {

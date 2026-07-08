@@ -52,13 +52,12 @@ describe('CustomerDetailPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('toolbar admin-page-header');
-    expect(markup).toContain('id="customer-booking-create-gates"');
     expect(markup).toContain('id="customer-operator-command-queue"');
     expect(markup).toContain('id="record-date-filter"');
     expect(markup).toContain('id="customer-account-evidence"');
     expect(markup).toContain('id="customer-account-operations"');
     expect(markup).toContain('id="customer-record-archive-summary"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-booking-create-gates"');
+    expect(markup).not.toContain('id="customer-booking-create-gates"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-operator-command-queue"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="record-date-filter"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-evidence"');
@@ -71,6 +70,39 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('Load record archive');
     expect(markup).not.toContain('No chat rooms matched this date filter.');
     expect(markup).toContain('class="empty-state');
+  });
+
+  it('renders the customer booking create gate section only when gate attempts exist', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/customers/customer-with-gate?includeDiagnostics=true') {
+        return customerDetail({
+          auditLogs: [
+            {
+              action: 'booking.create.rejected',
+              actor: { id: 'system', fullName: 'System' },
+              createdAt: '2026-07-01T00:00:00.000Z',
+              id: 'audit-gate-1',
+              metadata: {
+                bookingAddress: { addressText: 'District 1, Ho Chi Minh City' },
+                reasonCode: 'CUSTOMER_OUT_OF_RANGE',
+              },
+              target: 'customer:customer-with-gate',
+            },
+          ],
+        });
+      }
+
+      return fallback;
+    });
+
+    const page = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-with-gate' }),
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('id="customer-booking-create-gates"');
+    expect(markup).toContain('Booking gate queue');
   });
 
   it('requests customer detail without diagnostics for ordinary operators', async () => {
@@ -254,6 +286,13 @@ describe('CustomerDetailPage', () => {
     );
   });
 
+  it('keeps customer partner overview rails capped to a compact preview', () => {
+    expect(customerDetailSource).toContain('const CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT = 4;');
+    expect(
+      customerDetailSource.match(/\.slice\(0, CUSTOMER_OVERVIEW_PARTNER_PREVIEW_LIMIT\)/g),
+    ).toHaveLength(3);
+  });
+
   it('uses the shared DateTimeText atom for selected location address labels', () => {
     expect(customerDetailSource).toContain('labelNode?: ReactNode;');
     expect(customerDetailSource).toContain('{address.labelNode ?? address.label}');
@@ -316,7 +355,7 @@ describe('CustomerDetailPage', () => {
   });
 });
 
-function customerDetail(): AdminCustomerDetail {
+function customerDetail(overrides: Partial<AdminCustomerDetail> = {}): AdminCustomerDetail {
   return {
     addresses: [],
     auditLogs: [],
@@ -339,5 +378,6 @@ function customerDetail(): AdminCustomerDetail {
     },
     userId: 'user-1',
     viewedProviders: [],
+    ...overrides,
   } as unknown as AdminCustomerDetail;
 }
