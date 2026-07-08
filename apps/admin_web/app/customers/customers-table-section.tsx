@@ -42,7 +42,6 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
                   avatarStatus={row.avatarStatus}
                   className="vuexy-booking-person vuexy-customer-person"
                   copyClassName="vuexy-booking-person-copy"
-                  helper={row.phone}
                   href={row.detailHref}
                   initials={row.initials}
                   label={row.name}

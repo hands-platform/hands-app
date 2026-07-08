@@ -83,7 +83,7 @@ describe('CustomersTableSection', () => {
 
     expect(rendered).toContain('Customer directory');
     expect(rendered).toContain('Customer One');
-    expect(rendered).toContain('+84900000000');
+    expect(rendered).not.toContain('+84900000000');
     expect(rendered).toContain('Vietnam');
     expect(rendered).toContain('Female');
     expect(rendered).toContain('1 Jun 2026');
