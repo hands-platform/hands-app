@@ -634,7 +634,7 @@ const partnerFilterHrefParamKeys = [
   'sort',
 ] as const satisfies readonly (keyof ProviderFilters)[];
 
-const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 50;
+const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 25;
 
 function partnerFilterSearchParams(filters: ProviderFilters) {
   const params = new URLSearchParams();

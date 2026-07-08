@@ -50,7 +50,7 @@ describe('partner filters', () => {
       '/partners?providerStatus=ONLINE_AVAILABLE_SOON&review=marketplace-ready',
     );
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=50&providerStatus=ONLINE_AVAILABLE_SOON',
+      listHref: '/admin/partners/list-providers?take=25&providerStatus=ONLINE_AVAILABLE_SOON',
       listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
@@ -80,7 +80,7 @@ describe('partner filters', () => {
     expect(filters.activity).toBe('inactive-7d');
     expect(buildPartnerListHref(filters)).toBe('/partners?activity=inactive-7d&review=marketplace-ready');
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=50',
+      listHref: '/admin/partners/list-providers?take=25',
       listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
@@ -141,7 +141,7 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({ location: 'stale' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=50',
+      listHref: '/admin/partners/list-providers?take=25',
       listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
@@ -238,7 +238,7 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({ page: '8', pageSize: '25', review: 'marketplace-ready' });
 
     expect(buildPartnerDataHrefs(filters)).toEqual({
-      listHref: '/admin/partners/list-providers?take=50',
+      listHref: '/admin/partners/list-providers?take=25',
       listIsServerPaginated: false,
       summaryHref: '/admin/partners/list-providers/summary',
       summaryMatchesVisibleFilter: false,
