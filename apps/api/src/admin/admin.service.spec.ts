@@ -10064,6 +10064,39 @@ describe('AdminService query orchestration', () => {
     expect(prisma.bookingSettlementSnapshot.findMany).not.toHaveBeenCalled();
   });
 
+  it('casts coupon finance review filters to Postgres enum types in raw SQL', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          bookingServiceAmount: 0n,
+          companyCouponExpense: 0n,
+          couponDiscountAmount: 0n,
+          couponReviewFlagCount: 0n,
+          couponSettlementCount: 0n,
+          customerPaidAmount: 0n,
+          partnerFundedCouponAmount: 0n,
+          platformFeeDiscountAmount: 0n,
+          reversedCompanyCouponExpense: 0n,
+          reversedCouponDiscountAmount: 0n,
+          settlementBaseAmount: 0n,
+        },
+      ]),
+      bookingSettlementSnapshot: {
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.couponFinanceSummary({ review: 'open' });
+    await service.couponFinanceSummary({ review: 'posted' });
+    await service.couponFinanceSummary({ review: 'cash' });
+
+    const queries = prisma.$queryRaw.mock.calls.map(([query]) => query as { text: string });
+    expect(queries[0]?.text).toContain('::"BookingSettlementTaxStatus"');
+    expect(queries[1]?.text).toContain('::"BookingSettlementStatus"');
+    expect(queries[2]?.text).toContain('::"PaymentMethod"');
+  });
+
   it('lists coupon finance settlement rows by bounded coupon metadata ids', async () => {
     const settlementRow = {
       id: 'settlement-1',

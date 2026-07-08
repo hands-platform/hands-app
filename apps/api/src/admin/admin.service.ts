@@ -17048,21 +17048,21 @@ function adminCouponFinanceReviewSql(review: string | null | undefined): Prisma.
   switch (normalizeNullable(review)) {
     case 'needs-action':
     case 'open':
-      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.OPEN}`;
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.OPEN}::"BookingSettlementTaxStatus"`;
     case 'declared':
-      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.DECLARED}`;
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.DECLARED}::"BookingSettlementTaxStatus"`;
     case 'paid':
-      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.PAID}`;
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.PAID}::"BookingSettlementTaxStatus"`;
     case 'closed':
-      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.CLOSED}`;
+      return Prisma.sql`"taxStatus" = ${BookingSettlementTaxStatus.CLOSED}::"BookingSettlementTaxStatus"`;
     case 'posted':
-      return Prisma.sql`"settlementStatus" = ${BookingSettlementStatus.POSTED}`;
+      return Prisma.sql`"settlementStatus" = ${BookingSettlementStatus.POSTED}::"BookingSettlementStatus"`;
     case 'reversed':
-      return Prisma.sql`("settlementStatus" = ${BookingSettlementStatus.REVERSED} OR "taxStatus" = ${BookingSettlementTaxStatus.REVERSED})`;
+      return Prisma.sql`("settlementStatus" = ${BookingSettlementStatus.REVERSED}::"BookingSettlementStatus" OR "taxStatus" = ${BookingSettlementTaxStatus.REVERSED}::"BookingSettlementTaxStatus")`;
     case 'cash':
-      return Prisma.sql`"paymentMethod" = ${PaymentMethod.CASH}`;
+      return Prisma.sql`"paymentMethod" = ${PaymentMethod.CASH}::"PaymentMethod"`;
     case 'non-cash':
-      return Prisma.sql`"paymentMethod" <> ${PaymentMethod.CASH}`;
+      return Prisma.sql`"paymentMethod" <> ${PaymentMethod.CASH}::"PaymentMethod"`;
     default:
       return null;
   }
