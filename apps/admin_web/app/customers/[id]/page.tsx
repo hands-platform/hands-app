@@ -196,13 +196,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     customerBookingOperationBuckets,
     detailSearchParams,
   );
-  const filteredChatBookings = bookings.filter((booking) => {
-    if (!booking.chatRoom) return false;
-    return (
-      isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters) ||
-      readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
-    );
-  });
+  const filteredChatBookings = shouldRenderRecordArchive
+    ? buildCustomerChatArchiveBookings(bookings, dateFilters)
+    : buildCustomerChatArchiveSummaryBookings(bookings, dateFilters);
   const chatHistoryPage = readCustomerBookingOperationPage(detailSearchParams, 'chatHistoryPage');
   const chatHistoryTotalPages = Math.max(
     1,
@@ -2323,6 +2319,28 @@ function partnerAvatarStatusFromProviderStatus(
   if (providerStatus.includes('ONLINE') || providerStatus.includes('AVAILABLE')) return 'online';
   if (providerStatus.includes('DELETED') || providerStatus.includes('REMOVED')) return 'app-deleted';
   return 'offline';
+}
+
+function buildCustomerChatArchiveSummaryBookings(
+  bookings: AdminBookingDetail[],
+  dateFilters: DetailDateFilters,
+) {
+  return bookings.filter((booking) => {
+    return Boolean(booking.chatRoom) && isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters);
+  });
+}
+
+function buildCustomerChatArchiveBookings(
+  bookings: AdminBookingDetail[],
+  dateFilters: DetailDateFilters,
+) {
+  return bookings.filter((booking) => {
+    if (!booking.chatRoom) return false;
+    return (
+      isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters) ||
+      readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
+    );
+  });
 }
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {

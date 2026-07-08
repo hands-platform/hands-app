@@ -10,6 +10,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('customer-chat-history-section');
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminTablePaginationFooter');
+    expect(pageSource).toContain('const filteredChatBookings = shouldRenderRecordArchive');
+    expect(pageSource).toContain('buildCustomerChatArchiveBookings(bookings, dateFilters)');
+    expect(pageSource).toContain('buildCustomerChatArchiveSummaryBookings(bookings, dateFilters)');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
     expect(pageSource).toContain('Customer contact and evidence');
     expect(pageSource).toContain('Customer account operations');
