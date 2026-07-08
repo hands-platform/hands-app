@@ -814,7 +814,7 @@ export function buildFinanceOverviewPageSections(input: FinanceOverviewSummaryIn
 export function buildFinanceOverviewVisibleActionItems(
   items: readonly FinanceOverviewActionItem[],
 ): FinanceOverviewActionItem[] {
-  return items.slice(0, 5);
+  return items.slice(0, 4);
 }
 
 export function buildFinanceOverviewActionItems(

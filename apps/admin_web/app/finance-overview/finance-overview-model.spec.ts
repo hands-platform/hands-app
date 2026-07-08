@@ -378,7 +378,7 @@ describe('finance-overview-model', () => {
 
     expect(sections).toHaveLength(6);
     expect(sections.every((section) => section.rows.length <= 3)).toBe(true);
-    expect(actions).toHaveLength(5);
+    expect(actions).toHaveLength(4);
     expect(sections.map((section) => section.title)).toContain('Revenue & Platform Fee');
     expect(sections.map((section) => section.title)).toContain('Reconciliation');
   });
