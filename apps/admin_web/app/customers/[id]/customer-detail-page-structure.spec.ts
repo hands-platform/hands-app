@@ -21,6 +21,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('buildCustomerActivityExportHref');
     expect(pageSource).toContain('/api/admin/customers/${encodeURIComponent(customerId)}/activity/export');
     expect(pageSource).not.toContain('buildCsvDataHref');
+    expect(pageSource).not.toContain('const customerActivityRecords = buildCustomerActivityRecords');
+    expect(pageSource).not.toContain('const filteredCustomerActivityRecords = orderCustomerActivityRecords');
     expect(pageSource).not.toContain('filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT)');
 
     const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');

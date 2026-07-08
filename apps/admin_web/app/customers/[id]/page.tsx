@@ -49,7 +49,6 @@ import {
 } from '../../../lib/admin-api';
 import {
   bookingLatestActivityAt,
-  bookingRecordCreatedAt,
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
@@ -67,7 +66,6 @@ import {
 } from '../../../lib/detail-date-filter';
 import {
   detailActivityTypeLabel,
-  isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -81,7 +79,6 @@ import {
   dateMs,
   formatDate,
   formatDistance,
-  formatMoney,
   readMetadataObject,
   readNumber,
   readString,
@@ -91,7 +88,6 @@ import {
   CUSTOMER_ACTIVITY_TYPE_OPTIONS,
   DETAIL_ACTIVITY_ORDER_OPTIONS,
   activityOrderLabel,
-  orderCustomerActivityRecords,
   readDetailActivityOrder,
 } from './customer-detail-filters';
 import { customerSelectedLocationDetail } from './customer-detail-location-copy';
@@ -185,7 +181,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   });
   const notifications = customer.user?.notifications ?? [];
   const activityPlan = buildCustomerActivityPlan(bookings, wallet, bookingStats, addresses);
-  const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
   const filteredBookings = bookings.filter((booking) =>
     isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters),
@@ -222,14 +217,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const chatHistoryPageTo = Math.min(
     filteredChatBookings.length,
     chatHistoryStartIndex + visibleChatBookings.length,
-  );
-  const filteredCustomerActivityRecords = orderCustomerActivityRecords(
-    customerActivityRecords.filter(
-      (record) =>
-        isWithinDetailDateFilter(record.at, dateFilters) &&
-        isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
-    ),
-    activityOrder,
   );
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
@@ -1047,15 +1034,6 @@ type CustomerAddressRow = {
   label: string;
   labelNode?: ReactNode;
   value: string;
-};
-
-type CustomerActivityRecord = {
-  id: string;
-  type: string;
-  at: string;
-  title: string;
-  detail: string;
-  href?: string;
 };
 
 type CustomerBookingGateAttemptRow = {
@@ -2311,287 +2289,6 @@ function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
   return [...(booking.chatRoom?.messages ?? [])].sort((left, right) => {
     return dateMs(left.createdAt) - dateMs(right.createdAt);
   });
-}
-
-function buildCustomerActivityRecords(
-  customer: AdminCustomerDetail,
-  bookings: AdminBookingDetail[],
-  addresses: CustomerAddressRow[],
-) {
-  const records: CustomerActivityRecord[] = [];
-
-  if (customer.user?.createdAt) {
-    records.push({
-      id: customer.user.id ?? customer.id,
-      type: 'ACCOUNT',
-      at: customer.user.createdAt,
-      title: 'Customer account created',
-      detail: `${customer.user.fullName ?? 'Unnamed customer'} / ${customer.user.phone ?? 'No phone'}`,
-    });
-  }
-
-  for (const booking of bookings) {
-    records.push({
-      id: booking.id,
-      type: 'BOOKING',
-      at: bookingRecordCreatedAt(booking) ?? '',
-      title: `${booking.status} booking ${shortId(booking.id)}`,
-      detail: `${bookingServiceLabel(booking)} / Partner ${bookingPartnerDisplayName(
-        booking,
-      )} / opened ${formatDate(bookingRequestOpenedAt(booking))}${
-        isClosedCustomerBooking(booking) ? ` / ${bookingClosureLabel(booking)}` : ''
-      }`,
-      href: `/bookings/${booking.id}`,
-    });
-    if (isClosedCustomerBooking(booking) && booking.closedAt) {
-      records.push({
-        id: `${booking.id}-closure`,
-        type: 'BOOKING',
-        at: booking.closedAt,
-        title: `Booking closed ${shortId(booking.id)}`,
-        detail: bookingClosureLabel(booking),
-        href: `/bookings/${booking.id}`,
-      });
-    }
-
-    if (booking.status === 'COMPLETED') {
-      records.push({
-        id: `${booking.id}-completed`,
-        type: 'WORK',
-        at: bookingLatestActivityAt(booking) ?? '',
-        title: `Completed work ${shortId(booking.id)}`,
-        detail: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
-        href: `/bookings/${booking.id}`,
-      });
-    }
-
-    if (booking.payment) {
-      records.push({
-        id: booking.payment.id ?? `${booking.id}-payment`,
-        type: 'PAYMENT',
-        at: booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${booking.payment.status} payment`,
-        detail: `${booking.payment.method} / ${formatMoney(Number(booking.payment.amount ?? 0), booking.payment.currency ?? 'VND')}`,
-        href: '/payments',
-      });
-    }
-
-    if (booking.earning) {
-      records.push({
-        id: booking.earning.id,
-        type: 'PAYMENT',
-        at: booking.earning.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${booking.earning.status} Partner earning`,
-        detail: `Gross ${formatMoney(Number(booking.earning.grossAmount ?? 0))} / platform fee ${formatMoney(
-          Number(booking.earning.platformFee ?? 0),
-        )} / net ${formatMoney(Number(booking.earning.netAmount ?? 0))}`,
-        href: '/earnings',
-      });
-    }
-
-    for (const ledger of booking.walletLedgerEntries ?? []) {
-      records.push({
-        id: ledger.id,
-        type: 'PAYMENT',
-        at: ledger.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${ledger.type} wallet impact`,
-        detail: `${formatMoney(Number(ledger.amount ?? 0), ledger.currency ?? 'VND')} / ${
-          ledger.notes ?? ledger.reference ?? ledger.sourceKey
-        }`,
-        href: '/earnings',
-      });
-    }
-
-    for (const feeLog of booking.platformFeeLogs ?? []) {
-      records.push({
-        id: feeLog.id,
-        type: 'PAYMENT',
-        at: feeLog.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: 'Platform fee log',
-        detail: `${formatMoney(Number(feeLog.platformFeeAmount ?? 0), feeLog.currency ?? 'VND')} / gross ${formatMoney(
-          Number(feeLog.grossAmount ?? 0),
-          feeLog.currency ?? 'VND',
-        )}`,
-        href: '/earnings',
-      });
-    }
-
-    for (const taxLog of booking.taxLogs ?? []) {
-      records.push({
-        id: taxLog.id,
-        type: 'PAYMENT',
-        at: taxLog.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: 'Tax withholding log',
-        detail: `${formatMoney(Number(taxLog.withholdingAmount ?? 0), taxLog.currency ?? 'VND')} / taxable ${formatMoney(
-          Number(taxLog.taxableAmount ?? 0),
-          taxLog.currency ?? 'VND',
-        )}`,
-        href: '/tax-policy',
-      });
-    }
-
-    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
-    for (const refund of refunds) {
-      const reason = 'reason' in refund ? refund.reason : undefined;
-      records.push({
-        id: refund.id,
-        type: 'REFUND',
-        at: refund.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${refund.status} refund`,
-        detail: `${formatMoney(Number(refund.amount ?? 0))}${reason ? ` / ${reason}` : ''}`,
-        href: '/refunds',
-      });
-    }
-
-    for (const participant of booking.participants ?? []) {
-      records.push({
-        id: participant.id,
-        type: 'BOOKING',
-        at: participant.respondedAt ?? participant.joinedAt ?? booking.createdAt ?? '',
-        title: `${participant.status} Partner participant`,
-        detail: `${participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName ?? 'Partner'} / ${
-          participant.distanceMeters != null ? `${participant.distanceMeters}m` : 'distance not stored'
-        }`,
-        href: `/bookings/${booking.id}`,
-      });
-    }
-
-    for (const message of readChatMessages(booking)) {
-      records.push({
-        id: message.id,
-        type: 'CHAT',
-        at: message.createdAt,
-        title: `Message in booking ${shortId(booking.id)}`,
-        detail: `${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown sender'}: ${compactText(
-          message.body,
-          96,
-        )}`,
-        href: `/bookings/${booking.id}#chat`,
-      });
-    }
-
-    for (const task of booking.opsTasks ?? []) {
-      records.push({
-        id: task.id,
-        type: 'OPS',
-        at: task.updatedAt,
-        title: `${task.status} ${task.type}`,
-        detail: `${task.note ?? 'No note'} / actor ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
-        href: `/bookings/${booking.id}`,
-      });
-    }
-  }
-
-  for (const location of customer.selectedLocations ?? []) {
-    records.push({
-      id: location.id,
-      type: 'ADDRESS',
-      at: location.createdAt,
-      title: 'Customer selected service location',
-      detail: customerSelectedLocationDetail(location),
-      href: '#addresses',
-    });
-  }
-
-  for (const address of addresses.filter((item) => item.key.startsWith('profile-'))) {
-    records.push({
-      id: address.key,
-      type: 'ADDRESS',
-      at: customer.user?.updatedAt ?? customer.user?.createdAt ?? '',
-      title: address.label,
-      detail: address.value,
-      href: '#addresses',
-    });
-  }
-
-  for (const session of customer.user?.appSessions ?? []) {
-    records.push({
-      id: session.id,
-      type: 'SESSION',
-      at: session.lastSeenAt,
-      title: `${session.active ? 'Active' : 'Inactive'} customer app session`,
-      detail: `${session.platform ?? 'Unknown platform'} / ${session.appVersion ?? 'No app version'} / device ${session.deviceId}`,
-      href: '#customer-account-evidence',
-    });
-  }
-
-  for (const device of customer.user?.pushDevices ?? []) {
-    records.push({
-      id: device.id,
-      type: 'DEVICE',
-      at: device.updatedAt ?? device.createdAt ?? '',
-      title: `${device.enabled ? 'Enabled' : 'Disabled'} push device`,
-      detail: `${device.platform} / ${device.deliveries?.[0]?.status ?? 'No delivery attempt'}`,
-      href: '#customer-account-evidence',
-    });
-
-    for (const delivery of device.deliveries ?? []) {
-      records.push({
-        id: delivery.id,
-        type: 'DEVICE',
-        at: delivery.attemptedAt,
-        title: `${delivery.status} push delivery`,
-        detail: `${displayMarketplaceText(delivery.provider)} / device ${device.platform}`,
-        href: '/notifications',
-      });
-    }
-  }
-
-  for (const notification of customer.user?.notifications ?? []) {
-    records.push({
-      id: notification.id,
-      type: 'NOTICE',
-      at: notification.createdAt,
-      title: displayMarketplaceText(notification.title),
-      detail: `${displayMarketplaceText(notification.type)} / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'} / ${
-        notification.deliveries?.[0]?.status ?? 'No delivery'
-      }`,
-      href: '/notifications',
-    });
-
-    for (const delivery of notification.deliveries ?? []) {
-      records.push({
-        id: delivery.id ?? `${notification.id}-${delivery.provider}-${delivery.attemptedAt}`,
-        type: 'NOTICE',
-        at: delivery.attemptedAt,
-        title: `${delivery.status} notification delivery`,
-        detail: `${displayMarketplaceText(delivery.provider)} / ${displayMarketplaceText(notification.title)}`,
-        href: '/notifications',
-      });
-    }
-  }
-
-  for (const review of customer.reviews ?? []) {
-    records.push({
-      id: review.id,
-      type: 'REVIEW',
-      at: review.createdAt ?? '',
-      title: `Service feedback left for ${review.providerProfile?.displayName ?? 'Partner'}`,
-      detail: `Feedback record / ${reviewBookingServiceLabel(review.booking)}`,
-      href: '/reviews',
-    });
-  }
-
-  for (const log of customer.auditLogs ?? []) {
-    const bookingGateAttempt =
-      log.action === 'booking.create.rejected'
-        ? buildCustomerBookingGateAttemptRows([log], customer.id)[0]
-        : null;
-    records.push({
-      id: log.id,
-      type: 'AUDIT',
-      at: log.createdAt,
-      title: bookingGateAttempt ? `Booking create stopped: ${bookingGateAttempt.reasonLabel}` : log.action,
-      detail: bookingGateAttempt
-        ? `${bookingGateAttempt.gateLabel} / ${bookingGateAttempt.detail}`
-        : `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${compactJson(log.metadata)}`,
-      href: bookingGateAttempt?.bookingMonitorHref ?? '/audit-log',
-    });
-  }
-
-  return records
-    .filter((record) => Boolean(record.at))
-    .sort((left, right) => dateMs(right.at) - dateMs(left.at));
 }
 
 function buildCustomerBookingGateAttemptRows(
