@@ -12,7 +12,7 @@ import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
-  buildPlatformVatSummaryCsvHref,
+  buildPlatformVatExportHref,
   buildPlatformVatSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyPlatformVatSummary,
@@ -34,7 +34,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
     buildPlatformVatSummaryApiHref(filters),
     emptyPlatformVatSummary(filters.period),
   );
-  const csvHref = buildPlatformVatSummaryCsvHref(summary);
+  const csvHref = buildPlatformVatExportHref(filters);
 
   return (
     <AdminPageTemplate

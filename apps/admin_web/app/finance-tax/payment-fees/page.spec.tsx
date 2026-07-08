@@ -51,6 +51,12 @@ describe('PaymentFeesPage', () => {
     expect(source).not.toContain('metrics={[');
   });
 
+  it('keeps payment fee CSV download off the page payload', () => {
+    expect(source).toContain('buildPaymentFeeExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildPaymentFeeSummaryCsvHref');
+  });
+
   it('uses the summary currency in every payment fee breakdown table', async () => {
     mockedAdminGet.mockResolvedValue({
       byPayer: [

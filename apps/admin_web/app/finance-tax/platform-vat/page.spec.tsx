@@ -49,4 +49,10 @@ describe('PlatformVatPage', () => {
     expect(source).toContain('<FinanceListCommandBoard ariaLabel="VAT command board">');
     expect(source).not.toContain('metrics={[');
   });
+
+  it('keeps platform VAT CSV download off the page payload', () => {
+    expect(source).toContain('buildPlatformVatExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildPlatformVatSummaryCsvHref');
+  });
 });

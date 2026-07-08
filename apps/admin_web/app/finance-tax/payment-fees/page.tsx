@@ -12,7 +12,7 @@ import { FinancePeriodFilterForm } from '../finance-period-filter-form';
 import { FinanceTablePanel } from '../finance-table-panel';
 import { TaxFinanceWorkflowActions } from '../tax-finance-workflow-actions';
 import {
-  buildPaymentFeeSummaryCsvHref,
+  buildPaymentFeeExportHref,
   buildPaymentFeeSummaryApiHref,
   buildTaxFinanceWorkflowLinks,
   emptyPaymentFeeSummary,
@@ -35,7 +35,7 @@ export default async function PaymentFeesPage({ searchParams }: PaymentFeesPageP
     buildPaymentFeeSummaryApiHref(filters),
     emptyPaymentFeeSummary(filters.period),
   );
-  const csvHref = buildPaymentFeeSummaryCsvHref(summary);
+  const csvHref = buildPaymentFeeExportHref(filters);
 
   return (
     <AdminPageTemplate
