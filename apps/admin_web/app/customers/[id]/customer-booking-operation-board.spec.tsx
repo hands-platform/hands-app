@@ -46,6 +46,28 @@ describe('CustomerBookingOperationBoard', () => {
     expect(classNamesIn(board)).not.toContain('admin-table-scroll');
   });
 
+  it('renders server-bounded operation rows while keeping the full group count for pagination', () => {
+    const board = CustomerBookingOperationBoard({
+      basePath: '/customers/customer-1',
+      groups: [
+        {
+          ...group('live', 'Current / In Progress', 'Current booking rows.', 5),
+          page: 2,
+          totalRows: 11,
+        },
+      ],
+      metrics: buildMetrics(),
+      searchParams: { range: '7d' },
+    });
+
+    const rendered = textContent(board).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('Showing 6 to 10 of 11 entries');
+    expect(rendered).toContain('booking-5');
+    expect(rendered).not.toContain('booking-6');
+    expect(boardSource).not.toContain('group.rows.slice(');
+  });
+
   it('uses shared Vuexy status badge atoms instead of raw operation board pill markup', () => {
     expect(boardSource).toContain('AdminTraceSummary');
     expect(boardSource).toContain("from '../../../components/status-badge'");
@@ -115,7 +137,12 @@ function buildGroups(): readonly CustomerBookingOperationGroup[] {
   ];
 }
 
-function group(key: string, title: string, description: string): CustomerBookingOperationGroup {
+function group(
+  key: string,
+  title: string,
+  description: string,
+  rowCount = key === 'live' ? 11 : 1,
+): CustomerBookingOperationGroup {
   return {
     countTone: 'pill-info',
     description,
@@ -123,7 +150,7 @@ function group(key: string, title: string, description: string): CustomerBooking
     key,
     page: 1,
     pageParam: `${key}Page`,
-    rows: Array.from({ length: key === 'live' ? 11 : 1 }, (_, index) => ({
+    rows: Array.from({ length: Math.min(rowCount, 5) }, (_, index) => ({
         addressLabel: 'District 1, Ho Chi Minh City',
         bookingHelper: 'OPEN_MATCHING / State 19 Jun 2026, 10:00',
         bookingHref: `/bookings/booking-${index + 1}`,
@@ -144,6 +171,7 @@ function group(key: string, title: string, description: string): CustomerBooking
         stateTone: 'pill-info',
       })),
     title,
+    totalRows: rowCount,
   };
 }
 

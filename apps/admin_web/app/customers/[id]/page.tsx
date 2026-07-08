@@ -93,6 +93,7 @@ import {
 import { customerSelectedLocationDetail } from './customer-detail-location-copy';
 import {
   CustomerBookingOperationBoard,
+  CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
   type CustomerBookingOperationGroup,
   type CustomerBookingOperationMetric,
   type CustomerBookingOperationRow,
@@ -1155,48 +1156,87 @@ function buildCustomerBookingOperationGroups(
   buckets: CustomerBookingOperationBuckets,
   searchParams: Record<string, string | string[] | undefined>,
 ): CustomerBookingOperationGroup[] {
+  const livePage = readCustomerBookingOperationPage(searchParams, 'liveBookingsPage');
+  const completedPage = readCustomerBookingOperationPage(searchParams, 'completedBookingsPage');
+  const preMatchCancelledPage = readCustomerBookingOperationPage(searchParams, 'preMatchCancelledBookingsPage');
+  const partnerCancelledPage = readCustomerBookingOperationPage(searchParams, 'partnerCancelledBookingsPage');
+  const liveRows = buildPaginatedCustomerBookingOperationRows(buckets.live, livePage);
+  const completedRows = buildPaginatedCustomerBookingOperationRows(buckets.completed, completedPage);
+  const preMatchCancelledRows = buildPaginatedCustomerBookingOperationRows(
+    buckets.preMatchCancelled,
+    preMatchCancelledPage,
+  );
+  const partnerCancelledRows = buildPaginatedCustomerBookingOperationRows(
+    buckets.partnerCancelled,
+    partnerCancelledPage,
+  );
+
   return [
     {
       countTone: buckets.live.length ? 'pill-warn' : 'pill-neutral',
       description: 'Bookings still waiting for matching, matched, on the way, arrived, or in service.',
       emptyMessage: 'No current or in-progress booking matched this filter.',
       key: 'live',
-      page: readCustomerBookingOperationPage(searchParams, 'liveBookingsPage'),
+      page: liveRows.page,
       pageParam: 'liveBookingsPage',
-      rows: buildCustomerBookingOperationRows(buckets.live),
+      rows: liveRows.rows,
       title: 'Current / In Progress',
+      totalRows: liveRows.totalRows,
     },
     {
       countTone: 'pill-success',
       description: 'Completed service rows with service price, Partner, address, and state timestamp.',
       emptyMessage: 'No completed booking matched this filter.',
       key: 'completed',
-      page: readCustomerBookingOperationPage(searchParams, 'completedBookingsPage'),
+      page: completedRows.page,
       pageParam: 'completedBookingsPage',
-      rows: buildCustomerBookingOperationRows(buckets.completed),
+      rows: completedRows.rows,
       title: 'Completed',
+      totalRows: completedRows.totalRows,
     },
     {
       countTone: buckets.preMatchCancelled.length ? 'pill-warn' : 'pill-neutral',
       description: 'Bookings closed before a final matched Partner signal was recorded.',
       emptyMessage: 'No pre-match cancellation matched this filter.',
       key: 'pre-match-cancelled',
-      page: readCustomerBookingOperationPage(searchParams, 'preMatchCancelledBookingsPage'),
+      page: preMatchCancelledRows.page,
       pageParam: 'preMatchCancelledBookingsPage',
-      rows: buildCustomerBookingOperationRows(buckets.preMatchCancelled),
+      rows: preMatchCancelledRows.rows,
       title: 'Pre-match Cancellations',
+      totalRows: preMatchCancelledRows.totalRows,
     },
     {
       countTone: buckets.partnerCancelled.length ? 'pill-danger' : 'pill-neutral',
       description: 'Partner-side post-match cancellations and no-show style rows for admin review history.',
       emptyMessage: 'No Partner cancellation matched this filter.',
       key: 'partner-cancelled',
-      page: readCustomerBookingOperationPage(searchParams, 'partnerCancelledBookingsPage'),
+      page: partnerCancelledRows.page,
       pageParam: 'partnerCancelledBookingsPage',
-      rows: buildCustomerBookingOperationRows(buckets.partnerCancelled),
+      rows: partnerCancelledRows.rows,
       title: 'Partner Cancellations',
+      totalRows: partnerCancelledRows.totalRows,
     },
   ];
+}
+
+function buildPaginatedCustomerBookingOperationRows(
+  bookings: readonly AdminBookingDetail[],
+  requestedPage: number,
+) {
+  const totalRows = bookings.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const pageStartIndex = (page - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
+  const visibleBookings = bookings.slice(
+    pageStartIndex,
+    pageStartIndex + CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
+  );
+
+  return {
+    page,
+    rows: buildCustomerBookingOperationRows(visibleBookings),
+    totalRows,
+  };
 }
 
 function buildCustomerBookingOperationRows(

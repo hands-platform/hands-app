@@ -47,9 +47,10 @@ export type CustomerBookingOperationGroup = {
   readonly pageParam: string;
   readonly rows: readonly CustomerBookingOperationRow[];
   readonly title: string;
+  readonly totalRows: number;
 };
 
-const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 5;
+export const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 5;
 const CUSTOMER_BOOKING_OPERATION_HEADERS = [
   'Request Time',
   'Booking',
@@ -116,22 +117,20 @@ function CustomerBookingOperationSection({
   readonly searchParams: Record<string, string | string[] | undefined>;
 }) {
   const sectionId = `customer-booking-operation-${group.key}`;
-  const totalPages = Math.max(1, Math.ceil(group.rows.length / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
+  const totalRows = Math.max(0, group.totalRows);
+  const totalPages = Math.max(1, Math.ceil(totalRows / CUSTOMER_BOOKING_OPERATION_PAGE_SIZE));
   const activePage = Math.min(Math.max(1, group.page), totalPages);
   const pageStartIndex = (activePage - 1) * CUSTOMER_BOOKING_OPERATION_PAGE_SIZE;
-  const visibleRows = group.rows.slice(
-    pageStartIndex,
-    pageStartIndex + CUSTOMER_BOOKING_OPERATION_PAGE_SIZE,
-  );
-  const pageFrom = group.rows.length === 0 ? 0 : pageStartIndex + 1;
-  const pageTo = Math.min(group.rows.length, pageStartIndex + visibleRows.length);
+  const visibleRows = group.rows;
+  const pageFrom = totalRows === 0 ? 0 : pageStartIndex + 1;
+  const pageTo = Math.min(totalRows, pageStartIndex + visibleRows.length);
 
   return (
     <AdminTablePanel
       className="booking-monitor customer-booking-operation-section"
       description={group.description}
       id={sectionId}
-      resultLabel={`${group.rows.length} booking(s)`}
+      resultLabel={`${totalRows} booking(s)`}
       resultTone={customerBookingOperationResultTone(group.countTone)}
       title={group.title}
     >
@@ -196,7 +195,7 @@ function CustomerBookingOperationSection({
         }
         to={pageTo}
         totalPages={totalPages}
-        totalRows={group.rows.length}
+        totalRows={totalRows}
       />
     </AdminTablePanel>
   );
