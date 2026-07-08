@@ -49,7 +49,7 @@ export type CustomerBookingOperationGroup = {
   readonly title: string;
 };
 
-const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 10;
+const CUSTOMER_BOOKING_OPERATION_PAGE_SIZE = 5;
 const CUSTOMER_BOOKING_OPERATION_HEADERS = [
   'Request Time',
   'Booking',

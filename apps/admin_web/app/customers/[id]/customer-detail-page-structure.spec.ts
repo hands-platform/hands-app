@@ -18,7 +18,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('AdminManualWalletAdjustmentHistory');
     expect(pageSource).toContain('customerManualAdjustmentRows');
     expect(pageSource).toContain('/admin/wallet-adjustments?ownerType=CUSTOMER');
-    expect(pageSource).toContain('CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 30');
+    expect(pageSource).toContain('CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 10');
     expect(pageSource).toContain('filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT)');
 
     const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');

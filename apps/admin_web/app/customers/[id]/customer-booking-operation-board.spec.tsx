@@ -25,7 +25,7 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Pre-match Cancellations');
     expect(rendered).toContain('Partner Cancellations');
-    expect(rendered).toContain('Showing 1 to 10 of 11 entries');
+    expect(rendered).toContain('Showing 1 to 5 of 11 entries');
     expect(rendered).toContain('Smoke Partner');
     expect(rendered).toContain('Payment Type');
     expect(rendered).toContain('Wallet');
