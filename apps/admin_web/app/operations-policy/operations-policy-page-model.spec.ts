@@ -13,10 +13,10 @@ describe('operations policy page model', () => {
     expect(plan.detailsMode).toBe('summary');
     expect(plan.shouldRenderFullDiagnostics).toBe(false);
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
-    expect(bookingsUrl.searchParams.get('take')).toBe('5');
+    expect(bookingsUrl.searchParams.get('take')).toBe('3');
     expect(plan.providersHref).toBeNull();
-    expect(policyAuditUrl.searchParams.get('take')).toBe('5');
-    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('5');
+    expect(policyAuditUrl.searchParams.get('take')).toBe('3');
+    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
   });
 
   it('keeps the previous larger diagnostics window behind details=all', () => {
@@ -43,10 +43,10 @@ describe('operations policy page model', () => {
 
     expect(plan.detailsMode).toBe('summary');
     expect(plan.shouldRenderFullDiagnostics).toBe(false);
-    expect(bookingsUrl.searchParams.get('take')).toBe('5');
+    expect(bookingsUrl.searchParams.get('take')).toBe('3');
     expect(plan.providersHref).toBeNull();
-    expect(policyAuditUrl.searchParams.get('take')).toBe('5');
-    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('5');
+    expect(policyAuditUrl.searchParams.get('take')).toBe('3');
+    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
   });
 
   it('builds stable summary and full diagnostics links', () => {

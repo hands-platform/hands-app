@@ -2,9 +2,9 @@ import { readSearchParam } from '../../lib/date-range';
 
 export type OperationsPolicyDetailsMode = 'summary' | 'all';
 
-const SUMMARY_BOOKING_SAMPLE_TAKE = 5;
-const SUMMARY_POLICY_AUDIT_TAKE = 5;
-const SUMMARY_BOOKING_GATE_AUDIT_TAKE = 5;
+const SUMMARY_BOOKING_SAMPLE_TAKE = 3;
+const SUMMARY_POLICY_AUDIT_TAKE = 3;
+const SUMMARY_BOOKING_GATE_AUDIT_TAKE = 3;
 
 const FULL_BOOKING_SAMPLE_TAKE = 50;
 const FULL_PROVIDER_SAMPLE_TAKE = 100;
