@@ -27,9 +27,9 @@ import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
   bookingSettlementAuditDetailHref,
+  buildBookingSettlementAuditExportHref,
   bookingSettlementAuditHref,
   buildBookingSettlementSnapshotApiHref,
-  buildBookingSettlementSnapshotRowsCsvHref,
   buildBookingSettlementSnapshotSummaryApiHref,
   buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
@@ -58,7 +58,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
   ]);
   const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.count);
   const tableRows = pagination.rows;
-  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(tableRows);
+  const csvHref = buildBookingSettlementAuditExportHref(filters);
   const openTaxRatio = formatFinancePercent(summary.openTaxCount, summary.count);
   const paidTaxRatio = formatFinancePercent(summary.paidTaxCount, summary.count);
 

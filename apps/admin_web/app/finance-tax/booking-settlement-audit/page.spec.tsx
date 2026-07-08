@@ -15,4 +15,10 @@ describe('BookingSettlementAuditPage Vuexy links', () => {
     expect(source).toContain('<FinanceListCommandBoard ariaLabel="Settlement audit command board">');
     expect(source).not.toContain('metrics={[');
   });
+
+  it('keeps settlement audit CSV download off the page payload', () => {
+    expect(source).toContain('buildBookingSettlementAuditExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildBookingSettlementSnapshotRowsCsvHref');
+  });
 });

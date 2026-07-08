@@ -10,4 +10,10 @@ describe('CouponFinancePage Vuexy links', () => {
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain("import Link from 'next/link';");
   });
+
+  it('keeps coupon finance CSV download off the page payload', () => {
+    expect(source).toContain('buildCouponFinanceExportHref');
+    expect(source).not.toContain('data:text/csv');
+    expect(source).not.toContain('buildBookingSettlementSnapshotRowsCsvHref');
+  });
 });

@@ -1567,8 +1567,15 @@ export function buildPartnerWithholdingTaxExportHref(filters: PartnerWithholding
 }
 
 export function buildBookingSettlementSnapshotRowsCsvHref(rows: readonly AdminBookingSettlementSnapshot[]) {
-  return buildCsvDataHref(
-    rows.map((row) => ({
+  return buildCsvDataHref(buildBookingSettlementSnapshotRowsCsvRows(rows), BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS);
+}
+
+export function buildBookingSettlementSnapshotRowsCsvContent(rows: readonly AdminBookingSettlementSnapshot[]) {
+  return buildCsvContent(buildBookingSettlementSnapshotRowsCsvRows(rows), BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS);
+}
+
+function buildBookingSettlementSnapshotRowsCsvRows(rows: readonly AdminBookingSettlementSnapshot[]) {
+  return rows.map((row) => ({
       snapshot_id: row.id,
       booking_id: row.bookingId,
       monthly_period: row.monthlyPeriod,
@@ -1595,9 +1602,31 @@ export function buildBookingSettlementSnapshotRowsCsvHref(rows: readonly AdminBo
       settlement_status: row.settlementStatus,
       tax_status: row.taxStatus,
       booking_status: row.booking?.status ?? '',
-    })),
-    BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS,
-  );
+    }));
+}
+
+export function buildBookingSettlementAuditExportHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+    review: filters.review,
+    take: String(filters.take),
+  });
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  return `/api/admin/finance-tax/booking-settlement-audit/export?${params.toString()}`;
+}
+
+export function buildCouponFinanceExportHref(filters: BookingSettlementFilters) {
+  const params = new URLSearchParams({
+    range: filters.range,
+    review: filters.review,
+    take: String(filters.take),
+  });
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  return `/api/admin/finance-tax/coupon-finance/export?${params.toString()}`;
 }
 
 export function buildMonthlyTaxClosingAccountingJournalCsvHref(summary: AdminMonthlyTaxClosingSummary) {

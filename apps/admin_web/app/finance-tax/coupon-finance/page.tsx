@@ -20,8 +20,8 @@ import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer
 import { FinanceTablePanel } from '../finance-table-panel';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
-  buildBookingSettlementSnapshotRowsCsvHref,
   buildCouponFinanceApiHref,
+  buildCouponFinanceExportHref,
   buildCouponFinanceSummaryApiHref,
   buildTaxSettlementServerPagination,
   buildTaxFinanceWorkflowLinks,
@@ -51,7 +51,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
   ]);
   const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.couponSettlementCount);
   const tableRows = pagination.rows;
-  const csvHref = buildBookingSettlementSnapshotRowsCsvHref(tableRows);
+  const csvHref = buildCouponFinanceExportHref(filters);
 
   return (
     <AdminPageTemplate
