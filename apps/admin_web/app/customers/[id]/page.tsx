@@ -72,7 +72,6 @@ import {
 } from '../../../lib/detail-activity-filter';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
-import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readAddressText, serviceAddressAreaLabel } from '../../bookings/booking-address-readers';
 import { addCustomerOpsNote } from './actions';
 import {
@@ -132,7 +131,6 @@ const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 3;
 const CUSTOMER_BOOKING_GATE_PREVIEW_LIMIT = 8;
 const CUSTOMER_NOTIFICATION_PREVIEW_LIMIT = 10;
 const CUSTOMER_AUDIT_TRAIL_PREVIEW_LIMIT = 10;
-const CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT = 10;
 const CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT = 5;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
@@ -272,20 +270,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     notifications,
     currentTimeMs,
   });
-  const activityCsvRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT);
-  const filteredActivityCsvHref = buildCsvDataHref(
-    activityCsvRecords.map((record) => ({
-      type: record.type,
-      date: formatDate(record.at),
-      title: record.title,
-      detail: record.detail,
-      href: record.href ?? '',
-      record_id: record.id,
-      customer_id: customer.id,
-      customer_phone: customer.user?.phone ?? '',
-    })),
-    ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
-  );
+  const filteredActivityCsvHref = buildCustomerActivityExportHref(customer.id, detailSearchParams);
   const overviewPartnerRails = buildCustomerPartnerRails(
     bookings,
     customer.favoriteProviders ?? [],
@@ -620,7 +605,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               className="admin-directory-filter-export"
               download={`hands-customer-${shortId(customer.id)}-activity.csv`}
               href={filteredActivityCsvHref}
-              title={`Exports the first ${CUSTOMER_ACTIVITY_CSV_EXPORT_LIMIT} filtered activity rows`}
+              title="Exports filtered activity rows from the protected server route"
             >
               <Download aria-hidden="true" size={16} />
               Export activity CSV
@@ -1371,6 +1356,28 @@ function buildCustomerDetailModeHref(
   params.set(modeParam, modeValue);
   const query = params.toString();
   return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
+}
+
+function buildCustomerActivityExportHref(
+  customerId: string,
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  const params = new URLSearchParams();
+  const allowedKeys = new Set(['range', 'type', 'order', 'from', 'to']);
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!allowedKeys.has(key) || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, item);
+      }
+    } else {
+      params.set(key, value);
+    }
+  }
+
+  const query = params.toString();
+  return `/api/admin/customers/${encodeURIComponent(customerId)}/activity/export${query ? `?${query}` : ''}`;
 }
 
 function readCustomerDetailSearchParam(value: string | string[] | undefined) {

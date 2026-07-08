@@ -127,6 +127,19 @@ describe('CustomerDetailPage', () => {
     expect(markup).not.toContain('id="notifications"');
   });
 
+  it('uses a protected server export route instead of embedding activity CSV data in the detail HTML', async () => {
+    const page = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-1' }),
+      searchParams: Promise.resolve({ range: '7d', type: 'BOOKING' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain(
+      'href="/api/admin/customers/customer-1/activity/export?range=7d&amp;type=BOOKING"',
+    );
+    expect(markup).not.toContain('data:text/csv');
+  });
+
   it('renders customer chat and audit archive rows when records=all is requested', async () => {
     const page = await CustomerDetailPage({
       params: Promise.resolve({ id: 'customer-1' }),
