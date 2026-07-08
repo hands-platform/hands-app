@@ -75,4 +75,24 @@ describe('CustomersPage', () => {
     expect(customerPageSource).toContain('AdminTextLink');
     expect(customerPageSource).not.toContain('className="text-link"');
   });
+
+  it('links customer export to a protected CSV route instead of embedding CSV data in the page payload', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/customers/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 } satisfies AdminCustomerSummary;
+      }
+
+      if (href.startsWith('/admin/customers')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await CustomersPage({ searchParams: Promise.resolve({ page: '2', pageSize: '25', q: 'mai' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('href="/api/admin/customers/export?q=mai&amp;page=2&amp;pageSize=25"');
+    expect(markup).not.toContain('data:text/csv');
+  });
 });

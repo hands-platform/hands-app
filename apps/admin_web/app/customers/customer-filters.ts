@@ -104,6 +104,12 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
   return params.size ? `/customers?${params.toString()}` : '/customers';
 }
 
+export function buildCustomerExportHref(filters: CustomerFilters) {
+  const params = buildCustomerPageQueryParams(filters);
+  const query = params.toString();
+  return query ? `/api/admin/customers/export?${query}` : '/api/admin/customers/export';
+}
+
 export function buildCustomerDataHrefs(filters: CustomerFilters): CustomerDataHrefs {
   const listParams = buildCustomerDataQueryParams(filters, { includeSort: true });
   listParams.set('take', String(filters.pageSize));
@@ -266,6 +272,40 @@ function appendTextParam(params: URLSearchParams, key: string, value: string) {
   if (value) {
     params.set(key, value);
   }
+}
+
+function buildCustomerPageQueryParams(filters: CustomerFilters) {
+  const params = new URLSearchParams();
+
+  appendTextParam(params, 'q', filters.q);
+  appendTextParam(params, 'country', filters.country);
+  appendTextParam(params, 'gender', filters.gender);
+  appendTextParam(params, 'joinedRange', filters.joinedRange);
+  if (!filters.joinedRange || filters.joinedRange === 'custom') {
+    appendTextParam(params, 'joinedFrom', filters.joinedFrom);
+    appendTextParam(params, 'joinedTo', filters.joinedTo);
+  }
+  appendTextParam(params, 'lastBookingRange', filters.lastBookingRange);
+  if (!filters.lastBookingRange || filters.lastBookingRange === 'custom') {
+    appendTextParam(params, 'lastBookingFrom', filters.lastBookingFrom);
+    appendTextParam(params, 'lastBookingTo', filters.lastBookingTo);
+  }
+  appendTextParam(params, 'lastLoginRange', filters.lastLoginRange);
+  if (!filters.lastLoginRange || filters.lastLoginRange === 'custom') {
+    appendTextParam(params, 'lastLoginFrom', filters.lastLoginFrom);
+    appendTextParam(params, 'lastLoginTo', filters.lastLoginTo);
+  }
+  if (filters.sort !== 'last-booking') {
+    params.set('sort', filters.sort);
+  }
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.pageSize !== DEFAULT_CUSTOMER_PAGE_SIZE) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+
+  return params;
 }
 
 function normalizeCustomerCountryFilter(value: string) {
