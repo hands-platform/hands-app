@@ -49,4 +49,11 @@ describe('local production Admin smoke scripts', () => {
     expect(nodeEnvIndex).toBeGreaterThan(productionAdminCommandIndex);
     expect(adminBuildIndex).toBeGreaterThan(nodeEnvIndex);
   });
+
+  it('stops Next 16 production Admin listeners left behind by the wrapper process', () => {
+    const stopScript = readFileSync('../../infra/scripts/stop-hands-local.ps1', 'utf8');
+
+    expect(stopScript).toContain('next[/\\\\]dist[/\\\\]bin[/\\\\]next');
+    expect(stopScript).toContain('Stop-HandsPortListener -Port $state.adminPort');
+  });
 });

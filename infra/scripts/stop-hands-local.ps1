@@ -30,7 +30,11 @@ function Stop-HandsPortListener {
     $isHandsNode =
       $process -and
       $process.ProcessName -eq "node" -and
-      ($commandLine -match "dist[/\\]main\.js" -or $commandLine -match "next[/\\]dist[/\\]server[/\\]lib[/\\]start-server\.js")
+      (
+        $commandLine -match "dist[/\\]main\.js" -or
+        $commandLine -match "next[/\\]dist[/\\]server[/\\]lib[/\\]start-server\.js" -or
+        $commandLine -match "next[/\\]dist[/\\]bin[/\\]next"
+      )
 
     if ($isHandsNode) {
       Stop-Process -Id $processId -Force
