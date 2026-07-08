@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../../components/admin-data-table';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminSection } from '../../../components/admin-surface';
@@ -74,6 +75,8 @@ export function CustomerBookingOperationBoard({
   metrics,
   searchParams,
 }: CustomerBookingOperationBoardProps) {
+  const hasBookingOperationRows = groups.some((group) => group.totalRows > 0);
+
   return (
     <>
       <AdminSection
@@ -95,14 +98,38 @@ export function CustomerBookingOperationBoard({
         />
       </AdminSection>
 
-      {groups.map((group) => (
-        <CustomerBookingOperationSection
-          basePath={basePath}
-          group={group}
-          key={group.key}
-          searchParams={searchParams}
-        />
-      ))}
+      {hasBookingOperationRows ? (
+        groups.map((group) => (
+          <CustomerBookingOperationSection
+            basePath={basePath}
+            group={group}
+            key={group.key}
+            searchParams={searchParams}
+          />
+        ))
+      ) : (
+        <AdminSection
+          className="admin-mb-16 customer-booking-operation-empty-card"
+          description="Payment Type, Partner, address, and state evidence will appear after the first booking."
+          id="customer-booking-operation-empty"
+          statusLabel="0 booking(s)"
+          statusTone="neutral"
+          title="Customer booking records"
+        >
+          <AdminEmptyState
+            framed
+            message="No customer booking operation rows have been created for this customer yet."
+            title="No customer booking operation rows yet"
+          />
+          <div className="admin-filter-chip-row admin-mt-12" aria-label="Empty booking operation buckets">
+            {groups.map((group) => (
+              <StatusBadge key={group.key} tone="neutral">
+                {group.title}
+              </StatusBadge>
+            ))}
+          </div>
+        </AdminSection>
+      )}
     </>
   );
 }

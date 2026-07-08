@@ -68,6 +68,31 @@ describe('CustomerBookingOperationBoard', () => {
     expect(boardSource).not.toContain('group.rows.slice(');
   });
 
+  it('uses a compact empty state instead of rendering four empty booking tables', () => {
+    const board = CustomerBookingOperationBoard({
+      basePath: '/customers/customer-1',
+      groups: buildGroups().map((operationGroup) => ({
+        ...operationGroup,
+        rows: [],
+        totalRows: 0,
+      })),
+      metrics: buildMetrics(),
+      searchParams: {},
+    });
+
+    const rendered = textContent(board).replace(/\s+/g, ' ');
+    const classNames = classNamesIn(board);
+
+    expect(rendered).toContain('No customer booking operation rows yet');
+    expect(rendered).toContain('Current / In Progress');
+    expect(rendered).toContain('Completed');
+    expect(rendered).toContain('Pre-match Cancellations');
+    expect(rendered).toContain('Partner Cancellations');
+    expect(rendered).toContain('Payment Type');
+    expect(classNames).not.toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
+    expect(boardSource).toContain('const hasBookingOperationRows =');
+  });
+
   it('uses shared Vuexy status badge atoms instead of raw operation board pill markup', () => {
     expect(boardSource).toContain('AdminTraceSummary');
     expect(boardSource).toContain("from '../../../components/status-badge'");
