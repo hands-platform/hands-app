@@ -22,7 +22,7 @@ describe('admin customer selects', () => {
   });
 
   it('keeps customer detail activity lists bounded', () => {
-    expect(ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT).toBe(10);
+    expect(ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT).toBe(6);
     expect(ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT).toBe(10);
     expect(ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT).toBe(10);
     expect(ADMIN_CUSTOMER_DETAIL_PROVIDER_REVIEW_LIMIT).toBe(10);
