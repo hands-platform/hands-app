@@ -142,4 +142,28 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Partner operations list');
     expect(markup).toContain('Marketplace ready');
   });
+
+  it('links partner export to a protected CSV route instead of embedding CSV data in the page payload', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
+      }
+
+      if (href.startsWith('/admin/partners/list-providers')) {
+        return [];
+      }
+
+      if (href.startsWith('/admin/operational-policy?keys=')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ page: '2', pageSize: '25', q: 'linh' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('href="/api/admin/partners/export?page=2&amp;pageSize=25&amp;q=linh"');
+    expect(markup).not.toContain('data:text/csv');
+  });
 });

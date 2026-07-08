@@ -180,6 +180,12 @@ export function buildPartnerListHref(filters: ProviderFilters, overrides: Partia
   return query ? `/partners?${query}` : '/partners';
 }
 
+export function buildPartnerExportHref(filters: ProviderFilters) {
+  const params = partnerFilterSearchParams(filters);
+  const query = params.toString();
+  return query ? `/api/admin/partners/export?${query}` : '/api/admin/partners/export';
+}
+
 export function buildProviderActiveFilters(filters: ProviderFilters) {
   return [
     filters.q
@@ -629,6 +635,25 @@ const partnerFilterHrefParamKeys = [
 ] as const satisfies readonly (keyof ProviderFilters)[];
 
 const PARTNER_LOCAL_FILTER_HYDRATION_LIMIT = 50;
+
+function partnerFilterSearchParams(filters: ProviderFilters) {
+  const params = new URLSearchParams();
+
+  if (filters.page > 1) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.pageSize !== DEFAULT_PARTNER_PAGE_SIZE) {
+    params.set('pageSize', String(filters.pageSize));
+  }
+  partnerFilterHrefParamKeys.forEach((key) => {
+    const value = filters[key];
+    if (value && !(key === 'sort' && value === 'ops-priority')) {
+      params.set(key, value);
+    }
+  });
+
+  return params;
+}
 
 function setPartnerDirectoryServerFilter(
   listParams: URLSearchParams,

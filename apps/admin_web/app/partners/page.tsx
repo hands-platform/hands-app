@@ -7,9 +7,9 @@ import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge } from '../../components/status-badge';
-import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
+  buildPartnerExportHref,
   buildPartnerExportSlug,
   buildPartnerDataHrefs,
   buildProviderActiveFilters,
@@ -56,7 +56,6 @@ import { buildPartnerShiftHandoff } from './partner-shift-handoff';
 import { PartnerShiftHandoffSection } from './partner-shift-handoff-section';
 import { PartnerLegacyOperationsTableSection } from './partner-legacy-operations-table-section';
 import { buildPartnerOperationRow } from './partner-operation-row';
-import { buildPartnerExportRows, PARTNER_EXPORT_COLUMNS } from './partner-export-rows';
 import { PartnerFilterBoard } from './partner-filter-board';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
@@ -190,8 +189,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         };
       })()
     : null;
-  const partnerExportFilterLabel =
-    activeFilters.length > 0 ? activeFilters.map((filter) => filter.label).join(' | ') : 'All partners';
   const partnerExportFileSlug = buildPartnerExportSlug(filters);
   const partnerOperationRows = visibleProviders.map((provider) =>
     buildPartnerOperationRow(provider, opsPolicy, {
@@ -215,18 +212,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerMasterListMode =
     filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
   const showAdvancedPartnerFilters = partnerHasAdvancedOperationalFilters(filters);
-  const partnerExportRows = buildPartnerExportRows({
-    filterLabel: partnerExportFilterLabel,
-    filters,
-    masterRows: partnerMasterRows,
-    operationRows: partnerOperationRows,
-    fallbackOperationRow: (provider) =>
-      buildPartnerOperationRow(provider, opsPolicy, {
-        displayName: providerDisplayName,
-        canAcceptBookingNow: partnerCanAcceptBookingNow,
-      }),
-  });
-  const partnerListCsvHref = buildCsvDataHref(partnerExportRows, [...PARTNER_EXPORT_COLUMNS]);
+  const partnerListCsvHref = buildPartnerExportHref(filters);
   const accountConfirmation = buildPartnerAccountActionConfirmation(
     allProviders,
     readPartnerAccountConfirmationAction(readSearchParam(params.confirm)),
