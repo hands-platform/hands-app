@@ -49,4 +49,13 @@ describe('CalendarClient', () => {
     expect(source).toContain('{drawerOpen ? (');
     expect(source).not.toContain("import { CalendarEventDrawer } from './calendar-event-drawer'");
   });
+
+  it('keeps the mini date picker out of the primary calendar client bundle', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain('const CalendarMiniDatePicker = dynamic<CalendarMiniDatePickerProps>(');
+    expect(source).toContain("() => import('./calendar-mini-date-picker').then((module) => module.CalendarMiniDatePicker)");
+    expect(source).toContain('<CalendarMiniDatePicker currentDate={currentDate} onChange={handleJumpDate} />');
+    expect(source).not.toContain("import DatePicker from 'react-datepicker'");
+  });
 });

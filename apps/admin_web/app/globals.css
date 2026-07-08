@@ -1572,6 +1572,15 @@ a {
   padding: 0;
 }
 
+.calendar-mini-datepicker-skeleton {
+  background:
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--admin-surface) 76%, transparent), transparent),
+    color-mix(in srgb, var(--admin-surface) 88%, transparent);
+  border-radius: var(--admin-radius);
+  inline-size: 100%;
+  min-block-size: 286px;
+}
+
 .calendar-datepicker-field .react-datepicker-wrapper,
 .calendar-datepicker-field .react-datepicker__input-container {
   display: block;

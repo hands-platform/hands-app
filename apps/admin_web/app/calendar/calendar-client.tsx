@@ -8,7 +8,6 @@ import { flushSync } from 'react-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import DatePicker from 'react-datepicker';
 import type { EventClickArg, EventDropArg, EventInput, PluginDef } from '@fullcalendar/core';
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
@@ -37,6 +36,7 @@ import {
   type CalendarTagTone,
 } from './calendar-model';
 import type { CalendarEventDrawerProps } from './calendar-event-drawer';
+import type { CalendarMiniDatePickerProps } from './calendar-mini-date-picker';
 
 type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listMonth';
 type LazyCalendarPluginName = 'timeGrid' | 'list';
@@ -45,6 +45,19 @@ const CalendarEventDrawer = dynamic<CalendarEventDrawerProps>(
   () => import('./calendar-event-drawer').then((module) => module.CalendarEventDrawer),
   {
     loading: () => null,
+    ssr: false,
+  },
+);
+
+const CalendarMiniDatePicker = dynamic<CalendarMiniDatePickerProps>(
+  () => import('./calendar-mini-date-picker').then((module) => module.CalendarMiniDatePicker),
+  {
+    loading: () => (
+      <div
+        aria-label="Mini calendar loading"
+        className="calendar-mini-datepicker-skeleton"
+      />
+    ),
     ssr: false,
   },
 );
@@ -306,12 +319,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
 
           <div className="calendar-sidebar-section">
             <div className="calendar-mini-picker">
-              <DatePicker
-                calendarClassName="calendar-vuexy-datepicker calendar-vuexy-datepicker-inline"
-                inline
-                onChange={handleJumpDate}
-                selected={currentDate}
-              />
+              <CalendarMiniDatePicker currentDate={currentDate} onChange={handleJumpDate} />
             </div>
           </div>
 

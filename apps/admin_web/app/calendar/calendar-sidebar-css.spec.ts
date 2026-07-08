@@ -23,6 +23,13 @@ describe('Calendar sidebar CSS', () => {
     expect(globalsCss).not.toContain('.calendar-filter-row span:not(.pill) {');
   });
 
+  it('reserves the mini datepicker space while the lazy bundle loads', () => {
+    const skeletonBlock = cssRuleBlockAt(globalsCss.indexOf('.calendar-mini-datepicker-skeleton {'));
+
+    expect(skeletonBlock).toContain('min-block-size: 286px');
+    expect(skeletonBlock).toContain('inline-size: 100%');
+  });
+
   it('scopes Vuexy datepicker navigation chrome to direct navigation buttons', () => {
     expect(globalsCss).toContain(
       '.calendar-vuexy-datepicker > .react-datepicker__navigation > .react-datepicker__navigation-icon',
