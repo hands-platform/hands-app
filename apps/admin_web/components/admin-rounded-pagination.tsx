@@ -138,7 +138,7 @@ function AdminRoundedPaginationControl({
   }
 
   return (
-    <Link aria-current={active ? 'page' : undefined} aria-label={label} className={className} href={href}>
+    <Link aria-current={active ? 'page' : undefined} aria-label={label} className={className} href={href} prefetch={false}>
       {children}
     </Link>
   );

@@ -478,7 +478,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ? adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, [])
       : Promise.resolve([]),
     adminGet<AdminBooking[]>(dashboardDataHrefs.bookingsHref, []),
-    adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, []),
+    dashboardDataHrefs.paymentsHref
+      ? adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, [])
+      : Promise.resolve([]),
     adminGet<AdminPaymentSummary | null>(dashboardDataHrefs.paymentSummaryHref, null),
     adminGet<AdminEarningSummary>(dashboardDataHrefs.earningsSummaryHref, {
       count: 0,
@@ -491,19 +493,27 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       paidNetAmount: 0,
       currency: 'VND',
     }),
-    adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, []),
-    adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, []),
+    dashboardDataHrefs.earningsHref
+      ? adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, [])
+      : Promise.resolve([]),
+    dashboardDataHrefs.refundsHref
+      ? adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, [])
+      : Promise.resolve([]),
     adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
     dashboardDataHrefs.notificationsHref
       ? adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, [])
       : Promise.resolve([]),
     adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
-    adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, []),
+    dashboardDataHrefs.payoutBatchesHref
+      ? adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, [])
+      : Promise.resolve([]),
     adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
     dashboardDataHrefs.appSessionsHref
       ? adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, [])
       : Promise.resolve([]),
-    adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, []),
+    dashboardDataHrefs.bookingGateAuditHref
+      ? adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, [])
+      : Promise.resolve([]),
     adminGet<AdminCashSettlementSummary>(
       dashboardDataHrefs.cashSettlementSummaryHref,
       emptyCashSettlementSummary(),
@@ -535,6 +545,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const paymentHoldCount =
     paymentSummary?.authorized ?? payments.filter((payment) => payment.status === 'AUTHORIZED').length;
   const rangeEarningRows = earningRows;
+  const rangePaymentCount = paymentSummary?.totalCount ?? rangePayments.length;
+  const rangeEarningCount = earnings.count ?? rangeEarningRows.length;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
   const rangeBookingCreateRejections = bookingCreateRejections;
   const bookingCreateGateSummary = buildBookingCreateGateSummary(bookingCreateRejections);
@@ -1091,12 +1103,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             },
             {
               label: 'Range payments',
-              value: rangePayments.length,
+              value: rangePaymentCount,
               helper: 'Payment method mix for the selected window.',
             },
             {
               label: 'Range earnings',
-              value: rangeEarningRows.length,
+              value: rangeEarningCount,
               helper: 'Earning rows created in the selected window.',
             },
           ]}
@@ -2110,6 +2122,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     className={`ops-check-item ops-check-${item.severity}`}
                     href={item.href}
                     key={`${item.area}-${item.label}-${item.href}-${index}`}
+                    prefetch={false}
                   >
                     <div>
                       <span className="muted">

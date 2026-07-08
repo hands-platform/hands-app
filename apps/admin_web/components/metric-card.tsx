@@ -53,7 +53,7 @@ export function MetricCard({ className, label, value, helper, href, icon, iconSi
 
   if (href) {
     return (
-      <Link className={joinClassNames('card admin-kpi-card', className)} href={href}>
+      <Link className={joinClassNames('card admin-kpi-card', className)} href={href} prefetch={false}>
         {content}
       </Link>
     );

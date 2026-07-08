@@ -890,7 +890,7 @@ function BookingParticipantAvatar({ participant }: { readonly participant: Booki
   }
 
   return (
-    <Link aria-label={label} className={className} href={participant.partnerHref} title={label}>
+    <Link aria-label={label} className={className} href={participant.partnerHref} prefetch={false} title={label}>
       {adminPersonInitials(participant.partnerLabel)}
       <AdminAvatarStatusDot status={participant.avatarStatus} />
     </Link>

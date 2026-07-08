@@ -62,6 +62,16 @@ describe('CustomersTableSection', () => {
     expect(modelSource).not.toContain('totalWalletAmountLabel: formatMoney(row.capturedSpend)');
   });
 
+  it('uses the stable customer id instead of a shortened display label for table row keys', () => {
+    const source = readFileSync('app/customers/customers-table-section.tsx', 'utf8');
+    const modelSource = readFileSync('app/customers/customer-management-view-model.ts', 'utf8');
+
+    expect(modelSource).toContain('readonly id: string;');
+    expect(modelSource).toContain('id: row.id,');
+    expect(source).toContain('<tr key={row.id}>');
+    expect(source).not.toContain('<tr key={row.customerIdLabel}>');
+  });
+
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       filters: buildFilters({ country: 'VN', gender: 'female' }),
@@ -146,6 +156,7 @@ function buildRow(): CustomerManagementTableRow {
     deviceLanguageLabel: 'vi-VN',
     email: 'customer@example.com',
     genderLabel: 'Female',
+    id: 'customer-1',
     initials: 'CO',
     lastLoginAddressLabel: 'Not captured',
     lastSeenAt: '2026-06-12T20:15:00.000Z',

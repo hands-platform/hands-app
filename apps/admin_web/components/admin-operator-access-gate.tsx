@@ -3,17 +3,23 @@ import type { ReactNode } from 'react';
 
 import { AdminFormControlLink } from './admin-form-controls';
 import { AdminErrorState } from './admin-surface';
+import type { AdminOperatorAccess } from '../lib/admin-api';
 import { getAdminOperatorPageAccess } from '../lib/admin-operator-access';
 
 const PUBLIC_PATH_PREFIXES = ['/api/', '/files/', '/login', '/r/'];
 
-export async function AdminOperatorAccessGate({ children }: { readonly children: ReactNode }) {
+type AdminOperatorAccessGateProps = {
+  readonly children: ReactNode;
+  readonly operatorAccess?: AdminOperatorAccess | null;
+};
+
+export async function AdminOperatorAccessGate({ children, operatorAccess }: AdminOperatorAccessGateProps) {
   const pathname = await currentRequestPathname();
   if (!pathname || isPublicPath(pathname)) {
     return <>{children}</>;
   }
 
-  const access = await getAdminOperatorPageAccess(pathname);
+  const access = await getAdminOperatorPageAccess(pathname, operatorAccess);
   if (access.allowed) {
     return <>{children}</>;
   }

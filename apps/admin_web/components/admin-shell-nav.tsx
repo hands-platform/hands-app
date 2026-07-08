@@ -183,6 +183,7 @@ export function AdminShellNav({ onNavigate, sections }: AdminShellNavProps) {
                     href={link.href}
                     key={`${link.href}-${linkIndex}`}
                     onClick={onNavigate}
+                    prefetch={false}
                     title={link.description}
                   >
                     <NavIcon label={link.label} />

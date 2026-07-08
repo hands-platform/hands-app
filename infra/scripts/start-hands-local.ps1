@@ -2,7 +2,8 @@ param(
   [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path,
   [int]$ApiPort = 3000,
   [int]$AdminPort = 3101,
-  [switch]$SkipAdmin
+  [switch]$SkipAdmin,
+  [switch]$AdminProduction
 )
 
 $ErrorActionPreference = "Stop"
@@ -155,11 +156,21 @@ if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
 npm.cmd run start --workspace @massage-vn/api *> '$apiLog'
 "@
 
-$adminCommand = @"
+$adminCommand = if ($AdminProduction) {
+@"
+Set-Location '$RepoRoot'
+`$env:ADMIN_API_BASE_URL='http://localhost:$ApiPort/api'
+npm.cmd run build --workspace @massage-vn/admin-web *> '$adminLog'
+if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
+npm.cmd run start --workspace @massage-vn/admin-web -- --port $AdminPort *>> '$adminLog'
+"@
+} else {
+@"
 Set-Location '$RepoRoot'
 `$env:ADMIN_API_BASE_URL='http://localhost:$ApiPort/api'
 npm.cmd run dev --workspace @massage-vn/admin-web -- --port $AdminPort *> '$adminLog'
 "@
+}
 
 $apiProcess = Start-Process powershell -ArgumentList @(
   "-NoLogo",
@@ -188,6 +199,7 @@ $state = [pscustomobject]@{
   repoRoot = $RepoRoot
   apiPort = $ApiPort
   adminPort = $AdminPort
+  adminMode = if ($AdminProduction) { "production" } else { "development" }
   apiPid = $apiProcess.Id
   adminPid = if ($adminProcess) { $adminProcess.Id } else { $null }
   startedAt = (Get-Date).ToString("o")
@@ -204,6 +216,7 @@ Write-Host "API:   http://localhost:$ApiPort/api/health"
 if ($SkipAdmin) {
   Write-Host "Admin: skipped, existing admin can continue using http://localhost:$ApiPort/api"
 } else {
-  Write-Host "Admin: http://localhost:$AdminPort"
+  $adminModeLabel = if ($AdminProduction) { "production" } else { "development" }
+  Write-Host "Admin: http://localhost:$AdminPort ($adminModeLabel)"
 }
 Write-Host "Logs:  $logDir"

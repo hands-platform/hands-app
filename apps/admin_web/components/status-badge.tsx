@@ -185,6 +185,7 @@ export function StatusBadgeLink({
       className={mergeBadgeClassName(statusBadgeClassName(tone), className)}
       download={download}
       href={href}
+      prefetch={false}
       title={title}
     >
       {children}

@@ -73,6 +73,7 @@
     "admin:web-smoke:budget": "node infra/scripts/admin-web-smoke.mjs --budget",
     "admin:web-smoke:critical": "node infra/scripts/admin-web-smoke.mjs --critical",
     "local:start": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1",
+    "local:start:prod": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1 -AdminProduction",
     "local:stop": "powershell -ExecutionPolicy Bypass -File infra/scripts/stop-hands-local.ps1",
     "local:status": "powershell -ExecutionPolicy Bypass -File infra/scripts/status-hands-local.ps1",
     "local:clean-artifacts": "powershell -ExecutionPolicy Bypass -File infra/scripts/clean-dev-artifacts.ps1",

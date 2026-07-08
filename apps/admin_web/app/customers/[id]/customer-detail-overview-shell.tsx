@@ -174,7 +174,7 @@ export function CustomerDetailOverviewShell({
                         />
                         <div className="customer-detail-partner-avatar-copy">
                           {partner.href ? (
-                            <Link className="vuexy-booking-person-link" href={partner.href}>
+                            <Link className="vuexy-booking-person-link" href={partner.href} prefetch={false}>
                               {partner.label}
                             </Link>
                           ) : (

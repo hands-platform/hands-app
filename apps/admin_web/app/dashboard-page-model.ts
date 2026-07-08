@@ -12,21 +12,21 @@ export type DashboardViewMode = {
 
 export type DashboardDataHrefs = {
   readonly appSessionsHref: string | null;
-  readonly bookingGateAuditHref: string;
+  readonly bookingGateAuditHref: string | null;
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
   readonly dashboardSummaryHref: string;
-  readonly earningsHref: string;
+  readonly earningsHref: string | null;
   readonly earningsSummaryHref: string;
   readonly notificationSummaryHref: string;
   readonly notificationsHref: string | null;
   readonly operationalPolicyHref: string | null;
   readonly partnersHref: string | null;
-  readonly paymentsHref: string;
+  readonly paymentsHref: string | null;
   readonly paymentSummaryHref: string;
   readonly payoutBatchSummaryHref: string;
-  readonly payoutBatchesHref: string;
-  readonly refundsHref: string;
+  readonly payoutBatchesHref: string | null;
+  readonly refundsHref: string | null;
   readonly refundsSummaryHref: string;
   readonly usersHref: string | null;
 };
@@ -85,23 +85,23 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
           take: String(limits.appSessions),
         }).toString()}`
       : null,
-    bookingGateAuditHref: buildDashboardDateScopedHref(
-      '/admin/audit-logs',
-      {
-        action: 'booking.create.rejected',
-        take: String(limits.audit),
-      },
-      range,
-    ),
+    bookingGateAuditHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardDateScopedHref(
+          '/admin/audit-logs',
+          {
+            action: 'booking.create.rejected',
+            take: String(limits.audit),
+          },
+          range,
+        )
+      : null,
     bookingsHref: `/admin/bookings?${new URLSearchParams({
       dateRange: range,
       take: String(limits.bookings),
     }).toString()}`,
-    earningsHref: buildDashboardRangeScopedHref(
-      '/admin/earnings',
-      { take: String(limits.finance) },
-      range,
-    ),
+    earningsHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardRangeScopedHref('/admin/earnings', { take: String(limits.finance) }, range)
+      : null,
     earningsSummaryHref: buildDashboardRangeScopedHref('/admin/earnings/summary', {}, range),
     notificationsHref: viewMode.shouldRenderFullDashboard
       ? buildDashboardDateScopedHref('/admin/notifications', { take: String(limits.notifications) }, range)
@@ -113,23 +113,17 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
           take: String(DASHBOARD_PARTNER_TAKE),
         }).toString()}`
       : null,
-    paymentsHref: buildDashboardRangeScopedHref(
-      '/admin/payments',
-      { take: String(limits.finance) },
-      range,
-    ),
+    paymentsHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardRangeScopedHref('/admin/payments', { take: String(limits.finance) }, range)
+      : null,
     paymentSummaryHref: buildDashboardRangeScopedHref('/admin/payments/summary', {}, range),
-    payoutBatchesHref: buildDashboardRangeScopedHref(
-      '/admin/payout-batches',
-      { take: String(limits.finance) },
-      range,
-    ),
+    payoutBatchesHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardRangeScopedHref('/admin/payout-batches', { take: String(limits.finance) }, range)
+      : null,
     payoutBatchSummaryHref: buildDashboardRangeScopedHref('/admin/payout-batches/summary', {}, range),
-    refundsHref: buildDashboardRangeScopedHref(
-      '/admin/refunds',
-      { take: String(limits.finance) },
-      range,
-    ),
+    refundsHref: viewMode.shouldRenderFullDashboard
+      ? buildDashboardRangeScopedHref('/admin/refunds', { take: String(limits.finance) }, range)
+      : null,
     refundsSummaryHref: buildDashboardRangeScopedHref('/admin/refunds/summary', {}, range),
     usersHref: viewMode.shouldRenderFullDashboard
       ? `/admin/users?${new URLSearchParams({ take: String(DASHBOARD_USER_TAKE) }).toString()}`

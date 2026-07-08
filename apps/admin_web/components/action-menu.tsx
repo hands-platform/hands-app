@@ -174,6 +174,7 @@ function ActionMenuDropdownControl({
         aria-label={item.ariaLabel}
         className={joinClassNames('admin-action-item', itemClassName)}
         href={item.href}
+        prefetch={false}
         role="menuitem"
         title={readActionMenuTitle(item.description)}
       >

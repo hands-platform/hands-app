@@ -184,7 +184,7 @@ function BookingUnifiedValue({ row }: { readonly row: BookingUnifiedDetailRow })
 
   if (row.href) {
     return (
-      <Link className="booking-unified-value-link" href={row.href}>
+      <Link className="booking-unified-value-link" href={row.href} prefetch={false}>
         {value}
       </Link>
     );
@@ -253,7 +253,7 @@ function BookingUnifiedPeople({ people }: { readonly people: readonly BookingUni
         {people.map((person) => (
           <div className="booking-unified-participant-row" key={`${person.id}-row`}>
             {person.href ? (
-              <Link className="booking-unified-participant-link" href={person.href}>
+              <Link className="booking-unified-participant-link" href={person.href} prefetch={false}>
                 {person.label}
               </Link>
             ) : (
@@ -277,7 +277,7 @@ function BookingUnifiedPersonAvatar({ person }: { readonly person: BookingUnifie
 
   if (person.href) {
     return (
-      <Link className="vuexy-booking-avatar-group-item" href={person.href} title={person.label}>
+      <Link className="vuexy-booking-avatar-group-item" href={person.href} prefetch={false} title={person.label}>
         {content}
       </Link>
     );

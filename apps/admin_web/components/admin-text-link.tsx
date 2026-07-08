@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 type AdminTextLinkProps = ComponentProps<typeof Link>;
 
 export function AdminTextLink({ className, ...linkProps }: AdminTextLinkProps) {
-  return <Link {...linkProps} className={joinClassNames('text-link', className)} />;
+  return <Link {...linkProps} className={joinClassNames('text-link', className)} prefetch={false} />;
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {

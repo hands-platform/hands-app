@@ -35,7 +35,7 @@ export function CustomersTableSection({ filters, pagination, sortLabel }: Custom
           rowCount={rows.length}
         >
           {rows.map((row) => (
-            <tr key={row.customerIdLabel}>
+            <tr key={row.id}>
               <td>
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar"

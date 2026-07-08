@@ -14,7 +14,7 @@ export function AdminStageItem({ className, ...props }: AdminStageItemProps) {
 }
 
 export function AdminStageItemLink({ className, ...linkProps }: AdminStageItemLinkProps) {
-  return <Link {...linkProps} className={joinClassNames('setup-stage-item', className)} />;
+  return <Link {...linkProps} className={joinClassNames('setup-stage-item', className)} prefetch={false} />;
 }
 
 function joinClassNames(...classNames: Array<string | undefined>) {

@@ -478,6 +478,7 @@ export function AdminLinkCard({
       className={joinClassNames('card admin-card', className)}
       href={href}
       id={id}
+      prefetch={false}
       title={htmlTitle}
     >
       {children}
@@ -501,6 +502,7 @@ export function AdminRowLink({
       className={joinClassNames('admin-row-link', className)}
       href={href}
       id={id}
+      prefetch={false}
       title={htmlTitle}
     >
       {children}
@@ -644,6 +646,7 @@ export function AdminActionCard({
           className,
         )}
         href={href}
+        prefetch={false}
         title={htmlTitle}
       >
         {leading}
@@ -659,7 +662,7 @@ export function AdminActionCard({
   }
 
   return (
-    <Link className={joinClassNames('card admin-action-card', className)} href={href} title={htmlTitle}>
+    <Link className={joinClassNames('card admin-action-card', className)} href={href} prefetch={false} title={htmlTitle}>
       {title !== undefined && title !== null ? <p>{title}</p> : null}
       {value !== undefined && value !== null ? (
         <strong className={joinClassNames('admin-action-card-value', valueClassName)}>{value}</strong>
@@ -727,7 +730,7 @@ export function AdminTaskBreakdown({ children, className, items }: AdminTaskBrea
         const key = adminTaskBreakdownKey(item.label, index);
 
         return item.href ? (
-          <Link className={itemClassName} href={item.href} key={key}>
+          <Link className={itemClassName} href={item.href} key={key} prefetch={false}>
             {content}
           </Link>
         ) : (

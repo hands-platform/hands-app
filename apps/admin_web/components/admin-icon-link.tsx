@@ -8,7 +8,7 @@ type AdminIconLinkProps = {
 
 export function AdminIconLink({ children, className, ...linkProps }: AdminIconLinkProps) {
   return (
-    <Link {...linkProps} className={joinClassNames('admin-icon-button', className)}>
+    <Link {...linkProps} className={joinClassNames('admin-icon-button', className)} prefetch={false}>
       {children}
     </Link>
   );

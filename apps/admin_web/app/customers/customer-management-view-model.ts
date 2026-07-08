@@ -53,6 +53,7 @@ export type CustomerManagementTableRow = {
   readonly deviceLanguageLabel: string;
   readonly email: string;
   readonly genderLabel: string;
+  readonly id: string;
   readonly initials: string;
   readonly joinedAt: string | null;
   readonly lastCompletedAt: string | null;
@@ -150,6 +151,7 @@ export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): 
       deviceLanguageLabel: row.deviceLanguage,
       email: row.email,
       genderLabel: row.genderLabel,
+      id: row.id,
       initials: readInitials(row.name),
       joinedAt: row.joinedAt ?? null,
       lastCompletedAt: row.lastCompletedAt ?? null,

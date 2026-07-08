@@ -18,7 +18,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <AdminRootShell sections={navSections}>
-          <AdminOperatorAccessGate>{children}</AdminOperatorAccessGate>
+          <AdminOperatorAccessGate operatorAccess={operatorAccess}>{children}</AdminOperatorAccessGate>
         </AdminRootShell>
       </body>
     </html>

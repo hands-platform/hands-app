@@ -93,7 +93,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
       {navigationToggle ? <div className="topbar-mobile-nav-slot">{navigationToggle}</div> : null}
       <div className="workspace-heading">
         <nav className="workspace-breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">HANDS</Link>
+          <Link href="/" prefetch={false}>HANDS</Link>
           {activeSection ? (
             <>
               <ChevronRight aria-hidden="true" size={14} />
@@ -139,6 +139,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
                       className="topbar-dropdown-link"
                       href={link.href}
                       key={`${link.sectionLabel}:${link.href}:${linkIndex}`}
+                      prefetch={false}
                       onClick={() => setSearchOpen(false)}
                     >
                       <span className="topbar-dropdown-label">{link.label}</span>
@@ -180,6 +181,7 @@ export function AdminWorkspaceHeader({ navigationToggle, sections }: AdminWorksp
                       className="topbar-dropdown-link"
                       href={section.links[0]?.href ?? '/'}
                       key={`${section.label}:${sectionIndex}`}
+                      prefetch={false}
                       onClick={() => setNotificationsOpen(false)}
                     >
                       <span className="topbar-dropdown-label">{section.label}</span>

@@ -38,9 +38,12 @@ export async function getCurrentAdminOperatorAccess() {
   return access ?? envMasterAdminAccessForIdentity(identity);
 }
 
-export async function getAdminOperatorPageAccess(pathname: string): Promise<AdminOperatorPageAccess> {
+export async function getAdminOperatorPageAccess(
+  pathname: string,
+  loadedAccess?: AdminOperatorAccess | null,
+): Promise<AdminOperatorPageAccess> {
   const category = adminOperatorCategoryForPath(pathname);
-  const access = await getCurrentAdminOperatorAccess();
+  const access = loadedAccess === undefined ? await getCurrentAdminOperatorAccess() : loadedAccess;
 
   if (!category) {
     await recordAdminOperatorActivity('admin_web.access_denied', pathname, {

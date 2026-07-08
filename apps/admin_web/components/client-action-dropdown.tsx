@@ -128,7 +128,7 @@ function ClientActionDropdownControl({
 
   if (typeof item.href === 'string') {
     return (
-      <Link className={className} href={item.href} onClick={onSelect} role="menuitem" title={item.description}>
+      <Link className={className} href={item.href} onClick={onSelect} prefetch={false} role="menuitem" title={item.description}>
         {content}
       </Link>
     );

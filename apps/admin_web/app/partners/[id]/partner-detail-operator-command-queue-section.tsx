@@ -89,6 +89,7 @@ export function PartnerDetailOperatorCommandQueueSection({
             <Link
               className={`partner-command-decision-button is-${nextCommand.tone}`}
               href={partnerOperatorCommandActionHref(providerId, nextCommand.action)}
+              prefetch={false}
             >
               {nextCommand.action.label}
             </Link>

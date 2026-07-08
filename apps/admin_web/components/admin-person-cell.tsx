@@ -41,7 +41,7 @@ export function AdminPersonCell({
       />
       <div className={joinClassNames(copyClassName)}>
         {href ? (
-          <Link className={joinClassNames(linkClassName)} href={href}>
+          <Link className={joinClassNames(linkClassName)} href={href} prefetch={false}>
             {label}
           </Link>
         ) : (
