@@ -392,6 +392,11 @@ describe('FinanceOverviewPage', () => {
     );
     expect(mockedAdminGet).toHaveBeenCalledTimes(1);
   });
+
+  it('builds only the visible finance sections for the overview payload', () => {
+    expect(pageSource).toContain('buildFinanceOverviewPageSections');
+    expect(pageSource).not.toContain('buildFinanceOverviewVisibleSections(buildFinanceOverviewSections(overviewInput))');
+  });
 });
 
 function cssRuleBlockAt(index: number) {

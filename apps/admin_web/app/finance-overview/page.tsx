@@ -26,11 +26,10 @@ import {
   buildFinanceOverviewApiHrefs,
   buildFinanceOverviewControlMetrics,
   buildFinanceOverviewFilters,
+  buildFinanceOverviewPageSections,
   buildFinanceOverviewPrimaryKpis,
   buildFinanceOverviewRangeLabel,
-  buildFinanceOverviewSections,
   buildFinanceOverviewVisibleActionItems,
-  buildFinanceOverviewVisibleSections,
   emptyFinanceOverviewSummaries,
   financeOverviewSummaryInput,
   financeOverviewHref,
@@ -69,7 +68,7 @@ export default async function FinanceOverviewPage({
   const { couponSummary, settlementSummary } = overviewInput;
   const controlMetrics = buildFinanceOverviewControlMetrics(overviewInput);
   const primaryKpis = buildFinanceOverviewPrimaryKpis(overviewInput);
-  const sections = buildFinanceOverviewVisibleSections(buildFinanceOverviewSections(overviewInput));
+  const sections = buildFinanceOverviewPageSections(overviewInput);
   const actionItems = buildFinanceOverviewActionItems(overviewInput, filters.range);
   const visibleActionItems = buildFinanceOverviewVisibleActionItems(actionItems);
   const priorityItems = actionItems.filter((item) => item.tone === 'danger' || item.tone === 'warning');

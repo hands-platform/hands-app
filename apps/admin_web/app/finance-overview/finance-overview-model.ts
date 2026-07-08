@@ -137,6 +137,10 @@ export type FinanceOverviewSummaryInput = {
   readonly withdrawalSummary: AdminProviderWalletWithdrawalRequestSummary;
 };
 
+type FinanceOverviewSectionOptions = {
+  readonly includeHiddenSections?: boolean;
+};
+
 type FinanceOverviewTone = 'danger' | 'info' | 'neutral' | 'primary' | 'success' | 'warning';
 
 const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
@@ -471,7 +475,11 @@ export function buildFinanceOverviewPrimaryKpis(input: FinanceOverviewSummaryInp
   });
 }
 
-export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput): FinanceOverviewSection[] {
+export function buildFinanceOverviewSections(
+  input: FinanceOverviewSummaryInput,
+  options: FinanceOverviewSectionOptions = {},
+): FinanceOverviewSection[] {
+  const includeHiddenSections = options.includeHiddenSections ?? true;
   const currency = financeOverviewCurrency(input);
   const paymentFeeSummary = input.paymentFeeSummary;
   const couponCost = input.couponSummary.companyCouponExpense;
@@ -488,7 +496,7 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
         ) / 10}%`
       : '—';
 
-  return [
+  const sections: FinanceOverviewSection[] = [
     {
       title: 'Revenue & Platform Fee',
       description: 'Company revenue is platform fee only; gross customer payment stays separated.',
@@ -652,53 +660,6 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       ],
     },
     {
-      title: 'Cash Payment / Receivable',
-      description: 'Cash booking debt means Partner receivable / negative wallet exposure.',
-      href: '/cash-settlements',
-      tone: 'danger',
-      rows: [
-        {
-          ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
-          label: 'Cash debt amount',
-          value: input.cashSummary ? undefined : '—',
-          detail: `${input.cashSummary?.rowCount ?? 0} row(s), ${input.cashSummary?.providerCount ?? 0} Partner(s).`,
-        },
-        {
-          label: 'High debt Partners',
-          value: String(input.cashSummary?.highDebtProviderCount ?? 0),
-          detail: 'Partners whose negative wallet should be reviewed before accepting more work.',
-        },
-        {
-          label: 'Missing payment evidence',
-          value: String(input.cashSummary?.missingPaymentEvidenceCount ?? 0),
-          detail: 'Cash rows missing supporting evidence.',
-        },
-      ],
-    },
-    {
-      title: 'Refund & Dispute',
-      description: 'Refund queue status without mixing refund amounts into platform fee revenue.',
-      href: '/refunds',
-      tone: 'warning',
-      rows: [
-        {
-          ...financeOverviewMoneyValue(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
-          label: 'Open refunds',
-          detail: 'Refund rows still needing resolution.',
-        },
-        {
-          label: 'Needs update',
-          value: String(input.refundSummary?.needsUpdateCount ?? 0),
-          detail: 'Refund rows whose payment or booking state needs an update.',
-        },
-        {
-          ...financeOverviewMoneyValue(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
-          label: 'Completed refunds',
-          detail: 'Completed refund cases in the active range.',
-        },
-      ],
-    },
-    {
       title: 'Tax Overview',
       description: 'Tax rows and remittance summary remain separated from revenue and payment fee cost.',
       href: '/finance-tax',
@@ -759,6 +720,62 @@ export function buildFinanceOverviewSections(input: FinanceOverviewSummaryInput)
       ],
     },
   ];
+
+  if (includeHiddenSections) {
+    sections.splice(
+      4,
+      0,
+      {
+        title: 'Cash Payment / Receivable',
+        description: 'Cash booking debt means Partner receivable / negative wallet exposure.',
+        href: '/cash-settlements',
+        tone: 'danger',
+        rows: [
+          {
+            ...financeOverviewMoneyValue(input.cashSummary?.totalDebtAmount, input.cashSummary?.currency ?? currency),
+            label: 'Cash debt amount',
+            value: input.cashSummary ? undefined : '—',
+            detail: `${input.cashSummary?.rowCount ?? 0} row(s), ${input.cashSummary?.providerCount ?? 0} Partner(s).`,
+          },
+          {
+            label: 'High debt Partners',
+            value: String(input.cashSummary?.highDebtProviderCount ?? 0),
+            detail: 'Partners whose negative wallet should be reviewed before accepting more work.',
+          },
+          {
+            label: 'Missing payment evidence',
+            value: String(input.cashSummary?.missingPaymentEvidenceCount ?? 0),
+            detail: 'Cash rows missing supporting evidence.',
+          },
+        ],
+      },
+      {
+        title: 'Refund & Dispute',
+        description: 'Refund queue status without mixing refund amounts into platform fee revenue.',
+        href: '/refunds',
+        tone: 'warning',
+        rows: [
+          {
+            ...financeOverviewMoneyValue(input.amountSummary.refundPendingAmount, input.amountSummary.currency),
+            label: 'Open refunds',
+            detail: 'Refund rows still needing resolution.',
+          },
+          {
+            label: 'Needs update',
+            value: String(input.refundSummary?.needsUpdateCount ?? 0),
+            detail: 'Refund rows whose payment or booking state needs an update.',
+          },
+          {
+            ...financeOverviewMoneyValue(input.amountSummary.refundCompletedAmount, input.amountSummary.currency),
+            label: 'Completed refunds',
+            detail: 'Completed refund cases in the active range.',
+          },
+        ],
+      },
+    );
+  }
+
+  return sections;
 }
 
 export function buildFinanceOverviewVisibleSections(
@@ -786,6 +803,12 @@ export function buildFinanceOverviewVisibleSections(
       rows: section.rows.slice(0, 3),
     };
   });
+}
+
+export function buildFinanceOverviewPageSections(input: FinanceOverviewSummaryInput): FinanceOverviewSection[] {
+  return buildFinanceOverviewVisibleSections(
+    buildFinanceOverviewSections(input, { includeHiddenSections: false }),
+  );
 }
 
 export function buildFinanceOverviewVisibleActionItems(
