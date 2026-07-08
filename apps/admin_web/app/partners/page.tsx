@@ -190,12 +190,14 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       })()
     : null;
   const partnerExportFileSlug = buildPartnerExportSlug(filters);
-  const partnerOperationRows = visibleProviders.map((provider) =>
-    buildPartnerOperationRow(provider, opsPolicy, {
-      displayName: providerDisplayName,
-      canAcceptBookingNow: partnerCanAcceptBookingNow,
-    }),
-  );
+  const partnerOperationRows = showPartnerOperationsList
+    ? visibleProviders.map((provider) =>
+        buildPartnerOperationRow(provider, opsPolicy, {
+          displayName: providerDisplayName,
+          canAcceptBookingNow: partnerCanAcceptBookingNow,
+        }),
+      )
+    : [];
   const directReadyPartnerCount = showPartnerOperationsList
     ? providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length
     : 0;

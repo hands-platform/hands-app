@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
+import { buildPartnerOperationRow } from './partner-operation-row';
 import ProvidersPage from './page';
 
 vi.mock('../../lib/admin-api', async () => {
@@ -15,11 +16,22 @@ vi.mock('../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('./partner-operation-row', async () => {
+  const actual = await vi.importActual<typeof import('./partner-operation-row')>('./partner-operation-row');
+
+  return {
+    ...actual,
+    buildPartnerOperationRow: vi.fn(actual.buildPartnerOperationRow),
+  };
+});
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedBuildPartnerOperationRow = vi.mocked(buildPartnerOperationRow);
 
 describe('ProvidersPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedBuildPartnerOperationRow.mockClear();
   });
 
   it('uses the shared Vuexy badge atom for the active sort summary', () => {
@@ -78,6 +90,7 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('vuexy-partner-page-header');
     expect(markup).toContain('Server Trusted Partner');
     expect(markup).toContain('Showing 1 to 1 of 120 entries');
+    expect(mockedBuildPartnerOperationRow).not.toHaveBeenCalled();
     const policyHref = mockedAdminGet.mock.calls.map(([href]) => href).find((href) => {
       return href.startsWith('/admin/operational-policy?keys=');
     });
