@@ -1,6 +1,6 @@
 'use client';
 
-import maplibregl, { type LngLatBoundsLike, type Map as MapLibreMap, type Marker } from 'maplibre-gl';
+import type { LngLatBoundsLike, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 
 import { AdminEmptyState } from '../../components/admin-empty-state';
@@ -11,7 +11,7 @@ import {
   vietnamOverviewRealtimeMetricDotLegend,
 } from './vietnam-overview-model';
 
-type VietnamOverviewLiveMapProps = {
+export type VietnamOverviewLiveMapProps = {
   readonly clearRegionHref: string | null;
   readonly focusRegionCode: string | null;
   readonly focusRegionName: string | null;
@@ -24,6 +24,8 @@ type VietnamOverviewLiveMapProps = {
 type MarkerHandle = {
   readonly marker: Marker;
 };
+
+type MapLibreApi = typeof import('maplibre-gl');
 
 type VietnamOverviewSignalFilter = {
   readonly count: number;
@@ -61,62 +63,88 @@ export function VietnamOverviewLiveMap({
 }: VietnamOverviewLiveMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const mapLibreRef = useRef<MapLibreApi | null>(null);
   const markerRefs = useRef<MarkerHandle[]>([]);
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    let isDisposed = false;
 
-    const focusCenter = focusRegionCode ? vietnamRegionCenters[focusRegionCode]?.center : null;
-    const focusZoom = focusRegionCode ? vietnamRegionCenters[focusRegionCode]?.zoom : null;
-    const map = new maplibregl.Map({
-      attributionControl: false,
-      center: focusCenter ?? vietnamDefaultCenter,
-      container: containerRef.current,
-      maxBounds: vietnamBounds,
-      maxZoom: 16,
-      minZoom: 5,
-      style: {
-        version: 8,
-        sources: {
-          maptiler: {
-            attribution:
-              '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
-            tileSize: 256,
-            tiles: ['/api/admin/maptiler-tiles/{z}/{x}/{y}.png'],
-            type: 'raster',
-          },
-        },
-        layers: [
-          {
-            id: 'maptiler-base',
-            source: 'maptiler',
-            type: 'raster',
-          },
-        ],
-      },
-      zoom: focusZoom ?? 5.4,
-    });
+    async function mountMap() {
+      if (!containerRef.current || mapRef.current) return;
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-    map.on('load', () => setMapStatus('ready'));
-    map.on('error', () => setMapStatus('error'));
-    mapRef.current = map;
+      setMapStatus('loading');
+
+      try {
+        const mapLibreModule = await import('maplibre-gl');
+
+        if (isDisposed || !containerRef.current || mapRef.current) return;
+
+        const maplibregl = mapLibreModule;
+        const focusCenter = focusRegionCode ? vietnamRegionCenters[focusRegionCode]?.center : null;
+        const focusZoom = focusRegionCode ? vietnamRegionCenters[focusRegionCode]?.zoom : null;
+        const map = new maplibregl.Map({
+          attributionControl: false,
+          center: focusCenter ?? vietnamDefaultCenter,
+          container: containerRef.current,
+          maxBounds: vietnamBounds,
+          maxZoom: 16,
+          minZoom: 5,
+          style: {
+            version: 8,
+            sources: {
+              maptiler: {
+                attribution:
+                  '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>',
+                tileSize: 256,
+                tiles: ['/api/admin/maptiler-tiles/{z}/{x}/{y}.png'],
+                type: 'raster',
+              },
+            },
+            layers: [
+              {
+                id: 'maptiler-base',
+                source: 'maptiler',
+                type: 'raster',
+              },
+            ],
+          },
+          zoom: focusZoom ?? 5.4,
+        });
+
+        mapLibreRef.current = maplibregl;
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+        map.on('load', () => {
+          if (!isDisposed) setMapStatus('ready');
+        });
+        map.on('error', () => {
+          if (!isDisposed) setMapStatus('error');
+        });
+        mapRef.current = map;
+      } catch {
+        if (!isDisposed) setMapStatus('error');
+      }
+    }
+
+    void mountMap();
 
     return () => {
+      isDisposed = true;
       markerRefs.current.forEach(({ marker }) => {
         marker.remove();
       });
       markerRefs.current = [];
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
+      mapLibreRef.current = null;
     };
   }, [focusRegionCode]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    const maplibregl = mapLibreRef.current;
+    if (!map || !maplibregl || mapStatus !== 'ready') return;
 
     markerRefs.current.forEach(({ marker }) => {
       marker.remove();
@@ -172,7 +200,7 @@ export function VietnamOverviewLiveMap({
         zoom: focus?.zoom ?? 5.4,
       });
     }
-  }, [focusRegionCode, points]);
+  }, [focusRegionCode, mapStatus, points]);
 
   return (
     <div className="vietnam-maplibre-shell">

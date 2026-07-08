@@ -30,6 +30,14 @@ describe('VietnamOverviewPage', () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
   });
 
+  it('defers the MapLibre live map bundle behind a dynamic boundary', () => {
+    expect(pageSource).toContain("import dynamicComponent from 'next/dynamic';");
+    expect(pageSource).toContain("import type { VietnamOverviewLiveMapProps } from './vietnam-overview-live-map';");
+    expect(pageSource).toContain('const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(');
+    expect(pageSource).toContain("() => import('./vietnam-overview-live-map').then((mod) => mod.VietnamOverviewLiveMap)");
+    expect(pageSource).not.toContain("import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';");
+  });
+
   it('renders the realtime map and period report with shared Vuexy section surfaces', async () => {
     const page = await VietnamOverviewPage({
       searchParams: Promise.resolve({ range: 'today' }),

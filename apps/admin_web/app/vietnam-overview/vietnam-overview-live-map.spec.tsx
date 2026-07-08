@@ -17,4 +17,12 @@ describe('VietnamOverviewLiveMap', () => {
     expect(source).not.toContain('vietnam-map-empty-icon');
     expect(styles).not.toContain('.vietnam-map-empty-icon');
   });
+
+  it('loads MapLibre only after the client map shell mounts', () => {
+    const source = readFileSync('app/vietnam-overview/vietnam-overview-live-map.tsx', 'utf8');
+
+    expect(source).toContain("import type { LngLatBoundsLike, Map as MapLibreMap, Marker } from 'maplibre-gl';");
+    expect(source).toContain("await import('maplibre-gl')");
+    expect(source).not.toContain("import maplibregl, {");
+  });
 });

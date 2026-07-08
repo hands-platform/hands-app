@@ -8,6 +8,7 @@ import {
   WalletCards,
   XCircle,
 } from 'lucide-react';
+import dynamicComponent from 'next/dynamic';
 import type { ReactNode } from 'react';
 import {
   type AdminVietnamOverview,
@@ -24,7 +25,7 @@ import {
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
-import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';
+import type { VietnamOverviewLiveMapProps } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminOverviewGrid, AdminSummaryCardGrid } from '../../components/admin-overview-card';
@@ -37,6 +38,18 @@ import { StatusBadge, StatusBadgeLink } from '../../components/status-badge';
 import { formatWholeNumber as formatNumber } from '../../lib/admin-format';
 
 export const dynamic = 'force-dynamic';
+
+const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(
+  () => import('./vietnam-overview-live-map').then((mod) => mod.VietnamOverviewLiveMap),
+  {
+    loading: () => (
+      <div
+        aria-label="Vietnam overview map loading"
+        className="vietnam-maplibre-shell is-loading"
+      />
+    ),
+  },
+);
 
 type VietnamOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
