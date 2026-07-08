@@ -3,13 +3,12 @@
 import 'react-datepicker/dist/react-datepicker.css';
 
 import { useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import listPlugin from '@fullcalendar/list';
-import timeGridPlugin from '@fullcalendar/timegrid';
 import DatePicker from 'react-datepicker';
-import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core';
+import type { EventClickArg, EventDropArg, EventInput, PluginDef } from '@fullcalendar/core';
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
@@ -39,6 +38,7 @@ import {
 import { CalendarEventDrawer } from './calendar-event-drawer';
 
 type CalendarViewName = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listMonth';
+type LazyCalendarPluginName = 'timeGrid' | 'list';
 
 type CalendarClientProps = {
   readonly currentOperator: CalendarOperator;
@@ -57,6 +57,7 @@ const calendarViewOptions: ReadonlyArray<{
 
 export function CalendarClient({ currentOperator, initialEvents }: CalendarClientProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
+  const loadedLazyPluginNamesRef = useRef<Set<LazyCalendarPluginName>>(new Set());
   const [events, setEvents] = useState<CalendarEventRecord[]>(() =>
     initialEvents
       .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
@@ -70,6 +71,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
   const [draft, setDraft] = useState<CalendarEventDraft>(createBlankDraft(new Date()));
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [lazyCalendarPlugins, setLazyCalendarPlugins] = useState<PluginDef[]>([]);
 
   const visibleEvents = useMemo(
     () => filterCalendarEvents(events, selectedTags),
@@ -78,6 +80,10 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
   const tagFilters = useMemo(() => buildCalendarTagFilters(events, currentDate), [events, currentDate]);
   const metrics = useMemo(() => buildCalendarMetrics(visibleEvents, new Date()), [visibleEvents]);
   const calendarEvents = useMemo(() => visibleEvents.map(toCalendarEventInput), [visibleEvents]);
+  const calendarPlugins = useMemo(
+    () => [interactionPlugin, dayGridPlugin, ...lazyCalendarPlugins],
+    [lazyCalendarPlugins],
+  );
   const editingEvent = editingEventId ? (events.find((event) => event.id === editingEventId) ?? null) : null;
   const canEditSelectedEvent = editingEventId ? canEditCalendarEvent(editingEvent, currentOperator) : true;
 
@@ -225,8 +231,9 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
     calendarRef.current?.getApi().gotoDate(date);
   };
 
-  const changeView = (view: CalendarViewName) => {
+  const changeView = async (view: CalendarViewName) => {
     setCurrentView(view);
+    await ensureCalendarViewPlugins(view, loadedLazyPluginNamesRef.current, setLazyCalendarPlugins);
     calendarRef.current?.getApi().changeView(view);
   };
 
@@ -362,7 +369,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
                   label: option.label,
                   onClick: (event) => {
                     event.preventDefault();
-                    changeView(option.value);
+                    void changeView(option.value);
                   },
                   value: option.value,
                 }))}
@@ -402,7 +409,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
             <FullCalendar
               ref={calendarRef}
               events={calendarEvents}
-              plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
+              plugins={calendarPlugins}
               initialView={currentView}
               headerToolbar={false}
               dayMaxEvents={2}
@@ -472,6 +479,52 @@ function formatMonthLabel(date: Date) {
     month: 'long',
     year: 'numeric',
   }).format(date);
+}
+
+async function ensureCalendarViewPlugins(
+  view: CalendarViewName,
+  loadedPluginNames: Set<LazyCalendarPluginName>,
+  setLazyCalendarPlugins: (update: (current: PluginDef[]) => PluginDef[]) => void,
+) {
+  const pluginNames = lazyCalendarPluginNames(view).filter((pluginName) => !loadedPluginNames.has(pluginName));
+
+  if (!pluginNames.length) {
+    return;
+  }
+
+  pluginNames.forEach((pluginName) => loadedPluginNames.add(pluginName));
+
+  try {
+    const plugins = await Promise.all(pluginNames.map(loadLazyCalendarPlugin));
+    flushSync(() => {
+      setLazyCalendarPlugins((current) => [...current, ...plugins]);
+    });
+  } catch (error) {
+    pluginNames.forEach((pluginName) => loadedPluginNames.delete(pluginName));
+    throw error;
+  }
+}
+
+function lazyCalendarPluginNames(view: CalendarViewName): LazyCalendarPluginName[] {
+  if (view === 'timeGridWeek' || view === 'timeGridDay') {
+    return ['timeGrid'];
+  }
+
+  if (view === 'listMonth') {
+    return ['list'];
+  }
+
+  return [];
+}
+
+async function loadLazyCalendarPlugin(pluginName: LazyCalendarPluginName) {
+  if (pluginName === 'timeGrid') {
+    const module = await import('@fullcalendar/timegrid');
+    return module.default;
+  }
+
+  const module = await import('@fullcalendar/list');
+  return module.default;
 }
 
 function fromInputDraft(draft: CalendarEventDraft): CalendarEventDraft {

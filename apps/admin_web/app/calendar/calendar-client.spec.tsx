@@ -31,4 +31,13 @@ describe('CalendarClient', () => {
     expect(source).toContain('AdminMetricGrid');
     expect(source).not.toContain('<section className="admin-metric-grid"');
   });
+
+  it('keeps non-default FullCalendar views out of the initial client bundle', () => {
+    const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
+
+    expect(source).toContain("await import('@fullcalendar/timegrid')");
+    expect(source).toContain("await import('@fullcalendar/list')");
+    expect(source).not.toContain("import listPlugin from '@fullcalendar/list'");
+    expect(source).not.toContain("import timeGridPlugin from '@fullcalendar/timegrid'");
+  });
 });
