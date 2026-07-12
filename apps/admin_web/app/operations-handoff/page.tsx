@@ -1,4 +1,4 @@
-import { ListChecks, Sparkles } from 'lucide-react';
+import { BellRing, CalendarClock, HandCoins, ListChecks, ReceiptText, Sparkles } from 'lucide-react';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -177,6 +177,43 @@ export default async function OperationsHandoffPage({
     operatorNotes,
   });
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
+  const operationsHistoryMetrics = [
+    {
+      href: operationsHandoffModeHref(filters.range, 'all'),
+      icon: ListChecks,
+      label: 'Open review checks',
+      value: checklistNeedsReview,
+      helper: 'Checklist items that still need operator review.',
+    },
+    {
+      href: operationsHandoffModeHref(filters.range, 'all'),
+      icon: CalendarClock,
+      label: 'Booking rows',
+      value: bookingQueue.length,
+      helper: 'Bookings returned for the selected history window.',
+    },
+    {
+      href: '/notifications',
+      icon: BellRing,
+      label: 'Failed alerts',
+      value: failedNotificationCount,
+      helper: 'Notification delivery failures found in the selected range.',
+    },
+    {
+      href: '/cash-settlements',
+      icon: HandCoins,
+      label: 'Cash debt partners',
+      value: cashSummary.providerCount,
+      helper: 'Partners with cash booking debt in the settlement summary.',
+    },
+    {
+      href: operationsHandoffModeHref(filters.range, 'all'),
+      icon: ReceiptText,
+      label: 'Finance rows',
+      value: financeRows.length,
+      helper: 'Finance history rows loaded for closeout review.',
+    },
+  ];
 
   return (
     <AdminPageTemplate
@@ -197,6 +234,7 @@ export default async function OperationsHandoffPage({
       }
       contentClassName="operations-handoff-page"
       description="Review past operations across bookings, chat, wallet, finance, alerts, and operator notes without mixing them into the live Start Shift board."
+      metrics={operationsHistoryMetrics}
       title="Operations History"
     >
       <OperationsHandoffDateRangeSection range={filters.range} />

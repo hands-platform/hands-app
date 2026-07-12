@@ -53,6 +53,11 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('Start Shift');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d"');
     expect(markup).toContain('Full history');
+    expect(markup).toContain('Open review checks');
+    expect(markup).toContain('Booking rows');
+    expect(markup).toContain('Failed alerts');
+    expect(markup).toContain('Cash debt partners');
+    expect(markup).toContain('Finance rows');
     expect(markup).toContain('Detailed history lists');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
