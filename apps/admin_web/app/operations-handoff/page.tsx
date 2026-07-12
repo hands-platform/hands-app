@@ -177,9 +177,10 @@ export default async function OperationsHandoffPage({
     operatorNotes,
   });
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
+  const currentMode = shouldRenderFullDetails ? 'all' : 'summary';
   const operationsHistoryMetrics = [
     {
-      href: operationsHandoffSectionHref(filters.range, 'summary', 'operations-handoff-review-checklist'),
+      href: operationsHandoffSectionHref(filters.range, currentMode, 'operations-handoff-review-checklist'),
       icon: ListChecks,
       label: 'Open review checks',
       value: checklistNeedsReview,
