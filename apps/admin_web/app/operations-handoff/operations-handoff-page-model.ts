@@ -27,6 +27,11 @@ type OperationsHandoffRangeDataInput = {
 };
 
 export type OperationsHandoffFilters = {
+  readonly detailPages: {
+    readonly activity: number;
+    readonly bookings: number;
+    readonly finance: number;
+  };
   readonly detailsMode: 'summary' | 'all';
   readonly range: ReturnType<typeof normalizeDateRange>;
 };
@@ -58,6 +63,7 @@ const OPERATIONS_HANDOFF_SUMMARY_AUDIT_TAKE = 5;
 const OPERATIONS_HANDOFF_SUMMARY_FINANCE_TAKE = 5;
 const OPERATIONS_HANDOFF_SUMMARY_LIST_TAKE = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_OPERATIONS_HANDOFF_DETAIL_PAGE = 20;
 
 export function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   return {
@@ -85,6 +91,11 @@ export function buildOperationsHandoffFilters(
   const rangeParam = readSearchParam(params.range);
   const detailsParam = readSearchParam(params.details);
   return {
+    detailPages: {
+      activity: readOperationsHandoffPage(params.activityPage),
+      bookings: readOperationsHandoffPage(params.bookingPage),
+      finance: readOperationsHandoffPage(params.financePage),
+    },
     detailsMode: detailsParam === 'all' ? 'all' : 'summary',
     range: rangeParam ? normalizeDateRange(rangeParam) : '7d',
   };
@@ -193,6 +204,34 @@ export function buildActivityStreamCsvHref(activityStream: readonly ActivityStre
   );
 }
 
+export function operationsHandoffDetailPageHref(
+  filters: OperationsHandoffFilters,
+  pageParam: keyof OperationsHandoffFilters['detailPages'],
+) {
+  return (page: number) => {
+    const query = new URLSearchParams({
+      details: 'all',
+      range: filters.range,
+    });
+    const pageParams: Record<keyof OperationsHandoffFilters['detailPages'], string> = {
+      activity: 'activityPage',
+      bookings: 'bookingPage',
+      finance: 'financePage',
+    };
+
+    for (const [key, param] of Object.entries(pageParams) as Array<
+      [keyof OperationsHandoffFilters['detailPages'], string]
+    >) {
+      const nextPage = key === pageParam ? page : filters.detailPages[key];
+      if (nextPage > 1) {
+        query.set(param, String(nextPage));
+      }
+    }
+
+    return `/operations-handoff?${query.toString()}`;
+  };
+}
+
 function relativeTime(value?: string | null) {
   return formatRelativeTime(value, {
     emptyFallback: 'unknown time',
@@ -205,6 +244,15 @@ function failedNotificationRows(notifications: readonly AdminNotification[]) {
   return notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+}
+
+function readOperationsHandoffPage(value: string | string[] | undefined) {
+  const parsed = Number.parseInt(readSearchParam(value) ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1;
+  }
+
+  return Math.min(Math.trunc(parsed), MAX_OPERATIONS_HANDOFF_DETAIL_PAGE);
 }
 
 function buildDateScopedHref(pathname: string, baseParams: Record<string, string>, range: AdminDateRange) {

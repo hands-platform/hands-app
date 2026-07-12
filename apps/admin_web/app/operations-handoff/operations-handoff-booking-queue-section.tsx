@@ -6,9 +6,15 @@ import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
+import {
+  OperationsHandoffPaginationFooter,
+  type OperationsHandoffPagination,
+  paginateOperationsHandoffRows,
+} from './operations-handoff-pagination';
 
 type OperationsHandoffBookingQueueSectionProps = {
   readonly bookings: readonly BookingHandoffQueueRow[];
+  readonly pagination: OperationsHandoffPagination;
 };
 
 const BOOKING_HANDOFF_QUEUE_HEADERS = [
@@ -23,7 +29,10 @@ const BOOKING_HANDOFF_QUEUE_HEADERS = [
 
 export function OperationsHandoffBookingQueueSection({
   bookings,
+  pagination,
 }: OperationsHandoffBookingQueueSectionProps) {
+  const pagedRows = paginateOperationsHandoffRows(bookings, pagination.activePage);
+
   return (
     <AdminTableSection
       actions={
@@ -46,9 +55,9 @@ export function OperationsHandoffBookingQueueSection({
         <AdminDataTable
           emptyMessage="No booking history rows."
           headers={BOOKING_HANDOFF_QUEUE_HEADERS}
-          rowCount={bookings.length}
+          rowCount={pagedRows.rows.length}
         >
-          {bookings.map((booking) => (
+          {pagedRows.rows.map((booking) => (
             <tr key={booking.id}>
               <td>
                 <AdminFormControlLink
@@ -96,6 +105,12 @@ export function OperationsHandoffBookingQueueSection({
             </tr>
           ))}
         </AdminDataTable>
+        <OperationsHandoffPaginationFooter
+          from={pagedRows.from}
+          pagination={pagination}
+          to={pagedRows.to}
+          totalPages={pagedRows.totalPages}
+        />
       </AdminTableScroll>
     </AdminTableSection>
   );

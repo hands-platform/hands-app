@@ -46,6 +46,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
           walletLabel: 'Wallet effect 120.000 VND',
         },
       ],
+      pagination: pagination(1),
     });
 
     const rendered = textContent(section);
@@ -75,8 +76,18 @@ describe('OperationsHandoffBookingQueueSection', () => {
   });
 
   it('renders the empty state when there are no booking rows', () => {
-    const rendered = textContent(OperationsHandoffBookingQueueSection({ bookings: [] }));
+    const rendered = textContent(OperationsHandoffBookingQueueSection({ bookings: [], pagination: pagination(0) }));
 
     expect(rendered).toContain('No booking history rows.');
   });
 });
+
+function pagination(totalRows: number) {
+  return {
+    activePage: 1,
+    ariaLabel: 'Operations booking history pagination',
+    hrefForPage: (page: number) => `/operations-handoff?details=all&bookingPage=${page}`,
+    itemLabel: 'booking rows',
+    totalRows,
+  };
+}

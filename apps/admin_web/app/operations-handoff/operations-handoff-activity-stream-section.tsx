@@ -5,9 +5,15 @@ import { AdminSection } from '../../components/admin-surface';
 import { DateTimeText } from '../../components/date-time-text';
 import { formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
+import {
+  OperationsHandoffPaginationFooter,
+  type OperationsHandoffPagination,
+  paginateOperationsHandoffRows,
+} from './operations-handoff-pagination';
 
 type OperationsHandoffActivityStreamSectionProps = {
   readonly csvHref: string;
+  readonly pagination: OperationsHandoffPagination;
   readonly rows: readonly ActivityStreamRow[];
 };
 
@@ -15,8 +21,11 @@ const ACTIVITY_STREAM_HEADERS = ['When', 'Area', 'Record', 'Summary', 'Continue'
 
 export function OperationsHandoffActivityStreamSection({
   csvHref,
+  pagination,
   rows,
 }: OperationsHandoffActivityStreamSectionProps) {
+  const pagedRows = paginateOperationsHandoffRows(rows, pagination.activePage);
+
   return (
     <AdminSection
       actions={
@@ -47,9 +56,9 @@ export function OperationsHandoffActivityStreamSection({
         <AdminDataTable
           emptyMessage="No recent activity stream rows."
           headers={ACTIVITY_STREAM_HEADERS}
-          rowCount={rows.length}
+          rowCount={pagedRows.rows.length}
         >
-          {rows.map((item) => (
+          {pagedRows.rows.map((item) => (
             <tr key={item.id}>
               <td>
                 <div>{relativeTime(item.createdAt)}</div>
@@ -72,6 +81,12 @@ export function OperationsHandoffActivityStreamSection({
             </tr>
           ))}
         </AdminDataTable>
+        <OperationsHandoffPaginationFooter
+          from={pagedRows.from}
+          pagination={pagination}
+          to={pagedRows.to}
+          totalPages={pagedRows.totalPages}
+        />
       </AdminTableScroll>
     </AdminSection>
   );

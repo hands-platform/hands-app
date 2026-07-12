@@ -13,20 +13,44 @@ import {
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
+  operationsHandoffDetailPageHref,
 } from './operations-handoff-page-model';
 
 describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
-    expect(buildOperationsHandoffFilters({})).toEqual({ detailsMode: 'summary', range: '7d' });
+    expect(buildOperationsHandoffFilters({})).toEqual({
+      detailPages: {
+        activity: 1,
+        bookings: 1,
+        finance: 1,
+      },
+      detailsMode: 'summary',
+      range: '7d',
+    });
     expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({
+      detailPages: {
+        activity: 1,
+        bookings: 1,
+        finance: 1,
+      },
       detailsMode: 'summary',
       range: '7d',
     });
     expect(buildOperationsHandoffFilters({ range: 'unsupported' })).toEqual({
+      detailPages: {
+        activity: 1,
+        bookings: 1,
+        finance: 1,
+      },
       detailsMode: 'summary',
       range: 'today',
     });
     expect(buildOperationsHandoffFilters({ details: 'all' })).toEqual({
+      detailPages: {
+        activity: 1,
+        bookings: 1,
+        finance: 1,
+      },
       detailsMode: 'all',
       range: '7d',
     });
@@ -37,6 +61,25 @@ describe('operations handoff page model', () => {
       topProviderGroups: [],
       totalDebtAmount: 0,
     });
+  });
+
+  it('normalizes full history detail pagination links without changing the data window', () => {
+    const filters = buildOperationsHandoffFilters({
+      activityPage: '2',
+      bookingPage: 'bad',
+      details: 'all',
+      financePage: '30',
+      range: '30d',
+    });
+
+    expect(filters.detailPages).toEqual({
+      activity: 2,
+      bookings: 1,
+      finance: 20,
+    });
+    expect(operationsHandoffDetailPageHref(filters, 'bookings')(3)).toBe(
+      '/operations-handoff?details=all&range=30d&activityPage=2&bookingPage=3&financePage=20',
+    );
   });
 
   it('keeps default operations history requests bounded and scoped to the last 7 days', () => {

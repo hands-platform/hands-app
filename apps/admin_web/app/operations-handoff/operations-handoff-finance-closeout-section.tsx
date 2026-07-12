@@ -5,8 +5,14 @@ import { MoneyText } from '../../components/money-text';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { shortDisplayId } from '../../lib/admin-format';
 import type { FinanceHandoffRow } from './operations-handoff-finance-rows';
+import {
+  OperationsHandoffPaginationFooter,
+  type OperationsHandoffPagination,
+  paginateOperationsHandoffRows,
+} from './operations-handoff-pagination';
 
 type OperationsHandoffFinanceCloseoutSectionProps = {
+  readonly pagination: OperationsHandoffPagination;
   readonly rows: readonly FinanceHandoffRow[];
 };
 
@@ -21,9 +27,10 @@ const FINANCE_CLOSEOUT_HEADERS = [
 ] as const;
 
 export function OperationsHandoffFinanceCloseoutSection({
+  pagination,
   rows,
 }: OperationsHandoffFinanceCloseoutSectionProps) {
-  const visibleRows = rows.slice(0, 12);
+  const pagedRows = paginateOperationsHandoffRows(rows, pagination.activePage);
 
   return (
     <AdminSection
@@ -45,9 +52,9 @@ export function OperationsHandoffFinanceCloseoutSection({
         <AdminDataTable
           emptyMessage="No finance history rows."
           headers={FINANCE_CLOSEOUT_HEADERS}
-          rowCount={visibleRows.length}
+          rowCount={pagedRows.rows.length}
         >
-          {visibleRows.map((row) => (
+          {pagedRows.rows.map((row) => (
             <tr key={row.id}>
               <td>
                 <AdminTextLink href={`/partners/${row.providerId}`}>
@@ -77,6 +84,12 @@ export function OperationsHandoffFinanceCloseoutSection({
             </tr>
           ))}
         </AdminDataTable>
+        <OperationsHandoffPaginationFooter
+          from={pagedRows.from}
+          pagination={pagination}
+          to={pagedRows.to}
+          totalPages={pagedRows.totalPages}
+        />
       </AdminTableScroll>
     </AdminSection>
   );

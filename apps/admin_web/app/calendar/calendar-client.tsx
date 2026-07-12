@@ -538,12 +538,12 @@ function lazyCalendarPluginNames(view: CalendarViewName): LazyCalendarPluginName
 
 async function loadLazyCalendarPlugin(pluginName: LazyCalendarPluginName) {
   if (pluginName === 'timeGrid') {
-    const module = await import('@fullcalendar/timegrid');
-    return module.default;
+    const pluginModule = await import('@fullcalendar/timegrid');
+    return pluginModule.default;
   }
 
-  const module = await import('@fullcalendar/list');
-  return module.default;
+  const pluginModule = await import('@fullcalendar/list');
+  return pluginModule.default;
 }
 
 function fromInputDraft(draft: CalendarEventDraft): CalendarEventDraft {

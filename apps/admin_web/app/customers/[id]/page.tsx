@@ -2434,30 +2434,6 @@ function mostCommonLabel(values: string[]) {
   return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
 }
 
-function reviewBookingServiceLabel(booking?: { services?: AdminBookingDetail['services'] }) {
-  const first = booking?.services?.[0];
-  if (!first?.service) return 'No service';
-  return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
-}
-
-function isClosedCustomerBooking(booking: AdminBookingDetail) {
-  return CLOSED_BOOKING_STATUSES.includes(booking.status);
-}
-
-function bookingClosureLabel(booking: AdminBookingDetail) {
-  const actor =
-    booking.closedByRole === 'CUSTOMER'
-      ? 'customer'
-      : booking.closedByRole === 'PROVIDER'
-        ? 'Partner'
-        : booking.closedByRole === 'ADMIN'
-          ? 'admin'
-          : 'system';
-  const reason = booking.closedReason ? booking.closedReason.replace(/_/g, ' ') : 'no reason saved';
-  const note = booking.closedNote ? ` / ${compactText(booking.closedNote, 90)}` : '';
-  return `${actor} closure / ${reason}${note}`;
-}
-
 function bookingStatusPillClass(status: string) {
   if (ACTIVE_STATUSES.includes(status)) return 'pill-info';
   if (status === 'COMPLETED') return 'pill-success';

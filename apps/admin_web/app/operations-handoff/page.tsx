@@ -47,6 +47,7 @@ import {
   buildOperationsHandoffFilters,
   buildOperationsHandoffRangeData,
   emptyCashSettlementSummary,
+  operationsHandoffDetailPageHref,
 } from './operations-handoff-page-model';
 import { OperationsHandoffReadinessChecklistSection } from './operations-handoff-readiness-checklist-section';
 import {
@@ -207,16 +208,44 @@ export default async function OperationsHandoffPage({
 
       {shouldRenderFullDetails ? (
         <>
-          <OperationsHandoffActivityStreamSection csvHref={activityStreamCsvHref} rows={activityStream} />
+          <OperationsHandoffActivityStreamSection
+            csvHref={activityStreamCsvHref}
+            pagination={{
+              activePage: filters.detailPages.activity,
+              ariaLabel: 'Operations activity pagination',
+              hrefForPage: operationsHandoffDetailPageHref(filters, 'activity'),
+              itemLabel: 'activity rows',
+              totalRows: activityStream.length,
+            }}
+            rows={activityStream}
+          />
 
-          <OperationsHandoffBookingQueueSection bookings={bookingQueue} />
+          <OperationsHandoffBookingQueueSection
+            bookings={bookingQueue}
+            pagination={{
+              activePage: filters.detailPages.bookings,
+              ariaLabel: 'Operations booking history pagination',
+              hrefForPage: operationsHandoffDetailPageHref(filters, 'bookings'),
+              itemLabel: 'booking rows',
+              totalRows: bookingQueue.length,
+            }}
+          />
 
           <OperationsHandoffCustomerPartnerSection
             customers={customerSignals}
             partners={partnerSignals.rows}
           />
 
-          <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
+          <OperationsHandoffFinanceCloseoutSection
+            pagination={{
+              activePage: filters.detailPages.finance,
+              ariaLabel: 'Operations finance history pagination',
+              hrefForPage: operationsHandoffDetailPageHref(filters, 'finance'),
+              itemLabel: 'finance rows',
+              totalRows: financeRows.length,
+            }}
+            rows={financeRows}
+          />
         </>
       ) : (
         <OperationsHandoffFullDetailsLink range={filters.range} />

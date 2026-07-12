@@ -20,6 +20,7 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
 
   it('renders finance rows and closeout links', () => {
     const section = OperationsHandoffFinanceCloseoutSection({
+      pagination: pagination(1),
       rows: [
         {
           bookingId: 'booking-1234567890',
@@ -61,8 +62,18 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
   });
 
   it('renders the empty state when there are no finance rows', () => {
-    const rendered = textContent(OperationsHandoffFinanceCloseoutSection({ rows: [] }));
+    const rendered = textContent(OperationsHandoffFinanceCloseoutSection({ pagination: pagination(0), rows: [] }));
 
     expect(rendered).toContain('No finance history rows.');
   });
 });
+
+function pagination(totalRows: number) {
+  return {
+    activePage: 1,
+    ariaLabel: 'Operations finance history pagination',
+    hrefForPage: (page: number) => `/operations-handoff?details=all&financePage=${page}`,
+    itemLabel: 'finance rows',
+    totalRows,
+  };
+}

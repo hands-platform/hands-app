@@ -589,6 +589,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     failedNotificationCount,
     failedNotifications,
     activePayoutBatches,
+    activePayoutBatchCount,
   });
   const fullDashboardData = shouldRenderFullDashboard
     ? buildFullDashboardData({
@@ -854,6 +855,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </AdminTaskGrid>
       </AdminSection>
 
+      {fullDashboardData ? (
+        <>
       <AdminSection
         actions={
           <AdminTextLink href="/bookings?view=marketplace">
@@ -1066,6 +1069,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </AdminTaskGrid>
       </AdminSection>
+        </>
+      ) : null}
 
       <AdminSection
         actions={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
@@ -2905,6 +2910,7 @@ function buildOperationsCommandBoard(input: {
   failedNotificationCount: number;
   failedNotifications: AdminNotification[];
   activePayoutBatches: AdminPayoutBatch[];
+  activePayoutBatchCount: number;
 }): OperationsCommandBoardItem[] {
   const openMatchingFollowUp = input.matchingControl.openRows.filter(
     (row) => row.expired || row.freshEligibleCount === 0,
@@ -2922,7 +2928,7 @@ function buildOperationsCommandBoard(input: {
   const financeRows =
     input.bookingOps.completedCloseoutChecks +
     input.cashSettlementSummary.rowCount +
-    input.activePayoutBatches.length;
+    input.activePayoutBatchCount;
 
   return [
     {
@@ -3026,7 +3032,7 @@ function buildOperationsCommandBoard(input: {
       tone: financeRows ? 'warn' : 'ok',
       checks: [
         `${input.cashSettlementSummary.rowCount} cash fee row(s)`,
-        `${input.activePayoutBatches.length} payout batch(es)`,
+        `${input.activePayoutBatchCount} payout batch(es)`,
         'Weekly/monthly/admin batch',
       ],
     },

@@ -191,7 +191,8 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('<span>Payout evidence</span><strong>7</strong>');
+    expect(markup).toContain('<h3>Finance closeout</h3><strong>7 item(s)</strong>');
+    expect(markup).toContain('<span class="pill pill-neutral">7 payout batch(es)</span>');
   });
 
   it('uses notification summary for default dashboard failed notification counters', async () => {
@@ -223,7 +224,6 @@ describe('DashboardPage', () => {
       null,
     );
     expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
-    expect(markup).toContain('<h3>Alert evidence</h3><strong>19 alert</strong>');
   });
 
   it('uses payment summary for default dashboard payment hold counters', async () => {
@@ -286,22 +286,9 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
     );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-booking-participant-flow-title">Booking participant flow</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
-    );
-    expect(markup).toContain('<h2 id="dashboard-evidence-drilldown-title">Evidence drilldown</h2>');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-booking-evidence-command-queue-title">Booking evidence command queue</h2>',
-    );
+    expect(markup).not.toContain('id="dashboard-booking-participant-flow"');
+    expect(markup).not.toContain('id="dashboard-evidence-drilldown"');
+    expect(markup).not.toContain('id="dashboard-booking-evidence-command-queue"');
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-date-range"',
     );
@@ -448,6 +435,22 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-booking-participant-flow-title">Booking participant flow</h2>',
+    );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
+    );
+    expect(markup).toContain('<h2 id="dashboard-evidence-drilldown-title">Evidence drilldown</h2>');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-booking-evidence-command-queue-title">Booking evidence command queue</h2>',
+    );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-live-operations-radar"',
     );

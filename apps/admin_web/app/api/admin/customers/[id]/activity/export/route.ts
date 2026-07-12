@@ -76,7 +76,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
     )
     .slice(0, CUSTOMER_ACTIVITY_EXPORT_LIMIT);
 
-  const csvRows = rows.map(({ at: _at, ...row }) => row);
+  const csvRows = rows.map(({ at: omittedAt, ...row }) => {
+    void omittedAt;
+    return row;
+  });
 
   return new NextResponse(buildCsvContent(csvRows, [...CUSTOMER_ACTIVITY_EXPORT_COLUMNS]), {
     headers: {

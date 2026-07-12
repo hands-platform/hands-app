@@ -19,6 +19,7 @@ describe('OperationsHandoffActivityStreamSection', () => {
   it('renders activity stream rows and export links', () => {
     const section = OperationsHandoffActivityStreamSection({
       csvHref: 'data:text/csv,created_at',
+      pagination: pagination(1),
       rows: [
         {
           area: 'Notification',
@@ -57,9 +58,19 @@ describe('OperationsHandoffActivityStreamSection', () => {
 
   it('renders the empty state when there are no rows', () => {
     const rendered = textContent(
-      OperationsHandoffActivityStreamSection({ csvHref: 'data:text/csv,', rows: [] }),
+      OperationsHandoffActivityStreamSection({ csvHref: 'data:text/csv,', pagination: pagination(0), rows: [] }),
     );
 
     expect(rendered).toContain('No recent activity stream rows.');
   });
 });
+
+function pagination(totalRows: number) {
+  return {
+    activePage: 1,
+    ariaLabel: 'Operations activity pagination',
+    hrefForPage: (page: number) => `/operations-handoff?details=all&activityPage=${page}`,
+    itemLabel: 'activity rows',
+    totalRows,
+  };
+}
