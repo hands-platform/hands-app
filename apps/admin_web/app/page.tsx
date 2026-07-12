@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   CalendarClock,
   FileClock,
+  ListChecks,
   Settings2,
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
@@ -776,7 +777,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <AdminSection
         actions={
           <AdminFormControlLink href={operationsCommandBoard[0]?.href ?? '/bookings'}>
-            <BellRing size={16} aria-hidden="true" />
+            <ListChecks size={16} aria-hidden="true" />
             Open top priority
           </AdminFormControlLink>
         }
