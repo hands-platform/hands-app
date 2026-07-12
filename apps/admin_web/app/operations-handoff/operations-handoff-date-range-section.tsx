@@ -7,17 +7,22 @@ import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
 
 type OperationsHandoffDateRangeSectionProps = {
+  readonly detailsMode?: 'all' | 'summary';
   readonly range: AdminDateRange;
 };
 
 const handoffRangeLinks = [
-  ['All dates', '/operations-handoff?range=all'],
-  ['Today', '/operations-handoff?range=today'],
-  ['Last 7 days', '/operations-handoff'],
-  ['Last 30 days', '/operations-handoff?range=30d'],
+  ['all', 'All dates'],
+  ['today', 'Today'],
+  ['7d', 'Last 7 days'],
+  ['30d', 'Last 30 days'],
+  ['90d', 'Last 90 days'],
 ] as const;
 
-export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDateRangeSectionProps) {
+export function OperationsHandoffDateRangeSection({
+  detailsMode = 'summary',
+  range,
+}: OperationsHandoffDateRangeSectionProps) {
   return (
     <AdminSection
       actions={
@@ -28,13 +33,42 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
       title="Operations history range"
     >
       <div className="actions">
-        {handoffRangeLinks.map(([label, href]) => (
-          <AdminFormControlLink className="button-secondary" href={href} key={href}>
-            <CalendarDays aria-hidden="true" size={16} />
-            {label}
-          </AdminFormControlLink>
-        ))}
+        {handoffRangeLinks.map(([rangeValue, label]) => {
+          const selected = range === rangeValue;
+
+          return (
+            <AdminFormControlLink
+              aria-current={selected ? 'page' : undefined}
+              className={selected ? 'button-primary' : 'button-secondary'}
+              href={operationsHandoffRangeHref(rangeValue, detailsMode)}
+              key={rangeValue}
+            >
+              <CalendarDays aria-hidden="true" size={16} />
+              {label}
+            </AdminFormControlLink>
+          );
+        })}
       </div>
     </AdminSection>
   );
+}
+
+function operationsHandoffRangeHref(
+  range: AdminDateRange,
+  detailsMode: NonNullable<OperationsHandoffDateRangeSectionProps['detailsMode']>,
+) {
+  const query = new URLSearchParams();
+
+  if (detailsMode === 'all') {
+    query.set('details', 'all');
+  }
+
+  if (range !== '7d') {
+    query.set('range', range);
+  } else if (detailsMode === 'all') {
+    query.set('range', range);
+  }
+
+  const search = query.toString();
+  return search ? `/operations-handoff?${search}` : '/operations-handoff';
 }

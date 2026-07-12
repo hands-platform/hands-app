@@ -238,7 +238,7 @@ export default async function OperationsHandoffPage({
       metrics={operationsHistoryMetrics}
       title="Operations History"
     >
-      <OperationsHandoffDateRangeSection range={filters.range} />
+      <OperationsHandoffDateRangeSection detailsMode={filters.detailsMode} range={filters.range} />
 
       <OperationsHandoffReadinessChecklistSection
         openCount={checklistNeedsReview}

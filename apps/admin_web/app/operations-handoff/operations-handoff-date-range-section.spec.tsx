@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
@@ -29,6 +30,7 @@ describe('OperationsHandoffDateRangeSection', () => {
         '/operations-handoff?range=today',
         '/operations-handoff',
         '/operations-handoff?range=30d',
+        '/operations-handoff?range=90d',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
@@ -37,5 +39,19 @@ describe('OperationsHandoffDateRangeSection', () => {
         'actions',
       ]),
     );
+  });
+
+  it('marks the selected range and preserves full-history mode while switching ranges', () => {
+    const markup = renderToStaticMarkup(
+      OperationsHandoffDateRangeSection({ detailsMode: 'all', range: '30d' }),
+    );
+
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=all"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=30d"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=90d"');
+    expect(markup).toContain('button-primary');
   });
 });
