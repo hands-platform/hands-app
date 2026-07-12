@@ -335,6 +335,9 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
     );
+    expect(markup.indexOf('id="dashboard-operations-command-board"')).toBeLessThan(
+      markup.indexOf('id="dashboard-core-operating-counters"'),
+    );
     expect(markup).not.toContain('id="dashboard-booking-participant-flow"');
     expect(markup).not.toContain('id="dashboard-evidence-drilldown"');
     expect(markup).not.toContain('id="dashboard-booking-evidence-command-queue"');

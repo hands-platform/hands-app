@@ -768,37 +768,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     >
       <AdminSection
         actions={
-          <AdminFormControlLink href="/bookings">
-            <CalendarClock size={16} aria-hidden="true" />
-            Open booking monitor
-          </AdminFormControlLink>
-        }
-        className="admin-mt-20"
-        description="Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply, payment holds, and cash debt in one operator scan."
-        id="dashboard-core-operating-counters"
-        title="Core operating counters"
-      >
-        <DashboardTraceSummary className="admin-mt-12" metrics={coreOperatingCounters} />
-        <div className="actions admin-mt-12">
-          <AdminFormControlLink href="/bookings?view=matching">
-            <BellRing size={16} aria-hidden="true" />
-            Matching wait
-          </AdminFormControlLink>
-          <AdminFormControlLink href="/bookings?view=no-show">
-            <BookOpenCheck size={16} aria-hidden="true" />
-            No-show evidence
-          </AdminFormControlLink>
-          <AdminTextLink href="/usage-overview?segment=live-customers">
-            Live customer pattern
-          </AdminTextLink>
-          <AdminTextLink href="/cash-settlements">
-            Cash settlement gate
-          </AdminTextLink>
-        </div>
-      </AdminSection>
-
-      <AdminSection
-        actions={
           <AdminFormControlLink href={operationsCommandBoard[0]?.href ?? '/bookings'}>
             <BellRing size={16} aria-hidden="true" />
             Open first action
@@ -836,6 +805,37 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminActionCard>
           ))}
         </AdminTaskGrid>
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <AdminFormControlLink href="/bookings">
+            <CalendarClock size={16} aria-hidden="true" />
+            Open booking monitor
+          </AdminFormControlLink>
+        }
+        className="admin-mt-20"
+        description="Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply, payment holds, and cash debt in one operator scan."
+        id="dashboard-core-operating-counters"
+        title="Core operating counters"
+      >
+        <DashboardTraceSummary className="admin-mt-12" metrics={coreOperatingCounters} />
+        <div className="actions admin-mt-12">
+          <AdminFormControlLink href="/bookings?view=matching">
+            <BellRing size={16} aria-hidden="true" />
+            Matching wait
+          </AdminFormControlLink>
+          <AdminFormControlLink href="/bookings?view=no-show">
+            <BookOpenCheck size={16} aria-hidden="true" />
+            No-show evidence
+          </AdminFormControlLink>
+          <AdminTextLink href="/usage-overview?segment=live-customers">
+            Live customer pattern
+          </AdminTextLink>
+          <AdminTextLink href="/cash-settlements">
+            Cash settlement gate
+          </AdminTextLink>
+        </div>
       </AdminSection>
 
       {fullDashboardData ? (
