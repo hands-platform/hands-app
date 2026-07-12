@@ -58,15 +58,18 @@ export function AdminPageTemplate({
   title,
 }: AdminPageTemplateProps) {
   const normalizedTitle = adminPageTitleLabel(title);
+  const hasActions = Boolean(actions);
 
   return (
     <>
       <div className="admin-page-header admin-page-header-toolbar">
-        <div>
+        <div className="admin-page-header-copy">
           <h1>{normalizedTitle}</h1>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {actions ? <div className="admin-page-header-actions">{actions}</div> : null}
+        <div aria-label="Page actions" className="admin-page-header-actions" data-empty={hasActions ? undefined : 'true'}>
+          {actions}
+        </div>
       </div>
       {metrics.length ? <AdminMetricGrid metrics={metrics} /> : null}
       {contentClassName ? <div className={joinClassNames(contentClassName)}>{children}</div> : children}

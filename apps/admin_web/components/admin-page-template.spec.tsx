@@ -16,7 +16,25 @@ describe('AdminPageTemplate', () => {
     expect(template.props.children[0].props).toMatchObject({
       className: 'admin-page-header admin-page-header-toolbar',
     });
+    expect(template.props.children[0].props.children[0].props.className).toBe('admin-page-header-copy');
     expect(template.props.children[0].props.children[1].props.className).toBe('admin-page-header-actions');
+    expect(template.props.children[0].props.children[1].props['aria-label']).toBe('Page actions');
+    expect(template.props.children[0].props.children[1].props['data-empty']).toBeUndefined();
+  });
+
+  it('keeps the same page header slots when a page has no actions', () => {
+    const template = AdminPageTemplate({
+      children: <section>Calendar board</section>,
+      title: 'Calendar',
+    });
+
+    const header = template.props.children[0];
+
+    expect(header.props.children).toHaveLength(2);
+    expect(header.props.children[0].props.className).toBe('admin-page-header-copy');
+    expect(header.props.children[1].props.className).toBe('admin-page-header-actions');
+    expect(header.props.children[1].props['aria-label']).toBe('Page actions');
+    expect(header.props.children[1].props['data-empty']).toBe('true');
   });
 
   it('deduplicates content wrapper classes when page sections migrate to the shared shell', () => {
@@ -32,12 +50,16 @@ describe('AdminPageTemplate', () => {
   it('scopes shared page header typography to direct title copy slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.admin-page-header > div > h1');
-    expect(css).toContain('.admin-page-header > div > p');
+    expect(css).toContain('.admin-page-header-copy {');
+    expect(css).toContain('.admin-page-header-copy > h1');
+    expect(css).toContain('.admin-page-header-copy > p');
     expect(css).toContain('.admin-page-header-toolbar {');
     expect(css).toContain('.admin-page-header-actions {');
+    expect(css).toContain(".admin-page-header-actions[data-empty='true']");
     expect(css).not.toContain('.admin-page-header h1');
     expect(css).not.toContain('.admin-page-header p');
+    expect(css).not.toContain('.admin-page-header > div > h1');
+    expect(css).not.toContain('.admin-page-header > div > p');
     expect(css).not.toContain('.admin-page-header.toolbar');
   });
 

@@ -3285,11 +3285,11 @@ a.action-button-card:hover {
 }
 
 .admin-page-header-toolbar {
-  align-items: flex-start;
+  align-items: start;
   background: transparent;
-  display: flex;
+  display: grid;
   gap: 16px;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 16px;
   padding-bottom: 4px;
 }
@@ -3302,13 +3302,19 @@ a.action-button-card:hover {
   padding: 24px;
 }
 
-.admin-page-header > div > h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
+.admin-page-header-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 
-.admin-page-header > div > p {
+.admin-page-header-copy > h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 0;
+}
+
+.admin-page-header-copy > p {
   max-width: 780px;
 }
 
@@ -3319,6 +3325,11 @@ a.action-button-card:hover {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 0;
+  min-width: 0;
+}
+
+.admin-page-header-actions[data-empty='true'] {
+  display: none;
 }
 
 .admin-page-header-toolbar h1,
@@ -3328,6 +3339,17 @@ a.action-button-card:hover {
 .toolbar h2,
 .toolbar p {
   margin-top: 0;
+}
+
+@media (max-width: 799px) {
+  .admin-page-header-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-page-header-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
 }
 
 .booking-monitor {
