@@ -44,6 +44,7 @@ describe('OperationsHandoffFinanceActionSection', () => {
     const rendered = textContent(section);
 
     expect(rendered).toContain('Finance history review');
+    expect(rendered).toContain('1 finance lane open');
     expect(rendered).toContain('Payment state review');
     expect(rendered).toContain('100.000 VND');
     expect(hrefsIn(section)).toEqual(
@@ -60,6 +61,7 @@ describe('OperationsHandoffFinanceActionSection', () => {
   it('renders the finance closeout link without action rows', () => {
     const section = OperationsHandoffFinanceActionSection({ actions: [] });
 
+    expect(textContent(section)).toContain('Finance clear');
     expect(textContent(section)).toContain('Open Finance Closeout');
     expect(hrefsIn(section)).toContain('/finance-closeout');
   });

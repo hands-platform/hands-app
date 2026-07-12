@@ -11,6 +11,8 @@ type OperationsHandoffFinanceActionSectionProps = {
 export function OperationsHandoffFinanceActionSection({
   actions,
 }: OperationsHandoffFinanceActionSectionProps) {
+  const openActionCount = actions.filter((item) => !item.statusClass.includes('success')).length;
+
   return (
     <AdminSection
       actions={
@@ -21,6 +23,13 @@ export function OperationsHandoffFinanceActionSection({
       className="admin-mb-16 operations-handoff-finance-action-card"
       description="Money-flow history lanes for the selected range: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
       id="operations-handoff-finance-review"
+      status={
+        <StatusBadge tone={openActionCount > 0 ? 'warning' : 'success'}>
+          {openActionCount > 0
+            ? `${openActionCount} finance ${openActionCount === 1 ? 'lane' : 'lanes'} open`
+            : 'Finance clear'}
+        </StatusBadge>
+      }
       title="Finance history review"
     >
       <AdminTaskGrid>
