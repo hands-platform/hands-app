@@ -443,7 +443,7 @@ describe('DashboardPage', () => {
     expect(markup).toContain('Work red/yellow lanes first.');
     expect(markup).toContain('Live counters for bookings, app presence, supply, payments, and cash debt.');
     expect(markup).toContain('Current live queues stay visible; dated totals follow the selected window.');
-    expect(markup).toContain('Open only when you need detailed radar, queues, policy, and finance panels.');
+    expect(markup).toContain('Full dashboard opens focused review lanes without loading them on Start Shift.');
     expect(markup).not.toContain('<h1>HANDS Operations</h1>');
     expect(markup).not.toContain('Daily command center');
     expect(markup).toContain('href="/notifications"');
@@ -502,6 +502,15 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-on-demand-detail-title">More operating detail</h2>',
     );
+    expect(markup).toContain('Full dashboard opens focused review lanes without loading them on Start Shift.');
+    expect(markup).toContain('Live radar');
+    expect(markup).toContain('href="/?details=all#dashboard-live-operations-radar"');
+    expect(markup).toContain('Dispatch evidence');
+    expect(markup).toContain('href="/?details=all#dashboard-booking-participant-flow"');
+    expect(markup).toContain('Partner supply');
+    expect(markup).toContain('href="/?details=all#dashboard-partner-supply-status"');
+    expect(markup).toContain('Finance closeout');
+    expect(markup).toContain('href="/?details=all#dashboard-finance-closeout-status"');
     expect(markup).not.toContain('Detailed dashboard loaded on demand');
     expect(markup).not.toContain('API source:');
     expect(markup).not.toContain('setup readiness');

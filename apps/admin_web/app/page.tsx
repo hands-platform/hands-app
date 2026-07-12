@@ -2295,10 +2295,49 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminFormControlLink>
           }
           className="admin-mt-20"
-          description="Open only when you need detailed radar, queues, policy, and finance panels."
+          description="Full dashboard opens focused review lanes without loading them on Start Shift."
           id="dashboard-on-demand-detail"
           title="More operating detail"
-        />
+        >
+          <AdminTaskGrid>
+            {[
+              {
+                title: 'Live radar',
+                value: 'Now',
+                detail: 'Realtime booking, Partner supply, alert, and finance lanes.',
+                href: `${buildDashboardDetailsHref('all', params)}#dashboard-live-operations-radar`,
+              },
+              {
+                title: 'Dispatch evidence',
+                value: 'Evidence',
+                detail: 'Participant flow, retained signals, and evidence queue shortcuts.',
+                href: `${buildDashboardDetailsHref('all', params)}#dashboard-booking-participant-flow`,
+              },
+              {
+                title: 'Partner supply',
+                value: 'Supply',
+                detail: 'Online supply, location freshness, verification, and contactability.',
+                href: `${buildDashboardDetailsHref('all', params)}#dashboard-partner-supply-status`,
+              },
+              {
+                title: 'Finance closeout',
+                value: 'Money',
+                detail: 'Payment, cash settlement, payout, wallet, and closeout signals.',
+                href: `${buildDashboardDetailsHref('all', params)}#dashboard-finance-closeout-status`,
+              },
+            ].map((item) => (
+              <AdminActionCard
+                actionLabel="Open detail"
+                detail={item.detail}
+                href={item.href}
+                key={item.title}
+                title={item.title}
+                value={item.value}
+                variant="ops-task"
+              />
+            ))}
+          </AdminTaskGrid>
+        </AdminSection>
       )}
     </AdminPageTemplate>
   );
