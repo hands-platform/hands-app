@@ -64,6 +64,7 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('/operations-handoff?details=all');
+    expect(markup).not.toContain('href="/chat-archive"');
   });
 
   it('lets operators return from full history details to the compact summary', async () => {

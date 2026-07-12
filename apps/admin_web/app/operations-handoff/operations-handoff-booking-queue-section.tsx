@@ -41,9 +41,9 @@ export function OperationsHandoffBookingQueueSection({
             <ClipboardList aria-hidden="true" size={16} />
             Booking monitor
           </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/chat-archive">
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat">
             <MessageSquare aria-hidden="true" size={16} />
-            Chat archive
+            Booking chats
           </AdminFormControlLink>
         </div>
       }

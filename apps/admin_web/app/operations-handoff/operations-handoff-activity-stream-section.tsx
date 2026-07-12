@@ -42,9 +42,9 @@ export function OperationsHandoffActivityStreamSection({
             <FileClock aria-hidden="true" size={16} />
             Audit trail
           </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/chat-archive">
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat">
             <MessageSquare aria-hidden="true" size={16} />
-            Chat archive
+            Booking chats
           </AdminFormControlLink>
         </div>
       }

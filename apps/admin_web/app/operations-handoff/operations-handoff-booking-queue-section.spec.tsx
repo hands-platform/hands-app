@@ -58,7 +58,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=attention',
-        '/chat-archive',
+        '/bookings?view=chat',
         '/bookings/booking-1234567890',
         '/customers/customer-mai',
         '/partners/partner-linh',

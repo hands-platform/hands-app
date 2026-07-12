@@ -38,13 +38,14 @@ describe('OperationsHandoffActivityStreamSection', () => {
 
     expect(rendered).toContain('Unified activity stream');
     expect(rendered).toContain('Export activity CSV');
+    expect(rendered).toContain('Booking chats');
     expect(rendered).toContain('Notification');
     expect(rendered).toContain('Partner booking update failed');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         'data:text/csv,created_at',
         '/audit-log',
-        '/chat-archive',
+        '/bookings?view=chat',
         '/audit-log?bucket=Notification&range=all',
       ]),
     );
