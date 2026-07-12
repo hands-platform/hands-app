@@ -23,7 +23,7 @@ export function OperationsHandoffActivityStreamSection({
         <div className="actions">
           <AdminFormControlLink
             className="button-secondary"
-            download="hands-operations-handoff-activity.csv"
+            download="hands-operations-history-activity.csv"
             href={csvHref}
           >
             <Download aria-hidden="true" size={16} />

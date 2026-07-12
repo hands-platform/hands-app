@@ -38,12 +38,12 @@ export function OperationsHandoffFinanceCloseoutSection({
         </div>
       }
       className="operations-handoff-finance-closeout-card"
-      description="Cash debt, payout evidence, and chat records that an operator should not lose at handoff."
+      description="Cash debt, payout evidence, and chat records from the selected historical window."
       title="Finance and chat closeout"
     >
       <AdminTableScroll>
         <AdminDataTable
-          emptyMessage="No finance rows need handoff."
+          emptyMessage="No finance history rows."
           headers={FINANCE_CLOSEOUT_HEADERS}
           rowCount={visibleRows.length}
         >

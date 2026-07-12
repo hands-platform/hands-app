@@ -41,7 +41,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     expect(source).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 
-  it('renders Customer and Partner handoff cards with links', () => {
+  it('renders Customer and Partner history cards with links', () => {
     const section = OperationsHandoffCustomerPartnerSection({
       customers: [
         {
@@ -83,11 +83,11 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     const rendered = textContent(section);
 
     expect(section).not.toBeNull();
-    if (section === null) throw new Error('Expected customer partner handoff section to render.');
+    if (section === null) throw new Error('Expected customer partner history section to render.');
     expect(section.type.name).toBe('AdminDetailGrid');
-    expect(rendered).toContain('Customer handoff');
+    expect(rendered).toContain('Customer history');
     expect(rendered).toContain('Customer Mai');
-    expect(rendered).toContain('Partner handoff');
+    expect(rendered).toContain('Partner history');
     expect(rendered).toContain('Partner Linh');
     expect(rendered).not.toContain('Partner An');
     expect(classNamesIn(section)).toEqual(

@@ -8,7 +8,6 @@ import type {
 } from '../../lib/admin-api';
 import {
   buildActivityStreamCsvHref,
-  buildLatestFcmSentSummary,
   buildOperationsHandoffFailedNotificationCount,
   buildOperationsHandoffDataHrefs,
   buildOperationsHandoffFilters,
@@ -18,7 +17,7 @@ import {
 
 describe('operations handoff page model', () => {
   it('normalizes filters and provides a complete empty cash settlement fallback', () => {
-    expect(buildOperationsHandoffFilters({})).toEqual({ detailsMode: 'summary', range: 'today' });
+    expect(buildOperationsHandoffFilters({})).toEqual({ detailsMode: 'summary', range: '7d' });
     expect(buildOperationsHandoffFilters({ range: ['7d'] })).toEqual({
       detailsMode: 'summary',
       range: '7d',
@@ -29,7 +28,7 @@ describe('operations handoff page model', () => {
     });
     expect(buildOperationsHandoffFilters({ details: 'all' })).toEqual({
       detailsMode: 'all',
-      range: 'today',
+      range: '7d',
     });
     expect(emptyCashSettlementSummary()).toMatchObject({
       cashPaymentRowCount: 0,
@@ -40,35 +39,33 @@ describe('operations handoff page model', () => {
     });
   });
 
-  it('keeps default handoff board requests bounded and scoped to today', () => {
+  it('keeps default operations history requests bounded and scoped to the last 7 days', () => {
     const hrefs = buildOperationsHandoffDataHrefs({});
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
     const auditUrl = new URL(hrefs.auditLogsHref, 'http://admin.local');
-    const appSessionSummaryUrl = new URL(hrefs.appSessionSummaryHref, 'http://admin.local');
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
     const earningsUrl = new URL(hrefs.earningsHref, 'http://admin.local');
     const refundsUrl = new URL(hrefs.refundsHref, 'http://admin.local');
     const payoutBatchesUrl = new URL(hrefs.payoutBatchesHref, 'http://admin.local');
 
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
-    expect(bookingsUrl.searchParams.get('dateRange')).toBe('today');
+    expect(bookingsUrl.searchParams.get('dateRange')).toBe('7d');
     expect(bookingsUrl.searchParams.get('take')).toBe('10');
-    expect(hrefs.appSessionsHref).toBeNull();
-    expect(appSessionSummaryUrl.pathname).toBe('/admin/app-sessions/summary');
-    expect(appSessionSummaryUrl.searchParams.toString()).toBe('');
+    expect('appSessionsHref' in hrefs).toBe(false);
+    expect('appSessionSummaryHref' in hrefs).toBe(false);
     expect(hrefs.chatArchiveHref).toBeNull();
     expect(hrefs.customersHref).toBeNull();
     expect(hrefs.partnersHref).toBeNull();
-    expect(paymentsUrl.searchParams.get('range')).toBe('today');
+    expect(paymentsUrl.searchParams.get('range')).toBe('7d');
     expect(paymentsUrl.searchParams.get('take')).toBe('5');
-    expect(earningsUrl.searchParams.get('range')).toBe('today');
+    expect(earningsUrl.searchParams.get('range')).toBe('7d');
     expect(earningsUrl.searchParams.get('take')).toBe('5');
-    expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
+    expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.notificationSummaryHref).toContain('/admin/notifications/summary?');
-    expect(refundsUrl.searchParams.get('range')).toBe('today');
+    expect(refundsUrl.searchParams.get('range')).toBe('7d');
     expect(refundsUrl.searchParams.get('take')).toBe('5');
-    expect(payoutBatchesUrl.searchParams.get('range')).toBe('today');
+    expect(payoutBatchesUrl.searchParams.get('range')).toBe('7d');
     expect(payoutBatchesUrl.searchParams.get('take')).toBe('5');
     expect(payoutBatchesUrl.searchParams.get('review')).toBe('needs-review');
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
@@ -80,7 +77,6 @@ describe('operations handoff page model', () => {
   it('keeps retained chat archive behind full handoff details', () => {
     const hrefs = buildOperationsHandoffDataHrefs({ details: 'all', range: '7d' });
     const bookingsUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
-    const appSessionsUrl = new URL(hrefs.appSessionsHref!, 'http://admin.local');
     const chatArchiveUrl = new URL(hrefs.chatArchiveHref!, 'http://admin.local');
     const customersUrl = new URL(hrefs.customersHref!, 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref!, 'http://admin.local');
@@ -88,8 +84,8 @@ describe('operations handoff page model', () => {
     const paymentsUrl = new URL(hrefs.paymentsHref, 'http://admin.local');
 
     expect(bookingsUrl.searchParams.get('take')).toBe('50');
-    expect(appSessionsUrl.pathname).toBe('/admin/app-sessions');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('50');
+    expect('appSessionsHref' in hrefs).toBe(false);
+    expect('appSessionSummaryHref' in hrefs).toBe(false);
     expect(chatArchiveUrl.pathname).toBe('/admin/chat-archive');
     expect(chatArchiveUrl.searchParams.get('dateRange')).toBe('7d');
     expect(chatArchiveUrl.searchParams.get('take')).toBe('50');
@@ -166,34 +162,7 @@ describe('operations handoff page model', () => {
     expect(data.rangeRefunds.map((row) => row.id)).toEqual(['refund-current']);
   });
 
-  it('builds FCM summary and activity CSV data hrefs for page sections', () => {
-    const fcmSummary = buildLatestFcmSentSummary([
-      {
-        body: 'Body',
-        createdAt: '2026-06-14T00:00:00.000Z',
-        deliveries: [
-          {
-            attemptedAt: '2026-06-14T01:00:00.000Z',
-            provider: 'FCM',
-            pushDevice: {
-              enabled: true,
-              id: 'push-device-1',
-              platform: 'ios',
-              role: 'CUSTOMER',
-            },
-            status: 'SENT',
-          },
-        ],
-        id: 'notification-1',
-        title: 'Title',
-        type: 'BOOKING',
-        user: {
-          phone: '+84900000001',
-          providerProfile: null,
-          roles: ['CUSTOMER'],
-        },
-      },
-    ]);
+  it('builds activity CSV data hrefs for page sections', () => {
     const csvHref = buildActivityStreamCsvHref([
       {
         area: 'Booking',
@@ -207,10 +176,6 @@ describe('operations handoff page model', () => {
       },
     ]);
 
-    expect(fcmSummary?.helper).toContain('Customer +84900000001 / ios');
-    expect(fcmSummary?.helper).toContain('device push-dev');
-    expect(fcmSummary?.href).toBe('/notifications?review=fcm#notification-1');
-    expect(fcmSummary?.value).toContain('14 Jun 2026');
     expect(decodeURIComponent(csvHref)).toContain('Customer / Partner / payment');
   });
 

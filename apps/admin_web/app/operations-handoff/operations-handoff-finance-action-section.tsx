@@ -19,8 +19,8 @@ export function OperationsHandoffFinanceActionSection({
         </AdminTextLink>
       }
       className="admin-mb-16 operations-handoff-finance-action-card"
-      description="Money-flow lanes the next operator should verify before continuing the shift: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
-      title="Finance handoff action map"
+      description="Money-flow history lanes for the selected range: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
+      title="Finance history review"
     >
       <AdminTaskGrid>
         {actions.map((item) => (

@@ -31,10 +31,12 @@ describe('operations handoff finance action model', () => {
       count: 2,
       countLabel: '2 row(s)',
       statusClass: 'pill pill-warn',
+      title: 'Payment state review',
     });
     expect(rowById(rows, 'finance-refund-state')).toMatchObject({
       count: 1,
       statusClass: 'pill pill-danger',
+      title: 'Refund state review',
     });
     expect(rowById(rows, 'finance-cash-debt')).toMatchObject({
       count: 2,
@@ -42,6 +44,7 @@ describe('operations handoff finance action model', () => {
       nextAction:
         'Record deposit reference or approved offset before final acceptance, service start, or payout release resumes.',
       statusClass: 'pill pill-danger',
+      title: 'Cash wallet debt review',
     });
     expect(rowById(rows, 'finance-reference-trace')).toMatchObject({
       count: 4,

@@ -27,7 +27,7 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
     {
       id: 'finance-payment-state',
       owner: 'Finance',
-      title: 'Payment state handoff',
+      title: 'Payment state review',
       detail: `${formatMoney(
         facts.totalOpenPaymentAmount,
         facts.currency,
@@ -36,14 +36,14 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
       count: facts.openPaymentRows.length,
       countLabel: `${facts.openPaymentRows.length} row(s)`,
       status: facts.openPaymentRows.length ? 'Open' : 'Clear',
-      nextAction: 'Capture, release, refund, or record cash collection evidence before handoff closes.',
+      nextAction: 'Capture, release, refund, or record cash collection evidence before closing the review.',
       className: facts.openPaymentRows.length ? 'signal signal-warn' : 'signal signal-ok',
       statusClass: facts.openPaymentRows.length ? 'pill pill-warn' : 'pill pill-success',
     },
     {
       id: 'finance-refund-state',
       owner: 'Finance',
-      title: 'Refund state handoff',
+      title: 'Refund state review',
       detail: `${formatMoney(
         facts.totalOpenRefundAmount,
         facts.currency,
@@ -59,7 +59,7 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
     {
       id: 'finance-cash-debt',
       owner: 'Finance',
-      title: 'Cash wallet debt handoff',
+      title: 'Cash wallet debt review',
       detail: `${formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency)} open HANDS fee debt from cash bookings.`,
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
@@ -73,7 +73,7 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
     {
       id: 'finance-payout-release',
       owner: 'Finance',
-      title: 'Payout release handoff',
+      title: 'Payout release review',
       detail: `${formatMoney(
         facts.totalOpenPayoutAmount,
         facts.currency,
@@ -102,7 +102,7 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
     {
       id: 'finance-earning-release',
       owner: 'Finance',
-      title: 'Earning release handoff',
+      title: 'Earning release review',
       detail: `${facts.pendingEarnings.length} earning row(s) are pending or available for batch review.`,
       href: '/earnings',
       count: facts.pendingEarnings.length,

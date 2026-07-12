@@ -44,6 +44,7 @@ describe('operations handoff immediate action model', () => {
     });
     expect(rowById(rows, 'recent-operator-notes')).toMatchObject({
       count: 1,
+      owner: 'History',
       statusClass: 'pill pill-info',
     });
   });

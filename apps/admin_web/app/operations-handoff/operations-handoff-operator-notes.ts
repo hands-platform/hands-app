@@ -9,7 +9,7 @@ export function buildOperatorNotes(logs: readonly AdminAuditLog[]) {
       const metadata = asRecord(log.metadata);
       const area =
         log.action === 'operations.handoff_note.add'
-          ? 'Shift'
+          ? 'History'
           : log.action.startsWith('booking')
             ? 'Booking'
             : log.action.startsWith('customer')

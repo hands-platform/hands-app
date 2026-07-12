@@ -138,9 +138,9 @@ export function buildImmediateActionQueue(
     },
     {
       id: 'recent-operator-notes',
-      owner: 'Handoff',
+      owner: 'History',
       title: 'Recent written notes',
-      detail: 'New Customer, Partner, or booking notes should be read before taking over the shift.',
+      detail: 'New Customer, Partner, or booking notes should be read when reviewing this period.',
       href: '/audit-log',
       count: recentNotes.length,
       countLabel: `${recentNotes.length} recent note(s)`,

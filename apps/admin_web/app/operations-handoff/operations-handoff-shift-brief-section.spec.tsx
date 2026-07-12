@@ -15,7 +15,7 @@ describe('OperationsHandoffShiftBriefSection', () => {
     expect(source).not.toContain('actions={<span className="pill pill-info">Factual queue</span>}');
   });
 
-  it('renders shift brief cards from count props', () => {
+  it('renders period brief cards from count props', () => {
     const section = OperationsHandoffShiftBriefSection({
       activeBookingCount: 4,
       cashDebtPartnerCount: 2,
@@ -27,7 +27,7 @@ describe('OperationsHandoffShiftBriefSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Shift brief');
+    expect(rendered).toContain('Period brief');
     expect(rendered).toContain('Factual queue');
     expect(rendered).toContain('5 matching wait');
     expect(rendered).toContain('6 Partner facts to check');

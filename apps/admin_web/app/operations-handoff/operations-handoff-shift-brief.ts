@@ -12,7 +12,7 @@ export function buildShiftBriefItems(input: ShiftBriefInput) {
     {
       owner: 'Dispatch',
       title: `${input.matchingBookings} matching wait`,
-      detail: `${input.activeBookings} active booking(s) need status continuity across the shift.`,
+      detail: `${input.activeBookings} active booking(s) need status continuity in this period.`,
       action: 'Open booking monitor and check the 10-minute Partner response window first.',
       href: '/bookings?view=matching',
       className: input.matchingBookings ? 'signal signal-warn' : 'signal signal-ok',

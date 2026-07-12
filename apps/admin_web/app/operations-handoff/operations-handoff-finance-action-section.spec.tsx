@@ -22,7 +22,7 @@ describe('OperationsHandoffFinanceActionSection', () => {
     expect(source).not.toContain('<span className="pill">{item.countLabel}</span>');
   });
 
-  it('renders finance handoff action rows and closeout link', () => {
+  it('renders finance history review rows and closeout link', () => {
     const section = OperationsHandoffFinanceActionSection({
       actions: [
         {
@@ -36,15 +36,15 @@ describe('OperationsHandoffFinanceActionSection', () => {
           owner: 'Finance',
           status: 'Open',
           statusClass: 'pill pill-warn',
-          title: 'Payment state handoff',
+          title: 'Payment state review',
         },
       ],
     });
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Finance handoff action map');
-    expect(rendered).toContain('Payment state handoff');
+    expect(rendered).toContain('Finance history review');
+    expect(rendered).toContain('Payment state review');
     expect(rendered).toContain('100.000 VND');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/finance-closeout', '/payments?review=needs-action']),

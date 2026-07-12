@@ -23,13 +23,13 @@ export function OperationsHandoffReadinessChecklistSection({
     <AdminSection
       bodyClassName="ops-task-grid"
       className="admin-mb-16"
-      description="A factual close-of-shift list for the next operator: live bookings, chat continuity, cash settlement, alerts, app presence, customer context, and written notes."
+      description="A dated operations review list: matching outcomes, active service records, chat continuity, cash settlement, alerts, customer context, and written notes."
       status={
         <StatusBadge tone={openCount ? 'warning' : 'success'}>
           {openCount ? `${openCount} check(s) open` : 'Ready to hand over'}
         </StatusBadge>
       }
-      title="Shift handoff checklist"
+      title="Operations review checklist"
     >
       {visibleRows.map((item) => (
         <AdminActionCard

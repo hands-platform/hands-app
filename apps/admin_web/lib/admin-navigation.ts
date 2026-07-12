@@ -25,7 +25,7 @@ const developerSystemCategories = new Set([
 export const adminNavSections: AdminNavSection[] = [
   {
     label: 'Command Center',
-    description: 'Today-first workspace for live shift operation and handoff.',
+    description: 'Today-first workspace for live operations and historical review.',
     links: [
       {
         href: '/',
@@ -39,8 +39,8 @@ export const adminNavSections: AdminNavSection[] = [
       },
       {
         href: '/operations-handoff',
-        label: 'Handoff',
-        description: 'Leave a factual shift note for the next operator.',
+        label: 'Operations History',
+        description: 'Review dated booking, finance, alert, and operator-note history.',
       },
     ],
   },
@@ -52,7 +52,7 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/bookings',
         label: 'All Bookings',
         description:
-          'Live booking workspace for request intake, matching, Partner handoff, chat repair, and active service checks.',
+          'Live booking workspace for request intake, matching, Partner coordination, chat repair, and active service checks.',
       },
       {
         href: '/bookings/completed',

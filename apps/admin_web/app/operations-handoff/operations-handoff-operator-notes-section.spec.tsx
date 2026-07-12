@@ -38,9 +38,10 @@ describe('OperationsHandoffOperatorNotesSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Latest operator notes');
+    expect(rendered).toContain('Operations history notes');
     expect(rendered).toContain('Owner lane');
-    expect(rendered).toContain('Partner operations handoff reviewed.');
+    expect(rendered).toContain('Partner operations history reviewed.');
+    expect(rendered).toContain('Save history note');
     expect(rendered).toContain('Partner document reviewed');
     expect(rendered).toContain('Ops Lead');
     expect(classNamesIn(section)).toEqual(

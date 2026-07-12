@@ -18,15 +18,16 @@ describe('OperationsHandoffDateRangeSection', () => {
     expect(source).not.toContain('<Link className="button button-secondary"');
   });
 
-  it('renders the selected range label and handoff range links', () => {
-    const section = OperationsHandoffDateRangeSection({ range: 'today' });
+  it('renders the selected range label and operations history range links', () => {
+    const section = OperationsHandoffDateRangeSection({ range: '7d' });
 
-    expect(textContent(section)).toContain('Today (Vietnam)');
+    expect(textContent(section)).toContain('Operations history range');
+    expect(textContent(section)).toContain('Last 7 days');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
-        '/operations-handoff',
+        '/operations-handoff?range=all',
         '/operations-handoff?range=today',
-        '/operations-handoff?range=7d',
+        '/operations-handoff',
         '/operations-handoff?range=30d',
       ]),
     );

@@ -40,11 +40,11 @@ export function OperationsHandoffBookingQueueSection({
       }
       className="operations-handoff-booking-queue-card admin-mb-16"
       description="Open and recently changed bookings with payment, chat, Partner, and next action."
-      title="Booking handoff queue"
+      title="Booking history queue"
     >
       <AdminTableScroll>
         <AdminDataTable
-          emptyMessage="No active booking handoff rows."
+          emptyMessage="No booking history rows."
           headers={BOOKING_HANDOFF_QUEUE_HEADERS}
           rowCount={bookings.length}
         >

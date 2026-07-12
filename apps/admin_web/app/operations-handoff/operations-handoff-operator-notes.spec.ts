@@ -1,8 +1,8 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { buildOperatorNotes } from './operations-handoff-operator-notes';
 
-describe('operations handoff operator notes model', () => {
-  it('keeps only ops notes and maps them to handoff rows', () => {
+describe('operations history operator notes model', () => {
+  it('keeps only ops notes and maps them to history rows', () => {
     const notes = buildOperatorNotes([
       auditLog({
         action: 'operations.handoff_note.add',
@@ -23,7 +23,7 @@ describe('operations handoff operator notes model', () => {
 
     expect(notes).toEqual([
       expect.objectContaining({
-        area: 'Shift',
+        area: 'History',
         actor: 'Ops Lead',
         href: '/operations-handoff',
         note: 'Shift remains active',

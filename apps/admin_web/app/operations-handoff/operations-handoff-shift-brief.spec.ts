@@ -1,7 +1,7 @@
 import { buildShiftBriefItems } from './operations-handoff-shift-brief';
 
-describe('operations handoff shift brief model', () => {
-  it('builds top-level handoff summary cards with Partner-facing copy', () => {
+describe('operations history period brief model', () => {
+  it('builds top-level period summary cards with Partner-facing copy', () => {
     const items = buildShiftBriefItems({
       activeBookings: 4,
       cashDebtPartners: 2,
@@ -15,6 +15,7 @@ describe('operations handoff shift brief model', () => {
       expect.objectContaining({
         owner: 'Dispatch',
         title: '5 matching wait',
+        detail: '4 active booking(s) need status continuity in this period.',
         className: 'signal signal-warn',
       }),
       expect.objectContaining({

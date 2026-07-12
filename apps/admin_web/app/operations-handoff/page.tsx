@@ -1,6 +1,4 @@
 import {
-  AdminAppSession,
-  AdminAppSessionSummary,
   AdminAuditLog,
   AdminBooking,
   AdminBookingDetail,
@@ -15,11 +13,9 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
@@ -38,7 +34,6 @@ import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-fi
 import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
 import { OperationsHandoffImmediateActionSection } from './operations-handoff-immediate-action-section';
-import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 import { buildOperatorNotes } from './operations-handoff-operator-notes';
 import { OperationsHandoffOperatorNotesSection } from './operations-handoff-operator-notes-section';
 import {
@@ -47,7 +42,6 @@ import {
 } from './operations-handoff-readiness-checklist';
 import {
   buildActivityStreamCsvHref,
-  buildLatestFcmSentSummary,
   buildOperationsHandoffDataHrefs,
   buildOperationsHandoffFailedNotificationCount,
   buildOperationsHandoffFilters,
@@ -56,10 +50,8 @@ import {
 } from './operations-handoff-page-model';
 import { OperationsHandoffReadinessChecklistSection } from './operations-handoff-readiness-checklist-section';
 import {
-  buildChatSignals,
   buildCustomerSignals,
   buildPartnerSignals,
-  buildPresence,
 } from './operations-handoff-signals';
 import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
 
@@ -73,7 +65,6 @@ export default async function OperationsHandoffPage({
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const filters = buildOperationsHandoffFilters(resolvedSearchParams);
   const dataHrefs = buildOperationsHandoffDataHrefs(resolvedSearchParams);
-  const canViewAppSessionDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const [
     bookings,
     customers,
@@ -84,8 +75,6 @@ export default async function OperationsHandoffPage({
     payouts,
     notifications,
     notificationSummary,
-    sessions,
-    appSessionSummary,
     auditLogs,
     cashSummary,
     chatArchive,
@@ -105,10 +94,6 @@ export default async function OperationsHandoffPage({
       ? adminGet<AdminNotification[]>(dataHrefs.notificationsHref, [])
       : Promise.resolve<AdminNotification[]>([]),
     adminGet<AdminNotificationBoardSummary | null>(dataHrefs.notificationSummaryHref, null),
-    dataHrefs.appSessionsHref
-      ? adminGet<AdminAppSession[]>(dataHrefs.appSessionsHref, [])
-      : Promise.resolve<AdminAppSession[]>([]),
-    adminGet<AdminAppSessionSummary | null>(dataHrefs.appSessionSummaryHref, null),
     adminGet<AdminAuditLog[]>(dataHrefs.auditLogsHref, []),
     adminGet<AdminCashSettlementSummary>(
       dataHrefs.cashSettlementSummaryHref,
@@ -136,7 +121,6 @@ export default async function OperationsHandoffPage({
       filters.range,
     );
   const operatorNotes = buildOperatorNotes(rangeAuditLogs);
-  const chatSignals = buildChatSignals(bookings);
   const financeRows = buildFinanceRows(rangeEarnings);
   const financeHandoffActions = buildFinanceHandoffActionMap({
     payments: rangePayments,
@@ -145,7 +129,6 @@ export default async function OperationsHandoffPage({
     earnings: rangeEarnings,
     cashSummary,
   });
-  const presence = buildPresence(sessions, { appSessionSummary });
   const customerSignals = buildCustomerSignals(customers);
   const partnerSignals = buildPartnerSignals(partners, cashSummary);
   const failedNotifications = notifications.filter((notification) =>
@@ -155,7 +138,6 @@ export default async function OperationsHandoffPage({
     notifications,
     notificationSummary,
   );
-  const latestFcmSentSummary = buildLatestFcmSentSummary(notifications);
   const immediateActions = buildImmediateActionQueue({
     bookings,
     matchingBookings,
@@ -197,22 +179,10 @@ export default async function OperationsHandoffPage({
   return (
     <AdminPageTemplate
       contentClassName="operations-handoff-page"
-      description="One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app activity. Use this before changing operators so open work keeps context."
-      title="Operations Handoff"
+      description="Review past operations across bookings, chat, wallet, finance, alerts, and operator notes without mixing them into the live Start Shift board."
+      title="Operations History"
     >
       <OperationsHandoffDateRangeSection range={filters.range} />
-
-      <OperationsHandoffMetricGridSection
-        activeBookingCount={activeBookings.length}
-        matchingBookingCount={matchingBookings.length}
-        inServiceBookingCount={inServiceBookings.length}
-        canViewAppSessionDiagnostics={canViewAppSessionDiagnostics}
-        cashSummary={cashSummary}
-        presence={presence}
-        chatSignals={chatSignals}
-        failedNotificationCount={failedNotificationCount}
-        latestFcmSent={latestFcmSentSummary}
-      />
 
       <OperationsHandoffReadinessChecklistSection
         openCount={checklistNeedsReview}
@@ -223,7 +193,7 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffFinanceActionSection actions={financeHandoffActions} />
 
-      <AdminDetailGrid ariaLabel="Shift brief and operator notes" className="admin-mb-16">
+      <AdminDetailGrid ariaLabel="Operations brief and history notes" className="admin-mb-16">
         <OperationsHandoffShiftBriefSection
           activeBookingCount={activeBookings.length}
           cashDebtPartnerCount={cashSummary.providerCount}
@@ -265,12 +235,12 @@ function OperationsHandoffFullDetailsLink({ range }: { readonly range: string })
     <AdminSection
       actions={
         <AdminFormControlLink className="button-secondary" href={`/operations-handoff?${query.toString()}`}>
-          Load full handoff details
+          Load full history details
         </AdminFormControlLink>
       }
       className="admin-mb-16 operations-handoff-full-details-card"
-      description="Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and finance closeout rows are loaded only when an operator opens full handoff details."
-      title="Detailed handoff lists"
+      description="Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and finance closeout rows are loaded only when an operator opens full history details."
+      title="Detailed history lists"
     />
   );
 }

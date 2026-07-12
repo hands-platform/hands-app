@@ -31,8 +31,8 @@ export function OperationsHandoffShiftBriefSection({
   return (
     <AdminSection
       actions={<StatusBadge tone="info">Factual queue</StatusBadge>}
-      description="Recommended opening order for the next operator."
-      title="Shift brief"
+      description="Historical follow-up order for the selected period."
+      title="Period brief"
     >
       <AdminTaskGrid>
         {items.map((item) => (

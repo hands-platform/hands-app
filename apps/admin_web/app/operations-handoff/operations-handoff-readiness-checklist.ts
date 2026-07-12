@@ -195,21 +195,21 @@ function buildReadinessChecklistBaseRows(
       count: input.customerSignals.length,
       countLabel: `${input.customerSignals.length} record(s)`,
       status: input.customerSignals.length ? 'Available' : 'No rows',
-      operatorAction: 'Use customer detail pages for support handoff when a customer contacts the team.',
+      operatorAction: 'Use customer detail pages for support history when a customer contacts the team.',
       tone: input.customerSignals.length ? 'info' : 'success',
     },
     {
       id: 'handoff-note-written',
-      owner: 'Handoff',
+      owner: 'History',
       title: 'Written note prepared',
       detail: context.latestNote
         ? `Latest note: ${relativeTime(context.latestNote.createdAt)} by ${context.latestNote.actor}.`
-        : 'No handoff note has been written yet.',
+        : 'No operations history note has been written yet.',
       href: '/operations-handoff',
       count: context.hasFreshHandoffNote ? 1 : 0,
       countLabel: context.hasFreshHandoffNote ? 'fresh note' : 'needs note',
       status: context.hasFreshHandoffNote ? 'Ready' : 'Write note',
-      operatorAction: 'Write a short factual note before ending the shift if open work remains.',
+      operatorAction: 'Write a short factual note when the selected period needs future review.',
       tone: context.hasFreshHandoffNote ? 'success' : 'warn',
     },
   ];

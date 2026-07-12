@@ -63,6 +63,6 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
   it('renders the empty state when there are no finance rows', () => {
     const rendered = textContent(OperationsHandoffFinanceCloseoutSection({ rows: [] }));
 
-    expect(rendered).toContain('No finance rows need handoff.');
+    expect(rendered).toContain('No finance history rows.');
   });
 });

@@ -22,7 +22,7 @@ export function OperationsHandoffCustomerPartnerSection({
   }
 
   return (
-    <AdminDetailGrid ariaLabel="Customer and Partner handoff" className="admin-mb-16">
+    <AdminDetailGrid ariaLabel="Customer and Partner history" className="admin-mb-16">
       {visibleCustomers.length > 0 ? (
         <AdminSection
           actions={
@@ -32,7 +32,7 @@ export function OperationsHandoffCustomerPartnerSection({
             </AdminFormControlLink>
           }
           description="Recent customers with booking, payment, address, and chat evidence."
-          title="Customer handoff"
+          title="Customer history"
         >
           <div className="stack">
             {visibleCustomers.map((customer) => (
@@ -65,7 +65,7 @@ export function OperationsHandoffCustomerPartnerSection({
             </AdminFormControlLink>
           }
           description="Partners that need location, identity, bank, or wallet follow-up."
-          title="Partner handoff"
+          title="Partner history"
         >
           <div className="stack">
             {visiblePartners.map((partner) => (

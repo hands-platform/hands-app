@@ -40,28 +40,35 @@ describe('OperationsHandoffPage', () => {
     });
   });
 
-  it('renders the full details lazy-load prompt on a shared Vuexy surface', async () => {
+  it('renders Operations History as a past-operations review page', async () => {
     const page = await OperationsHandoffPage({
       searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('toolbar admin-page-header');
-    expect(markup).toContain('Detailed handoff lists');
+    expect(markup).toContain('<h1>Operations History</h1>');
+    expect(markup).toContain('Review past operations');
+    expect(markup).toContain('Detailed history lists');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('/operations-handoff?details=all');
   });
 
-  it('does not expose app session diagnostics links to ordinary operators', async () => {
+  it('keeps Start Shift live KPI metrics out of the handoff board', async () => {
     const page = await OperationsHandoffPage({
       searchParams: Promise.resolve({}),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Customer app online');
-    expect(markup).toContain('Partner app online');
+    expect(markup).toContain('Operations review checklist');
+    expect(markup).toContain('Operations history notes');
+    expect(markup).not.toContain('Customer app online');
+    expect(markup).not.toContain('Partner app online');
+    expect(markup).not.toContain('Chat rooms');
+    expect(markup).not.toContain('Recent FCM sent');
     expect(markup).not.toContain('/app-sessions');
+    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/app-sessions/summary', null);
   });
 
   it('uses the shared Vuexy detail grid atom for brief and note panels', () => {

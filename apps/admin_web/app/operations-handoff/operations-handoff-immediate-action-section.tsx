@@ -19,11 +19,11 @@ export function OperationsHandoffImmediateActionSection({
   return (
     <AdminSection
       actions={
-        <StatusBadge tone="info">{visibleActions.length} action lane(s)</StatusBadge>
+        <StatusBadge tone="info">{visibleActions.length} issue lane(s)</StatusBadge>
       }
       className="admin-mb-16 operations-handoff-immediate-action-card"
-      description="Ordered by operational state only: live booking stage, chat availability, cash settlement, notification delivery, and written handoff notes."
-      title="Immediate action queue"
+      description="Historical issue lanes from the selected range: booking stage, chat availability, cash settlement, notification delivery, and written operations notes."
+      title="Historical issue signals"
     >
       <AdminTaskGrid>
         {visibleActions.map((item) => (

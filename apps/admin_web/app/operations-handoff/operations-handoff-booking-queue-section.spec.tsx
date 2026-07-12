@@ -22,7 +22,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(source).not.toContain('<span className={booking.chatClass}>{booking.chatLabel}</span>');
   });
 
-  it('renders booking handoff rows and monitor links', () => {
+  it('renders booking history rows and monitor links', () => {
     const section = OperationsHandoffBookingQueueSection({
       bookings: [
         {
@@ -50,7 +50,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Booking handoff queue');
+    expect(rendered).toContain('Booking history queue');
     expect(rendered).toContain('Customer Mai');
     expect(rendered).toContain('Partner Linh');
     expect(rendered).toContain('MOMO / CAPTURED / 150.000 VND');
@@ -77,6 +77,6 @@ describe('OperationsHandoffBookingQueueSection', () => {
   it('renders the empty state when there are no booking rows', () => {
     const rendered = textContent(OperationsHandoffBookingQueueSection({ bookings: [] }));
 
-    expect(rendered).toContain('No active booking handoff rows.');
+    expect(rendered).toContain('No booking history rows.');
   });
 });

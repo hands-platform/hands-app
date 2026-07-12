@@ -9,11 +9,7 @@ import type {
   AdminRefund,
 } from '../../lib/admin-api';
 import { buildCsvDataHref } from '../../lib/csv-export';
-import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
-import {
-  formatFcmSentDeliveryDetail,
-  latestFcmSentNotificationDelivery,
-} from '../../lib/admin-notification-delivery';
+import { formatRelativeTime } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   isInDateRange,
@@ -36,8 +32,6 @@ export type OperationsHandoffFilters = {
 };
 
 export type OperationsHandoffDataHrefs = {
-  readonly appSessionsHref: string | null;
-  readonly appSessionSummaryHref: string;
   readonly auditLogsHref: string;
   readonly bookingsHref: string;
   readonly cashSettlementSummaryHref: string;
@@ -92,7 +86,7 @@ export function buildOperationsHandoffFilters(
   const detailsParam = readSearchParam(params.details);
   return {
     detailsMode: detailsParam === 'all' ? 'all' : 'summary',
-    range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
+    range: rangeParam ? normalizeDateRange(rangeParam) : '7d',
   };
 }
 
@@ -103,13 +97,6 @@ export function buildOperationsHandoffDataHrefs(
   const limits = operationsHandoffDataLimits(detailsMode);
 
   return {
-    appSessionsHref:
-      detailsMode === 'all'
-        ? `/admin/app-sessions?${new URLSearchParams({
-            take: String(limits.list),
-          }).toString()}`
-        : null,
-    appSessionSummaryHref: '/admin/app-sessions/summary',
     auditLogsHref: buildDateScopedHref('/admin/audit-logs', { take: String(limits.audit) }, range),
     bookingsHref: `/admin/bookings?${new URLSearchParams({
       dateRange: range,
@@ -182,17 +169,6 @@ export function buildOperationsHandoffRangeData(
     rangePayouts: input.payouts.filter((payout) => isInDateRange(payout.createdAt, range)),
     rangeRefunds: input.refunds.filter((refund) => isInDateRange(refund.createdAt, range)),
   };
-}
-
-export function buildLatestFcmSentSummary(notifications: readonly AdminNotification[]) {
-  const latestFcmSent = latestFcmSentNotificationDelivery(notifications);
-  return latestFcmSent
-    ? {
-        helper: formatFcmSentDeliveryDetail(latestFcmSent.notification, latestFcmSent.delivery),
-        href: `/notifications?review=fcm#${encodeURIComponent(latestFcmSent.notification.id)}`,
-        value: formatDateTime(latestFcmSent.delivery.attemptedAt),
-      }
-    : null;
 }
 
 export function buildOperationsHandoffFailedNotificationCount(

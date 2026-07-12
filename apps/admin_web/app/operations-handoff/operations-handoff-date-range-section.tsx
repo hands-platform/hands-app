@@ -11,9 +11,9 @@ type OperationsHandoffDateRangeSectionProps = {
 };
 
 const handoffRangeLinks = [
-  ['All dates', '/operations-handoff'],
+  ['All dates', '/operations-handoff?range=all'],
   ['Today', '/operations-handoff?range=today'],
-  ['Last 7 days', '/operations-handoff?range=7d'],
+  ['Last 7 days', '/operations-handoff'],
   ['Last 30 days', '/operations-handoff?range=30d'],
 ] as const;
 
@@ -24,8 +24,8 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
         <StatusBadge tone="info">{dateRangeLabel(range)}</StatusBadge>
       }
       className="admin-mt-16 admin-mb-16 operations-handoff-date-range-card"
-      description="Live booking counters stay current. Operator notes and the unified activity stream are filtered by the selected record window."
-      title="Handoff date range"
+      description="Review dated booking, chat, finance, alert, and operator-note records for the selected historical window."
+      title="Operations history range"
     >
       <div className="actions">
         {handoffRangeLinks.map(([label, href]) => (

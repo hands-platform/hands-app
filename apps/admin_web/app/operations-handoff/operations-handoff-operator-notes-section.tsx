@@ -29,18 +29,18 @@ export function OperationsHandoffOperatorNotesSection({
           Open audit log
         </AdminFormControlLink>
       }
-      description="Shift, Customer, Partner, and booking notes written by admins."
-      title="Latest operator notes"
+      description="Dated Customer, Partner, booking, finance, alert, and operations notes written by admins."
+      title="Operations history notes"
     >
       <AdminOpsNoteForm action={addOperationsHandoffNote} className="admin-mb-14">
         <AdminFormGridFields className="compact-form">
           <AdminFormSelect
-            defaultValue="Shift handoff"
+            defaultValue="Operations history"
             label="Owner lane"
             labelVisibility="visible"
             name="owner"
             options={[
-              { label: 'Shift handoff', value: 'Shift handoff' },
+              { label: 'Operations history', value: 'Operations history' },
               { label: 'Dispatch', value: 'Dispatch' },
               { label: 'Support', value: 'Support' },
               { label: 'Partner Ops', value: 'Partner Ops' },
@@ -56,33 +56,33 @@ export function OperationsHandoffOperatorNotesSection({
             options={[
               { label: 'No preset', value: '' },
               {
-                label: 'Review live matching, chat, and cash settlement first.',
-                value: 'Next operator should review live matching, chat, and cash settlement lanes first.',
+                label: 'Review matching, chat, and cash settlement history.',
+                value: 'Operations history review: matching, chat, and cash settlement lanes checked.',
               },
               {
-                label: 'Customer support handoff reviewed.',
-                value: 'Customer support handoff: recent customer contacts and chat archives reviewed.',
+                label: 'Customer support history reviewed.',
+                value: 'Customer support history: recent customer contacts and chat archives reviewed.',
               },
               {
-                label: 'Partner operations handoff reviewed.',
-                value: 'Partner operations handoff: KYC, wallet, location, and app session facts reviewed.',
+                label: 'Partner operations history reviewed.',
+                value: 'Partner operations history: KYC, wallet, location, and app session facts reviewed.',
               },
               {
-                label: 'Finance handoff reviewed.',
-                value: 'Finance handoff: cash debt, payout evidence, and completed closeout rows reviewed.',
+                label: 'Finance history reviewed.',
+                value: 'Finance history: cash debt, payout evidence, and completed closeout rows reviewed.',
               },
             ]}
           />
         </AdminFormGridFields>
         <AdminFormTextarea
-          label="Shift note"
+          label="History note"
           labelVisibility="visible"
           name="note"
-          placeholder="Write the factual shift handoff note for the next operator."
+          placeholder="Write a factual operations history note for future review."
         />
         <AdminFormControlButton className="button-primary" type="submit">
           <Save aria-hidden="true" size={16} />
-          Save handoff note
+          Save history note
         </AdminFormControlButton>
       </AdminOpsNoteForm>
       <div className="stack">

@@ -21,7 +21,7 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(source).not.toContain('<span className={item.statusClass}>{item.status}</span>');
   });
 
-  it('renders immediate action lanes', () => {
+  it('renders historical issue lanes', () => {
     const section = OperationsHandoffImmediateActionSection({
       actions: [
         {
@@ -57,9 +57,9 @@ describe('OperationsHandoffImmediateActionSection', () => {
 
     expect(section).not.toBeNull();
     if (section === null) throw new Error('Expected immediate action section to render.');
-    expect(rendered).toContain('Immediate action queue');
+    expect(rendered).toContain('Historical issue signals');
     expect(rendered).toContain('1');
-    expect(rendered).toContain('action lane(s)');
+    expect(rendered).toContain('issue lane(s)');
     expect(rendered).toContain('Open matching windows');
     expect(rendered).not.toContain('Closeout clear');
     expect(hrefsIn(section)).toContain('/bookings?view=matching');

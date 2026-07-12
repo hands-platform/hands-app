@@ -37,7 +37,7 @@ describe('admin navigation', () => {
 
     expect(linksByHref.get('/')).toBe('Command Center: Start Shift');
     expect(linksByHref.get('/calendar')).toBe('Command Center: Calendar');
-    expect(linksByHref.get('/operations-handoff')).toBe('Command Center: Handoff');
+    expect(linksByHref.get('/operations-handoff')).toBe('Command Center: Operations History');
     expect(linksByHref.get('/app-sessions')).toBeUndefined();
     expect(linksByHref.get('/setup')).toBeUndefined();
 
