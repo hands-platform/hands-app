@@ -52,6 +52,7 @@ export function OperationsHandoffCustomerPartnerSection({
             </AdminFormControlLink>
           }
           description="Recent customers with booking, payment, address, and chat evidence."
+          id="operations-handoff-customer-history"
           title="Customer history"
         >
           <div className="stack">
@@ -93,6 +94,7 @@ export function OperationsHandoffCustomerPartnerSection({
             </AdminFormControlLink>
           }
           description="Partners that need location, identity, bank, or wallet follow-up."
+          id="operations-handoff-partner-history"
           title="Partner history"
         >
           <div className="stack">

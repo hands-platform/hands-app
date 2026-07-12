@@ -56,6 +56,10 @@ import {
   buildPartnerSignals,
 } from './operations-handoff-signals';
 import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
+import {
+  OperationsHandoffReviewOrderSection,
+  type OperationsHandoffReviewOrderItem,
+} from './operations-handoff-review-order-section';
 
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -151,6 +155,7 @@ export default async function OperationsHandoffPage({
     partnerSignals,
     operatorNotes,
   });
+  const issueLaneCount = immediateActions.filter((item) => !item.statusClass.includes('success')).length;
   const activityStream = shouldRenderFullDetails
     ? filterActivityStreamByRange(
         buildUnifiedActivityStream({
@@ -179,6 +184,71 @@ export default async function OperationsHandoffPage({
   });
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
   const currentMode = shouldRenderFullDetails ? 'all' : 'summary';
+  const reviewOrderItems: OperationsHandoffReviewOrderItem[] = [
+    {
+      count: checklistNeedsReview,
+      detail: 'Open handoff checks still need a final operator decision.',
+      href: operationsHandoffSectionHref(filters.range, currentMode, 'operations-handoff-review-checklist'),
+      id: 'review-checks',
+      label: 'Open review checks',
+      priority: 1,
+      tone: 'warn',
+    },
+    {
+      count: issueLaneCount,
+      detail: 'Historical issue lanes still need booking, chat, cash, alert, or note follow-up.',
+      href: operationsHandoffSectionHref(filters.range, currentMode, 'operations-handoff-issue-signals'),
+      id: 'issue-lanes',
+      label: 'Issue signals',
+      priority: 2,
+      tone: 'warn',
+    },
+    {
+      count: partnerAttentionSignals.length,
+      detail: 'Partner history rows need location, identity, bank, wallet, or payout follow-up.',
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-partner-history'),
+      id: 'partner-signals',
+      label: 'Partner signals',
+      priority: 3,
+      tone: 'warn',
+    },
+    {
+      count: customerSignals.length,
+      detail: 'Customer history rows show booking, payment, address, and chat evidence.',
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-customer-history'),
+      id: 'customer-signals',
+      label: 'Customer history',
+      priority: 4,
+      tone: 'info',
+    },
+    {
+      count: financeRows.length,
+      detail: 'Finance rows should be checked before period closeout or later reversal review.',
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-finance-closeout'),
+      id: 'finance-rows',
+      label: 'Finance rows',
+      priority: 5,
+      tone: 'info',
+    },
+    {
+      count: bookingQueue.length,
+      detail: 'Booking rows preserve booking state, payment, Partner, chat, and next action context.',
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-booking-history'),
+      id: 'booking-rows',
+      label: 'Booking history',
+      priority: 6,
+      tone: 'info',
+    },
+    {
+      count: activityStream.length,
+      detail: 'The unified stream shows dated booking, chat, notification, audit, and finance movement.',
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-activity-stream'),
+      id: 'activity-stream',
+      label: 'Activity stream',
+      priority: 7,
+      tone: 'info',
+    },
+  ];
   const operationsHistoryMetrics = [
     {
       href: operationsHandoffSectionHref(filters.range, currentMode, 'operations-handoff-review-checklist'),
@@ -264,6 +334,8 @@ export default async function OperationsHandoffPage({
 
       {shouldRenderFullDetails ? (
         <>
+          <OperationsHandoffReviewOrderSection items={reviewOrderItems} />
+
           <OperationsHandoffActivityStreamSection
             csvHref={activityStreamCsvHref}
             pagination={{

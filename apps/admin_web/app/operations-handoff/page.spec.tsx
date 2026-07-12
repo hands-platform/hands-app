@@ -79,6 +79,8 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-review-checklist"');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-booking-history"');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-finance-closeout"');
+    expect(markup).toContain('Review order');
+    expect(markup).toContain('id="operations-handoff-review-order"');
     expect(markup).toContain('Unified activity stream');
     expect(markup).toContain('id="operations-handoff-activity-stream"');
     expect(markup).toContain('Booking history queue');
