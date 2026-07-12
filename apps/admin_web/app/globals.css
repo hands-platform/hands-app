@@ -14376,6 +14376,26 @@ a.ops-task-card {
   display: inline;
 }
 
+.action-menu-button-list {
+  align-items: center;
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.action-menu-button-list-items {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.action-menu-button-form {
+  margin: 0;
+}
+
 .action-menu-dropdown {
   display: inline-flex;
   justify-content: flex-end;

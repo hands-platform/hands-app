@@ -39,6 +39,38 @@ describe('ActionMenu', () => {
     );
   });
 
+  it('renders header button-list actions through shared Vuexy button atoms', () => {
+    const menu = ActionMenu({
+      actions: [
+        {
+          href: '/finance-tax',
+          kind: 'link',
+          label: 'Tax Overview',
+        },
+        {
+          href: '/finance-tax/payment-clearing',
+          kind: 'link',
+          label: 'Payment Clearing',
+        },
+      ],
+      label: 'Finance workflow actions',
+      variant: 'button-list',
+    });
+
+    expect(menu.props).toMatchObject({
+      'aria-label': 'Finance workflow actions',
+      className: 'action-menu action-menu-button-list',
+    });
+    expect(classNamesIn(menu)).toEqual(
+      expect.arrayContaining([
+        'action-menu-button-list-items',
+        'admin-form-control-link button button-secondary',
+      ]),
+    );
+    expect(classNamesIn(menu)).not.toContain('participant-list');
+    expect(classNamesIn(menu).some((className) => className.startsWith('pill '))).toBe(false);
+  });
+
   it('uses string descriptions as native titles only', () => {
     expect(readActionMenuTitle('Review booking')).toBe('Review booking');
     expect(readActionMenuTitle(<span>Review booking</span>)).toBeUndefined();

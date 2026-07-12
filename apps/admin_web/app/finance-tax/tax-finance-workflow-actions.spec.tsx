@@ -28,7 +28,9 @@ describe('TaxFinanceWorkflowActions', () => {
     expect(markup).toContain('Finance workflow actions');
     expect(markup).toContain('/finance-tax/general-ledger');
     expect(markup).toContain('/finance-tax/payment-clearing');
-    expect(markup).toContain('action-menu');
-    expect(markup).toContain('pill pill-info');
+    expect(markup).toContain('action-menu action-menu-button-list');
+    expect(markup).toContain('admin-form-control-link button button-secondary');
+    expect(markup).not.toContain('participant-list');
+    expect(markup).not.toContain('pill pill-info');
   });
 });

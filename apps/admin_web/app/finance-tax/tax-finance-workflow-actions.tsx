@@ -21,6 +21,7 @@ export function TaxFinanceWorkflowActions({
           tone: 'info',
         }))}
         label="Finance workflow actions"
+        variant="button-list"
       />
     </>
   );

@@ -3,7 +3,7 @@ import type { FormHTMLAttributes, ReactNode } from 'react';
 
 import { MoreVertical, type LucideIcon } from 'lucide-react';
 
-import { AdminFormControlButton } from './admin-form-controls';
+import { AdminFormControlButton, AdminFormControlLink } from './admin-form-controls';
 import type { StatusBadgeTone } from './status-badge';
 import { StatusBadge, StatusBadgeButton, StatusBadgeLink, statusBadgeClassName } from './status-badge';
 
@@ -44,7 +44,7 @@ type ActionMenuProps = {
   readonly menuClassName?: string;
   readonly title?: ReactNode;
   readonly triggerClassName?: string;
-  readonly variant?: 'dropdown' | 'pill-list';
+  readonly variant?: 'button-list' | 'dropdown' | 'pill-list';
 };
 
 type ActionMenuDropdownFormProps = {
@@ -87,6 +87,23 @@ export function ActionMenu({
     });
   }
 
+  if (variant === 'button-list') {
+    return (
+      <nav aria-label={label} className={joinClassNames('action-menu action-menu-button-list', className)}>
+        {title ? <strong className="action-menu-title">{title}</strong> : null}
+        <div className={joinClassNames('action-menu-button-list-items', menuClassName)}>
+          {actions.map((item, itemIndex) => (
+            <ActionMenuButtonListControl
+              item={item}
+              itemClassName={itemClassName}
+              key={`${item.kind}:${item.label}:${itemIndex}`}
+            />
+          ))}
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav aria-label={label} className="action-menu">
       {title ? <strong>{title}</strong> : null}
@@ -96,6 +113,64 @@ export function ActionMenu({
         ))}
       </div>
     </nav>
+  );
+}
+
+function ActionMenuButtonListControl({
+  item,
+  itemClassName,
+}: {
+  readonly item: ActionMenuItem;
+  readonly itemClassName?: string;
+}) {
+  const Icon = item.icon;
+  const content = (
+    <>
+      {Icon ? <Icon aria-hidden="true" size={16} /> : null}
+      <span>{item.label}</span>
+    </>
+  );
+
+  if (item.kind === 'link') {
+    if (item.disabled) {
+      return (
+        <span
+          aria-disabled="true"
+          className={joinClassNames('admin-form-control-link button button-secondary is-disabled', itemClassName)}
+          title={readActionMenuTitle(item.description)}
+        >
+          {content}
+        </span>
+      );
+    }
+
+    return (
+      <AdminFormControlLink
+        aria-label={item.ariaLabel}
+        className={joinClassNames('button-secondary', itemClassName)}
+        href={item.href}
+        title={readActionMenuTitle(item.description)}
+      >
+        {content}
+      </AdminFormControlLink>
+    );
+  }
+
+  return (
+    <form action={item.action} className="action-menu-form action-menu-button-form">
+      {item.hiddenInputs?.map((input, inputIndex) => (
+        <input key={`${input.name}-${inputIndex}`} name={input.name} type="hidden" value={String(input.value)} />
+      ))}
+      <AdminFormControlButton
+        aria-label={item.ariaLabel}
+        className={joinClassNames('button-secondary', itemClassName)}
+        disabled={item.disabled}
+        title={readActionMenuTitle(item.description)}
+        type="submit"
+      >
+        {content}
+      </AdminFormControlButton>
+    </form>
   );
 }
 
