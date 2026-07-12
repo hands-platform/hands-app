@@ -821,7 +821,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat handoff, settlement gates, notifications, and owner follow-up."
+        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat readiness, settlement gates, notifications, and owner follow-up."
         id="dashboard-operations-command-board"
         title="Operations command board"
       >
@@ -1072,13 +1072,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         className="admin-mt-20"
         description={
           <>
-            Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
-            closeout checks, and notification history use this window. Live queues and app activity stay
+            Window: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
+            closeout checks, and notification rows use this window. Live queues and app activity stay
             current so urgent work is never hidden.
           </>
         }
         id="dashboard-date-range"
-        title="Dashboard date range"
+        title="Start Shift window"
       >
         <div className="actions admin-mt-12">
           {dashboardRangeLinks.map((link) => (
@@ -1124,7 +1124,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminTextLink>
             }
             className="admin-mt-20"
-            description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat handoff, Partner supply, cash fee gates, and payout batches."
+            description="Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat readiness, Partner supply, cash fee gates, and payout batches."
             id="dashboard-live-operations-radar"
             title="Live operations radar"
           >
@@ -1200,7 +1200,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminSignal>
             }
             className="admin-mt-20"
-            description="Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt, notification, and payout pressure into one operating handoff."
+            description="Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt, notification, and payout pressure into one current operating order."
             id="dashboard-shift-command-briefing"
             title="Shift command briefing"
           >
@@ -1534,7 +1534,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Attention bookings
                 </AdminFormControlLink>
               }
-              description="Dispatch exceptions for the selected dashboard date range that should be checked before they become customer complaints."
+              description="Dispatch exceptions for the selected Start Shift window that should be checked before they become customer complaints."
               id="dashboard-booking-attention-cockpit"
               title="Booking attention cockpit"
             >
@@ -1553,7 +1553,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   {
                     label: 'Matching escalations',
                     value: fullDashboardData.bookingDeepDive.matchingEscalations,
-                    helper: 'First-pick, marketplace participants, final choice, or chat handoff',
+                    helper: 'First-pick, marketplace participants, final choice, or chat readiness',
                   },
                   {
                     label: 'Expired matching',
@@ -1605,7 +1605,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Service pricing
                 </AdminTextLink>
               }
-              description="Which services and payment methods created operational load in the selected dashboard date range."
+              description="Which services and payment methods created operational load in the selected Start Shift window."
               id="dashboard-service-payment-mix"
               title="Service and payment mix"
             >
@@ -1662,7 +1662,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Open bookings
                 </AdminTextLink>
               }
-              description="Total, matching, completion, cancellation, and no-show proxy for the selected dashboard date range."
+              description="Total, matching, completion, cancellation, and no-show proxy for the selected Start Shift window."
               id="dashboard-booking-status-control"
               title="Booking status control"
             >
@@ -2949,7 +2949,7 @@ function buildOperationsCommandBoard(input: {
       detail:
         firstPickRows || marketplaceRows
           ? 'Preferred Partner keeps the first window while nearby Partners can request to participate for customer choice.'
-          : 'No first-pick or marketplace handoff is waiting in the current open sample.',
+          : 'No first-pick or marketplace lane is waiting in the current open sample.',
       href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
       tone: firstPickRows || marketplaceRows ? 'info' : 'ok',
       checks: [
@@ -2966,7 +2966,7 @@ function buildOperationsCommandBoard(input: {
       detail:
         customerChoiceRows > 0
           ? 'Accepted Partners are visible; customer must select the final Partner before work is locked.'
-          : 'No customer final-choice handoff is waiting now.',
+          : 'No customer final-choice decision is waiting now.',
       href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
       tone: customerChoiceRows ? 'info' : 'ok',
       checks: [
@@ -3101,7 +3101,7 @@ function buildBookingEvidenceCommandQueue(input: {
       tone: evidenceTone(partnerChoiceChecks, 2, 6),
       checks: ['First-pick window', '10km marketplace', 'Customer final choice'],
       operatorAction:
-        partnerChoiceChecks > 0 ? 'Check customer final-choice handoff' : 'Watch first-pick flow',
+        partnerChoiceChecks > 0 ? 'Check customer final-choice decision' : 'Watch first-pick flow',
       sample: bookingEvidenceSample(partnerChoiceRows, 'Partner choice sample'),
     },
     {
@@ -3141,8 +3141,8 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${locationChecks} pin`,
       detail:
         locationChecks > 0
-          ? 'Active handoff rows need a fresh Partner location pin or an operator-visible reason it is missing.'
-          : 'Active handoff rows have usable location evidence or do not require a live pin yet.',
+          ? 'Active booking rows need a fresh Partner location pin or an operator-visible reason it is missing.'
+          : 'Active booking rows have usable location evidence or do not require a live pin yet.',
       href: '/bookings?view=all&evidence=location',
       tone: evidenceTone(locationChecks, 1, 5),
       checks: ['Booking address', 'Partner pin', 'Freshness window'],
@@ -3390,7 +3390,7 @@ function buildLiveOperationsRadar(input: {
       detail:
         customerChoiceRows > 0
           ? 'Accepted Partners are visible; customer must pick the final Partner before the job is locked.'
-          : 'No customer final-choice handoff is waiting in the open matching sample.',
+          : 'No customer final-choice decision is waiting in the open matching sample.',
       href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
       tone: customerChoiceRows ? 'info' : 'ok',
       checks: [
@@ -3400,7 +3400,7 @@ function buildLiveOperationsRadar(input: {
       ],
     },
     {
-      lane: 'Chat handoff lane',
+      lane: 'Chat readiness lane',
       owner: 'Support',
       title: 'Verify matched bookings have retained chat',
       value: `${chatHandoffRows} check`,
@@ -4424,7 +4424,7 @@ function buildDashboardCommandSignals(input: {
         : `${openMatching.length} OPEN`,
       detail: staleOpenMatching.length
         ? 'Some open matching windows are expired and need operator review.'
-        : 'Monitor open matching, quiet chat rooms, and customer final-choice handoff.',
+        : 'Monitor open matching, quiet chat rooms, and customer final-choice decisions.',
       action: 'Open booking monitor',
       href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings',
       priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,
@@ -5155,7 +5155,7 @@ function buildOperatorStartChecklist(input: {
       pillClass: notificationFailures ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Confirm finance handoff',
+      title: 'Confirm finance closeout',
       status: payoutWork ? 'Finance open' : 'No payout batch',
       detail: `${payoutWork} active payout batch(es), ${money(
         input.cashSettlementSummary.totalDebtAmount,

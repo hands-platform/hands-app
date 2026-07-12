@@ -305,7 +305,10 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-date-range"',
     );
-    expect(markup).toContain('<h2 id="dashboard-date-range-title">Dashboard date range</h2>');
+    expect(markup).toContain('<h2 id="dashboard-date-range-title">Start Shift window</h2>');
+    expect(markup).not.toContain('Dashboard date range');
+    expect(markup).not.toContain('operating handoff');
+    expect(markup).not.toContain('finance handoff');
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-on-demand-detail"',
     );
