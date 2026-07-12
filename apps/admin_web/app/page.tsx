@@ -899,14 +899,22 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <>
       <AdminSection
         actions={
-          <AdminTextLink href="/bookings?view=marketplace">
-            Open participant ledger
-          </AdminTextLink>
+          <AdminFilterChipGroup>
+            <AdminTextLink href="/bookings?view=marketplace">
+              Participant ledger
+            </AdminTextLink>
+            <AdminTextLink href="#dashboard-evidence-drilldown">
+              Retained signals
+            </AdminTextLink>
+            <AdminTextLink href="#dashboard-booking-evidence-command-queue">
+              Queue shortcuts
+            </AdminTextLink>
+          </AdminFilterChipGroup>
         }
         className="admin-mt-20"
-        description="Actual booking participant records only. Partners with negative wallets can see open booking requests, but final acceptance, service start, and payout release wait for settlement."
+        description="Read this as one dispatch evidence group: participant flow first, retained signals second, and queue shortcuts third."
         id="dashboard-booking-participant-flow"
-        title="Booking participant flow"
+        title="Dispatch evidence map"
       >
         <DashboardTraceSummary
           className="admin-mt-12"
@@ -987,9 +995,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminTextLink>
         }
         className="admin-mt-20"
-        description="Fast paths for admin decisions that must be based on retained facts: chat, location, alert, payment, cash settlement, refund, and audit evidence."
+        description="Retained facts for decisions: chat, location, alert, payment, cash settlement, refund, payout, and audit evidence."
         id="dashboard-evidence-drilldown"
-        title="Evidence drilldown"
+        title="Retained evidence signals"
       >
         <DashboardTraceSummary
           className="admin-mt-12"
@@ -1070,9 +1078,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminTextLink>
         }
         className="admin-mt-20"
-        description="Direct routes into the booking monitor evidence filters. Use these when staff need the exact booking list behind address, Partner choice, chat records, payment, wallet, location, alert, or closeout evidence."
+        description="Direct booking monitor shortcuts for address, Partner choice, chat records, payment, wallet, location, alert, and closeout checks."
         id="dashboard-booking-evidence-command-queue"
-        title="Booking evidence command queue"
+        title="Evidence queue shortcuts"
       >
         <AdminTaskGrid className="admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
@@ -1177,9 +1185,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   owner: 'Ops',
                 },
                 {
-                  href: '#dashboard-booking-evidence-command-queue',
+                  href: '#dashboard-booking-participant-flow',
                   label: 'Dispatch evidence',
-                  detail: 'Open address, Partner choice, chat, location, and alert evidence queues.',
+                  detail: 'Start with participant flow, retained evidence, then queue shortcuts.',
                   owner: 'Dispatch',
                 },
                 {

@@ -636,17 +636,20 @@ describe('DashboardPage', () => {
       'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-booking-participant-flow-title">Booking participant flow</h2>',
+      '<h2 id="dashboard-booking-participant-flow-title">Dispatch evidence map</h2>',
     );
+    expect(markup).toContain('Read this as one dispatch evidence group');
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
     );
-    expect(markup).toContain('<h2 id="dashboard-evidence-drilldown-title">Evidence drilldown</h2>');
+    expect(markup).toContain(
+      '<h2 id="dashboard-evidence-drilldown-title">Retained evidence signals</h2>',
+    );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-booking-evidence-command-queue-title">Booking evidence command queue</h2>',
+      '<h2 id="dashboard-booking-evidence-command-queue-title">Evidence queue shortcuts</h2>',
     );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-full-detail-review-order"',
@@ -657,6 +660,7 @@ describe('DashboardPage', () => {
     expect(markup).toContain('Use this order when the full dashboard is open.');
     expect(markup).toContain('Live radar');
     expect(markup).toContain('Dispatch evidence');
+    expect(markup).toContain('href="#dashboard-booking-participant-flow"');
     expect(markup).toContain('Partner supply');
     expect(markup).toContain('Finance closeout');
     expect(markup).toContain(
