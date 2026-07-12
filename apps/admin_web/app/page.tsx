@@ -1158,6 +1158,64 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <>
           <AdminSection
             actions={
+              <AdminFormControlLink href="/operations-handoff">
+                <FileClock size={16} aria-hidden="true" />
+                Historical handoff
+              </AdminFormControlLink>
+            }
+            className="admin-mt-20"
+            description="Use this order when the full dashboard is open. It keeps live triage ahead of deeper evidence and finance sections."
+            id="dashboard-full-detail-review-order"
+            title="Full detail review order"
+          >
+            <AdminTaskGrid className="admin-mt-14">
+              {[
+                {
+                  href: '#dashboard-live-operations-radar',
+                  label: 'Live radar',
+                  detail: 'Confirm the active live lanes before reading deeper queues.',
+                  owner: 'Ops',
+                },
+                {
+                  href: '#dashboard-booking-evidence-command-queue',
+                  label: 'Dispatch evidence',
+                  detail: 'Open address, Partner choice, chat, location, and alert evidence queues.',
+                  owner: 'Dispatch',
+                },
+                {
+                  href: '#dashboard-partner-supply-status',
+                  label: 'Partner supply',
+                  detail: 'Check online supply, location freshness, verification, and contactability.',
+                  owner: 'Partner Ops',
+                },
+                {
+                  href: '#dashboard-finance-closeout-status',
+                  label: 'Finance closeout',
+                  detail: 'Review payment, cash settlement, payout, wallet, and closeout signals last.',
+                  owner: 'Finance',
+                },
+              ].map((item, index) => (
+                <AdminActionCard
+                  actionLabel="Jump"
+                  className={index === 0 ? 'ops-task-active' : 'ops-task-done'}
+                  detail={item.detail}
+                  href={item.href}
+                  key={item.label}
+                  leading={
+                    <>
+                      <small>Step {index + 1}</small>
+                      <StatusBadge tone={index === 0 ? 'info' : 'success'}>{item.owner}</StatusBadge>
+                    </>
+                  }
+                  title={item.label}
+                  variant="ops-task"
+                />
+              ))}
+            </AdminTaskGrid>
+          </AdminSection>
+
+          <AdminSection
+            actions={
               <AdminTextLink href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}>
                 Open first lane
               </AdminTextLink>

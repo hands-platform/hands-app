@@ -649,6 +649,17 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-booking-evidence-command-queue-title">Booking evidence command queue</h2>',
     );
     expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-full-detail-review-order"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-full-detail-review-order-title">Full detail review order</h2>',
+    );
+    expect(markup).toContain('Use this order when the full dashboard is open.');
+    expect(markup).toContain('Live radar');
+    expect(markup).toContain('Dispatch evidence');
+    expect(markup).toContain('Partner supply');
+    expect(markup).toContain('Finance closeout');
+    expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-live-operations-radar"',
     );
     expect(markup).toContain(
@@ -778,6 +789,9 @@ describe('DashboardPage', () => {
     );
     expect(markup).toContain(
       '<h2 id="dashboard-finance-closeout-status-title">Finance closeout status</h2>',
+    );
+    expect(markup.indexOf('id="dashboard-full-detail-review-order"')).toBeLessThan(
+      markup.indexOf('id="dashboard-live-operations-radar"'),
     );
   });
 });
