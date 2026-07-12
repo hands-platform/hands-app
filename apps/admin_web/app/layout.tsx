@@ -1,3 +1,4 @@
+import 'react-datepicker/dist/react-datepicker.css';
 import './globals.css';
 import type { ReactNode } from 'react';
 import { AdminOperatorAccessGate } from '../components/admin-operator-access-gate';

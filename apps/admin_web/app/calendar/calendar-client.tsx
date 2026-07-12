@@ -1,7 +1,5 @@
 'use client';
 
-import 'react-datepicker/dist/react-datepicker.css';
-
 import dynamic from 'next/dynamic';
 import { useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';

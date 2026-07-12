@@ -38,7 +38,8 @@ describe('FinancePeriodFilterForm', () => {
       'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
     );
     expect(markup).toContain('class="admin-form-label">Monthly tax period');
-    expect(markup).toContain('type="month"');
+    expect(markup).toContain('type="hidden"');
+    expect(markup).not.toContain('type="month"');
     expect(markup).toContain('value="2026-07"');
     expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
     expect(markup).toContain('name="pageSize"');

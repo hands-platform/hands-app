@@ -13,6 +13,8 @@ import {
 
 import { Search } from 'lucide-react';
 
+import { AdminFormDatePickerField } from './admin-form-date-picker-field';
+
 type AdminFormSelectOption = {
   readonly label: string;
   readonly value: string;
@@ -301,28 +303,21 @@ export function AdminFormDate({
   labelVisibility = 'hidden',
   mode = 'date',
   name,
-  onChange,
   required,
   value,
 }: AdminFormDateProps) {
   return (
-    <div className={datePickerWrapperClassName(className)}>
-      <div className="react-datepicker__input-container">
-        <label className={datePickerInputClassName()}>
-          <span className={labelClassName(labelVisibility)}>{label}</span>
-          <input
-            className="admin-form-date-input"
-            defaultValue={defaultValue}
-            disabled={disabled}
-            name={name}
-            onChange={onChange}
-            required={required}
-            type={mode}
-            value={value}
-          />
-        </label>
-      </div>
-    </div>
+    <AdminFormDatePickerField
+      className={datePickerWrapperClassName(className)}
+      defaultValue={defaultValue}
+      disabled={disabled}
+      label={label}
+      labelVisibility={labelVisibility}
+      mode={mode}
+      name={name}
+      required={required}
+      value={value}
+    />
   );
 }
 
@@ -333,28 +328,21 @@ export function AdminFormDateTime({
   label,
   labelVisibility = 'hidden',
   name,
-  onChange,
   required,
   value,
 }: AdminFormDateTimeProps) {
   return (
-    <div className={datePickerWrapperClassName(className)}>
-      <div className="react-datepicker__input-container">
-        <label className={datePickerInputClassName()}>
-          <span className={labelClassName(labelVisibility)}>{label}</span>
-          <input
-            className="admin-form-date-input"
-            defaultValue={defaultValue}
-            disabled={disabled}
-            name={name}
-            onChange={onChange}
-            required={required}
-            type="datetime-local"
-            value={value}
-          />
-        </label>
-      </div>
-    </div>
+    <AdminFormDatePickerField
+      className={datePickerWrapperClassName(className)}
+      defaultValue={defaultValue}
+      disabled={disabled}
+      label={label}
+      labelVisibility={labelVisibility}
+      mode="datetime-local"
+      name={name}
+      required={required}
+      value={value}
+    />
   );
 }
 
@@ -646,18 +634,7 @@ function visibleLabelClass(visibility: AdminFormLabelVisibility) {
 function datePickerWrapperClassName(className: string | undefined) {
   const pageHookTokens = splitClassNames(className).filter((token) => !datePickerShellClassNames.has(token));
 
-  return joinClassNames('react-datepicker-wrapper', 'admin-form-control-fluid', 'calendar-datepicker-field', ...pageHookTokens);
-}
-
-function datePickerInputClassName(className?: string) {
-  return joinClassNames(
-    'admin-form-input',
-    'admin-form-date-picker',
-    'admin-form-input-date-picker',
-    'admin-form-control-labeled',
-    'calendar-datepicker-input',
-    className,
-  );
+  return joinClassNames('admin-form-control-fluid', 'calendar-datepicker-field', ...pageHookTokens);
 }
 
 function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {

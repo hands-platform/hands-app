@@ -178,7 +178,10 @@ describe('Admin form controls', () => {
     const markup = renderToStaticMarkup(date);
 
     expect(date.props.className).toBe(
-      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field partner-date-filter',
+      'admin-form-control-fluid calendar-datepicker-field partner-date-filter',
+    );
+    expect(markup).toContain(
+      'class="react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field partner-date-filter"',
     );
     expect(markup).toContain('<div class="react-datepicker__input-container">');
     expect(markup).toContain(
@@ -187,7 +190,8 @@ describe('Admin form controls', () => {
     expect(markup).toContain('class="sr-only">From date');
     expect(markup).toContain('class="admin-form-date-input"');
     expect(markup).toContain('name="from"');
-    expect(markup).toContain('type="date"');
+    expect(markup).toContain('type="hidden"');
+    expect(markup).not.toContain('type="date"');
     expect(markup).toContain('value="2026-06-17"');
   });
 
@@ -210,7 +214,7 @@ describe('Admin form controls', () => {
 
     expect(grid.props.className).toBe('admin-form-grid form-grid compact-form');
     expect(date.props.className).toBe(
-      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field settlement-date',
+      'admin-form-control-fluid calendar-datepicker-field settlement-date',
     );
     expect(input.props.className).toBe(
       'admin-form-input admin-form-date-picker admin-form-input-date-picker closing-period',
@@ -230,13 +234,17 @@ describe('Admin form controls', () => {
     const markup = renderToStaticMarkup(month);
 
     expect(month.props.className).toBe(
-      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field finance-period',
+      'admin-form-control-fluid calendar-datepicker-field finance-period',
+    );
+    expect(markup).toContain(
+      'class="react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field finance-period"',
     );
     expect(markup).toContain('class="admin-form-label">Monthly tax period');
     expect(markup).toContain('class="admin-form-date-input"');
     expect(markup).toContain('name="period"');
     expect(markup).toContain('required=""');
-    expect(markup).toContain('type="month"');
+    expect(markup).toContain('type="hidden"');
+    expect(markup).not.toContain('type="month"');
     expect(markup).toContain('value="2026-07"');
   });
 
@@ -307,7 +315,10 @@ describe('Admin form controls', () => {
     const markup = renderToStaticMarkup(dateTime);
 
     expect(dateTime.props.className).toBe(
-      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field payout-paid-at',
+      'admin-form-control-fluid calendar-datepicker-field payout-paid-at',
+    );
+    expect(markup).toContain(
+      'class="react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field payout-paid-at"',
     );
     expect(markup).toContain(
       'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
@@ -316,7 +327,8 @@ describe('Admin form controls', () => {
     expect(markup).toContain('class="admin-form-date-input"');
     expect(markup).toContain('name="paidAt"');
     expect(markup).toContain('required=""');
-    expect(markup).toContain('type="datetime-local"');
+    expect(markup).toContain('type="hidden"');
+    expect(markup).not.toContain('type="datetime-local"');
     expect(markup).toContain('value="2026-07-03T14:30"');
   });
 
