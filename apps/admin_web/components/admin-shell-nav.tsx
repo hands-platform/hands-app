@@ -106,7 +106,6 @@ const sectionIconByLabel = {
   Bookings: CalendarClock,
   'Admin Control': UserRoundCog,
   Customers: UsersRound,
-  'Command Center': FolderKanban,
   'Developer / System': Settings2,
   'Growth & Communications': BellRing,
   Communications: BellRing,
@@ -114,6 +113,7 @@ const sectionIconByLabel = {
   Partners: HeartHandshake,
   Policies: Settings2,
   'Policies & Setup': Settings2,
+  'Shift Operations': FolderKanban,
   'Tax & Accounting': ReceiptText,
   Users: UsersRound,
 } as const;

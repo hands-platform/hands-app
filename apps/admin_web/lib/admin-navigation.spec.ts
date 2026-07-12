@@ -15,7 +15,7 @@ import {
 describe('admin navigation', () => {
   it('organizes the sidebar into operation-focused categories', () => {
     expect(adminNavSections.map((section) => section.label)).toEqual([
-      'Command Center',
+      'Shift Operations',
       'Bookings',
       'Customers',
       'Partners',
@@ -35,9 +35,9 @@ describe('admin navigation', () => {
       ),
     );
 
-    expect(linksByHref.get('/')).toBe('Command Center: Start Shift');
-    expect(linksByHref.get('/calendar')).toBe('Command Center: Calendar');
-    expect(linksByHref.get('/operations-handoff')).toBe('Command Center: Operations History');
+    expect(linksByHref.get('/')).toBe('Shift Operations: Start Shift');
+    expect(linksByHref.get('/calendar')).toBe('Shift Operations: Calendar');
+    expect(linksByHref.get('/operations-handoff')).toBe('Shift Operations: Operations History');
     expect(linksByHref.get('/app-sessions')).toBeUndefined();
     expect(linksByHref.get('/setup')).toBeUndefined();
 

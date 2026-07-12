@@ -24,8 +24,8 @@ const developerSystemCategories = new Set([
 
 export const adminNavSections: AdminNavSection[] = [
   {
-    label: 'Command Center',
-    description: 'Today-first workspace for live operations and historical review.',
+    label: 'Shift Operations',
+    description: 'Today-first workspace for live shift control and historical review.',
     links: [
       {
         href: '/',

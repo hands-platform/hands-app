@@ -1,4 +1,4 @@
-import { Bell, LayoutDashboard } from 'lucide-react';
+import { Bell, Sparkles } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminTableSection } from '../../components/admin-table-panel';
@@ -86,8 +86,8 @@ export default async function AppSessionsPage({
       actions={
         <>
           <AdminFormControlLink className="button-secondary" href="/">
-            <LayoutDashboard aria-hidden="true" size={16} />
-            Dashboard
+            <Sparkles aria-hidden="true" size={16} />
+            Start Shift
           </AdminFormControlLink>
           <AdminFormControlLink className="button-secondary" href="/notifications">
             <Bell aria-hidden="true" size={16} />

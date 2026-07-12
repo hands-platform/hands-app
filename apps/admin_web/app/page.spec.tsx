@@ -352,6 +352,8 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toContain('Review withdrawal setup');
     expect(dashboardSource).not.toContain('Open payout setup');
     expect(dashboardSource).not.toContain('First revenue setup');
+    expect(dashboardSource).not.toContain('Dashboard summary');
+    expect(dashboardSource).not.toContain('matchingPolicy metadata');
   });
 
   it('uses the shared Vuexy empty-state atom for dashboard queue fallbacks', () => {

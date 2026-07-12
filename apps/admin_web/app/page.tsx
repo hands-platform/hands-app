@@ -2402,14 +2402,14 @@ function buildMatchingControlRoom(
       {
         label: 'Saved rules',
         value: `${openMatchingWithPolicySnapshot.length}/${openMatching.length}`,
-        helper: 'Open bookings with stored matchingPolicy metadata for audit-safe dispatch decisions.',
+        helper: 'Open bookings with saved dispatch rules for audit review.',
       },
       {
         label: 'Fresh online supply',
         value: String(freshOnlinePartnerCount),
         helper: hasProviderRows
           ? `Online Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`
-          : 'Dashboard summary supply available without loading the full Partner list.',
+          : 'Partner supply total comes from the current Start Shift summary.',
       },
     ],
     checks: [
