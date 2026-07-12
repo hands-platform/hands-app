@@ -62,6 +62,7 @@ export function buildBookingHandoffQueue(
           : 'No earning row yet',
         chatLabel: chatReady ? 'Chat archived' : 'Chat not created',
         chatClass: chatReady ? 'pill pill-success' : 'pill pill-warn',
+        reviewReason: bookingReviewReason(booking),
         nextAction: bookingNextAction(booking),
       };
     });
@@ -103,6 +104,34 @@ function bookingNextAction(booking: AdminBooking) {
   if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED')
     return 'Check payment release, refund, and customer notice.';
   return 'Open booking detail for the latest factual state.';
+}
+
+function bookingReviewReason(booking: AdminBooking) {
+  if (booking.status === 'OPEN_MATCHING') {
+    return 'Open matching window needs Partner response and customer choice.';
+  }
+  if (booking.status === 'MATCHED') {
+    return 'Matched booking still needs service-start confirmation.';
+  }
+  if (booking.status === 'IN_SERVICE') {
+    return 'In-service booking needs completion and chat closeout watch.';
+  }
+  if (!booking.chatRoom?.id && ACTIVE_BOOKING_STATUSES.has(booking.status)) {
+    return 'Active booking is missing retained chat evidence.';
+  }
+  if (booking.earning && booking.earning.netAmount < 0) {
+    return 'Negative wallet effect needs finance review.';
+  }
+  if (!booking.payment) {
+    return 'Payment evidence is not attached yet.';
+  }
+  if (booking.status === 'COMPLETED') {
+    return 'Completed booking changed recently and needs closeout confirmation.';
+  }
+  if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') {
+    return 'Cancelled or expired booking needs refund and customer notice review.';
+  }
+  return 'Recently changed booking needs factual state review.';
 }
 
 function bookingCustomerHandoffAvatarStatus(booking: AdminBooking): AdminAvatarStatus {

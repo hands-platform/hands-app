@@ -24,6 +24,7 @@ const FINANCE_CLOSEOUT_HEADERS = [
   'Withholding',
   'Wallet effect',
   'Status',
+  'Review reason',
 ] as const;
 
 export function OperationsHandoffFinanceCloseoutSection({
@@ -81,6 +82,9 @@ export function OperationsHandoffFinanceCloseoutSection({
               </td>
               <td>
                 <StatusBadgeFromPillClass pillClass={row.statusClass}>{row.status}</StatusBadgeFromPillClass>
+              </td>
+              <td>
+                <small className="muted">{row.reviewReason}</small>
               </td>
             </tr>
           ))}

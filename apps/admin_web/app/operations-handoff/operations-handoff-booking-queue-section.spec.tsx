@@ -40,6 +40,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
           partnerHref: '/partners/partner-linh',
           partnerName: 'Partner Linh',
           paymentLabel: 'MOMO / CAPTURED / 150.000 VND',
+          reviewReason: 'Matched booking still needs service-start confirmation.',
           status: 'MATCHED',
           statusClass: 'pill pill-info',
           updatedAt: '2026-06-14T00:10:00.000Z',
@@ -55,6 +56,7 @@ describe('OperationsHandoffBookingQueueSection', () => {
     expect(rendered).toContain('Customer Mai');
     expect(rendered).toContain('Partner Linh');
     expect(rendered).toContain('MOMO / CAPTURED / 150.000 VND');
+    expect(rendered).toContain('Matched booking still needs service-start confirmation.');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/bookings?view=attention',

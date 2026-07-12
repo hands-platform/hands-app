@@ -25,6 +25,7 @@ const BOOKING_HANDOFF_QUEUE_HEADERS = [
   'Payment / wallet',
   'Chat',
   'Next action',
+  'Review reason',
 ] as const;
 
 export function OperationsHandoffBookingQueueSection({
@@ -103,6 +104,9 @@ export function OperationsHandoffBookingQueueSection({
                 <StatusBadgeFromPillClass pillClass={booking.chatClass}>{booking.chatLabel}</StatusBadgeFromPillClass>
               </td>
               <td>{booking.nextAction}</td>
+              <td>
+                <small className="muted">{booking.reviewReason}</small>
+              </td>
             </tr>
           ))}
         </AdminDataTable>

@@ -65,6 +65,7 @@ describe('operations handoff booking queue model', () => {
       partnerHref: '/partners/partner-linh',
       partnerName: 'Partner Linh',
       paymentLabel: 'CASH / AUTHORIZED / 150.000 VND',
+      reviewReason: 'Open matching window needs Partner response and customer choice.',
       statusClass: 'pill pill-warn',
     });
     expect(rows[1]).toMatchObject({
@@ -73,6 +74,7 @@ describe('operations handoff booking queue model', () => {
       partnerDetail: 'Selected Partner',
       partnerAvatarStatus: 'online',
       partnerHref: '/partners/partner-mai',
+      reviewReason: 'Negative wallet effect needs finance review.',
       walletLabel: 'Wallet effect -50.000 VND',
     });
   });

@@ -26,10 +26,12 @@ describe('operations handoff finance rows model', () => {
     expect(rows.map((row) => row.id)).toEqual(['earning-negative', 'earning-available']);
     expect(rows[0]).toMatchObject({
       partnerName: 'Partner Linh',
+      reviewReason: 'Negative wallet effect creates or increases Partner receivable.',
       statusClass: 'pill pill-danger',
     });
     expect(rows[1]).toMatchObject({
       partnerName: 'Partner Mai',
+      reviewReason: 'Available earning still needs payout release review.',
       statusClass: 'pill pill-info',
     });
   });
@@ -37,6 +39,7 @@ describe('operations handoff finance rows model', () => {
   it('uses a warning class for pending positive earnings', () => {
     expect(buildFinanceRows([earning({ netAmount: 100000, status: 'PENDING' })])[0]).toMatchObject({
       partnerName: 'Partner',
+      reviewReason: 'Earning is not fully paid yet.',
       statusClass: 'pill pill-warn',
     });
   });

@@ -20,6 +20,7 @@ export function buildFinanceRows(earnings: readonly AdminEarning[]) {
       status: earning.status,
       createdAt: earning.createdAt,
       statusClass: financeRowStatusClass(earning),
+      reviewReason: financeRowReviewReason(earning),
     }));
 }
 
@@ -33,4 +34,14 @@ function financeRowStatusClass(earning: AdminEarning) {
     return 'pill pill-info';
   }
   return 'pill pill-warn';
+}
+
+function financeRowReviewReason(earning: AdminEarning) {
+  if (earning.netAmount < 0) {
+    return 'Negative wallet effect creates or increases Partner receivable.';
+  }
+  if (earning.status === 'AVAILABLE') {
+    return 'Available earning still needs payout release review.';
+  }
+  return 'Earning is not fully paid yet.';
 }
