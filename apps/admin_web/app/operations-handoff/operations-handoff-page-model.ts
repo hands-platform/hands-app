@@ -30,7 +30,9 @@ export type OperationsHandoffFilters = {
   readonly detailPages: {
     readonly activity: number;
     readonly bookings: number;
+    readonly customers: number;
     readonly finance: number;
+    readonly partners: number;
   };
   readonly detailsMode: 'summary' | 'all';
   readonly range: ReturnType<typeof normalizeDateRange>;
@@ -94,7 +96,9 @@ export function buildOperationsHandoffFilters(
     detailPages: {
       activity: readOperationsHandoffPage(params.activityPage),
       bookings: readOperationsHandoffPage(params.bookingPage),
+      customers: readOperationsHandoffPage(params.customerPage),
       finance: readOperationsHandoffPage(params.financePage),
+      partners: readOperationsHandoffPage(params.partnerPage),
     },
     detailsMode: detailsParam === 'all' ? 'all' : 'summary',
     range: rangeParam ? normalizeDateRange(rangeParam) : '7d',
@@ -216,7 +220,9 @@ export function operationsHandoffDetailPageHref(
     const pageParams: Record<keyof OperationsHandoffFilters['detailPages'], string> = {
       activity: 'activityPage',
       bookings: 'bookingPage',
+      customers: 'customerPage',
       finance: 'financePage',
+      partners: 'partnerPage',
     };
 
     for (const [key, param] of Object.entries(pageParams) as Array<

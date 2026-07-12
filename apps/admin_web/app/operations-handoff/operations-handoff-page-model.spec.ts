@@ -22,7 +22,9 @@ describe('operations handoff page model', () => {
       detailPages: {
         activity: 1,
         bookings: 1,
+        customers: 1,
         finance: 1,
+        partners: 1,
       },
       detailsMode: 'summary',
       range: '7d',
@@ -31,7 +33,9 @@ describe('operations handoff page model', () => {
       detailPages: {
         activity: 1,
         bookings: 1,
+        customers: 1,
         finance: 1,
+        partners: 1,
       },
       detailsMode: 'summary',
       range: '7d',
@@ -40,7 +44,9 @@ describe('operations handoff page model', () => {
       detailPages: {
         activity: 1,
         bookings: 1,
+        customers: 1,
         finance: 1,
+        partners: 1,
       },
       detailsMode: 'summary',
       range: 'today',
@@ -49,7 +55,9 @@ describe('operations handoff page model', () => {
       detailPages: {
         activity: 1,
         bookings: 1,
+        customers: 1,
         finance: 1,
+        partners: 1,
       },
       detailsMode: 'all',
       range: '7d',
@@ -67,18 +75,28 @@ describe('operations handoff page model', () => {
     const filters = buildOperationsHandoffFilters({
       activityPage: '2',
       bookingPage: 'bad',
+      customerPage: '4',
       details: 'all',
       financePage: '30',
+      partnerPage: '5',
       range: '30d',
     });
 
     expect(filters.detailPages).toEqual({
       activity: 2,
       bookings: 1,
+      customers: 4,
       finance: 20,
+      partners: 5,
     });
     expect(operationsHandoffDetailPageHref(filters, 'bookings')(3)).toBe(
-      '/operations-handoff?details=all&range=30d&activityPage=2&bookingPage=3&financePage=20',
+      '/operations-handoff?details=all&range=30d&activityPage=2&bookingPage=3&customerPage=4&financePage=20&partnerPage=5',
+    );
+    expect(operationsHandoffDetailPageHref(filters, 'customers')(6)).toBe(
+      '/operations-handoff?details=all&range=30d&activityPage=2&customerPage=6&financePage=20&partnerPage=5',
+    );
+    expect(operationsHandoffDetailPageHref(filters, 'partners')(7)).toBe(
+      '/operations-handoff?details=all&range=30d&activityPage=2&customerPage=4&financePage=20&partnerPage=7',
     );
   });
 

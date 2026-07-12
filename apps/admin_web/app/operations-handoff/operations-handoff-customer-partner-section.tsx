@@ -3,19 +3,39 @@ import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminActionCard, AdminDetailGrid, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import {
+  OperationsHandoffPaginationFooter,
+  paginateOperationsHandoffRows,
+  type OperationsHandoffPagination,
+} from './operations-handoff-pagination';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
+  readonly customerPagination?: OperationsHandoffPagination;
   readonly customers: readonly CustomerSignalRow[];
+  readonly partnerPagination?: OperationsHandoffPagination;
   readonly partners: readonly PartnerSignalRow[];
 };
 
 export function OperationsHandoffCustomerPartnerSection({
+  customerPagination,
   customers,
+  partnerPagination,
   partners,
 }: OperationsHandoffCustomerPartnerSectionProps) {
-  const visibleCustomers = customers.slice(0, 8);
-  const visiblePartners = partners.filter((partner) => partner.attention).slice(0, 8);
+  const customerPage = paginateOperationsHandoffRows(
+    customers,
+    customerPagination?.activePage ?? 1,
+    customerPagination ? undefined : 8,
+  );
+  const partnerRows = partners.filter((partner) => partner.attention);
+  const partnerPage = paginateOperationsHandoffRows(
+    partnerRows,
+    partnerPagination?.activePage ?? 1,
+    partnerPagination ? undefined : 8,
+  );
+  const visibleCustomers = customerPage.rows;
+  const visiblePartners = partnerPage.rows;
 
   if (visibleCustomers.length === 0 && visiblePartners.length === 0) {
     return null;
@@ -53,6 +73,14 @@ export function OperationsHandoffCustomerPartnerSection({
               </AdminActionCard>
             ))}
           </div>
+          {customerPagination ? (
+            <OperationsHandoffPaginationFooter
+              from={customerPage.from}
+              pagination={customerPagination}
+              to={customerPage.to}
+              totalPages={customerPage.totalPages}
+            />
+          ) : null}
         </AdminSection>
       ) : null}
 
@@ -88,6 +116,14 @@ export function OperationsHandoffCustomerPartnerSection({
               </AdminActionCard>
             ))}
           </div>
+          {partnerPagination ? (
+            <OperationsHandoffPaginationFooter
+              from={partnerPage.from}
+              pagination={partnerPagination}
+              to={partnerPage.to}
+              totalPages={partnerPage.totalPages}
+            />
+          ) : null}
         </AdminSection>
       ) : null}
     </AdminDetailGrid>

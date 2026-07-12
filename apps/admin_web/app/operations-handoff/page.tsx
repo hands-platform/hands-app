@@ -133,6 +133,7 @@ export default async function OperationsHandoffPage({
   });
   const customerSignals = buildCustomerSignals(customers);
   const partnerSignals = buildPartnerSignals(partners, cashSummary);
+  const partnerAttentionSignals = partnerSignals.rows.filter((partner) => partner.attention);
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
@@ -287,7 +288,21 @@ export default async function OperationsHandoffPage({
           />
 
           <OperationsHandoffCustomerPartnerSection
+            customerPagination={{
+              activePage: filters.detailPages.customers,
+              ariaLabel: 'Operations customer signal pagination',
+              hrefForPage: operationsHandoffDetailPageHref(filters, 'customers'),
+              itemLabel: 'customer signals',
+              totalRows: customerSignals.length,
+            }}
             customers={customerSignals}
+            partnerPagination={{
+              activePage: filters.detailPages.partners,
+              ariaLabel: 'Operations Partner signal pagination',
+              hrefForPage: operationsHandoffDetailPageHref(filters, 'partners'),
+              itemLabel: 'partner signals',
+              totalRows: partnerAttentionSignals.length,
+            }}
             partners={partnerSignals.rows}
           />
 

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffCustomerPartnerSection } from './operations-handoff-customer-partner-section';
@@ -104,6 +105,39 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     );
   });
 
+  it('paginates full history Customer and Partner signal lists', () => {
+    const section = OperationsHandoffCustomerPartnerSection({
+      customerPagination: {
+        activePage: 2,
+        ariaLabel: 'Customer signal pagination',
+        hrefForPage: (page: number) => `/operations-handoff?details=all&customerPage=${page}`,
+        itemLabel: 'customer signals',
+        totalRows: 12,
+      },
+      customers: Array.from({ length: 12 }, (_, index) => customerSignal(index + 1)),
+      partnerPagination: {
+        activePage: 2,
+        ariaLabel: 'Partner signal pagination',
+        hrefForPage: (page: number) => `/operations-handoff?details=all&partnerPage=${page}`,
+        itemLabel: 'partner signals',
+        totalRows: 12,
+      },
+      partners: Array.from({ length: 12 }, (_, index) => partnerSignal(index + 1)),
+    });
+
+    const rendered = textContent(section);
+    const markup = renderToStaticMarkup(section);
+
+    expect(rendered).not.toContain('Customer 2');
+    expect(rendered).toContain('Customer 11');
+    expect(markup).toContain('Showing 11 to 12 of 12 customer signals');
+    expect(rendered).not.toContain('Partner 2');
+    expect(rendered).toContain('Partner 11');
+    expect(markup).toContain('Showing 11 to 12 of 12 partner signals');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;customerPage=1"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;partnerPage=1"');
+  });
+
   it('returns no section when there are no Customer rows or Partner attention rows', () => {
     const section = OperationsHandoffCustomerPartnerSection({
       customers: [],
@@ -125,3 +159,29 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     expect(section).toBeNull();
   });
 });
+
+function customerSignal(index: number) {
+  return {
+    avatarStatus: 'offline' as const,
+    completedCount: index,
+    detail: `${index} booking(s), ${index * 1000} VND payment total, 1 saved location(s).`,
+    id: `customer-${index}`,
+    lastWorkLabel: `Last booking booking-${index}`,
+    name: `Customer ${index}`,
+    sortTime: index,
+  };
+}
+
+function partnerSignal(index: number) {
+  return {
+    action: 'Open Partner detail.',
+    attention: true,
+    avatarStatus: 'working' as const,
+    className: 'pill pill-warn',
+    detail: `${index} completed booking(s), ACTIVE, location ${index}m ago.`,
+    id: `partner-${index}`,
+    name: `Partner ${index}`,
+    sortPriority: index,
+    status: 'Needs review',
+  };
+}
