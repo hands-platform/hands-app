@@ -32,7 +32,10 @@ describe('FinancePeriodFilterForm', () => {
     expect(markup).toContain('name="range"');
     expect(markup).toContain('value="7d"');
     expect(markup).toContain(
-      'class="admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled"',
+      'class="react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field"',
+    );
+    expect(markup).toContain(
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
     );
     expect(markup).toContain('class="admin-form-label">Monthly tax period');
     expect(markup).toContain('type="month"');

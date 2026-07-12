@@ -111,11 +111,14 @@ describe('ChatArchivePage', () => {
 
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
-    expect(markup).toContain('admin-form-date');
+    expect(markup).toContain('calendar-datepicker-field');
     expect(markup).toContain('admin-form-input admin-form-control-labeled admin-directory-filter-search');
     expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
     expect(markup).toContain(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled admin-form-control-fluid',
+      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field',
+    );
+    expect(markup).toContain(
+      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input',
     );
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-link');

@@ -419,31 +419,17 @@ describe('Admin form control CSS', () => {
     expect(fieldBlock).toContain('min-width: 0');
   });
 
-  it('keeps labeled native date controls stable inside grid label layouts', () => {
-    const labelShellIndex = globalsCss.lastIndexOf('label.admin-form-date.admin-form-control-labeled,');
-    const labelShellBlock = cssRuleBlockAt(labelShellIndex);
-    const labelFieldIndex = globalsCss.lastIndexOf(
-      ':root label.admin-form-date.admin-form-control-labeled > input.admin-form-date-input,',
+  it('keeps datepicker wrapper shells fluid inside grid layouts', () => {
+    const wrapperIndex = globalsCss.indexOf(
+      '.calendar-datepicker-field,\n.calendar-datepicker-field .react-datepicker-wrapper,',
     );
-    const labelFieldBlock = cssRuleBlockAt(labelFieldIndex);
-    const labelIconIndex = globalsCss.lastIndexOf('label.admin-form-date.admin-form-control-labeled::after,');
-    const labelIconBlock = cssRuleBlockAt(labelIconIndex);
+    const wrapperBlock = cssRuleBlockAt(wrapperIndex);
 
-    expect(labelShellIndex).toBeGreaterThan(-1);
-    expect(labelShellBlock).toContain('background: transparent');
-    expect(labelShellBlock).toContain('border: 0');
-    expect(labelShellBlock).toContain('display: grid');
-    expect(labelShellBlock).toContain('grid-template-columns: minmax(0, 1fr)');
-    expect(labelShellBlock).toContain('inline-size: 100%');
-    expect(labelShellBlock).toContain('padding: 0');
-    expect(labelFieldBlock).toContain('background: var(--admin-surface)');
-    expect(labelFieldBlock).toContain('border: 1px solid var(--admin-input-border)');
-    expect(labelFieldBlock).toContain('box-sizing: border-box');
-    expect(labelFieldBlock).toContain('min-height: var(--admin-control-height-sm)');
-    expect(labelFieldBlock).toContain('padding: 7.25px 42px 7.25px 14px');
-    expect(labelFieldBlock).toContain('width: 100%');
-    expect(labelIconBlock).toContain('bottom: calc((var(--admin-control-height-sm) - 18px) / 2)');
-    expect(labelIconBlock).toContain('top: auto');
+    expect(wrapperIndex).toBeGreaterThan(-1);
+    expect(wrapperBlock).toContain('display: block');
+    expect(wrapperBlock).toContain('inline-size: 100%');
+    expect(wrapperBlock).toContain('min-width: 0');
+    expect(globalsCss).not.toContain('label.admin-form-date.admin-form-control-labeled');
   });
 
   it('keeps date-time native picker affordances aligned behind one Vuexy calendar icon', () => {

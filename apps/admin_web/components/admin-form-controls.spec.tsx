@@ -175,11 +175,20 @@ describe('Admin form controls', () => {
       label: 'From date',
       name: 'from',
     });
+    const markup = renderToStaticMarkup(date);
 
     expect(date.props.className).toBe(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker partner-date-filter',
+      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field partner-date-filter',
     );
-    expect(textContent(date)).toContain('From date');
+    expect(markup).toContain('<div class="react-datepicker__input-container">');
+    expect(markup).toContain(
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
+    );
+    expect(markup).toContain('class="sr-only">From date');
+    expect(markup).toContain('class="admin-form-date-input"');
+    expect(markup).toContain('name="from"');
+    expect(markup).toContain('type="date"');
+    expect(markup).toContain('value="2026-06-17"');
   });
 
   it('dedupes repeated Vuexy form atom classes when page hooks include base classes', () => {
@@ -201,7 +210,7 @@ describe('Admin form controls', () => {
 
     expect(grid.props.className).toBe('admin-form-grid form-grid compact-form');
     expect(date.props.className).toBe(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker settlement-date',
+      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field settlement-date',
     );
     expect(input.props.className).toBe(
       'admin-form-input admin-form-date-picker admin-form-input-date-picker closing-period',
@@ -218,17 +227,17 @@ describe('Admin form controls', () => {
       name: 'period',
       required: true,
     });
+    const markup = renderToStaticMarkup(month);
 
     expect(month.props.className).toBe(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled finance-period',
+      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field finance-period',
     );
-    expect(month.props.children[1].props).toMatchObject({
-      className: 'admin-form-date-input',
-      defaultValue: '2026-07',
-      name: 'period',
-      required: true,
-      type: 'month',
-    });
+    expect(markup).toContain('class="admin-form-label">Monthly tax period');
+    expect(markup).toContain('class="admin-form-date-input"');
+    expect(markup).toContain('name="period"');
+    expect(markup).toContain('required=""');
+    expect(markup).toContain('type="month"');
+    expect(markup).toContain('value="2026-07"');
   });
 
   it('renders input controls with the same field contract', () => {
@@ -295,18 +304,20 @@ describe('Admin form controls', () => {
       name: 'paidAt',
       required: true,
     });
+    const markup = renderToStaticMarkup(dateTime);
 
     expect(dateTime.props.className).toBe(
-      'admin-form-date admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled payout-paid-at',
+      'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field payout-paid-at',
     );
-    expect(textContent(dateTime)).toContain('Paid at');
-    expect(dateTime.props.children[1].props).toMatchObject({
-      className: 'admin-form-date-input',
-      defaultValue: '2026-07-03T14:30',
-      name: 'paidAt',
-      required: true,
-      type: 'datetime-local',
-    });
+    expect(markup).toContain(
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
+    );
+    expect(markup).toContain('class="admin-form-label">Paid at');
+    expect(markup).toContain('class="admin-form-date-input"');
+    expect(markup).toContain('name="paidAt"');
+    expect(markup).toContain('required=""');
+    expect(markup).toContain('type="datetime-local"');
+    expect(markup).toContain('value="2026-07-03T14:30"');
   });
 
   it('renders custom react-datepicker inputs through the shared Vuexy atom', () => {
@@ -315,7 +326,7 @@ describe('Admin form controls', () => {
     );
 
     expect(markup).toContain(
-      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled"',
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
     );
     expect(markup).toContain('class="admin-form-label">Starts');
     expect(markup).toContain('class="admin-form-date-input"');

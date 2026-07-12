@@ -306,27 +306,23 @@ export function AdminFormDate({
   value,
 }: AdminFormDateProps) {
   return (
-    <label
-      className={joinClassNames(
-        'admin-form-date',
-        'admin-form-date-picker',
-        'admin-form-input-date-picker',
-        visibleLabelClass(labelVisibility),
-        className,
-      )}
-    >
-      <span className={labelClassName(labelVisibility)}>{label}</span>
-      <input
-        className="admin-form-date-input"
-        defaultValue={defaultValue}
-        disabled={disabled}
-        name={name}
-        onChange={onChange}
-        required={required}
-        type={mode}
-        value={value}
-      />
-    </label>
+    <div className={datePickerWrapperClassName(className)}>
+      <div className="react-datepicker__input-container">
+        <label className={datePickerInputClassName()}>
+          <span className={labelClassName(labelVisibility)}>{label}</span>
+          <input
+            className="admin-form-date-input"
+            defaultValue={defaultValue}
+            disabled={disabled}
+            name={name}
+            onChange={onChange}
+            required={required}
+            type={mode}
+            value={value}
+          />
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -342,27 +338,23 @@ export function AdminFormDateTime({
   value,
 }: AdminFormDateTimeProps) {
   return (
-    <label
-      className={joinClassNames(
-        'admin-form-date',
-        'admin-form-date-picker',
-        'admin-form-input-date-picker',
-        visibleLabelClass(labelVisibility),
-        className,
-      )}
-    >
-      <span className={labelClassName(labelVisibility)}>{label}</span>
-      <input
-        className="admin-form-date-input"
-        defaultValue={defaultValue}
-        disabled={disabled}
-        name={name}
-        onChange={onChange}
-        required={required}
-        type="datetime-local"
-        value={value}
-      />
-    </label>
+    <div className={datePickerWrapperClassName(className)}>
+      <div className="react-datepicker__input-container">
+        <label className={datePickerInputClassName()}>
+          <span className={labelClassName(labelVisibility)}>{label}</span>
+          <input
+            className="admin-form-date-input"
+            defaultValue={defaultValue}
+            disabled={disabled}
+            name={name}
+            onChange={onChange}
+            required={required}
+            type="datetime-local"
+            value={value}
+          />
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -375,6 +367,7 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
           'admin-form-date-picker',
           'admin-form-input-date-picker',
           'admin-form-control-labeled',
+          'calendar-datepicker-input',
           className,
         )}
       >
@@ -650,6 +643,23 @@ function visibleLabelClass(visibility: AdminFormLabelVisibility) {
   return visibility === 'visible' ? 'admin-form-control-labeled' : undefined;
 }
 
+function datePickerWrapperClassName(className: string | undefined) {
+  const pageHookTokens = splitClassNames(className).filter((token) => !datePickerShellClassNames.has(token));
+
+  return joinClassNames('react-datepicker-wrapper', 'admin-form-control-fluid', 'calendar-datepicker-field', ...pageHookTokens);
+}
+
+function datePickerInputClassName(className?: string) {
+  return joinClassNames(
+    'admin-form-input',
+    'admin-form-date-picker',
+    'admin-form-input-date-picker',
+    'admin-form-control-labeled',
+    'calendar-datepicker-input',
+    className,
+  );
+}
+
 function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {
   return type === 'date' || type === 'datetime-local' || type === 'month' || type === 'time'
     ? 'admin-form-date-picker admin-form-input-date-picker'
@@ -659,3 +669,16 @@ function dateTimeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type'])
 function dateTimeNativeInputClass(type: InputHTMLAttributes<HTMLInputElement>['type']) {
   return dateTimeInputClass(type) ? 'admin-form-date-input' : undefined;
 }
+
+const datePickerShellClassNames = new Set([
+  'admin-form-date',
+  'admin-form-date-picker',
+  'admin-form-input',
+  'admin-form-input-date-picker',
+  'admin-form-control-labeled',
+  'admin-form-control-fluid',
+  'calendar-datepicker-field',
+  'calendar-datepicker-input',
+  'react-datepicker-wrapper',
+  'react-datepicker__input-container',
+]);
