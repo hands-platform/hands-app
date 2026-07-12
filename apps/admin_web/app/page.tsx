@@ -3003,7 +3003,12 @@ function buildOperationsCommandBoard(input: {
         input.partnerSupply.onlineAvailable > 0
           ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
           : 'No online available Partner is visible; check app activity, location update, and onboarding review.',
-      href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
+      href:
+        input.partnerSupply.staleLocation > 0
+          ? '/partners?review=location'
+          : input.partnerSupply.onlineAvailable > 0
+            ? '/partners'
+            : '/partners/overview?range=7d&selectionIssue=availability&selectionSort=response',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
           ? 'warn'

@@ -268,6 +268,67 @@ describe('DashboardPage', () => {
     expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open top priority/);
   });
 
+  it('routes unavailable Partner supply to the Partner Overview availability queue', async () => {
+    const dashboardSummary: AdminDashboardSummary = {
+      generatedAt: '2026-06-28T00:00:00.000Z',
+      appPresence: {
+        activeBookingCustomers: 0,
+        disabledPushCustomers: 0,
+        liveActiveBookingCustomers: 0,
+        liveAppCustomers: 0,
+        liveAppPartners: 0,
+        liveOpenMatchingCustomers: 0,
+        reachableCustomers: 0,
+        recentCustomerSessions: 0,
+        staleCustomerSessions: 0,
+        totalCustomers: 0,
+      },
+      partnerSupply: {
+        approvedVerification: 3,
+        bankApproved: 3,
+        blocked: 0,
+        cashDebtPartners: 0,
+        firstRevenue: 1,
+        kycApproved: 3,
+        level2Active: 3,
+        liveSessions: 0,
+        noLocation: 0,
+        offline: 3,
+        online: 0,
+        onlineAvailable: 0,
+        onlineAvailableSoon: 0,
+        onlineBusy: 0,
+        pendingVerification: 0,
+        staleLocation: 0,
+        supplyPressureLabel: 'No supply',
+        total: 3,
+        withdrawalProfileReady: 3,
+      },
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/dashboard/summary') {
+        return dashboardSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Partner supply');
+    expect(markup).toContain(
+      'href="/partners/overview?range=7d&amp;selectionIssue=availability&amp;selectionSort=response"',
+    );
+  });
+
   it('uses payment summary for default dashboard payment hold counters', async () => {
     const paymentSummary: AdminPaymentSummary = {
       authorized: 13,
