@@ -474,6 +474,8 @@ describe('DashboardPage', () => {
       '<h2 id="dashboard-current-action-order-title">Current action order</h2>',
     );
     expect(markup).toContain('Follow this order now. Older shift context stays in Operations Handoff.');
+    expect(markup).toContain('Past review order');
+    expect(markup).toContain('href="/operations-handoff#operations-handoff-review-order"');
     expect(markup).toContain('Now');
     expect(markup).toContain('Next');
     expect(markup).toContain('Watch');

@@ -830,9 +830,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <AdminSection
         actions={
-          <AdminFormControlLink href="/operations-handoff">
+          <AdminFormControlLink href="/operations-handoff#operations-handoff-review-order">
             <FileClock size={16} aria-hidden="true" />
-            Past handoff history
+            Past review order
           </AdminFormControlLink>
         }
         className="admin-mt-20"
