@@ -3328,7 +3328,32 @@ a.action-button-card:hover {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 0;
+  max-width: min(100%, 560px);
   min-width: 0;
+}
+
+.admin-page-header-actions > * {
+  max-width: 100%;
+}
+
+.admin-page-header-actions .text-link {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 8px;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 18px;
+  text-decoration: none;
+}
+
+.admin-page-header-actions .text-link:hover {
+  background: var(--admin-action-hover);
 }
 
 .admin-page-header-actions[data-empty='true'] {
@@ -14408,6 +14433,51 @@ a.ops-task-card {
 
 .action-menu-button-form {
   margin: 0;
+}
+
+.tax-finance-workflow-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tax-finance-workflow-dropdown {
+  display: inline-flex;
+  max-width: 100%;
+  position: relative;
+}
+
+.tax-finance-workflow-dropdown > summary {
+  list-style: none;
+}
+
+.tax-finance-workflow-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tax-finance-workflow-dropdown[open] > summary,
+.tax-finance-workflow-dropdown > summary:hover {
+  background: var(--admin-action-hover);
+}
+
+.tax-finance-workflow-dropdown-trigger svg {
+  transition: transform var(--admin-transition);
+}
+
+.tax-finance-workflow-dropdown[open] .tax-finance-workflow-dropdown-trigger svg {
+  transform: rotate(180deg);
+}
+
+.tax-finance-workflow-dropdown-menu {
+  min-width: 260px;
+}
+
+.tax-finance-workflow-dropdown-link {
+  white-space: nowrap;
 }
 
 .action-menu-dropdown {

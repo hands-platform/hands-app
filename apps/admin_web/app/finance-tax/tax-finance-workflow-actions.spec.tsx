@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { TaxFinanceWorkflowActions } from './tax-finance-workflow-actions';
 
 describe('TaxFinanceWorkflowActions', () => {
-  it('renders workflow links through the shared ActionMenu atom', () => {
+  it('renders short workflow links through the shared ActionMenu atom', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/tax-finance-workflow-actions.tsx'), 'utf8');
 
     expect(source).toContain('ActionMenu');
@@ -32,5 +32,31 @@ describe('TaxFinanceWorkflowActions', () => {
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).not.toContain('participant-list');
     expect(markup).not.toContain('pill pill-info');
+  });
+
+  it('collapses long finance workflow lists so page headers keep title space', () => {
+    const markup = renderToStaticMarkup(
+      <TaxFinanceWorkflowActions
+        links={[
+          { href: '/finance-tax', key: 'overview', label: 'Tax overview' },
+          {
+            href: '/finance-tax/booking-settlement-audit',
+            key: 'booking-settlement-audit',
+            label: 'Booking settlement audit',
+          },
+          { href: '/finance-tax/settlement-reversals', key: 'settlement-reversals', label: 'Settlement reversals' },
+          { href: '/finance-tax/general-ledger', key: 'general-ledger', label: 'General ledger' },
+          { href: '/finance-tax/payment-clearing', key: 'payment-clearing', label: 'Payment clearing' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('tax-finance-workflow-actions');
+    expect(markup).toContain('Tax overview');
+    expect(markup).toContain('More finance pages');
+    expect(markup).toContain('tax-finance-workflow-dropdown-menu');
+    expect(markup).toContain('Booking settlement audit');
+    expect(markup).toContain('Payment clearing');
+    expect(markup).not.toContain('action-menu action-menu-button-list');
   });
 });

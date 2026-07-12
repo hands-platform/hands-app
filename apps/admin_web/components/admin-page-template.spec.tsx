@@ -55,6 +55,8 @@ describe('AdminPageTemplate', () => {
     expect(css).toContain('.admin-page-header-copy > p');
     expect(css).toContain('.admin-page-header-toolbar {');
     expect(css).toContain('.admin-page-header-actions {');
+    expect(css).toContain('max-width: min(100%, 560px);');
+    expect(css).toContain('.admin-page-header-actions .text-link {');
     expect(css).toContain(".admin-page-header-actions[data-empty='true']");
     expect(css).not.toContain('.admin-page-header h1');
     expect(css).not.toContain('.admin-page-header p');

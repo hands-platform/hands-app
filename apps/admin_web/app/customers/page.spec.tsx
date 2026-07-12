@@ -71,9 +71,10 @@ describe('CustomersPage', () => {
     expect(markup).toContain('Female 25 / Male 12 / Other 3 / Not captured 4');
   });
 
-  it('uses the shared Vuexy text link atom for inline page actions', () => {
-    expect(customerPageSource).toContain('AdminTextLink');
+  it('uses shared Vuexy secondary button links for page header actions', () => {
+    expect(customerPageSource).toContain('AdminFormControlLink');
     expect(customerPageSource).not.toContain('className="text-link"');
+    expect(customerPageSource.match(/className="button-secondary"/g)).toHaveLength(3);
   });
 
   it('links customer export to a protected CSV route instead of embedding CSV data in the page payload', async () => {
