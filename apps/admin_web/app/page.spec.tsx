@@ -319,6 +319,8 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('location readiness');
     expect(markup).not.toContain('payout readiness');
     expect(markup).not.toContain('onboarding readiness');
+    expect(markup).toContain('href="/bookings?view=chat"');
+    expect(markup).not.toContain('href="/chat-archive"');
   });
 
   it('keeps the operator dashboard free of raw Developer/System evidence labels', () => {

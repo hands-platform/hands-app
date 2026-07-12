@@ -2990,7 +2990,7 @@ function buildOperationsCommandBoard(input: {
         chatHandoffRows > 0
           ? 'Matched work must have chat available during service and retained for admin decisions after completion.'
           : 'Matched chat and retained message checks are clear in the loaded data.',
-      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/chat-archive',
+      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/bookings?view=chat',
       tone: chatHandoffRows ? 'warn' : 'ok',
       checks: [
         `${input.bookingDeepDive.matchedWithoutChat} missing room`,
@@ -3415,7 +3415,7 @@ function buildLiveOperationsRadar(input: {
         chatHandoffRows > 0
           ? 'Matched bookings must have chat available for mobile during work and archived for admin after completion.'
           : 'No missing or quiet active chat row is visible in the loaded booking set.',
-      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/chat-archive',
+      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/bookings?view=chat',
       tone: chatHandoffRows ? 'warn' : 'ok',
       checks: [
         `${input.bookingDeepDive.matchedWithoutChat} missing room`,
