@@ -2913,7 +2913,7 @@ function buildOperationsCommandBoard(input: {
     input.cashSettlementSummary.rowCount +
     input.activePayoutBatchCount;
 
-  return [
+  const items: OperationsCommandBoardItem[] = [
     {
       lane: 'Live booking command',
       owner: 'Dispatch',
@@ -3033,6 +3033,22 @@ function buildOperationsCommandBoard(input: {
       checks: ['Delivery status', 'Disabled device', 'Retry status'],
     },
   ];
+
+  const tonePriority: Record<DashboardTone, number> = {
+    danger: 4,
+    warn: 3,
+    info: 2,
+    ok: 1,
+  };
+
+  return items
+    .map((item, index) => ({ index, item }))
+    .sort((left, right) => {
+      const toneDelta = tonePriority[right.item.tone] - tonePriority[left.item.tone];
+      if (toneDelta !== 0) return toneDelta;
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
 }
 
 function buildBookingEvidenceCommandQueue(input: {

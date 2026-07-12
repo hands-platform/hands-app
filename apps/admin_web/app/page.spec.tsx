@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import type {
   AdminCashSettlementSummary,
+  AdminDashboardSummary,
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
@@ -196,6 +197,42 @@ describe('DashboardPage', () => {
   });
 
   it('uses notification summary for default dashboard failed notification counters', async () => {
+    const dashboardSummary: AdminDashboardSummary = {
+      generatedAt: '2026-06-28T00:00:00.000Z',
+      appPresence: {
+        activeBookingCustomers: 0,
+        disabledPushCustomers: 0,
+        liveActiveBookingCustomers: 0,
+        liveAppCustomers: 0,
+        liveAppPartners: 0,
+        liveOpenMatchingCustomers: 0,
+        reachableCustomers: 0,
+        recentCustomerSessions: 0,
+        staleCustomerSessions: 0,
+        totalCustomers: 0,
+      },
+      partnerSupply: {
+        approvedVerification: 1,
+        bankApproved: 1,
+        blocked: 0,
+        cashDebtPartners: 0,
+        firstRevenue: 1,
+        kycApproved: 1,
+        level2Active: 1,
+        liveSessions: 1,
+        noLocation: 0,
+        offline: 0,
+        online: 1,
+        onlineAvailable: 1,
+        onlineAvailableSoon: 0,
+        onlineBusy: 0,
+        pendingVerification: 0,
+        staleLocation: 0,
+        supplyPressureLabel: '0.0x',
+        total: 1,
+        withdrawalProfileReady: 1,
+      },
+    };
     const notificationSummary: AdminNotificationBoardSummary = {
       failed: 19,
       generatedAt: '2026-06-28T00:00:00.000Z',
@@ -208,6 +245,9 @@ describe('DashboardPage', () => {
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/dashboard/summary') {
+        return dashboardSummary;
+      }
       if (typeof href === 'string' && href.startsWith('/admin/notifications/summary?')) {
         return notificationSummary;
       }
@@ -224,6 +264,7 @@ describe('DashboardPage', () => {
       null,
     );
     expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
+    expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open first action/);
   });
 
   it('uses payment summary for default dashboard payment hold counters', async () => {
