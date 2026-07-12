@@ -20,7 +20,7 @@ export function OperationsHandoffReadinessChecklistSection({
     <AdminSection
       bodyClassName={visibleRows.length > 0 ? 'ops-task-grid' : undefined}
       className="admin-mb-16"
-      description="A dated operations review list: matching outcomes, active service records, chat continuity, cash settlement, alerts, customer context, and written notes."
+      description="Past checks that still need booking, chat, cash, alert, customer, or note review."
       status={
         <StatusBadge tone={openCount ? 'warning' : 'success'}>
           {openCount ? `${openCount} check(s) open` : 'Ready to hand over'}

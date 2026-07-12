@@ -22,7 +22,7 @@ export function OperationsHandoffImmediateActionSection({
       }
       bodyClassName={visibleActions.length > 0 ? undefined : 'admin-section-empty-body'}
       className="admin-mb-16 operations-handoff-immediate-action-card"
-      description="Historical issue lanes from the selected range: booking stage, chat availability, cash settlement, notification delivery, and written operations notes."
+      description="Past issue lanes that still need booking, chat, cash, alert, or note follow-up."
       id="operations-handoff-issue-signals"
       title="Historical issue signals"
     >

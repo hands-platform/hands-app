@@ -62,6 +62,7 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     if (section === null) throw new Error('Expected readiness checklist section to render.');
     expect(section.type.name).toBe('AdminSection');
     expect(rendered).toContain('Operations review checklist');
+    expect(rendered).toContain('Past checks that still need booking, chat, cash, alert, customer, or note review.');
     expect(rendered).toContain('1 check(s) open');
     expect(rendered).toContain('Live matching reviewed');
     expect(rendered).not.toContain('Notifications clear');

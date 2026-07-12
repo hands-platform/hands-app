@@ -329,6 +329,67 @@ describe('DashboardPage', () => {
     );
   });
 
+  it('marks stale Partner supply as a refresh lane instead of available', async () => {
+    const dashboardSummary: AdminDashboardSummary = {
+      generatedAt: '2026-06-28T00:00:00.000Z',
+      appPresence: {
+        activeBookingCustomers: 0,
+        disabledPushCustomers: 0,
+        liveActiveBookingCustomers: 0,
+        liveAppCustomers: 0,
+        liveAppPartners: 0,
+        liveOpenMatchingCustomers: 0,
+        reachableCustomers: 0,
+        recentCustomerSessions: 0,
+        staleCustomerSessions: 0,
+        totalCustomers: 0,
+      },
+      partnerSupply: {
+        approvedVerification: 10,
+        bankApproved: 10,
+        blocked: 0,
+        cashDebtPartners: 0,
+        firstRevenue: 10,
+        kycApproved: 10,
+        level2Active: 10,
+        liveSessions: 10,
+        noLocation: 1,
+        offline: 0,
+        online: 10,
+        onlineAvailable: 10,
+        onlineAvailableSoon: 0,
+        onlineBusy: 0,
+        pendingVerification: 0,
+        staleLocation: 3,
+        supplyPressureLabel: '0.0x',
+        total: 10,
+        withdrawalProfileReady: 10,
+      },
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: '2026-06-28T00:00:00.000Z',
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/dashboard/summary') {
+        return dashboardSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('<h3>Partner supply</h3>');
+    expect(markup).toContain('<span class="pill pill-warn">Refresh</span>');
+    expect(markup).toContain('3 location pin(s) need refresh before dispatch.');
+    expect(markup).toContain('href="/partners?review=location"');
+  });
+
   it('uses payment summary for default dashboard payment hold counters', async () => {
     const paymentSummary: AdminPaymentSummary = {
       authorized: 13,
@@ -379,7 +440,10 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<h1>Start Shift</h1>');
     expect(markup).toContain('Live start-of-shift workspace');
-    expect(markup).toContain('Work the red and yellow lanes first');
+    expect(markup).toContain('Work red/yellow lanes first.');
+    expect(markup).toContain('Live counters for bookings, app presence, supply, payments, and cash debt.');
+    expect(markup).toContain('Current live queues stay visible; dated totals follow the selected window.');
+    expect(markup).toContain('Open only when you need detailed radar, queues, policy, and finance panels.');
     expect(markup).not.toContain('<h1>HANDS Operations</h1>');
     expect(markup).not.toContain('Daily command center');
     expect(markup).toContain('href="/notifications"');

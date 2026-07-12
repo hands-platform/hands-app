@@ -58,6 +58,7 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(section).not.toBeNull();
     if (section === null) throw new Error('Expected immediate action section to render.');
     expect(rendered).toContain('Historical issue signals');
+    expect(rendered).toContain('Past issue lanes that still need booking, chat, cash, alert, or note follow-up.');
     expect(rendered).toContain('1');
     expect(rendered).toContain('issue lane(s)');
     expect(rendered).toContain('Open matching windows');

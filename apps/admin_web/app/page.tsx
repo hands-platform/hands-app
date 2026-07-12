@@ -782,7 +782,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="Work the red and yellow lanes first, then clear the remaining live booking, Partner supply, payment, notification, and follow-up checks."
+        description="Work red/yellow lanes first. Then clear live booking, Partner supply, payment, notification, and follow-up checks."
         id="dashboard-operations-command-board"
         status={
           <StatusBadge tone={operationsCommandBoardAttentionCount > 0 ? 'warning' : 'success'}>
@@ -828,7 +828,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply, payment holds, and cash debt in one operator scan."
+        description="Live counters for bookings, app presence, supply, payments, and cash debt."
         id="dashboard-core-operating-counters"
         title="Core operating counters"
       >
@@ -1071,13 +1071,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <AdminSection
         actions={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
         className="admin-mt-20"
-        description={
-          <>
-            Window: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
-            closeout checks, and notification rows use this window. Live queues and app activity stay
-            current so urgent work is never hidden.
-          </>
-        }
+        description="Current live queues stay visible; dated totals follow the selected window."
         id="dashboard-date-range"
         title="Start Shift window"
       >
@@ -2187,7 +2181,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminFormControlLink>
           }
           className="admin-mt-20"
-          description="The default dashboard keeps the first operator scan focused on core counters, command lanes, evidence shortcuts, and the selected date range. Load the full dashboard when you need radar, policy pulse, Partner review, queue, and finance detail sections."
+          description="Open only when you need detailed radar, queues, policy, and finance panels."
           id="dashboard-on-demand-detail"
           title="More operating detail"
         />
@@ -2997,12 +2991,18 @@ function buildOperationsCommandBoard(input: {
     {
       lane: 'Partner supply',
       owner: 'Partner Ops',
-      status: input.partnerSupply.onlineAvailable ? 'Available' : 'Check',
+      status: input.partnerSupply.onlineAvailable
+        ? input.partnerSupply.staleLocation
+          ? 'Refresh'
+          : 'Available'
+        : 'Check',
       value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online} online`,
       detail:
-        input.partnerSupply.onlineAvailable > 0
-          ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
-          : 'No online available Partner is visible; check app activity, location update, and onboarding review.',
+        input.partnerSupply.staleLocation > 0
+          ? `${input.partnerSupply.staleLocation} location pin(s) need refresh before dispatch.`
+          : input.partnerSupply.onlineAvailable > 0
+            ? `${input.partnerSupply.onlineAvailable} available Partner(s) are ready for customer demand.`
+            : 'No online available Partner is visible; check app activity, location update, and onboarding review.',
       href:
         input.partnerSupply.staleLocation > 0
           ? '/partners?review=location'
