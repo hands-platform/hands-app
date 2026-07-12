@@ -63,6 +63,14 @@ describe('AdminPageTemplate', () => {
     expect(css).not.toContain('.admin-page-header.toolbar');
   });
 
+  it('does not keep page-specific top-level toolbar overrides for shared page headers', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+    const staleHeaderOverrides = css.match(/^\.[\w-]+-page\s*>\s*\.toolbar\b/gm) ?? [];
+    const staleContentOverrides = css.match(/^\.(booking-monitor|notification-monitor)\s*>\s*\.toolbar\b/gm) ?? [];
+
+    expect([...staleHeaderOverrides, ...staleContentOverrides]).toEqual([]);
+  });
+
   it('normalizes page header terminology through the shared shell', () => {
     const labels = [
       AdminPageTemplate({ children: <section />, title: 'Customer Management' }),

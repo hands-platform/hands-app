@@ -3358,7 +3358,6 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.booking-monitor > .toolbar,
 .booking-monitor > .card {
   margin-bottom: 0;
   margin-top: 0;
@@ -3366,23 +3365,8 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.booking-monitor > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.booking-monitor > .toolbar > *,
 .booking-monitor > .card > * {
   min-width: 0;
-}
-
-.booking-monitor > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
 }
 
 .booking-monitor > .card {
@@ -4684,28 +4668,12 @@ a.action-button-card:hover {
   gap: 16px;
 }
 
-.notification-monitor > .toolbar,
 .notification-monitor > .card,
 .notification-monitor > .notification-table-shell {
   margin-bottom: 0;
   margin-top: 0;
 }
 
-.notification-monitor > .toolbar {
-  align-items: center;
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.notification-monitor > .toolbar .participant-list {
-  justify-content: flex-end;
-  margin-top: 0;
-}
-
-.notification-monitor > .toolbar .pill,
 .notification-monitor > .card > .toolbar .pill,
 .notification-monitor .participant-list .pill {
   white-space: nowrap;
@@ -4793,25 +4761,10 @@ a.action-button-card:hover {
   gap: 16px;
 }
 
-.chat-archive-page > .toolbar,
 .chat-archive-page > .card,
 .chat-archive-page > .grid {
   margin-bottom: 0;
   margin-top: 0;
-}
-
-.chat-archive-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.chat-archive-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
 }
 
 .chat-archive-page > .card {
@@ -5055,10 +5008,6 @@ a.action-button-card:hover {
 
 .partner-detail-page {
   gap: 18px;
-}
-
-.partner-detail-page > .toolbar {
-  margin-bottom: 0;
 }
 
 .partner-detail-page > .card,
@@ -5628,30 +5577,11 @@ a.action-button-card:hover {
   gap: 16px;
 }
 
-.operations-handoff-page > .toolbar,
 .operations-handoff-page > .card,
 .operations-handoff-page > .grid,
 .operations-handoff-page > .detail-grid {
   margin-bottom: 0;
   margin-top: 0;
-}
-
-.operations-handoff-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.operations-handoff-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
-}
-
-.operations-handoff-page > .toolbar p {
-  max-width: 780px;
 }
 
 .operations-handoff-page > .grid,
@@ -5793,24 +5723,9 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.vietnam-overview-page > .toolbar,
 .vietnam-overview-page > .card {
   margin-bottom: 0;
   margin-top: 0;
-}
-
-.vietnam-overview-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.vietnam-overview-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
 }
 
 .vietnam-realtime-dashboard {
@@ -6197,8 +6112,7 @@ a.action-button-card:hover {
     grid-template-columns: 1fr;
   }
 
-  .vietnam-realtime-chart-header,
-  .vietnam-overview-page > .toolbar {
+  .vietnam-realtime-chart-header {
     align-items: flex-start;
     display: grid;
   }
@@ -8694,36 +8608,12 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.marketing-analytics-page > .toolbar,
 .marketing-analytics-page > .card,
-.usage-overview-page > .toolbar,
 .usage-overview-page > .card,
-.partner-overview-page > .toolbar,
 .partner-overview-page > .card,
-.finance-overview-page > .toolbar,
 .finance-overview-page > .card {
   margin-bottom: 0;
   margin-top: 0;
-}
-
-.marketing-analytics-page > .toolbar,
-.usage-overview-page > .toolbar,
-.partner-overview-page > .toolbar,
-.finance-overview-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.marketing-analytics-page > .toolbar h1,
-.usage-overview-page > .toolbar h1,
-.partner-overview-page > .toolbar h1,
-.finance-overview-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
 }
 
 .marketing-analytics-filter-panel,
@@ -11343,28 +11233,9 @@ a.action-button-card:hover {
   margin-top: 0;
 }
 
-.operations-policy-page > .toolbar,
 .operations-policy-page > .card,
 .operations-policy-page .grid > .card {
   min-width: 0;
-}
-
-.operations-policy-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  padding: 24px;
-}
-
-.operations-policy-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
-}
-
-.operations-policy-page > .toolbar p {
-  max-width: 780px;
 }
 
 .operations-policy-page > .card,
@@ -11534,7 +11405,6 @@ a.action-button-card:hover {
   margin-top: 0;
 }
 
-.dashboard-page > .toolbar,
 .dashboard-page > .card,
 .dashboard-page > .grid > .card,
 .dashboard-page > .detail-grid > .card {
@@ -11586,13 +11456,11 @@ a.action-button-card:hover {
 }
 
 .tax-policy-page > .admin-mb-16,
-.tax-policy-page > .toolbar,
 .tax-policy-page > .grid {
   margin-bottom: 0;
   margin-top: 0;
 }
 
-.tax-policy-page > .toolbar,
 .tax-policy-page > .card,
 .tax-policy-version-grid > .card {
   min-width: 0;
@@ -12811,7 +12679,6 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
-.booking-detail-page > .toolbar,
 .booking-detail-page > .grid,
 .booking-detail-page > .detail-grid,
 .booking-detail-page > .card,
@@ -14034,30 +13901,6 @@ a.ops-task-card {
   display: grid;
   gap: 16px;
   min-width: 0;
-}
-
-.setup-page > .toolbar {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  margin-bottom: 0;
-  padding: 24px;
-}
-
-.setup-page > .toolbar h1 {
-  font-size: 26px;
-  line-height: 1.18;
-  margin-bottom: 8px;
-}
-
-.setup-page > .toolbar p {
-  max-width: 780px;
-}
-
-.setup-page > .toolbar .actions {
-  align-items: center;
-  justify-content: flex-end;
 }
 
 .setup-page > .admin-mb-16,
@@ -16444,7 +16287,6 @@ textarea:focus-visible {
   min-width: 0;
 }
 
-.customer-detail-page > .toolbar,
 .customer-detail-page > .customer-detail-shortcut-strip {
   margin-bottom: 0;
   margin-top: 0;
