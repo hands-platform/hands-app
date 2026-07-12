@@ -131,6 +131,17 @@ describe('Admin form control usage', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('keeps shared react-datepicker poppers out of form layout scroll flow', () => {
+    const datePickerFieldSource = readFileSync(join(process.cwd(), 'components/admin-form-date-picker-field.tsx'), 'utf8');
+    const formControlsSource = readFileSync(join(process.cwd(), 'components/admin-form-controls.tsx'), 'utf8');
+
+    expect(datePickerFieldSource).toContain('portalId="admin-datepicker-portal"');
+    expect(datePickerFieldSource).toContain('popperProps={ADMIN_DATEPICKER_POPPER_PROPS}');
+    expect(datePickerFieldSource).toContain('onMouseDown={preventDatePickerTextInputFocus}');
+    expect(datePickerFieldSource).toContain('event.preventDefault();');
+    expect(formControlsSource).toContain('onMouseDown={preventDatePickerTextInputFocus}');
+  });
+
   it('keeps legacy page field class names out of production form atoms', () => {
     const offenders = productionTsxFiles()
       .filter((filePath) => legacyPageFieldClassPattern.test(readFileSync(filePath, 'utf8')))

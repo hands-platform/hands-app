@@ -5,6 +5,8 @@ import DatePicker from 'react-datepicker';
 
 type AdminFormDatePickerMode = 'date' | 'datetime-local' | 'month' | 'time';
 
+const ADMIN_DATEPICKER_POPPER_PROPS = { strategy: 'fixed' as const };
+
 type AdminFormDatePickerFieldProps = {
   readonly className: string;
   readonly defaultValue?: string | number | readonly string[];
@@ -64,6 +66,8 @@ export const AdminFormDatePickerField = memo(function AdminFormDatePickerField({
         onChange={(date: Date | null) => setSelectedDate(date instanceof Date && Number.isFinite(date.getTime()) ? date : null)}
         popperClassName="calendar-vuexy-datepicker-popper"
         popperPlacement="bottom-end"
+        popperProps={ADMIN_DATEPICKER_POPPER_PROPS}
+        portalId="admin-datepicker-portal"
         required={required}
         selected={selectedDate}
         showMonthYearPicker={mode === 'month'}
@@ -98,6 +102,7 @@ const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTex
           disabled={disabled}
           onChange={onChange}
           onClick={onClick}
+          onMouseDown={preventDatePickerTextInputFocus}
           readOnly
           ref={ref}
           required={required}
@@ -107,6 +112,10 @@ const AdminDatePickerTextInput = forwardRef<HTMLInputElement, AdminDatePickerTex
     );
   },
 );
+
+const preventDatePickerTextInputFocus: MouseEventHandler<HTMLInputElement> = (event) => {
+  event.preventDefault();
+};
 
 function stringValue(value: string | number | readonly string[] | undefined) {
   if (Array.isArray(value)) {

@@ -365,6 +365,7 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
           className="admin-form-date-input"
           disabled={disabled}
           onClick={onClick}
+          onMouseDown={preventDatePickerTextInputFocus}
           readOnly
           ref={ref}
           value={value ?? ''}
@@ -373,6 +374,10 @@ export const AdminFormDatePickerInput = forwardRef<HTMLInputElement, AdminFormDa
     );
   },
 );
+
+const preventDatePickerTextInputFocus: MouseEventHandler<HTMLInputElement> = (event) => {
+  event.preventDefault();
+};
 
 export function AdminFormInput({
   autoComplete,
