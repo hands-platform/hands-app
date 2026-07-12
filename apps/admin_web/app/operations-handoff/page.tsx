@@ -15,7 +15,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminDetailGrid, AdminSection } from '../../components/admin-surface';
+import { AdminActionCard, AdminDetailGrid, AdminSection, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import {
   buildUnifiedActivityStream,
@@ -397,17 +397,59 @@ export default async function OperationsHandoffPage({
 }
 
 function OperationsHandoffFullDetailsLink({ range }: { readonly range: string }) {
+  const fullHistoryHref = operationsHandoffModeHref(range, 'all');
+  const fullHistorySections = [
+    {
+      detail: 'Dated booking, chat, notification, audit, and finance movement.',
+      href: `${fullHistoryHref}#operations-handoff-activity-stream`,
+      label: 'Activity stream',
+      value: 'Timeline',
+    },
+    {
+      detail: 'Past booking state, payment, Partner, chat, and next action context.',
+      href: `${fullHistoryHref}#operations-handoff-booking-history`,
+      label: 'Booking history',
+      value: 'Bookings',
+    },
+    {
+      detail: 'Customer support evidence and Partner follow-up rows for the selected window.',
+      href: `${fullHistoryHref}#operations-handoff-customer-history`,
+      label: 'Customer and Partner signals',
+      value: 'People',
+    },
+    {
+      detail: 'Earning, payment, payout, refund, and cash debt rows for closeout review.',
+      href: `${fullHistoryHref}#operations-handoff-finance-closeout`,
+      label: 'Finance closeout',
+      value: 'Money',
+    },
+  ];
+
   return (
     <AdminSection
       actions={
-        <AdminFormControlLink className="button-secondary" href={operationsHandoffModeHref(range, 'all')}>
+        <AdminFormControlLink className="button-secondary" href={fullHistoryHref}>
           Load full history details
         </AdminFormControlLink>
       }
       className="admin-mb-16 operations-handoff-full-details-card"
-      description="Activity stream, retained chat archive, booking queue, customer/Partner signal lists, and finance closeout rows are loaded only when an operator opens full history details."
+      description="Full history opens these paginated review tables without loading them on the summary page."
       title="Detailed history lists"
-    />
+    >
+      <AdminTaskGrid>
+        {fullHistorySections.map((section) => (
+          <AdminActionCard
+            actionLabel="Open in full history"
+            detail={section.detail}
+            href={section.href}
+            key={section.label}
+            title={section.label}
+            value={section.value}
+            variant="ops-task"
+          />
+        ))}
+      </AdminTaskGrid>
+    </AdminSection>
   );
 }
 

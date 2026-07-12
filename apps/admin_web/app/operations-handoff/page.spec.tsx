@@ -66,6 +66,15 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('href="/operations-handoff#operations-handoff-review-checklist"');
     expect(markup).toContain('id="operations-handoff-review-checklist"');
     expect(markup).toContain('Detailed history lists');
+    expect(markup).toContain('Full history opens these paginated review tables without loading them on the summary page.');
+    expect(markup).toContain('Activity stream');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-activity-stream"');
+    expect(markup).toContain('Booking history');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-booking-history"');
+    expect(markup).toContain('Customer and Partner signals');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-customer-history"');
+    expect(markup).toContain('Finance closeout');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d#operations-handoff-finance-closeout"');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('/operations-handoff?details=all');
