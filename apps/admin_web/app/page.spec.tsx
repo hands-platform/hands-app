@@ -462,7 +462,21 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
     );
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-current-action-order"',
+    );
+    expect(markup).toContain(
+      '<h2 id="dashboard-current-action-order-title">Current action order</h2>',
+    );
+    expect(markup).toContain('Follow this order now. Older shift context stays in Operations Handoff.');
+    expect(markup).toContain('Now');
+    expect(markup).toContain('Next');
+    expect(markup).toContain('Watch');
+    expect(markup).toContain('href="/operations-handoff"');
     expect(markup.indexOf('id="dashboard-operations-command-board"')).toBeLessThan(
+      markup.indexOf('id="dashboard-current-action-order"'),
+    );
+    expect(markup.indexOf('id="dashboard-current-action-order"')).toBeLessThan(
       markup.indexOf('id="dashboard-core-operating-counters"'),
     );
     expect(markup).not.toContain('id="dashboard-booking-participant-flow"');

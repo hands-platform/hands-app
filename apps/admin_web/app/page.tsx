@@ -597,6 +597,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       : operationsCommandBoardAttentionCount === 1
         ? '1 lane needs action'
         : `${operationsCommandBoardAttentionCount} lanes need action`;
+  const currentActionOrder = operationsCommandBoard.slice(0, 3).map((item, index) => ({
+    item,
+    step: ['Now', 'Next', 'Watch'][index] ?? `Step ${index + 1}`,
+  }));
   const fullDashboardData = shouldRenderFullDashboard
     ? buildFullDashboardData({
         activePayoutBatches,
@@ -814,6 +818,46 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     {check}
                   </StatusBadge>
                 ))}
+              </AdminFilterChipGroup>
+            </AdminActionCard>
+          ))}
+        </AdminTaskGrid>
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <AdminFormControlLink href="/operations-handoff">
+            <FileClock size={16} aria-hidden="true" />
+            Past handoff history
+          </AdminFormControlLink>
+        }
+        className="admin-mt-20"
+        description="Follow this order now. Older shift context stays in Operations Handoff."
+        id="dashboard-current-action-order"
+        title="Current action order"
+      >
+        <AdminTaskGrid className="admin-mt-14">
+          {currentActionOrder.map(({ item, step }) => (
+            <AdminActionCard
+              actionLabel="Open"
+              className={dashboardToneCardClass(item.tone)}
+              detail={item.detail}
+              href={item.href}
+              key={`${step}-${item.lane}`}
+              leading={
+                <>
+                  <small>{step}</small>
+                  <StatusBadgeFromPillClass pillClass={dashboardTonePillClass(item.tone)}>
+                    {item.status}
+                  </StatusBadgeFromPillClass>
+                </>
+              }
+              title={item.lane}
+              variant="ops-task"
+            >
+              <AdminFilterChipGroup className="admin-mt-10">
+                <StatusBadge tone="neutral">{item.owner}</StatusBadge>
+                <StatusBadge tone="neutral">{item.value}</StatusBadge>
               </AdminFilterChipGroup>
             </AdminActionCard>
           ))}
