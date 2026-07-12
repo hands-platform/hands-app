@@ -20,9 +20,11 @@ import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { createServiceDurationSet, saveServiceDurationMenu } from './actions';
 
 type ServiceCatalogManagerSectionProps = {
+  readonly activeOptionCount: number;
   readonly dialogMode: 'new' | 'edit' | null;
   readonly editGroup: ServiceCatalogGroup | null;
   readonly groups: readonly ServiceCatalogGroup[];
+  readonly payoutRuleCount: number;
   readonly totalGroupCount: number;
 };
 
@@ -36,19 +38,26 @@ const SERVICE_TRANSLATION_FIELDS = [
 ] as const;
 
 export function ServiceCatalogManagerSection({
+  activeOptionCount,
   dialogMode,
   editGroup,
   groups,
+  payoutRuleCount,
   totalGroupCount,
 }: ServiceCatalogManagerSectionProps) {
   return (
     <>
       <AdminSection
         actions={
-          <AdminFormControlLink className="button-primary" href={serviceDialogHref('new', null)}>
-            <Plus aria-hidden="true" size={16} />
-            Add service
-          </AdminFormControlLink>
+          <>
+            <StatusBadge tone="info">{totalGroupCount} service type(s)</StatusBadge>
+            <StatusBadge tone="success">{activeOptionCount} active option(s)</StatusBadge>
+            <StatusBadge tone="neutral">{payoutRuleCount} payout rule(s)</StatusBadge>
+            <AdminFormControlLink className="button-primary" href={serviceDialogHref('new', null)}>
+              <Plus aria-hidden="true" size={16} />
+              Add service
+            </AdminFormControlLink>
+          </>
         }
         className="service-catalog-manager-card"
         description="Register the service menu that Partners can opt into. Customer app partner details only show services selected by that Partner."

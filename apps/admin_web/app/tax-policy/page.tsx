@@ -64,12 +64,6 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <AdminSignal tone={activePolicies.length === 1 ? 'ok' : 'warn'}>{activePolicies.length} active</AdminSignal>
-          <StatusBadge tone="info">{ruleCount} rule(s)</StatusBadge>
-        </>
-      }
       contentClassName="tax-policy-page"
       description="Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in application code."
       title="Tax policy"
@@ -95,9 +89,13 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
       <AdminSection
         actions={
-          <StatusBadgeFromPillClass pillClass={healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}>
-            {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
-          </StatusBadgeFromPillClass>
+          <>
+            <AdminSignal tone={activePolicies.length === 1 ? 'ok' : 'warn'}>{activePolicies.length} active</AdminSignal>
+            <StatusBadge tone="info">{ruleCount} rule(s)</StatusBadge>
+            <StatusBadgeFromPillClass pillClass={healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}>
+              {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
+            </StatusBadgeFromPillClass>
+          </>
         }
         className="admin-mb-16 tax-policy-checklist-card"
         description="Keep exactly one active policy with a default rule. Every earning stores the selected rule snapshot, so changing future policy does not rewrite tax history."

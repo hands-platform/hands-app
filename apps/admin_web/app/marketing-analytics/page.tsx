@@ -270,21 +270,21 @@ export default async function MarketingAnalyticsPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">No live ad API</StatusBadge>
-          <StatusBadge tone="info">
-            Generated <DateTimeText value={overview.generatedAt} />
-          </StatusBadge>
-        </>
-      }
       contentClassName="marketing-analytics-page"
       description="Acquisition funnel, source, campaign, and region analytics from stored HANDS app, booking, referral, and finance records. This page is intentionally separate from Vietnam Operations Map."
       title="Marketing Analytics"
     >
 
       <AdminSection
-        actions={<StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>}
+        actions={
+          <>
+            <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
+            <StatusBadge tone="success">No live ad API</StatusBadge>
+            <StatusBadge tone="info">
+              Generated <DateTimeText value={overview.generatedAt} />
+            </StatusBadge>
+          </>
+        }
         className="marketing-analytics-filter-panel"
         description="Bounded ranges and aggregate dimensions only. Phone numbers, exact location points, and ad identifiers are not exposed here."
         title="Marketing filters"

@@ -112,20 +112,20 @@ export default async function PartnerOverviewPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">Vietnam supply</StatusBadge>
-          <StatusBadge tone="info">
-            Generated <DateTimeText value={overview.generatedAt} />
-          </StatusBadge>
-        </>
-      }
       contentClassName="partner-overview-page"
       description="Supply status, Partner activation, booking quality, wallet risk, and action queues from stored operational records."
       title="Partner Overview"
     >
 
       <AdminSection
+        actions={
+          <>
+            <StatusBadge tone="success">Vietnam supply</StatusBadge>
+            <StatusBadge tone="info">
+              Generated <DateTimeText value={overview.generatedAt} />
+            </StatusBadge>
+          </>
+        }
         className="partner-overview-filter-panel"
         description="Default view stays focused on current supply and bounded operating windows."
         statusLabel={overview.rangeLabel}

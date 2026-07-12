@@ -14480,6 +14480,30 @@ a.ops-task-card {
   white-space: nowrap;
 }
 
+.tax-finance-workflow-export-menu :is(a, button, .pill, .status-badge) {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--admin-radius);
+  box-shadow: none;
+  color: var(--admin-text);
+  display: flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 10px;
+  justify-content: flex-start;
+  margin-inline: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tax-finance-workflow-export-menu :is(a, button, .pill, .status-badge):hover {
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
+}
+
 .action-menu-dropdown {
   display: inline-flex;
   justify-content: flex-end;

@@ -21,7 +21,20 @@ export function TaxFinanceWorkflowActions({
 
     return (
       <div className="tax-finance-workflow-actions">
-        {children}
+        {children ? (
+          <details className="tax-finance-workflow-dropdown tax-finance-workflow-export-dropdown">
+            <summary
+              aria-label="Finance export actions"
+              className="admin-form-control-button button button-secondary tax-finance-workflow-dropdown-trigger"
+            >
+              <span>Export CSV</span>
+              <ChevronDown aria-hidden="true" size={16} />
+            </summary>
+            <div className="admin-action-menu tax-finance-workflow-dropdown-menu tax-finance-workflow-export-menu" role="menu">
+              {children}
+            </div>
+          </details>
+        ) : null}
         {primaryLink ? (
           <AdminFormControlLink className="button-secondary" href={primaryLink.href}>
             {primaryLink.label}

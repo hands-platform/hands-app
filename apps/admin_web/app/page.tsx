@@ -4,6 +4,7 @@ import {
   BellRing,
   BookOpenCheck,
   CalendarClock,
+  ChevronDown,
   FileClock,
   ListChecks,
   Settings2,
@@ -762,20 +763,46 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <CalendarClock size={16} aria-hidden="true" />
             Booking monitor
           </AdminFormControlLink>
-          <AdminTextLink href="/cash-settlements">
-            Cash settlements
-          </AdminTextLink>
-          <AdminTextLink href="/payments">
-            Payments
-          </AdminTextLink>
           <AdminFormControlLink href="/operations-handoff">
             <FileClock size={16} aria-hidden="true" />
             Operations History
           </AdminFormControlLink>
-          <AdminFormControlLink href="/notifications">
-            <BellRing size={16} aria-hidden="true" />
-            Notifications
-          </AdminFormControlLink>
+          <details className="tax-finance-workflow-dropdown admin-page-header-more-dropdown">
+            <summary
+              aria-label="More Start Shift actions"
+              className="admin-form-control-button button button-secondary tax-finance-workflow-dropdown-trigger"
+            >
+              <span>More actions</span>
+              <ChevronDown aria-hidden="true" size={16} />
+            </summary>
+            <div className="admin-action-menu tax-finance-workflow-dropdown-menu" role="menu">
+              <Link
+                className="admin-action-item tax-finance-workflow-dropdown-link"
+                href="/cash-settlements"
+                prefetch={false}
+                role="menuitem"
+              >
+                Cash settlements
+              </Link>
+              <Link
+                className="admin-action-item tax-finance-workflow-dropdown-link"
+                href="/payments"
+                prefetch={false}
+                role="menuitem"
+              >
+                Payments
+              </Link>
+              <Link
+                className="admin-action-item tax-finance-workflow-dropdown-link"
+                href="/notifications"
+                prefetch={false}
+                role="menuitem"
+              >
+                <BellRing size={16} aria-hidden="true" />
+                Notifications
+              </Link>
+            </div>
+          </details>
         </>
       }
       contentClassName="dashboard-page"

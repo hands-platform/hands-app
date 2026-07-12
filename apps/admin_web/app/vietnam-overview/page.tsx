@@ -399,15 +399,6 @@ export default async function VietnamOverviewPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">Vietnam only</StatusBadge>
-          {activeRegion ? (
-            <StatusBadge tone="primary">Focused: {activeRegion.regionName}</StatusBadge>
-          ) : null}
-          <StatusBadge tone="info">Refreshes every {overview.refreshSeconds}s</StatusBadge>
-        </>
-      }
       contentClassName="vietnam-overview-page"
       description="Realtime operating map for saved customer addresses, active customers, ready Partners, offline Partners, 7-day inactive Partners, and active bookings across Vietnam. Period metrics are summarized below without paid map lookup."
       title="Vietnam Overview"
@@ -500,9 +491,16 @@ export default async function VietnamOverviewPage({
 
       <AdminSection
         actions={
-          <StatusBadge tone="info">
-            Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
-          </StatusBadge>
+          <>
+            <StatusBadge tone="success">Vietnam only</StatusBadge>
+            {activeRegion ? (
+              <StatusBadge tone="primary">Focused: {activeRegion.regionName}</StatusBadge>
+            ) : null}
+            <StatusBadge tone="info">Refreshes every {overview.refreshSeconds}s</StatusBadge>
+            <StatusBadge tone="info">
+              Generated <DateTimeText fallback="pending" value={overview.generatedAt} />
+            </StatusBadge>
+          </>
         }
         bodyClassName="vietnam-overview-map-layout"
         className="vietnam-overview-map-card"

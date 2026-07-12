@@ -134,20 +134,20 @@ export default async function UsageOverviewPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">Vietnam only</StatusBadge>
-          <StatusBadge tone="info">
-            Generated <DateTimeText value={overview.generatedAt} />
-          </StatusBadge>
-        </>
-      }
       contentClassName="usage-overview-page"
       description="Customer app frequency, Partner discovery, booking intent, and completed-work flow from stored usage events."
       title="Usage Overview"
     >
 
       <AdminSection
+        actions={
+          <>
+            <StatusBadge tone="success">Vietnam only</StatusBadge>
+            <StatusBadge tone="info">
+              Generated <DateTimeText value={overview.generatedAt} />
+            </StatusBadge>
+          </>
+        }
         className="usage-overview-filter-panel"
         description="Use bounded date windows so operators can compare app activity without broad page fetches."
         statusLabel={overview.rangeLabel}

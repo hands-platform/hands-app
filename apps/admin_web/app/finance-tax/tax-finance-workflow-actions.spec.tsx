@@ -59,4 +59,27 @@ describe('TaxFinanceWorkflowActions', () => {
     expect(markup).toContain('Payment clearing');
     expect(markup).not.toContain('action-menu action-menu-button-list');
   });
+
+  it('keeps export links inside a dropdown when the workflow list is long', () => {
+    const markup = renderToStaticMarkup(
+      <TaxFinanceWorkflowActions
+        links={[
+          { href: '/finance-tax', key: 'overview', label: 'Tax overview' },
+          { href: '/finance-tax/general-ledger', key: 'general-ledger', label: 'General ledger' },
+          { href: '/finance-tax/payment-clearing', key: 'payment-clearing', label: 'Payment clearing' },
+          { href: '/finance-tax/bank-reconciliation', key: 'bank-reconciliation', label: 'Bank reconciliation' },
+          { href: '/finance-tax/payment-fees', key: 'payment-fees', label: 'Payment fees' },
+        ]}
+      >
+        <a className="pill pill-success" href="/finance-tax/export.csv">
+          Export visible CSV
+        </a>
+      </TaxFinanceWorkflowActions>,
+    );
+
+    expect(markup).toContain('tax-finance-workflow-export-dropdown');
+    expect(markup).toContain('Finance export actions');
+    expect(markup).toContain('Export visible CSV');
+    expect(markup).toContain('tax-finance-workflow-export-menu');
+  });
 });

@@ -176,9 +176,9 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
       description={description}
       metrics={metrics}
       actions={
-        <AdminTextLink href="/operations-policy">
+        <AdminFormControlLink className="button-secondary" href="/operations-policy">
           Open operations policy
-        </AdminTextLink>
+        </AdminFormControlLink>
       }
     >
       <ReferralPolicyPanel label={title} policy={props.policy} />

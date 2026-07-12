@@ -125,18 +125,18 @@ export default async function FinanceOverviewPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">Read-only</StatusBadge>
-          <StatusBadge tone="info">{buildFinanceOverviewRangeLabel(filters.range)}</StatusBadge>
-        </>
-      }
       contentClassName="finance-overview-page"
       description="Money-flow command view for gross payments, platform-fee revenue, Partner payable, wallet liability, refunds, tax, and reconciliation risk."
       title="Finance Overview"
     >
 
       <AdminSection
+        actions={
+          <>
+            <StatusBadge tone="success">Read-only</StatusBadge>
+            <StatusBadge tone="info">{buildFinanceOverviewRangeLabel(filters.range)}</StatusBadge>
+          </>
+        }
         className="finance-overview-filter-panel"
         description="This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists."
         statusLabel={`Period ${filters.period}`}

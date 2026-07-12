@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 
 describe('ServicesPage source', () => {
-  it('uses the shared Vuexy status badge atom for page action counters', () => {
+  it('uses the shared Vuexy status badge atom for service section counters', () => {
     const source = readFileSync('app/services/page.tsx', 'utf8');
     const managerSource = readFileSync('app/services/service-catalog-manager-section.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
+    expect(managerSource).toContain('StatusBadge');
+    expect(source).not.toContain('service-catalog-page-actions');
     expect(source).not.toContain('<span className="pill pill-info">{groupedServices.length} service type(s)</span>');
     expect(source).not.toContain('<span className="pill pill-success">{activeServices.length} active option(s)</span>');
     expect(source).not.toContain('<span className="pill pill-neutral">{payoutRuleCount} payout rule(s)</span>');

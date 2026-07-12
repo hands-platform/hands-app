@@ -1,5 +1,4 @@
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { StatusBadge } from '../../components/status-badge';
 import { adminGet, type AdminServiceCatalogItem } from '../../lib/admin-api';
 import { groupServices, readSingleParam, type ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceActionNotice } from '../../lib/service-action-notice';
@@ -27,13 +26,6 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
   return (
     <AdminPageTemplate
-      actions={
-        <div className="service-catalog-page-actions">
-          <StatusBadge tone="info">{groupedServices.length} service type(s)</StatusBadge>
-          <StatusBadge tone="success">{activeServices.length} active option(s)</StatusBadge>
-          <StatusBadge tone="neutral">{payoutRuleCount} payout rule(s)</StatusBadge>
-        </div>
-      }
       description="Manage the base service menu, duration options, base customer prices, and Partner payout amounts."
       title="Service catalog"
     >
@@ -42,7 +34,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         <ServiceCatalogManagerSection
           dialogMode={dialogMode}
           editGroup={editGroup}
+          activeOptionCount={activeServices.length}
           groups={groupedServices}
+          payoutRuleCount={payoutRuleCount}
           totalGroupCount={groupedServices.length}
         />
       </div>

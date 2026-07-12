@@ -117,9 +117,9 @@ export function ReferralCashoutQueuePage({
       description="Finance queue for referral wallet cashout requests, tax-review holds, and manual paid closeout."
       metrics={metrics}
       actions={
-        <AdminTextLink href="/referrals/customers">
+        <AdminFormControlLink className="button-secondary" href="/referrals/customers">
           Customer referrals
-        </AdminTextLink>
+        </AdminFormControlLink>
       }
     >
       <AdminFilterPanel

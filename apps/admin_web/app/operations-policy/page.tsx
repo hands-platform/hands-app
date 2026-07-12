@@ -131,13 +131,6 @@ export default async function OperationsPolicyPage({
 
   return (
     <AdminPageTemplate
-      actions={
-        <>
-          <StatusBadge tone="success">{matchingSettings.length} enforced policy</StatusBadge>
-          <StatusBadge tone="info">{decisionSettings.length} decision item(s)</StatusBadge>
-          <StatusBadge tone="info">{savedCount} saved override(s)</StatusBadge>
-        </>
-      }
       contentClassName="operations-policy-page"
       description="Change live matching details from Admin instead of editing code. Decision cards capture product choices that should be approved before deeper app-flow work."
       title="Operations Policy"
@@ -180,6 +173,12 @@ export default async function OperationsPolicyPage({
       ) : null}
 
       <AdminSection
+        actions={
+          <>
+            <StatusBadge tone="success">{matchingSettings.length} enforced policy</StatusBadge>
+            <StatusBadge tone="info">{savedCount} saved override(s)</StatusBadge>
+          </>
+        }
         className="admin-mb-16"
         description="These settings are enforced by booking creation, marketplace partner discovery, and partner participation eligibility. Existing open bookings keep their stored expiry time, while new bookings use the latest policy."
         statusLabel="Admin editable"

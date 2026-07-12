@@ -39,6 +39,7 @@ describe('ServiceCatalogManagerSection', () => {
 
   it('keeps service dialog text fields and submit actions on shared AdminForm atoms', () => {
     const section = ServiceCatalogManagerSection({
+      activeOptionCount: 1,
       dialogMode: 'new',
       editGroup: null,
       groups: [
@@ -71,6 +72,7 @@ describe('ServiceCatalogManagerSection', () => {
           label: 'Aroma Massage',
         },
       ],
+      payoutRuleCount: 1,
       totalGroupCount: 1,
     });
 
@@ -113,9 +115,11 @@ describe('ServiceCatalogManagerSection', () => {
 
   it('uses the shared empty-state atom when no service menus are registered', () => {
     const section = ServiceCatalogManagerSection({
+      activeOptionCount: 0,
       dialogMode: null,
       editGroup: null,
       groups: [],
+      payoutRuleCount: 0,
       totalGroupCount: 0,
     });
 
