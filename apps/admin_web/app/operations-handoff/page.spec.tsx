@@ -46,7 +46,7 @@ describe('OperationsHandoffPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('<h1>Operations History</h1>');
     expect(markup).toContain('Review past operations');
     expect(markup).toContain('href="/"');

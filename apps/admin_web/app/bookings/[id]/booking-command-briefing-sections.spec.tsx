@@ -127,7 +127,7 @@ describe('BookingCommandBriefingSections', () => {
     expect(markup).toContain('Open customer');
     expect(markup).toContain('Open chat record');
     expect(markup).not.toContain('Open chat archive');
-    expect(markup).not.toContain('toolbar admin-page-header');
+    expect(markup).not.toContain('admin-page-header admin-page-header-toolbar');
     expect(source).not.toContain('AdminPageTemplate');
   });
 

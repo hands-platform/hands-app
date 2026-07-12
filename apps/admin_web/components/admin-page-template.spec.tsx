@@ -14,8 +14,9 @@ describe('AdminPageTemplate', () => {
 
     expect(template.props.children).toHaveLength(3);
     expect(template.props.children[0].props).toMatchObject({
-      className: 'toolbar admin-page-header',
+      className: 'admin-page-header admin-page-header-toolbar',
     });
+    expect(template.props.children[0].props.children[1].props.className).toBe('admin-page-header-actions');
   });
 
   it('deduplicates content wrapper classes when page sections migrate to the shared shell', () => {
@@ -33,8 +34,27 @@ describe('AdminPageTemplate', () => {
 
     expect(css).toContain('.admin-page-header > div > h1');
     expect(css).toContain('.admin-page-header > div > p');
+    expect(css).toContain('.admin-page-header-toolbar {');
+    expect(css).toContain('.admin-page-header-actions {');
     expect(css).not.toContain('.admin-page-header h1');
     expect(css).not.toContain('.admin-page-header p');
+    expect(css).not.toContain('.admin-page-header.toolbar');
+  });
+
+  it('normalizes page header terminology through the shared shell', () => {
+    const labels = [
+      AdminPageTemplate({ children: <section />, title: 'Customer Management' }),
+      AdminPageTemplate({ children: <section />, title: 'Usage Overview' }),
+      AdminPageTemplate({ children: <section />, title: 'Service catalog' }),
+      AdminPageTemplate({ children: <section />, title: 'Setup' }),
+    ].map((template) => normalizeSpaces(textContent(template.props.children[0])));
+
+    expect(labels).toEqual([
+      'Customers',
+      'Customer Usage Overview',
+      'Service Catalog',
+      'Developer Setup',
+    ]);
   });
 
   it('renders metric cards through the shared metric grid', () => {

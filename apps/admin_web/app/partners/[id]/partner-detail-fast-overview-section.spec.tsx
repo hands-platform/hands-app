@@ -45,7 +45,7 @@ describe('PartnerDetailFastOverviewSection', () => {
 
     const classNames = classNamesIn(section);
 
-    expect(classNames).toContain('toolbar admin-page-header');
+    expect(classNames).toContain('admin-page-header admin-page-header-toolbar');
     expect(normalizedText(section)).toContain('Partner One');
     expect(normalizedText(section)).toContain('Marketplace ready');
     expect(normalizedText(section)).toContain('Joined : 1 Jun 2026, 07:00');

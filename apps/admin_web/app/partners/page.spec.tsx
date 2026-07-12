@@ -86,7 +86,7 @@ describe('ProvidersPage', () => {
     const page = await ProvidersPage({ searchParams: Promise.resolve({ pageSize: '10', q: 'linh' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('class="toolbar admin-page-header"');
+    expect(markup).toContain('class="admin-page-header admin-page-header-toolbar"');
     expect(markup).not.toContain('vuexy-partner-page-header');
     expect(markup).toContain('Server Trusted Partner');
     expect(markup).toContain('Showing 1 to 1 of 120 entries');

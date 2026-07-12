@@ -168,7 +168,7 @@ describe('FinanceOverviewPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Finance Overview');
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
     expect(markup).toContain('Top finance queues');

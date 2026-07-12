@@ -60,7 +60,7 @@ describe('ChatArchivePage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('1 room(s), 1234 message(s)');
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('99');
     expect(markup).toContain('800 customer / 434 Partner');
     expect(markup).toContain('Chat window previews');

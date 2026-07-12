@@ -38,8 +38,8 @@ describe('SetupPage', () => {
     const page = await SetupPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('class="toolbar admin-page-header"');
-    expect(markup).toContain('<h1>Setup</h1>');
+    expect(markup).toContain('class="admin-page-header admin-page-header-toolbar"');
+    expect(markup).toContain('<h1>Developer Setup</h1>');
     expect(markup).toContain('External setup');
     expect(markup).toContain('Setup group details');
     expect(markup).toContain('class="setup-page"');

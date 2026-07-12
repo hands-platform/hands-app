@@ -31,7 +31,7 @@ describe('UsageOverviewPage', () => {
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/usage-overview?range=7d', expect.any(Object));
     expect(markup).toContain('Usage Overview');
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Customer app-to-booking funnel');
     expect(markup).toContain('Customer segments');
     expect(markup).toContain('Action priorities');

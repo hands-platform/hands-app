@@ -16,7 +16,7 @@ describe('BookingMonitorToolbarSection', () => {
     expect(markup).toContain('admin-form-control-button button button-secondary');
     expect(rendered).toContain('Pause live');
     expect(rendered).not.toContain('Booking Monitor');
-    expect(markup).not.toContain('toolbar admin-page-header');
+    expect(markup).not.toContain('admin-page-header admin-page-header-toolbar');
     expect(rendered).not.toContain('Refresh now');
   });
 

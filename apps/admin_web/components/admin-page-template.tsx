@@ -37,6 +37,18 @@ type AdminSectionHeaderProps = {
   readonly titleId?: string;
 };
 
+const ADMIN_PAGE_TITLE_TERMS: Readonly<Record<string, string>> = {
+  'Customer Management': 'Customers',
+  'Customer detail': 'Customer Detail',
+  'Usage Overview': 'Customer Usage Overview',
+  'Tax policy': 'Tax Policy',
+  'Referral accounting guardrails': 'Referral Accounting',
+  'Parent account': 'Referral Parent Account',
+  'Service catalog': 'Service Catalog',
+  Setup: 'Developer Setup',
+  'Page not found': 'Page Not Found',
+};
+
 export function AdminPageTemplate({
   actions,
   children,
@@ -45,19 +57,25 @@ export function AdminPageTemplate({
   metrics = [],
   title,
 }: AdminPageTemplateProps) {
+  const normalizedTitle = adminPageTitleLabel(title);
+
   return (
     <>
-      <div className="toolbar admin-page-header">
+      <div className="admin-page-header admin-page-header-toolbar">
         <div>
-          <h1>{title}</h1>
+          <h1>{normalizedTitle}</h1>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {actions ? <div className="participant-list">{actions}</div> : null}
+        {actions ? <div className="admin-page-header-actions">{actions}</div> : null}
       </div>
       {metrics.length ? <AdminMetricGrid metrics={metrics} /> : null}
       {contentClassName ? <div className={joinClassNames(contentClassName)}>{children}</div> : children}
     </>
   );
+}
+
+function adminPageTitleLabel(title: string) {
+  return ADMIN_PAGE_TITLE_TERMS[title] ?? title;
 }
 
 export function AdminMetricGrid({ ariaLabel, className, metrics }: AdminMetricGridProps) {

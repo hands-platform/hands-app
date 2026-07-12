@@ -152,7 +152,7 @@ describe('DashboardPage', () => {
 
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(hrefs).toContain('/admin/dashboard/summary');
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');

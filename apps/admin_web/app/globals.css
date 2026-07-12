@@ -3284,6 +3284,16 @@ a.action-button-card:hover {
   padding-bottom: 4px;
 }
 
+.admin-page-header-toolbar {
+  align-items: flex-start;
+  background: transparent;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 4px;
+}
+
 .admin-page-header {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
@@ -3302,6 +3312,18 @@ a.action-button-card:hover {
   max-width: 780px;
 }
 
+.admin-page-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.admin-page-header-toolbar h1,
+.admin-page-header-toolbar h2,
+.admin-page-header-toolbar p,
 .toolbar h1,
 .toolbar h2,
 .toolbar p {

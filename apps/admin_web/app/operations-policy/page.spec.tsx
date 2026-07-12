@@ -36,7 +36,7 @@ describe('OperationsPolicyPage', () => {
     const page = await OperationsPolicyPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Live matching policy');
     expect(markup).not.toContain('Diagnostics loaded on demand');
     expect(markup).toContain('Operator decisions');

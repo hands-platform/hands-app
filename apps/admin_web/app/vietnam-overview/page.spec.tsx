@@ -47,7 +47,7 @@ describe('VietnamOverviewPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/vietnam-overview/summary?range=today', expect.any(Object));
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/vietnam-overview/realtime-points?take=50', expect.any(Object));
     expect(markup).toContain('Vietnam Overview');
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('card admin-card vietnam-realtime-widget');
     expect(markup).not.toContain('<article class="vietnam-realtime-widget');
     expect(pageSource).toContain('AdminOverviewGrid');

@@ -96,7 +96,7 @@ describe('TaxPolicyPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('card admin-section admin-mb-16 tax-policy-checklist-card');
     expect(markup).toContain('card admin-section admin-mb-16 tax-policy-withholding-preview-card');
     expect(markup).toContain('card admin-section admin-mb-16 tax-policy-create-policy-card');

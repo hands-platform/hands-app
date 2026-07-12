@@ -80,7 +80,7 @@ describe('MarketingAnalyticsPage', () => {
     const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="marketing-analytics-page"');
     expect(markup).not.toContain('usage-overview-page');
     expect(markup).toContain('card admin-section marketing-analytics-filter-panel');

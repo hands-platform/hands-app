@@ -41,7 +41,7 @@ describe('PartnerOverviewPage', () => {
       expect.any(Object),
     );
     expect(markup).toContain('Risk and action queues');
-    expect(markup).toContain('toolbar admin-page-header');
+    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="partner-overview-page"');
     expect(markup).not.toContain('usage-overview-page');
     expect(markup).toContain('card admin-section partner-overview-filter-panel');
