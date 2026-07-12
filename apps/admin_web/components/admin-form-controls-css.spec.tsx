@@ -491,6 +491,51 @@ describe('Admin form control CSS', () => {
     expect(selectPaddingBlock).not.toContain('padding-right: 22px');
   });
 
+  it('stretches compact select and search controls across the visible Vuexy hit area', () => {
+    const compactSearchSelector = globalsCss.indexOf(
+      ':root .admin-form-search > input:not([type=\'checkbox\'])',
+    );
+    const compactControlIndex = globalsCss.lastIndexOf(
+      ':root .admin-form-search > input:not([type=\'checkbox\'])',
+      globalsCss.indexOf('align-self: stretch', compactSearchSelector),
+    );
+    const compactControlBlock = cssRuleBlockAt(compactControlIndex);
+    const compactSelectStretchIndex = globalsCss.lastIndexOf(
+      ':root .admin-form-select:not(.admin-form-control-labeled) > select',
+      globalsCss.indexOf('inline-size: 100%', compactControlIndex),
+    );
+    const compactSelectStretchBlock = cssRuleBlockAt(compactSelectStretchIndex);
+    const compactSelectIndex = globalsCss.lastIndexOf(
+      ':root .admin-form-select:not(.admin-form-control-labeled) > select',
+    );
+    const compactSelectBlock = cssRuleBlockAt(compactSelectIndex);
+    const compactShellIndex = globalsCss.lastIndexOf(
+      '.admin-form-select:not(.admin-form-control-labeled),\nlabel.admin-form-select:not(.admin-form-control-labeled),',
+    );
+    const compactShellBlock = cssRuleBlockAt(compactShellIndex);
+    const compactSearchShellIndex = globalsCss.lastIndexOf(
+      '.admin-form-search,\nlabel.admin-form-search,',
+    );
+    const compactSearchShellBlock = cssRuleBlockAt(compactSearchShellIndex);
+
+    expect(compactControlIndex).toBeGreaterThan(-1);
+    expect(compactControlBlock).toContain('align-self: stretch');
+    expect(compactControlBlock).toContain('block-size: 100%');
+    expect(compactControlBlock).toContain('box-sizing: border-box');
+    expect(compactControlBlock).toContain('flex: 1 1 auto');
+    expect(compactControlBlock).toContain('inline-size: auto');
+    expect(compactControlBlock).not.toContain('inline-size: 100%');
+    expect(compactControlBlock).toContain('min-block-size: calc(var(--admin-control-height-sm) - 2px)');
+    expect(compactControlBlock).toContain('min-width: 0');
+    expect(compactSelectStretchBlock).toContain('inline-size: 100%');
+    expect(compactSelectBlock).toContain('cursor: pointer');
+    expect(compactSelectBlock).toContain('padding: 0 42px 0 14px');
+    expect(compactSearchShellBlock).toContain('display: flex');
+    expect(compactSearchShellBlock).toContain('flex-wrap: nowrap');
+    expect(compactShellBlock).toContain('cursor: pointer');
+    expect(compactShellBlock).toContain('padding: 0');
+  });
+
   it('reserves one visible calendar icon slot for labeled date picker inputs', () => {
     const datePaddingIndex = globalsCss.indexOf(':root\n  .admin-form-date.admin-form-control-labeled');
     const datePaddingBlock = cssRuleBlockAt(datePaddingIndex);

@@ -18221,3 +18221,69 @@ textarea:focus-visible {
 .admin-directory-filter-select select {
   padding-inline-end: 32px;
 }
+
+.admin-form-search,
+label.admin-form-search,
+.admin-directory-filter-search,
+label.admin-directory-filter-search {
+  align-items: center;
+  cursor: text;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.admin-form-select:not(.admin-form-control-labeled),
+label.admin-form-select:not(.admin-form-control-labeled),
+.admin-directory-filter-select:not(.admin-form-control-labeled),
+label.admin-directory-filter-select:not(.admin-form-control-labeled) {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 0;
+  padding: 0;
+}
+
+:root .admin-form-search > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']),
+:root
+  .admin-directory-filter-search
+  > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']) {
+  align-self: stretch;
+  block-size: 100%;
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  inline-size: auto;
+  min-block-size: calc(var(--admin-control-height-sm) - 2px);
+  min-width: 0;
+}
+
+:root .admin-form-select:not(.admin-form-control-labeled) > select,
+:root .admin-directory-filter-select:not(.admin-form-control-labeled) > select {
+  align-self: stretch;
+  block-size: 100%;
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: calc(var(--admin-control-height-sm) - 2px);
+  min-width: 0;
+}
+
+:root .admin-form-search > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']),
+:root
+  .admin-directory-filter-search
+  > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']) {
+  cursor: text;
+}
+
+:root .admin-form-select:not(.admin-form-control-labeled) > select,
+:root .admin-directory-filter-select:not(.admin-form-control-labeled) > select {
+  cursor: pointer;
+  padding: 0 42px 0 14px;
+}
