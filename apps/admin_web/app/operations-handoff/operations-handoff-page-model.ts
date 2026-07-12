@@ -202,9 +202,10 @@ export function buildActivityStreamCsvHref(activityStream: readonly ActivityStre
       source: item.source,
       record: item.record,
       summary: item.summary,
+      review_reason: item.reviewReason,
       href: item.href,
     })),
-    ['created_at', 'relative_time', 'area', 'source', 'record', 'summary', 'href'],
+    ['created_at', 'relative_time', 'area', 'source', 'record', 'summary', 'review_reason', 'href'],
   );
 }
 

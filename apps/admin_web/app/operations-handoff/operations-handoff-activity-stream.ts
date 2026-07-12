@@ -14,6 +14,7 @@ type FinanceActivityRow = {
   readonly status: string;
   readonly statusClass: string;
   readonly createdAt?: string | null;
+  readonly reviewReason?: string | null;
 };
 
 type UnifiedActivityStreamInput = {
@@ -29,6 +30,7 @@ type ActivityStreamSourceRow = {
   readonly area: string;
   readonly source: string;
   readonly record: string;
+  readonly reviewReason: string;
   readonly summary: string;
   readonly href: string;
   readonly className: string;
@@ -63,6 +65,7 @@ function buildBookingActivityRows(bookings: readonly AdminBooking[]): ActivitySt
     area: 'Booking',
     source: booking.status,
     record: shortDisplayId(booking.id),
+    reviewReason: 'Booking movement needs payment, Partner, and customer follow-up context.',
     summary: bookingActivitySummary(booking),
     href: `/bookings/${booking.id}`,
     className: bookingStatusClass(booking.status),
@@ -92,6 +95,7 @@ function buildChatActivityRows(chatArchive: readonly AdminBookingDetail[]): Acti
           ? 'Partner message'
           : 'Customer/admin message',
         record: `Room ${shortDisplayId(booking.chatRoom?.id)}`,
+        reviewReason: 'Retained chat evidence may explain customer, Partner, or dispute context.',
         summary: operatorDisplayText(
           `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(
             message.body,
@@ -117,6 +121,7 @@ function buildAuditActivityRows(auditLogs: readonly AdminAuditLog[]): ActivitySt
     area: auditActivityArea(log),
     source: operatorDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
     record: shortTarget(log.target),
+    reviewReason: auditActivityReviewReason(log),
     summary: auditActivitySummary(log),
     href: relatedHref(log),
     className: auditActivityClassName(log),
@@ -137,6 +142,7 @@ function buildNotificationActivityRows(
       area: 'Notification',
       source: notification.type,
       record: shortDisplayId(notification.id),
+      reviewReason: 'Failed delivery can hide booking, payment, or status updates from users.',
       summary: operatorDisplayText(`${notification.title}: ${trimText(notification.body, 100)}`),
       href: '/notifications?review=failed',
       className: 'pill pill-warn',
@@ -152,6 +158,7 @@ function buildFinanceActivityRows(
     area: 'Finance',
     source: row.status,
     record: shortDisplayId(row.bookingId),
+    reviewReason: financeActivityReviewReason(row),
     summary: `${row.partnerName} / wallet effect ${formatMoney(row.netAmount, row.currency)} / fee ${formatMoney(
       row.platformFee,
       row.currency,
@@ -204,6 +211,26 @@ function auditActivityClassName(log: AdminAuditLog) {
     return 'pill pill-info';
   }
   return log.action.endsWith('.ops_note.add') ? 'pill pill-info' : 'pill';
+}
+
+function auditActivityReviewReason(log: AdminAuditLog) {
+  if (isNotificationAuditLog(log)) {
+    return 'Notification audit evidence needs delivery and recipient follow-up context.';
+  }
+  return 'Operator note or audit event for the next handoff review.';
+}
+
+function financeActivityReviewReason(row: FinanceActivityRow) {
+  if (row.netAmount < 0) {
+    return 'Negative wallet effect needs cash settlement or Partner receivable review.';
+  }
+  if (row.status === 'AVAILABLE') {
+    return 'Available earning needs payout release or finance closeout review.';
+  }
+  return (
+    stringValue(row.reviewReason) ??
+    'Finance row needs payment, wallet, tax, and payout evidence review.'
+  );
 }
 
 export function relatedHref(log: AdminAuditLog) {

@@ -83,10 +83,21 @@ describe('operations handoff activity stream', () => {
     expect(rows.find((row) => row.id === 'finance-earning-1')).toMatchObject({
       area: 'Finance',
       href: '/cash-settlements',
+      reviewReason: 'Negative wallet effect needs cash settlement or Partner receivable review.',
     });
     expect(rows.find((row) => row.id === 'notification-notification-1')).toMatchObject({
       area: 'Notification',
       href: '/notifications?review=failed',
+      reviewReason: 'Failed delivery can hide booking, payment, or status updates from users.',
+    });
+    expect(rows.find((row) => row.id === 'audit-audit-1')).toMatchObject({
+      reviewReason: 'Operator note or audit event for the next handoff review.',
+    });
+    expect(rows.find((row) => row.id === 'chat-message-1')).toMatchObject({
+      reviewReason: 'Retained chat evidence may explain customer, Partner, or dispute context.',
+    });
+    expect(rows.find((row) => row.id === 'booking-booking-1')).toMatchObject({
+      reviewReason: 'Booking movement needs payment, Partner, and customer follow-up context.',
     });
     expect(rows.find((row) => row.id === 'notification-notification-sent')).toBeUndefined();
     expect(rows.find((row) => row.id === 'booking-missing-date')).toBeUndefined();
@@ -112,6 +123,7 @@ function activityRow(input: Partial<ActivityRow>): ActivityRow {
     href: '/bookings/booking-1',
     id: 'activity-1',
     record: 'booking-1',
+    reviewReason: 'Booking movement needs payment, Partner, and customer follow-up context.',
     source: 'MATCHED',
     summary: 'Activity row',
     ...input,

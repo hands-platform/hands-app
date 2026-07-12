@@ -28,6 +28,7 @@ describe('OperationsHandoffActivityStreamSection', () => {
           href: '/audit-log?bucket=Notification&range=all',
           id: 'activity-1',
           record: 'notification:abc123',
+          reviewReason: 'Failed delivery can hide booking, payment, or status updates from users.',
           source: 'PUSH',
           summary: 'Partner booking update failed',
         },
@@ -39,8 +40,10 @@ describe('OperationsHandoffActivityStreamSection', () => {
     expect(rendered).toContain('Unified activity stream');
     expect(rendered).toContain('Export activity CSV');
     expect(rendered).toContain('Booking chats');
+    expect(rendered).toContain('Review reason');
     expect(rendered).toContain('Notification');
     expect(rendered).toContain('Partner booking update failed');
+    expect(rendered).toContain('Failed delivery can hide booking, payment, or status updates from users.');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         'data:text/csv,created_at',

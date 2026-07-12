@@ -17,7 +17,7 @@ type OperationsHandoffActivityStreamSectionProps = {
   readonly rows: readonly ActivityStreamRow[];
 };
 
-const ACTIVITY_STREAM_HEADERS = ['When', 'Area', 'Record', 'Summary', 'Continue'] as const;
+const ACTIVITY_STREAM_HEADERS = ['When', 'Area', 'Record', 'Summary', 'Review reason', 'Continue'] as const;
 
 export function OperationsHandoffActivityStreamSection({
   csvHref,
@@ -73,6 +73,9 @@ export function OperationsHandoffActivityStreamSection({
                 <small className="muted">{item.source}</small>
               </td>
               <td>{item.summary}</td>
+              <td>
+                <small className="muted">{item.reviewReason}</small>
+              </td>
               <td>
                 <AdminFormControlLink className="button-secondary admin-inline-action" href={item.href}>
                   <ExternalLink aria-hidden="true" size={14} />

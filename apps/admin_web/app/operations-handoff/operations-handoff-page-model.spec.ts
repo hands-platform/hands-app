@@ -232,12 +232,17 @@ describe('operations handoff page model', () => {
         href: '/bookings/booking-1',
         id: 'activity-1',
         record: 'booking-1',
+        reviewReason: 'Booking movement needs payment, Partner, and customer follow-up context.',
         source: 'MATCHED',
         summary: 'Customer / Partner / payment',
       },
     ]);
 
     expect(decodeURIComponent(csvHref)).toContain('Customer / Partner / payment');
+    expect(decodeURIComponent(csvHref)).toContain('review_reason');
+    expect(decodeURIComponent(csvHref)).toContain(
+      'Booking movement needs payment, Partner, and customer follow-up context.',
+    );
   });
 
   it('links notification audit activity rows to filtered notification audit evidence', () => {
