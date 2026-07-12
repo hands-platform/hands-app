@@ -28,7 +28,8 @@ describe('FinanceTaxPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(4);
+    expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16');
     expect(markup).toContain('Tax command board');
     expect(markup).toContain('Open finance risk');
     expect(markup).toContain('Platform VAT');
@@ -49,6 +50,50 @@ describe('FinanceTaxPage', () => {
       expect.stringContaining('/admin/provider-wallet/withdrawal-requests/summary'),
       expect.anything(),
     );
+  });
+
+  it('keeps header actions compact like customer management pages', async () => {
+    const page = await FinanceTaxPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const headerActions = readHeaderActionsMarkup(markup);
+
+    expect(headerActions).toContain('Payment clearing');
+    expect(headerActions).toContain('General ledger');
+    expect(headerActions).toContain('Bank reconciliation');
+    expect(headerActions).not.toContain('Booking settlement audit');
+    expect(headerActions).not.toContain('Partner withholding tax');
+    expect((headerActions.match(/admin-form-control-link button button-secondary/g) ?? [])).toHaveLength(3);
+  });
+
+  it('renders finance priorities and workspaces through customer-aligned table panels', async () => {
+    const page = await FinanceTaxPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('finance-overview-table-card');
+    expect(markup).toContain('admin-table-scroll finance-overview-table-wrap');
+    expect(markup).toContain('finance-overview-table-action');
+    expect(markup).toContain('<th scope="col">Signal</th>');
+    expect(markup).toContain('<th scope="col">Workspace</th>');
+    expect(markup).toContain('<th scope="col">Evidence</th>');
+    expect(markup).toContain('<th scope="col">Action</th>');
+    expect(markup).toContain('Finance operations priority desk');
+    expect(markup).toContain('Finance tax workspaces');
+    expect(sectionMarkup(markup, 'Finance tax workspaces')).not.toContain('admin-stage-list');
+  });
+
+  it('uses Vuexy button atoms for optional finance summary actions', async () => {
+    const page = await FinanceTaxPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const optionalSummary = navMarkup(markup, 'Finance optional summary actions');
+
+    expect(optionalSummary).toContain('admin-form-control-link button button-secondary');
+    expect(optionalSummary).not.toContain('pill pill-info');
   });
 
   it('uses the shared ActionMenu atom for the optional full summary link', () => {
@@ -97,3 +142,26 @@ describe('FinanceTaxPage', () => {
     );
   });
 });
+
+function readHeaderActionsMarkup(markup: string) {
+  return sectionMarkup(markup, 'admin-page-header-actions');
+}
+
+function sectionMarkup(markup: string, marker: string) {
+  const index = markup.indexOf(marker);
+  if (index < 0) {
+    return '';
+  }
+
+  return markup.slice(index, index + 3000);
+}
+
+function navMarkup(markup: string, marker: string) {
+  const index = markup.indexOf(marker);
+  if (index < 0) {
+    return '';
+  }
+  const navEnd = markup.indexOf('</nav>', index);
+
+  return markup.slice(index, navEnd > index ? navEnd : index + 1000);
+}
