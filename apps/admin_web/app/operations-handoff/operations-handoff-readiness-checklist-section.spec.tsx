@@ -68,9 +68,19 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
   });
 
-  it('returns no section when nothing is open', () => {
+  it('keeps the review checklist anchor visible when nothing is open', () => {
     const section = OperationsHandoffReadinessChecklistSection({ openCount: 0, rows: [] });
 
-    expect(section).toBeNull();
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected readiness checklist section to render.');
+
+    const rendered = textContent(section);
+
+    expect(section.type.name).toBe('AdminSection');
+    expect(section.props.id).toBe('operations-handoff-review-checklist');
+    expect(section.props.bodyClassName).toBeUndefined();
+    expect(rendered).toContain('Ready to hand over');
+    expect(rendered).toContain('No open review checks');
+    expect(rendered).toContain('The selected history window has no handoff review items.');
   });
 });

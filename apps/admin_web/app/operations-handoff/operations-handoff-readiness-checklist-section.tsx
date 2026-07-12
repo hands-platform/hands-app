@@ -1,3 +1,4 @@
+import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminActionCard, AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -15,13 +16,9 @@ export function OperationsHandoffReadinessChecklistSection({
 }: OperationsHandoffReadinessChecklistSectionProps) {
   const visibleRows = rows.filter((item) => item.tone !== 'success');
 
-  if (visibleRows.length === 0) {
-    return null;
-  }
-
   return (
     <AdminSection
-      bodyClassName="ops-task-grid"
+      bodyClassName={visibleRows.length > 0 ? 'ops-task-grid' : undefined}
       className="admin-mb-16"
       description="A dated operations review list: matching outcomes, active service records, chat continuity, cash settlement, alerts, customer context, and written notes."
       status={
@@ -32,23 +29,31 @@ export function OperationsHandoffReadinessChecklistSection({
       id="operations-handoff-review-checklist"
       title="Operations review checklist"
     >
-      {visibleRows.map((item) => (
-        <AdminActionCard
-          actionLabel={item.operatorAction}
-          detail={item.detail}
-          href={item.href}
-          key={item.id}
-          signalClassName={badgeClassToSignalClass(item.badgeClass)}
-          signalLabel={item.status}
-          title={item.title}
-          variant="ops-task"
-        >
-        <AdminFilterChipGroup>
-          <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
-          <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
-        </AdminFilterChipGroup>
-        </AdminActionCard>
-      ))}
+      {visibleRows.length > 0 ? (
+        visibleRows.map((item) => (
+          <AdminActionCard
+            actionLabel={item.operatorAction}
+            detail={item.detail}
+            href={item.href}
+            key={item.id}
+            signalClassName={badgeClassToSignalClass(item.badgeClass)}
+            signalLabel={item.status}
+            title={item.title}
+            variant="ops-task"
+          >
+            <AdminFilterChipGroup>
+              <StatusBadge tone="neutral">{item.countLabel}</StatusBadge>
+              <StatusBadgeFromPillClass pillClass={item.badgeClass}>{item.owner}</StatusBadgeFromPillClass>
+            </AdminFilterChipGroup>
+          </AdminActionCard>
+        ))
+      ) : (
+        <AdminEmptyState
+          framed
+          message="The selected history window has no handoff review items."
+          title="No open review checks"
+        />
+      )}
     </AdminSection>
   );
 }
