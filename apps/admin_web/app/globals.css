@@ -17636,7 +17636,10 @@ textarea:focus-visible {
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
   min-height: 0;
+  min-width: 0;
+  overflow: visible;
   padding: 0;
 }
 
@@ -17777,7 +17780,7 @@ textarea:focus-visible {
 
 .admin-form-date.admin-form-control-labeled::after,
 .admin-form-input-date-picker.admin-form-control-labeled::after {
-  bottom: 10px;
+  bottom: calc((var(--admin-control-height-sm) - 18px) / 2);
   top: auto;
   transform: none;
 }
@@ -17822,7 +17825,12 @@ textarea:focus-visible {
   color: transparent;
   cursor: pointer;
   height: 100%;
+  inset-block: 0;
+  inset-inline-end: 0;
+  margin: 0;
   opacity: 0;
+  padding: 0;
+  position: absolute;
   width: 38px;
 }
 
@@ -17875,11 +17883,13 @@ textarea:focus-visible {
   border: 1px solid var(--admin-input-border);
   border-radius: var(--admin-input-radius-sm);
   box-shadow: none;
+  box-sizing: border-box;
   color: var(--admin-text);
   font: inherit;
   font-size: var(--admin-input-font-md);
   line-height: var(--admin-input-line-height);
   min-height: var(--admin-control-height-sm);
+  min-width: 0;
   padding: var(--admin-input-padding-sm);
   transition:
     border-color var(--admin-transition),
@@ -17892,9 +17902,17 @@ textarea:focus-visible {
   padding-inline-end: 32px;
 }
 
-.admin-form-date.admin-form-control-labeled input,
-.admin-form-input-date-picker.admin-form-control-labeled input {
-  padding-inline-end: 42px;
+:root
+  .admin-form-date.admin-form-control-labeled
+  > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']),
+:root
+  .admin-form-input-date-picker.admin-form-control-labeled
+  > input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not(
+    [type='hidden']
+  ):not([type='color']) {
+  padding: 7.25px 42px 7.25px 14px;
 }
 
 .admin-form-date.admin-form-control-labeled:hover input:not(:disabled),

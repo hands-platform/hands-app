@@ -380,7 +380,7 @@ describe('Admin form control CSS', () => {
     expect(fieldBlock).toContain('background: var(--admin-surface)');
     expect(fieldBlock).toContain('border: 1px solid var(--admin-input-border)');
     expect(fieldBlock).toContain('min-height: var(--admin-control-height-sm)');
-    expect(dateIconBlock).toContain('bottom: 10px');
+    expect(dateIconBlock).toContain('bottom: calc((var(--admin-control-height-sm) - 18px) / 2)');
     expect(selectArrowBlock).toContain('bottom: 15px');
   });
 
@@ -398,6 +398,39 @@ describe('Admin form control CSS', () => {
     expect(nativeIndicatorBlock).toContain('color: transparent');
     expect(nativeIndicatorBlock).toContain('opacity: 0');
     expect(nativeIndicatorBlock).toContain('width: 38px');
+  });
+
+  it('keeps labeled input shells from creating a second visible field box', () => {
+    const shellIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled,');
+    const shellBlock = cssRuleBlockAt(shellIndex);
+    const fieldIndex = globalsCss.lastIndexOf(
+      '.admin-form-date.admin-form-control-labeled input,\n' +
+        '.admin-form-input.admin-form-control-labeled input,\n' +
+        '.admin-form-select.admin-form-control-labeled select,\n' +
+        '.admin-form-static-value.admin-form-control-labeled strong {',
+    );
+    const fieldBlock = cssRuleBlockAt(fieldIndex);
+
+    expect(shellBlock).toContain('display: grid');
+    expect(shellBlock).toContain('inline-size: 100%');
+    expect(shellBlock).toContain('min-width: 0');
+    expect(shellBlock).toContain('overflow: visible');
+    expect(fieldBlock).toContain('box-sizing: border-box');
+    expect(fieldBlock).toContain('min-width: 0');
+  });
+
+  it('keeps date-time native picker affordances aligned behind one Vuexy calendar icon', () => {
+    const labeledIconIndex = globalsCss.indexOf('.admin-form-date.admin-form-control-labeled::after,');
+    const labeledIconBlock = cssRuleBlockAt(labeledIconIndex);
+    const nativeIndicatorIndex = globalsCss.indexOf('.admin-form-date input::-webkit-calendar-picker-indicator,');
+    const nativeIndicatorBlock = cssRuleBlockAt(nativeIndicatorIndex);
+
+    expect(labeledIconBlock).toContain('bottom: calc((var(--admin-control-height-sm) - 18px) / 2)');
+    expect(nativeIndicatorBlock).toContain('position: absolute');
+    expect(nativeIndicatorBlock).toContain('inset-block: 0');
+    expect(nativeIndicatorBlock).toContain('inset-inline-end: 0');
+    expect(nativeIndicatorBlock).toContain('margin: 0');
+    expect(nativeIndicatorBlock).toContain('padding: 0');
   });
 
   it('keeps late compact input resets from stripping visible-label field borders', () => {
@@ -456,6 +489,17 @@ describe('Admin form control CSS', () => {
     expect(selectPaddingIndex).toBeGreaterThan(resetIndex);
     expect(selectPaddingBlock).toContain('padding-inline-end: 32px');
     expect(selectPaddingBlock).not.toContain('padding-right: 22px');
+  });
+
+  it('reserves one visible calendar icon slot for labeled date picker inputs', () => {
+    const datePaddingIndex = globalsCss.indexOf(':root\n  .admin-form-date.admin-form-control-labeled');
+    const datePaddingBlock = cssRuleBlockAt(datePaddingIndex);
+
+    expect(datePaddingIndex).toBeGreaterThan(-1);
+    expect(datePaddingBlock).toContain(':root\n  .admin-form-input-date-picker.admin-form-control-labeled');
+    expect(datePaddingBlock).toContain("> input:not([type='checkbox'])");
+    expect(datePaddingBlock).toContain('padding: 7.25px 42px 7.25px 14px');
+    expect(datePaddingBlock).not.toContain('padding-inline-end');
   });
 
   it('animates placeholders like Vuexy CustomTextField on shared inputs', () => {
