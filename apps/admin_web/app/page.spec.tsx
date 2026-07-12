@@ -265,7 +265,7 @@ describe('DashboardPage', () => {
     );
     expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
     expect(markup).toContain('<span class="pill pill-warn">1 lane needs action</span>');
-    expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open first action/);
+    expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open top priority/);
   });
 
   it('uses payment summary for default dashboard payment hold counters', async () => {
@@ -318,6 +318,7 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<h1>Start Shift</h1>');
     expect(markup).toContain('Live start-of-shift workspace');
+    expect(markup).toContain('Work the red and yellow lanes first');
     expect(markup).not.toContain('<h1>HANDS Operations</h1>');
     expect(markup).not.toContain('Daily command center');
     expect(markup).toContain('href="/notifications"');

@@ -777,11 +777,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         actions={
           <AdminFormControlLink href={operationsCommandBoard[0]?.href ?? '/bookings'}>
             <BellRing size={16} aria-hidden="true" />
-            Open first action
+            Open top priority
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat readiness, settlement gates, notifications, and owner follow-up."
+        description="Work the red and yellow lanes first, then clear the remaining live booking, Partner supply, payment, notification, and follow-up checks."
         id="dashboard-operations-command-board"
         status={
           <StatusBadge tone={operationsCommandBoardAttentionCount > 0 ? 'warning' : 'success'}>
