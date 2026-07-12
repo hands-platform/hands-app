@@ -589,6 +589,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     activePayoutBatches,
     activePayoutBatchCount,
   });
+  const operationsCommandBoardAttentionCount = operationsCommandBoard.filter((item) => item.tone !== 'ok').length;
+  const operationsCommandBoardAttentionLabel =
+    operationsCommandBoardAttentionCount === 0
+      ? 'All lanes clear'
+      : operationsCommandBoardAttentionCount === 1
+        ? '1 lane needs action'
+        : `${operationsCommandBoardAttentionCount} lanes need action`;
   const fullDashboardData = shouldRenderFullDashboard
     ? buildFullDashboardData({
         activePayoutBatches,
@@ -776,6 +783,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         className="admin-mt-20"
         description="One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer choice, chat readiness, settlement gates, notifications, and owner follow-up."
         id="dashboard-operations-command-board"
+        status={
+          <StatusBadge tone={operationsCommandBoardAttentionCount > 0 ? 'warning' : 'success'}>
+            {operationsCommandBoardAttentionLabel}
+          </StatusBadge>
+        }
         title="Operations command board"
       >
         <AdminTaskGrid className="admin-mt-14">

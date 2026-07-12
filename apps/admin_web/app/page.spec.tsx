@@ -264,6 +264,7 @@ describe('DashboardPage', () => {
       null,
     );
     expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
+    expect(markup).toContain('<span class="pill pill-warn">1 lane needs action</span>');
     expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open first action/);
   });
 
