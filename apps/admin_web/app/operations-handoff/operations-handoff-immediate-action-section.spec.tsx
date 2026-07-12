@@ -71,9 +71,14 @@ describe('OperationsHandoffImmediateActionSection', () => {
     );
   });
 
-  it('returns no section when there are no actions', () => {
+  it('keeps the issue signal section visible when there are no open actions', () => {
     const section = OperationsHandoffImmediateActionSection({ actions: [] });
 
-    expect(section).toBeNull();
+    const rendered = textContent(section);
+
+    expect(rendered).toContain('Historical issue signals');
+    expect(rendered).toContain('No issue lanes');
+    expect(rendered).toContain('No historical issue lanes');
+    expect(rendered).toContain('The selected history window has no booking, chat, cash, notification, or written-note issue lanes.');
   });
 });
