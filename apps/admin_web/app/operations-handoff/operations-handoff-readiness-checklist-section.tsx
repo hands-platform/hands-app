@@ -29,6 +29,7 @@ export function OperationsHandoffReadinessChecklistSection({
           {openCount ? `${openCount} check(s) open` : 'Ready to hand over'}
         </StatusBadge>
       }
+      id="operations-handoff-review-checklist"
       title="Operations review checklist"
     >
       {visibleRows.map((item) => (

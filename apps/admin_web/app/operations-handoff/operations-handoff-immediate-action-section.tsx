@@ -23,6 +23,7 @@ export function OperationsHandoffImmediateActionSection({
       }
       className="admin-mb-16 operations-handoff-immediate-action-card"
       description="Historical issue lanes from the selected range: booking stage, chat availability, cash settlement, notification delivery, and written operations notes."
+      id="operations-handoff-issue-signals"
       title="Historical issue signals"
     >
       <AdminTaskGrid>

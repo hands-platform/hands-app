@@ -58,6 +58,8 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('Failed alerts');
     expect(markup).toContain('Cash debt partners');
     expect(markup).toContain('Finance rows');
+    expect(markup).toContain('href="/operations-handoff#operations-handoff-review-checklist"');
+    expect(markup).toContain('id="operations-handoff-review-checklist"');
     expect(markup).toContain('Detailed history lists');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
@@ -73,9 +75,14 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('<h1>Operations History</h1>');
     expect(markup).toContain('href="/operations-handoff?range=today"');
     expect(markup).toContain('Summary view');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-booking-history"');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=today#operations-handoff-finance-closeout"');
     expect(markup).toContain('Unified activity stream');
+    expect(markup).toContain('id="operations-handoff-activity-stream"');
     expect(markup).toContain('Booking history queue');
+    expect(markup).toContain('id="operations-handoff-booking-history"');
     expect(markup).toContain('Finance and chat closeout');
+    expect(markup).toContain('id="operations-handoff-finance-closeout"');
   });
 
   it('keeps Start Shift live KPI metrics out of the handoff board', async () => {

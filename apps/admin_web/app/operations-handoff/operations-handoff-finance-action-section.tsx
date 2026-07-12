@@ -20,6 +20,7 @@ export function OperationsHandoffFinanceActionSection({
       }
       className="admin-mb-16 operations-handoff-finance-action-card"
       description="Money-flow history lanes for the selected range: payment state, refund rows, cash wallet debt, payout release, and tax/reference trace."
+      id="operations-handoff-finance-review"
       title="Finance history review"
     >
       <AdminTaskGrid>

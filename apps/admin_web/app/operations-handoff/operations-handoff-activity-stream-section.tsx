@@ -50,6 +50,7 @@ export function OperationsHandoffActivityStreamSection({
       }
       className="admin-mb-16 operations-handoff-activity-stream-card"
       description="Recent booking movement, chat archive messages, operator notes, notification failures, and finance rows in one chronological trail."
+      id="operations-handoff-activity-stream"
       title="Unified activity stream"
     >
       <AdminTableScroll>

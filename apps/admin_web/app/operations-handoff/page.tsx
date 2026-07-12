@@ -179,14 +179,14 @@ export default async function OperationsHandoffPage({
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
   const operationsHistoryMetrics = [
     {
-      href: operationsHandoffModeHref(filters.range, 'all'),
+      href: operationsHandoffSectionHref(filters.range, 'summary', 'operations-handoff-review-checklist'),
       icon: ListChecks,
       label: 'Open review checks',
       value: checklistNeedsReview,
       helper: 'Checklist items that still need operator review.',
     },
     {
-      href: operationsHandoffModeHref(filters.range, 'all'),
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-booking-history'),
       icon: CalendarClock,
       label: 'Booking rows',
       value: bookingQueue.length,
@@ -207,7 +207,7 @@ export default async function OperationsHandoffPage({
       helper: 'Partners with cash booking debt in the settlement summary.',
     },
     {
-      href: operationsHandoffModeHref(filters.range, 'all'),
+      href: operationsHandoffSectionHref(filters.range, 'all', 'operations-handoff-finance-closeout'),
       icon: ReceiptText,
       label: 'Finance rows',
       value: financeRows.length,
@@ -338,4 +338,8 @@ function operationsHandoffModeHref(range: string, mode: 'all' | 'summary') {
 
   const search = query.toString();
   return search ? `/operations-handoff?${search}` : '/operations-handoff';
+}
+
+function operationsHandoffSectionHref(range: string, mode: 'all' | 'summary', sectionId: string) {
+  return `${operationsHandoffModeHref(range, mode)}#${sectionId}`;
 }

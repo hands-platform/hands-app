@@ -46,6 +46,7 @@ export function OperationsHandoffFinanceCloseoutSection({
       }
       className="operations-handoff-finance-closeout-card"
       description="Cash debt, payout evidence, and chat records from the selected historical window."
+      id="operations-handoff-finance-closeout"
       title="Finance and chat closeout"
     >
       <AdminTableScroll>

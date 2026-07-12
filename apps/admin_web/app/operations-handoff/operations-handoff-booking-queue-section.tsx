@@ -49,6 +49,7 @@ export function OperationsHandoffBookingQueueSection({
       }
       className="operations-handoff-booking-queue-card admin-mb-16"
       description="Open and recently changed bookings with payment, chat, Partner, and next action."
+      id="operations-handoff-booking-history"
       title="Booking history queue"
     >
       <AdminTableScroll>
