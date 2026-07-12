@@ -29,7 +29,7 @@ export function OperationsHandoffReviewOrderSection({
     <AdminSection
       bodyClassName={visibleItems.length > 0 ? undefined : 'admin-section-empty-body'}
       className="admin-mb-16 operations-handoff-review-order-card"
-      description="Start with these history lanes before opening the longer paginated tables below."
+      description="Start with these history lanes before opening Full history tables."
       id="operations-handoff-review-order"
       status={
         <StatusBadge tone={visibleItems.length > 0 ? 'warning' : 'success'}>

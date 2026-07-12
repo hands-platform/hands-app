@@ -58,6 +58,11 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('Failed alerts');
     expect(markup).toContain('Cash debt partners');
     expect(markup).toContain('Finance rows');
+    expect(markup).toContain('id="operations-handoff-review-order"');
+    expect(markup).toContain('Start with these history lanes before opening Full history tables.');
+    expect(markup.indexOf('id="operations-handoff-review-order"')).toBeLessThan(
+      markup.indexOf('id="operations-handoff-review-checklist"'),
+    );
     expect(markup).toContain('href="/operations-handoff#operations-handoff-review-checklist"');
     expect(markup).toContain('id="operations-handoff-review-checklist"');
     expect(markup).toContain('Detailed history lists');

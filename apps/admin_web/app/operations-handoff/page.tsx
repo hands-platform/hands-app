@@ -311,6 +311,8 @@ export default async function OperationsHandoffPage({
     >
       <OperationsHandoffDateRangeSection detailsMode={filters.detailsMode} range={filters.range} />
 
+      <OperationsHandoffReviewOrderSection items={reviewOrderItems} />
+
       <OperationsHandoffReadinessChecklistSection
         openCount={checklistNeedsReview}
         rows={handoffChecklist}
@@ -334,8 +336,6 @@ export default async function OperationsHandoffPage({
 
       {shouldRenderFullDetails ? (
         <>
-          <OperationsHandoffReviewOrderSection items={reviewOrderItems} />
-
           <OperationsHandoffActivityStreamSection
             csvHref={activityStreamCsvHref}
             pagination={{
