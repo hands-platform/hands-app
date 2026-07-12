@@ -1,3 +1,4 @@
+import { ListChecks, Sparkles } from 'lucide-react';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -179,6 +180,21 @@ export default async function OperationsHandoffPage({
 
   return (
     <AdminPageTemplate
+      actions={
+        <>
+          <AdminFormControlLink className="button-secondary" href="/">
+            <Sparkles aria-hidden="true" size={16} />
+            Start Shift
+          </AdminFormControlLink>
+          <AdminFormControlLink
+            className={shouldRenderFullDetails ? 'button-secondary' : 'button-primary'}
+            href={operationsHandoffModeHref(filters.range, shouldRenderFullDetails ? 'summary' : 'all')}
+          >
+            <ListChecks aria-hidden="true" size={16} />
+            {shouldRenderFullDetails ? 'Summary view' : 'Full history'}
+          </AdminFormControlLink>
+        </>
+      }
       contentClassName="operations-handoff-page"
       description="Review past operations across bookings, chat, wallet, finance, alerts, and operator notes without mixing them into the live Start Shift board."
       title="Operations History"
@@ -255,15 +271,10 @@ export default async function OperationsHandoffPage({
 }
 
 function OperationsHandoffFullDetailsLink({ range }: { readonly range: string }) {
-  const query = new URLSearchParams({ details: 'all' });
-  if (range !== 'today') {
-    query.set('range', range);
-  }
-
   return (
     <AdminSection
       actions={
-        <AdminFormControlLink className="button-secondary" href={`/operations-handoff?${query.toString()}`}>
+        <AdminFormControlLink className="button-secondary" href={operationsHandoffModeHref(range, 'all')}>
           Load full history details
         </AdminFormControlLink>
       }
@@ -272,4 +283,21 @@ function OperationsHandoffFullDetailsLink({ range }: { readonly range: string })
       title="Detailed history lists"
     />
   );
+}
+
+function operationsHandoffModeHref(range: string, mode: 'all' | 'summary') {
+  const query = new URLSearchParams();
+
+  if (mode === 'all') {
+    query.set('details', 'all');
+  }
+
+  if (range !== '7d') {
+    query.set('range', range);
+  } else if (mode === 'all') {
+    query.set('range', range);
+  }
+
+  const search = query.toString();
+  return search ? `/operations-handoff?${search}` : '/operations-handoff';
 }

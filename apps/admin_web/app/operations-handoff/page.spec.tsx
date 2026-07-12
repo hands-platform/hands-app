@@ -49,10 +49,28 @@ describe('OperationsHandoffPage', () => {
     expect(markup).toContain('toolbar admin-page-header');
     expect(markup).toContain('<h1>Operations History</h1>');
     expect(markup).toContain('Review past operations');
+    expect(markup).toContain('href="/"');
+    expect(markup).toContain('Start Shift');
+    expect(markup).toContain('href="/operations-handoff?details=all&amp;range=7d"');
+    expect(markup).toContain('Full history');
     expect(markup).toContain('Detailed history lists');
     expect(markup).toContain('card admin-section admin-mb-16 operations-handoff-full-details-card');
     expect(markup).toContain('admin-form-control-link button button-secondary');
     expect(markup).toContain('/operations-handoff?details=all');
+  });
+
+  it('lets operators return from full history details to the compact summary', async () => {
+    const page = await OperationsHandoffPage({
+      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('<h1>Operations History</h1>');
+    expect(markup).toContain('href="/operations-handoff?range=today"');
+    expect(markup).toContain('Summary view');
+    expect(markup).toContain('Unified activity stream');
+    expect(markup).toContain('Booking history queue');
+    expect(markup).toContain('Finance and chat closeout');
   });
 
   it('keeps Start Shift live KPI metrics out of the handoff board', async () => {
