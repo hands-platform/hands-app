@@ -768,6 +768,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <AdminTextLink href="/payments">
             Payments
           </AdminTextLink>
+          <AdminFormControlLink href="/operations-handoff">
+            <FileClock size={16} aria-hidden="true" />
+            Operations History
+          </AdminFormControlLink>
           <AdminFormControlLink href="/notifications">
             <BellRing size={16} aria-hidden="true" />
             Notifications

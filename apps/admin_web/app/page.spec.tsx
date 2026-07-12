@@ -450,6 +450,11 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('href="/partner-controls"');
     expect(markup).not.toContain('href="/tax-policy"');
     expect(markup).not.toContain('href="/audit-log"');
+    expect(markup).toContain('Operations History');
+    expect(markup).toContain('href="/operations-handoff"');
+    expect(markup.indexOf('Operations History')).toBeLessThan(
+      markup.indexOf('id="dashboard-operations-command-board"'),
+    );
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-core-operating-counters"',
     );
