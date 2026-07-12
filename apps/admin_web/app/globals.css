@@ -11566,8 +11566,19 @@ a.action-button-card:hover {
 }
 
 .coupon-create-form {
-  grid-template-columns: minmax(260px, 0.9fr) 112px minmax(210px, 0.75fr) minmax(210px, 0.75fr) auto;
+  grid-template-columns: minmax(260px, 1fr) minmax(112px, 0.35fr) repeat(2, minmax(210px, 0.75fr));
   padding: 0 24px 24px;
+}
+
+.coupon-create-form .admin-form-control-button {
+  inline-size: max-content;
+  justify-self: start;
+}
+
+@media (max-width: 1100px) {
+  .coupon-create-form {
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
 }
 
 .admin-form-textarea-compact {
@@ -17938,6 +17949,19 @@ textarea:focus-visible {
 .admin-form-date.admin-form-control-labeled input:focus,
 .admin-form-input-date-picker.admin-form-control-labeled input:focus {
   padding: 6.25px 41px 6.25px 13px;
+}
+
+.calendar-datepicker-input > input.admin-form-date-input[readonly] {
+  caret-color: transparent;
+}
+
+.calendar-datepicker-input > input.admin-form-date-input[readonly]:focus,
+.calendar-datepicker-input > input.admin-form-date-input[readonly]:focus-visible {
+  border-color: var(--admin-accent);
+  border-width: 1px;
+  box-shadow: var(--admin-primary-shadow-sm);
+  outline: 0;
+  padding: 7.25px 42px 7.25px 14px;
 }
 
 .admin-form-select.admin-form-control-labeled select:focus {

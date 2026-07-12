@@ -237,6 +237,23 @@ describe('Admin form control CSS', () => {
     expect(selectedHoverBlock).toContain('color: var(--admin-inverse-text) !important');
   });
 
+  it('keeps readonly datepicker inputs stable when opening the Vuexy picker', () => {
+    const genericFocusIndex = globalsCss.indexOf(
+      '.admin-form-date.admin-form-control-labeled input:focus,\n.admin-form-input.admin-form-control-labeled input:focus,',
+    );
+    const datepickerFocusIndex = globalsCss.indexOf(
+      '.calendar-datepicker-input > input.admin-form-date-input[readonly]:focus,',
+    );
+    const datepickerFocusBlock = cssRuleBlockAt(datepickerFocusIndex);
+
+    expect(genericFocusIndex).toBeGreaterThan(-1);
+    expect(datepickerFocusIndex).toBeGreaterThan(genericFocusIndex);
+    expect(datepickerFocusBlock).toContain('border-width: 1px');
+    expect(datepickerFocusBlock).toContain('outline: 0');
+    expect(datepickerFocusBlock).toContain('padding: 7.25px 42px 7.25px 14px');
+    expect(datepickerFocusBlock).not.toContain('padding: 6.25px 41px 6.25px 13px');
+  });
+
   it('keeps time picker rows on Vuexy body typography and selected weight', () => {
     const timeItemIndex = globalsCss.indexOf('.calendar-vuexy-datepicker .react-datepicker__time-list-item {');
     const timeItemBlock = cssRuleBlockAt(timeItemIndex);

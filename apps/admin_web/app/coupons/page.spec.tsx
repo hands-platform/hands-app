@@ -100,4 +100,26 @@ describe('CouponsPage', () => {
     expect(globalCss).not.toContain('.coupon-create-notice strong {');
     expect(globalCss).not.toContain('.coupon-create-notice span {');
   });
+
+  it('keeps coupon creation date fields wide enough for the Vuexy datepicker input', () => {
+    const formIndex = globalCss.indexOf('.coupon-create-form {');
+    const formBlock = cssRuleBlockAt(formIndex);
+    const buttonIndex = globalCss.indexOf('.coupon-create-form .admin-form-control-button {');
+    const buttonBlock = cssRuleBlockAt(buttonIndex);
+
+    expect(formIndex).toBeGreaterThan(-1);
+    expect(formBlock).toContain('repeat(2, minmax(210px, 0.75fr))');
+    expect(buttonIndex).toBeGreaterThan(formIndex);
+    expect(buttonBlock).toContain('inline-size: max-content');
+    expect(buttonBlock).toContain('justify-self: start');
+  });
 });
+
+function cssRuleBlockAt(index: number) {
+  if (index < 0) {
+    return '';
+  }
+
+  const endIndex = globalCss.indexOf('}', index);
+  return globalCss.slice(index, endIndex + 1);
+}
