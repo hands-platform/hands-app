@@ -5,9 +5,7 @@ import {
   BookOpenCheck,
   CalendarClock,
   FileClock,
-  HeartHandshake,
   Settings2,
-  ShieldCheck,
 } from 'lucide-react';
 import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
@@ -752,36 +750,21 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <CalendarClock size={16} aria-hidden="true" />
             Booking monitor
           </AdminFormControlLink>
-          <AdminFormControlLink href="/operations-policy">
-            <Settings2 size={16} aria-hidden="true" />
-            Operations policy
-          </AdminFormControlLink>
           <AdminTextLink href="/cash-settlements">
             Cash settlements
           </AdminTextLink>
           <AdminTextLink href="/payments">
             Payments
           </AdminTextLink>
-          <AdminFormControlLink href="/partners">
-            <HeartHandshake size={16} aria-hidden="true" />
-            Partner review
-          </AdminFormControlLink>
-          <AdminFormControlLink href="/partner-controls">
-            <ShieldCheck size={16} aria-hidden="true" />
-            Partner controls
-          </AdminFormControlLink>
-          <AdminTextLink href="/tax-policy">
-            Tax policy
-          </AdminTextLink>
-          <AdminFormControlLink href="/audit-log">
-            <FileClock size={16} aria-hidden="true" />
-            Audit log
+          <AdminFormControlLink href="/notifications">
+            <BellRing size={16} aria-hidden="true" />
+            Notifications
           </AdminFormControlLink>
         </>
       }
       contentClassName="dashboard-page"
-      description="Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and payout follow-up."
-      title="HANDS Operations"
+      description="Live start-of-shift workspace for current bookings, Partner supply, payment holds, cash debt, notifications, and closeout."
+      title="Start Shift"
     >
       <AdminSection
         actions={

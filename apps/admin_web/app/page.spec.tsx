@@ -274,6 +274,14 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('<h1>Start Shift</h1>');
+    expect(markup).toContain('Live start-of-shift workspace');
+    expect(markup).not.toContain('<h1>HANDS Operations</h1>');
+    expect(markup).not.toContain('Daily command center');
+    expect(markup).toContain('href="/notifications"');
+    expect(markup).not.toContain('href="/partner-controls"');
+    expect(markup).not.toContain('href="/tax-policy"');
+    expect(markup).not.toContain('href="/audit-log"');
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-core-operating-counters"',
     );
