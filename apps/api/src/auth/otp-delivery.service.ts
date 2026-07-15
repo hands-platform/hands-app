@@ -25,13 +25,14 @@ export class OtpDeliveryService {
   }
 
   private async deliverViaHttp(phone: string, otp: string) {
-    const url = this.config.get<string>('SMS_API_URL');
+    const configuredUrl = this.config.get<string>('SMS_API_URL');
     const apiKey = this.config.get<string>('SMS_API_KEY');
     const senderId = this.config.get<string>('SMS_SENDER_ID') ?? 'HANDS';
 
-    if (!url || !apiKey) {
+    if (!configuredUrl || !apiKey) {
       throw new ServiceUnavailableException('SMS service is not configured');
     }
+    const url = requiredHttpsSmsUrl(configuredUrl);
 
     const response = await fetch(url, {
       method: 'POST',
@@ -55,14 +56,15 @@ export class OtpDeliveryService {
   }
 
   private async deliverViaVonage(phone: string, otp: string) {
-    const url = this.config.get<string>('SMS_API_URL');
+    const configuredUrl = this.config.get<string>('SMS_API_URL');
     const apiKey = this.config.get<string>('SMS_API_KEY');
     const apiSecret = this.config.get<string>('SMS_API_SECRET');
     const senderId = this.config.get<string>('SMS_SENDER_ID') ?? 'HANDS';
 
-    if (!url || !apiKey || !apiSecret) {
+    if (!configuredUrl || !apiKey || !apiSecret) {
       throw new ServiceUnavailableException('SMS service is not configured');
     }
+    const url = requiredHttpsSmsUrl(configuredUrl);
 
     const body = new URLSearchParams({
       api_key: apiKey,
@@ -101,6 +103,18 @@ export class OtpDeliveryService {
       return 'http';
     }
     throw new ServiceUnavailableException('Unsupported SMS provider');
+  }
+}
+
+function requiredHttpsSmsUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password) {
+      throw new Error('Unsafe SMS API URL');
+    }
+    return value;
+  } catch {
+    throw new ServiceUnavailableException('SMS service is not configured');
   }
 }
 

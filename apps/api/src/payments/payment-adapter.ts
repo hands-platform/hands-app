@@ -13,11 +13,46 @@ export type PaymentCallbackResult = {
   rawMeta: Record<string, unknown>;
 };
 
+export type PaymentAdapterMode = 'INTERNAL' | 'PLACEHOLDER' | 'GATEWAY';
+
+export type PaymentAuthorizationInput = {
+  bookingId: string;
+  amount: number;
+  currency: string;
+  paymentId?: string;
+};
+
+export type PaymentOperationInput = {
+  paymentId: string;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  providerRef: string | null;
+  rawMeta?: unknown;
+};
+
+export type PaymentRefundInput = PaymentOperationInput & {
+  refundId: string;
+  gatewayTransactionId?: string;
+  requestedBy?: string;
+  refundMeta?: unknown;
+};
+
+export type PaymentOperationResult = {
+  status: PaymentStatus;
+  providerFinalized?: boolean;
+  rawMeta?: Record<string, unknown>;
+};
+
 export interface PaymentAdapter {
   readonly method: PaymentMethod;
-  authorize(input: { bookingId: string; amount: number; currency: string }): PaymentAuthorization;
+  readonly mode: PaymentAdapterMode;
+  initialAuthorization(input: PaymentAuthorizationInput): PaymentAuthorization;
+  authorize(input: PaymentAuthorizationInput): Promise<PaymentAuthorization>;
   parseCallback(payload: unknown): PaymentCallbackResult;
-  checkStatus(providerRef: string): PaymentStatus;
-  release(providerRef: string | null): PaymentStatus;
+  checkStatus(input: PaymentOperationInput): Promise<PaymentOperationResult>;
+  capture(input: PaymentOperationInput): Promise<PaymentOperationResult>;
+  release(input: PaymentOperationInput): Promise<PaymentOperationResult>;
+  refund(input: PaymentRefundInput): Promise<PaymentOperationResult>;
+  checkRefund(input: PaymentRefundInput): Promise<PaymentOperationResult>;
 }
-

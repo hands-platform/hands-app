@@ -110,6 +110,11 @@ describe('booking policy helpers', () => {
     expect(() => assertBookingServiceId('')).toThrow(BadRequestException);
     expect(() => assertBookingPaymentMethod(PaymentMethod.CASH)).not.toThrow();
     expect(() => assertBookingPaymentMethod(PaymentMethod.CARD)).not.toThrow();
+    expect(() => assertBookingPaymentMethod(PaymentMethod.MOMO)).not.toThrow();
+    expect(() => assertBookingPaymentMethod(PaymentMethod.VNPAY)).not.toThrow();
+    expect(() => assertBookingPaymentMethod(PaymentMethod.BANK_TRANSFER)).toThrow(BadRequestException);
+    expect(() => assertBookingPaymentMethod(PaymentMethod.CUSTOMER_WALLET)).toThrow(BadRequestException);
+    expect(() => assertBookingPaymentMethod(PaymentMethod.MANUAL)).toThrow(BadRequestException);
     expect(() => assertBookingPaymentMethod('NOT_A_METHOD')).toThrow(BadRequestException);
     expect(normalizeBookingCoordinate('10.7769', 'lat')).toBe(10.7769);
     expect(() => normalizeBookingCoordinate(undefined, 'lng')).toThrow(BadRequestException);

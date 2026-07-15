@@ -150,6 +150,33 @@ describe('NotificationsService retry queue', () => {
     );
   });
 
+  it('creates Admin in-app notifications without enqueuing mobile push delivery', async () => {
+    const notification = { id: 'notification-admin-1' };
+    const prisma = {
+      notification: { create: vi.fn().mockResolvedValue(notification) },
+      notificationTemplate: { findUnique: vi.fn().mockResolvedValue(null) },
+      pushDevice: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const queue = { add: vi.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.createInApp({
+      body: 'An overdue bank statement batch needs reconciliation.',
+      data: { batchImportId: 'batch-1' },
+      resolveTemplate: false,
+      title: 'Finance reconciliation assigned',
+      type: 'admin.finance.bank_statement_batch.escalated',
+      userId: 'admin-1',
+    })).resolves.toEqual(notification);
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'admin.finance.bank_statement_batch.escalated',
+        userId: 'admin-1',
+      }),
+    });
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
   it('uses enabled language template copy when creating a notification', async () => {
     const notification = { id: 'notification-1' };
     const prisma = {

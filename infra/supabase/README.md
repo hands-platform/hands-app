@@ -32,6 +32,22 @@ If the generated SQL was applied before PostgREST role grants were added and RES
 C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
 ```
 
+Projects created before 2026-07-14 must also apply the location exposure patch.
+It removes anonymous exact Partner-location reads and makes the radius RPC
+available only to the server-side `service_role`:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-14-restrict-provider-location-exposure.sql
+```
+
+Existing projects should also make future Data API grants opt-in. This patch
+changes default privileges only; it does not remove explicit access already
+granted to current objects:
+
+```text
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-07-14-restrict-default-postgrest-privileges.sql
+```
+
 ## After Applying SQL
 
 Set these values in the API environment:
@@ -53,7 +69,13 @@ Keep `AUTH_BACKEND=nest` until Supabase Phone Auth and the API exchange smoke te
 npm.cmd run supabase:schema:check
 npm.cmd run supabase:sql:pack
 npm.cmd run external:check:supabase
+npm.cmd run supabase:location-exposure-smoke
 ```
+
+The location exposure smoke is read-only. It uses the anon key and fails unless both
+`provider_locations` and `nearby_providers` explicitly deny anonymous access. A successful
+empty response is still treated as a failure because exact Partner location access belongs
+behind the NestJS API.
 
 `external:check:supabase` checks core Supabase URL, anon key, JWT secret, and service role values. Phone Auth is intentionally separate and should only be checked when the chosen SMS provider/Supabase SMS E2E starts:
 
@@ -84,3 +106,5 @@ npm.cmd run auth:supabase-smoke
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-side only.
 - Test on a fresh staging project before touching any production-like project.
 - Do not run destructive SQL against real data until backup and restore have been tested.
+- If the configured project hostname does not resolve, verify the project status and copy the
+  current Project URL from Supabase Dashboard before applying any patch.

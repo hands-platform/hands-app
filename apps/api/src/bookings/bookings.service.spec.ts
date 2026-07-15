@@ -21,6 +21,7 @@ import {
   DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
 } from '../matching/matching.policy';
 import { BookingsService } from './bookings.service';
+import { PROVIDER_ACTIVE_WORK_STATUS_VALUES } from './bookings.provider-readiness';
 
 describe('BookingsService booking creation', () => {
   it('loads the immutable address snapshot in the immediate booking response', async () => {
@@ -106,6 +107,7 @@ describe('BookingsService booking creation', () => {
     const payments = {
       buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
       refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(false),
       scheduleStatusCheck: vi.fn(),
     };
     const notifications = { create: vi.fn() };
@@ -141,6 +143,9 @@ describe('BookingsService booking creation', () => {
         }),
       }),
     );
+    expect(prisma.booking.create.mock.invocationCallOrder[0]).toBeLessThan(
+      payments.refreshAuthorizationForBooking.mock.invocationCallOrder[0],
+    );
     expect(matching.openBooking).toHaveBeenCalledWith(
       expect.objectContaining({
         booking: expect.objectContaining({
@@ -155,6 +160,212 @@ describe('BookingsService booking creation', () => {
           backupProviderRadiusMeters: 10000,
         }),
       }),
+    );
+  });
+
+  it('keeps a real gateway booking in CREATED until post-booking authorization succeeds', async () => {
+    const create = vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.CREATED });
+    const findUniqueOrThrow = vi.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.OPEN_MATCHING });
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const payments = {
+      buildAuthorization: vi.fn().mockReturnValue({
+        amount: 500000,
+        method: PaymentMethod.VNPAY,
+        providerRef: null,
+        status: PaymentStatus.PENDING,
+      }),
+    };
+    const service = new BookingsService(
+      { booking: { create, findUniqueOrThrow, updateMany } } as never,
+      {} as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      {} as never,
+    );
+
+    const gatewayFlow = service as unknown as {
+      createOpenMatchingBookingRecord(input: Record<string, unknown>): Promise<unknown>;
+      openBookingAfterPaymentAuthorization(booking: Record<string, unknown>, required: boolean): Promise<unknown>;
+    };
+    await gatewayFlow.createOpenMatchingBookingRecord({
+      addressPayload: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      bookingGateSnapshot: {},
+      bookingLat: 10.7769,
+      bookingLng: 106.7009,
+      customerPrice: 500000,
+      customerProfileId: 'customer-1',
+      matchingPolicy: matchingPolicy(),
+      paymentMethod: PaymentMethod.VNPAY,
+      preferredProviderDistanceMeters: null,
+      priceSummary: { finalAmount: 500000, paymentMetadata: {} },
+      requiresPostBookingAuthorization: true,
+      serviceId: 'service-1',
+      timing: {
+        expiresAt: new Date('2026-07-14T06:10:00.000Z'),
+        openedAt: new Date('2026-07-14T06:00:00.000Z'),
+        scheduledEndAt: new Date('2026-07-14T07:00:00.000Z'),
+        scheduledStartAt: new Date('2026-07-14T06:00:00.000Z'),
+      },
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: BookingStatus.CREATED }),
+      }),
+    );
+
+    await expect(
+      gatewayFlow.openBookingAfterPaymentAuthorization({ id: 'booking-1', status: BookingStatus.CREATED }, true),
+    ).resolves.toEqual({ id: 'booking-1', status: BookingStatus.OPEN_MATCHING });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: 'booking-1', status: BookingStatus.CREATED },
+      data: { status: BookingStatus.OPEN_MATCHING },
+    });
+    expect(findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'booking-1' },
+      include: expect.any(Object),
+    });
+  });
+
+  it('does not open VNPay matching while the provider payment is still pending', async () => {
+    const updateMany = vi.fn();
+    const payments = {
+      paymentCanOpenMatching: vi.fn().mockReturnValue(false),
+    };
+    const service = new BookingsService(
+      { booking: { updateMany } } as never,
+      {} as never,
+      {} as never,
+      payments as never,
+      {} as never,
+      {} as never,
+    );
+    const booking = {
+      id: 'booking-1',
+      status: BookingStatus.CREATED,
+      payment: {
+        method: PaymentMethod.VNPAY,
+        status: PaymentStatus.PENDING,
+      },
+    };
+    const gatewayFlow = service as unknown as {
+      openBookingAfterPaymentAuthorization(
+        booking: typeof booking,
+        required: boolean,
+      ): Promise<typeof booking>;
+    };
+
+    await expect(gatewayFlow.openBookingAfterPaymentAuthorization(booking, true)).resolves.toBe(booking);
+    expect(payments.paymentCanOpenMatching).toHaveBeenCalledWith(
+      PaymentMethod.VNPAY,
+      PaymentStatus.PENDING,
+    );
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('recovers a captured VNPay booking with a fresh matching window exactly once', async () => {
+    const createdBooking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      customerProfile: { userId: 'customer-user-1' },
+      status: BookingStatus.CREATED,
+      scheduledStartAt: new Date(Date.now() + 60_000),
+      scheduledEndAt: new Date(Date.now() + 3_600_000),
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressSnapshot: null,
+      lat: 10.7769,
+      lng: 106.7009,
+      notes: null,
+      metadata: {},
+      openedAt: new Date(),
+      expiresAt: new Date(Date.now() - 60_000),
+      preferredProviderId: null,
+      selectedProviderId: null,
+      preferredProvider: null,
+      selectedProvider: null,
+      participants: [],
+      services: [{ serviceId: 'service-1', price: 500000, service: massageService() }],
+      payment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        method: PaymentMethod.VNPAY,
+        amount: 450000,
+        currency: 'VND',
+        providerRef: 'booking-1',
+        status: PaymentStatus.CAPTURED,
+        rawMeta: {
+          authorizationState: 'READY',
+          authorizationVerifiedBy: 'STATUS_QUERY',
+          couponCode: 'SAVE10',
+          discountAmount: 50000,
+        },
+      },
+    };
+    const recoveredBooking = {
+      ...createdBooking,
+      status: BookingStatus.OPEN_MATCHING,
+      expiresAt: new Date(Date.now() + 600_000),
+    };
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue(createdBooking),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(recoveredBooking),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn(),
+      },
+      providerProfile: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const matching = {
+      getPolicy: vi.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: vi.fn().mockReturnValue({ id: 'booking-1', status: 'OPEN_MATCHING' }),
+      registerActiveBooking: vi.fn(),
+      scheduleBookingTimeout: vi.fn(),
+      closeBooking: vi.fn(),
+    };
+    const matchingGateway = { emitBookingOpened: vi.fn(), emitBackupBookingAvailable: vi.fn() };
+    const payments = {
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(true),
+      paymentCanOpenMatching: vi.fn().mockReturnValue(true),
+      paymentRequiresCaptureBeforeMatching: vi.fn().mockReturnValue(true),
+      scheduleStatusCheck: vi.fn(),
+    };
+    const notifications = { create: vi.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(service.recoverCreatedBookingAfterPayment('booking-1', 'payment-1')).resolves.toEqual({
+      recovered: true,
+      bookingId: 'booking-1',
+      status: BookingStatus.OPEN_MATCHING,
+    });
+
+    expect(prisma.booking.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 'booking-1', status: BookingStatus.CREATED },
+      data: {
+        status: BookingStatus.OPEN_MATCHING,
+        openedAt: expect.any(Date),
+        expiresAt: expect.any(Date),
+      },
+    });
+    expect(matching.registerActiveBooking).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ status: 'OPEN_MATCHING' }),
+    );
+    expect(matchingGateway.emitBookingOpened).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ status: 'OPEN_MATCHING' }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'customer-user-1' }),
     );
   });
 
@@ -247,6 +458,7 @@ describe('BookingsService booking creation', () => {
     const payments = {
       buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
       refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(false),
       scheduleStatusCheck: vi.fn(),
     };
     const notifications = { create: vi.fn() };
@@ -404,6 +616,7 @@ describe('BookingsService booking creation', () => {
     const payments = {
       buildAuthorization: vi.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
       refreshAuthorizationForBooking: vi.fn().mockResolvedValue(booking.payment),
+      requiresPostBookingAuthorization: vi.fn().mockReturnValue(false),
       scheduleStatusCheck: vi.fn(),
     };
     const notifications = { create: vi.fn().mockResolvedValue({ id: 'notification-1' }) };
@@ -1151,6 +1364,7 @@ describe('BookingsService service completion', () => {
   it('loads the immutable address snapshot before emitting the completed booking', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
@@ -1170,6 +1384,13 @@ describe('BookingsService service completion', () => {
       },
       locationSnapshot: {
         create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
+      payment: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
+          .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
     const matching = {
@@ -1213,11 +1434,16 @@ describe('BookingsService service completion', () => {
         }),
       }),
     );
+    expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+      data: { status: PaymentStatus.CAPTURED },
+      where: { id: 'payment-1', status: { in: [PaymentStatus.PENDING] } },
+    });
   });
 
   it('records a booking-linked partner action location before completion when provided', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
     const prisma = {
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(prisma)),
       providerProfile: {
         findUnique: vi.fn().mockResolvedValue(approvedPartner()),
       },
@@ -1237,6 +1463,13 @@ describe('BookingsService service completion', () => {
       },
       locationSnapshot: {
         create: vi.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
+      payment: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'payment-1', method: PaymentMethod.CASH })
+          .mockResolvedValueOnce({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
     };
     const matching = {
@@ -1483,7 +1716,11 @@ describe('BookingsService customer cancellation', () => {
     const matching = { closeBooking: vi.fn() };
     const matchingGateway = { emitBookingExpired: vi.fn() };
     const payments = {
-      release: vi.fn().mockResolvedValue(cancelledBooking.payment),
+      closeUnmatchedBookingPayment: vi.fn().mockResolvedValue({
+        payment: cancelledBooking.payment,
+        refundRequested: false,
+        released: true,
+      }),
     };
     const notifications = { create: vi.fn() };
     const service = new BookingsService(
@@ -1618,6 +1855,62 @@ describe('BookingsService marketplace participation', () => {
         orderBy: { createdAt: 'desc' },
         take: 20,
       }),
+    );
+  });
+
+  it('keeps active assigned work visible ahead of recent provider history', async () => {
+    const activeBooking = {
+      ...openMarketplaceBooking(),
+      id: 'active-booking',
+      status: BookingStatus.MATCHED,
+      selectedProviderId: 'provider-1',
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: null,
+      selectedProvider: approvedPartner({ id: 'provider-1' }),
+      participants: [],
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue(approvedPartner({ id: 'provider-1' })),
+      },
+      booking: {
+        findMany: vi.fn().mockResolvedValueOnce([activeBooking]).mockResolvedValueOnce([]),
+      },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.listProviderBookings('partner-user-1')).resolves.toEqual([
+      expect.objectContaining({ id: 'active-booking', status: BookingStatus.MATCHED }),
+    ]);
+    expect(prisma.booking.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: {
+          selectedProviderId: 'provider-1',
+          status: { in: PROVIDER_ACTIVE_WORK_STATUS_VALUES },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      }),
+    );
+    expect(prisma.booking.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ take: 19 }),
     );
   });
 

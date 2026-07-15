@@ -1,5 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { RefreshTokenDto, RequestOtpDto, SupabaseExchangeDto, VerifyOtpDto } from './auth.dto';
+import {
+  AdminOperatorLoginDto,
+  RefreshTokenDto,
+  RequestOtpDto,
+  SupabaseExchangeDto,
+  VerifyOtpDto,
+} from './auth.dto';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -19,6 +25,16 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body() body: RefreshTokenDto) {
     return this.auth.refresh(body.refreshToken);
+  }
+
+  @Post('logout')
+  logout(@Body() body: RefreshTokenDto) {
+    return this.auth.logout(body.refreshToken);
+  }
+
+  @Post('admin-operator-login')
+  verifyAdminOperatorLogin(@Body() body: AdminOperatorLoginDto) {
+    return this.auth.verifyAdminOperatorLogin(body);
   }
 
   @Post('supabase/exchange')

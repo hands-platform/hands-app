@@ -29,7 +29,10 @@ export class BookingTimeoutProcessor extends WorkerHost {
     }
 
     if (booking.payment) {
-      await this.payments.release(booking.payment.id);
+      await this.payments.closeUnmatchedBookingPayment(
+        booking.payment.id,
+        'Payment refund requested because matching expired without a partner',
+      );
     }
 
     const expired = await this.prisma.booking.update({

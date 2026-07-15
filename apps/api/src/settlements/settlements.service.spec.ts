@@ -7,15 +7,80 @@ import {
   PaymentFeeTreatment,
   PayoutBatchStatus,
 } from '@prisma/client';
-import { settlementMonthlyPeriod, SettlementsService } from './settlements.service';
+import {
+  settlementMonthlyPeriod,
+  SettlementsService,
+  VIETNAM_TIME_ZONE,
+} from './settlements.service';
 
 describe('settlementMonthlyPeriod', () => {
   it('uses Vietnam local month for monthly tax closing periods', () => {
+    expect(VIETNAM_TIME_ZONE).toBe('Asia/Ho_Chi_Minh');
     expect(settlementMonthlyPeriod(new Date('2026-06-30T18:00:00.000Z'))).toBe('2026-07');
+    expect(settlementMonthlyPeriod(new Date('2026-06-30T16:59:59.999Z'))).toBe('2026-06');
   });
 });
 
 describe('SettlementsService', () => {
+  it('builds a read-only settlement and journal dry-run without touching Prisma', () => {
+    const prisma = {
+      accountingJournalBatch: { upsert: vi.fn() },
+      bookingPaymentClearingEntry: { upsert: vi.fn() },
+      bookingSettlementSnapshot: { upsert: vi.fn() },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    const preview = service.previewBookingSettlementSnapshot({
+      bookingId: 'booking-dry-run-1',
+      customerProfileId: 'customer-1',
+      providerProfileId: 'provider-1',
+      paymentMethod: 'MOMO',
+      currency: 'VND',
+      customerPaymentAmount: 400_000,
+      partnerPayoutAmount: 300_000,
+      platformFeeGross: 80_000,
+      partnerVatRateBps: 0,
+      partnerPitRateBps: 500,
+      platformVatRateBps: 0,
+      paymentFeeRateBps: 0,
+      paymentFeeFixedAmount: 0,
+      platformFeePolicyVersionId: null,
+      platformFeeRuleSnapshot: {
+        source: 'SERVICE_PAYOUT_RULE',
+        lines: [{ ruleId: 'payout-rule-1', vatBps: 0 }],
+      },
+      occurredAt: new Date('2026-06-10T03:00:00.000Z'),
+    });
+
+    expect(preview).toMatchObject({
+      currency: 'VND',
+      customerPaymentAmount: 400_000,
+      monthlyPeriod: '2026-06',
+      partnerPayoutAmount: 300_000,
+      platformFeeGross: 80_000,
+      platformFeePolicyVersionId: null,
+      platformFeeRuleSnapshot: {
+        source: 'SERVICE_PAYOUT_RULE',
+        lines: [{ ruleId: 'payout-rule-1', vatBps: 0 }],
+      },
+      platformVatRateBps: 0,
+      amounts: {
+        companyOutputVat: 0,
+        partnerWithholdingTotal: 20_000,
+        paymentProcessingFee: 0,
+        platformFeeNetRevenue: 80_000,
+      },
+      journal: {
+        reconciliationDelta: 0,
+        totalCredit: 400_000,
+        totalDebit: 400_000,
+      },
+    });
+    expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
+    expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+  });
+
   it('rejects direct settlement snapshot edits in closed monthly periods', async () => {
     const prisma = {
       accountingJournalBatch: {
@@ -100,6 +165,63 @@ describe('SettlementsService', () => {
       expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
     },
   );
+
+  it.each([
+    [
+      MonthlyTaxClosingStatus.CLOSED,
+      'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
+    ],
+    [
+      MonthlyTaxClosingStatus.DECLARED,
+      'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
+    ],
+    [
+      MonthlyTaxClosingStatus.PAID,
+      'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
+    ],
+  ])('rejects a missing settlement snapshot in a %s target period', async (status, message) => {
+    const prisma = {
+      accountingJournalBatch: {
+        upsert: vi.fn(),
+      },
+      bookingPaymentClearingEntry: {
+        upsert: vi.fn(),
+      },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn(),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status }),
+      },
+    };
+    const service = new SettlementsService(prisma as never);
+
+    await expect(
+      service.upsertBookingSettlementSnapshot({
+        bookingId: 'booking-missing-snapshot-1',
+        customerProfileId: 'customer-1',
+        providerProfileId: 'provider-1',
+        paymentMethod: 'CARD',
+        currency: 'VND',
+        customerPaymentAmount: 600_000,
+        partnerPayoutAmount: 430_000,
+        platformFeeGross: 128_000,
+        partnerVatRateBps: 500,
+        partnerPitRateBps: 200,
+        platformVatRateBps: 800,
+        occurredAt: new Date('2026-07-13T03:02:00.000Z'),
+      }),
+    ).rejects.toThrow(message);
+
+    expect(prisma.monthlyTaxClosing.findUnique).toHaveBeenCalledWith({
+      where: { period_currency: { period: '2026-07', currency: 'VND' } },
+      select: { status: true },
+    });
+    expect(prisma.bookingSettlementSnapshot.upsert).not.toHaveBeenCalled();
+    expect(prisma.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+    expect(prisma.bookingPaymentClearingEntry.upsert).not.toHaveBeenCalled();
+  });
 
   it('upserts a booking settlement snapshot with calculated tax and fee amounts', async () => {
     const prisma = {

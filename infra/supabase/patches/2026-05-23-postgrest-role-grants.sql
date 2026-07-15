@@ -6,8 +6,10 @@ grant usage on schema public to anon, authenticated, service_role;
 
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function public.is_admin() to authenticated, service_role;
+revoke execute on function public.nearby_providers(double precision, double precision, integer)
+from public, anon, authenticated;
 grant execute on function public.nearby_providers(double precision, double precision, integer)
-to anon, authenticated, service_role;
+to service_role;
 
 grant all privileges on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
@@ -64,7 +66,6 @@ grant select on table
   public.providers,
   public.services,
   public.provider_services,
-  public.provider_locations,
   public.reviews,
   public.coupons
 to anon;

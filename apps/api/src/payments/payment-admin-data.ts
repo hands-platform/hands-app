@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '@prisma/client';
 
 export function paymentCaptureUpdateData() {
   return { status: PaymentStatus.CAPTURED };
@@ -14,22 +14,16 @@ type PaymentRefundUpdateInput = {
   reason?: string;
 };
 
-export function paymentRefundUpdateData(input: PaymentRefundUpdateInput) {
+export function paymentRefundRequestCreateData(input: PaymentRefundUpdateInput) {
   const metadata = paymentRefundMetadata(input);
 
   return {
-    status: PaymentStatus.REFUNDED,
-    booking: { update: { status: BookingStatus.REFUNDED } },
-    refunds: {
-      create: {
-        bookingId: input.bookingId,
-        amount: input.amount,
-        currency: input.currency ?? 'VND',
-        ...(metadata ? { metadata } : {}),
-        reason: input.reason ?? 'Admin manual refund',
-        status: 'COMPLETED',
-      },
-    },
+    bookingId: input.bookingId,
+    amount: input.amount,
+    currency: input.currency ?? 'VND',
+    ...(metadata ? { metadata } : {}),
+    reason: input.reason ?? 'Admin manual refund',
+    status: 'REQUESTED',
   };
 }
 

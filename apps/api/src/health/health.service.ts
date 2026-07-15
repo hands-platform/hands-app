@@ -92,13 +92,22 @@ export class HealthService {
         { key: 'REFERRAL_PARTNER_IOS_STORE_URL', validator: 'https-url' },
       ]),
       this.externalGroup('MoMo payments', 'payments', [
+        { key: 'MOMO_GATEWAY_ENABLED', expected: 'true' },
         { key: 'MOMO_PARTNER_CODE' },
         { key: 'MOMO_ACCESS_KEY' },
         { key: 'MOMO_SECRET_KEY', validator: 'secret' },
+        { key: 'MOMO_BASE_URL', validator: 'https-url' },
+        { key: 'MOMO_IPN_URL', validator: 'https-url' },
+        { key: 'MOMO_REDIRECT_URL', validator: 'https-url' },
       ]),
       this.externalGroup('VNPay payments', 'payments', [
+        { key: 'VNPAY_GATEWAY_ENABLED', expected: 'true' },
         { key: 'VNPAY_TMN_CODE' },
         { key: 'VNPAY_HASH_SECRET', validator: 'secret' },
+        { key: 'VNPAY_PAYMENT_URL', validator: 'https-url' },
+        { key: 'VNPAY_API_URL', validator: 'https-url' },
+        { key: 'VNPAY_RETURN_URL', validator: 'https-url' },
+        { key: 'VNPAY_SERVER_IP' },
       ]),
       this.storageExternalReadiness(),
       this.externalGroup('Production SMS', 'sms', [

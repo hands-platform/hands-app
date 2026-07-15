@@ -14,12 +14,14 @@ export const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.SELFIE,
 ];
 
-const PROVIDER_ACTIVE_WORK_STATUSES = new Set<BookingStatus>([
+export const PROVIDER_ACTIVE_WORK_STATUS_VALUES = [
   BookingStatus.MATCHED,
   BookingStatus.PROVIDER_ON_THE_WAY,
   BookingStatus.ARRIVED,
   BookingStatus.IN_SERVICE,
-]);
+] as const;
+
+const PROVIDER_ACTIVE_WORK_STATUSES = new Set<BookingStatus>(PROVIDER_ACTIVE_WORK_STATUS_VALUES);
 
 export function assertProviderCanReceiveBooking(provider: {
   blockedAt: Date | null;

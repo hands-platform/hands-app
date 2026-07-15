@@ -14,6 +14,7 @@ export function paymentStatusCheckJob(paymentId: string) {
     name: PAYMENT_STATUS_CHECK_JOB_NAME,
     data: { paymentId },
     options: {
+      jobId: `payment-status-check-${paymentId}`,
       delay: PAYMENT_STATUS_CHECK_DELAY_MS,
       attempts: PAYMENT_STATUS_CHECK_ATTEMPTS,
       backoff: { type: 'exponential', delay: PAYMENT_STATUS_CHECK_BACKOFF_MS },

@@ -46,12 +46,24 @@ export class NotificationsService {
   ) {}
 
   async create(input: CreateNotificationInput) {
+    const notification = await this.persist(input);
+
+    await this.enqueueNotificationSend(notification.id);
+
+    return notification;
+  }
+
+  createInApp(input: CreateNotificationInput) {
+    return this.persist(input);
+  }
+
+  private async persist(input: CreateNotificationInput) {
     const data = notificationDataWithTargetRole(input.data, input.targetRole);
     const copy =
       input.resolveTemplate === false
         ? { title: input.title, body: input.body }
         : await this.resolveNotificationCopy(input);
-    const notification = await this.prisma.notification.create({
+    return this.prisma.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
@@ -61,9 +73,6 @@ export class NotificationsService {
       },
     });
 
-    await this.enqueueNotificationSend(notification.id);
-
-    return notification;
   }
 
   async retry(notificationId: string): Promise<RetryNotificationResult> {

@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus } from '@prisma/client';
+import { BookingStatus } from '@prisma/client';
 import {
   bookingCompletedUpdateData,
   bookingResponseTimeoutAt,
@@ -52,10 +52,9 @@ describe('booking lifecycle update helpers', () => {
     });
   });
 
-  it('builds the completed booking update data with captured payment', () => {
+  it('builds the completed booking update without bypassing the payment state guard', () => {
     expect(bookingCompletedUpdateData()).toEqual({
       status: BookingStatus.COMPLETED,
-      payment: { update: { status: PaymentStatus.CAPTURED } },
     });
   });
 });

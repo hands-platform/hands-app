@@ -1,8 +1,24 @@
 import { Logger } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
+import { hashAdminOperatorPassword } from './admin-operator-credential';
 
 describe('AuthService OTP production guard', () => {
+  it('uses a cryptographic six-digit OTP generator in production', async () => {
+    const mathRandom = vi.spyOn(Math, 'random').mockImplementation(() => {
+      throw new Error('Math.random must not be used for OTPs');
+    });
+    const { redisState, service } = createOtpService({ NODE_ENV: 'production' });
+
+    await expect(service.requestOtp({ phone: '+84900000000', role: Role.CUSTOMER })).resolves.toMatchObject({
+      status: 'OTP_REQUESTED',
+    });
+    const otp = redisState.setOtp.mock.calls[0]?.[1];
+    expect(otp).toMatch(/^\d{6}$/);
+    expect(mathRandom).not.toHaveBeenCalled();
+    mathRandom.mockRestore();
+  });
+
   it('rejects admin OTP requests before storing or delivering OTPs', async () => {
     const { otpDelivery, redisState, service } = createOtpService({});
 
@@ -192,6 +208,65 @@ describe('AuthService refresh', () => {
     });
     expect(signedPayloads[0]).not.toHaveProperty('activeRole');
   });
+
+  it('rotates the refresh token and revokes the presented token hash', async () => {
+    const { redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
+      [Role.CUSTOMER],
+    );
+
+    await expect(service.refresh('refresh-token-1')).resolves.toEqual({
+      accessToken: 'signed-token-1',
+      refreshToken: 'signed-token-2',
+    });
+    expect(redisState.consumeRefreshToken).toHaveBeenCalledWith(expect.any(String), expect.any(Number));
+    expect(redisState.consumeRefreshToken.mock.calls[0]?.[0]).not.toContain('refresh-token-1');
+  });
+
+  it('rejects a refresh token that was already revoked', async () => {
+    const { prisma, redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', activeRole: Role.CUSTOMER },
+      [Role.CUSTOMER],
+    );
+    redisState.consumeRefreshToken.mockResolvedValue(false);
+
+    await expect(service.refresh('refresh-token-1')).rejects.toThrow('Refresh token has been revoked');
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('revokes a refresh token on logout', async () => {
+    const { redisState, service } = createService(
+      { sub: 'user-1', tokenType: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600 },
+      [Role.CUSTOMER],
+    );
+
+    await expect(service.logout('refresh-token-1')).resolves.toEqual({ ok: true });
+    expect(redisState.revokeRefreshToken).toHaveBeenCalledWith(expect.any(String), expect.any(Number));
+  });
+
+  it('fails closed in production when refresh token consumption cannot reach Redis', async () => {
+    const { config, jwt, prisma, service } = createOtpService({
+      NODE_ENV: 'production',
+      redisState: {
+        consumeRefreshToken: vi.fn().mockRejectedValue(new Error('redis down')),
+      },
+    });
+    config.get.mockImplementation((key: string) => {
+      if (key === 'NODE_ENV') return 'production';
+      if (key === 'JWT_REFRESH_SECRET') return 'production-refresh-secret';
+      return undefined;
+    });
+    jwt.verify.mockReturnValue({
+      sub: 'user-1',
+      tokenType: 'refresh',
+      activeRole: Role.CUSTOMER,
+    });
+
+    await expect(service.refresh('refresh-token-1')).rejects.toThrow(
+      'Authentication service is temporarily unavailable',
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe('AuthService Supabase exchange', () => {
@@ -205,6 +280,39 @@ describe('AuthService Supabase exchange', () => {
       }),
     ).rejects.toThrow('Supabase mobile exchange only supports CUSTOMER or PROVIDER roles');
     expect(authTokens.authenticateSupabaseBearerToken).not.toHaveBeenCalled();
+  });
+});
+
+describe('AuthService Admin operator login', () => {
+  it('verifies a stored Admin credential without a broad Admin bearer token', async () => {
+    const { passwordHash, passwordSalt } = hashAdminOperatorPassword('operator-password');
+    const { prisma, service } = createOtpService({});
+    prisma.adminOperatorCredential.findUnique.mockResolvedValue({
+      passwordHash,
+      passwordSalt,
+      user: {
+        id: 'operator-1',
+        email: 'operator@hands.vn',
+        fullName: 'Operator One',
+        roles: [Role.ADMIN],
+      },
+    });
+
+    await expect(
+      service.verifyAdminOperatorLogin({ email: ' OPERATOR@hands.vn ', password: 'operator-password' }),
+    ).resolves.toMatchObject({ authenticated: true, user: { id: 'operator-1', roles: [Role.ADMIN] } });
+    expect(prisma.adminOperatorCredential.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: 'operator@hands.vn' } }),
+    );
+  });
+
+  it('rejects invalid stored Admin credentials', async () => {
+    const { prisma, service } = createOtpService({});
+    prisma.adminOperatorCredential.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.verifyAdminOperatorLogin({ email: 'operator@hands.vn', password: 'wrong' }),
+    ).rejects.toThrow('Invalid admin operator credentials');
   });
 });
 
@@ -223,17 +331,23 @@ function createService(refreshPayload: Record<string, unknown>, roles: Role[]) {
     },
   };
   const config = { get: vi.fn().mockReturnValue(undefined) };
+  const redisState = {
+    consumeRefreshToken: vi.fn().mockResolvedValue(true),
+    revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     service: new AuthService(
       prisma as never,
       jwt as never,
       config as never,
-      {} as never,
+      redisState as never,
       {} as never,
       {} as never,
     ),
     signedPayloads,
+    prisma,
+    redisState,
   };
 }
 
@@ -242,13 +356,21 @@ function createOtpService({
   redisState: redisStateOverrides,
 }: {
   NODE_ENV?: string;
-  redisState?: Partial<Record<'consumeOtp' | 'getOtp' | 'setOtp', ReturnType<typeof vi.fn>>>;
+  redisState?: Partial<
+    Record<
+      'consumeOtp' | 'getOtp' | 'setOtp' | 'consumeRefreshToken' | 'revokeRefreshToken',
+      ReturnType<typeof vi.fn>
+    >
+  >;
 }) {
   const jwt = {
     sign: vi.fn().mockReturnValue('signed-token'),
     verify: vi.fn(),
   };
   const prisma = {
+    adminOperatorCredential: {
+      findUnique: vi.fn(),
+    },
     user: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
@@ -260,6 +382,8 @@ function createOtpService({
   const redisState = {
     consumeOtp: vi.fn().mockResolvedValue(undefined),
     getOtp: vi.fn().mockResolvedValue(null),
+    consumeRefreshToken: vi.fn().mockResolvedValue(true),
+    revokeRefreshToken: vi.fn().mockResolvedValue(undefined),
     setOtp: vi.fn().mockResolvedValue(undefined),
     ...redisStateOverrides,
   };

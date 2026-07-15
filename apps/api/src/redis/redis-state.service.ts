@@ -95,4 +95,19 @@ export class RedisStateService implements OnModuleDestroy {
   consumeOtp(phone: string) {
     return this.redis.del(`auth:otp:${phone}`);
   }
+
+  async revokeRefreshToken(tokenHash: string, ttlSeconds: number) {
+    await this.redis.set(`auth:refresh:revoked:${tokenHash}`, '1', 'EX', Math.max(1, Math.trunc(ttlSeconds)));
+  }
+
+  async consumeRefreshToken(tokenHash: string, ttlSeconds: number) {
+    const result = await this.redis.set(
+      `auth:refresh:revoked:${tokenHash}`,
+      '1',
+      'EX',
+      Math.max(1, Math.trunc(ttlSeconds)),
+      'NX',
+    );
+    return result === 'OK';
+  }
 }

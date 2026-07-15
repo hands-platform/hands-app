@@ -83,6 +83,17 @@ describe('booking notification payloads', () => {
     });
 
     expect(
+      customerBookingCancelledNotification({
+        userId: 'customer-user-1',
+        bookingId: 'booking-1',
+        releasedPayment: false,
+        refundRequested: true,
+      }),
+    ).toMatchObject({
+      body: 'Your request has been cancelled and the captured payment is queued for refund review.',
+    });
+
+    expect(
       customerProviderJoinedNotification({
         userId: 'customer-user-1',
         bookingId: 'booking-1',

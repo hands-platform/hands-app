@@ -1,10 +1,12 @@
 import {
+  BankReconciliationStatus,
   BookingStatus,
   EarningStatus,
   PartnerTaxLineKind,
   PaymentFeePayer,
   PaymentFeeTreatment,
   PaymentMethod,
+  PaymentStatus,
   PayoutBatchStatus,
   ProviderAgreementType,
   ProviderBankAccountStatus,
@@ -19,6 +21,7 @@ type EarningsServiceWithWithdrawalRequests = EarningsService & {
   providerWalletWithdrawalRequestSummaryForAdmin: (options: {
     range?: string | null;
     providerProfileId?: string | null;
+    reconciliation?: string | null;
   }) => Promise<unknown>;
   createProviderWalletWithdrawalRequestForProviderUser: (
     userId: string,
@@ -68,6 +71,9 @@ describe('EarningsService payout batches', () => {
       providerSanction: {
         findFirst: vi.fn().mockResolvedValue(null),
       },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
     };
     const service = new EarningsService(prisma as never);
 
@@ -81,6 +87,42 @@ describe('EarningsService payout batches', () => {
         reviewedAt,
         updatedAt,
       },
+    });
+  });
+
+  it('uses the wallet ledger balance for partner wallet blocking in the summary', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'provider-1',
+          userId: 'provider-user-1',
+          bankAccounts: [],
+        }),
+      },
+      providerEarning: {
+        aggregate: vi.fn().mockResolvedValue({
+          _sum: { grossAmount: 0, netAmount: 0, platformFeeAmount: 0, taxWithheldAmount: 0 },
+        }),
+        count: vi.fn().mockResolvedValue(0),
+      },
+      providerSanction: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -225_000 } }),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.summaryForProviderUser('provider-user-1')).resolves.toMatchObject({
+      walletBalance: -225_000,
+      walletBlocked: true,
+      walletDebtAmount: 225_000,
+      walletSettlementRequired: true,
+    });
+    expect(prisma.providerWalletLedgerEntry.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'provider-1' },
+      _sum: { amount: true },
     });
   });
 
@@ -200,6 +242,7 @@ describe('EarningsService payout batches', () => {
 
     await expect(service.adminSummary({ range: 'today' })).resolves.toMatchObject({
       count: 0,
+      generatedAt: expect.any(String),
       grossAmount: 0,
     });
 
@@ -934,6 +977,7 @@ describe('EarningsService payout batches', () => {
         }),
       },
       providerEarning: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'earning-1' }),
         upsert: vi.fn().mockResolvedValue(earning),
       },
       providerPlatformFeeLog: {
@@ -980,6 +1024,120 @@ describe('EarningsService payout batches', () => {
       }),
       tx,
     );
+
+    await service.createForCompletedBooking('booking-1', 'provider-1', {
+      preserveExistingLifecycle: true,
+    });
+
+    expect(tx.providerEarning.findUnique).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1' },
+      select: { id: true },
+    });
+    const repairUpdate = tx.providerEarning.upsert.mock.calls.at(-1)?.[0].update;
+    expect(repairUpdate).not.toHaveProperty('status');
+    expect(repairUpdate).not.toHaveProperty('availableAt');
+  });
+
+  it('reconstructs paid settlement accounting from retained evidence without mutating earning or wallet rows', async () => {
+    const occurredAt = new Date('2026-06-20T03:00:00.000Z');
+    const booking = {
+      id: 'booking-paid-gap-1',
+      status: BookingStatus.COMPLETED,
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'provider-1',
+      updatedAt: occurredAt,
+      closedAt: occurredAt,
+      services: [{ price: 400_000, quantity: 1 }],
+      payment: {
+        id: 'payment-1',
+        status: PaymentStatus.CAPTURED,
+        method: PaymentMethod.MOMO,
+        amount: 400_000,
+        currency: 'VND',
+        rawMeta: { provider: 'MOMO' },
+      },
+      settlementSnapshot: null,
+      earning: {
+        id: 'earning-paid-1',
+        providerProfileId: 'provider-1',
+        status: EarningStatus.PAID,
+        grossAmount: 400_000,
+        platformFee: 80_000,
+        withholdingAmount: 20_000,
+        netAmount: 300_000,
+        currency: 'VND',
+        paidAt: new Date('2026-06-21T03:00:00.000Z'),
+        platformFeeLogs: [
+          {
+            id: 'fee-log-1',
+            grossAmount: 400_000,
+            platformFeeAmount: 80_000,
+            currency: 'VND',
+            policyVersionId: null,
+            ruleSnapshot: { lines: [{ vatBps: 0 }] },
+            policyVersion: null,
+          },
+        ],
+        taxLogs: [
+          {
+            id: 'tax-log-1',
+            grossAmount: 400_000,
+            taxableAmount: 400_000,
+            withholdingAmount: 20_000,
+            currency: 'VND',
+            policyVersionId: 'tax-policy-1',
+            ruleSnapshot: { rateBps: 500 },
+          },
+        ],
+        walletLedgerEntries: [
+          { id: 'wallet-created', type: ProviderWalletLedgerType.BOOKING_EARNING, amount: 300_000 },
+          { id: 'wallet-paid', type: ProviderWalletLedgerType.PAYOUT_PAID, amount: -300_000 },
+        ],
+      },
+    };
+    const tx = {
+      booking: { findUnique: vi.fn().mockResolvedValue(booking) },
+      paymentFeePolicyVersion: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const settlements = {
+      upsertBookingSettlementSnapshot: vi.fn().mockResolvedValue({ id: 'settlement-1' }),
+    };
+    const service = new EarningsService(prisma as never, undefined, settlements as never);
+
+    await expect(
+      service.reconstructPaidBookingSettlement('booking-paid-gap-1', 'provider-1', {
+        actorId: 'admin-1',
+        approvalAdminId: 'admin-2',
+        reason: 'Reconstruct paid evidence',
+      }),
+    ).resolves.toMatchObject({
+      earningId: 'earning-paid-1',
+      settlementSnapshot: { id: 'settlement-1' },
+    });
+    expect(settlements.upsertBookingSettlementSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookingId: 'booking-paid-gap-1',
+        providerEarningId: 'earning-paid-1',
+        providerPlatformFeeLogId: 'fee-log-1',
+        providerTaxLogIds: ['tax-log-1'],
+        providerWalletLedgerEntryIds: ['wallet-created', 'wallet-paid'],
+        paymentMethod: PaymentMethod.MOMO,
+        customerPaymentAmount: 400_000,
+        partnerPayoutAmount: 300_000,
+        platformFeeGross: 80_000,
+        metadata: expect.objectContaining({
+          historicalReconstruction: true,
+          historicalReconstructionActorId: 'admin-1',
+          historicalReconstructionApprovalAdminId: 'admin-2',
+        }),
+      }),
+      tx,
+    );
+    expect(tx).not.toHaveProperty('providerEarning');
+    expect(tx).not.toHaveProperty('providerWalletLedgerEntry');
   });
 
   it('applies active payment fee policy to completed booking settlement snapshots', async () => {
@@ -2061,6 +2219,9 @@ describe('EarningsService payout batches', () => {
       status: 'REQUESTED',
     };
     const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-lock-journal-1' }),
+      },
       providerBankAccount: {
         findFirst: vi.fn().mockResolvedValue({ id: 'bank-account-1' }),
       },
@@ -2114,6 +2275,34 @@ describe('EarningsService payout batches', () => {
         },
       },
     });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          sourceKey: 'accounting-journal:provider-withdrawal:withdrawal-request-1:lock',
+        },
+        update: {},
+        create: expect.objectContaining({
+          sourceType: 'PROVIDER_WITHDRAWAL',
+          sourceId: 'withdrawal-request-1',
+          totalDebit: 500000,
+          totalCredit: 500000,
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                side: 'DEBIT',
+                accountCode: 'partner_wallet_liability',
+                amount: 500000,
+              }),
+              expect.objectContaining({
+                side: 'CREDIT',
+                accountCode: 'partner_withdrawal_payable',
+                amount: 500000,
+              }),
+            ]),
+          },
+        }),
+      }),
+    );
   });
 
   it('rejects partner wallet withdrawal requests above available balance after pending requests', async () => {
@@ -2168,7 +2357,13 @@ describe('EarningsService payout batches', () => {
   it('filters admin partner wallet withdrawal requests by provider profile without loading every partner', async () => {
     const prisma = {
       providerWalletWithdrawalRequest: {
-        findMany: vi.fn().mockResolvedValue([{ id: 'withdrawal-request-1' }]),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            bankReconciliationMatches: [],
+            id: 'withdrawal-request-1',
+            status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+          },
+        ]),
       },
     };
     const service = new EarningsService(prisma as never);
@@ -2181,7 +2376,13 @@ describe('EarningsService payout batches', () => {
         status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
         take: '500',
       }),
-    ).resolves.toEqual([{ id: 'withdrawal-request-1' }]);
+    ).resolves.toEqual([
+      expect.objectContaining({
+        bankReconciliationMatch: null,
+        id: 'withdrawal-request-1',
+        reconciliationState: 'NOT_APPLICABLE',
+      }),
+    ]);
 
     expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith({
       where: {
@@ -2193,8 +2394,64 @@ describe('EarningsService payout batches', () => {
       take: 100,
       include: expect.objectContaining({
         bankAccount: true,
+        bankReconciliationMatches: expect.objectContaining({
+          take: 1,
+          where: {
+            status: {
+              in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+            },
+          },
+        }),
       }),
     });
+  });
+
+  it('filters paid withdrawals by active bank reconciliation state without counting reversed matches', async () => {
+    const prisma = {
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            bankReconciliationMatches: [],
+            id: 'withdrawal-request-1',
+            status: ProviderWalletWithdrawalRequestStatus.PAID,
+          },
+        ]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(
+      service.listProviderWalletWithdrawalRequestsForAdmin({
+        range: 'all',
+        reconciliation: 'unmatched',
+        take: 10,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        bankReconciliationMatch: null,
+        reconciliationState: 'UNMATCHED',
+      }),
+    ]);
+
+    expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        where: {
+          AND: [
+            { status: ProviderWalletWithdrawalRequestStatus.PAID },
+            {
+              bankReconciliationMatches: {
+                none: {
+                  status: {
+                    in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
   });
 
   it('summarizes admin partner wallet withdrawal requests with count queries only', async () => {
@@ -2206,7 +2463,9 @@ describe('EarningsService payout batches', () => {
           .mockResolvedValueOnce(2)
           .mockResolvedValueOnce(1)
           .mockResolvedValueOnce(3)
-          .mockResolvedValueOnce(1),
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(2),
         aggregate: vi
           .fn()
           .mockResolvedValueOnce({ _sum: { amount: 2_400_000 } })
@@ -2214,7 +2473,9 @@ describe('EarningsService payout batches', () => {
           .mockResolvedValueOnce({ _sum: { amount: 1_600_000 } })
           .mockResolvedValueOnce({ _sum: { amount: 900_000 } })
           .mockResolvedValueOnce({ _sum: { amount: 500_000 } })
-          .mockResolvedValueOnce({ _sum: { amount: 300_000 } }),
+          .mockResolvedValueOnce({ _sum: { amount: 300_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 1_100_000 } })
+          .mockResolvedValueOnce({ _sum: { amount: 800_000 } }),
         findMany: vi.fn(),
       },
     };
@@ -2237,6 +2498,10 @@ describe('EarningsService payout batches', () => {
       bankTransferPendingAmount: 900_000,
       paidAmount: 500_000,
       returnedAmount: 300_000,
+      paidUnreconciled: 4,
+      paidUnreconciledAmount: 1_100_000,
+      paidReconciled: 2,
+      paidReconciledAmount: 800_000,
       currency: 'VND',
     });
 
@@ -2344,6 +2609,9 @@ describe('EarningsService payout batches', () => {
       transferRef: 'BANK-OUT-001',
     };
     const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-journal-1' }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
         upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-ledger-1' }),
@@ -2436,6 +2704,39 @@ describe('EarningsService payout batches', () => {
         bankAccount: true,
       }),
     });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledTimes(2);
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: {
+          sourceKey: 'accounting-journal:provider-withdrawal:withdrawal-request-1:lock',
+        },
+      }),
+    );
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: 'accounting-journal:provider-withdrawal:withdrawal-request-1:paid',
+        },
+        create: expect.objectContaining({
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                side: 'DEBIT',
+                accountCode: 'partner_withdrawal_payable',
+                amount: 500000,
+              }),
+              expect.objectContaining({
+                side: 'CREDIT',
+                accountCode: 'company_bank_cash',
+                amount: 500000,
+              }),
+            ]),
+          },
+        }),
+      }),
+    );
   });
 
   it('rejects marking withdrawal paid when other pending withdrawals already reserve the balance', async () => {
@@ -2452,6 +2753,9 @@ describe('EarningsService payout batches', () => {
       paidAt: null,
     };
     const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-release-journal-1' }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 750000 } }),
         upsert: vi.fn(),
@@ -2502,6 +2806,7 @@ describe('EarningsService payout batches', () => {
       _sum: { amount: true },
     });
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
     expect(tx.providerWalletWithdrawalRequest.update).not.toHaveBeenCalled();
   });
 
@@ -2520,6 +2825,9 @@ describe('EarningsService payout batches', () => {
       metadata: { requestedFrom: 'partner-app' },
     };
     const tx = {
+      accountingJournalBatch: {
+        upsert: vi.fn().mockResolvedValue({ id: 'withdrawal-release-journal-1' }),
+      },
       providerWalletLedgerEntry: {
         aggregate: vi.fn(),
         upsert: vi.fn(),
@@ -2551,6 +2859,29 @@ describe('EarningsService payout batches', () => {
     );
 
     expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledTimes(2);
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: {
+          sourceKey: 'accounting-journal:provider-withdrawal:withdrawal-request-1:release',
+        },
+        create: expect.objectContaining({
+          entries: {
+            create: expect.arrayContaining([
+              expect.objectContaining({
+                side: 'DEBIT',
+                accountCode: 'partner_withdrawal_payable',
+              }),
+              expect.objectContaining({
+                side: 'CREDIT',
+                accountCode: 'partner_wallet_liability',
+              }),
+            ]),
+          },
+        }),
+      }),
+    );
     expect(tx.providerWalletWithdrawalRequest.update).toHaveBeenCalledWith({
       where: { id: 'withdrawal-request-1' },
       data: expect.objectContaining({

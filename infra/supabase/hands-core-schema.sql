@@ -612,9 +612,16 @@ create policy "provider services public read"
   using (status = 'ACTIVE' or public.is_admin());
 
 drop policy if exists "recent provider locations read" on public.provider_locations;
-create policy "recent provider locations read"
+drop policy if exists "provider locations owner or admin read" on public.provider_locations;
+create policy "provider locations owner or admin read"
   on public.provider_locations for select
-  using (updated_at >= now() - interval '24 hours' or public.is_admin());
+  using (
+    public.is_admin()
+    or exists (
+      select 1 from public.providers p
+      where p.id = provider_id and p.user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "provider owner location upsert" on public.provider_locations;
 create policy "provider owner location upsert"
@@ -1234,12 +1241,23 @@ create policy "provider devices owner or admin"
 -- PostgREST role grants.
 -- RLS policies above still decide row-level access. HANDS business writes are
 -- owned by the NestJS API, so browser/mobile Supabase roles are read-oriented.
+-- New public-schema objects start private. Grant each Data API surface
+-- explicitly after its RLS and ownership contract is defined.
+alter default privileges for role postgres in schema public
+  revoke select, insert, update, delete on tables from anon, authenticated, service_role;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated, service_role;
+alter default privileges for role postgres in schema public
+  revoke usage, select on sequences from anon, authenticated, service_role;
+
 grant usage on schema public to anon, authenticated, service_role;
 
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function public.is_admin() to authenticated, service_role;
+revoke execute on function public.nearby_providers(double precision, double precision, integer)
+from public, anon, authenticated;
 grant execute on function public.nearby_providers(double precision, double precision, integer)
-to anon, authenticated, service_role;
+to service_role;
 
 grant all privileges on all tables in schema public to service_role;
 grant usage, select on all sequences in schema public to service_role;
@@ -1296,7 +1314,6 @@ grant select on table
   public.providers,
   public.services,
   public.provider_services,
-  public.provider_locations,
   public.reviews,
   public.coupons
 to anon;

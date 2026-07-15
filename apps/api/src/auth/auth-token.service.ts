@@ -4,7 +4,12 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from './auth.types';
-import { adminRealtimeTokenSecretFromConfig, jwtAccessSecretFromConfig } from './jwt-secrets';
+import {
+  adminRealtimeTokenSecretFromConfig,
+  adminWebApiTokenSecretFromConfig,
+  jwtAccessSecretFromConfig,
+} from './jwt-secrets';
+import { normalizeVietnamPhoneIdentifier } from './phone-number';
 
 type NestJwtPayload = {
   activeRole?: Role;
@@ -16,6 +21,7 @@ type NestJwtPayload = {
 type SupabaseJwtPayload = {
   sub?: string;
   aud?: string | string[];
+  iss?: string;
   phone?: string;
   email?: string;
   app_metadata?: {
@@ -35,9 +41,14 @@ type AdminRealtimeJwtPayload = {
   exp?: number;
 };
 
+type AdminWebApiJwtPayload = AdminRealtimeJwtPayload;
+
 const ADMIN_REALTIME_TOKEN_TYPE = 'admin-realtime';
 const ADMIN_REALTIME_TOKEN_AUDIENCE = 'hands-socket';
 const ADMIN_REALTIME_TOKEN_SCOPE = 'admin:realtime';
+const ADMIN_WEB_API_TOKEN_TYPE = 'admin-web-api';
+const ADMIN_WEB_API_TOKEN_AUDIENCE = 'hands-api';
+const ADMIN_WEB_API_TOKEN_SCOPE = 'admin:api';
 
 @Injectable()
 export class AuthTokenService {
@@ -48,6 +59,11 @@ export class AuthTokenService {
   ) {}
 
   async authenticateBearerToken(token: string): Promise<AuthenticatedUser> {
+    const adminWebUser = await this.tryVerifyAdminWebApiJwt(token);
+    if (adminWebUser) {
+      return adminWebUser;
+    }
+
     const nestUser = this.tryVerifyNestJwt(token);
     if (nestUser) {
       return nestUser;
@@ -134,25 +150,62 @@ export class AuthTokenService {
     };
   }
 
-  private async tryVerifySupabaseJwt(
-    token: string,
-    requestedRoles: Role[] = [],
-  ): Promise<AuthenticatedUser | null> {
-    const supabaseJwtSecret = this.config.get<string>('SUPABASE_JWT_SECRET');
-    if (!supabaseJwtSecret) {
+  private async tryVerifyAdminWebApiJwt(token: string): Promise<AuthenticatedUser | null> {
+    if (unverifiedJwtType(token) !== ADMIN_WEB_API_TOKEN_TYPE) {
       return null;
     }
 
-    let payload: SupabaseJwtPayload;
+    let payload: AdminWebApiJwtPayload;
     try {
-      payload = this.jwt.verify<SupabaseJwtPayload>(token, {
-        secret: supabaseJwtSecret,
+      payload = this.jwt.verify<AdminWebApiJwtPayload>(token, {
+        secret: adminWebApiTokenSecretFromConfig(this.config),
       });
     } catch {
       return null;
     }
 
-    if (!payload.sub) {
+    const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (
+      !payload.sub ||
+      payload.typ !== ADMIN_WEB_API_TOKEN_TYPE ||
+      payload.scope !== ADMIN_WEB_API_TOKEN_SCOPE ||
+      payload.role !== Role.ADMIN ||
+      !audiences.includes(ADMIN_WEB_API_TOKEN_AUDIENCE)
+    ) {
+      return null;
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [
+          { id: payload.sub },
+          { email: payload.sub },
+          { phone: payload.sub },
+          { adminOperatorCredential: { is: { email: payload.sub } } },
+        ],
+      },
+      select: { id: true, roles: true },
+    });
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      activeRole: Role.ADMIN,
+      roles: user.roles,
+      authProvider: 'admin-web',
+    };
+  }
+
+  private async tryVerifySupabaseJwt(
+    token: string,
+    requestedRoles: Role[] = [],
+  ): Promise<AuthenticatedUser | null> {
+    const payload = await this.verifySupabaseJwt(token);
+
+    if (!payload?.sub) {
       return null;
     }
 
@@ -169,6 +222,85 @@ export class AuthTokenService {
       authProvider: 'supabase',
       externalUserId: payload.sub,
     };
+  }
+
+  private async verifySupabaseJwt(token: string): Promise<SupabaseJwtPayload | null> {
+    const supabaseJwtSecret = this.config.get<string>('SUPABASE_JWT_SECRET');
+    if (supabaseJwtSecret) {
+      try {
+        return this.jwt.verify<SupabaseJwtPayload>(token, {
+          secret: supabaseJwtSecret,
+        });
+      } catch {
+        // Projects using Supabase signing keys require Auth/JWKS verification.
+      }
+    }
+
+    return this.verifySupabaseJwtWithAuthServer(token);
+  }
+
+  private async verifySupabaseJwtWithAuthServer(token: string): Promise<SupabaseJwtPayload | null> {
+    const projectUrl = this.supabaseProjectUrl();
+    const apiKey = this.config.get<string>('SUPABASE_ANON_KEY')?.trim();
+    if (!projectUrl || !apiKey) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${projectUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          apikey: apiKey,
+          authorization: `Bearer ${token}`,
+        },
+        redirect: 'error',
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (!response.ok) {
+        return null;
+      }
+
+      const authUser = (await response.json()) as {
+        id?: string;
+        phone?: string;
+        email?: string;
+        app_metadata?: SupabaseJwtPayload['app_metadata'];
+        user_metadata?: SupabaseJwtPayload['user_metadata'];
+      };
+      const decoded = this.jwt.decode<SupabaseJwtPayload>(token);
+      if (!decoded?.sub || !authUser.id || decoded.sub !== authUser.id) {
+        return null;
+      }
+
+      const expectedIssuer = `${projectUrl}/auth/v1`;
+      if (decoded.iss && decoded.iss !== expectedIssuer) {
+        return null;
+      }
+
+      return {
+        ...decoded,
+        phone: authUser.phone ?? decoded.phone,
+        email: authUser.email ?? decoded.email,
+        app_metadata: authUser.app_metadata ?? decoded.app_metadata,
+        user_metadata: authUser.user_metadata ?? decoded.user_metadata,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private supabaseProjectUrl(): string | null {
+    const rawUrl = this.config.get<string>('SUPABASE_URL')?.trim().replace(/\/+$/, '');
+    if (!rawUrl) {
+      return null;
+    }
+
+    try {
+      const url = new URL(rawUrl);
+      return url.protocol === 'https:' ? url.toString().replace(/\/$/, '') : null;
+    } catch {
+      return null;
+    }
   }
 
   private assertSupabaseAudience(payload: SupabaseJwtPayload) {
@@ -200,7 +332,9 @@ export class AuthTokenService {
   }
 
   private async syncSupabaseUser(payload: SupabaseJwtPayload, roles: Role[]) {
-    const phone = payload.phone?.trim() || `supabase:${payload.sub}`;
+    const phone = payload.phone
+      ? normalizeVietnamPhoneIdentifier(payload.phone)
+      : `supabase:${payload.sub}`;
     const email = payload.email?.trim() || null;
 
     const existingBySupabaseId = await this.prisma.user.findUnique({
@@ -275,5 +409,18 @@ export class AuthTokenService {
           : undefined,
       },
     });
+  }
+}
+
+function unverifiedJwtType(token: string) {
+  try {
+    const [, payloadSegment] = token.split('.');
+    if (!payloadSegment) {
+      return null;
+    }
+    const payload = JSON.parse(Buffer.from(payloadSegment, 'base64url').toString('utf8')) as { typ?: unknown };
+    return typeof payload.typ === 'string' ? payload.typ : null;
+  } catch {
+    return null;
   }
 }

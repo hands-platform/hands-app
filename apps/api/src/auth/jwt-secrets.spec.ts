@@ -1,5 +1,6 @@
 import {
   adminRealtimeTokenSecretFromConfig,
+  adminWebApiTokenSecretFromConfig,
   jwtAccessSecretFromConfig,
   jwtAccessSecretFromEnv,
   jwtRefreshSecretFromConfig,
@@ -55,6 +56,21 @@ describe('JWT secret resolution', () => {
         }),
       ),
     ).toThrow('ADMIN_REALTIME_TOKEN_SECRET must be separate from JWT_ACCESS_SECRET.');
+  });
+
+  it('keeps the Admin Web API token secret separate and production-required', () => {
+    expect(() => adminWebApiTokenSecretFromConfig(configReader({ NODE_ENV: 'production' }))).toThrow(
+      'ADMIN_WEB_API_TOKEN_SECRET must be configured with a non-placeholder value in production.',
+    );
+    expect(() =>
+      adminWebApiTokenSecretFromConfig(
+        configReader({
+          ADMIN_WEB_API_TOKEN_SECRET: 'shared-secret',
+          ADMIN_REALTIME_TOKEN_SECRET: 'shared-secret',
+          NODE_ENV: 'production',
+        }),
+      ),
+    ).toThrow('ADMIN_WEB_API_TOKEN_SECRET must be separate from ADMIN_REALTIME_TOKEN_SECRET.');
   });
 });
 

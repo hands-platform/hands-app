@@ -53,3 +53,16 @@ export class SupabaseExchangeDto {
   @IsEnum(Role)
   role?: Role;
 }
+
+export class AdminOperatorLoginDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(320)
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(256)
+  password!: string;
+}

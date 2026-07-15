@@ -12,7 +12,9 @@ import type { PaymentsService } from './payments.service';
 describe('PaymentsController', () => {
   const payments = {
     capture: vi.fn(),
+    customerCheckoutMethods: vi.fn(),
     handleCallback: vi.fn(),
+    handleVnpayIpn: vi.fn(),
     refund: vi.fn(),
     releaseForAdmin: vi.fn(),
     syncStatusForAdmin: vi.fn(),
@@ -39,6 +41,42 @@ describe('PaymentsController', () => {
     expect(rolesMetadata('callback')).toBeUndefined();
     expect(methodParamPipes('callback')).toEqual([expect.any(ParseEnumPipe)]);
     expect(payments.handleCallback).toHaveBeenCalledWith(PaymentMethod.MOMO, { orderId: 'booking-1' });
+  });
+
+  it('returns the customer checkout catalog behind the customer role guards', () => {
+    payments.customerCheckoutMethods.mockReturnValue({
+      currency: 'VND',
+      defaultMethod: PaymentMethod.CASH,
+      methods: [{ method: PaymentMethod.CASH, label: 'Cash', requiresRedirect: false }],
+    });
+
+    expect(controller.customerPaymentMethods()).toEqual({
+      currency: 'VND',
+      defaultMethod: PaymentMethod.CASH,
+      methods: [{ method: PaymentMethod.CASH, label: 'Cash', requiresRedirect: false }],
+    });
+    expect(routeMetadata('customerPaymentMethods')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customer/payment-methods',
+    });
+    expect(guardNames('customerPaymentMethods')).toEqual([JwtAuthGuard.name, RolesGuard.name]);
+    expect(rolesMetadata('customerPaymentMethods')).toEqual([Role.CUSTOMER]);
+  });
+
+  it('exposes the official VNPay GET IPN route without an application auth guard', async () => {
+    const query = { vnp_TxnRef: 'booking-1', vnp_TransactionStatus: '00' };
+    payments.handleVnpayIpn.mockResolvedValue({ RspCode: '00', Message: 'Confirm Success' });
+
+    await expect(controller.vnpayIpn(query)).resolves.toEqual({
+      RspCode: '00',
+      Message: 'Confirm Success',
+    });
+    expect(routeMetadata('vnpayIpn')).toEqual({
+      method: RequestMethod.GET,
+      path: 'payments/VNPAY/callback',
+    });
+    expect(guardNames('vnpayIpn')).toEqual([]);
+    expect(payments.handleVnpayIpn).toHaveBeenCalledWith(query);
   });
 
   it('keeps admin payment commands role protected', async () => {

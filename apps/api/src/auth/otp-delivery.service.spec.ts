@@ -110,6 +110,37 @@ describe('OtpDeliveryService', () => {
     expect(body.get('text')).toBe('Your HANDS verification code is 654321. It expires in 5 minutes.');
   });
 
+  it.each([
+    ['plain HTTP', 'http://api.example.test/sms'],
+    ['an invalid URL', 'not-a-url'],
+    ['URL credentials', 'https://user:password@api.example.test/sms'],
+  ])('rejects %s for generic SMS before making a network request', async (_label, url) => {
+    const fetchMock = mockFetch();
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'custom',
+        SMS_API_URL: url,
+        SMS_API_KEY: 'test-sms-api-key',
+      }).deliverOtp('+84900000001', '123456'),
+    ).rejects.toThrow('SMS service is not configured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unsafe Vonage URL before sending credentials', async () => {
+    const fetchMock = mockFetch();
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'vonage',
+        SMS_API_URL: 'http://rest.nexmo.com/sms/json',
+        SMS_API_KEY: '51830fa7',
+        SMS_API_SECRET: 'test-vonage-secret',
+      }).deliverOtp('+84900000001', '123456'),
+    ).rejects.toThrow('SMS service is not configured');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('fails safely when Vonage accepts the HTTP request but rejects the message', async () => {
     const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation();
     mockFetch({

@@ -332,6 +332,20 @@ enum MonthlyTaxClosingStatus {
   REVERSED
 }
 
+enum ManualWalletAdjustmentRequestStatus {
+  REQUESTED
+  EXECUTED
+  REJECTED
+  CANCELLED
+}
+
+enum PartnerBankDepositRequestStatus {
+  REQUESTED
+  EXECUTED
+  REJECTED
+  CANCELLED
+}
+
 enum AccountingJournalSourceType {
   BOOKING_SETTLEMENT
   BOOKING_SETTLEMENT_REVERSAL
@@ -691,6 +705,7 @@ model ProviderProfile {
   payoutBatches            ProviderPayoutBatch[]
   walletLedgerEntries      ProviderWalletLedgerEntry[]
   walletWithdrawalRequests ProviderWalletWithdrawalRequest[]
+  bankDepositRequests      PartnerBankDepositRequest[]
   accountingJournalBatches AccountingJournalBatch[]
   reports                  ProviderReport[]
   sanctions                ProviderSanction[]
@@ -1356,6 +1371,7 @@ model ProviderEarning {
   platformFeeLogs     ProviderPlatformFeeLog[]
   taxLogs             ProviderTaxLog[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
+  bankDepositCashDebtAllocations PartnerBankDepositCashDebtAllocation[]
   settlementSnapshot  BookingSettlementSnapshot?
 
   @@index([providerProfileId, createdAt])
@@ -1456,6 +1472,97 @@ model CustomerWalletLedgerEntry {
   @@index([bookingId])
   @@index([referralRewardId])
   @@index([type, createdAt])
+}
+
+model ManualWalletAdjustmentRequest {
+  id                     String                              @id @default(cuid())
+  ownerType              String
+  ownerId                String
+  direction              String
+  adjustmentType         String
+  amount                 Int
+  currency               String                              @default("VND")
+  reason                 String
+  monthlyPeriod          String?
+  attachmentUrl          String?
+  requestedBeforeBalance Int
+  requestedAfterBalance  Int
+  requestedWalletDelta   Int
+  accountingPreview      Json
+  affects                Json
+  requiresAttachment     Boolean                             @default(false)
+  status                 ManualWalletAdjustmentRequestStatus @default(REQUESTED)
+  requestedByAdminId     String
+  approvedByAdminId      String?
+  rejectedByAdminId      String?
+  decisionReason         String?
+  ledgerEntryId          String?
+  executedAt             DateTime?
+  rejectedAt             DateTime?
+  createdAt              DateTime                            @default(now())
+  updatedAt              DateTime                            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([ownerType, ownerId, status, createdAt])
+  @@index([requestedByAdminId, createdAt])
+  @@index([monthlyPeriod, status])
+}
+
+model PartnerBankDepositRequest {
+  id                               String                          @id @default(cuid())
+  providerProfileId                String
+  amount                           Int
+  currency                         String                          @default("VND")
+  bankTransactionId                String
+  depositDate                      DateTime
+  bankAccount                      String?
+  attachmentFileId                String?
+  attachmentUrl                   String?
+  notes                            String?
+  requestedBeforeBalance           Int
+  requestedAfterBalance            Int
+  requestedReceivableRecovery      Int
+  requestedWalletLiabilityIncrease Int
+  accountingPreview                Json
+  status                           PartnerBankDepositRequestStatus @default(REQUESTED)
+  requestedByAdminId               String
+  approvedByAdminId                String?
+  rejectedByAdminId                String?
+  decisionReason                   String?
+  ledgerEntryId                    String?
+  journalBatchId                   String?
+  executedAllocation               Json?
+  executedAt                       DateTime?
+  rejectedAt                       DateTime?
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
+  providerProfile                  ProviderProfile                 @relation(fields: [providerProfileId], references: [id], onDelete: Restrict)
+  cashDebtAllocations              PartnerBankDepositCashDebtAllocation[]
+
+  @@index([status, createdAt])
+  @@index([providerProfileId, status, createdAt])
+  @@index([bankTransactionId, status])
+  @@index([requestedByAdminId, createdAt])
+  @@index([depositDate, status])
+  @@unique([providerProfileId, bankTransactionId])
+}
+
+model PartnerBankDepositCashDebtAllocation {
+  id                          String                    @id @default(cuid())
+  partnerBankDepositRequestId String
+  providerEarningId           String
+  amount                      Int
+  currency                    String                    @default("VND")
+  allocatedByAdminId          String
+  notes                       String?
+  createdAt                   DateTime                  @default(now())
+  partnerBankDepositRequest   PartnerBankDepositRequest @relation(fields: [partnerBankDepositRequestId], references: [id], onDelete: Restrict, map: "pb_deposit_cash_debt_request_fkey")
+  providerEarning             ProviderEarning           @relation(fields: [providerEarningId], references: [id], onDelete: Restrict, map: "pb_deposit_cash_debt_earning_fkey")
+
+  @@unique([partnerBankDepositRequestId, providerEarningId], map: "pb_deposit_cash_debt_request_earning_key")
+  @@index([partnerBankDepositRequestId, createdAt], map: "pb_deposit_cash_debt_request_created_idx")
+  @@index([providerEarningId, createdAt], map: "pb_deposit_cash_debt_earning_created_idx")
+  @@index([allocatedByAdminId, createdAt], map: "pb_deposit_cash_debt_admin_created_idx")
 }
 
 model TaxPolicyVersion {
@@ -1945,6 +2052,8 @@ model WithholdingLog {
 }
 
 model Notification {
+  /// The partial index for Admin system incident date queries is maintained by migration
+  /// 20260714074000 because Prisma 6 cannot express partial-index predicates.
   id         String                 @id @default(cuid())
   userId     String
   type       String
@@ -2122,7 +2231,7 @@ model Coupon {
 model Refund {
   id        String   @id @default(cuid())
   bookingId String
-  paymentId String
+  paymentId String   @unique
   amount    Int
   currency  String   @default("VND")
   reason    String?
@@ -2133,7 +2242,6 @@ model Refund {
   payment   Payment  @relation(fields: [paymentId], references: [id])
 
   @@index([bookingId, createdAt])
-  @@index([paymentId, createdAt])
   @@index([status, createdAt])
 }
 
@@ -2145,6 +2253,8 @@ model AdminAuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
   actor     User     @relation("AdminActor", fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
 }
 
 model AdminCalendarEvent {

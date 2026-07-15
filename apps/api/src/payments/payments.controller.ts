@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseEnumPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseEnumPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { PaymentMethod, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -11,6 +11,13 @@ import { PaymentsService } from './payments.service';
 @Controller()
 export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}
+
+  @Get('customer/payment-methods')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  customerPaymentMethods() {
+    return this.payments.customerCheckoutMethods();
+  }
 
   @Post('admin/payments/:id/refund')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,5 +54,10 @@ export class PaymentsController {
   @Post('payments/:method/callback')
   callback(@Param('method', new ParseEnumPipe(PaymentMethod)) method: PaymentMethod, @Body() body: unknown) {
     return this.payments.handleCallback(method, body);
+  }
+
+  @Get('payments/VNPAY/callback')
+  vnpayIpn(@Query() query: Record<string, unknown>) {
+    return this.payments.handleVnpayIpn(query);
   }
 }

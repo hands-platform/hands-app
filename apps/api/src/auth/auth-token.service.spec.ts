@@ -49,6 +49,141 @@ describe('AuthTokenService Supabase roles', () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
+
+  it('falls back to the Supabase Auth server for signing-key tokens', async () => {
+    const payload = {
+      sub: 'supabase-signing-key-user',
+      aud: 'authenticated',
+      iss: 'https://projectref.supabase.co/auth/v1',
+      phone: '84900000004',
+      app_metadata: { role: Role.CUSTOMER },
+    };
+    const { jwt, prisma, service } = createService(payload);
+    jwt.verify.mockImplementation(() => {
+      throw new Error('legacy HMAC verification failed');
+    });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        id: payload.sub,
+        phone: payload.phone,
+        app_metadata: payload.app_metadata,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await expect(
+        service.authenticateSupabaseBearerToken('supabase-signing-key-token', [Role.CUSTOMER]),
+      ).resolves.toMatchObject({
+        activeRole: Role.CUSTOMER,
+        roles: [Role.CUSTOMER],
+        authProvider: 'supabase',
+        externalUserId: payload.sub,
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://projectref.supabase.co/auth/v1/user',
+        expect.objectContaining({
+          method: 'GET',
+          headers: {
+            apikey: 'sb_publishable_test',
+            authorization: 'Bearer supabase-signing-key-token',
+          },
+          redirect: 'error',
+        }),
+      );
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ phone: '+84900000004' }),
+        }),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('rejects a remotely validated token when the Auth user does not match its subject', async () => {
+    const payload = {
+      sub: 'supabase-token-subject',
+      aud: 'authenticated',
+      iss: 'https://projectref.supabase.co/auth/v1',
+      app_metadata: { role: Role.CUSTOMER },
+    };
+    const { jwt, prisma, service } = createService(payload);
+    jwt.verify.mockImplementation(() => {
+      throw new Error('legacy HMAC verification failed');
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: 'different-supabase-user' }),
+      }),
+    );
+
+    try {
+      await expect(
+        service.authenticateSupabaseBearerToken('subject-mismatch-token', [Role.CUSTOMER]),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('rejects a remotely validated token with an unexpected issuer', async () => {
+    const payload = {
+      sub: 'supabase-wrong-issuer-user',
+      aud: 'authenticated',
+      iss: 'https://other-project.supabase.co/auth/v1',
+      app_metadata: { role: Role.CUSTOMER },
+    };
+    const { jwt, prisma, service } = createService(payload);
+    jwt.verify.mockImplementation(() => {
+      throw new Error('legacy HMAC verification failed');
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ id: payload.sub }),
+      }),
+    );
+
+    try {
+      await expect(
+        service.authenticateSupabaseBearerToken('wrong-issuer-token', [Role.CUSTOMER]),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('fails closed when the Supabase Auth server rejects the token', async () => {
+    const payload = {
+      sub: 'supabase-rejected-user',
+      aud: 'authenticated',
+      app_metadata: { role: Role.CUSTOMER },
+    };
+    const { jwt, prisma, service } = createService(payload);
+    jwt.verify.mockImplementation(() => {
+      throw new Error('legacy HMAC verification failed');
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+
+    try {
+      await expect(
+        service.authenticateSupabaseBearerToken('rejected-token', [Role.CUSTOMER]),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe('AuthTokenService admin realtime socket tokens', () => {
@@ -137,9 +272,53 @@ describe('AuthTokenService admin realtime socket tokens', () => {
   });
 });
 
+describe('AuthTokenService Admin Web API tokens', () => {
+  it('authenticates a valid token as the database-backed operator identity', async () => {
+    const { prisma, service, token } = createAdminWebApiServiceAndToken();
+
+    await expect(service.authenticateBearerToken(token)).resolves.toMatchObject({
+      id: 'operator-user-1',
+      activeRole: Role.ADMIN,
+      roles: [Role.ADMIN],
+      authProvider: 'admin-web',
+    });
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: {
+        roles: { has: Role.ADMIN },
+        OR: [
+          { id: 'operator@hands.vn' },
+          { email: 'operator@hands.vn' },
+          { phone: 'operator@hands.vn' },
+          { adminOperatorCredential: { is: { email: 'operator@hands.vn' } } },
+        ],
+      },
+      select: { id: true, roles: true },
+    });
+  });
+
+  it.each([
+    ['wrong audience', { aud: 'hands-socket' }],
+    ['wrong scope', { scope: 'admin:realtime' }],
+    ['wrong type', { typ: 'access' }],
+    ['wrong role', { role: Role.CUSTOMER }],
+  ])('rejects an Admin Web API token with %s', async (_label, overrides) => {
+    const { service, signToken } = createAdminWebApiServiceAndToken();
+
+    await expect(service.authenticateBearerToken(signToken(overrides))).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects a signed token when the operator no longer has Admin access', async () => {
+    const { prisma, service, token } = createAdminWebApiServiceAndToken();
+    prisma.user.findFirst.mockResolvedValue(null);
+
+    await expect(service.authenticateBearerToken(token)).rejects.toThrow(UnauthorizedException);
+  });
+});
+
 function createService(payload: Record<string, unknown>) {
   const jwt = {
     verify: vi.fn().mockReturnValue(payload),
+    decode: vi.fn().mockReturnValue(payload),
   };
   const config = {
     get: vi.fn((key: string) => {
@@ -148,6 +327,12 @@ function createService(payload: Record<string, unknown>) {
       }
       if (key === 'SUPABASE_JWT_AUDIENCE') {
         return 'authenticated';
+      }
+      if (key === 'SUPABASE_URL') {
+        return 'https://projectref.supabase.co';
+      }
+      if (key === 'SUPABASE_ANON_KEY') {
+        return 'sb_publishable_test';
       }
       return undefined;
     }),
@@ -221,4 +406,38 @@ function createAdminRealtimeServiceAndToken() {
     signAdminRealtimeToken,
     signNestToken,
   };
+}
+
+function createAdminWebApiServiceAndToken() {
+  const jwt = new JwtService();
+  const config = {
+    get: vi.fn((key: string) => {
+      if (key === 'ADMIN_WEB_API_TOKEN_SECRET') return 'test-admin-web-api-secret';
+      if (key === 'JWT_ACCESS_SECRET') return 'test-jwt-access-secret';
+      if (key === 'ADMIN_REALTIME_TOKEN_SECRET') return 'test-admin-realtime-secret';
+      if (key === 'ADMIN_WEB_SESSION_COOKIE_SECRET') return 'test-session-cookie-secret';
+      return undefined;
+    }),
+  };
+  const prisma = {
+    user: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'operator-user-1', roles: [Role.ADMIN] }),
+    },
+  };
+  const service = new AuthTokenService(jwt, config as never, prisma as never);
+  const signToken = (overrides: Record<string, unknown> = {}) =>
+    jwt.sign(
+      {
+        sub: 'operator@hands.vn',
+        typ: 'admin-web-api',
+        aud: 'hands-api',
+        scope: 'admin:api',
+        role: Role.ADMIN,
+        jti: 'admin-web-jti',
+        ...overrides,
+      },
+      { secret: 'test-admin-web-api-secret', expiresIn: '5m' },
+    );
+
+  return { jwt, prisma, service, signToken, token: signToken() };
 }

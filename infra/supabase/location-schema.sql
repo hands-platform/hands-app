@@ -83,11 +83,16 @@ alter table public.providers enable row level security;
 alter table public.provider_locations enable row level security;
 alter table public.customer_selected_locations enable row level security;
 
--- MVP policy examples. Tighten these once real Supabase auth claims are mapped.
+-- Legacy draft safety: public provider metadata may be visible, but exact
+-- locations and the radius RPC remain server-only. The generated staging pack
+-- uses hands-core-schema.sql instead of this file.
 create policy if not exists "public read active providers"
   on public.providers for select
   using (true);
 
-create policy if not exists "public read provider locations"
-  on public.provider_locations for select
-  using (updated_at >= now() - interval '24 hours');
+drop policy if exists "public read provider locations" on public.provider_locations;
+revoke select on public.provider_locations from anon;
+revoke execute on function public.nearby_providers(double precision, double precision, integer)
+from public, anon, authenticated;
+grant execute on function public.nearby_providers(double precision, double precision, integer)
+to service_role;

@@ -68,15 +68,18 @@ export function customerBookingCancelledNotification(input: {
   userId: string;
   bookingId: string;
   releasedPayment: boolean;
+  refundRequested?: boolean;
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
     targetRole: Role.CUSTOMER,
     type: 'booking.cancelled',
     title: 'Booking cancelled',
-    body: input.releasedPayment
-      ? 'Your request has been cancelled and the payment hold was released.'
-      : 'Your request has been cancelled.',
+    body: input.refundRequested
+      ? 'Your request has been cancelled and the captured payment is queued for refund review.'
+      : input.releasedPayment
+        ? 'Your request has been cancelled and the payment hold was released.'
+        : 'Your request has been cancelled.',
     data: { bookingId: input.bookingId },
   };
 }

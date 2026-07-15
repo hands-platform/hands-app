@@ -60,12 +60,9 @@ type SettlementPrismaClient = PrismaService | Prisma.TransactionClient;
 export class SettlementsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async upsertBookingSettlementSnapshot(
-    input: UpsertBookingSettlementSnapshotInput,
-    client: SettlementPrismaClient = this.prisma,
-  ) {
-    await this.ensureSnapshotIsEditable(input.bookingId, client);
-
+  previewBookingSettlementSnapshot(input: UpsertBookingSettlementSnapshotInput) {
+    const currency = input.currency ?? 'VND';
+    const monthlyPeriod = settlementMonthlyPeriod(input.occurredAt, input.timeZone ?? undefined);
     const paymentFeeRateBps = input.paymentFeeRateBps ?? 0;
     const paymentFeeFixedAmount = input.paymentFeeFixedAmount ?? 0;
     const amounts = calculateBookingSettlementAmounts({
@@ -80,9 +77,49 @@ export class SettlementsService {
       paymentFeeFixedAmount,
       partnerTaxableRevenueAmount: input.partnerTaxableRevenueAmount ?? undefined,
     });
-    const sourceKey = bookingSettlementSourceKey(input.bookingId);
-    const monthlyPeriod = settlementMonthlyPeriod(input.occurredAt, input.timeZone ?? undefined);
     const metadata = settlementSnapshotMetadata(input.metadata, amounts.partnerTaxableRevenue);
+    const journal = buildBookingSettlementJournal({
+      bookingId: input.bookingId,
+      companyOutputVat: amounts.companyOutputVat,
+      currency,
+      customerPaymentAmount: input.customerPaymentAmount,
+      metadata,
+      partnerPayoutAmount: input.partnerPayoutAmount,
+      partnerWithholdingTotal: amounts.partnerWithholdingTotal,
+      paymentMethod: input.paymentMethod as SettlementPaymentMethod,
+      paymentProcessingFee: amounts.paymentProcessingFee,
+      platformFeeNetRevenue: amounts.platformFeeNetRevenue,
+    });
+
+    return {
+      amounts,
+      currency,
+      customerPaymentAmount: input.customerPaymentAmount,
+      journal,
+      metadata,
+      monthlyPeriod,
+      partnerPayoutAmount: input.partnerPayoutAmount,
+      paymentFeeFixedAmount,
+      paymentFeePayer: input.paymentFeePayer ?? PaymentFeePayer.HANDS,
+      paymentFeePolicyVersionId: input.paymentFeePolicyVersionId ?? null,
+      paymentFeeRateBps,
+      paymentFeeRuleSnapshot: input.paymentFeeRuleSnapshot ?? null,
+      paymentFeeTreatment: input.paymentFeeTreatment ?? PaymentFeeTreatment.OPERATING_EXPENSE,
+      platformFeeGross: input.platformFeeGross,
+      platformFeePolicyVersionId: input.platformFeePolicyVersionId ?? null,
+      platformFeeRuleSnapshot: input.platformFeeRuleSnapshot ?? null,
+      platformVatRateBps: input.platformVatRateBps,
+    };
+  }
+
+  async upsertBookingSettlementSnapshot(
+    input: UpsertBookingSettlementSnapshotInput,
+    client: SettlementPrismaClient = this.prisma,
+  ) {
+    const preview = this.previewBookingSettlementSnapshot(input);
+    const { amounts, currency, metadata, monthlyPeriod, paymentFeeFixedAmount, paymentFeeRateBps } = preview;
+    await this.ensureSnapshotIsEditable(input.bookingId, monthlyPeriod, currency, client);
+    const sourceKey = bookingSettlementSourceKey(input.bookingId);
     const customerWalletLedgerEntryIds = await this.customerWalletLedgerEntryIdsForSettlement(
       input,
       amounts.customerWalletDebitAmount,
@@ -96,7 +133,7 @@ export class SettlementsService {
       paymentId: input.paymentId ?? null,
       providerEarningId: input.providerEarningId ?? null,
       paymentMethod: input.paymentMethod as PaymentMethod,
-      currency: input.currency ?? 'VND',
+      currency,
       customerPaymentAmount: input.customerPaymentAmount,
       partnerPayoutAmount: input.partnerPayoutAmount,
       partnerTaxableRevenue: amounts.partnerTaxableRevenue,
@@ -143,7 +180,12 @@ export class SettlementsService {
     return snapshot;
   }
 
-  private async ensureSnapshotIsEditable(bookingId: string, client: SettlementPrismaClient) {
+  private async ensureSnapshotIsEditable(
+    bookingId: string,
+    monthlyPeriod: string,
+    currency: string,
+    client: SettlementPrismaClient,
+  ) {
     const bookingSettlementSnapshot = client.bookingSettlementSnapshot as unknown as {
       findUnique?: (args: {
         where: { bookingId: string };
@@ -175,6 +217,36 @@ export class SettlementsService {
     if (
       existing?.monthlyClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
       existing?.monthlyClosing?.status === MonthlyTaxClosingStatus.PAID
+    ) {
+      throw new BadRequestException(
+        'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
+      );
+    }
+
+    const monthlyTaxClosing = client.monthlyTaxClosing as unknown as
+      | {
+      findUnique?: (args: {
+        where: { period_currency: { period: string; currency: string } };
+        select: { status: true };
+      }) => Promise<{ status: MonthlyTaxClosingStatus } | null>;
+        }
+      | undefined;
+    if (!monthlyTaxClosing?.findUnique) {
+      return;
+    }
+
+    const targetClosing = await monthlyTaxClosing.findUnique({
+      where: { period_currency: { period: monthlyPeriod, currency } },
+      select: { status: true },
+    });
+    if (targetClosing?.status === MonthlyTaxClosingStatus.CLOSED) {
+      throw new BadRequestException(
+        'Closed monthly periods require reversal entries, not direct settlement snapshot edits.',
+      );
+    }
+    if (
+      targetClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
+      targetClosing?.status === MonthlyTaxClosingStatus.PAID
     ) {
       throw new BadRequestException(
         'Finalized monthly periods require reversal entries, not direct settlement snapshot edits.',
@@ -651,7 +723,9 @@ export function customerWalletPaymentSourceKey(bookingId: string) {
   return `customer-wallet-payment:${bookingId}:settlement`;
 }
 
-export function settlementMonthlyPeriod(date: Date, timeZone = 'Asia/Bangkok') {
+export const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+export function settlementMonthlyPeriod(date: Date, timeZone = VIETNAM_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',

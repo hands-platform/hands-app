@@ -5,6 +5,7 @@ type ConfigReader = {
 const DEV_JWT_ACCESS_SECRET = 'dev-access-secret';
 const DEV_JWT_REFRESH_SECRET = 'dev-refresh-secret';
 const DEV_ADMIN_REALTIME_TOKEN_SECRET = 'dev-admin-realtime-token-secret';
+const DEV_ADMIN_WEB_API_TOKEN_SECRET = 'dev-admin-web-api-token-secret';
 const INSECURE_SECRET_VALUES = new Set(['change-me', 'changeme', 'secret', 'password']);
 
 export function jwtAccessSecretFromEnv(env: NodeJS.ProcessEnv = process.env) {
@@ -40,6 +41,21 @@ export function adminRealtimeTokenSecretFromConfig(config: ConfigReader) {
   return secret;
 }
 
+export function adminWebApiTokenSecretFromConfig(config: ConfigReader) {
+  const secret = jwtSecretOrDevFallback(
+    'ADMIN_WEB_API_TOKEN_SECRET',
+    config.get<string>('ADMIN_WEB_API_TOKEN_SECRET'),
+    config.get<string>('NODE_ENV'),
+  );
+  for (const name of ['JWT_ACCESS_SECRET', 'ADMIN_REALTIME_TOKEN_SECRET', 'ADMIN_WEB_SESSION_COOKIE_SECRET']) {
+    const value = config.get<string>(name)?.trim();
+    if (value && value === secret) {
+      throw new Error(`ADMIN_WEB_API_TOKEN_SECRET must be separate from ${name}.`);
+    }
+  }
+  return secret;
+}
+
 function jwtSecretOrDevFallback(name: string, value: string | undefined, nodeEnv: string | undefined) {
   const trimmed = value?.trim();
   if (trimmed && !INSECURE_SECRET_VALUES.has(trimmed.toLowerCase())) {
@@ -61,6 +77,8 @@ function devSecretFor(name: string) {
       return DEV_JWT_REFRESH_SECRET;
     case 'ADMIN_REALTIME_TOKEN_SECRET':
       return DEV_ADMIN_REALTIME_TOKEN_SECRET;
+    case 'ADMIN_WEB_API_TOKEN_SECRET':
+      return DEV_ADMIN_WEB_API_TOKEN_SECRET;
     default:
       return DEV_JWT_ACCESS_SECRET;
   }

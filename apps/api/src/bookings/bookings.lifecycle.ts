@@ -1,4 +1,4 @@
-import { BookingStatus, PaymentStatus } from '@prisma/client';
+import { BookingStatus } from '@prisma/client';
 
 const MINUTE_MS = 60_000;
 
@@ -40,6 +40,5 @@ export function bookingServiceStartedUpdateData() {
 export function bookingCompletedUpdateData() {
   return {
     status: BookingStatus.COMPLETED,
-    payment: { update: { status: PaymentStatus.CAPTURED } },
   };
 }

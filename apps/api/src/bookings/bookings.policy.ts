@@ -217,7 +217,13 @@ export function assertBookingServiceId(serviceId: unknown) {
 }
 
 export function assertBookingPaymentMethod(paymentMethod: unknown) {
-  if (!Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
+  const checkoutMethods: readonly PaymentMethod[] = [
+    PaymentMethod.CASH,
+    PaymentMethod.MOMO,
+    PaymentMethod.VNPAY,
+    PaymentMethod.CARD,
+  ];
+  if (!checkoutMethods.includes(paymentMethod as PaymentMethod)) {
     throw new BadRequestException('Valid paymentMethod is required');
   }
 }
