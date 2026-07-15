@@ -59,10 +59,10 @@ describe('customer activity export route', () => {
     mockedAdminGet.mockResolvedValue({
       bookings: [
         {
-          createdAt: '2026-07-02T01:00:00.000Z',
+          createdAt: '2026-07-12T01:00:00.000Z',
           id: 'booking-1',
           status: 'CREATED',
-          updatedAt: '2026-07-02T02:00:00.000Z',
+          updatedAt: '2026-07-12T02:00:00.000Z',
         },
       ],
       id: 'customer-1',

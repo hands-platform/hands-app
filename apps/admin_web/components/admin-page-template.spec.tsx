@@ -100,7 +100,9 @@ describe('AdminPageTemplate', () => {
           helper: 'Clean route.',
           href: '/notifications?review=sent',
           iconSize: 18,
+          kind: 'period',
           label: 'Sent',
+          scope: 'Today',
           value: '8',
         },
       ],
@@ -111,6 +113,8 @@ describe('AdminPageTemplate', () => {
     expect(grid.props['aria-label']).toBe('Notification metrics');
     expect(grid.props.children).toHaveLength(2);
     expect(grid.props.children[1].props.className).toContain('is-success');
+    expect(grid.props.children[1].props.kind).toBe('period');
+    expect(grid.props.children[1].props.scope).toBe('Today');
   });
 
   it('renders metric values through the shared Vuexy date atom when raw timestamps are provided', () => {

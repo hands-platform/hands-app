@@ -7,6 +7,7 @@ describe('Admin web session login route', () => {
     process.env = { ...originalEnv };
     vi.resetModules();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('issues an HttpOnly admin session cookie for a stored operator credential verified by the API', async () => {
@@ -59,11 +60,10 @@ describe('Admin web session login route', () => {
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3000/api/admin/users/admin-operator-login',
+      'http://localhost:3000/api/auth/admin-operator-login',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          authorization: 'Bearer server-admin-token',
           'content-type': 'application/json',
         }),
       }),
@@ -83,17 +83,19 @@ describe('Admin web session login route', () => {
     });
   });
 
-  it('issues an HttpOnly admin session cookie for valid credentials', async () => {
+  it('issues an HttpOnly admin session cookie for explicit non-production fallback credentials', async () => {
     const salt = 'test-admin-login-salt';
     process.env = {
       ...process.env,
       ADMIN_WEB_LOGIN_EMAIL: 'admin@hands.vn',
       ADMIN_WEB_LOGIN_PASSWORD_HASH: hashAdminWebPasswordForEnv('correct horse battery staple', salt),
       ADMIN_WEB_LOGIN_PASSWORD_SALT: salt,
+      ADMIN_WEB_ALLOW_DEV_LOGIN: 'true',
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       ADMIN_WEB_SESSION_TTL_SECONDS: '3600',
-      NODE_ENV: 'production',
+      NODE_ENV: 'test',
     };
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
     const { POST } = await import('./route');
 
     const response = await POST(
@@ -127,7 +129,7 @@ describe('Admin web session login route', () => {
     expect(body.token).toBeUndefined();
     expect(setCookie).toContain('hands_admin_session=');
     expect(setCookie).toContain('HttpOnly');
-    expect(setCookie).toContain('Secure');
+    expect(setCookie).not.toContain('Secure');
     expect(setCookie.toLowerCase()).toContain('samesite=lax');
     expect(setCookie).toContain('Path=/');
     expect(setCookie).toContain('Max-Age=3600');
@@ -146,7 +148,7 @@ describe('Admin web session login route', () => {
     expect(sessionPayload.secret).toBeUndefined();
   });
 
-  it('falls back to configured master credentials when the stored operator API does not authenticate them', async () => {
+  it('does not fall back to configured master credentials when the stored operator API rejects them', async () => {
     const salt = 'test-admin-login-salt';
     process.env = {
       ...process.env,
@@ -182,18 +184,18 @@ describe('Admin web session login route', () => {
     );
     const body = (await response.json()) as {
       authenticated?: boolean;
+      error?: string;
       role?: string;
       sub?: string;
       token?: string;
     };
     const setCookie = response.headers.get('set-cookie') ?? '';
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(401);
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(body).toMatchObject({ authenticated: true, role: 'ADMIN', sub: 'admin@hands.vn' });
+    expect(body).toMatchObject({ error: 'INVALID_ADMIN_CREDENTIALS' });
     expect(body.token).toBeUndefined();
-    expect(setCookie).toContain('hands_admin_session=');
-    expect(setCookie).toContain('HttpOnly');
+    expect(setCookie).toBe('');
   });
 
   it('rejects an invalid password without leaking credential details', async () => {
@@ -206,6 +208,10 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ error: 'Invalid admin operator credentials' }, { status: 401 })),
+    );
     const { POST } = await import('./route');
 
     const response = await POST(
@@ -270,6 +276,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
     const { POST } = await import('./route');
 
     const response = await POST(
@@ -306,6 +313,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'production',
     };
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
     const { POST } = await import('./route');
 
     const response = await POST(
@@ -339,6 +347,7 @@ describe('Admin web session login route', () => {
       ADMIN_WEB_SESSION_COOKIE_SECRET: 'test-admin-session-secret',
       NODE_ENV: 'test',
     };
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Admin API unavailable')));
     const { POST } = await import('./route');
 
     const response = await POST(

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(csv, {
     headers: {
       ...NO_STORE_HEADERS,
-      'content-disposition': `attachment; filename="hands-booking-settlement-audit-${filters.range}-${filters.review}.csv"`,
+      'content-disposition': `attachment; filename="hands-booking-settlement-audit-${filters.period ?? filters.range}-${filters.review}.csv"`,
       'content-type': 'text/csv; charset=utf-8',
     },
   });

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AdminFormInput } from './admin-form-controls';
+import { AdminFormInput, AdminFormSelect } from './admin-form-controls';
 import { AdminSectionHeader } from './admin-page-template';
 import { AdminDialogCard } from './admin-surface';
 import type { StatusBadgeTone } from './status-badge';
@@ -23,6 +23,14 @@ type ConfirmDialogTextInput = {
   readonly required?: boolean;
 };
 
+type ConfirmDialogSelectInput = {
+  readonly defaultValue?: string;
+  readonly label: string;
+  readonly name: string;
+  readonly options: readonly { readonly label: string; readonly value: string }[];
+  readonly required?: boolean;
+};
+
 type ConfirmDialogSupportingLink = {
   readonly description?: string;
   readonly href: string;
@@ -40,6 +48,7 @@ type ConfirmDialogProps = {
   readonly id: string;
   readonly loading?: boolean;
   readonly loadingLabel?: string;
+  readonly selectInputs?: readonly ConfirmDialogSelectInput[];
   readonly supportingLinks?: readonly ConfirmDialogSupportingLink[];
   readonly textInputs?: readonly ConfirmDialogTextInput[];
   readonly title: string;
@@ -85,6 +94,7 @@ export function ConfirmDialog({
   id,
   loading = false,
   loadingLabel = 'Working...',
+  selectInputs = [],
   supportingLinks = [],
   textInputs = [],
   title,
@@ -124,6 +134,18 @@ export function ConfirmDialog({
               minLength={input.minLength}
               name={input.name}
               placeholder={input.placeholder}
+              required={input.required}
+            />
+          ))}
+          {selectInputs.map((input) => (
+            <AdminFormSelect
+              className="confirm-dialog-label"
+              defaultValue={input.defaultValue}
+              key={input.name}
+              label={input.label}
+              labelVisibility="visible"
+              name={input.name}
+              options={input.options}
               required={input.required}
             />
           ))}

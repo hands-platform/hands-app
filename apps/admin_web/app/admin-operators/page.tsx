@@ -4,10 +4,9 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormCheckbox, AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
-import { AdminCard, AdminCardGrid, AdminFormCard } from '../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminFormCard, AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -46,22 +45,30 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
       metrics={[
         {
           helper: 'Admin role users returned by the bounded Admin API.',
+          kind: 'record',
           label: 'Admin operators',
+          scope: 'All records',
           value: adminUsers.length,
         },
         {
           helper: 'Operators with an active Admin Web or app session record.',
+          kind: 'live',
           label: 'Active sessions',
+          scope: 'Live',
           value: activeSessionCount,
         },
         {
           helper: 'Operators allowed to manage all admin operator access.',
+          kind: 'record',
           label: 'Master admins',
+          scope: 'Access records',
           value: masterAdminCount,
         },
         {
           helper: 'Second-control admins for money, tax, payout, and bank actions.',
+          kind: 'record',
           label: 'Finance approvers',
+          scope: 'Role records',
           value: financeApproverCount,
         },
       ]}
@@ -69,11 +76,11 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
     >
       {params.operatorNotice ? <OperatorNotice notice={params.operatorNotice} /> : null}
 
-      <AdminFilterPanel
+      <AdminSection
         className="admin-operator-master-card admin-mb-16"
         description="Create admin operators, grant category access, or revoke admin access without deleting the underlying user account."
-        resultLabel="Master admin control"
-        resultTone="info"
+        statusLabel="Master admin control"
+        statusTone="info"
         title="Master admin control"
       >
         <AdminCardGrid ariaLabel="Operator account controls" className="admin-operator-control-grid">
@@ -99,13 +106,13 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             </AdminFormControlButton>
           </AdminFormCard>
         </AdminCardGrid>
-      </AdminFilterPanel>
+      </AdminSection>
 
-      <AdminFilterPanel
+      <AdminSection
         className="admin-operator-permission-card admin-mb-16"
         description="Category permissions are stored separately from the broad Admin role so each operator can be granted only the page groups they need."
-        resultLabel={`${adminOperatorPermissionCategoryDefinitions.length} categories`}
-        resultTone="info"
+        statusLabel={`${adminOperatorPermissionCategoryDefinitions.length} categories`}
+        statusTone="info"
         title="Category permissions"
       >
         <AdminCardGrid ariaLabel="Operator permission categories" className="admin-operator-permission-grid">
@@ -120,7 +127,7 @@ export default async function AdminOperatorsPage({ searchParams }: AdminOperator
             </AdminCard>
           ))}
         </AdminCardGrid>
-      </AdminFilterPanel>
+      </AdminSection>
 
       <AdminTablePanel
         description="Recent Admin Web page visits and server actions are stored in the shared audit log by resolved operator identity."
@@ -287,13 +294,16 @@ function OperatorNotice({ notice }: { readonly notice: string }) {
     }[notice] ?? 'Operator action finished.';
 
   return (
-    <AdminFilterPanel
+    <AdminNoticeCard
       className="admin-mb-16"
-      description={message}
-      resultLabel={notice}
-      resultTone={notice === 'created' || notice === 'updated' || notice === 'revoked' ? 'success' : 'warning'}
-      title="Operator action"
-    />
+      tone={notice === 'created' || notice === 'updated' || notice === 'revoked' ? 'success' : 'warning'}
+    >
+      <strong>Operator action</strong>
+      <p className="muted">{message}</p>
+      <StatusBadge tone={notice === 'created' || notice === 'updated' || notice === 'revoked' ? 'success' : 'warning'}>
+        {notice}
+      </StatusBadge>
+    </AdminNoticeCard>
   );
 }
 

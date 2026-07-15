@@ -3,7 +3,7 @@ import type {
   AdminBookingMatchSource,
   AdminBookingMatchingEvidence,
 } from './admin-api';
-import { adminPostOrThrow, getAdminAccessToken } from './admin-api';
+import { AdminApiRequestError, adminPostOrThrow, getAdminAccessToken } from './admin-api';
 import { ADMIN_WEB_SESSION_COOKIE_NAME, createAdminWebSessionCookieValue } from './admin-session';
 import { headers } from 'next/headers';
 
@@ -45,29 +45,57 @@ describe('admin api auth guard', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not use the local demo OTP fallback in production', async () => {
+  it('rejects Admin API access without an operator session even when a broad token is configured', async () => {
     process.env = {
       ...process.env,
-      ADMIN_ACCESS_TOKEN: undefined,
+      ADMIN_ACCESS_TOKEN: 'legacy-broad-admin-token',
       NODE_ENV: 'production',
     };
     const fetchMock = vi.spyOn(global, 'fetch');
 
-    await expect(getAdminAccessToken()).rejects.toThrow(
-      'ADMIN_ACCESS_TOKEN is required for Admin Web API access',
-    );
+    await expect(getAdminAccessToken()).rejects.toThrow('Admin Web session is required for Admin API access');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects an expired local admin token instead of using mobile OTP fallback', async () => {
+  it('issues a short-lived scoped token from the current operator session instead of returning the broad token', async () => {
+    const sessionSecret = 'test-session-secret';
     process.env = {
       ...process.env,
-      ADMIN_ACCESS_TOKEN: testJwt(Math.floor(Date.now() / 1000) - 60),
-      NODE_ENV: 'development',
+      ADMIN_ACCESS_TOKEN: 'legacy-broad-admin-token',
+      ADMIN_WEB_API_TOKEN_SECRET: 'test-admin-web-api-secret',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+      NODE_ENV: 'production',
     };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'operator-1',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
     const fetchMock = vi.spyOn(global, 'fetch');
 
-    await expect(getAdminAccessToken()).rejects.toThrow('ADMIN_ACCESS_TOKEN is expired');
+    const token = await getAdminAccessToken();
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')) as {
+      aud: string;
+      exp: number;
+      iat: number;
+      role: string;
+      scope: string;
+      sub: string;
+      typ: string;
+    };
+
+    expect(token).not.toBe(process.env.ADMIN_ACCESS_TOKEN);
+    expect(payload).toMatchObject({
+      aud: 'hands-api',
+      role: 'ADMIN',
+      scope: 'admin:api',
+      sub: 'operator-1',
+      typ: 'admin-web-api',
+    });
+    expect(payload.exp - payload.iat).toBe(300);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -205,16 +233,53 @@ describe('admin api auth guard', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   });
+
+  it('retains structured API error evidence on the server for bounded operator recovery flows', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        return new Response('null', { headers: { 'content-type': 'application/json' }, status: 200 });
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      if (url.endsWith('/admin/bank-reconciliation/transactions')) {
+        return Response.json(
+          {
+            code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
+            candidates: [{ id: 'bank-tx-existing' }],
+          },
+          { status: 409 },
+        );
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    const error = await adminPostOrThrow('/admin/bank-reconciliation/transactions', {}).catch(
+      (caught) => caught,
+    );
+    expect(error).toBeInstanceOf(AdminApiRequestError);
+    expect(error).toMatchObject({
+      status: 409,
+      payload: {
+        code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
+        candidates: [{ id: 'bank-tx-existing' }],
+      },
+    });
+  });
 });
-
-function testJwt(exp: number) {
-  return [
-    base64UrlJson({ alg: 'none', typ: 'JWT' }),
-    base64UrlJson({ exp }),
-    'signature',
-  ].join('.');
-}
-
-function base64UrlJson(value: unknown) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url');
-}

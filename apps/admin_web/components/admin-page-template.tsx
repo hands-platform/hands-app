@@ -5,7 +5,7 @@ import { DateTimeText } from './date-time-text';
 
 export type AdminPageMetric = Pick<
   ComponentProps<typeof AdminKpiCard>,
-  'className' | 'href' | 'icon' | 'iconSize' | 'label' | 'value'
+  'className' | 'href' | 'icon' | 'iconSize' | 'kind' | 'label' | 'scope' | 'value'
 > & {
   readonly helper?: ComponentProps<typeof AdminKpiCard>['helper'];
   readonly valueDateTimeFallback?: string;
@@ -91,8 +91,10 @@ export function AdminMetricGrid({ ariaLabel, className, metrics }: AdminMetricGr
           href={metric.href}
           icon={metric.icon}
           iconSize={metric.iconSize}
+          kind={metric.kind}
           key={`${metric.label}-${index}`}
           label={metric.label}
+          scope={metric.scope}
           value={adminMetricValue(metric)}
         />
       ))}

@@ -189,6 +189,11 @@ export const adminNavSections: AdminNavSection[] = [
           'Gross customer payments, platform fee revenue, Partner payable, wallet exposure, refunds, tax, and reconciliation risk.',
       },
       {
+        href: '/finance-tax/approval-queue',
+        label: 'Approval Queue',
+        description: 'Payment fee policy reviews, Partner withdrawal work, and recent wallet approval evidence.',
+      },
+      {
         href: '/finance-closeout',
         label: 'Finance Closeout',
         description: 'Daily, weekly, monthly, and manual closeout view.',
@@ -207,6 +212,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/cash-settlements',
         label: 'Cash Debt',
         description: 'Clear Partner wallet debt from cash bookings.',
+      },
+      {
+        href: '/finance-tax/partner-bank-deposits',
+        label: 'Partner Bank Deposits',
+        description: 'Bank evidence, approved wallet credits, GL posting, and explicit cash-debt allocation history.',
       },
       {
         href: '/wallet-adjustments',
@@ -355,6 +365,11 @@ export const developerSystemNavSection: AdminNavSection = {
       href: '/app-sessions',
       label: 'App Session Diagnostics',
       description: 'Customer and Partner app session diagnostics for system investigation.',
+    },
+    {
+      href: '/background-jobs',
+      label: 'Background Jobs',
+      description: 'Queue workers, recurring jobs, retained failures, and retry health.',
     },
   ],
 };

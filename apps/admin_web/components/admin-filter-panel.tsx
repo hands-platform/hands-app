@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { StatusBadge, type StatusBadgeTone } from './status-badge';
 
 type AdminFilterPanelProps = {
+  readonly actions?: ReactNode;
+  readonly bodyClassName?: string;
   readonly children?: ReactNode;
   readonly className?: string;
   readonly description?: ReactNode;
@@ -14,6 +16,8 @@ type AdminFilterPanelProps = {
 };
 
 export function AdminFilterPanel({
+  actions,
+  bodyClassName,
   children,
   className,
   description,
@@ -37,13 +41,18 @@ export function AdminFilterPanel({
           <h2 id={headingId}>{title}</h2>
           {description ? <p className="muted">{description}</p> : null}
         </div>
-        {resultLabel ? (
+        {resultLabel || actions ? (
           <div className="admin-filter-panel-actions">
-            <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge>
+            {resultLabel ? <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge> : null}
+            {actions}
           </div>
         ) : null}
       </div>
-      {hasBody ? <div className="admin-filter-panel-body admin-section-body">{children}</div> : null}
+      {hasBody ? (
+        <div className={joinClassNames('admin-filter-panel-body admin-section-body', bodyClassName)}>
+          {children}
+        </div>
+      ) : null}
       {footer ? <div className="admin-filter-panel-footer admin-section-footer">{footer}</div> : null}
     </section>
   );

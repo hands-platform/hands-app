@@ -449,6 +449,39 @@ describe('Admin surface components', () => {
     expect(children[3].props.className).toBe('button button-secondary admin-inline-action');
   });
 
+  it('avoids nested anchors when a clickable ops card contains linked breakdown items', () => {
+    const card = AdminActionCard({
+      actionLabel: 'Open queue',
+      actionLabelClassName: 'button button-secondary admin-inline-action',
+      detail: 'Operators can open a summary or individual breakdown filters.',
+      href: '/notifications',
+      title: 'Notification delivery',
+      variant: 'ops-task',
+      children: (
+        <AdminTaskBreakdown
+          items={[
+            {
+              href: '/notifications?review=failed',
+              label: 'Failed sends',
+              tone: 'danger',
+              value: '2',
+            },
+          ]}
+        />
+      ),
+    });
+
+    expect(card.type).toBe('div');
+    expect(card.props.className).toBe('ops-task-card');
+    const children = card.props.children.filter(Boolean);
+    const action = children[children.length - 1];
+
+    expect(action.props).toMatchObject({
+      className: 'button button-secondary admin-inline-action',
+      href: '/notifications',
+    });
+  });
+
   it('supports value-first ops task cards without forcing an empty heading', () => {
     const card = AdminActionCard({
       detail: 'No marketplace participant action is needed.',

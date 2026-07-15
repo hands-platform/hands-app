@@ -1,10 +1,16 @@
-import type { ReactNode } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import Link from 'next/link';
 
 import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, CircleCheck, Info, LoaderCircle, TriangleAlert } from 'lucide-react';
 
-import { MetricCard, type MetricCardProps } from './metric-card';
+import {
+  MetricCard,
+  inferredMetricKind,
+  inferredMetricScope,
+  type MetricCardKind,
+  type MetricCardProps,
+} from './metric-card';
 import { AdminSignal, StatusBadge, adminSignalToneFromClassName, type StatusBadgeTone } from './status-badge';
 
 type AdminCardProps = {
@@ -133,6 +139,9 @@ type AdminSectionProps = {
 
 type AdminKpiCardProps = MetricCardProps;
 
+export { inferredMetricKind, inferredMetricScope };
+export type { MetricCardKind };
+
 type AdminActionCardProps = {
   readonly actionLabel?: ReactNode;
   readonly actionLabelClassName?: string;
@@ -169,6 +178,14 @@ type AdminTaskBreakdownProps = {
   readonly children?: ReactNode;
   readonly className?: string;
   readonly items?: readonly AdminTaskBreakdownItem[];
+};
+
+type AdminSurfaceChildProps = {
+  readonly children?: ReactNode;
+  readonly href?: unknown;
+  readonly items?: readonly {
+    readonly href?: unknown;
+  }[];
 };
 
 type AdminTaskGridProps = {
@@ -637,14 +654,35 @@ export function AdminActionCard({
   if (variant === 'ops-task' || variant === 'ops-signal') {
     const hasTitle = title !== undefined && title !== null;
     const hasValue = value !== undefined && value !== null;
+    const hasNestedLink = adminSurfaceContainsLink(children);
+    const classNames = joinClassNames(
+      'ops-task-card',
+      variant === 'ops-signal' ? 'ops-signal-card' : undefined,
+      className,
+    );
+
+    if (hasNestedLink) {
+      return (
+        <div className={classNames} title={htmlTitle}>
+          {leading}
+          {signalLabel ? renderAdminSurfaceSignal(signalClassName, signalLabel) : null}
+          {hasTitle ? <h3>{title}</h3> : null}
+          {hasTitle && detail ? <p>{detail}</p> : null}
+          {hasValue ? <strong className={joinClassNames('ops-task-card-value', valueClassName)}>{value}</strong> : null}
+          {!hasTitle && detail ? <p>{detail}</p> : null}
+          {children}
+          {actionLabel ? (
+            <Link className={actionLabelClassName} href={href} prefetch={false}>
+              {actionLabel}
+            </Link>
+          ) : null}
+        </div>
+      );
+    }
 
     return (
       <Link
-        className={joinClassNames(
-          'ops-task-card',
-          variant === 'ops-signal' ? 'ops-signal-card' : undefined,
-          className,
-        )}
+        className={classNames}
         href={href}
         prefetch={false}
         title={htmlTitle}
@@ -854,6 +892,35 @@ function adminTaskBreakdownKey(label: ReactNode, index: number) {
   }
 
   return `metric-${index}`;
+}
+
+function adminSurfaceContainsLink(children: ReactNode): boolean {
+  let containsLink = false;
+
+  Children.forEach(children, (child) => {
+    if (containsLink || !isValidElement<AdminSurfaceChildProps>(child)) {
+      return;
+    }
+
+    if (child.type === 'a' || child.type === Link) {
+      containsLink = true;
+      return;
+    }
+
+    if (
+      typeof child.props.href === 'string' ||
+      child.props.items?.some((item) => typeof item.href === 'string')
+    ) {
+      containsLink = true;
+      return;
+    }
+
+    if (child.props.children) {
+      containsLink = adminSurfaceContainsLink(child.props.children);
+    }
+  });
+
+  return containsLink;
 }
 
 const noticeToneIcons: Record<AdminNoticeTone, LucideIcon> = {

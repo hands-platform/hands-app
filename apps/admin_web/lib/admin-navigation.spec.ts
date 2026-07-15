@@ -54,10 +54,12 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/files')).toBe('Partners: Files');
 
     expect(linksByHref.get('/finance-overview')).toBe('Finance: Finance Overview');
+    expect(linksByHref.get('/finance-tax/approval-queue')).toBe('Finance: Approval Queue');
     expect(linksByHref.get('/finance-closeout')).toBe('Finance: Finance Closeout');
     expect(linksByHref.get('/payments')).toBe('Finance: Payments');
     expect(linksByHref.get('/finance-tax/payment-clearing')).toBe('Finance: Payment Clearing');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
+    expect(linksByHref.get('/finance-tax/partner-bank-deposits')).toBe('Finance: Partner Bank Deposits');
     expect(linksByHref.get('/wallet-adjustments')).toBe('Finance: Wallet Adjustments');
     expect(linksByHref.get('/earnings')).toBe('Finance: Earnings');
     expect(linksByHref.get('/payouts')).toBe('Finance: Payouts');
@@ -112,6 +114,7 @@ describe('admin navigation', () => {
     expect(masterSections.map((section) => section.label)).toContain('Developer / System');
     expect(masterLinks).toContain('Developer / System: Setup Readiness -> /setup');
     expect(masterLinks).toContain('Developer / System: App Session Diagnostics -> /app-sessions');
+    expect(masterLinks).toContain('Developer / System: Background Jobs -> /background-jobs');
     expect(developerSections.map((section) => section.label)).toContain('Developer / System');
   });
 
@@ -180,6 +183,7 @@ describe('admin navigation', () => {
       '/files',
     ]);
     expect(financeSection?.links.map((link) => link.href)).toContain('/finance-tax/payment-clearing');
+    expect(financeSection?.links.map((link) => link.href)).toContain('/finance-tax/approval-queue');
     expect(financeSection?.links.map((link) => link.href)).not.toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/monthly-tax-closing');
     expect(taxSection?.links.map((link) => link.href)).toContain('/finance-tax/general-ledger');

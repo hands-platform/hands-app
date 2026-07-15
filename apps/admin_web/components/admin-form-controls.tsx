@@ -33,6 +33,7 @@ type AdminFormSelectProps = {
 type AdminFormSearchProps = {
   readonly className?: string;
   readonly label: string;
+  readonly labelVisibility?: AdminFormLabelVisibility;
   readonly name?: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'autoFocus' | 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
 
@@ -118,6 +119,13 @@ type AdminFormCheckboxProps = {
   InputHTMLAttributes<HTMLInputElement>,
   'checked' | 'defaultChecked' | 'disabled' | 'onChange' | 'value'
 >;
+
+type AdminFormFileProps = {
+  readonly displayValue: ReactNode;
+  readonly icon?: ReactNode;
+  readonly label: string;
+  readonly name?: string;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'accept' | 'disabled' | 'onChange'>;
 
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
@@ -273,15 +281,16 @@ export function AdminFormSearch({
   className,
   defaultValue,
   label,
+  labelVisibility = 'hidden',
   name,
   onChange,
   placeholder = 'Search',
   value,
 }: AdminFormSearchProps) {
   return (
-    <label className={joinClassNames('admin-form-search', className)}>
+    <label className={joinClassNames('admin-form-search', visibleLabelClass(labelVisibility), className)}>
       <Search aria-hidden="true" size={18} />
-      <span className="sr-only">{label}</span>
+      <span className={labelClassName(labelVisibility)}>{label}</span>
       <input
         autoFocus={autoFocus}
         defaultValue={defaultValue}
@@ -398,11 +407,28 @@ export function AdminFormInput({
   type = 'text',
   value,
 }: AdminFormInputProps) {
+  const datePickerMode = formDatePickerMode(type);
+
+  if (datePickerMode) {
+    return (
+      <AdminFormDatePickerField
+        className={datePickerWrapperClassName(className)}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        label={label}
+        labelVisibility={labelVisibility}
+        mode={datePickerMode}
+        name={name}
+        required={required}
+        value={value}
+      />
+    );
+  }
+
   return (
     <label
       className={joinClassNames(
         'admin-form-input',
-        dateTimeInputClass(type),
         visibleLabelClass(labelVisibility),
         className,
       )}
@@ -512,6 +538,27 @@ export function AdminFormCheckbox({
       ) : (
         <span className="sr-only">{label}</span>
       )}
+    </label>
+  );
+}
+
+export function AdminFormFile({
+  accept,
+  disabled,
+  displayValue,
+  icon,
+  label,
+  name,
+  onChange,
+}: AdminFormFileProps) {
+  return (
+    <label className="admin-form-file admin-form-control-labeled">
+      <span className="admin-form-label">{label}</span>
+      <span className="admin-form-file-control">
+        {icon}
+        <span>{displayValue}</span>
+      </span>
+      <input accept={accept} disabled={disabled} name={name} onChange={onChange} type="file" />
     </label>
   );
 }
@@ -664,3 +711,20 @@ const datePickerShellClassNames = new Set([
   'react-datepicker-wrapper',
   'react-datepicker__input-container',
 ]);
+
+function formDatePickerMode(
+  type: InputHTMLAttributes<HTMLInputElement>['type'],
+): 'date' | 'datetime-local' | 'month' | 'time' | null {
+  switch (type) {
+    case 'date':
+      return 'date';
+    case 'datetime-local':
+      return 'datetime-local';
+    case 'month':
+      return 'month';
+    case 'time':
+      return 'time';
+    default:
+      return null;
+  }
+}

@@ -60,6 +60,11 @@ describe('payment fees export route', () => {
           paymentMethod: 'CARD',
           paymentProcessingFeeTotal: 30,
           settlementCount: 1,
+          evidenceReviewCount: 1,
+          evidenceCustomerPaymentAmountTotal: 1000,
+          evidenceRecordedFeeTotal: 30,
+          remediationExpectedFeeTotal: null,
+          remediationDelta: null,
         },
       ],
       byTreatment: [],
@@ -67,6 +72,16 @@ describe('payment fees export route', () => {
       customerPaymentAmountTotal: 1000,
       paymentProcessingFeeTotal: 30,
       period: '2026-06',
+      remediationPreview: {
+        status: 'BLOCKED',
+        policyVersionId: null,
+        blockers: [],
+        evidenceReviewCount: 1,
+        evidenceCustomerPaymentAmountTotal: 1000,
+        recordedFeeTotal: 30,
+        expectedFeeTotal: null,
+        delta: null,
+      },
       settlementCount: 1,
     });
 

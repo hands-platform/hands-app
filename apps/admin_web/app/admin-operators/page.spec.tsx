@@ -113,6 +113,10 @@ describe('AdminOperatorsPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/users?take=100', []);
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/audit-logs?bucket=Admin%20Web&take=30', []);
     expect(markup).toContain('Admin Operators');
+    expect(markup).toContain('<span class="metric-card-scope is-record">All records</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-record">Access records</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-record">Role records</span>');
     expect(markup).toContain('Master admin control');
     expect(markup).toContain('Add operator');
     expect(markup).toContain('Delete operator');

@@ -1,3 +1,5 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { AdminFilterPanel } from './admin-filter-panel';
 
 describe('AdminFilterPanel', () => {
@@ -25,7 +27,7 @@ describe('AdminFilterPanel', () => {
     );
     expect(panel.props.children[0].props.children[0].props.className).toBe('admin-filter-panel-copy');
     expect(panel.props.children[0].props.children[1].props.className).toBe('admin-filter-panel-actions');
-    expect(panel.props.children[0].props.children[1].props.children.props.tone).toBe('warning');
+    expect(renderToStaticMarkup(panel)).toContain('pill pill-warn');
     expect(panel.props.children[1].props.className).toBe('admin-filter-panel-body admin-section-body');
     expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
   });
@@ -40,6 +42,44 @@ describe('AdminFilterPanel', () => {
     expect(panel.props.children).toHaveLength(3);
     expect(panel.props.children[1]).toBeNull();
     expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer admin-section-footer');
+  });
+
+  it('supports multiple header action badges without leaving filter chrome', () => {
+    const panel = AdminFilterPanel({
+      actions: (
+        <>
+          <span>Vietnam only</span>
+          <span>Generated now</span>
+        </>
+      ),
+      children: <div>Range controls</div>,
+      className: 'usage-overview-filter-panel',
+      resultLabel: '7 days',
+      title: 'Usage range',
+    });
+
+    expect(panel.props.className).toBe('card admin-filter-panel usage-overview-filter-panel admin-section');
+    expect(panel.props.children[0].props.children[1].props.className).toBe('admin-filter-panel-actions');
+    const markup = renderToStaticMarkup(panel);
+
+    expect(markup).toContain('admin-filter-panel-actions');
+    expect(markup).toContain('7 days');
+    expect(markup).toContain('Vietnam only');
+    expect(markup).toContain('Generated now');
+  });
+
+  it('allows page-specific body layout classes while keeping shared filter chrome', () => {
+    const panel = AdminFilterPanel({
+      bodyClassName: 'vietnam-overview-filter-body',
+      children: <div>Region controls</div>,
+      className: 'vietnam-overview-filter-panel',
+      title: 'Period metrics range',
+    });
+
+    expect(panel.props.className).toBe('card admin-filter-panel vietnam-overview-filter-panel admin-section');
+    expect(panel.props.children[1].props.className).toBe(
+      'admin-filter-panel-body admin-section-body vietnam-overview-filter-body',
+    );
   });
 
   it('deduplicates Vuexy surface class tokens passed by legacy callers', () => {

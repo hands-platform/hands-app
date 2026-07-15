@@ -1,4 +1,5 @@
 import type {
+  AdminBookingSettlementGapList,
   AdminCashSettlementSummary,
   AdminEarning,
   AdminEarningSummary,
@@ -11,6 +12,12 @@ import {
   buildFinanceCloseoutApiHrefs,
   buildFinanceCloseoutEvidenceChecklist,
   buildFinanceCloseoutFilters,
+  buildFinanceCloseoutPageHref,
+  buildFinanceCloseoutSettlementBatchReviewHref,
+  buildFinanceCloseoutSettlementRepairHref,
+  buildFinanceCloseoutSettlementDryRunHref,
+  buildFinanceCloseoutSettlementPagination,
+  buildFinanceCloseoutSettlementPeriodOptions,
   buildHandoffRows,
   buildReconciliation,
   buildShiftCloseActionMap,
@@ -22,9 +29,23 @@ describe('finance closeout helpers', () => {
     const defaultFilters = buildFinanceCloseoutFilters({});
     const rangeFilters = buildFinanceCloseoutFilters({ range: '30d' });
 
-    expect(defaultFilters).toMatchObject({ label: 'Today (Vietnam)', range: 'today' });
+    expect(defaultFilters).toMatchObject({
+      label: 'Today (Vietnam)',
+      range: 'today',
+      settlementAge: 'backlog',
+      settlementPage: 1,
+      settlementPageSize: 10,
+      settlementPaymentMethod: 'all',
+      settlementPeriod: 'all',
+      settlementQuery: '',
+      settlementTrack: 'canonical',
+      settlementTrackLabel: 'Canonical',
+    });
     expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
+      bookingSettlementGapDryRunHref: '/admin/booking-settlement-gaps/dry-run?take=100',
+      bookingSettlementGapSummaryHref: '/admin/booking-settlement-gaps/summary',
+      bookingSettlementGapsHref: '/admin/booking-settlement-gaps?age=backlog&skip=0&take=10&track=canonical',
       cashSettlementSummaryHref: '/admin/cash-settlement-summary?range=30d',
       earningsHref: '/admin/earnings?range=30d&take=10&review=closeout-review',
       earningsSummaryHref: '/admin/earnings/summary?range=30d',
@@ -34,6 +55,67 @@ describe('finance closeout helpers', () => {
       refundSummaryHref: '/admin/refunds/summary?range=30d',
       refundsHref: '/admin/refunds?range=30d&take=10&review=open',
     });
+  });
+
+  it('preserves closeout state in settlement backlog links and builds server pagination', () => {
+    const filters = buildFinanceCloseoutFilters({
+      q: 'booking 1',
+      range: '7d',
+      settlementAge: '7d-plus',
+      settlementPage: '3',
+      settlementPaymentMethod: 'MOMO',
+      settlementPeriod: '2026-07',
+      settlementTrack: 'historical-ready',
+    });
+    const hrefs = buildFinanceCloseoutApiHrefs(filters);
+    const list: AdminBookingSettlementGapList = {
+      generatedAt: '2026-07-13T00:00:00.000Z',
+      hasNext: true,
+      items: [{ id: 'gap-21' } as never, { id: 'gap-22' } as never],
+      skip: 20,
+      take: 10,
+      total: 32,
+    };
+
+    expect(hrefs.bookingSettlementGapsHref).toBe(
+      '/admin/booking-settlement-gaps?age=7d-plus&skip=20&take=10&track=historical-ready&q=booking+1&period=2026-07&paymentMethod=MOMO',
+    );
+    expect(buildFinanceCloseoutPageHref(filters, { settlementPage: 2 })).toBe(
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=2&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1',
+    );
+    expect(buildFinanceCloseoutSettlementRepairHref(filters, 'gap-21')).toBe(
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&repairBookingId=gap-21',
+    );
+    expect(hrefs.bookingSettlementGapDryRunHref).toBe(
+      '/admin/booking-settlement-gaps/dry-run?take=100&period=2026-07&paymentMethod=MOMO',
+    );
+    expect(buildFinanceCloseoutSettlementDryRunHref(filters)).toBe(
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&settlementDryRun=1',
+    );
+    expect(buildFinanceCloseoutSettlementBatchReviewHref(filters, ['gap-21', 'gap-22', 'gap-21'])).toBe(
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&settlementDryRun=1&reviewBookingId=gap-21&reviewBookingId=gap-22',
+    );
+    expect(buildFinanceCloseoutSettlementPagination(list)).toEqual({
+      from: 21,
+      page: 3,
+      pageSize: 10,
+      to: 22,
+      totalPages: 4,
+      totalRows: 32,
+    });
+  });
+
+  it('builds bounded Vietnam settlement month options', () => {
+    expect(
+      buildFinanceCloseoutSettlementPeriodOptions(new Date('2026-07-13T00:00:00.000Z')).slice(0, 3),
+    ).toEqual([
+      { label: 'All settlement months', value: 'all' },
+      { label: 'July 2026', value: '2026-07' },
+      { label: 'June 2026', value: '2026-06' },
+    ]);
+    expect(buildFinanceCloseoutSettlementPeriodOptions(new Date('2026-07-13T00:00:00.000Z'))).toHaveLength(
+      13,
+    );
   });
 
   it('builds reconciliation counts and all-date cash debt from settlement summary', () => {

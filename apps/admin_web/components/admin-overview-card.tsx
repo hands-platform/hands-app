@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 
-import { AdminCard, AdminLinkCard } from './admin-surface';
+import {
+  AdminCard,
+  AdminLinkCard,
+  inferredMetricKind,
+  inferredMetricScope,
+  type MetricCardKind,
+} from './admin-surface';
 import { DateTimeText } from './date-time-text';
 
 type AdminOverviewCommandGridProps = {
@@ -42,7 +48,9 @@ type AdminOverviewCommandCardProps = {
   readonly htmlTitle?: string;
   readonly icon: ReactNode;
   readonly iconClassName?: string;
+  readonly kind?: MetricCardKind;
   readonly label: ReactNode;
+  readonly scope?: ReactNode;
   readonly trailing?: ReactNode;
   readonly value: ReactNode;
 };
@@ -98,7 +106,9 @@ type AdminTraceSummaryMetric = {
   readonly detailDateTimeValue?: string | null;
   readonly href?: string;
   readonly key?: string;
+  readonly kind?: MetricCardKind;
   readonly label: ReactNode;
+  readonly scope?: ReactNode;
   readonly value: ReactNode;
   readonly valueDateTimeFallback?: string;
   readonly valueDateTimeValue?: string | null;
@@ -107,6 +117,8 @@ type AdminTraceSummaryMetric = {
 type AdminTraceSummaryProps = {
   readonly ariaLabel?: string;
   readonly className?: string;
+  readonly defaultKind?: MetricCardKind;
+  readonly defaultScope?: ReactNode;
   readonly itemClassName?: string;
   readonly metrics: readonly AdminTraceSummaryMetric[];
 };
@@ -249,13 +261,36 @@ function summaryCardDetail(item: AdminSummaryCardItem) {
   return item.detail ? <small>{item.detail}</small> : null;
 }
 
-export function AdminTraceSummary({ ariaLabel, className, itemClassName, metrics }: AdminTraceSummaryProps) {
+export function AdminTraceSummary({
+  ariaLabel,
+  className,
+  defaultKind,
+  defaultScope,
+  itemClassName,
+  metrics,
+}: AdminTraceSummaryProps) {
   return (
     <div aria-label={ariaLabel} className={joinClassNames('service-trace-summary', className)}>
       {metrics.map((metric, index) => {
         const metricClassName = joinClassNames(itemClassName, metric.className) || undefined;
+        const metricLabelText = traceNodeText(metric.label);
+        const metricDetailText = traceNodeText(metric.detail);
+        const inferenceText = [metricLabelText, metricDetailText].filter(Boolean).join(' ');
+        const visibleScope =
+          metric.scope ?? defaultScope ?? (inferenceText ? inferredMetricScope(inferenceText) : undefined);
+        const visibleKind =
+          metric.kind ??
+          defaultKind ??
+          (inferenceText
+            ? inferredMetricKind(inferenceText, typeof visibleScope === 'string' ? visibleScope : undefined)
+            : undefined);
         const content = (
           <>
+            {visibleScope ? (
+              <span className={joinClassNames('metric-card-scope', visibleKind ? `is-${visibleKind}` : undefined)}>
+                {visibleScope}
+              </span>
+            ) : null}
             <span>{metric.label}</span>
             <strong>{traceSummaryValue(metric)}</strong>
             {traceSummaryDetail(metric)}
@@ -325,7 +360,9 @@ export function AdminOverviewCommandCard({
   htmlTitle,
   icon,
   iconClassName,
+  kind,
   label,
+  scope,
   trailing,
   value,
 }: AdminOverviewCommandCardProps) {
@@ -333,6 +370,11 @@ export function AdminOverviewCommandCard({
     <>
       <span className={iconClassName ?? 'usage-overview-command-icon'}>{icon}</span>
       <div>
+        {scope ? (
+          <span className={joinClassNames('metric-card-scope', kind ? `is-${kind}` : undefined)}>
+            {scope}
+          </span>
+        ) : null}
         <span>{label}</span>
         <strong>{value}</strong>
         {detail ? <small>{detail}</small> : null}
@@ -378,6 +420,11 @@ function traceSummaryKey(metric: AdminTraceSummaryMetric, index: number) {
   if (metric.key) return metric.key;
   if (typeof metric.label === 'string' || typeof metric.label === 'number') return String(metric.label);
   return `trace-metric-${index}`;
+}
+
+function traceNodeText(value: ReactNode) {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  return '';
 }
 
 const adminOverviewGridClassNames: Record<AdminOverviewGridVariant, string> = {

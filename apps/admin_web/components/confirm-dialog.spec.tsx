@@ -100,7 +100,7 @@ describe('ConfirmDialog', () => {
 
     const actions = dialog.props.children[1];
     const form = actions.props.children[0];
-    const button = form.props.children[2];
+    const button = form.props.children[3];
 
     expect(actions.props.className).toBe('actions confirm-dialog-actions');
     expect(form.props.className).toBe('confirm-dialog-form');
@@ -143,5 +143,31 @@ describe('ConfirmDialog', () => {
     expect(markup).toContain('name="reason"');
     expect(markup).toContain('placeholder="Partner rejection reason"');
     expect(markup).toContain('required=""');
+  });
+
+  it('renders optional shared select inputs inside the confirm form', () => {
+    const dialog = ConfirmDialog({
+      action: '/finance/reassign',
+      cancelHref: '/notifications',
+      confirmLabel: 'Reassign owner',
+      description: 'The API validates Finance assignment authority.',
+      id: 'finance-reassign',
+      selectInputs: [{
+        defaultValue: 'owner-2',
+        label: 'Review owner',
+        name: 'assigneeAdminId',
+        options: [
+          { label: 'Finance One', value: 'owner-1' },
+          { label: 'Finance Two', value: 'owner-2' },
+        ],
+        required: true,
+      }],
+      title: 'Reassign Finance review?',
+    });
+
+    const markup = renderToStaticMarkup(dialog);
+    expect(markup).toContain('class="admin-form-select admin-form-control-labeled confirm-dialog-label"');
+    expect(markup).toContain('name="assigneeAdminId"');
+    expect(markup).toContain('<option value="owner-2" selected="">Finance Two</option>');
   });
 });

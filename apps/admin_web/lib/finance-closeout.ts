@@ -1,8 +1,10 @@
 import type {
+  AdminBookingSettlementGapList,
   AdminCashSettlementSummary,
   AdminEarning,
   AdminEarningSummary,
   AdminPayment,
+  AdminPaymentMethod,
   AdminPaymentSummary,
   AdminPayoutBatch,
   AdminRefund,
@@ -66,6 +68,75 @@ const OPEN_PAYMENT_REFERENCE_STATUSES = ['AUTHORIZED', 'PENDING'];
 const CLOSED_PAYOUT_STATUSES = ['PAID', 'CANCELLED'];
 const PAYOUT_REFERENCE_REQUIRED_STATUSES = ['PROCESSING', 'PAID'];
 const FINANCE_CLOSEOUT_API_LIMIT = 10;
+const FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE = 10;
+
+export type FinanceCloseoutSettlementAge = 'backlog' | '24-72h' | '3-7d' | '7d-plus' | 'recent' | 'all';
+export type FinanceCloseoutSettlementTrack =
+  | 'canonical'
+  | 'historical-ready'
+  | 'evidence-blocked'
+  | 'manual-review'
+  | 'all';
+export type FinanceCloseoutSettlementPaymentMethod = AdminPaymentMethod | 'all';
+
+export const FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: FinanceCloseoutSettlementAge;
+}> = [
+  { label: 'Backlog', value: 'backlog' },
+  { label: '24–72 hours', value: '24-72h' },
+  { label: '3–7 days', value: '3-7d' },
+  { label: '7+ days', value: '7d-plus' },
+  { label: 'Under 24 hours', value: 'recent' },
+  { label: 'All gaps', value: 'all' },
+];
+
+export const FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: FinanceCloseoutSettlementTrack;
+}> = [
+  { label: 'Canonical', value: 'canonical' },
+  { label: 'Historical evidence ready', value: 'historical-ready' },
+  { label: 'Evidence blocked', value: 'evidence-blocked' },
+  { label: 'Manual review', value: 'manual-review' },
+  { label: 'All repair tracks', value: 'all' },
+];
+
+export const FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: FinanceCloseoutSettlementPaymentMethod;
+}> = [
+  { label: 'All payment methods', value: 'all' },
+  { label: 'Cash', value: 'CASH' },
+  { label: 'Card', value: 'CARD' },
+  { label: 'MoMo', value: 'MOMO' },
+  { label: 'VNPay', value: 'VNPAY' },
+  { label: 'Bank transfer', value: 'BANK_TRANSFER' },
+  { label: 'Customer wallet', value: 'CUSTOMER_WALLET' },
+  { label: 'Manual', value: 'MANUAL' },
+];
+
+export function buildFinanceCloseoutSettlementPeriodOptions(now = new Date()) {
+  const vietnamParts = new Intl.DateTimeFormat('en-CA', {
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(now);
+  const year = Number(vietnamParts.find((part) => part.type === 'year')?.value ?? now.getUTCFullYear());
+  const month = Number(vietnamParts.find((part) => part.type === 'month')?.value ?? now.getUTCMonth() + 1);
+  return [
+    { label: 'All settlement months', value: 'all' },
+    ...Array.from({ length: 12 }, (_, index) => {
+      const date = new Date(Date.UTC(year, month - 1 - index, 1));
+      return {
+        label: new Intl.DateTimeFormat('en', { month: 'long', timeZone: 'UTC', year: 'numeric' }).format(
+          date,
+        ),
+        value: date.toISOString().slice(0, 7),
+      };
+    }),
+  ];
+}
 
 export function buildReconciliation(input: ReconciliationInput) {
   const authorizedPayments = input.payments.filter((payment) => payment.status === 'AUTHORIZED');
@@ -115,9 +186,7 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
       status: `${reconciliation.authorizedPaymentCount} HOLD(S)`,
       detail:
         'Authorized payments should remain held until service completion, then capture, release, or refund.',
-      action: reconciliation.authorizedPaymentCount
-        ? 'Open payment holds before handoff.'
-        : 'No open holds.',
+      action: reconciliation.authorizedPaymentCount ? 'Open payment holds before handoff.' : 'No open holds.',
       href: '/payments?review=authorized',
       className: reconciliation.authorizedPaymentCount ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.authorizedPaymentCount ? 'pill-warn' : 'pill-success',
@@ -357,9 +426,26 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
 export function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
   const rangeParam = readSearchParam(params.range);
   const range = rangeParam ? normalizeDateRange(rangeParam) : 'today';
+  const settlementAge = normalizeFinanceCloseoutSettlementAge(readSearchParam(params.settlementAge));
+  const settlementPaymentMethod = normalizeFinanceCloseoutSettlementPaymentMethod(
+    readSearchParam(params.settlementPaymentMethod),
+  );
+  const settlementPeriod = normalizeFinanceCloseoutSettlementPeriod(readSearchParam(params.settlementPeriod));
+  const settlementTrack = normalizeFinanceCloseoutSettlementTrack(readSearchParam(params.settlementTrack));
+  const settlementPage = normalizeFinanceCloseoutPage(readSearchParam(params.settlementPage));
+  const settlementQuery = (readSearchParam(params.q) ?? '').trim().slice(0, 80);
   return {
     range,
     label: dateRangeLabel(range),
+    settlementAge,
+    settlementAgeLabel: financeCloseoutSettlementAgeLabel(settlementAge),
+    settlementPage,
+    settlementPageSize: FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE,
+    settlementPaymentMethod,
+    settlementPeriod,
+    settlementQuery,
+    settlementTrack,
+    settlementTrackLabel: financeCloseoutSettlementTrackLabel(settlementTrack),
   };
 }
 
@@ -376,8 +462,33 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
   payoutBatchQuery.set('review', 'needs-review');
   const refundQuery = new URLSearchParams(query);
   refundQuery.set('review', 'open');
+  const settlementGapQuery = new URLSearchParams({
+    age: filters.settlementAge,
+    skip: String((filters.settlementPage - 1) * filters.settlementPageSize),
+    take: String(filters.settlementPageSize),
+    track: filters.settlementTrack,
+  });
+  if (filters.settlementQuery) {
+    settlementGapQuery.set('q', filters.settlementQuery);
+  }
+  if (filters.settlementPeriod !== 'all') {
+    settlementGapQuery.set('period', filters.settlementPeriod);
+  }
+  if (filters.settlementPaymentMethod !== 'all') {
+    settlementGapQuery.set('paymentMethod', filters.settlementPaymentMethod);
+  }
+  const settlementDryRunQuery = new URLSearchParams({ take: '100' });
+  if (filters.settlementPeriod !== 'all') {
+    settlementDryRunQuery.set('period', filters.settlementPeriod);
+  }
+  if (filters.settlementPaymentMethod !== 'all') {
+    settlementDryRunQuery.set('paymentMethod', filters.settlementPaymentMethod);
+  }
 
   return {
+    bookingSettlementGapDryRunHref: `/admin/booking-settlement-gaps/dry-run?${settlementDryRunQuery.toString()}`,
+    bookingSettlementGapSummaryHref: '/admin/booking-settlement-gaps/summary',
+    bookingSettlementGapsHref: `/admin/booking-settlement-gaps?${settlementGapQuery.toString()}`,
     cashSettlementSummaryHref: `/admin/cash-settlement-summary?range=${filters.range}`,
     earningsHref: `/admin/earnings?${earningQuery.toString()}`,
     earningsSummaryHref: `/admin/earnings/summary?range=${filters.range}`,
@@ -387,6 +498,116 @@ export function buildFinanceCloseoutApiHrefs(filters: ReturnType<typeof buildFin
     refundsHref: `/admin/refunds?${refundQuery.toString()}`,
     refundSummaryHref: `/admin/refunds/summary?range=${filters.range}`,
   };
+}
+
+export function buildFinanceCloseoutPageHref(
+  filters: ReturnType<typeof buildFinanceCloseoutFilters>,
+  overrides: Partial<{
+    range: AdminDateRange;
+    settlementAge: FinanceCloseoutSettlementAge;
+    settlementPage: number;
+    settlementPaymentMethod: FinanceCloseoutSettlementPaymentMethod;
+    settlementPeriod: string;
+    settlementQuery: string;
+    settlementTrack: FinanceCloseoutSettlementTrack;
+  }> = {},
+) {
+  const params = new URLSearchParams({
+    range: overrides.range ?? filters.range,
+    settlementAge: overrides.settlementAge ?? filters.settlementAge,
+    settlementPage: String(overrides.settlementPage ?? filters.settlementPage),
+    settlementPaymentMethod: overrides.settlementPaymentMethod ?? filters.settlementPaymentMethod,
+    settlementPeriod: overrides.settlementPeriod ?? filters.settlementPeriod,
+    settlementTrack: overrides.settlementTrack ?? filters.settlementTrack,
+  });
+  const query = overrides.settlementQuery ?? filters.settlementQuery;
+  if (query) {
+    params.set('q', query);
+  }
+  return `/finance-closeout?${params.toString()}`;
+}
+
+export function buildFinanceCloseoutSettlementRepairHref(
+  filters: ReturnType<typeof buildFinanceCloseoutFilters>,
+  bookingId: string,
+) {
+  const url = new URL(buildFinanceCloseoutPageHref(filters), 'http://admin.local');
+  url.searchParams.set('repairBookingId', bookingId);
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+export function buildFinanceCloseoutSettlementDryRunHref(
+  filters: ReturnType<typeof buildFinanceCloseoutFilters>,
+) {
+  const url = new URL(buildFinanceCloseoutPageHref(filters), 'http://admin.local');
+  url.searchParams.set('settlementDryRun', '1');
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+export function buildFinanceCloseoutSettlementBatchReviewHref(
+  filters: ReturnType<typeof buildFinanceCloseoutFilters>,
+  bookingIds: readonly string[],
+) {
+  const url = new URL(buildFinanceCloseoutSettlementDryRunHref(filters), 'http://admin.local');
+  Array.from(new Set(bookingIds.map((bookingId) => bookingId.trim()).filter(Boolean)))
+    .slice(0, 10)
+    .forEach((bookingId) => url.searchParams.append('reviewBookingId', bookingId));
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+export function buildFinanceCloseoutSettlementPagination(list: AdminBookingSettlementGapList) {
+  const pageSize = Math.max(1, list.take || FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE);
+  const totalRows = Math.max(0, list.total);
+  const page = Math.floor(Math.max(0, list.skip) / pageSize) + 1;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  return {
+    from: totalRows === 0 ? 0 : list.skip + 1,
+    page,
+    pageSize,
+    to: Math.min(list.skip + list.items.length, totalRows),
+    totalPages,
+    totalRows,
+  };
+}
+
+export function financeCloseoutSettlementAgeLabel(age: FinanceCloseoutSettlementAge) {
+  return FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS.find((option) => option.value === age)?.label ?? 'Backlog';
+}
+
+export function financeCloseoutSettlementTrackLabel(track: FinanceCloseoutSettlementTrack) {
+  return (
+    FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS.find((option) => option.value === track)?.label ?? 'Canonical'
+  );
+}
+
+function normalizeFinanceCloseoutSettlementTrack(value?: string): FinanceCloseoutSettlementTrack {
+  return FINANCE_CLOSEOUT_SETTLEMENT_TRACK_OPTIONS.some((option) => option.value === value)
+    ? (value as FinanceCloseoutSettlementTrack)
+    : 'canonical';
+}
+
+function normalizeFinanceCloseoutSettlementPaymentMethod(
+  value?: string,
+): FinanceCloseoutSettlementPaymentMethod {
+  return FINANCE_CLOSEOUT_SETTLEMENT_PAYMENT_METHOD_OPTIONS.some((option) => option.value === value)
+    ? (value as FinanceCloseoutSettlementPaymentMethod)
+    : 'all';
+}
+
+function normalizeFinanceCloseoutSettlementPeriod(value?: string) {
+  return value && /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? value : 'all';
+}
+
+function normalizeFinanceCloseoutSettlementAge(value?: string): FinanceCloseoutSettlementAge {
+  return FINANCE_CLOSEOUT_SETTLEMENT_AGE_OPTIONS.some((option) => option.value === value)
+    ? (value as FinanceCloseoutSettlementAge)
+    : 'backlog';
+}
+
+function normalizeFinanceCloseoutPage(value?: string) {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.min(Math.max(parsed, 1), 1000);
 }
 
 export function summarizeEarnings(earnings: readonly AdminEarning[], currency: string): AdminEarningSummary {

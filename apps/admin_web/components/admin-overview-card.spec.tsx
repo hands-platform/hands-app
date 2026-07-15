@@ -81,6 +81,24 @@ describe('AdminOverviewCommandCard', () => {
     expect(markup).toContain('<small>Active customers in the selected range</small>');
   });
 
+  it('renders an explicit operating scope and card kind when supplied', () => {
+    const markup = renderToStaticMarkup(
+      <AdminOverviewCommandCard
+        className="is-warning"
+        detail="Partner approvals waiting for operator review."
+        icon={<svg aria-hidden="true" />}
+        kind="action"
+        label="Partner approvals"
+        scope="Pending"
+        value="4"
+      />,
+    );
+
+    expect(markup).toContain('<span class="metric-card-scope is-action">Pending</span>');
+    expect(markup).toContain('<span>Partner approvals</span>');
+    expect(markup).toContain('<strong>4</strong>');
+  });
+
   it('allows overview pages to supply scoped command card and icon classes', () => {
     const markup = renderToStaticMarkup(
       <AdminOverviewCommandCard
@@ -252,17 +270,55 @@ describe('AdminOverviewCommandCard', () => {
       <AdminTraceSummary
         className="admin-mt-12"
         metrics={[
-          { label: 'Gross', value: '1.200.000 VND', detail: 'Customer charge represented.' },
+          {
+            detail: 'Customer charge represented.',
+            kind: 'period',
+            label: 'Gross',
+            scope: 'Today',
+            value: '1.200.000 VND',
+          },
           { label: 'Cash debt', value: '80.000 VND' },
         ]}
       />,
     );
 
     expect(markup).toContain('class="service-trace-summary admin-mt-12"');
+    expect(markup).toContain('class="metric-card-scope is-period"');
+    expect(markup).toContain('<span class="metric-card-scope is-period">Today</span>');
     expect(markup).toContain('<span>Gross</span>');
     expect(markup).toContain('<strong>1.200.000 VND</strong>');
     expect(markup).toContain('<small>Customer charge represented.</small>');
     expect(markup).toContain('<span>Cash debt</span>');
+  });
+
+  it('infers operating scope and card kind for unscoped trace summary metrics', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        metrics={[
+          { label: 'Cash debt', value: '80.000 VND' },
+          { label: 'Online Partners', value: '12' },
+          { label: 'Total customer records', value: '412' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-record">All records</span>');
+  });
+
+  it('infers trace summary scope from detail copy when labels are generic', () => {
+    const markup = renderToStaticMarkup(
+      <AdminTraceSummary
+        metrics={[
+          { detail: 'Customer charge in the selected range.', label: 'Gross', value: '1.200.000 VND' },
+          { detail: 'Failed callbacks need review today.', label: 'Callbacks', value: '3' },
+        ]}
+      />,
+    );
+
+    expect(markup).toContain('<span class="metric-card-scope is-period">Selected range</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-risk">Today</span>');
   });
 
   it('keeps shared trace summaries on the Vuexy linked card token contract', () => {
@@ -278,6 +334,13 @@ describe('AdminOverviewCommandCard', () => {
     expect(hoverBlock).toContain('transform: translateY(-1px);');
     expect(valueBlock).toContain('font-feature-settings: "tnum" 1;');
     expect(valueBlock).toContain('font-variant-numeric: tabular-nums;');
+  });
+
+  it('does not let trace summary label selectors override scope badges', () => {
+    const globals = readFileSync('app/globals.css', 'utf8');
+
+    expect(globals).toContain('.service-trace-summary span:not(.metric-card-scope)');
+    expect(globals).not.toContain('.service-trace-summary span {');
   });
 
   it('renders trace summary metric dates through the shared DateTimeText atom', () => {

@@ -98,6 +98,10 @@ const pageCategoryRules: Array<{
     prefixes: ['/finance-overview', '/finance-closeout'],
   },
   {
+    category: 'FINANCE_SETTLEMENTS',
+    prefixes: ['/finance-tax/approval-queue'],
+  },
+  {
     category: 'FINANCE_GENERAL_LEDGER',
     prefixes: ['/finance-tax/general-ledger'],
   },
@@ -115,7 +119,7 @@ const pageCategoryRules: Array<{
   },
   {
     category: 'FINANCE_WALLET_ADJUSTMENTS',
-    prefixes: ['/wallet-adjustments'],
+    prefixes: ['/finance-tax/partner-bank-deposits', '/wallet-adjustments'],
   },
   {
     category: 'FINANCE_SETTLEMENTS',
@@ -173,12 +177,20 @@ const pageCategoryRules: Array<{
     category: 'DEVELOPER_APP_SESSIONS_DIAGNOSTICS',
     prefixes: ['/app-sessions'],
   },
+  {
+    category: 'DEVELOPER_HEALTH',
+    prefixes: ['/background-jobs'],
+  },
 ];
 
 const apiCategoryRules: Array<{
   readonly category: AdminOperatorPermissionCategory;
   readonly prefixes: readonly string[];
 }> = [
+  {
+    category: 'DEVELOPER_HEALTH',
+    prefixes: ['/admin/system/background-jobs'],
+  },
   {
     category: 'BOOKINGS_DETAIL',
     prefixes: ['/admin/bookings'],
@@ -222,6 +234,8 @@ const apiCategoryRules: Array<{
   {
     category: 'FINANCE_SETTLEMENTS',
     prefixes: [
+      '/admin/finance-approval-queue',
+      '/admin/booking-settlement-gaps',
       '/admin/booking-settlements',
       '/admin/cash-settlements',
       '/admin/earnings',
@@ -237,9 +251,11 @@ const apiCategoryRules: Array<{
     category: 'FINANCE_WALLET_ADJUSTMENTS',
     prefixes: [
       '/admin/manual-wallet-adjustments',
+      '/admin/provider-wallet/deposit-requests',
       '/admin/provider-wallet/deposits',
       '/admin/wallet',
       '/admin/wallet-adjustments',
+      '/admin/wallet-adjustment-requests',
     ],
   },
   {
@@ -247,6 +263,7 @@ const apiCategoryRules: Array<{
     prefixes: [
       '/admin/finance',
       '/admin/monthly-tax-closings',
+      '/admin/payment-fee-policies',
       '/admin/tax-policy-versions',
       '/admin/tax-rules',
       '/admin/tax',

@@ -217,7 +217,7 @@ describe('Admin form controls', () => {
       'admin-form-control-fluid calendar-datepicker-field settlement-date',
     );
     expect(input.props.className).toBe(
-      'admin-form-input admin-form-date-picker admin-form-input-date-picker closing-period',
+      'admin-form-control-fluid calendar-datepicker-field closing-period',
     );
   });
 
@@ -275,19 +275,24 @@ describe('Admin form controls', () => {
     });
   });
 
-  it('marks native date and time inputs with the shared Vuexy date picker shell', () => {
+  it('routes legacy date and time input types through the shared Vuexy date picker atom', () => {
     const input = AdminFormInput({
       label: 'Starts',
       labelVisibility: 'visible',
       name: 'startsAt',
       type: 'datetime-local',
     });
+    const markup = renderToStaticMarkup(input);
 
-    expect(input.props.className).toBe(
-      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
+    expect(input.props.className).toBe('admin-form-control-fluid calendar-datepicker-field');
+    expect(markup).toContain(
+      'class="admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled calendar-datepicker-input"',
     );
-    expect(input.props.children[1].props.className).toBe('admin-form-date-input');
-    expect(input.props.children[1].props.type).toBe('datetime-local');
+    expect(markup).toContain('class="admin-form-label">Starts');
+    expect(markup).toContain('class="admin-form-date-input"');
+    expect(markup).toContain('name="startsAt"');
+    expect(markup).toContain('type="hidden"');
+    expect(markup).not.toContain('type="datetime-local"');
 
     const monthInput = AdminFormInput({
       label: 'Monthly tax period',
@@ -295,12 +300,13 @@ describe('Admin form controls', () => {
       name: 'period',
       type: 'month',
     });
+    const monthMarkup = renderToStaticMarkup(monthInput);
 
-    expect(monthInput.props.className).toBe(
-      'admin-form-input admin-form-date-picker admin-form-input-date-picker admin-form-control-labeled',
-    );
-    expect(monthInput.props.children[1].props.className).toBe('admin-form-date-input');
-    expect(monthInput.props.children[1].props.type).toBe('month');
+    expect(monthInput.props.className).toBe('admin-form-control-fluid calendar-datepicker-field');
+    expect(monthMarkup).toContain('class="admin-form-label">Monthly tax period');
+    expect(monthMarkup).toContain('name="period"');
+    expect(monthMarkup).toContain('type="hidden"');
+    expect(monthMarkup).not.toContain('type="month"');
   });
 
   it('renders date-time controls through a dedicated Vuexy atom', () => {

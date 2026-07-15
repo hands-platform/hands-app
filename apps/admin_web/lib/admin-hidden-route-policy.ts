@@ -13,6 +13,11 @@ export type AdminHiddenRoutePolicyDetails = {
 };
 
 export const intentionallyUnlistedPageRoutes = {
+  '/background-jobs/incidents/[id]': {
+    kind: 'DETAIL_PAGE',
+    primaryRoutes: ['/background-jobs'],
+    reason: 'Background job incident detail opens from retained system incident and job evidence links.',
+  },
   '/bookings/[id]': {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/bookings'],
@@ -33,6 +38,11 @@ export const intentionallyUnlistedPageRoutes = {
     primaryRoutes: ['/finance-tax/bank-reconciliation'],
     reason: 'Bank transaction detail opens from reconciliation and finance evidence links.',
   },
+  '/finance-tax/bank-reconciliation/import-batches/[batchImportId]': {
+    kind: 'DETAIL_PAGE',
+    primaryRoutes: ['/finance-tax/bank-reconciliation'],
+    reason: 'Bank statement import batch detail opens from the reconciliation import history.',
+  },
   '/finance-tax/booking-settlement-audit/[id]': {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/finance-tax/booking-settlement-audit', '/finance-tax/settlement-reversals'],
@@ -47,6 +57,11 @@ export const intentionallyUnlistedPageRoutes = {
     kind: 'DETAIL_PAGE',
     primaryRoutes: ['/finance-tax/payment-clearing'],
     reason: 'Payment clearing detail opens from clearing and reversal evidence links.',
+  },
+  '/finance-tax/partner-bank-deposits/[id]': {
+    kind: 'DETAIL_PAGE',
+    primaryRoutes: ['/finance-tax/partner-bank-deposits', '/cash-settlements'],
+    reason: 'Partner bank deposit detail opens from deposit history, approval, and cash-debt evidence links.',
   },
   '/finance-tax/settlement-reversals/[id]': {
     kind: 'DETAIL_PAGE',

@@ -7,7 +7,6 @@ import {
   verifyAdminWebSessionCookieValue,
   type AdminWebLoginResult,
 } from '../../../../../lib/admin-session';
-import { getAdminAccessToken } from '../../../../../lib/admin-api';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +19,11 @@ const NO_STORE_HEADERS = {
 export async function POST(request: Request) {
   const credentials = await readCredentials(request);
   const storedOperatorLogin = await authenticateStoredAdminOperatorLogin(credentials);
-  const login = storedOperatorLogin?.ok ? storedOperatorLogin : authenticateAdminWebLogin(credentials);
+  const login =
+    storedOperatorLogin ??
+    (process.env.NODE_ENV === 'production'
+      ? ({ ok: false, error: 'ADMIN_LOGIN_UNAVAILABLE', status: 503 } satisfies AdminWebLoginResult)
+      : authenticateAdminWebLogin(credentials));
   const wantsHtml = request.headers.get('accept')?.includes('text/html') ?? false;
 
   if (!login.ok) {
@@ -67,12 +70,10 @@ async function authenticateStoredAdminOperatorLogin(
   }
 
   try {
-    const token = await getAdminAccessToken();
     const apiBaseUrl = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
-    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/admin/users/admin-operator-login`, {
+    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/auth/admin-operator-login`, {
       method: 'POST',
       headers: {
-        authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify(credentials),
@@ -80,7 +81,11 @@ async function authenticateStoredAdminOperatorLogin(
     });
 
     if (!response.ok) {
-      return null;
+      return {
+        ok: false,
+        error: response.status === 401 ? 'INVALID_ADMIN_CREDENTIALS' : 'ADMIN_LOGIN_UNAVAILABLE',
+        status: response.status === 401 ? 401 : 503,
+      };
     }
 
     const body = (await response.json()) as {

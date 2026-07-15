@@ -14,9 +14,10 @@ describe('MetricCard', () => {
       className: 'card admin-kpi-card',
     });
     expect(card.props.children.props.className).toBe('metric-card');
-    const content = card.props.children.props.children[1].props.children;
-    expect(content[0].props.children).toBe('Total');
-    expect(content[1].props.children).toBe(12);
+    const content = card.props.children.props.children[1].props.children.filter(Boolean);
+    expect(content[0].props.children).toBe('All records');
+    expect(content[1].props.children).toBe('Total');
+    expect(content[2].props.children).toBe(12);
   });
 
   it('renders a linked metric card when an href is provided', () => {
@@ -50,5 +51,59 @@ describe('MetricCard', () => {
     expect(card.props.children.props.className).toBe('metric-card');
     expect(card.props.children.props.children[0].props.children.type).toBe(MapPinned);
     expect(card.props.children.props.children[0].props.children.props.size).toBe(18);
+  });
+
+  it('renders an operator scope pill before KPI labels when provided', () => {
+    const card = MetricCard({
+      helper: '10 booking create attempts need review.',
+      kind: 'risk',
+      label: 'Create blocks',
+      scope: 'Today',
+      value: 10,
+    });
+
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0].props.className).toBe('metric-card-scope is-risk');
+    expect(content[0].props.children).toBe('Today');
+    expect(content[1].props.children).toBe('Create blocks');
+  });
+
+  it('infers the scope from helper copy when the label is generic', () => {
+    const card = MetricCard({
+      helper: 'Payout batches in the selected range.',
+      label: 'Total batches',
+      value: 8,
+    });
+
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0].props.className).toBe('metric-card-scope is-period');
+    expect(content[0].props.children).toBe('Selected range');
+  });
+
+  it('uses helper risk language when inferring the card kind', () => {
+    const card = MetricCard({
+      helper: 'Failed delivery callbacks need review today.',
+      label: 'Callbacks',
+      value: 3,
+    });
+
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0].props.className).toBe('metric-card-scope is-risk');
+    expect(content[0].props.children).toBe('Today');
+  });
+
+  it('uses a filter-oriented fallback instead of the vague current view label', () => {
+    const card = MetricCard({
+      helper: 'Loaded for operator review.',
+      label: 'Open items',
+      value: 5,
+    });
+
+    const content = card.props.children.props.children[1].props.children;
+
+    expect(content[0].props.children).toBe('Current filters');
   });
 });

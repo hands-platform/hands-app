@@ -18,6 +18,10 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/finance-tax/payment-clearing')).toBe('FINANCE_PAYMENT_CLEARING');
     expect(adminOperatorCategoryForPath('/finance-overview')).toBe('FINANCE');
     expect(adminOperatorCategoryForPath('/finance-closeout')).toBe('FINANCE');
+    expect(adminOperatorCategoryForPath('/finance-tax/approval-queue')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForPath('/finance-tax/partner-bank-deposits/deposit-1')).toBe(
+      'FINANCE_WALLET_ADJUSTMENTS',
+    );
     expect(adminOperatorCategoryForPath('/finance-tax/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
     expect(adminOperatorCategoryForPath('/finance-tax/coupon-finance')).toBe('FINANCE_TAX');
     expect(adminOperatorCategoryForPath('/finance-tax/finance-approvers')).toBe('SYSTEM_ADMIN_OPERATORS');
@@ -27,6 +31,7 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForPath('/referrals/cashouts')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForPath('/notifications/push-send')).toBe('NOTIFICATIONS_PUSH');
     expect(adminOperatorCategoryForPath('/app-sessions')).toBe('DEVELOPER_APP_SESSIONS_DIAGNOSTICS');
+    expect(adminOperatorCategoryForPath('/background-jobs')).toBe('DEVELOPER_HEALTH');
     expect(adminOperatorCategoryForPath('/chat-archive')).toBe('SYSTEM_AUDIT');
     expect(adminOperatorCategoryForPath('/calendar')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForPath('/usage-overview')).toBe('CUSTOMERS_DIRECTORY');
@@ -42,9 +47,27 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/users/user-1/admin-operator-access')).toBe('SYSTEM_ADMIN_OPERATORS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/manual-wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustments')).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/wallet-adjustment-requests/request-1/approve')).toBe(
+      'FINANCE_WALLET_ADJUSTMENTS',
+    );
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payment-fee-policies/policy-1/activate')).toBe(
+      'FINANCE_TAX',
+    );
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposits')).toBe('FINANCE_WALLET_ADJUSTMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/provider-wallet/deposit-requests/request-1/approve')).toBe(
+      'FINANCE_WALLET_ADJUSTMENTS',
+    );
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/provider-wallet/deposit-requests/request-1/reconciliation-assignment',
+      ),
+    ).toBe('FINANCE_WALLET_ADJUSTMENTS');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/provider-wallet/withdrawal-requests/request-1')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/payout-batches')).toBe('FINANCE_SETTLEMENTS');
+    expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/booking-settlement-gaps/booking-1/repair')).toBe(
+      'FINANCE_SETTLEMENTS',
+    );
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/referrals/rewards/reward-1/credit')).toBe('FINANCE_SETTLEMENTS');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/company-bank-accounts')).toBe('FINANCE_BANK_RECONCILIATION');
     expect(adminOperatorCategoryForAdminApiPath('PATCH', '/admin/company-bank-accounts/bank-account-1')).toBe('FINANCE_BANK_RECONCILIATION');
@@ -57,6 +80,12 @@ describe('admin operator access model', () => {
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/marketing/spend-daily')).toBe('GROWTH_MARKETING');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/calendar-events')).toBe('BOOKINGS_REALTIME');
     expect(adminOperatorCategoryForAdminApiPath('POST', '/admin/notifications/push-campaigns')).toBe('NOTIFICATIONS_DELIVERY');
+    expect(
+      adminOperatorCategoryForAdminApiPath(
+        'POST',
+        '/admin/system/background-jobs/payment-status-check/job-1/acknowledge',
+      ),
+    ).toBe('DEVELOPER_HEALTH');
   });
 
   it('keeps audit sink writes out of category matching and behind an explicit allowlist reason', () => {

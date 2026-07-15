@@ -20,10 +20,13 @@ describe('Metric card CSS', () => {
   });
 
   it('scopes KPI copy typography to the metric content column', () => {
+    const scopeBlock = cssRuleBlock('.metric-card-scope {');
     const labelBlock = cssRuleBlock('.metric-card-content > p {');
     const valueBlock = cssRuleBlock('.metric-card-content > h2 {');
     const helperBlock = cssRuleBlock('.metric-card-content > small {');
 
+    expect(scopeBlock).toContain('border-radius: 999px;');
+    expect(scopeBlock).toContain('width: max-content;');
     expect(labelBlock).toContain('color: var(--admin-muted);');
     expect(valueBlock).toContain('font-size: 1.5rem;');
     expect(helperBlock).toContain('display: block;');
