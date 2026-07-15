@@ -26,6 +26,7 @@ const PAYOUT_OPERATIONAL_POLICY_KEYS = [
 ] as const;
 
 export type PayoutFilters = {
+  readonly details: 'operations' | 'all';
   readonly page: number;
   readonly pageSize: number;
   readonly range: AdminDateRange;
@@ -55,6 +56,7 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
     (withdrawalReconciliation ? 'PAID' : 'REVIEW_REQUIRED');
 
   return {
+    details: readSearchParam(params.details) === 'all' ? 'all' : 'operations',
     page: readPayoutPage(params.page),
     pageSize: readPayoutPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
@@ -89,10 +91,13 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
   }
 
   return {
-    earningsHref: `/admin/earnings?${params.toString()}`,
-    operationalPolicyHref: `/admin/operational-policy?${new URLSearchParams({
-      keys: PAYOUT_OPERATIONAL_POLICY_KEYS.join(','),
-    }).toString()}`,
+    earningsHref: filters.details === 'all' ? `/admin/earnings?${params.toString()}` : null,
+    operationalPolicyHref:
+      filters.details === 'all'
+        ? `/admin/operational-policy?${new URLSearchParams({
+            keys: PAYOUT_OPERATIONAL_POLICY_KEYS.join(','),
+          }).toString()}`
+        : null,
     payoutBatchSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
     providerWalletWithdrawalRequestsHref: `/admin/provider-wallet/withdrawal-requests?${withdrawalRequestParams.toString()}`,
@@ -101,6 +106,7 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
 }
 
 export function payoutHref(input: {
+  readonly details?: 'operations' | 'all';
   readonly page?: number;
   readonly pageSize?: number;
   readonly range: AdminDateRange;
@@ -109,6 +115,9 @@ export function payoutHref(input: {
   readonly withdrawalReconciliation?: 'unmatched' | 'matched' | null;
 }) {
   const params = new URLSearchParams();
+  if (input.details === 'all') {
+    params.set('details', 'all');
+  }
   if (input.range && input.range !== 'today') {
     params.set('range', input.range);
   }

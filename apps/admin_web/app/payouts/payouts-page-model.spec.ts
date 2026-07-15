@@ -1,10 +1,11 @@
-import { buildPayoutFilters, buildPayoutOperationsApiHrefs } from './payouts-page-model';
+import { buildPayoutFilters, buildPayoutOperationsApiHrefs, payoutHref } from './payouts-page-model';
 
 describe('payouts page model', () => {
   it('defaults payout operations filters to today and bounded API hrefs', () => {
     const defaultFilters = buildPayoutFilters({});
-    const rangeFilters = buildPayoutFilters({ range: '30d' });
+    const rangeFilters = buildPayoutFilters({ details: 'all', range: '30d' });
 
+    expect(defaultFilters.details).toBe('operations');
     expect(defaultFilters.range).toBe('today');
     expect(defaultFilters.page).toBe(1);
     expect(defaultFilters.pageSize).toBe(10);
@@ -48,6 +49,7 @@ describe('payouts page model', () => {
 
   it('passes withdrawal status filters only to partner wallet withdrawal requests', () => {
     const filters = buildPayoutFilters({
+      details: 'all',
       range: '7d',
       withdrawalStatus: 'BANK_TRANSFER_PENDING',
     });
@@ -66,6 +68,7 @@ describe('payouts page model', () => {
 
   it('turns payout list page state into bounded API skip offsets', () => {
     const filters = buildPayoutFilters({
+      details: 'all',
       page: '3',
       pageSize: '25',
       range: '30d',
@@ -84,5 +87,23 @@ describe('payouts page model', () => {
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&status=REVIEW_REQUIRED',
     });
+  });
+
+  it('keeps evidence-only API reads and pagination links behind the full details mode', () => {
+    const operationsFilters = buildPayoutFilters({ range: 'today' });
+    const apiHrefs = buildPayoutOperationsApiHrefs(operationsFilters);
+
+    expect(apiHrefs.earningsHref).toBeNull();
+    expect(apiHrefs.operationalPolicyHref).toBeNull();
+    expect(
+      payoutHref({
+        details: 'all',
+        page: 2,
+        pageSize: 25,
+        range: '30d',
+        withdrawalPage: 3,
+        withdrawalStatus: 'PAID',
+      }),
+    ).toBe('/payouts?details=all&range=30d&withdrawalStatus=PAID&withdrawalPage=3&pageSize=25&page=2');
   });
 });

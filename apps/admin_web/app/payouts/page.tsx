@@ -83,6 +83,7 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
+  const showFullEvidence = filters.details === 'all';
   const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
   const payoutRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
@@ -96,8 +97,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   ] = await Promise.all([
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
-    adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
-    adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, []),
+    apiHrefs.earningsHref
+      ? adminGet<AdminEarning[]>(apiHrefs.earningsHref, [])
+      : Promise.resolve([] as AdminEarning[]),
+    apiHrefs.operationalPolicyHref
+      ? adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, [])
+      : Promise.resolve([] as AdminOperationalPolicySetting[]),
     adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, []),
     adminGet<AdminProviderWalletWithdrawalRequestSummary | null>(
       apiHrefs.providerWalletWithdrawalRequestSummaryHref,
@@ -123,20 +128,22 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       )
     : null;
   const commandSignals = buildPayoutCommandSignals(batches);
-  const payoutLanes = buildPayoutLanes(batches);
-  const payoutStatusLanes = buildPayoutStatusLanes(payoutLanes);
+  const payoutLanes = showFullEvidence ? buildPayoutLanes(batches) : [];
+  const payoutStatusLanes = showFullEvidence ? buildPayoutStatusLanes(payoutLanes) : [];
   const serviceEvidence = buildPayoutServiceEvidence(batches);
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
-  const appliedPayoutPolicyCards = buildAppliedPayoutPolicyCards(liveOperationsPolicy);
-  const releasePolicyDesk = buildPayoutReleasePolicyDesk(batches, earnings, summary);
-  const releaseCycleBoard = buildPayoutReleaseCycleBoard(batches, earnings);
-  const marketplaceUnblockBridge = buildPayoutMarketplaceUnblockBridge(batches, earnings, summary);
+  const appliedPayoutPolicyCards = showFullEvidence ? buildAppliedPayoutPolicyCards(liveOperationsPolicy) : [];
+  const releasePolicyDesk = showFullEvidence ? buildPayoutReleasePolicyDesk(batches, earnings, summary) : [];
+  const releaseCycleBoard = showFullEvidence ? buildPayoutReleaseCycleBoard(batches, earnings) : [];
+  const marketplaceUnblockBridge = showFullEvidence
+    ? buildPayoutMarketplaceUnblockBridge(batches, earnings, summary)
+    : [];
   const releaseQueue = buildPayoutReleaseQueue(batches);
   const releaseBlockerRows = buildPayoutReleaseBlockerRows(releaseQueue);
   const partnerFinanceQueueRows = buildPayoutPartnerFinanceQueueRows(batches);
-  const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
+  const inclusionAudit = showFullEvidence ? buildPayoutInclusionAudit(earnings, batches) : null;
   const confirmationBatchId = readSearchParam(params.payoutBatchId);
   const confirmationBatch = allBatches.find((batch) => batch.id === confirmationBatchId);
   const confirmation = buildPayoutActionConfirmation(
@@ -262,11 +269,24 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
 
       <AdminTablePanel
         className="payout-date-range-card"
-        description={`Range: ${dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service evidence use payout batch record dates.`}
+        description={`Range: ${dateRangeLabel(filters.range)}. The default view keeps current payout decisions first; full evidence adds policy, audit, and service traces.`}
         footer={
-          <AdminTextLink href="/finance-closeout">
-            Open finance closeout
-          </AdminTextLink>
+          <AdminFilterChipGroup ariaLabel="Payout evidence views">
+            <AdminTextLink
+              href={payoutHref({
+                details: showFullEvidence ? 'operations' : 'all',
+                page: filters.page,
+                pageSize: filters.pageSize,
+                range: filters.range,
+                withdrawalPage: filters.withdrawalPage,
+                withdrawalReconciliation: filters.withdrawalReconciliation,
+                withdrawalStatus: filters.withdrawalStatus,
+              })}
+            >
+              {showFullEvidence ? 'Operational view' : 'Full payout evidence'}
+            </AdminTextLink>
+            <AdminTextLink href="/finance-closeout">Open finance closeout</AdminTextLink>
+          </AdminFilterChipGroup>
         }
         resultLabel={`${summary.total} batch(es)`}
         resultTone={summary.total > 0 ? 'info' : 'warning'}
@@ -279,21 +299,22 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             ariaLabel="Payout date range"
             className="payout-range-filter-buttons"
             options={[
-              { href: '/payouts?range=all', label: 'All dates', value: 'all' },
-              { href: '/payouts?range=today', label: 'Today', value: 'today' },
-              { href: '/payouts?range=7d', label: 'Last 7 days', value: '7d' },
-              { href: '/payouts?range=30d', label: 'Last 30 days', value: '30d' },
+              { href: payoutHref({ details: filters.details, range: 'all' }), label: 'All dates', value: 'all' },
+              { href: payoutHref({ details: filters.details, range: 'today' }), label: 'Today', value: 'today' },
+              { href: payoutHref({ details: filters.details, range: '7d' }), label: 'Last 7 days', value: '7d' },
+              { href: payoutHref({ details: filters.details, range: '30d' }), label: 'Last 30 days', value: '30d' },
             ]}
           />
         </div>
       </AdminTablePanel>
-      <AdminTablePanel
-        className="payout-release-policy-card"
-        description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
-        resultLabel={`${releasePolicyDesk.length} gate(s)`}
-        resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
-        title="Payout batch release policy desk"
-      >
+      {showFullEvidence ? (
+        <AdminTablePanel
+          className="payout-release-policy-card"
+          description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
+          resultLabel={`${releasePolicyDesk.length} gate(s)`}
+          resultTone={releasePolicyDesk.some((signal) => signal.pillClass === 'pill-danger') ? 'danger' : 'info'}
+          title="Payout batch release policy desk"
+        >
         <AdminFilterChipGroup ariaLabel="Payout release policy links" className="admin-mb-12">
           <AdminTextLink href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
             Batch policy
@@ -384,7 +405,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             />
           ))}
         </AdminTaskGrid>
-      </AdminTablePanel>
+        </AdminTablePanel>
+      ) : null}
 
       <PayoutMoneyFlowSection
         cards={moneyFlowCards}
@@ -395,7 +417,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
 
       <PayoutCommandQueueSection signals={commandSignals} />
 
-      <PayoutInclusionAuditSection audit={inclusionAudit} />
+      {inclusionAudit ? <PayoutInclusionAuditSection audit={inclusionAudit} /> : null}
 
       <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
 
@@ -407,6 +429,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         pagination={withdrawalPagination}
         paginationHrefForPage={(withdrawalPage) =>
           payoutHref({
+            details: filters.details,
             page: filters.page,
             pageSize: filters.pageSize,
             range: filters.range,
@@ -422,18 +445,21 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
       />
 
-      <PayoutServiceEvidenceSection
-        batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}
-        currency={summary.currency}
-        items={serviceEvidence}
-      />
+      {showFullEvidence ? (
+        <PayoutServiceEvidenceSection
+          batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}
+          currency={summary.currency}
+          items={serviceEvidence}
+        />
+      ) : null}
 
-      <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} />
+      {showFullEvidence ? <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} /> : null}
 
       <PayoutBatchListSection
         pagination={payoutBatchPagination}
         paginationHrefForPage={(page) =>
           payoutHref({
+            details: filters.details,
             page,
             pageSize: filters.pageSize,
             range: filters.range,

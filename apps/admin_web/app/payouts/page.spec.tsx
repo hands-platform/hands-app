@@ -67,7 +67,7 @@ describe('PayoutsPage', () => {
     });
 
     const page = await PayoutsPage({
-      searchParams: Promise.resolve({ range: 'today' }),
+      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -79,6 +79,22 @@ describe('PayoutsPage', () => {
       'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card',
     );
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table payout-release-cycle-table');
+  });
+
+  it('keeps the default payout workspace focused and defers full evidence reads', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await PayoutsPage({
+      searchParams: Promise.resolve({ range: 'today' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const requestedHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(requestedHrefs).not.toContain('/admin/earnings?range=today&take=10');
+    expect(requestedHrefs).not.toContain(payoutPolicyHref);
+    expect(markup).toContain('Full payout evidence');
+    expect(markup).not.toContain('Payout batch release policy desk');
+    expect(markup).not.toContain('Payout inclusion audit');
   });
 
   it('uses the payout summary endpoint for top-level payout metrics', async () => {
