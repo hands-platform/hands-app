@@ -1581,6 +1581,7 @@ if (providerLinkMatch) {
         {
           query: 'section=control&control=reference',
           markers: ['Partner control workspace', 'Developer reference', 'Partner operations digest'],
+          excludedMarkers: ['Partner operator command queue', 'Partner review records'],
         },
         {
           query: 'section=bookings',
@@ -1588,7 +1589,18 @@ if (providerLinkMatch) {
         },
         {
           query: 'section=access',
-          markers: ['App activity and readiness', 'Recent app and operations activity', 'Marketplace booking gate decision'],
+          markers: ['Partner readiness and access controls', 'Access workspace view', 'Marketplace booking gate decision'],
+          excludedMarkers: ['Device and session activity'],
+        },
+        {
+          query: 'section=access&access=diagnostics',
+          markers: [
+            'Partner device and session diagnostics',
+            'Access workspace view',
+            'Recent app and operations activity',
+            'Device and session activity',
+          ],
+          excludedMarkers: ['Marketplace booking gate decision'],
         },
         {
           query: 'section=dossier',

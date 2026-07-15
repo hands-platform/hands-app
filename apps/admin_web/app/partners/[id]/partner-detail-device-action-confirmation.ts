@@ -41,9 +41,10 @@ export function partnerDeviceActionConfirmHref(
   providerDeviceId: string,
 ) {
   const params = new URLSearchParams({
+    access: 'diagnostics',
     deviceAction: action,
     providerDeviceId,
-    section: 'full',
+    section: 'access',
   });
 
   return `/partners/${encodeURIComponent(providerId)}?${params.toString()}`;
@@ -136,7 +137,7 @@ function baseConfirmation(input: {
 
   return {
     action: input.action,
-    cancelHref: `/partners/${input.provider.id}?section=full#app-activity`,
+    cancelHref: `/partners/${input.provider.id}?section=access&access=diagnostics#app-activity`,
     confirmLabel: input.confirmLabel,
     description: input.disabledReason || input.description,
     disabled,

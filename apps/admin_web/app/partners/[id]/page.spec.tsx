@@ -102,7 +102,7 @@ describe('ProviderDetailPage data loading', () => {
     await expect(
       ProviderDetailPage({
         params: Promise.resolve({ id: 'partner-no-diagnostics' }),
-        searchParams: Promise.resolve({ section: 'access' }),
+        searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
@@ -116,7 +116,7 @@ describe('ProviderDetailPage data loading', () => {
     );
   });
 
-  it('loads deep access diagnostics only for Master Admin operators', async () => {
+  it('loads deep access diagnostics only when a Master Admin selects the diagnostics workspace', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -132,6 +132,20 @@ describe('ProviderDetailPage data loading', () => {
       ProviderDetailPage({
         params: Promise.resolve({ id: 'partner-master-diagnostics' }),
         searchParams: Promise.resolve({ section: 'access' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-master-diagnostics?includeDiagnostics=false',
+      null,
+    );
+
+    mockedAdminGet.mockClear();
+
+    await expect(
+      ProviderDetailPage({
+        params: Promise.resolve({ id: 'partner-master-diagnostics' }),
+        searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
@@ -165,6 +179,15 @@ describe('ProviderDetailPage data loading', () => {
       params: Promise.resolve({ id: 'partner-control' }),
       searchParams: Promise.resolve({ section: 'control' }),
     });
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
+    ).toBe(true);
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
+    ).toBe(true);
+
+    mockedAdminGet.mockClear();
+
     const referencePage = await ProviderDetailPage({
       params: Promise.resolve({ id: 'partner-control' }),
       searchParams: Promise.resolve({ control: 'reference', section: 'control' }),
@@ -177,6 +200,67 @@ describe('ProviderDetailPage data loading', () => {
     expect(controlMarkup).not.toContain('Partner operations digest');
     expect(referenceMarkup).toContain('Partner operations digest');
     expect(referenceMarkup).toContain('Partner operating ledger');
+    expect(referenceMarkup).not.toContain('Partner operator command queue');
+    expect(referenceMarkup).not.toContain('Partner review records');
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
+    ).toBe(false);
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
+    ).toBe(false);
+  });
+
+  it('separates operator readiness from Developer device and session diagnostics', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (
+        href === '/admin/partners/partner-access?includeDiagnostics=false' ||
+        href === '/admin/partners/partner-access?includeDiagnostics=true'
+      ) {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) {
+        return [];
+      }
+      return fallback;
+    });
+
+    const readinessPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-access' }),
+      searchParams: Promise.resolve({ section: 'access' }),
+    });
+    const readinessMarkup = renderToStaticMarkup(readinessPage);
+
+    expect(readinessMarkup).toContain('Partner readiness and access controls');
+    expect(readinessMarkup).toContain('Access workspace view');
+    expect(readinessMarkup).toContain('Marketplace booking gate decision');
+    expect(readinessMarkup).not.toContain('Device and session activity');
+
+    mockedAdminGet.mockClear();
+
+    const diagnosticsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-access' }),
+      searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
+    });
+    const diagnosticsMarkup = renderToStaticMarkup(diagnosticsPage);
+
+    expect(diagnosticsMarkup).toContain('Partner device and session diagnostics');
+    expect(diagnosticsMarkup).toContain('Access workspace view');
+    expect(diagnosticsMarkup).toContain('Recent app and operations activity');
+    expect(diagnosticsMarkup).toContain('Device and session activity');
+    expect(diagnosticsMarkup).not.toContain('Marketplace booking gate decision');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-access?includeDiagnostics=true',
+      null,
+    );
   });
 
   it('loads partner finance records only in the finance dossier workspace', async () => {
@@ -320,7 +404,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).toContain('canLoadPartnerDiagnostics');
     expect(providerDetailSource).not.toContain('AdminDeveloperSystemSection');
     expect(providerDetailSource).toContain(
-      "const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (",
+      'const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
     expect(providerDetailSource).toContain(
       "canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? (",
@@ -329,10 +413,10 @@ describe('ProviderDetailPage data loading', () => {
       "const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'bookings' ? (",
     );
     expect(providerDetailSource).toContain(
-      "const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (",
+      'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',
     );
     expect(
-      providerDetailSource.indexOf("const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? ("),
+      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = shouldLoadAccessDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'),
     );
@@ -347,7 +431,7 @@ describe('ProviderDetailPage data loading', () => {
       providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
     );
     expect(
-      providerDetailSource.indexOf("const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? ("),
+      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? ('),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
     );

@@ -32,7 +32,7 @@ describe('partner detail device action confirmation', () => {
 
     expect(confirmation).toEqual({
       action: 'block-device',
-      cancelHref: '/partners/partner-detail-123456?section=full#app-activity',
+      cancelHref: '/partners/partner-detail-123456?section=access&access=diagnostics#app-activity',
       confirmLabel: 'Block device',
       description:
         'Block Partner device andr...3456 for Linh Wellness. This prevents the device from being trusted for Partner app activity.',
@@ -90,7 +90,7 @@ describe('partner detail device action confirmation', () => {
     expect(readPartnerDeviceConfirmationAction('unblock-device')).toBe('unblock-device');
     expect(readPartnerDeviceConfirmationAction('delete-device')).toBeNull();
     expect(partnerDeviceActionConfirmHref('partner 1', 'block-device', 'device 1')).toBe(
-      '/partners/partner%201?deviceAction=block-device&providerDeviceId=device+1&section=full',
+      '/partners/partner%201?access=diagnostics&deviceAction=block-device&providerDeviceId=device+1&section=access',
     );
   });
 });
