@@ -21,6 +21,22 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
   }
 
   @override
+  Future<List<CustomerPaymentMethodOption>> listPaymentMethods() async {
+    final result = await _api.getJson('/customer/payment-methods');
+    final methods = result is Map<String, dynamic> ? result['methods'] : null;
+    if (methods is! List<dynamic>) {
+      return const [CustomerPaymentMethodOption.cash];
+    }
+
+    final parsed = methods
+        .whereType<Map<String, dynamic>>()
+        .map(CustomerPaymentMethodOption.fromJson)
+        .where((item) => item.method.isNotEmpty && item.label.isNotEmpty)
+        .toList(growable: false);
+    return parsed.isEmpty ? const [CustomerPaymentMethodOption.cash] : parsed;
+  }
+
+  @override
   void joinBookingRoom(String bookingId) {
     _socket.joinBooking(bookingId);
   }
@@ -33,11 +49,27 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    required int rating,
+    String? comment,
+  }) async {
+    final result = await _api.postJson('/customer/reviews', {
+      'bookingId': bookingId,
+      'rating': rating,
+      if (comment != null && comment.trim().isNotEmpty)
+        'comment': comment.trim(),
+    });
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
+    required String paymentMethod,
     required String customerName,
     required String customerPhone,
     required String addressLine,
@@ -63,8 +95,9 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
       if (currentLat != null) 'currentLat': currentLat,
       if (currentLng != null) 'currentLng': currentLng,
       if (currentLocationUpdatedAt != null)
-        'currentLocationUpdatedAt': currentLocationUpdatedAt.toUtc().toIso8601String(),
-      'paymentMethod': 'CASH',
+        'currentLocationUpdatedAt':
+            currentLocationUpdatedAt.toUtc().toIso8601String(),
+      'paymentMethod': paymentMethod,
     });
     final bookingId = result['id'] as String;
     _socket.joinBooking(bookingId);

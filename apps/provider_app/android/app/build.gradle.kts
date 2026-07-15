@@ -11,8 +11,16 @@ plugins {
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseKeystore = keystorePropertiesFile.exists()
+val releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("release", ignoreCase = true)
+}
 if (hasReleaseKeystore) {
     keystorePropertiesFile.reader(Charsets.UTF_8).use { keystoreProperties.load(it) }
+}
+if (releaseBuildRequested && !hasReleaseKeystore) {
+    throw GradleException(
+        "Release signing is not configured. Create android/key.properties with the HANDS Partner upload keystore before building a release.",
+    )
 }
 
 fun signingProperty(name: String): String =
@@ -59,8 +67,9 @@ android {
 
     buildTypes {
         release {
-            // Local MVP falls back to the debug key. Add android/key.properties for store release signing.
-            signingConfig = signingConfigs.getByName(if (hasReleaseKeystore) "release" else "debug")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

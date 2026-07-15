@@ -33,6 +33,13 @@ void main() {
         ProviderScope(
           overrides: [
             customerLocationProvider.overrideWithValue(locationSource),
+            customerRepositoryProvider.overrideWithValue(CustomerRepository(
+              _FakeDiscoveryRepository(),
+              _RecordingBookingRepository(),
+              _FakeChatRepository(),
+              _FakeCouponRepository(),
+              _FakePushNotificationRepository(),
+            )),
           ],
           child: MaterialApp(
             home: BookingConfirmationPage(
@@ -125,8 +132,79 @@ void main() {
       expect(bookingRepository.currentLat, 10.777);
       expect(bookingRepository.currentLng, 106.701);
       expect(bookingRepository.currentLocationUpdatedAt, isNotNull);
+      expect(bookingRepository.paymentMethod, 'CASH');
     },
   );
+
+  testWidgets('sends the payment method selected from the API catalog',
+      (tester) async {
+    final bookingRepository = _RecordingBookingRepository(
+      paymentMethods: const [
+        CustomerPaymentMethodOption.cash,
+        CustomerPaymentMethodOption(
+          method: 'MOMO',
+          label: 'MoMo',
+          requiresRedirect: true,
+        ),
+      ],
+    );
+    final locationSource = CustomerDeviceLocationDataSource(
+      isLocationServiceEnabled: () async => true,
+      checkPermission: () async => LocationPermission.whileInUse,
+      getCurrentPosition: ({LocationSettings? locationSettings}) async =>
+          _position(latitude: 10.777, longitude: 106.701),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          customerLocationProvider.overrideWithValue(locationSource),
+          customerRepositoryProvider.overrideWithValue(CustomerRepository(
+            _FakeDiscoveryRepository(),
+            bookingRepository,
+            _FakeChatRepository(),
+            _FakeCouponRepository(),
+            _FakePushNotificationRepository(),
+          )),
+        ],
+        child: MaterialApp(
+          home: BookingConfirmationPage(
+            initialCustomerLat: 10.7769,
+            initialCustomerLng: 106.7009,
+            initialCustomerAddress: 'District 1, Ho Chi Minh City',
+            providerDetail: const {
+              'id': 'partner-1',
+              'displayName': 'Smoke Partner',
+            },
+            selectedService: const {
+              'id': 'service-1',
+              'name': 'Aroma Massage',
+              'durationMinutes': 60,
+              'basePrice': 300000,
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final paymentField = find.byType(DropdownButtonFormField<String>);
+    for (var attempt = 0;
+        attempt < 6 && paymentField.evaluate().isEmpty;
+        attempt++) {
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+    }
+    expect(paymentField, findsOneWidget);
+    await tester.tap(paymentField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('MoMo').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.paymentMethod, 'MOMO');
+  });
 }
 
 Position _position({
@@ -148,13 +226,32 @@ Position _position({
 }
 
 class _RecordingBookingRepository implements CustomerBookingRepository {
+  _RecordingBookingRepository({
+    this.paymentMethods = const [CustomerPaymentMethodOption.cash],
+  });
+
+  final List<CustomerPaymentMethodOption> paymentMethods;
   double? currentLat;
   double? currentLng;
   DateTime? currentLocationUpdatedAt;
+  String? paymentMethod;
 
   @override
   Future<Map<String, dynamic>> cancelBooking(String bookingId) async {
     return {'id': bookingId};
+  }
+
+  @override
+  Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    required int rating,
+    String? comment,
+  }) async {
+    return {
+      'bookingId': bookingId,
+      'rating': rating,
+      'comment': comment,
+    };
   }
 
   @override
@@ -163,6 +260,7 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
+    required String paymentMethod,
     required String customerName,
     required String customerPhone,
     required String addressLine,
@@ -175,6 +273,7 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
     this.currentLat = currentLat;
     this.currentLng = currentLng;
     this.currentLocationUpdatedAt = currentLocationUpdatedAt;
+    this.paymentMethod = paymentMethod;
     return {'id': 'booking-1'};
   }
 
@@ -189,6 +288,11 @@ class _RecordingBookingRepository implements CustomerBookingRepository {
   @override
   Future<List<dynamic>> listBookings() async {
     return [];
+  }
+
+  @override
+  Future<List<CustomerPaymentMethodOption>> listPaymentMethods() async {
+    return paymentMethods;
   }
 
   @override

@@ -104,6 +104,10 @@ class CustomerRepository {
     return _bookingRepository.listBookings();
   }
 
+  Future<List<CustomerPaymentMethodOption>> listPaymentMethods() async {
+    return _bookingRepository.listPaymentMethods();
+  }
+
   void joinBookingRoom(String bookingId) {
     _bookingRepository.joinBookingRoom(bookingId);
   }
@@ -112,11 +116,24 @@ class CustomerRepository {
     return _bookingRepository.cancelBooking(bookingId);
   }
 
+  Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    required int rating,
+    String? comment,
+  }) async {
+    return _bookingRepository.createReview(
+      bookingId: bookingId,
+      rating: rating,
+      comment: comment,
+    );
+  }
+
   Future<Map<String, dynamic>> createBooking(
     String serviceId, {
     String? providerId,
     String? couponCode,
     String? selectedLocationId,
+    required String paymentMethod,
     required String customerName,
     required String customerPhone,
     required String addressLine,
@@ -131,6 +148,7 @@ class CustomerRepository {
       providerId: providerId,
       couponCode: couponCode,
       selectedLocationId: selectedLocationId,
+      paymentMethod: paymentMethod,
       customerName: customerName,
       customerPhone: customerPhone,
       addressLine: addressLine,

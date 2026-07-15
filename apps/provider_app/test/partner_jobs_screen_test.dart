@@ -209,6 +209,55 @@ void main() {
     expect(find.textContaining('HANDS operations for review'), findsOneWidget);
   });
 
+  testWidgets('starts a matched service from the chat screen', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bookingRepository = _StartableBookingRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              _FakeProviderProfileRepository(),
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChatScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Open latest chat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Start service'), findsOneWidget);
+    await tester.tap(find.text('Start service'));
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.startedBookingId, 'booking-chat-ready');
+    expect(find.text('Complete service'), findsOneWidget);
+    expect(find.textContaining('Service started'), findsOneWidget);
+  });
+
   testWidgets(
       'blocks post-match cancellation when action location capture fails',
       (tester) async {
@@ -677,6 +726,29 @@ class _CompletableBookingRepository extends _ChatReadyBookingRepository {
       'id': bookingId,
       'status': 'COMPLETED',
     };
+  }
+}
+
+class _StartableBookingRepository extends _ChatReadyBookingRepository {
+  String? startedBookingId;
+
+  @override
+  Future<List<dynamic>> listBookings() async => [
+        {
+          'id': 'booking-chat-ready',
+          'status': 'MATCHED',
+          'chatRoom': {'id': 'chat-room-1'},
+          'addressSnapshot': {
+            'latitude': 10.7769,
+            'longitude': 106.7009,
+          },
+        },
+      ];
+
+  @override
+  Future<Map<String, dynamic>> startBooking(String bookingId) async {
+    startedBookingId = bookingId;
+    return {'id': bookingId, 'status': 'IN_SERVICE'};
   }
 }
 

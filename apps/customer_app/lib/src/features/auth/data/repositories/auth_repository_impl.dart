@@ -61,6 +61,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    try {
+      await _apiClient.revokeRefreshToken();
+    } catch (_) {
+      // Local sign-out must still complete when the API is unavailable.
+    }
     await _localDataSource.clearSession();
     _activeSession = null;
     _apiClient.onTokensRefreshed = null;

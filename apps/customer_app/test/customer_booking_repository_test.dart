@@ -21,6 +21,7 @@ void main() {
       providerId: 'partner-1',
       couponCode: ' hands10 ',
       selectedLocationId: 'location-1',
+      paymentMethod: 'MOMO',
       customerName: 'Demo Customer',
       customerPhone: '0865907184',
       addressLine: 'District 1, Ho Chi Minh City, Vietnam',
@@ -48,13 +49,44 @@ void main() {
       api.postBody['currentLocationUpdatedAt'],
       '2026-06-01T01:02:03.000Z',
     );
-    expect(api.postBody['paymentMethod'], 'CASH');
+    expect(api.postBody['paymentMethod'], 'MOMO');
     expect(api.postBody['scheduledStartAt'], isNull);
 
     final address = api.postBody['address'] as Map<String, dynamic>;
     expect(address['name'], 'Demo Customer');
     expect(address['phone'], '0865907184');
     expect(address['line1'], 'District 1, Ho Chi Minh City, Vietnam');
+  });
+
+  test('lists only payment methods returned by the authenticated API',
+      () async {
+    final api = _FakeApiClient(
+      postResponse: const {},
+      getResponse: {
+        'currency': 'VND',
+        'defaultMethod': 'CASH',
+        'methods': [
+          {
+            'method': 'CASH',
+            'label': 'Cash',
+            'requiresRedirect': false,
+          },
+          {
+            'method': 'MOMO',
+            'label': 'MoMo',
+            'requiresRedirect': true,
+          },
+        ],
+      },
+    );
+    final repository =
+        CustomerBookingRepositoryImpl(api, _FakeRealtimeSocket());
+
+    final methods = await repository.listPaymentMethods();
+
+    expect(api.getPath, '/customer/payment-methods');
+    expect(methods.map((item) => item.method), ['CASH', 'MOMO']);
+    expect(methods.last.requiresRedirect, isTrue);
   });
 }
 

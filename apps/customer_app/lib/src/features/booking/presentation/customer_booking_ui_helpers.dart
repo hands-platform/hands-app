@@ -489,6 +489,19 @@ LatLng? deriveRealtimeLatLng(Map<String, dynamic>? payload) {
   return LatLng(lat, lng);
 }
 
+Map<String, dynamic>? bookingLatestProviderLocation(
+    Map<String, dynamic>? booking) {
+  final snapshots = asList(booking?['snapshots']);
+  if (snapshots.isEmpty) {
+    return null;
+  }
+  final snapshot = asMap(snapshots.first);
+  if (deriveRealtimeLatLng(snapshot) == null) {
+    return null;
+  }
+  return snapshot;
+}
+
 String formatCoordinate(double? value) {
   if (value == null) {
     return '-';
@@ -575,6 +588,24 @@ WaitingCustomerAction waitingCustomerAction({
       title: 'Service is live',
       body:
           'Continue in chat if you need help during the service. Review becomes available after completion.',
+    );
+  }
+  if (status == 'COMPLETED') {
+    return const WaitingCustomerAction(
+      title: 'Service complete',
+      body: 'Review your service when ready, then return to your bookings.',
+    );
+  }
+  if (status == 'CANCELLED') {
+    return const WaitingCustomerAction(
+      title: 'Booking cancelled',
+      body: 'This request is closed. The booking record remains in Bookings.',
+    );
+  }
+  if (status == 'EXPIRED') {
+    return const WaitingCustomerAction(
+      title: 'Request expired',
+      body: 'No partner was selected before the response window closed.',
     );
   }
   return WaitingCustomerAction(

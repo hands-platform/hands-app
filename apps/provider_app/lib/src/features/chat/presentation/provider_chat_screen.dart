@@ -41,6 +41,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   DateTime? lastSharedAt;
   Map<String, dynamic>? currentBooking;
   bool loading = false;
+  bool startSubmitting = false;
   bool cancellationSubmitting = false;
   bool completionSubmitting = false;
 
@@ -387,6 +388,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  Future<void> startService() async {
+    final activeBookingId = bookingId;
+    if (activeBookingId == null || !isServiceStartAvailable) {
+      return;
+    }
+
+    setState(() {
+      startSubmitting = true;
+      error = null;
+      statusMessage = null;
+    });
+    try {
+      await ref.read(providerRepositoryProvider).startBooking(activeBookingId);
+      setState(() {
+        currentBooking = {
+          ...?currentBooking,
+          'id': activeBookingId,
+          'status': 'IN_SERVICE',
+        };
+        statusMessage =
+            'Service started. Complete it here when the appointment ends.';
+      });
+      await ref.read(providerLocationHeartbeatProvider).startActiveBooking(
+            activeBookingId,
+            runImmediately: false,
+          );
+    } catch (exception) {
+      setState(() => error = providerAppErrorMessage(exception));
+    } finally {
+      if (mounted) {
+        setState(() => startSubmitting = false);
+      }
+    }
+  }
+
+  bool get isServiceStartAvailable {
+    return bookingId != null &&
+        currentBooking?['status']?.toString() == 'MATCHED';
+  }
+
   bool get isPostMatchCancellationAvailable {
     final status = currentBooking?['status']?.toString();
     return bookingId != null &&
@@ -499,13 +540,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               icon: const Icon(Icons.my_location_outlined),
               label: const Text('Share current location'),
             ),
+            if (isServiceStartAvailable) ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: startSubmitting ||
+                        completionSubmitting ||
+                        cancellationSubmitting ||
+                        loading
+                    ? null
+                    : startService,
+                icon: startSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.play_arrow_outlined),
+                label: const Text('Start service'),
+              ),
+            ],
             if (isServiceCompletionAvailable) ...[
               const SizedBox(height: 8),
               FilledButton.icon(
-                onPressed:
-                    completionSubmitting || cancellationSubmitting || loading
-                        ? null
-                        : completeService,
+                onPressed: startSubmitting ||
+                        completionSubmitting ||
+                        cancellationSubmitting ||
+                        loading
+                    ? null
+                    : completeService,
                 icon: completionSubmitting
                     ? const SizedBox(
                         width: 18,
@@ -519,10 +581,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             if (isPostMatchCancellationAvailable) ...[
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed:
-                    cancellationSubmitting || completionSubmitting || loading
-                        ? null
-                        : requestPostMatchCancellation,
+                onPressed: startSubmitting ||
+                        cancellationSubmitting ||
+                        completionSubmitting ||
+                        loading
+                    ? null
+                    : requestPostMatchCancellation,
                 icon: cancellationSubmitting
                     ? const SizedBox(
                         width: 18,

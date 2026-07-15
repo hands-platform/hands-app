@@ -30,6 +30,19 @@ class ApiClient {
         http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
   }
 
+  Future<void> revokeRefreshToken() async {
+    final token = refreshToken;
+    if (token == null || token.isEmpty) {
+      return;
+    }
+    final response = await http.post(
+      _uri('/auth/logout'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'refreshToken': token}),
+    );
+    _decode(response);
+  }
+
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   Map<String, String> _headers() {

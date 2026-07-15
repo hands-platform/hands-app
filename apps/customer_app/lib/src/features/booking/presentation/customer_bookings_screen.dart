@@ -7,6 +7,7 @@ import '../../../app_state.dart';
 import '../../../core/widgets/customer_feedback_panels.dart';
 import '../../discovery/presentation/customer_service_option_helpers.dart';
 import '../../map/presentation/customer_map_widgets.dart';
+import 'customer_booking_flow_screens.dart';
 import 'customer_booking_ui_helpers.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
@@ -32,17 +33,12 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   @override
   void initState() {
     super.initState();
-    if (_hasInitialTarget) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(restoreSessionAndLoadTarget());
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(restoreSessionAndLoadBookings());
+    });
   }
 
-  bool get _hasInitialTarget =>
-      widget.initialBookingId != null || widget.initialPaymentId != null;
-
-  Future<void> restoreSessionAndLoadTarget() async {
+  Future<void> restoreSessionAndLoadBookings() async {
     setState(() {
       loading = true;
       error = null;
@@ -119,6 +115,57 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
     }
   }
 
+  Future<void> openBooking(Map<String, dynamic> booking) async {
+    final bookingId = booking['id']?.toString();
+    if (bookingId == null || loading) {
+      return;
+    }
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final detail =
+          await ref.read(customerRepositoryProvider).getBooking(bookingId);
+      if (!mounted) {
+        return;
+      }
+      setState(() => loading = false);
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (context) => BookingWaitingPage(
+            initialBooking: detail,
+            onBookingUpdated: replaceBooking,
+          ),
+        ),
+      );
+      if (mounted) {
+        await loadBookings(showLoading: false);
+      }
+    } catch (exception) {
+      if (mounted) {
+        setState(() => error = '$exception');
+      }
+    } finally {
+      if (mounted && loading) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  void replaceBooking(Map<String, dynamic> updated) {
+    final id = updated['id']?.toString();
+    if (id == null || !mounted) {
+      return;
+    }
+    setState(() {
+      bookings = bookings
+          .map((item) =>
+              item is Map<String, dynamic> && item['id'] == id ? updated : item)
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
@@ -176,6 +223,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
             for (final booking in items)
               CustomerBookingHistoryCard(
                 booking: booking,
+                onOpen: () => openBooking(booking),
                 highlighted: isCustomerBookingTarget(
                   booking,
                   bookingId: widget.initialBookingId,
@@ -268,10 +316,12 @@ class CustomerBookingHistoryCard extends StatelessWidget {
   const CustomerBookingHistoryCard({
     super.key,
     required this.booking,
+    required this.onOpen,
     this.highlighted = false,
   });
 
   final Map<String, dynamic> booking;
+  final VoidCallback onOpen;
   final bool highlighted;
 
   @override
@@ -347,6 +397,15 @@ class CustomerBookingHistoryCard extends StatelessWidget {
                   .textTheme
                   .bodyMedium
                   ?.copyWith(color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonalIcon(
+                onPressed: onOpen,
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('Open booking'),
+              ),
             ),
           ],
         ),

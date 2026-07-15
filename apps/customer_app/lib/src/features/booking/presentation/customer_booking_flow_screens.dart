@@ -12,6 +12,7 @@ import '../../chat/presentation/customer_chat_screen.dart';
 import '../../discovery/presentation/customer_service_option_helpers.dart';
 import '../../map/presentation/customer_location_helpers.dart';
 import '../../map/presentation/customer_map_widgets.dart';
+import '../domain/repositories/customer_booking_repository.dart';
 import 'customer_booking_error_messages.dart';
 import 'customer_booking_ui_helpers.dart';
 
@@ -55,6 +56,11 @@ class _BookingConfirmationPageState
   bool applyingCoupon = false;
   bool submitting = false;
   bool locationConfirmed = false;
+  bool loadingPaymentMethods = true;
+  List<CustomerPaymentMethodOption> paymentMethods = const [
+    CustomerPaymentMethodOption.cash,
+  ];
+  String selectedPaymentMethod = CustomerPaymentMethodOption.cash.method;
   String? error;
 
   @override
@@ -76,6 +82,35 @@ class _BookingConfirmationPageState
     if (customerLat == null || customerLng == null) {
       locationMessage =
           'Choose the exact Vietnam service location before booking.';
+    }
+    unawaited(loadPaymentMethods());
+  }
+
+  Future<void> loadPaymentMethods() async {
+    try {
+      final loaded =
+          await ref.read(customerRepositoryProvider).listPaymentMethods();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        paymentMethods =
+            loaded.isEmpty ? const [CustomerPaymentMethodOption.cash] : loaded;
+        if (!paymentMethods
+            .any((item) => item.method == selectedPaymentMethod)) {
+          selectedPaymentMethod = paymentMethods.first.method;
+        }
+        loadingPaymentMethods = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        paymentMethods = const [CustomerPaymentMethodOption.cash];
+        selectedPaymentMethod = CustomerPaymentMethodOption.cash.method;
+        loadingPaymentMethods = false;
+      });
     }
   }
 
@@ -171,6 +206,7 @@ class _BookingConfirmationPageState
             providerId: widget.providerDetail['id'] as String?,
             couponCode: appliedCouponCode,
             selectedLocationId: selectedLocationId,
+            paymentMethod: selectedPaymentMethod,
             customerName: nameController.text.trim(),
             customerPhone: phoneController.text.trim(),
             addressLine: addressController.text.trim(),
@@ -510,13 +546,42 @@ class _BookingConfirmationPageState
             const SizedBox(height: 14),
             BookingSectionCard(
               title: 'Payment method',
-              child: Row(
-                children: [
-                  const Expanded(child: Text('Cash payment on service start')),
-                  FilledButton.tonal(
-                      onPressed: () {}, child: const Text('View all')),
-                ],
-              ),
+              child: loadingPaymentMethods
+                  ? const Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Checking available payment methods...'),
+                      ],
+                    )
+                  : paymentMethods.length == 1
+                      ? _PaymentMethodSummary(method: paymentMethods.first)
+                      : DropdownButtonFormField<String>(
+                          initialValue: selectedPaymentMethod,
+                          decoration: const InputDecoration(
+                            labelText: 'Payment method',
+                          ),
+                          items: paymentMethods
+                              .map(
+                                (method) => DropdownMenuItem<String>(
+                                  value: method.method,
+                                  child: Text(method.label),
+                                ),
+                              )
+                              .toList(growable: false),
+                          onChanged: submitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(
+                                        () => selectedPaymentMethod = value);
+                                  }
+                                },
+                        ),
             ),
             const SizedBox(height: 14),
             BookingSectionCard(
@@ -578,7 +643,7 @@ class _BookingConfirmationPageState
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '$appliedCouponCode saves ${formatCurrency(couponDiscountAmount)} VND. Final cash amount is ${formatCurrency(totalAmount)} VND.',
+                            '$appliedCouponCode saves ${formatCurrency(couponDiscountAmount)} VND. Final payment amount is ${formatCurrency(totalAmount)} VND.',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -664,6 +729,50 @@ class _BookingConfirmationPageState
   }
 }
 
+class _PaymentMethodSummary extends StatelessWidget {
+  const _PaymentMethodSummary({required this.method});
+
+  final CustomerPaymentMethodOption method;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          method.method == 'CASH'
+              ? Icons.payments_outlined
+              : Icons.account_balance_wallet_outlined,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                method.label,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                method.method == 'CASH'
+                    ? 'Pay the partner when the service starts.'
+                    : 'Continue to secure payment after the booking request.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class BookingSummaryRow extends StatelessWidget {
   const BookingSummaryRow({
     super.key,
@@ -735,12 +844,14 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
   String? statusMessage;
   String? error;
   bool loading = false;
+  bool reviewSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _socket = ref.read(realtimeSocketProvider);
     booking = widget.initialBooking;
+    latestProviderLocation = bookingLatestProviderLocation(booking);
     final bookingId = booking?['id'] as String?;
     if (bookingId != null) {
       ref.read(customerRepositoryProvider).joinBookingRoom(bookingId);
@@ -829,7 +940,13 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       if (!mounted) {
         return;
       }
-      setState(() => booking = updated);
+      final storedProviderLocation = bookingLatestProviderLocation(updated);
+      setState(() {
+        booking = updated;
+        if (storedProviderLocation != null) {
+          latestProviderLocation = storedProviderLocation;
+        }
+      });
       widget.onBookingUpdated(updated);
     } catch (exception) {
       if (mounted) {
@@ -908,6 +1025,46 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     }
   }
 
+  Future<void> submitReview() async {
+    final bookingId = booking?['id']?.toString();
+    if (bookingId == null || reviewSubmitting) {
+      return;
+    }
+    final reviewInput = await showDialog<CustomerReviewInput>(
+      context: context,
+      builder: (context) => const CustomerReviewDialog(),
+    );
+    if (reviewInput == null || !mounted) {
+      return;
+    }
+    setState(() {
+      reviewSubmitting = true;
+      error = null;
+    });
+    try {
+      final review = await ref.read(customerRepositoryProvider).createReview(
+            bookingId: bookingId,
+            rating: reviewInput.rating,
+            comment: reviewInput.comment,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        booking = {...?booking, 'review': review};
+        statusMessage = 'Review submitted. Thank you.';
+      });
+    } catch (exception) {
+      if (mounted) {
+        setState(() => error = '$exception');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => reviewSubmitting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentBooking = booking;
@@ -921,12 +1078,17 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final service =
         currentBooking == null ? null : firstBookingService(currentBooking);
     final status = currentBooking?['status'] as String? ?? 'OPEN_MATCHING';
+    final isMatching = status == 'OPEN_MATCHING';
+    final isCompleted = status == 'COMPLETED';
+    final isClosed =
+        currentBooking != null && isCustomerClosedBooking(currentBooking);
     final canDirectCancel = canCustomerDirectlyCancelBooking(currentBooking);
     final needsOpsReview = customerCancellationNeedsOpsReview(status);
     final preferredProvider =
         status == 'OPEN_MATCHING' ? preferredProviderData : null;
-    final finalizedProvider =
-        status == 'OPEN_MATCHING' ? null : selectedProvider;
+    final finalizedProvider = status == 'OPEN_MATCHING'
+        ? null
+        : selectedProvider ?? preferredProviderData;
     final alternativeParticipants = status == 'OPEN_MATCHING'
         ? customerSelectableMarketplaceParticipants(
             participants,
@@ -1044,9 +1206,11 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           const SizedBox(height: 8),
                           Text(waitingText,
                               style: Theme.of(context).textTheme.bodyLarge),
-                          const SizedBox(height: 8),
-                          Text(
-                              'This request closes automatically at ${formatExpiry(expiresAt)}'),
+                          if (isMatching) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                                'This request closes automatically at ${formatExpiry(expiresAt)}'),
+                          ],
                           const SizedBox(height: 16),
                           if (loading) const LinearProgressIndicator(),
                           if (error != null) ...[
@@ -1063,86 +1227,92 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               customerServiceOptionPriceLabel(service),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              BookingTimelineChip(
-                                icon: Icons.tag_rounded,
-                                label:
-                                    'Booking ${shortCode(currentBooking?['id'])}',
-                              ),
-                              BookingTimelineChip(
-                                icon: Icons.timer_outlined,
-                                label: status == 'OPEN_MATCHING'
-                                    ? timeLeft
-                                    : waitingStepLabel(status),
-                              ),
-                              BookingTimelineChip(
-                                icon: Icons.groups_rounded,
-                                label: fallbackCount == 0
-                                    ? 'No marketplace option yet'
-                                    : '$fallbackCount marketplace ready',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          LinearProgressIndicator(
-                            value: bookingProgress(status),
-                            minHeight: 8,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          const SizedBox(height: 18),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final cardWidth = (constraints.maxWidth - 12) / 2;
-                              return Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: WaitingStatCard(
-                                      label: 'Current step',
-                                      value: waitingStepLabel(status),
-                                    ),
+                          if (!isClosed) ...[
+                            const SizedBox(height: 16),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                BookingTimelineChip(
+                                  icon: Icons.tag_rounded,
+                                  label:
+                                      'Booking ${shortCode(currentBooking?['id'])}',
+                                ),
+                                BookingTimelineChip(
+                                  icon: Icons.timer_outlined,
+                                  label: isMatching
+                                      ? timeLeft
+                                      : waitingStepLabel(status),
+                                ),
+                                if (isMatching)
+                                  BookingTimelineChip(
+                                    icon: Icons.groups_rounded,
+                                    label: fallbackCount == 0
+                                        ? 'No marketplace option yet'
+                                        : '$fallbackCount marketplace ready',
                                   ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: WaitingStatCard(
-                                      label: 'Marketplace partners',
-                                      value: fallbackCount.toString(),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            LinearProgressIndicator(
+                              value: bookingProgress(status),
+                              minHeight: 8,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ],
+                          if (isMatching) ...[
+                            const SizedBox(height: 18),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final cardWidth =
+                                    (constraints.maxWidth - 12) / 2;
+                                return Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  children: [
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: WaitingStatCard(
+                                        label: 'Current step',
+                                        value: waitingStepLabel(status),
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: WaitingStatCard(
-                                      label: 'Time left',
-                                      value: timeLeft,
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: WaitingStatCard(
+                                        label: 'Marketplace partners',
+                                        value: fallbackCount.toString(),
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(
-                                    width: cardWidth,
-                                    child: WaitingStatCard(
-                                      label: 'Signal',
-                                      value: waitingSignalLabel(
-                                          status, fallbackCount),
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: WaitingStatCard(
+                                        label: 'Time left',
+                                        value: timeLeft,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          WaitingStagePanel(
-                            status: status,
-                            fallbackCount: fallbackCount,
-                            preferredProviderName:
-                                preferredProvider?['displayName'] as String?,
-                            expiresAt: expiresAt,
-                            matchingPolicy: matchingPolicy,
-                          ),
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: WaitingStatCard(
+                                        label: 'Signal',
+                                        value: waitingSignalLabel(
+                                            status, fallbackCount),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            WaitingStagePanel(
+                              status: status,
+                              fallbackCount: fallbackCount,
+                              preferredProviderName:
+                                  preferredProvider?['displayName'] as String?,
+                              expiresAt: expiresAt,
+                              matchingPolicy: matchingPolicy,
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           WaitingInfoBanner(
                             title: action.title,
@@ -1159,16 +1329,18 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               label: Text(chatActionLabel(status)),
                             ),
                           ],
-                          const SizedBox(height: 18),
-                          BookingSectionCard(
-                            title: 'Partner location',
-                            child: LiveLocationDetails(
-                              customerPoint: customerPoint,
-                              providerLocation: latestProviderLocation,
-                              emptyText:
-                                  'The partner\'s last shared pin will appear here after they share location.',
+                          if (!isClosed) ...[
+                            const SizedBox(height: 18),
+                            BookingSectionCard(
+                              title: 'Partner location',
+                              child: LiveLocationDetails(
+                                customerPoint: customerPoint,
+                                providerLocation: latestProviderLocation,
+                                emptyText:
+                                    'The partner\'s last shared pin will appear here after they share location.',
+                              ),
                             ),
-                          ),
+                          ],
                           const SizedBox(height: 18),
                           if (preferredProvider != null) ...[
                             Text('Chosen partner',
@@ -1220,17 +1392,44 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               detail:
                                   'Your booking is now locked to this partner.',
                             ),
-                          ] else ...[
+                          ] else if (isMatching) ...[
                             const EmptyPanel(
                                 text:
                                     'Waiting for a partner response. Marketplace options can appear here if the first partner is slow to confirm.'),
                           ],
+                          if (isCompleted &&
+                              currentBooking?['review'] == null) ...[
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: reviewSubmitting ? null : submitReview,
+                              icon: const Icon(Icons.star_outline_rounded),
+                              label: Text(reviewSubmitting
+                                  ? 'Submitting review...'
+                                  : 'Leave a review'),
+                            ),
+                          ] else if (isCompleted) ...[
+                            const SizedBox(height: 12),
+                            InfoBanner(
+                              text:
+                                  'Review submitted: ${asNum(asMap(currentBooking?['review'])?['rating'])?.toInt() ?? '-'} / 5',
+                            ),
+                          ],
+                          if (isClosed) ...[
+                            const SizedBox(height: 12),
+                            FilledButton.tonalIcon(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.receipt_long_outlined),
+                              label: const Text('Close booking record'),
+                            ),
+                          ],
                           const SizedBox(height: 10),
-                          FilledButton.tonalIcon(
-                            onPressed: loading ? null : () => refreshBooking(),
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Check latest status'),
-                          ),
+                          if (!isClosed)
+                            FilledButton.tonalIcon(
+                              onPressed:
+                                  loading ? null : () => refreshBooking(),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Check latest status'),
+                            ),
                         ],
                       ),
                     ),
@@ -1241,6 +1440,96 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class CustomerReviewInput {
+  const CustomerReviewInput({
+    required this.rating,
+    this.comment,
+  });
+
+  final int rating;
+  final String? comment;
+}
+
+class CustomerReviewDialog extends StatefulWidget {
+  const CustomerReviewDialog({super.key});
+
+  @override
+  State<CustomerReviewDialog> createState() => _CustomerReviewDialogState();
+}
+
+class _CustomerReviewDialogState extends State<CustomerReviewDialog> {
+  final commentController = TextEditingController();
+  int rating = 5;
+
+  @override
+  void dispose() {
+    commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Review your service'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('How was your HANDS service?'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 2,
+              children: [
+                for (var value = 1; value <= 5; value++)
+                  IconButton(
+                    tooltip: '$value star${value == 1 ? '' : 's'}',
+                    onPressed: () => setState(() => rating = value),
+                    icon: Icon(
+                      value <= rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      color: const Color(0xFFF4A340),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: commentController,
+              maxLength: 1000,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'Comment (optional)',
+                hintText: 'Share what went well or what could improve.',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Not now'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final comment = commentController.text.trim();
+            Navigator.of(context).pop(
+              CustomerReviewInput(
+                rating: rating,
+                comment: comment.isEmpty ? null : comment,
+              ),
+            );
+          },
+          child: const Text('Submit review'),
+        ),
+      ],
     );
   }
 }

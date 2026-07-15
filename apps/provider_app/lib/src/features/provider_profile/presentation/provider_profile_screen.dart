@@ -555,7 +555,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () async {
-                await ref.read(providerRepositoryProvider).goOffline();
+                try {
+                  await ref.read(providerRepositoryProvider).goOffline();
+                } catch (_) {
+                  // A stale session must not prevent local credential cleanup.
+                }
                 ref.read(providerLocationHeartbeatProvider).stop();
                 await ref.read(authControllerProvider.notifier).signOut();
                 if (context.mounted) {

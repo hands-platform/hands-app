@@ -238,6 +238,33 @@ void main() {
       hasChatRoom: true,
     );
     expect(confirmedAction.title, 'Booking confirmed');
+
+    final completedAction = waitingCustomerAction(
+      status: 'COMPLETED',
+      fallbackCount: 0,
+      hasChatRoom: false,
+    );
+    expect(completedAction.title, 'Service complete');
+    expect(completedAction.body, contains('Review your service'));
+  });
+
+  test('hydrates the last booking-specific partner location snapshot', () {
+    final location = bookingLatestProviderLocation({
+      'snapshots': [
+        {
+          'lat': '10.7769',
+          'lng': '106.7009',
+          'recordedAt': '2026-07-14T15:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(location, isNotNull);
+    expect(
+        deriveRealtimeLatLng(location)?.latitude, closeTo(10.7769, 0.000001));
+    expect(
+        deriveRealtimeLatLng(location)?.longitude, closeTo(106.7009, 0.000001));
+    expect(bookingLatestProviderLocation({'snapshots': []}), isNull);
   });
 
   test('customer app hides service chat after booking is closed', () {
