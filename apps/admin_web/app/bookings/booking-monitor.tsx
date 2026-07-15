@@ -7,7 +7,6 @@ import type { Socket } from 'socket.io-client';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import type { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
-import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
@@ -19,33 +18,24 @@ import type { BookingGateFilter } from './booking-gate-filters';
 import { bookingViewOptions } from './booking-monitor-options';
 import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
 import type { BookingMonitorBlockedCreateSectionProps } from './booking-monitor-blocked-create-section';
-import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
-import { bookingMatchingWindowLabel } from './booking-matching-window';
-import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
   BookingMonitorListSection,
   type BookingTableGroupKey,
 } from './booking-monitor-list-section';
-import type { BookingMonitorMatchingEscalationSectionProps } from './booking-monitor-matching-escalation-section';
+import type { BookingMonitorMatchingEscalationBoardProps } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
   BOOKING_MONITOR_REALTIME_EVENTS,
   type BookingMonitorRealtimeState,
 } from './booking-monitor-realtime';
-import {
-  buildBookingMonitorMatchingEscalationBoard,
-  buildBookingMonitorMatchingEscalationRows,
-} from './booking-monitor-matching-escalation-model';
-import { bookingCustomerLabel } from './booking-monitor-labels';
 import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
-import { buildBookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
-import type { BookingPostMatchCancellationsSectionProps } from './booking-post-match-cancellations-section';
+import type { BookingPostMatchCancellationBoardProps } from './booking-post-match-cancellations-section';
 
 type Props = {
   bookings: AdminBooking[];
@@ -78,13 +68,13 @@ const BookingMonitorBlockedCreateSection = dynamic<BookingMonitorBlockedCreateSe
   { loading: () => null, ssr: false },
 );
 
-const BookingMonitorMatchingEscalationSection = dynamic<BookingMonitorMatchingEscalationSectionProps>(
-  () => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationSection),
+const BookingMonitorMatchingEscalationBoard = dynamic<BookingMonitorMatchingEscalationBoardProps>(
+  () => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationBoard),
   { loading: () => null, ssr: false },
 );
 
-const BookingPostMatchCancellationsSection = dynamic<BookingPostMatchCancellationsSectionProps>(
-  () => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationsSection),
+const BookingPostMatchCancellationBoard = dynamic<BookingPostMatchCancellationBoardProps>(
+  () => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationBoard),
   { loading: () => null, ssr: false },
 );
 
@@ -180,31 +170,6 @@ export function BookingMonitor({
       return compactBookingMonitorSummaryRows(rows);
     },
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings, summaryLabels],
-  );
-
-  const postMatchCancellationBoard = useMemo(
-    () => (showPostMatchCancellationBoard ? buildBookingPostMatchCancellationBoard(orderedBookings, currentTimeMs) : null),
-    [currentTimeMs, orderedBookings, showPostMatchCancellationBoard],
-  );
-  const matchingEscalationBoard = useMemo(
-    () => (showMatchingEscalation ? buildBookingMonitorMatchingEscalationBoard(orderedBookings, currentTimeMs) : []),
-    [currentTimeMs, orderedBookings, showMatchingEscalation],
-  );
-  const livePolicyCards = useMemo(
-    () => (showMatchingEscalation ? buildBookingLiveMatchingPolicyCards(liveOperationsPolicy) : []),
-    [liveOperationsPolicy, showMatchingEscalation],
-  );
-  const matchingEscalationRows = useMemo(
-    () => (showMatchingEscalation ? buildBookingMonitorMatchingEscalationRows(orderedBookings, currentTimeMs) : []),
-    [currentTimeMs, orderedBookings, showMatchingEscalation],
-  );
-  const matchingFlowTimeline = useMemo(
-    () => (showMatchingEscalation ? buildBookingMonitorMatchingFlowTimeline(orderedBookings, currentTimeMs) : []),
-    [currentTimeMs, orderedBookings, showMatchingEscalation],
-  );
-  const dispatchPartnerShortcuts = useMemo(
-    () => (showMatchingEscalation ? buildBookingDispatchPartnerShortcuts(orderedBookings, currentTimeMs) : []),
-    [currentTimeMs, orderedBookings, showMatchingEscalation],
   );
 
   const visibleBookingModel = useMemo(
@@ -391,19 +356,18 @@ export function BookingMonitor({
       />
 
       {showMatchingEscalation && (
-        <BookingMonitorMatchingEscalationSection
-          dispatchPartnerShortcuts={dispatchPartnerShortcuts}
-          getCustomerLabel={bookingCustomerLabel}
-          getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
-          livePolicyCards={livePolicyCards}
-          matchingEscalationBoard={matchingEscalationBoard}
-          matchingEscalationRows={matchingEscalationRows}
-          matchingFlowTimeline={matchingFlowTimeline}
+        <BookingMonitorMatchingEscalationBoard
+          bookings={orderedBookings}
+          currentTimeMs={currentTimeMs}
+          liveOperationsPolicy={liveOperationsPolicy}
         />
       )}
 
-      {showPostMatchCancellationBoard && postMatchCancellationBoard && (
-        <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
+      {showPostMatchCancellationBoard && (
+        <BookingPostMatchCancellationBoard
+          bookings={orderedBookings}
+          currentTimeMs={currentTimeMs}
+        />
       )}
 
       {showCompletedCloseoutBoard && <BookingCompletedCloseoutSection />}

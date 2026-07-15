@@ -2,10 +2,19 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
-import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
+import type { AdminBooking } from '../../lib/admin-api';
+import {
+  buildBookingPostMatchCancellationBoard,
+  type BookingPostMatchCancellationBoard,
+} from './booking-post-match-cancellations-model';
 
 export type BookingPostMatchCancellationsSectionProps = {
   readonly board: BookingPostMatchCancellationBoard;
+};
+
+export type BookingPostMatchCancellationBoardProps = {
+  readonly bookings: readonly AdminBooking[];
+  readonly currentTimeMs: number;
 };
 
 const POST_MATCH_CANCELLATION_TABLE_HEADERS = ['Review Lane', 'Count', 'Handling Rule'] as const;
@@ -26,6 +35,14 @@ const POST_MATCH_CANCELLATION_DECISION_FLOW = [
     value: 'Resolved record',
   },
 ] as const;
+
+export function BookingPostMatchCancellationBoard({
+  bookings,
+  currentTimeMs,
+}: BookingPostMatchCancellationBoardProps) {
+  const board = buildBookingPostMatchCancellationBoard(bookings, currentTimeMs);
+  return board ? <BookingPostMatchCancellationsSection board={board} /> : null;
+}
 
 export function BookingPostMatchCancellationsSection({ board }: BookingPostMatchCancellationsSectionProps) {
   const metrics = [

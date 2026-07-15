@@ -29,10 +29,10 @@ describe('BookingMonitor Vuexy shell', () => {
       "() => import('./booking-monitor-blocked-create-section').then((module) => module.BookingMonitorBlockedCreateSection)",
     );
     expect(source).toContain(
-      "() => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationSection)",
+      "() => import('./booking-monitor-matching-escalation-section').then((module) => module.BookingMonitorMatchingEscalationBoard)",
     );
     expect(source).toContain(
-      "() => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationsSection)",
+      "() => import('./booking-post-match-cancellations-section').then((module) => module.BookingPostMatchCancellationBoard)",
     );
     expect(source).toContain(
       "() => import('./booking-completed-closeout-section').then((module) => module.BookingCompletedCloseoutSection)",
@@ -44,15 +44,23 @@ describe('BookingMonitor Vuexy shell', () => {
     expect(source).not.toContain("import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';");
   });
 
-  it('skips hidden route-specific board model builders on primary monitor renders', () => {
+  it('moves hidden route-specific board model builders out of the primary monitor bundle', () => {
     const source = readFileSync('app/bookings/booking-monitor.tsx', 'utf8');
+    const matchingSource = readFileSync('app/bookings/booking-monitor-matching-escalation-section.tsx', 'utf8');
+    const cancellationSource = readFileSync('app/bookings/booking-post-match-cancellations-section.tsx', 'utf8');
 
-    expect(source).toContain('showPostMatchCancellationBoard ? buildBookingPostMatchCancellationBoard');
-    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingEscalationBoard');
-    expect(source).toContain('showMatchingEscalation ? buildBookingLiveMatchingPolicyCards');
-    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingEscalationRows');
-    expect(source).toContain('showMatchingEscalation ? buildBookingMonitorMatchingFlowTimeline');
-    expect(source).toContain('showMatchingEscalation ? buildBookingDispatchPartnerShortcuts');
+    expect(source).not.toContain('buildBookingPostMatchCancellationBoard');
+    expect(source).not.toContain('buildBookingMonitorMatchingEscalationBoard');
+    expect(source).not.toContain('buildBookingLiveMatchingPolicyCards');
+    expect(source).not.toContain('buildBookingMonitorMatchingEscalationRows');
+    expect(source).not.toContain('buildBookingMonitorMatchingFlowTimeline');
+    expect(source).not.toContain('buildBookingDispatchPartnerShortcuts');
+    expect(cancellationSource).toContain('buildBookingPostMatchCancellationBoard');
+    expect(matchingSource).toContain('buildBookingMonitorMatchingEscalationBoard');
+    expect(matchingSource).toContain('buildBookingLiveMatchingPolicyCards');
+    expect(matchingSource).toContain('buildBookingMonitorMatchingEscalationRows');
+    expect(matchingSource).toContain('buildBookingMonitorMatchingFlowTimeline');
+    expect(matchingSource).toContain('buildBookingDispatchPartnerShortcuts');
   });
 
   it('scopes booking monitor header chrome to card-level section headers', () => {

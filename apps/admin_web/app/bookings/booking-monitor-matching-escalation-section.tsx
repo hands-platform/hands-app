@@ -7,11 +7,23 @@ import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminSignal, StatusBadge } from '../../components/status-badge';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
-import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
+import {
+  buildBookingLiveMatchingPolicyCards,
+  type BookingLiveMatchingPolicyCard,
+} from '../../lib/booking-live-matching-policy-cards';
 import type { BookingMatchingEscalationLane } from '../../lib/booking-matching-escalation-board';
 import type { BookingMatchingEscalationRow } from '../../lib/booking-matching-escalation-rows';
 import type { BookingMatchingFlowStep } from '../../lib/booking-matching-flow-timeline';
+import type { AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { commandSignalTone, commandToneLabel } from './booking-command-display';
+import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
+import { bookingMatchingWindowLabel } from './booking-matching-window';
+import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
+import { bookingCustomerLabel } from './booking-monitor-labels';
+import {
+  buildBookingMonitorMatchingEscalationBoard,
+  buildBookingMonitorMatchingEscalationRows,
+} from './booking-monitor-matching-escalation-model';
 import { bookingServiceOptionLabel } from './booking-service-labels';
 
 export type BookingMonitorDispatchPartnerShortcut = {
@@ -30,6 +42,12 @@ export type BookingMonitorMatchingEscalationSectionProps = {
   readonly matchingEscalationBoard: readonly BookingMatchingEscalationLane<AdminBooking>[];
   readonly matchingEscalationRows: readonly BookingMatchingEscalationRow<AdminBooking>[];
   readonly matchingFlowTimeline: readonly BookingMatchingFlowStep<AdminBooking>[];
+};
+
+export type BookingMonitorMatchingEscalationBoardProps = {
+  readonly bookings: readonly AdminBooking[];
+  readonly currentTimeMs: number;
+  readonly liveOperationsPolicy: AdminLiveOperationsPolicy;
 };
 
 const MATCHING_EXCEPTION_TABLE_HEADERS = [
@@ -60,6 +78,24 @@ const MATCHING_ESCALATION_LANE_TABLE_HEADERS = [
 const LIVE_POLICY_TABLE_HEADERS = ['Policy', 'Value', 'Helper'] as const;
 
 const DISPATCH_PARTNER_SHORTCUT_TABLE_HEADERS = ['Partner Queue', 'Count', 'Detail', 'Action'] as const;
+
+export function BookingMonitorMatchingEscalationBoard({
+  bookings,
+  currentTimeMs,
+  liveOperationsPolicy,
+}: BookingMonitorMatchingEscalationBoardProps) {
+  return (
+    <BookingMonitorMatchingEscalationSection
+      dispatchPartnerShortcuts={buildBookingDispatchPartnerShortcuts(bookings, currentTimeMs)}
+      getCustomerLabel={bookingCustomerLabel}
+      getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
+      livePolicyCards={buildBookingLiveMatchingPolicyCards(liveOperationsPolicy)}
+      matchingEscalationBoard={buildBookingMonitorMatchingEscalationBoard(bookings, currentTimeMs)}
+      matchingEscalationRows={buildBookingMonitorMatchingEscalationRows(bookings, currentTimeMs)}
+      matchingFlowTimeline={buildBookingMonitorMatchingFlowTimeline(bookings, currentTimeMs)}
+    />
+  );
+}
 
 export function BookingMonitorMatchingEscalationSection({
   dispatchPartnerShortcuts,
