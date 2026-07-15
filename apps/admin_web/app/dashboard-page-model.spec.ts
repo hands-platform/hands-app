@@ -98,10 +98,9 @@ describe('dashboard page model', () => {
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=today');
   });
 
-  it('keeps full dashboard diagnostics behind explicit details mode', () => {
+  it('keeps live operations diagnostics behind explicit details mode', () => {
     const hrefs = buildDashboardDataHrefs({ details: 'operations' });
     const auditUrl = new URL(hrefs.bookingGateAuditHref ?? '', 'http://admin.local');
-    const appSessionsUrl = new URL(hrefs.appSessionsHref ?? '', 'http://admin.local');
     const earningUrl = new URL(hrefs.earningsHref ?? '', 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref ?? '', 'http://admin.local');
     const paymentUrl = new URL(hrefs.paymentsHref ?? '', 'http://admin.local');
@@ -122,8 +121,68 @@ describe('dashboard page model', () => {
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
     expect(partnersUrl.searchParams.get('take')).toBe('12');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('5');
-    expect(appSessionsUrl.searchParams.has('role')).toBe(false);
+    expect(hrefs.appSessionsHref).toBeNull();
+  });
+
+  it('loads only the bounded list data required by each diagnostic workspace', () => {
+    const booking = buildDashboardDataHrefs({ details: 'booking' });
+    expect(booking).toMatchObject({
+      appSessionsHref: null,
+      earningsHref: null,
+      notificationsHref: null,
+      payoutBatchesHref: null,
+      refundsHref: null,
+    });
+    expect(booking.bookingGateAuditHref).not.toBeNull();
+    expect(booking.operationalPolicyHref).not.toBeNull();
+    expect(booking.partnersHref).not.toBeNull();
+    expect(booking.paymentsHref).not.toBeNull();
+
+    const analysis = buildDashboardDataHrefs({
+      details: 'operations',
+      operations: 'analysis',
+    });
+    expect(analysis).toMatchObject({
+      appSessionsHref: null,
+      bookingGateAuditHref: null,
+      earningsHref: null,
+      notificationsHref: null,
+      payoutBatchesHref: null,
+      refundsHref: null,
+    });
+    expect(analysis.operationalPolicyHref).not.toBeNull();
+    expect(analysis.partnersHref).not.toBeNull();
+    expect(analysis.paymentsHref).not.toBeNull();
+
+    const partner = buildDashboardDataHrefs({
+      details: 'operations',
+      operations: 'partner',
+    });
+    expect(partner).toMatchObject({
+      bookingGateAuditHref: null,
+      notificationsHref: null,
+      paymentsHref: null,
+      payoutBatchesHref: null,
+      refundsHref: null,
+    });
+    expect(partner.appSessionsHref).not.toBeNull();
+    expect(partner.earningsHref).not.toBeNull();
+    expect(partner.operationalPolicyHref).not.toBeNull();
+    expect(partner.partnersHref).not.toBeNull();
+
+    const closeout = buildDashboardDataHrefs({
+      details: 'operations',
+      operations: 'closeout',
+    });
+    expect(closeout.appSessionsHref).toBeNull();
+    expect(closeout.bookingGateAuditHref).not.toBeNull();
+    expect(closeout.earningsHref).not.toBeNull();
+    expect(closeout.notificationsHref).not.toBeNull();
+    expect(closeout.operationalPolicyHref).not.toBeNull();
+    expect(closeout.partnersHref).not.toBeNull();
+    expect(closeout.paymentsHref).not.toBeNull();
+    expect(closeout.payoutBatchesHref).not.toBeNull();
+    expect(closeout.refundsHref).not.toBeNull();
   });
 
   it('preserves selected dashboard range for bounded list requests', () => {

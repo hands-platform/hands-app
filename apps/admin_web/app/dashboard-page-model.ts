@@ -32,6 +32,18 @@ export type DashboardDataHrefs = {
   readonly refundsSummaryHref: string;
 };
 
+type DashboardListDataRequirements = {
+  readonly appSessions: boolean;
+  readonly audit: boolean;
+  readonly earnings: boolean;
+  readonly notifications: boolean;
+  readonly operationalPolicy: boolean;
+  readonly partners: boolean;
+  readonly payments: boolean;
+  readonly payoutBatches: boolean;
+  readonly refunds: boolean;
+};
+
 const DASHBOARD_BOOKING_TAKE = 20;
 const DASHBOARD_NOTIFICATION_TAKE = 10;
 const DASHBOARD_AUDIT_TAKE = 10;
@@ -74,6 +86,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const viewMode = buildDashboardViewMode(params);
   const range = buildDashboardRange(params);
   const limits = dashboardDataLimits(viewMode);
+  const requirements = dashboardListDataRequirements(viewMode);
   return {
     dashboardSummaryHref: `/admin/dashboard/summary?${new URLSearchParams({ dateRange: range }).toString()}`,
     cashSettlementSummaryHref: buildDashboardRangeScopedHref(
@@ -81,12 +94,12 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       {},
       range,
     ),
-    appSessionsHref: viewMode.shouldRenderFullDashboard
+    appSessionsHref: requirements.appSessions
       ? `/admin/app-sessions?${new URLSearchParams({
           take: String(limits.appSessions),
         }).toString()}`
       : null,
-    bookingGateAuditHref: viewMode.shouldRenderFullDashboard
+    bookingGateAuditHref: requirements.audit
       ? buildDashboardDateScopedHref(
           '/admin/audit-logs',
           {
@@ -100,32 +113,93 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       dateRange: range,
       take: String(limits.bookings),
     }).toString()}`,
-    earningsHref: viewMode.shouldRenderFullDashboard
+    earningsHref: requirements.earnings
       ? buildDashboardRangeScopedHref('/admin/earnings', { take: String(limits.finance) }, range)
       : null,
     earningsSummaryHref: buildDashboardRangeScopedHref('/admin/earnings/summary', {}, range),
-    notificationsHref: viewMode.shouldRenderFullDashboard
+    notificationsHref: requirements.notifications
       ? buildDashboardDateScopedHref('/admin/notifications', { take: String(limits.notifications) }, range)
       : null,
     notificationSummaryHref: buildDashboardDateScopedHref('/admin/notifications/summary', {}, range),
-    operationalPolicyHref: viewMode.shouldRenderFullDashboard ? DASHBOARD_OPERATIONAL_POLICY_HREF : null,
-    partnersHref: viewMode.shouldRenderFullDashboard
+    operationalPolicyHref: requirements.operationalPolicy ? DASHBOARD_OPERATIONAL_POLICY_HREF : null,
+    partnersHref: requirements.partners
       ? `/admin/partners/list-providers?${new URLSearchParams({
           take: String(DASHBOARD_PARTNER_TAKE),
         }).toString()}`
       : null,
-    paymentsHref: viewMode.shouldRenderFullDashboard
+    paymentsHref: requirements.payments
       ? buildDashboardRangeScopedHref('/admin/payments', { take: String(limits.finance) }, range)
       : null,
     paymentSummaryHref: buildDashboardRangeScopedHref('/admin/payments/summary', {}, range),
-    payoutBatchesHref: viewMode.shouldRenderFullDashboard
+    payoutBatchesHref: requirements.payoutBatches
       ? buildDashboardRangeScopedHref('/admin/payout-batches', { take: String(limits.finance) }, range)
       : null,
     payoutBatchSummaryHref: buildDashboardRangeScopedHref('/admin/payout-batches/summary', {}, range),
-    refundsHref: viewMode.shouldRenderFullDashboard
+    refundsHref: requirements.refunds
       ? buildDashboardRangeScopedHref('/admin/refunds', { take: String(limits.finance) }, range)
       : null,
     refundsSummaryHref: buildDashboardRangeScopedHref('/admin/refunds/summary', {}, range),
+  };
+}
+
+function dashboardListDataRequirements(
+  viewMode: DashboardViewMode,
+): DashboardListDataRequirements {
+  const none: DashboardListDataRequirements = {
+    appSessions: false,
+    audit: false,
+    earnings: false,
+    notifications: false,
+    operationalPolicy: false,
+    partners: false,
+    payments: false,
+    payoutBatches: false,
+    refunds: false,
+  };
+
+  if (viewMode.detailsMode === 'booking') {
+    return {
+      ...none,
+      audit: true,
+      operationalPolicy: true,
+      partners: true,
+      payments: true,
+    };
+  }
+
+  if (viewMode.detailsMode !== 'operations') {
+    return none;
+  }
+
+  if (viewMode.operationsMode === 'analysis') {
+    return {
+      ...none,
+      operationalPolicy: true,
+      partners: true,
+      payments: true,
+    };
+  }
+
+  if (viewMode.operationsMode === 'partner') {
+    return {
+      ...none,
+      appSessions: true,
+      earnings: true,
+      operationalPolicy: true,
+      partners: true,
+    };
+  }
+
+  return {
+    ...none,
+    audit: true,
+    earnings: true,
+    notifications: true,
+    operationalPolicy: true,
+    partners: true,
+    payments: true,
+    payoutBatches: true,
+    refunds: true,
   };
 }
 
