@@ -39,6 +39,7 @@ describe('partner control page filters', () => {
     expect(
       partnerControlListHref(
         {
+          details: 'reports',
           q: 'linh',
           review: 'cash-debt',
           reportPage: '3',
@@ -47,7 +48,7 @@ describe('partner control page filters', () => {
         'reportPage',
         1,
       ),
-    ).toBe('/partner-controls?q=linh&review=cash-debt&sanctionPage=2');
+    ).toBe('/partner-controls?details=reports&q=linh&review=cash-debt&sanctionPage=2');
 
     expect(
       partnerControlListHref(

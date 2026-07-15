@@ -81,7 +81,7 @@ export function partnerControlListHref(
 ) {
   const searchParams = new URLSearchParams();
 
-  for (const key of ['q', 'review', 'status', 'severity', 'sanction', 'reportPage', 'sanctionPage'] as const) {
+  for (const key of ['details', 'q', 'review', 'status', 'severity', 'sanction', 'reportPage', 'sanctionPage'] as const) {
     const value = readPartnerControlParam(params[key]);
     if (value) {
       searchParams.set(key, value);

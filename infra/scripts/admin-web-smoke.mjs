@@ -933,12 +933,37 @@ const pages = [
     path: '/partner-controls',
     markers: [
       'Partner Controls',
-      'Partner control board',
-      'Marketplace and payout unblock board',
-      'Marketplace and payout unblock playbook',
       'Partner control command center',
-      'System control checklist',
+      'Partner control workspaces',
     ],
+  },
+  {
+    path: '/partner-controls?details=controls',
+    markers: ['Partner Controls', 'Partner control board', 'System control checklist'],
+  },
+  {
+    path: '/partner-controls?details=all',
+    markers: ['Partner Controls', 'Partner control workspaces'],
+  },
+  {
+    path: '/partner-controls?details=reports',
+    markers: ['Partner Controls', 'Create partner report', 'Reports'],
+  },
+  {
+    path: '/partner-controls?details=sanctions',
+    markers: ['Partner Controls', 'Account controls'],
+  },
+  {
+    path: '/partner-controls?status=OPEN',
+    markers: ['Partner Controls', 'Reports', 'Report status'],
+  },
+  {
+    path: '/partner-controls?sanction=ACTIVE',
+    markers: ['Partner Controls', 'Account controls'],
+  },
+  {
+    path: '/partner-controls?review=cash-debt',
+    markers: ['Partner Controls', 'Partner control board', 'System control checklist'],
   },
   {
     path: '/app-sessions',

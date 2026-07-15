@@ -22,32 +22,40 @@ describe('PartnerControlsPage', () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
   });
 
-  it('renders top partner control boards with the shared Vuexy section surface', async () => {
-    const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
-    const markup = renderToStaticMarkup(page);
+  it('renders each Partner control workspace on shared Vuexy section surfaces', async () => {
+    const summaryMarkup = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({}) }),
+    );
+    const controlsMarkup = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'controls' }) }),
+    );
+    const reportsMarkup = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'reports' }) }),
+    );
+    const sanctionsMarkup = renderToStaticMarkup(
+      await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'sanctions' }) }),
+    );
 
-    expect(markup).toContain('id="partner-control-command-center"');
-    expect(markup).toContain('id="partner-control-next-actions"');
-    expect(markup).toContain('id="partner-control-board"');
-    expect(markup).toContain('id="partner-control-unblock-board"');
-    expect(markup).toContain('id="partner-control-unblock-playbook"');
-    expect(markup).toContain('id="partner-control-block-matrix"');
-    expect(markup).toContain('id="partner-control-filters"');
-    expect(markup).toContain('id="partner-control-checklist"');
-    expect(markup).toContain('id="partner-control-create-report"');
-    expect(markup).toContain('id="partner-control-reports"');
-    expect(markup).toContain('id="partner-control-account-controls"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-command-center"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-next-actions"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-board"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-unblock-board"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-unblock-playbook"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-block-matrix"');
-    expect(markup).toContain('class="card admin-filter-panel admin-mb-16 admin-section" id="partner-control-filters"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-checklist"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-create-report"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-reports"');
-    expect(markup).toContain('class="card admin-section" id="partner-control-account-controls"');
+    expect(summaryMarkup).toContain('id="partner-control-command-center"');
+    expect(summaryMarkup).toContain('id="partner-control-next-actions"');
+    expect(summaryMarkup).toContain('Partner control workspaces');
+    expect(summaryMarkup).not.toContain('id="partner-control-board"');
+
+    expect(controlsMarkup).toContain('id="partner-control-board"');
+    expect(controlsMarkup).toContain('id="partner-control-unblock-board"');
+    expect(controlsMarkup).toContain('id="partner-control-unblock-playbook"');
+    expect(controlsMarkup).toContain('id="partner-control-block-matrix"');
+    expect(controlsMarkup).toContain('id="partner-control-checklist"');
+    expect(controlsMarkup).not.toContain('id="partner-control-reports"');
+
+    expect(reportsMarkup).toContain('id="partner-control-filters"');
+    expect(reportsMarkup).toContain('id="partner-control-create-report"');
+    expect(reportsMarkup).toContain('id="partner-control-reports"');
+    expect(reportsMarkup).not.toContain('id="partner-control-account-controls"');
+
+    expect(sanctionsMarkup).toContain('id="partner-control-filters"');
+    expect(sanctionsMarkup).toContain('id="partner-control-account-controls"');
+    expect(sanctionsMarkup).not.toContain('id="partner-control-create-report"');
   });
 
   it('uses shared Vuexy status badge atoms instead of raw partner control pill markup', () => {
@@ -112,7 +120,7 @@ describe('PartnerControlsPage', () => {
   });
 
   it('uses shared labeled form atoms for partner control forms', async () => {
-    const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
+    const page = await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'reports' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('admin-form-control-labeled admin-form-control-fluid');
@@ -145,11 +153,12 @@ describe('PartnerControlsPage', () => {
 
   it('does not link ordinary Partner control tasks to Developer/System app session diagnostics', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href.startsWith('/admin/partners')) {
+      if (href.startsWith('/admin/partner-controls/providers')) {
         return [
           {
             id: 'partner-device-gap',
             displayName: 'Device Gap Partner',
+            status: 'OFFLINE',
             user: {
               fullName: 'Device Gap Partner',
               phone: '+84000000001',
@@ -165,7 +174,7 @@ describe('PartnerControlsPage', () => {
       return fallback;
     });
 
-    const page = await PartnerControlsPage({ searchParams: Promise.resolve({}) });
+    const page = await PartnerControlsPage({ searchParams: Promise.resolve({ details: 'controls' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Push/contact readiness');

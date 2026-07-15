@@ -62,7 +62,10 @@ import {
   partnerControlListHref,
   type PartnerControlPageFilters,
 } from './partner-control-page-filters';
-import { buildPartnerControlPageLoadPlan } from './partner-control-page-load-plan';
+import {
+  buildPartnerControlDetailsHref,
+  buildPartnerControlPageLoadPlan,
+} from './partner-control-page-load-plan';
 import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 import {
   buildPartnerControlSummaryFromServer,
@@ -111,11 +114,13 @@ export default async function PartnerControlsPage({
   const filters = buildPartnerControlFilters(params);
   const loadPlan = buildPartnerControlPageLoadPlan(params);
   const [providers, reports, sanctions, summaryResponse, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>(loadPlan.providersHref, []),
-    adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []),
-    adminGet<AdminProviderSanction[]>(loadPlan.sanctionsHref, []),
+    loadPlan.providersHref ? adminGet<AdminProvider[]>(loadPlan.providersHref, []) : Promise.resolve([]),
+    loadPlan.reportsHref ? adminGet<AdminProviderReport[]>(loadPlan.reportsHref, []) : Promise.resolve([]),
+    loadPlan.sanctionsHref ? adminGet<AdminProviderSanction[]>(loadPlan.sanctionsHref, []) : Promise.resolve([]),
     adminGet<PartnerControlSummaryResponse | null>(loadPlan.summaryHref, null),
-    adminGet<AdminOperationalPolicySetting[]>(loadPlan.operationalPolicyHref, []),
+    loadPlan.operationalPolicyHref
+      ? adminGet<AdminOperationalPolicySetting[]>(loadPlan.operationalPolicyHref, [])
+      : Promise.resolve([]),
   ]);
   const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);
@@ -165,13 +170,24 @@ export default async function PartnerControlsPage({
         />
       ) : null}
       <AdminPageTemplate
+        actions={
+          loadPlan.detailsMode === 'summary' ? (
+            <AdminFormControlLink className="button-secondary" href={buildPartnerControlDetailsHref('all')}>
+              Open workspaces
+            </AdminFormControlLink>
+          ) : (
+            <AdminFormControlLink className="button-secondary" href={buildPartnerControlDetailsHref('summary')}>
+              Back to summary
+            </AdminFormControlLink>
+          )
+        }
         contentClassName="partner-controls-page"
         description="Track Partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
         metrics={pageMetrics}
         title="Partner Controls"
       >
 
-      <AdminSection
+      {loadPlan.shouldRenderSummary ? <AdminSection
         actions={
           <>
           <StatusBadgeFromPillClass pillClass={commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}>
@@ -212,9 +228,9 @@ export default async function PartnerControlsPage({
             </AdminActionCard>
           ))}
         </AdminTaskGrid>
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderSummary ? <AdminSection
         className="admin-mb-16"
         description="Sorted by saved report level, wallet impact, active controls, and how long the item has waited."
         id="partner-control-next-actions"
@@ -250,9 +266,29 @@ export default async function PartnerControlsPage({
             No Partner control action currently needs operator review.
           </p>
         )}
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderWorkspaceIndex ? (
+        <AdminSection
+          className="admin-mb-16"
+          description="Open one bounded workspace at a time. Control diagnostics explains booking and payout blockers, Reports contains investigation writes, and Account controls contains sanction lifecycle actions."
+          statusLabel="Choose workspace"
+          statusTone="info"
+          title="Partner control workspaces"
+        >
+          <AdminFilterChipGroup ariaLabel="Partner control workspaces">
+            <AdminFormControlLink href={buildPartnerControlDetailsHref('controls')}>
+              Control diagnostics
+            </AdminFormControlLink>
+            <AdminFormControlLink href={buildPartnerControlDetailsHref('reports')}>Reports</AdminFormControlLink>
+            <AdminFormControlLink href={buildPartnerControlDetailsHref('sanctions')}>
+              Account controls
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
+
+      {loadPlan.shouldRenderControlDiagnostics ? <><AdminSection
         className="admin-mb-16"
         description="Shows factual Partner controls for booking blocks, wallet debt, payout gates, document gaps, location freshness, and device reachability."
         id="partner-control-board"
@@ -468,13 +504,17 @@ export default async function PartnerControlsPage({
             No Partner currently has a control record that should block operations.
           </p>
         )}
-      </AdminSection>
+      </AdminSection></> : null}
 
-      <AdminFilterPanel
+      {loadPlan.shouldRenderReports || loadPlan.shouldRenderAccountControls ? <AdminFilterPanel
         className="admin-mb-16"
         description="Dashboard links land here with the exact review lane already selected."
         id="partner-control-filters"
-        resultLabel={`Showing ${visibleReports.length} report(s), ${visibleSanctions.length} account control(s)`}
+        resultLabel={
+          loadPlan.shouldRenderReports
+            ? `Showing ${visibleReports.length} report(s)`
+            : `Showing ${visibleSanctions.length} account control(s)`
+        }
         resultTone={activeFilters.length ? 'warning' : 'success'}
         title="Control filters"
       >
@@ -486,6 +526,7 @@ export default async function PartnerControlsPage({
           <p className="muted admin-mb-12">No control filter is active. Showing every report and account-control lane.</p>
         )}
         <AdminFormGrid action="/partner-controls">
+          <input name="details" type="hidden" value={loadPlan.detailsMode} />
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
           <AdminFormSearch
             className="admin-form-control-fluid"
@@ -494,7 +535,7 @@ export default async function PartnerControlsPage({
             name="q"
             placeholder="Partner, phone, category, reason"
           />
-          <AdminFormSelect
+          {loadPlan.shouldRenderReports ? <AdminFormSelect
             className="admin-form-control-fluid"
             defaultValue={filters.status}
             label="Report status"
@@ -507,8 +548,8 @@ export default async function PartnerControlsPage({
               { label: 'Resolved', value: 'RESOLVED' },
               { label: 'Dismissed', value: 'DISMISSED' },
             ]}
-          />
-          <AdminFormSelect
+          /> : null}
+          {loadPlan.shouldRenderReports ? <AdminFormSelect
             className="admin-form-control-fluid"
             defaultValue={filters.severity}
             label="Report level"
@@ -522,8 +563,8 @@ export default async function PartnerControlsPage({
               { label: 'Medium', value: 'MEDIUM' },
               { label: 'Low', value: 'LOW' },
             ]}
-          />
-          <AdminFormSelect
+          /> : null}
+          {loadPlan.shouldRenderAccountControls ? <AdminFormSelect
             className="admin-form-control-fluid"
             defaultValue={filters.sanction}
             label="Account control"
@@ -535,13 +576,16 @@ export default async function PartnerControlsPage({
               { label: 'Lifted', value: 'LIFTED' },
               { label: 'Expired', value: 'EXPIRED' },
             ]}
-          />
+          /> : null}
           <AdminFormActionRow className="actions full-span">
             <AdminFormControlButton className="button-primary" type="submit">
               <Filter aria-hidden="true" size={16} />
               Apply filters
             </AdminFormControlButton>
-            <AdminFormControlLink className="button-secondary" href="/partner-controls">
+            <AdminFormControlLink
+              className="button-secondary"
+              href={buildPartnerControlDetailsHref(loadPlan.detailsMode)}
+            >
               <X aria-hidden="true" size={16} />
               Clear filters
             </AdminFormControlLink>
@@ -552,9 +596,9 @@ export default async function PartnerControlsPage({
             labels={activeFilters.map((filter) => filter.label)}
           />
         </AdminFormGrid>
-      </AdminFilterPanel>
+      </AdminFilterPanel> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderControlDiagnostics ? <AdminSection
         className="admin-mb-16"
         description="Factual partner follow-ups from wallet debt, account controls, onboarding gaps, devices, and recent report history."
         id="partner-control-checklist"
@@ -609,7 +653,7 @@ export default async function PartnerControlsPage({
                     {item.openReportCount > 0 ? (
                       <AdminFormControlLink
                         className="button-secondary partner-control-inline-action"
-                        href={`/partner-controls?q=${encodeURIComponent(item.provider.id)}`}
+                        href={buildPartnerControlDetailsHref('reports', { q: item.provider.id })}
                       >
                         <ExternalLink aria-hidden="true" size={14} />
                         Report lane
@@ -621,9 +665,9 @@ export default async function PartnerControlsPage({
               </tr>
             ))}
         </AdminDataTable>
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderReports ? <><AdminSection
         className="admin-mb-16"
         description="Use this for customer complaints, staff findings, payout holds, or service safety notes."
         id="partner-control-create-report"
@@ -834,9 +878,9 @@ export default async function PartnerControlsPage({
             loadPlan.listTake,
           )}
         />
-      </AdminSection>
+      </AdminSection></> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderAccountControls ? <AdminSection
         description="Active account controls restrict work or payout. Lift them only with a clear audit trail."
         id="partner-control-account-controls"
         statusLabel={`${visibleSanctions.length} shown`}
@@ -930,7 +974,7 @@ export default async function PartnerControlsPage({
             loadPlan.listTake,
           )}
         />
-      </AdminSection>
+      </AdminSection> : null}
       </AdminPageTemplate>
     </>
   );
@@ -1172,11 +1216,13 @@ function buildPartnerControlBoardItem(
     walletBalance,
     reasons: fallbackReasons.slice(0, 5),
     controls,
-    actionLabel: reportsOpen.length || activeSanctions.length ? 'Open reports' : 'Open profile',
+    actionLabel: reportsOpen.length ? 'Open reports' : activeSanctions.length ? 'Open controls' : 'Open profile',
     actionHref:
-      reportsOpen.length || activeSanctions.length
-        ? `/partner-controls?q=${encodeURIComponent(provider.id)}`
-        : `/partners/${provider.id}`,
+      reportsOpen.length
+        ? buildPartnerControlDetailsHref('reports', { q: provider.id })
+        : activeSanctions.length
+          ? buildPartnerControlDetailsHref('sanctions', { q: provider.id })
+          : `/partners/${provider.id}`,
     operatorAction:
       walletBalance < 0
         ? 'Collect the cash fee deposit or approve an auditable offset before this partner accepts more bookings.'
@@ -1206,7 +1252,10 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       detail: urgentReports.length
         ? 'Urgent or major reports need evidence review and a decision before profile review changes.'
         : 'No urgent or major partner report is currently open.',
-      href: urgentReports.length ? '/partner-controls?severity=HIGH_PLUS' : '/partner-controls?status=OPEN',
+      href: buildPartnerControlDetailsHref('reports', {
+        severity: urgentReports.length ? 'HIGH_PLUS' : undefined,
+        status: urgentReports.length ? undefined : 'OPEN',
+      }),
       action: urgentReports.length ? 'Open urgent + major lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -1240,7 +1289,9 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       detail: activeSanctions.length
         ? 'Active account controls are live operating controls and need clean audit follow-up.'
         : 'No active account control is currently restricting partner operations.',
-      href: activeSanctions.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
+      href: activeSanctions.length
+        ? buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' })
+        : buildPartnerControlDetailsHref('controls'),
       action: activeSanctions.length ? 'Review active controls' : 'Open control board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
       metrics: [
@@ -1255,9 +1306,9 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       detail: overdueReports.length
         ? 'Some open investigations have passed the target review window.'
         : 'Open Partner reports are inside their review windows.',
-      href: overdueReports.length
-        ? '/partner-controls?status=OPEN'
-        : '/partner-controls?status=INVESTIGATING',
+      href: buildPartnerControlDetailsHref('reports', {
+        status: overdueReports.length ? 'OPEN' : 'INVESTIGATING',
+      }),
       action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
       className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -1351,7 +1402,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         reason: 'Open reports can affect profile review, payout release, and future dispatch decisions.',
         operatorAction:
           'Move the report to investigating, resolve with notes, dismiss with evidence, or apply an account control.',
-        href: `/partner-controls?q=${encodeURIComponent(item.provider.id)}`,
+        href: buildPartnerControlDetailsHref('reports', { q: item.provider.id }),
         priority: item.severity === 'CRITICAL' ? 88 : 78,
       });
     }
@@ -1482,7 +1533,9 @@ function buildBookingAcceptanceUnblockBoard(
         'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
       customerImpact: 'Customers will not see or match with partners under active account restrictions.',
       action: accountBlockedItems.length ? 'Review account blocks' : 'Open control board',
-      href: accountBlockedItems.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
+      href: accountBlockedItems.length
+        ? buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' })
+        : buildPartnerControlDetailsHref('controls'),
       className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
       blockingCount: accountBlockedItems.length,
       partnerSamples: partnerSamples(accountBlockedItems),
@@ -1554,7 +1607,7 @@ function buildBookingAcceptanceUnblockBoard(
       customerImpact:
         'Marketplace supply may look available but fail to respond if the partner cannot receive alerts.',
       action: 'Review contact readiness',
-      href: '/partner-controls',
+      href: buildPartnerControlDetailsHref('controls'),
       className: deviceItems.length ? 'ops-task-pending' : 'ops-task-done',
       blockingCount: 0,
       partnerSamples: partnerSamples(deviceItems),
@@ -1628,7 +1681,9 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact: 'Payout holds should remain until the report or account control has a clean audit outcome.',
       customerImpact: 'Keeps customer bookings away from accounts with unresolved admin holds until documented review is complete.',
       action: card('account-controls')?.action ?? 'Review account blocks',
-      href: card('account-controls')?.href ?? '/partner-controls?sanction=ACTIVE',
+      href:
+        card('account-controls')?.href ??
+        buildPartnerControlDetailsHref('sanctions', { sanction: 'ACTIVE' }),
       blockingCount: card('account-controls')?.blockingCount ?? 0,
       partnerSamples: card('account-controls')?.partnerSamples ?? [],
     },
@@ -1683,7 +1738,7 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact: 'No direct payout impact.',
       customerImpact: 'Reduces missed partner requests during the 10 minute response window.',
       action: card('device-contact')?.action ?? 'Review contact readiness',
-      href: card('device-contact')?.href ?? '/partner-controls',
+      href: card('device-contact')?.href ?? buildPartnerControlDetailsHref('controls'),
       blockingCount: card('device-contact')?.blockingCount ?? 0,
       partnerSamples: card('device-contact')?.partnerSamples ?? [],
     },
@@ -1761,7 +1816,7 @@ function buildPartnerControlNextActions(input: {
           : 'Review evidence and move to investigating, resolved, dismissed, or account control.',
       href: report.bookingId
         ? `/bookings/${report.bookingId}`
-        : `/partner-controls?q=${encodeURIComponent(report.id)}`,
+        : buildPartnerControlDetailsHref('reports', { q: report.id }),
       tags: [
         { label: report.severity, tone: severityPill(report.severity) },
         { label: report.status, tone: statusPill(report.status) },
@@ -1797,7 +1852,7 @@ function buildPartnerControlNextActions(input: {
         sanction.type === 'PAYOUT_HOLD'
           ? 'Resolve payout evidence before creating or paying payout batches.'
           : 'Keep or lift the account control only with a clear audit trail.',
-      href: `/partner-controls?q=${encodeURIComponent(sanction.providerProfileId)}`,
+      href: buildPartnerControlDetailsHref('sanctions', { q: sanction.providerProfileId }),
       tags: [
         { label: sanction.status, tone: 'pill-danger' },
         { label: sanction.type, tone: sanction.type === 'WARNING' ? 'pill-warn' : 'pill-danger' },
