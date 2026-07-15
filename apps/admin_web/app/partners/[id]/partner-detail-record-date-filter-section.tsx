@@ -31,6 +31,7 @@ type PartnerDetailRecordDateFilterSectionProps = {
   partnerId: string;
   totalActivityCount: number;
   totalBookingArchiveCount: number;
+  view: 'journey' | 'evidence' | 'ledger';
 };
 
 export function PartnerDetailRecordDateFilterSection({
@@ -44,6 +45,7 @@ export function PartnerDetailRecordDateFilterSection({
   partnerId,
   totalActivityCount,
   totalBookingArchiveCount,
+  view,
 }: PartnerDetailRecordDateFilterSectionProps) {
   const activityTypeLabel = detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS);
 
@@ -63,6 +65,7 @@ export function PartnerDetailRecordDateFilterSection({
     >
       <AdminFormGrid className="admin-mt-14" action={`/partners/${partnerId}`}>
         <input name="section" type="hidden" value="bookings" />
+        {view === 'journey' ? null : <input name="bookings" type="hidden" value={view} />}
         <AdminFormSelect
           className="admin-directory-filter-select"
           defaultValue={dateFilters.range}
@@ -111,7 +114,10 @@ export function PartnerDetailRecordDateFilterSection({
           </AdminFormControlLink>
           <AdminFormControlLink
             className="admin-directory-filter-button is-ghost"
-            href={`/partners/${partnerId}?section=bookings`}
+            href={`/partners/${partnerId}?${new URLSearchParams({
+              section: 'bookings',
+              ...(view === 'journey' ? {} : { bookings: view }),
+            }).toString()}`}
           >
             <X aria-hidden="true" size={16} />
             Clear

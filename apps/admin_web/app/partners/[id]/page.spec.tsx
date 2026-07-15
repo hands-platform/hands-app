@@ -398,7 +398,7 @@ describe('ProviderDetailPage data loading', () => {
     ).toBe(true);
   });
 
-  it('keeps booking record filters visible and scoped to the bookings workspace', async () => {
+  it('separates booking journey, retained evidence, and the Developer ledger', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: ['PARTNERS_DETAIL'],
       email: 'ops@example.com',
@@ -418,18 +418,61 @@ describe('ProviderDetailPage data loading', () => {
       return fallback;
     });
 
-    const page = await ProviderDetailPage({
+    const journeyPage = await ProviderDetailPage({
       params: Promise.resolve({ id: 'partner-bookings' }),
       searchParams: Promise.resolve({ range: '30d', section: 'bookings' }),
     });
-    const markup = renderToStaticMarkup(page);
+    const journeyMarkup = renderToStaticMarkup(journeyPage);
 
-    expect(markup).toContain('Booking and chat evidence');
-    expect(markup).toContain('Record date filter');
-    expect(markup).toContain('Filtered booking archive');
-    expect(markup).toContain('Filtered activity');
-    expect(markup).toContain('type="hidden" name="section" value="bookings"');
-    expect(markup).toContain('/partners/partner-1?section=bookings');
+    expect(journeyMarkup).toContain('Partner booking journey');
+    expect(journeyMarkup).toContain('Booking workspace view');
+    expect(journeyMarkup).toContain('Record date filter');
+    expect(journeyMarkup).toContain('Filtered booking archive');
+    expect(journeyMarkup).toContain('Filtered activity');
+    expect(journeyMarkup).toContain('type="hidden" name="section" value="bookings"');
+    expect(journeyMarkup).not.toContain('name="bookings"');
+    expect(journeyMarkup).not.toContain('Partner chat retention ledger');
+    expect(journeyMarkup).not.toContain('Booking operations note ledger');
+
+    const evidencePage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-bookings' }),
+      searchParams: Promise.resolve({ bookings: 'evidence', range: '30d', section: 'bookings' }),
+    });
+    const evidenceMarkup = renderToStaticMarkup(evidencePage);
+
+    expect(evidenceMarkup).toContain('Partner booking evidence');
+    expect(evidenceMarkup).toContain('Partner booking evidence bundles');
+    expect(evidenceMarkup).toContain('Partner chat retention ledger');
+    expect(evidenceMarkup).toContain('type="hidden" name="bookings" value="evidence"');
+    expect(evidenceMarkup).toContain('/partners/partner-1?section=bookings&amp;bookings=evidence');
+    expect(evidenceMarkup).not.toContain('Partner booking create gate evidence');
+    expect(evidenceMarkup).not.toContain('Booking operations note ledger');
+
+    const deniedLedgerPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-bookings' }),
+      searchParams: Promise.resolve({ bookings: 'ledger', section: 'bookings' }),
+    });
+    expect(renderToStaticMarkup(deniedLedgerPage)).toContain('Partner booking journey');
+
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+    const ledgerPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-bookings' }),
+      searchParams: Promise.resolve({ bookings: 'ledger', section: 'bookings' }),
+    });
+    const ledgerMarkup = renderToStaticMarkup(ledgerPage);
+
+    expect(ledgerMarkup).toContain('Partner booking operations ledger');
+    expect(ledgerMarkup).toContain('Booking operations note ledger');
+    expect(ledgerMarkup).not.toContain('Partner booking create gate evidence');
+    expect(ledgerMarkup).not.toContain('Partner chat retention ledger');
   });
 
   it('keeps partner overview on the lightweight endpoint without diagnostics flags', async () => {
@@ -491,7 +534,7 @@ describe('ProviderDetailPage data loading', () => {
       "canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? (",
     );
     expect(providerDetailSource).toContain(
-      "const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'bookings' ? (",
+      "canLoadPartnerDiagnostics && detailSection === 'bookings' && bookingsView === 'ledger' ? (",
     );
     expect(providerDetailSource).toContain(
       'const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (',

@@ -1603,7 +1603,18 @@ if (providerLinkMatch) {
         },
         {
           query: 'section=bookings',
-          markers: ['Booking and chat evidence', 'Partner booking journey', 'Partner chat retention ledger'],
+          markers: ['Partner booking journey', 'Booking workspace view', 'Partner booking create gate evidence'],
+          excludedMarkers: ['Partner chat retention ledger', 'Booking operations note ledger'],
+        },
+        {
+          query: 'section=bookings&bookings=evidence',
+          markers: ['Partner booking evidence', 'Chat &amp; evidence', 'Partner booking evidence bundles', 'Partner chat retention ledger'],
+          excludedMarkers: ['Partner booking create gate evidence', 'Booking operations note ledger'],
+        },
+        {
+          query: 'section=bookings&bookings=ledger',
+          markers: ['Partner booking operations ledger', 'Developer ledger', 'Booking operations note ledger'],
+          excludedMarkers: ['Partner booking create gate evidence', 'Partner chat retention ledger'],
         },
         {
           query: 'section=access',

@@ -355,6 +355,7 @@ type PartnerDispatchPolicy = {
 };
 type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
 type PartnerControlView = 'work' | 'records' | 'reference';
+type PartnerBookingsView = 'journey' | 'evidence' | 'ledger';
 type PartnerAccessView = 'readiness' | 'controls' | 'diagnostics';
 type PartnerDossierView = 'approval' | 'evidence' | 'finance';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
@@ -404,6 +405,13 @@ function readPartnerControlView(
   return controlView === 'records' || controlView === 'reference' ? controlView : 'work';
 }
 
+function readPartnerBookingsView(
+  params: Record<string, string | string[] | undefined>,
+): PartnerBookingsView {
+  const bookingsView = readSearchParam(params.bookings);
+  return bookingsView === 'evidence' || bookingsView === 'ledger' ? bookingsView : 'journey';
+}
+
 function readPartnerAccessView(
   params: Record<string, string | string[] | undefined>,
 ): PartnerAccessView {
@@ -423,12 +431,15 @@ function readPartnerDossierView(
 
 function buildPartnerDetailWorkspaceHref(
   providerId: string,
-  section: 'control' | 'access' | 'dossier',
-  view?: PartnerControlView | PartnerAccessView | PartnerDossierView,
+  section: 'control' | 'bookings' | 'access' | 'dossier',
+  view?: PartnerControlView | PartnerBookingsView | PartnerAccessView | PartnerDossierView,
 ) {
   const query = new URLSearchParams({ section });
   if (section === 'control' && (view === 'records' || view === 'reference')) {
     query.set('control', view);
+  }
+  if (section === 'bookings' && (view === 'evidence' || view === 'ledger')) {
+    query.set('bookings', view);
   }
   if (section === 'dossier' && (view === 'evidence' || view === 'finance')) {
     query.set('dossier', view);
@@ -527,6 +538,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const detailSearchParams = searchParams ? await searchParams : {};
   const detailSection = readPartnerDetailSection(detailSearchParams);
   const requestedControlView = readPartnerControlView(detailSearchParams);
+  const requestedBookingsView = readPartnerBookingsView(detailSearchParams);
   const requestedAccessView = readPartnerAccessView(detailSearchParams);
   const dossierView = readPartnerDossierView(detailSearchParams);
   const dateFilters = readDetailDateFilters(detailSearchParams);
@@ -535,6 +547,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
   const controlView = requestedControlView === 'reference' && !canLoadPartnerDiagnostics ? 'work' : requestedControlView;
+  const bookingsView = requestedBookingsView === 'ledger' && !canLoadPartnerDiagnostics ? 'journey' : requestedBookingsView;
   const accessView = requestedAccessView === 'diagnostics' && !canLoadPartnerDiagnostics ? 'readiness' : requestedAccessView;
   const shouldLoadAccessDiagnostics = detailSection === 'access' && accessView === 'diagnostics';
   const isPartnerWorkspaceIndex = detailSection === 'full';
@@ -885,6 +898,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const detailBaseHref =
     detailSection === 'control'
       ? buildPartnerDetailWorkspaceHref(provider.id, 'control', controlView)
+      : detailSection === 'bookings'
+        ? buildPartnerDetailWorkspaceHref(provider.id, 'bookings', bookingsView)
       : detailSection === 'access'
         ? buildPartnerDetailWorkspaceHref(provider.id, 'access', accessView)
         : detailSection === 'dossier'
@@ -933,6 +948,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       partnerId={provider.id}
       totalActivityCount={partnerActivityRecords.length}
       totalBookingArchiveCount={partnerBookingArchive.length}
+      view={bookingsView}
     />
   ) : null;
   const partnerReferenceDiagnosticSection =
@@ -960,12 +976,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailOperatingChecklistSection pillClassForTone={partnerOpsPillClass} rows={partnerOperatingChecklist} />
     </PartnerDetailReferenceDetails>
   ) : null;
-  const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'bookings' ? (
+  const partnerBookingOpsLedgerDiagnosticSection =
+    canLoadPartnerDiagnostics && detailSection === 'bookings' && bookingsView === 'ledger' ? (
     <PartnerDetailBookingOpsLedgerSection
       rows={partnerBookingOpsLedgerRows}
       statusPillClass={partnerBookingStatusPillClass}
     />
-  ) : null;
+    ) : null;
   const partnerDeviceSessionDiagnosticSection = shouldLoadAccessDiagnostics ? (
     <PartnerDetailDeviceSessionActivitySection
       cardClassForTone={partnerOpsCardClass}
@@ -1165,13 +1182,61 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {detailSection === 'bookings' ? (
       <PartnerDetailSectionGroup
-        description="Booking rows, first-pick and marketplace gate evidence, retained chat, and booking operations records for this Partner."
+        description={
+          bookingsView === 'evidence'
+            ? 'Retained booking bundles and chat evidence for cancellation, no-show, payment, and service review.'
+            : bookingsView === 'ledger'
+              ? 'Developer-only booking operations notes and internal evidence references.'
+              : 'Booking journey, first-pick participation, and marketplace gate decisions for this Partner.'
+        }
         eyebrow="Bookings"
         id="partner-booking-section"
-        status={`${partnerBookingArchive.length} booking record(s)`}
-        title="Booking and chat evidence"
+        status={
+          bookingsView === 'evidence'
+            ? `${partnerBookingEvidenceRows.length + partnerBookingChatRecordRows.length} evidence row(s)`
+            : bookingsView === 'ledger'
+              ? `${partnerBookingOpsLedgerRows.length} ledger row(s)`
+              : `${partnerBookingJourneyRows.length} booking row(s)`
+        }
+        title={
+          bookingsView === 'evidence'
+            ? 'Partner booking evidence'
+            : bookingsView === 'ledger'
+              ? 'Partner booking operations ledger'
+              : 'Partner booking journey'
+        }
       >
+        <AdminSection
+          description="Keep current booking flow, retained evidence, and Developer ledger records in separate workspaces."
+          id="partner-bookings-workspace-selector"
+          title="Booking workspace view"
+        >
+          <AdminFilterChipGroup ariaLabel="Partner booking workspaces">
+            <AdminFormControlLink
+              aria-current={bookingsView === 'journey' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'journey')}
+            >
+              Booking journey
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={bookingsView === 'evidence' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'evidence')}
+            >
+              Chat &amp; evidence
+            </AdminFormControlLink>
+            {canLoadPartnerDiagnostics ? (
+              <AdminFormControlLink
+                aria-current={bookingsView === 'ledger' ? 'page' : undefined}
+                href={buildPartnerDetailWorkspaceHref(provider.id, 'bookings', 'ledger')}
+              >
+                Developer ledger
+              </AdminFormControlLink>
+            ) : null}
+          </AdminFilterChipGroup>
+        </AdminSection>
         {partnerRecordDateFilterSection}
+        {bookingsView === 'journey' ? (
+          <>
         <PartnerDetailBookingJourneySection
           description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
           emptyDetail="Use a wider date range to show older booking rows."
@@ -1184,6 +1249,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           filteredAttempts={filteredPartnerBookingGateAttempts}
           loadedAttempts={partnerBookingGateAttempts}
         />
+          </>
+        ) : null}
+        {bookingsView === 'evidence' ? (
+          <>
         <PartnerDetailBookingEvidenceBundlesSection
           rows={partnerBookingEvidenceRows}
           statusPillClass={partnerBookingStatusPillClass}
@@ -1201,7 +1270,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           openBookingsHref={`/bookings?q=${encodeURIComponent(provider.id)}`}
           rows={partnerBookingChatRecordRows}
         />
-        {partnerBookingOpsLedgerDiagnosticSection}
+          </>
+        ) : null}
+        {bookingsView === 'ledger' ? partnerBookingOpsLedgerDiagnosticSection : null}
       </PartnerDetailSectionGroup>
       ) : null}
 
