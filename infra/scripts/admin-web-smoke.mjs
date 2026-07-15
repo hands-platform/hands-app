@@ -1580,25 +1580,36 @@ if (providerLinkMatch) {
     if (providerPath.startsWith('/partners/')) {
       const workspaceChecks = [
         {
-          section: 'control',
-          markers: ['Partner control workspace', 'Partner operator command queue', 'Partner operations digest'],
+          query: 'section=control',
+          markers: ['Partner control workspace', 'Control workspace view', 'Partner operator command queue'],
+          excludedMarkers: ['Partner operations digest'],
         },
         {
-          section: 'bookings',
+          query: 'section=control&control=reference',
+          markers: ['Partner control workspace', 'Developer reference', 'Partner operations digest'],
+        },
+        {
+          query: 'section=bookings',
           markers: ['Booking and chat evidence', 'Partner booking journey', 'Partner chat retention ledger'],
         },
         {
-          section: 'access',
+          query: 'section=access',
           markers: ['App activity and readiness', 'Recent app and operations activity', 'Marketplace booking gate decision'],
         },
         {
-          section: 'dossier',
-          markers: ['Approval, profile, and finance dossier', 'Partner registration dossier', 'Partner wallet detail'],
+          query: 'section=dossier',
+          markers: ['Partner approval dossier', 'Dossier workspace view', 'Partner registration dossier'],
+          excludedMarkers: ['Partner wallet detail'],
+        },
+        {
+          query: 'section=dossier&dossier=finance',
+          markers: ['Partner finance records', 'Finance records', 'Partner wallet detail'],
+          excludedMarkers: ['Partner registration dossier'],
         },
       ];
 
       for (const workspace of workspaceChecks) {
-        const workspacePath = `${providerPath}?section=${workspace.section}`;
+        const workspacePath = `${providerPath}?${workspace.query}`;
         const workspaceBody = await fetchPage(workspacePath);
         const missingWorkspaceMarkers = workspace.markers.filter(
           (marker) => !workspaceBody.includes(marker),
@@ -1606,6 +1617,14 @@ if (providerLinkMatch) {
         if (missingWorkspaceMarkers.length > 0) {
           throw new Error(
             `${workspacePath} is missing expected markers: ${missingWorkspaceMarkers.join(', ')}`,
+          );
+        }
+        const unexpectedWorkspaceMarkers = (workspace.excludedMarkers ?? []).filter((marker) =>
+          workspaceBody.includes(marker),
+        );
+        if (unexpectedWorkspaceMarkers.length > 0) {
+          throw new Error(
+            `${workspacePath} includes deferred markers: ${unexpectedWorkspaceMarkers.join(', ')}`,
           );
         }
         assertNoLegacyVisibleLanguage(workspacePath, workspaceBody);

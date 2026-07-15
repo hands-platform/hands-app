@@ -23,9 +23,10 @@ import {
 import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { adminPayoutBatchOperatorEvidenceLines } from '../../../components/admin-finance-operator-evidence';
-import { AdminDetailGrid } from '../../../components/admin-surface';
+import { AdminDetailGrid, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
 import { MoneyText } from '../../../components/money-text';
@@ -353,6 +354,8 @@ type PartnerDispatchPolicy = {
   locationFreshnessMinutes: number;
 };
 type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
+type PartnerControlView = 'work' | 'reference';
+type PartnerDossierView = 'approval' | 'finance';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
   missingDocuments: string[];
 };
@@ -391,6 +394,33 @@ function readPartnerDetailSection(
     return 'control';
   }
   return 'full';
+}
+
+function readPartnerControlView(
+  params: Record<string, string | string[] | undefined>,
+): PartnerControlView {
+  return readSearchParam(params.control) === 'reference' ? 'reference' : 'work';
+}
+
+function readPartnerDossierView(
+  params: Record<string, string | string[] | undefined>,
+): PartnerDossierView {
+  return readSearchParam(params.dossier) === 'finance' ? 'finance' : 'approval';
+}
+
+function buildPartnerDetailWorkspaceHref(
+  providerId: string,
+  section: 'control' | 'dossier',
+  view?: PartnerControlView | PartnerDossierView,
+) {
+  const query = new URLSearchParams({ section });
+  if (section === 'control' && view === 'reference') {
+    query.set('control', 'reference');
+  }
+  if (section === 'dossier' && view === 'finance') {
+    query.set('dossier', 'finance');
+  }
+  return `/partners/${providerId}?${query.toString()}`;
 }
 
 type ProviderDetail = AdminProvider & {
@@ -480,6 +510,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
   const detailSection = readPartnerDetailSection(detailSearchParams);
+  const controlView = readPartnerControlView(detailSearchParams);
+  const dossierView = readPartnerDossierView(detailSearchParams);
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
@@ -521,7 +553,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }).toString();
   const partnerManualAdjustmentHref = `/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(provider.id)}`;
   const shouldLoadControlRecords = detailSection === 'control';
-  const shouldLoadFinanceRecords = detailSection === 'dossier';
+  const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
   const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] =
     await Promise.all([
       shouldLoadControlRecords
@@ -878,7 +910,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       totalBookingArchiveCount={partnerBookingArchive.length}
     />
   ) : null;
-  const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'control' ? (
+  const partnerReferenceDiagnosticSection =
+    canLoadPartnerDiagnostics && detailSection === 'control' && controlView === 'reference' ? (
     <PartnerDetailReferenceDetails
       helper="Digest, master facts, indexes, ledger, and checklist remain available without competing with approval work."
       label="Reference summaries"
@@ -1021,12 +1054,34 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {detailSection === 'control' ? (
       <PartnerDetailSectionGroup
-        description="Approval, hold, review records, and staff follow-up come first. Secondary digest and index blocks stay available below as reference material."
+        description="Approval, hold, review records, and staff follow-up come first. Developer reference summaries load only when selected."
         eyebrow="Control"
         id="partner-control-section"
         status={`${partnerOperatorCommandQueue.commands.length} command(s)`}
         title="Partner control workspace"
       >
+        {canLoadPartnerDiagnostics ? (
+          <AdminSection
+            description="Keep the daily control queue separate from deeper diagnostic summaries."
+            id="partner-control-workspace-selector"
+            title="Control workspace view"
+          >
+            <AdminFilterChipGroup ariaLabel="Partner control workspaces">
+              <AdminFormControlLink
+                aria-current={controlView === 'work' ? 'page' : undefined}
+                href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'work')}
+              >
+                Control work
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={controlView === 'reference' ? 'page' : undefined}
+                href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'reference')}
+              >
+                Developer reference
+              </AdminFormControlLink>
+            </AdminFilterChipGroup>
+          </AdminSection>
+        ) : null}
         <PartnerDetailOperatorCommandQueueSection
           pillClassForTone={partnerOpsPillClass}
           providerId={provider.id}
@@ -1135,16 +1190,41 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {detailSection === 'dossier' ? (
       <PartnerDetailSectionGroup
-        description="Level 2 approval evidence comes first. Finance-only withdrawal, wallet, and finance records stay available below without blocking matching readiness."
+        description="Level 2 approval evidence and finance records are separate bounded workspaces."
         eyebrow="Dossier"
         id="partner-dossier-section"
         status={
-          reviewChecklist.ready && registrationDossier.ready
-            ? 'Level 2 ready'
-            : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
+          dossierView === 'finance'
+            ? `${walletWithdrawalRequests.length + partnerManualAdjustmentRows.length} finance record(s)`
+            : reviewChecklist.ready && registrationDossier.ready
+              ? 'Level 2 ready'
+              : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
         }
-        title="Approval, profile, and finance dossier"
+        title={dossierView === 'finance' ? 'Partner finance records' : 'Partner approval dossier'}
       >
+        <AdminSection
+          description="Open only the approval or finance evidence needed for the current operator task."
+          id="partner-dossier-workspace-selector"
+          title="Dossier workspace view"
+        >
+          <AdminFilterChipGroup ariaLabel="Partner dossier workspaces">
+            <AdminFormControlLink
+              aria-current={dossierView === 'approval' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'approval')}
+            >
+              Approval evidence
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={dossierView === 'finance' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'finance')}
+            >
+              Finance records
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+
+        {dossierView === 'approval' ? (
+          <>
         <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
         <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
         <PartnerDetailLevelPathSection plan={levelPlan} />
@@ -1209,9 +1289,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
           </AdminDetailGrid>
         </PartnerDetailReferenceDetails>
+          </>
+        ) : null}
 
+        {dossierView === 'finance' ? (
         <PartnerDetailReferenceDetails
-          defaultOpen={hasCashFeeDebt}
+          defaultOpen
           helper="Wallet debt, withdrawal details, payout batches, and legacy tax rows are finance follow-up records. They do not gate Level 2 approval."
           label="Finance-only evidence"
           status={hasCashFeeDebt ? <><MoneyText amount={cashFeeDebtTotal} /> open debt</> : 'Reference'}
@@ -1255,6 +1338,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             />
           </AdminDetailGrid>
         </PartnerDetailReferenceDetails>
+        ) : null}
       </PartnerDetailSectionGroup>
       ) : null}
     </AdminPageTemplate>
