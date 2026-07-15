@@ -2262,6 +2262,7 @@ export class AdminService {
   async listAdminCalendarEvents(
     options: {
       from?: string | null;
+      skip?: number | string | null;
       take?: number | string | null;
       to?: string | null;
     } = {},
@@ -2274,9 +2275,11 @@ export class AdminService {
       where.AND = [...(from ? [{ endAt: { gte: from } }] : []), ...(to ? [{ startAt: { lte: to } }] : [])];
     }
 
+    const skip = boundedAdminListSkip(options.skip);
     const events = await this.prisma.adminCalendarEvent.findMany({
       ...(Object.keys(where).length ? { where } : {}),
-      orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      ...(skip > 0 ? { skip } : {}),
       take: adminCalendarEventListTake(options.take),
     });
 

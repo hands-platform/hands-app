@@ -22,6 +22,7 @@ import {
   buildCalendarTagFilters,
   calendarTagTone,
   canEditCalendarEvent,
+  collectCalendarEventPages,
   createBlankDraft,
   filterCalendarEvents,
   fromCalendarEventInput,
@@ -668,20 +669,23 @@ async function deleteCalendarEvent(id: string) {
 }
 
 async function listCalendarEvents(range: CalendarEventRange) {
-  const query = new URLSearchParams({
-    from: range.from,
-    take: '200',
-    to: range.to,
-  });
-  const response = await fetch(`/api/admin/calendar-events?${query.toString()}`, {
-    cache: 'no-store',
-  });
+  return collectCalendarEventPages(async (skip, take) => {
+    const query = new URLSearchParams({
+      from: range.from,
+      skip: String(skip),
+      take: String(take),
+      to: range.to,
+    });
+    const response = await fetch(`/api/admin/calendar-events?${query.toString()}`, {
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    throw new Error('Calendar events request failed');
-  }
+    if (!response.ok) {
+      throw new Error('Calendar events request failed');
+    }
 
-  return (await response.json()) as CalendarEventRecord[];
+    return (await response.json()) as CalendarEventRecord[];
+  });
 }
 
 function calendarRangeKey(range: CalendarEventRange) {

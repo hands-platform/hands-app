@@ -3,6 +3,8 @@ import type { EventInput } from '@fullcalendar/core';
 import { formatDateTime as formatAdminDateTime } from '../../lib/admin-format';
 
 export const CALENDAR_TAG_TONES = ['accent', 'info', 'success', 'warning', 'danger'] as const;
+export const CALENDAR_EVENT_PAGE_SIZE = 200;
+export const CALENDAR_EVENT_RANGE_LIMIT = 1_000;
 
 export type CalendarTagTone = (typeof CALENDAR_TAG_TONES)[number];
 
@@ -31,6 +33,29 @@ export type CalendarEventRecord = {
 };
 
 export type CalendarEventDraft = Omit<CalendarEventRecord, 'id'>;
+
+export async function collectCalendarEventPages<T>(
+  loadPage: (skip: number, take: number) => Promise<readonly T[]>,
+): Promise<T[]> {
+  const events: T[] = [];
+
+  while (events.length < CALENDAR_EVENT_RANGE_LIMIT) {
+    const take = Math.min(CALENDAR_EVENT_PAGE_SIZE, CALENDAR_EVENT_RANGE_LIMIT - events.length);
+    const page = await loadPage(events.length, take);
+    events.push(...page);
+
+    if (page.length < take) {
+      return events;
+    }
+  }
+
+  const overflow = await loadPage(events.length, 1);
+  if (overflow.length) {
+    throw new Error(`Calendar range exceeds ${CALENDAR_EVENT_RANGE_LIMIT} events`);
+  }
+
+  return events;
+}
 
 export function calendarMonthGridRange(date: Date): CalendarEventRange {
   const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);

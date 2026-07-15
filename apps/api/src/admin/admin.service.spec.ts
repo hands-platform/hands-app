@@ -860,7 +860,7 @@ describe('AdminService operations calendar', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.listAdminCalendarEvents({ take: '500' })).resolves.toEqual([
+    await expect(service.listAdminCalendarEvents({ skip: '200', take: '500' })).resolves.toEqual([
       expect.objectContaining({
         authorId: 'ops@hands.vn',
         authorName: 'Ops Lead',
@@ -873,7 +873,8 @@ describe('AdminService operations calendar', () => {
     ]);
     expect(prisma.adminCalendarEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }],
+        orderBy: [{ startAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        skip: 200,
         take: 200,
       }),
     );

@@ -52,8 +52,10 @@ describe('calendar client structure', () => {
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
     expect(pageSource).toContain('calendarMonthGridRange(new Date())');
+    expect(pageSource).toContain('collectCalendarEventPages(async (skip, take) =>');
     expect(pageSource).toContain('`/admin/calendar-events?${initialQuery.toString()}`');
     expect(clientSource).toContain('listCalendarEvents(range)');
+    expect(clientSource).toContain('collectCalendarEventPages(async (skip, take) =>');
     expect(clientSource).toContain("fetch(`/api/admin/calendar-events?${query.toString()}`");
     expect(clientSource).toContain('from: info.start.toISOString()');
     expect(clientSource).toContain('to: info.end.toISOString()');

@@ -134,8 +134,13 @@ export class AdminController {
   }
 
   @Get('calendar-events')
-  calendarEvents(@Query('from') from?: string, @Query('to') to?: string, @Query('take') take?: string) {
-    return this.admin.listAdminCalendarEvents({ from, take, to });
+  calendarEvents(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listAdminCalendarEvents({ from, skip, take, to });
   }
 
   @Post('calendar-events')

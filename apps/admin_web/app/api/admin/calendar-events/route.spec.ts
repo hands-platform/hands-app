@@ -77,6 +77,7 @@ describe('Admin calendar events route', () => {
     });
     const requestUrl = new URL('http://localhost/api/admin/calendar-events');
     requestUrl.searchParams.set('from', '2026-07-01T00:00:00.000Z');
+    requestUrl.searchParams.set('skip', '200');
     requestUrl.searchParams.set('take', '200');
     requestUrl.searchParams.set('to', '2026-08-01T00:00:00.000Z');
     requestUrl.searchParams.set('unexpected', 'ignored');
@@ -90,7 +91,7 @@ describe('Admin calendar events route', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/calendar-events?from=2026-07-01T00%3A00%3A00.000Z&take=200&to=2026-08-01T00%3A00%3A00.000Z',
+      '/admin/calendar-events?from=2026-07-01T00%3A00%3A00.000Z&skip=200&take=200&to=2026-08-01T00%3A00%3A00.000Z',
       null,
     );
   });

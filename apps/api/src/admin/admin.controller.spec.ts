@@ -272,7 +272,7 @@ describe('AdminController notification and push actions', () => {
     admin.deleteAdminCalendarEvent.mockResolvedValue({ ok: true, id: 'calendar-1' });
 
     await expect(
-      controller.calendarEvents('2026-07-01T00:00:00.000Z', '2026-07-31T23:59:59.999Z', '50'),
+      controller.calendarEvents('2026-07-01T00:00:00.000Z', '2026-07-31T23:59:59.999Z', '50', '200'),
     ).resolves.toEqual([{ id: 'calendar-1' }]);
     await expect(
       controller.createCalendarEvent(user, {
@@ -306,6 +306,7 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.listAdminCalendarEvents).toHaveBeenCalledWith({
       from: '2026-07-01T00:00:00.000Z',
+      skip: '200',
       take: '50',
       to: '2026-07-31T23:59:59.999Z',
     });

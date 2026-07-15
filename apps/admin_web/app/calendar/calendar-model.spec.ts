@@ -4,6 +4,7 @@ import {
   buildCalendarTagFilters,
   buildCalendarMetrics,
   calendarMonthGridRange,
+  collectCalendarEventPages,
   normalizeStoredCalendarEvent,
   createSeedEvents,
   filterCalendarEvents,
@@ -21,6 +22,27 @@ describe('calendar-model', () => {
     expect(to.getTime() - from.getTime()).toBe(42 * 24 * 60 * 60 * 1_000);
     expect(from <= new Date(2026, 6, 1)).toBe(true);
     expect(to > new Date(2026, 7, 1)).toBe(true);
+  });
+
+  it('collects bounded calendar pages without silently dropping later events', async () => {
+    const records = Array.from({ length: 401 }, (_, index) => `event-${index + 1}`);
+    const loadPage = vi.fn((skip: number, take: number) => Promise.resolve(records.slice(skip, skip + take)));
+
+    await expect(collectCalendarEventPages(loadPage)).resolves.toEqual(records);
+    expect(loadPage.mock.calls).toEqual([
+      [0, 200],
+      [200, 200],
+      [400, 200],
+    ]);
+  });
+
+  it('fails visibly when a calendar range exceeds the render safety limit', async () => {
+    const loadPage = vi.fn((skip: number, take: number) =>
+      Promise.resolve(Array.from({ length: take }, (_, index) => `event-${skip + index + 1}`)),
+    );
+
+    await expect(collectCalendarEventPages(loadPage)).rejects.toThrow('Calendar range exceeds 1000 events');
+    expect(loadPage).toHaveBeenLastCalledWith(1000, 1);
   });
 
   it('uses the shared admin date-time formatter for summary labels', () => {

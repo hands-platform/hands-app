@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const query = new URLSearchParams();
 
-  for (const key of ['from', 'take', 'to'] as const) {
+  for (const key of ['from', 'skip', 'take', 'to'] as const) {
     const value = requestUrl.searchParams.get(key)?.trim();
     if (value) {
       query.set(key, value);
