@@ -2,11 +2,13 @@ import { normalizeDateRange, readSearchParam } from '../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS } from '../lib/operations-policy';
 
 export type DashboardDetailsMode = 'summary' | 'all' | 'booking' | 'operations';
+export type DashboardOperationsMode = 'live' | 'analysis' | 'partner' | 'closeout';
 
 type DashboardParams = Record<string, string | string[] | undefined>;
 
 export type DashboardViewMode = {
   readonly detailsMode: DashboardDetailsMode;
+  readonly operationsMode: DashboardOperationsMode;
   readonly shouldRenderFullDashboard: boolean;
 };
 
@@ -63,6 +65,7 @@ export function buildDashboardViewMode(params: DashboardParams): DashboardViewMo
   const detailsMode = normalizeDashboardDetailsMode(readSearchParam(params.details));
   return {
     detailsMode,
+    operationsMode: normalizeDashboardOperationsMode(readSearchParam(params.operations)),
     shouldRenderFullDashboard: detailsMode === 'booking' || detailsMode === 'operations',
   };
 }
@@ -164,8 +167,28 @@ export function buildDashboardDetailsHref(detailsMode: DashboardDetailsMode, par
   return value ? `/?${value}` : '/';
 }
 
+export function buildDashboardOperationsHref(
+  operationsMode: DashboardOperationsMode,
+  params: DashboardParams,
+) {
+  const query = new URLSearchParams();
+  const range = readSearchParam(params.range);
+  if (range) {
+    query.set('range', range);
+  }
+  query.set('details', 'operations');
+  if (operationsMode !== 'live') {
+    query.set('operations', operationsMode);
+  }
+  return `/?${query.toString()}`;
+}
+
 function normalizeDashboardDetailsMode(value: string): DashboardDetailsMode {
   return value === 'all' || value === 'booking' || value === 'operations' ? value : 'summary';
+}
+
+function normalizeDashboardOperationsMode(value: string): DashboardOperationsMode {
+  return value === 'analysis' || value === 'partner' || value === 'closeout' ? value : 'live';
 }
 
 function buildDashboardDateScopedHref(

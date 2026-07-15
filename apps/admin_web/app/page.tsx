@@ -89,6 +89,7 @@ import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-locat
 import {
   buildDashboardDataHrefs,
   buildDashboardDetailsHref,
+  buildDashboardOperationsHref,
   buildDashboardRange,
   buildDashboardViewMode,
 } from './dashboard-page-model';
@@ -472,6 +473,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const dashboardViewMode = buildDashboardViewMode(params);
   const dashboardDataHrefs = buildDashboardDataHrefs(params);
   const shouldRenderFullDashboard = dashboardViewMode.shouldRenderFullDashboard;
+  const shouldRenderLiveOperations = dashboardViewMode.operationsMode === 'live';
+  const shouldRenderOperationsAnalysis = dashboardViewMode.operationsMode === 'analysis';
+  const shouldRenderPartnerReadiness = dashboardViewMode.operationsMode === 'partner';
+  const shouldRenderCloseoutQueues = dashboardViewMode.operationsMode === 'closeout';
   const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
     dashboardSummaryResponse,
@@ -1598,56 +1603,50 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminFormControlLink>
             }
             className="admin-mt-20"
-            description="Use this order when the full dashboard is open. It keeps live triage ahead of deeper evidence and finance sections."
+            description="Open one bounded operating view at a time. Live command is the default; analysis, Partner readiness, and closeout records stay separate."
             id="dashboard-full-detail-review-order"
-            title="Full detail review order"
+            statusLabel={
+              shouldRenderLiveOperations
+                ? 'Live command'
+                : shouldRenderOperationsAnalysis
+                  ? 'Demand analysis'
+                  : shouldRenderPartnerReadiness
+                    ? 'Partner readiness'
+                    : 'Closeout queues'
+            }
+            statusTone={shouldRenderLiveOperations ? 'warning' : 'info'}
+            title="Operations diagnostics workspace"
           >
-            <AdminTaskGrid className="admin-mt-14">
-              {[
-                {
-                  href: '#dashboard-live-operations-radar',
-                  label: 'Live radar',
-                  detail: 'Confirm the active live lanes before reading deeper queues.',
-                  owner: 'Ops',
-                },
-                {
-                  href: '#dashboard-booking-participant-flow',
-                  label: 'Dispatch evidence',
-                  detail: 'Start with participant flow, retained evidence, then queue shortcuts.',
-                  owner: 'Dispatch',
-                },
-                {
-                  href: '#dashboard-partner-supply-status',
-                  label: 'Partner supply',
-                  detail: 'Check online supply, location freshness, verification, and contactability.',
-                  owner: 'Partner Ops',
-                },
-                {
-                  href: '#dashboard-finance-closeout-status',
-                  label: 'Finance closeout',
-                  detail: 'Review payment, cash settlement, payout, wallet, and closeout signals last.',
-                  owner: 'Finance',
-                },
-              ].map((item, index) => (
-                <AdminActionCard
-                  actionLabel="Jump"
-                  className={index === 0 ? 'ops-task-active' : 'ops-task-done'}
-                  detail={item.detail}
-                  href={item.href}
-                  key={item.label}
-                  leading={
-                    <>
-                      <small>Step {index + 1}</small>
-                      <StatusBadge tone={index === 0 ? 'info' : 'success'}>{item.owner}</StatusBadge>
-                    </>
-                  }
-                  title={item.label}
-                  variant="ops-task"
-                />
-              ))}
-            </AdminTaskGrid>
+            <AdminFilterChipGroup ariaLabel="Operations diagnostic workspaces">
+              <AdminFormControlLink
+                aria-current={shouldRenderLiveOperations ? 'page' : undefined}
+                href={buildDashboardOperationsHref('live', params)}
+              >
+                Live command
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={shouldRenderOperationsAnalysis ? 'page' : undefined}
+                href={buildDashboardOperationsHref('analysis', params)}
+              >
+                Demand analysis
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={shouldRenderPartnerReadiness ? 'page' : undefined}
+                href={buildDashboardOperationsHref('partner', params)}
+              >
+                Partner readiness
+              </AdminFormControlLink>
+              <AdminFormControlLink
+                aria-current={shouldRenderCloseoutQueues ? 'page' : undefined}
+                href={buildDashboardOperationsHref('closeout', params)}
+              >
+                Closeout queues
+              </AdminFormControlLink>
+            </AdminFilterChipGroup>
           </AdminSection>
 
+          {shouldRenderLiveOperations ? (
+            <>
           <AdminSection
             actions={
               <AdminTextLink href={fullDashboardData.liveOperationsRadar[0]?.href ?? '/bookings'}>
@@ -1692,6 +1691,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminTaskGrid>
           </AdminSection>
 
+            </>
+          ) : null}
+
+          {shouldRenderOperationsAnalysis ? (
+            <>
           <AdminSection
             actions={
               <AdminFormControlLink href="/operations-policy">
@@ -1726,6 +1730,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminTaskGrid>
           </AdminSection>
 
+            </>
+          ) : null}
+
+          {shouldRenderLiveOperations ? (
+            <>
           <AdminSection
             actions={
               <AdminSignal
@@ -1926,6 +1935,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminDetailGrid>
           </AdminSection>
 
+            </>
+          ) : null}
+
+          {shouldRenderOperationsAnalysis ? (
+            <>
           <AdminSection
             actions={
               <AdminFormControlLink href="/operations-policy">
@@ -2345,6 +2359,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminSection>
           </AdminDetailGrid>
 
+            </>
+          ) : null}
+
+          {shouldRenderPartnerReadiness ? (
+            <>
           <AdminDetailGrid className="admin-mt-20">
             <AdminSection
               actions={
@@ -2554,6 +2573,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminTaskGrid>
           </AdminSection>
 
+            </>
+          ) : null}
+
+          {shouldRenderCloseoutQueues ? (
+            <>
           <AdminSection
             actions={
               <AdminSignal tone={queue.some((item) => item.severity === 'high') ? 'warn' : 'ok'}>
@@ -2732,6 +2756,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminDataTable>
             </AdminSection>
           </AdminDetailGrid>
+            </>
+          ) : null}
           </div>
         </AdminDisclosureCard>
       ) : (

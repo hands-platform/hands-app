@@ -780,21 +780,33 @@ describe('DashboardPage', () => {
       searchParams: Promise.resolve({ details: 'booking' }),
     });
     const bookingMarkup = renderToStaticMarkup(bookingPage);
-    const page = await DashboardPage({
+    const livePage = await DashboardPage({
       searchParams: Promise.resolve({ details: 'operations' }),
     });
-    const markup = renderToStaticMarkup(page);
+    const analysisPage = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'operations', operations: 'analysis' }),
+    });
+    const partnerPage = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'operations', operations: 'partner' }),
+    });
+    const closeoutPage = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'operations', operations: 'closeout' }),
+    });
+    const liveMarkup = renderToStaticMarkup(livePage);
+    const analysisMarkup = renderToStaticMarkup(analysisPage);
+    const partnerMarkup = renderToStaticMarkup(partnerPage);
+    const closeoutMarkup = renderToStaticMarkup(closeoutPage);
 
     expect(bookingMarkup).toContain(
       'aria-label="Booking diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-booking-diagnostics"',
     );
     expect(bookingMarkup).toContain('<strong>Booking diagnostics</strong>');
-    expect(markup).toContain(
+    expect(liveMarkup).toContain(
       'aria-label="Full operating diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-full-diagnostics"',
     );
-    expect(markup).toContain('<strong>Full diagnostics</strong>');
+    expect(liveMarkup).toContain('<strong>Full diagnostics</strong>');
     expect(bookingMarkup).not.toContain('id="dashboard-booking-diagnostics" open=""');
-    expect(markup).not.toContain('id="dashboard-full-diagnostics" open=""');
+    expect(liveMarkup).not.toContain('id="dashboard-full-diagnostics" open=""');
     expect(bookingMarkup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
     );
@@ -814,151 +826,83 @@ describe('DashboardPage', () => {
     expect(bookingMarkup).toContain(
       '<h2 id="dashboard-booking-evidence-command-queue-title">Evidence queue shortcuts</h2>',
     );
-    expect(markup).toContain(
+    expect(liveMarkup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-full-detail-review-order"',
     );
-    expect(markup).toContain(
-      '<h2 id="dashboard-full-detail-review-order-title">Full detail review order</h2>',
+    expect(liveMarkup).toContain(
+      '<h2 id="dashboard-full-detail-review-order-title">Operations diagnostics workspace</h2>',
     );
-    expect(markup).toContain('Use this order when the full dashboard is open.');
-    expect(markup).toContain('Live radar');
-    expect(markup).toContain('Dispatch evidence');
-    expect(markup).toContain('href="#dashboard-booking-participant-flow"');
-    expect(markup).toContain('Partner supply');
-    expect(markup).toContain('Finance closeout');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-live-operations-radar"',
+    expect(liveMarkup).toContain(
+      'aria-current="page" class="admin-form-control-link button button-secondary" href="/?details=operations"',
     );
-    expect(markup).toContain(
-      '<h2 id="dashboard-live-operations-radar-title">Live operations radar</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-policy-outcome-pulse"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-policy-outcome-pulse-title">Policy outcome pulse</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-shift-command-briefing"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-shift-command-briefing-title">Shift command briefing</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-opening-shift-checklist"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-opening-shift-checklist-title">Opening shift checklist</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-matching-card" id="dashboard-matching-control-room"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-matching-control-room-title">Matching control room</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-policy-card" id="dashboard-operations-policy-status"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-operations-policy-status-title">Operations policy status</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card" id="dashboard-partner-dispatch-control"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-partner-dispatch-control-title">Partner dispatch control</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-marketplace-unblock-quick-order"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-marketplace-unblock-quick-order-title">Marketplace unblock quick order</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card" id="dashboard-today-command-lanes"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-today-command-lanes-title">Today command lanes</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-booking-attention-cockpit"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-booking-attention-cockpit-title">Booking attention cockpit</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-service-payment-mix"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-service-payment-mix-title">Service and payment mix</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-booking-status-control"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-booking-status-control-title">Booking status control</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-customer-app-presence"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-customer-app-presence-title">Customer app presence</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-hourly-booking-demand"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-hourly-booking-demand-title">Hourly booking demand</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-regional-booking-demand"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-regional-booking-demand-title">Regional booking demand</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-partner-supply-status"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-partner-supply-status-title">Partner supply status</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-partner-approval-funnel"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-partner-approval-funnel-title">Partner approval funnel</h2>',
-    );
-    expect(markup).toContain(
-      'class="card admin-section dashboard-card-scroll dashboard-checklist-card" id="dashboard-operations-checklist-queue"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-operations-checklist-queue-title">Operations checklist queue</h2>',
-    );
-    expect(markup).not.toContain('dashboard-external-setup-readiness');
-    expect(markup).not.toContain('External setup readiness');
-    expect(markup).not.toContain('dashboard-realtime-flow-health');
-    expect(markup).not.toContain('Realtime flow health');
-    expect(markup).not.toContain('Generated from the latest admin API snapshot');
-    expect(markup).not.toContain('API source:');
-    expect(markup).not.toContain('Operations policy snapshot');
-    expect(markup).not.toContain('Partner supply snapshot');
-    expect(markup).not.toContain('Finance snapshot');
-    expect(markup).not.toContain('earnings snapshot');
-    expect(markup).not.toContain('current snapshot');
-    expect(markup).not.toContain('source of truth');
-    expect(markup).not.toContain('app sessions');
-    expect(markup).not.toContain('Partner readiness funnel');
-    expect(markup).not.toContain('location readiness');
-    expect(markup).not.toContain('payout readiness');
-    expect(markup).not.toContain('onboarding readiness');
-    expect(markup).toContain(
-      'class="card admin-section" id="dashboard-finance-closeout-status"',
-    );
-    expect(markup).toContain(
-      '<h2 id="dashboard-finance-closeout-status-title">Finance closeout status</h2>',
-    );
-    expect(markup.indexOf('id="dashboard-full-detail-review-order"')).toBeLessThan(
-      markup.indexOf('id="dashboard-live-operations-radar"'),
+    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=analysis"');
+    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=partner"');
+    expect(liveMarkup).toContain('href="/?details=operations&amp;operations=closeout"');
+
+    for (const sectionId of [
+      'dashboard-live-operations-radar',
+      'dashboard-shift-command-briefing',
+      'dashboard-opening-shift-checklist',
+      'dashboard-matching-control-room',
+    ]) {
+      expect(liveMarkup).toContain(`id="${sectionId}"`);
+    }
+    for (const sectionId of [
+      'dashboard-policy-outcome-pulse',
+      'dashboard-booking-attention-cockpit',
+      'dashboard-partner-supply-status',
+      'dashboard-today-command-lanes',
+    ]) {
+      expect(liveMarkup).not.toContain(`id="${sectionId}"`);
+    }
+
+    for (const sectionId of [
+      'dashboard-policy-outcome-pulse',
+      'dashboard-operations-policy-status',
+      'dashboard-booking-attention-cockpit',
+      'dashboard-service-payment-mix',
+      'dashboard-booking-status-control',
+      'dashboard-customer-app-presence',
+      'dashboard-hourly-booking-demand',
+      'dashboard-regional-booking-demand',
+    ]) {
+      expect(analysisMarkup).toContain(`id="${sectionId}"`);
+    }
+    expect(analysisMarkup).not.toContain('id="dashboard-live-operations-radar"');
+    expect(analysisMarkup).not.toContain('id="dashboard-partner-supply-status"');
+    expect(analysisMarkup).not.toContain('id="dashboard-finance-closeout-status"');
+
+    for (const sectionId of [
+      'dashboard-partner-supply-status',
+      'dashboard-partner-approval-funnel',
+      'dashboard-partner-dispatch-control',
+      'dashboard-marketplace-unblock-quick-order',
+    ]) {
+      expect(partnerMarkup).toContain(`id="${sectionId}"`);
+    }
+    expect(partnerMarkup).not.toContain('id="dashboard-live-operations-radar"');
+    expect(partnerMarkup).not.toContain('id="dashboard-hourly-booking-demand"');
+    expect(partnerMarkup).not.toContain('id="dashboard-finance-closeout-status"');
+
+    for (const sectionId of [
+      'dashboard-today-command-lanes',
+      'dashboard-operations-checklist-queue',
+      'dashboard-finance-closeout-status',
+    ]) {
+      expect(closeoutMarkup).toContain(`id="${sectionId}"`);
+    }
+    expect(closeoutMarkup).not.toContain('id="dashboard-live-operations-radar"');
+    expect(closeoutMarkup).not.toContain('id="dashboard-policy-outcome-pulse"');
+    expect(closeoutMarkup).not.toContain('id="dashboard-partner-supply-status"');
+
+    expect(liveMarkup).not.toContain('dashboard-external-setup-readiness');
+    expect(liveMarkup).not.toContain('External setup readiness');
+    expect(liveMarkup).not.toContain('dashboard-realtime-flow-health');
+    expect(liveMarkup).not.toContain('Realtime flow health');
+    expect(liveMarkup).not.toContain('Generated from the latest admin API snapshot');
+    expect(liveMarkup).not.toContain('API source:');
+    expect(liveMarkup.indexOf('id="dashboard-full-detail-review-order"')).toBeLessThan(
+      liveMarkup.indexOf('id="dashboard-live-operations-radar"'),
     );
   });
 });

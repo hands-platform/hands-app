@@ -1,6 +1,7 @@
 import {
   buildDashboardDataHrefs,
   buildDashboardDetailsHref,
+  buildDashboardOperationsHref,
   buildDashboardRange,
   buildDashboardViewMode,
 } from './dashboard-page-model';
@@ -9,6 +10,7 @@ describe('dashboard page model', () => {
   it('keeps the default dashboard in summary mode', () => {
     expect(buildDashboardViewMode({})).toEqual({
       detailsMode: 'summary',
+      operationsMode: 'live',
       shouldRenderFullDashboard: false,
     });
   });
@@ -16,10 +18,14 @@ describe('dashboard page model', () => {
   it('keeps details=all as a lightweight index and loads only a selected diagnostic workspace', () => {
     expect(buildDashboardViewMode({ details: 'all' })).toEqual({
       detailsMode: 'all',
+      operationsMode: 'live',
       shouldRenderFullDashboard: false,
     });
     expect(buildDashboardViewMode({ details: 'booking' }).shouldRenderFullDashboard).toBe(true);
     expect(buildDashboardViewMode({ details: 'operations' }).shouldRenderFullDashboard).toBe(true);
+    expect(buildDashboardViewMode({ details: 'operations', operations: 'partner' }).operationsMode).toBe(
+      'partner',
+    );
     expect(buildDashboardViewMode({ details: 'unexpected' }).shouldRenderFullDashboard).toBe(false);
   });
 
@@ -29,6 +35,16 @@ describe('dashboard page model', () => {
     expect(buildDashboardDetailsHref('operations', {})).toBe('/?details=operations');
     expect(buildDashboardDetailsHref('summary', { range: '7d', details: 'all' })).toBe('/?range=7d');
     expect(buildDashboardDetailsHref('summary', {})).toBe('/');
+    expect(buildDashboardOperationsHref('live', {})).toBe('/?details=operations');
+    expect(buildDashboardOperationsHref('analysis', { range: '7d' })).toBe(
+      '/?range=7d&details=operations&operations=analysis',
+    );
+    expect(buildDashboardOperationsHref('partner', {})).toBe(
+      '/?details=operations&operations=partner',
+    );
+    expect(buildDashboardOperationsHref('closeout', {})).toBe(
+      '/?details=operations&operations=closeout',
+    );
   });
 
   it('defaults dashboard range to today for the initial operations view', () => {
