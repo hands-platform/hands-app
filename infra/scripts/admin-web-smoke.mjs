@@ -1607,8 +1607,13 @@ if (providerLinkMatch) {
         },
         {
           query: 'section=access',
-          markers: ['Partner readiness and access controls', 'Access workspace view', 'Marketplace booking gate decision'],
-          excludedMarkers: ['Device and session activity'],
+          markers: ['Partner marketplace readiness', 'Access workspace view', 'Marketplace booking gate decision'],
+          excludedMarkers: ['Reports and account controls', 'Device and session activity'],
+        },
+        {
+          query: 'section=access&access=controls',
+          markers: ['Partner reports and account controls', 'Reports &amp; controls', 'Reports and account controls'],
+          excludedMarkers: ['Marketplace booking gate decision', 'Device and session activity'],
         },
         {
           query: 'section=access&access=diagnostics',

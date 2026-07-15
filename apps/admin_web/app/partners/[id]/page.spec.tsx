@@ -87,7 +87,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
   });
 
-  it('requests partner detail without diagnostics for ordinary operators', async () => {
+  it('keeps operator record and control workspaces available while denying diagnostics', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: ['PARTNERS_DETAIL'],
       email: 'ops@example.com',
@@ -97,23 +97,48 @@ describe('ProviderDetailPage data loading', () => {
       roles: ['ADMIN'],
       updatedAt: null,
     });
-    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-operator-views?includeDiagnostics=false') {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) {
+        return [];
+      }
+      return fallback;
+    });
 
-    await expect(
-      ProviderDetailPage({
-        params: Promise.resolve({ id: 'partner-no-diagnostics' }),
-        searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
-      }),
-    ).rejects.toThrow('NEXT_NOT_FOUND');
+    const deniedDiagnosticsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-operator-views' }),
+      searchParams: Promise.resolve({ access: 'diagnostics', section: 'access' }),
+    });
+    const deniedDiagnosticsMarkup = renderToStaticMarkup(deniedDiagnosticsPage);
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/partners/partner-no-diagnostics?includeDiagnostics=false',
+      '/admin/partners/partner-operator-views?includeDiagnostics=false',
       null,
     );
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/partners/partner-no-diagnostics?includeDiagnostics=true',
+      '/admin/partners/partner-operator-views?includeDiagnostics=true',
       null,
     );
+    expect(deniedDiagnosticsMarkup).toContain('Partner marketplace readiness');
+    expect(deniedDiagnosticsMarkup).not.toContain('Device and session activity');
+
+    mockedAdminGet.mockClear();
+
+    const controlsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-operator-views' }),
+      searchParams: Promise.resolve({ access: 'controls', section: 'access' }),
+    });
+    expect(renderToStaticMarkup(controlsPage)).toContain('Partner reports and account controls');
+
+    mockedAdminGet.mockClear();
+
+    const recordsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-operator-views' }),
+      searchParams: Promise.resolve({ control: 'records', section: 'control' }),
+    });
+    expect(renderToStaticMarkup(recordsPage)).toContain('Partner control records');
   });
 
   it('loads deep access diagnostics only when a Master Admin selects the diagnostics workspace', async () => {
@@ -258,10 +283,24 @@ describe('ProviderDetailPage data loading', () => {
     });
     const readinessMarkup = renderToStaticMarkup(readinessPage);
 
-    expect(readinessMarkup).toContain('Partner readiness and access controls');
+    expect(readinessMarkup).toContain('Partner marketplace readiness');
     expect(readinessMarkup).toContain('Access workspace view');
     expect(readinessMarkup).toContain('Marketplace booking gate decision');
+    expect(readinessMarkup).not.toContain('Reports and account controls');
     expect(readinessMarkup).not.toContain('Device and session activity');
+
+    mockedAdminGet.mockClear();
+
+    const controlsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-access' }),
+      searchParams: Promise.resolve({ access: 'controls', section: 'access' }),
+    });
+    const controlsMarkup = renderToStaticMarkup(controlsPage);
+
+    expect(controlsMarkup).toContain('Partner reports and account controls');
+    expect(controlsMarkup).toContain('Reports and account controls');
+    expect(controlsMarkup).not.toContain('Marketplace booking gate decision');
+    expect(controlsMarkup).not.toContain('Device and session activity');
 
     mockedAdminGet.mockClear();
 

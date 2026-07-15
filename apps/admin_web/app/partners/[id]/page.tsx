@@ -355,7 +355,7 @@ type PartnerDispatchPolicy = {
 };
 type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
 type PartnerControlView = 'work' | 'records' | 'reference';
-type PartnerAccessView = 'readiness' | 'diagnostics';
+type PartnerAccessView = 'readiness' | 'controls' | 'diagnostics';
 type PartnerDossierView = 'approval' | 'evidence' | 'finance';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
   missingDocuments: string[];
@@ -407,9 +407,11 @@ function readPartnerControlView(
 function readPartnerAccessView(
   params: Record<string, string | string[] | undefined>,
 ): PartnerAccessView {
-  return readSearchParam(params.access) === 'diagnostics' || Boolean(readSearchParam(params.deviceAction))
-    ? 'diagnostics'
-    : 'readiness';
+  if (Boolean(readSearchParam(params.deviceAction))) {
+    return 'diagnostics';
+  }
+  const accessView = readSearchParam(params.access);
+  return accessView === 'controls' || accessView === 'diagnostics' ? accessView : 'readiness';
 }
 
 function readPartnerDossierView(
@@ -431,8 +433,8 @@ function buildPartnerDetailWorkspaceHref(
   if (section === 'dossier' && (view === 'evidence' || view === 'finance')) {
     query.set('dossier', view);
   }
-  if (section === 'access' && view === 'diagnostics') {
-    query.set('access', 'diagnostics');
+  if (section === 'access' && (view === 'controls' || view === 'diagnostics')) {
+    query.set('access', view);
   }
   return `/partners/${providerId}?${query.toString()}`;
 }
@@ -532,8 +534,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const activityOrder = readDetailActivityOrder(detailSearchParams);
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
-  const controlView = canLoadPartnerDiagnostics ? requestedControlView : 'work';
-  const accessView = canLoadPartnerDiagnostics ? requestedAccessView : 'readiness';
+  const controlView = requestedControlView === 'reference' && !canLoadPartnerDiagnostics ? 'work' : requestedControlView;
+  const accessView = requestedAccessView === 'diagnostics' && !canLoadPartnerDiagnostics ? 'readiness' : requestedAccessView;
   const shouldLoadAccessDiagnostics = detailSection === 'access' && accessView === 'diagnostics';
   const isPartnerWorkspaceIndex = detailSection === 'full';
   const providerEndpoint =
@@ -1208,35 +1210,55 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         description={
           accessView === 'diagnostics'
             ? 'Developer-only app activity, device reachability, and session evidence.'
-            : 'Current marketplace readiness, booking gate decisions, repair actions, reports, and access controls.'
+            : accessView === 'controls'
+              ? 'Customer complaints, staff findings, payout holds, and account restrictions that need review.'
+              : 'Current marketplace readiness, booking gate decision, and repair actions.'
         }
         eyebrow="Access"
         id="partner-access-section"
-        status={accessView === 'diagnostics' ? `${partnerAppActivityRows.length} diagnostic row(s)` : 'Current controls'}
-        title={accessView === 'diagnostics' ? 'Partner device and session diagnostics' : 'Partner readiness and access controls'}
+        status={
+          accessView === 'diagnostics'
+            ? `${partnerAppActivityRows.length} diagnostic row(s)`
+            : accessView === 'controls'
+              ? `${partnerReportRows.length + partnerAccountControlRows.length} control signal(s)`
+              : 'Current readiness'
+        }
+        title={
+          accessView === 'diagnostics'
+            ? 'Partner device and session diagnostics'
+            : accessView === 'controls'
+              ? 'Partner reports and account controls'
+              : 'Partner marketplace readiness'
+        }
       >
-        {canLoadPartnerDiagnostics ? (
-          <AdminSection
-            description="Keep operator readiness controls separate from developer device and session evidence."
-            id="partner-access-workspace-selector"
-            title="Access workspace view"
-          >
-            <AdminFilterChipGroup ariaLabel="Partner access workspaces">
-              <AdminFormControlLink
-                aria-current={accessView === 'readiness' ? 'page' : undefined}
-                href={buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness')}
-              >
-                Readiness &amp; controls
-              </AdminFormControlLink>
+        <AdminSection
+          description="Keep marketplace readiness, operator controls, and Developer diagnostics in separate workspaces."
+          id="partner-access-workspace-selector"
+          title="Access workspace view"
+        >
+          <AdminFilterChipGroup ariaLabel="Partner access workspaces">
+            <AdminFormControlLink
+              aria-current={accessView === 'readiness' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'access', 'readiness')}
+            >
+              Marketplace readiness
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={accessView === 'controls' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'access', 'controls')}
+            >
+              Reports &amp; controls
+            </AdminFormControlLink>
+            {canLoadPartnerDiagnostics ? (
               <AdminFormControlLink
                 aria-current={accessView === 'diagnostics' ? 'page' : undefined}
                 href={buildPartnerDetailWorkspaceHref(provider.id, 'access', 'diagnostics')}
               >
                 Device &amp; sessions
               </AdminFormControlLink>
-            </AdminFilterChipGroup>
-          </AdminSection>
-        ) : null}
+            ) : null}
+          </AdminFilterChipGroup>
+        </AdminSection>
         {accessView === 'diagnostics' ? (
           <>
             {partnerCommandSnapshotDiagnosticSection}
@@ -1244,6 +1266,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} />
             {partnerDeviceSessionDiagnosticSection}
           </>
+        ) : accessView === 'controls' ? (
+          <PartnerDetailReportsControlsSection
+            accountControls={partnerAccountControlRows}
+            payoutHold={reportControlPayoutHold}
+            providerId={provider.id}
+            reports={partnerReportRows}
+            reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+          />
         ) : (
           <>
             <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
@@ -1256,13 +1286,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <PartnerDetailAcceptanceUnblockPlaybookSection
               pillClassForTone={partnerOpsPillClass}
               steps={acceptanceUnblockPlaybook}
-            />
-            <PartnerDetailReportsControlsSection
-              accountControls={partnerAccountControlRows}
-              payoutHold={reportControlPayoutHold}
-              providerId={provider.id}
-              reports={partnerReportRows}
-              reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
             />
           </>
         )}
