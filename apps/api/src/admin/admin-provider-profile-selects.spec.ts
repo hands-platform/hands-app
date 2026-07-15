@@ -10,6 +10,7 @@ import {
   adminLocationSnapshotSummarySelect,
   adminProviderDetailSelect,
   adminProviderDetailWithoutDiagnosticsSelect,
+  adminProviderFinanceDetailSelect,
   adminProviderDirectorySelect,
   adminProviderListBookingSelect,
   adminProviderListEarningSelect,
@@ -134,6 +135,22 @@ describe('admin provider profile selects', () => {
       reports: { take: 20 },
       sanctions: { take: 20 },
     });
+  });
+
+  it('keeps the partner finance detail select limited to money and payout evidence', () => {
+    expect(adminProviderFinanceDetailSelect).toMatchObject({
+      bankAccounts: { take: 10 },
+      earnings: { take: 10 },
+      payoutBatches: { take: 10 },
+      taxProfile: { select: expect.any(Object) },
+      verificationLogs: { take: 20 },
+    });
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('documents');
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('preferredBookings');
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('selectedBookings');
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('participants');
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('devices');
+    expect(adminProviderFinanceDetailSelect).not.toHaveProperty('sessions');
   });
 
   it('keeps provider booking and payout summaries location/payment aware', () => {

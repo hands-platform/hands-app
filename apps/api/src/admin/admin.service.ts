@@ -198,6 +198,7 @@ import {
   ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderControlSelect,
   adminProviderDetailSelect,
+  adminProviderFinanceDetailSelect,
   adminProviderDetailWithoutDiagnosticsSelect,
   adminProviderDirectorySelect,
   adminFileReviewItemSelect,
@@ -7237,17 +7238,29 @@ export class AdminService {
     });
   }
 
-  async getProviderDetail(providerProfileId: string, options: { includeDiagnostics?: boolean } = {}) {
+  async getProviderDetail(
+    providerProfileId: string,
+    options: { includeDiagnostics?: boolean; view?: 'finance' } = {},
+  ) {
     const includeDiagnostics = options.includeDiagnostics !== false;
+    const financeView = options.view === 'finance';
     const provider = await this.prisma.providerProfile.findUnique({
       where: { id: providerProfileId },
-      select: includeDiagnostics ? adminProviderDetailSelect : adminProviderDetailWithoutDiagnosticsSelect,
+      select: financeView
+        ? adminProviderFinanceDetailSelect
+        : includeDiagnostics
+          ? adminProviderDetailSelect
+          : adminProviderDetailWithoutDiagnosticsSelect,
     });
     if (!provider) {
       throw new NotFoundException('Partner not found');
     }
-    const providerDevices = includeDiagnostics && Array.isArray(provider.devices) ? provider.devices : [];
-    const providerSessions = includeDiagnostics && Array.isArray(provider.sessions) ? provider.sessions : [];
+    const providerDiagnostics = provider as typeof provider & {
+      devices?: Array<{ deviceId: string }>;
+      sessions?: Array<{ deviceId: string }>;
+    };
+    const providerDevices = includeDiagnostics && !financeView ? (providerDiagnostics.devices ?? []) : [];
+    const providerSessions = includeDiagnostics && !financeView ? (providerDiagnostics.sessions ?? []) : [];
 
     const deviceIds = Array.from(
       new Set(
@@ -7284,12 +7297,14 @@ export class AdminService {
           })
         : Promise.resolve([]);
 
-    const auditLogsPromise = this.prisma.adminAuditLog.findMany({
-      where: providerAuditLogWhere(providerProfileId),
-      orderBy: { createdAt: 'desc' },
-      take: ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT,
-      select: adminAuditLogSelect,
-    });
+    const auditLogsPromise = financeView
+      ? Promise.resolve([])
+      : this.prisma.adminAuditLog.findMany({
+          where: providerAuditLogWhere(providerProfileId),
+          orderBy: { createdAt: 'desc' },
+          take: ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT,
+          select: adminAuditLogSelect,
+        });
     const payoutBatchesWithOperatorsPromise = this.withPayoutBatchOperators(
       provider.payoutBatches ?? [],
     );

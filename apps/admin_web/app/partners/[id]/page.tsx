@@ -550,14 +550,19 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const bookingsView = requestedBookingsView === 'ledger' && !canLoadPartnerDiagnostics ? 'journey' : requestedBookingsView;
   const accessView = requestedAccessView === 'diagnostics' && !canLoadPartnerDiagnostics ? 'readiness' : requestedAccessView;
   const shouldLoadAccessDiagnostics = detailSection === 'access' && accessView === 'diagnostics';
+  const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
   const isPartnerWorkspaceIndex = detailSection === 'full';
   const providerEndpoint =
     detailSection === 'overview' || isPartnerWorkspaceIndex
       ? `/admin/partners/${id}/overview`
-      : `/admin/partners/${id}?includeDiagnostics=${shouldLoadAccessDiagnostics ? 'true' : 'false'}`;
+      : `/admin/partners/${id}?includeDiagnostics=${shouldLoadAccessDiagnostics ? 'true' : 'false'}${
+          shouldLoadFinanceRecords ? '&view=finance' : ''
+        }`;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(providerEndpoint, null),
-    adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
+    shouldLoadFinanceRecords
+      ? Promise.resolve<AdminOperationalPolicySetting[]>([])
+      : adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
   ]);
 
   if (!provider) {
@@ -584,7 +589,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }).toString();
   const partnerManualAdjustmentHref = `/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(provider.id)}`;
   const shouldLoadControlRecords = detailSection === 'control' && controlView === 'records';
-  const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
   const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] =
     await Promise.all([
       shouldLoadControlRecords

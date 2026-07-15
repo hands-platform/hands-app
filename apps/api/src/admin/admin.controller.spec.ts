@@ -2532,6 +2532,7 @@ describe('AdminController notification and push actions', () => {
 
     await expect(controller.providerDetail('partner-1', undefined)).resolves.toEqual({ id: 'partner-1' });
     await expect(controller.providerDetail('partner-1', 'false')).resolves.toEqual({ id: 'partner-1' });
+    await expect(controller.providerDetail('partner-1', 'false', 'finance')).resolves.toEqual({ id: 'partner-1' });
 
     expect(routeMetadata('providerDetail')).toEqual({
       method: RequestMethod.GET,
@@ -2539,6 +2540,10 @@ describe('AdminController notification and push actions', () => {
     });
     expect(admin.getProviderDetail).toHaveBeenNthCalledWith(1, 'partner-1', { includeDiagnostics: true });
     expect(admin.getProviderDetail).toHaveBeenNthCalledWith(2, 'partner-1', { includeDiagnostics: false });
+    expect(admin.getProviderDetail).toHaveBeenNthCalledWith(3, 'partner-1', {
+      includeDiagnostics: false,
+      view: 'finance',
+    });
   });
 
   it('passes customer detail diagnostics intent to the service while preserving default compatibility', async () => {

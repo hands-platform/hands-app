@@ -988,3 +988,37 @@ export const adminProviderDetailSelect = {
 export const adminProviderDetailWithoutDiagnosticsSelect = Object.fromEntries(
   Object.entries(adminProviderDetailSelect).filter(([key]) => key !== 'devices' && key !== 'sessions'),
 ) as Prisma.ProviderProfileSelect;
+
+export const adminProviderFinanceDetailSelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  legalName: true,
+  status: true,
+  blockedAt: true,
+  blockedReason: true,
+  trustedAt: true,
+  updatedAt: true,
+  user: { select: adminUserSummarySelect },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
+    select: adminProviderBankAccountSummarySelect,
+  },
+  taxProfile: { select: adminProviderTaxProfileSummarySelect },
+  earnings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
+    select: adminProviderDetailEarningSelect,
+  },
+  payoutBatches: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
+    select: adminProviderPayoutBatchSummarySelect,
+  },
+  verificationLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
+    select: adminProviderVerificationLogSummarySelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;

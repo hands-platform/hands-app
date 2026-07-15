@@ -596,9 +596,11 @@ export class AdminController {
   providerDetail(
     @Param('id') providerProfileId: string,
     @Query('includeDiagnostics') includeDiagnostics?: string,
+    @Query('view') view?: string,
   ) {
     return this.admin.getProviderDetail(providerProfileId, {
       includeDiagnostics: includeDiagnostics !== 'false',
+      ...(view === 'finance' ? { view: 'finance' as const } : {}),
     });
   }
 

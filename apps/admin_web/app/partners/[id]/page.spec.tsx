@@ -332,7 +332,10 @@ describe('ProviderDetailPage data loading', () => {
       updatedAt: null,
     });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/partners/partner-dossier?includeDiagnostics=false') {
+      if (
+        href === '/admin/partners/partner-dossier?includeDiagnostics=false' ||
+        href === '/admin/partners/partner-dossier?includeDiagnostics=false&view=finance'
+      ) {
         return partnerDetail();
       }
       if (href.startsWith('/admin/operational-policy')) {
@@ -390,6 +393,13 @@ describe('ProviderDetailPage data loading', () => {
     expect(financeMarkup).toContain('Partner finance records');
     expect(financeMarkup).toContain('Partner wallet detail');
     expect(financeMarkup).not.toContain('Partner registration dossier');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-dossier?includeDiagnostics=false&view=finance',
+      null,
+    );
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy')),
+    ).toBe(false);
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
     ).toBe(true);
