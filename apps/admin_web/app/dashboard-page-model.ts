@@ -1,7 +1,7 @@
 import { normalizeDateRange, readSearchParam } from '../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS } from '../lib/operations-policy';
 
-export type DashboardDetailsMode = 'summary' | 'all';
+export type DashboardDetailsMode = 'summary' | 'all' | 'booking' | 'operations';
 
 type DashboardParams = Record<string, string | string[] | undefined>;
 
@@ -30,17 +30,17 @@ export type DashboardDataHrefs = {
   readonly refundsSummaryHref: string;
 };
 
-const DASHBOARD_BOOKING_TAKE = 50;
-const DASHBOARD_NOTIFICATION_TAKE = 20;
-const DASHBOARD_AUDIT_TAKE = 20;
-const DASHBOARD_FINANCE_TAKE = 25;
-const DASHBOARD_APP_SESSION_TAKE = 10;
+const DASHBOARD_BOOKING_TAKE = 20;
+const DASHBOARD_NOTIFICATION_TAKE = 10;
+const DASHBOARD_AUDIT_TAKE = 10;
+const DASHBOARD_FINANCE_TAKE = 10;
+const DASHBOARD_APP_SESSION_TAKE = 5;
 const DASHBOARD_SUMMARY_BOOKING_TAKE = 5;
 const DASHBOARD_SUMMARY_NOTIFICATION_TAKE = 5;
 const DASHBOARD_SUMMARY_AUDIT_TAKE = 5;
 const DASHBOARD_SUMMARY_FINANCE_TAKE = 5;
 const DASHBOARD_SUMMARY_APP_SESSION_TAKE = 5;
-const DASHBOARD_PARTNER_TAKE = 25;
+const DASHBOARD_PARTNER_TAKE = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DASHBOARD_OPERATIONAL_POLICY_KEYS = [
   OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
@@ -63,7 +63,7 @@ export function buildDashboardViewMode(params: DashboardParams): DashboardViewMo
   const detailsMode = normalizeDashboardDetailsMode(readSearchParam(params.details));
   return {
     detailsMode,
-    shouldRenderFullDashboard: detailsMode === 'all',
+    shouldRenderFullDashboard: detailsMode === 'booking' || detailsMode === 'operations',
   };
 }
 
@@ -157,15 +157,15 @@ export function buildDashboardDetailsHref(detailsMode: DashboardDetailsMode, par
   if (range) {
     query.set('range', range);
   }
-  if (detailsMode === 'all') {
-    query.set('details', 'all');
+  if (detailsMode !== 'summary') {
+    query.set('details', detailsMode);
   }
   const value = query.toString();
   return value ? `/?${value}` : '/';
 }
 
 function normalizeDashboardDetailsMode(value: string): DashboardDetailsMode {
-  return value === 'all' ? 'all' : 'summary';
+  return value === 'all' || value === 'booking' || value === 'operations' ? value : 'summary';
 }
 
 function buildDashboardDateScopedHref(

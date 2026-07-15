@@ -11,7 +11,6 @@ import { AdminDataTable } from '../components/admin-data-table';
 import { AdminEmptyState } from '../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../components/admin-form-controls';
-import { AdminTraceSummary } from '../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../components/admin-page-template';
 import { AdminTextLink } from '../components/admin-text-link';
 import { DateTimeText } from '../components/date-time-text';
@@ -93,9 +92,16 @@ import {
   buildDashboardRange,
   buildDashboardViewMode,
 } from './dashboard-page-model';
+import {
+  DashboardTraceSummary,
+  combinedDashboardSourceState,
+  dashboardMetricWithSourceState,
+  dashboardSourceState,
+  type DashboardSourceState,
+  type DashboardTraceSummaryMetric,
+} from './dashboard-trace-summary';
 
 const DASHBOARD_INFO_HEADERS = ['Metric', 'Value'] as const;
-const DASHBOARD_SUMMARY_STALE_MS = 5 * 60_000;
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -104,88 +110,6 @@ const activeBookingStatuses = new Set([
   'ARRIVED',
   'IN_SERVICE',
 ]);
-
-type DashboardTraceSummaryMetric = {
-  readonly action?: ReactNode;
-  readonly className?: string;
-  readonly helper?: ReactNode;
-  readonly href?: string;
-  readonly key?: string;
-  readonly kind?: 'action' | 'live' | 'period' | 'record' | 'risk';
-  readonly label: ReactNode;
-  readonly scope?: ReactNode;
-  readonly value: ReactNode;
-};
-
-type DashboardSourceState = 'available' | 'stale' | 'unavailable';
-
-function dashboardSourceState(value: unknown, generatedAt?: string | null): DashboardSourceState {
-  if (value === null || value === undefined) {
-    return 'unavailable';
-  }
-  if (!generatedAt) {
-    return 'available';
-  }
-  const generatedAtMs = Date.parse(generatedAt);
-  if (!Number.isFinite(generatedAtMs)) {
-    return 'stale';
-  }
-  return Date.now() - generatedAtMs > DASHBOARD_SUMMARY_STALE_MS ? 'stale' : 'available';
-}
-
-function dashboardMetricWithSourceState(
-  metric: DashboardTraceSummaryMetric,
-  state: DashboardSourceState,
-  refreshHref: string,
-): DashboardTraceSummaryMetric {
-  if (state === 'available') {
-    return metric;
-  }
-  return {
-    ...metric,
-    helper: state === 'stale' ? 'Refresh to load current data.' : 'This data source did not respond.',
-    href: refreshHref,
-    kind: 'risk',
-    scope: state === 'stale' ? 'Stale' : 'Data unavailable',
-    value: state === 'stale' ? metric.value : 'Unavailable',
-  };
-}
-
-function combinedDashboardSourceState(states: readonly DashboardSourceState[]): DashboardSourceState {
-  if (states.includes('unavailable')) {
-    return 'unavailable';
-  }
-  return states.includes('stale') ? 'stale' : 'available';
-}
-
-function DashboardTraceSummary({
-  className,
-  defaultKind,
-  defaultScope,
-  metrics,
-}: {
-  readonly className?: string;
-  readonly defaultKind?: DashboardTraceSummaryMetric['kind'];
-  readonly defaultScope?: ReactNode;
-  readonly metrics: readonly DashboardTraceSummaryMetric[];
-}) {
-  return (
-    <AdminTraceSummary
-      className={className}
-      metrics={metrics.map((metric) => ({
-        action: metric.action,
-        className: metric.className,
-        detail: metric.helper,
-        href: metric.href,
-        key: metric.key,
-        kind: metric.kind ?? defaultKind,
-        label: metric.label,
-        scope: metric.scope ?? defaultScope,
-        value: metric.value,
-      }))}
-    />
-  );
-}
 
 // Authority marker for static guard: Online partners.
 
@@ -1410,7 +1334,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         />
       </AdminSection>
 
-      {fullDashboardData ? (
+      {fullDashboardData && dashboardViewMode.detailsMode === 'booking' ? (
         <AdminDisclosureCard
           ariaLabel="Booking diagnostics"
           className="start-shift-diagnostics"
@@ -1652,7 +1576,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </AdminDisclosureCard>
       ) : null}
 
-      {fullDashboardData ? (
+      {fullDashboardData && dashboardViewMode.detailsMode === 'operations' ? (
         <AdminDisclosureCard
           ariaLabel="Full operating diagnostics"
           className="start-shift-diagnostics"
@@ -2813,13 +2737,28 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ) : (
         <AdminSection
           actions={
-            <AdminFormControlLink href={buildDashboardDetailsHref('all', params)}>
-              Load full dashboard
-            </AdminFormControlLink>
+            <AdminFilterChipGroup ariaLabel="Diagnostic workspaces">
+              <AdminFormControlLink href={buildDashboardDetailsHref('booking', params)}>
+                Booking diagnostics
+              </AdminFormControlLink>
+              <AdminFormControlLink href={buildDashboardDetailsHref('operations', params)}>
+                Operations diagnostics
+              </AdminFormControlLink>
+            </AdminFilterChipGroup>
           }
           className="admin-mt-20 start-shift-diagnostics-entry"
           id="dashboard-on-demand-detail"
-          status={<StatusBadge tone="neutral">Not loaded</StatusBadge>}
+          status={
+            <StatusBadge tone={dashboardViewMode.detailsMode === 'summary' ? 'neutral' : 'info'}>
+              {dashboardViewMode.detailsMode === 'summary'
+                ? 'Not loaded'
+                : dashboardViewMode.detailsMode === 'all'
+                  ? 'Choose workspace'
+                  : dashboardViewMode.detailsMode === 'booking'
+                    ? 'Booking loaded'
+                    : 'Operations loaded'}
+            </StatusBadge>
+          }
           title="Diagnostics"
         >
           <AdminFilterChipGroup ariaLabel="Direct operating records">

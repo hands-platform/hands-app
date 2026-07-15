@@ -29,6 +29,7 @@ vi.mock('../lib/admin-api', async () => {
 const mockedAdminGet = vi.mocked(adminGet);
 const mockedApiGet = vi.mocked(apiGet);
 const dashboardSource = readFileSync('app/page.tsx', 'utf8');
+const dashboardTraceSummarySource = readFileSync('app/dashboard-trace-summary.tsx', 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('DashboardPage', () => {
@@ -38,15 +39,15 @@ describe('DashboardPage', () => {
   });
 
   it('uses the shared Vuexy trace summary atom for dashboard metric groups', () => {
-    expect(dashboardSource).toContain('AdminTraceSummary');
+    expect(dashboardTraceSummarySource).toContain('AdminTraceSummary');
     expect(dashboardSource).not.toMatch(/<div className="service-trace-summary(?: [^"]*)?">/);
   });
 
   it('lets dashboard trace summaries declare a default operating scope and card kind', () => {
-    expect(dashboardSource).toContain('readonly defaultKind?:');
-    expect(dashboardSource).toContain('readonly defaultScope?: ReactNode;');
-    expect(dashboardSource).toContain('kind: metric.kind ?? defaultKind');
-    expect(dashboardSource).toContain('scope: metric.scope ?? defaultScope');
+    expect(dashboardTraceSummarySource).toContain('readonly defaultKind?:');
+    expect(dashboardTraceSummarySource).toContain('readonly defaultScope?: ReactNode;');
+    expect(dashboardTraceSummarySource).toContain('kind: metric.kind ?? defaultKind');
+    expect(dashboardTraceSummarySource).toContain('scope: metric.scope ?? defaultScope');
     expect(dashboardSource).toContain('defaultScope={selectedRangeLabel}');
     expect(dashboardSource).toContain('defaultScope="Live"');
     expect(dashboardSource).toContain('defaultKind="risk"');
@@ -150,12 +151,16 @@ describe('DashboardPage', () => {
     });
 
     const page = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
+      searchParams: Promise.resolve({ details: 'operations', range: 'today' }),
     });
     const markup = renderToStaticMarkup(page);
+    const bookingPage = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'booking', range: 'today' }),
+    });
+    const bookingMarkup = renderToStaticMarkup(bookingPage);
 
     expect(markup).toContain('<span>Gross</span><strong>300.000 VND</strong>');
-    expect(markup).toContain('<span>Refund evidence</span><strong>42</strong>');
+    expect(bookingMarkup).toContain('<span>Refund evidence</span><strong>42</strong>');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', null);
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds/summary?range=today', null);
     expect(mockedAdminGet).toHaveBeenCalledWith(
@@ -635,7 +640,8 @@ describe('DashboardPage', () => {
       'class="card admin-section admin-mt-20 start-shift-diagnostics-entry" id="dashboard-on-demand-detail"',
     );
     expect(markup).toContain('<h2 id="dashboard-on-demand-detail-title">Diagnostics</h2>');
-    expect(markup).toContain('href="/?details=all"');
+    expect(markup).toContain('href="/?details=booking"');
+    expect(markup).toContain('href="/?details=operations"');
     expect(markup).toContain('Booking records');
     expect(markup).toContain('Partner records');
     expect(markup).toContain('Finance records');
@@ -770,38 +776,42 @@ describe('DashboardPage', () => {
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
+    const bookingPage = await DashboardPage({
+      searchParams: Promise.resolve({ details: 'booking' }),
+    });
+    const bookingMarkup = renderToStaticMarkup(bookingPage);
     const page = await DashboardPage({
-      searchParams: Promise.resolve({ details: 'all' }),
+      searchParams: Promise.resolve({ details: 'operations' }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       'aria-label="Booking diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-booking-diagnostics"',
     );
-    expect(markup).toContain('<strong>Booking diagnostics</strong>');
+    expect(bookingMarkup).toContain('<strong>Booking diagnostics</strong>');
     expect(markup).toContain(
       'aria-label="Full operating diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-full-diagnostics"',
     );
     expect(markup).toContain('<strong>Full diagnostics</strong>');
-    expect(markup).not.toContain('id="dashboard-booking-diagnostics" open=""');
+    expect(bookingMarkup).not.toContain('id="dashboard-booking-diagnostics" open=""');
     expect(markup).not.toContain('id="dashboard-full-diagnostics" open=""');
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
     );
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       '<h2 id="dashboard-booking-participant-flow-title">Dispatch evidence map</h2>',
     );
-    expect(markup).toContain('Read this as one dispatch evidence group');
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain('Read this as one dispatch evidence group');
+    expect(bookingMarkup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-evidence-drilldown"',
     );
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       '<h2 id="dashboard-evidence-drilldown-title">Retained evidence signals</h2>',
     );
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-booking-evidence-command-queue"',
     );
-    expect(markup).toContain(
+    expect(bookingMarkup).toContain(
       '<h2 id="dashboard-booking-evidence-command-queue-title">Evidence queue shortcuts</h2>',
     );
     expect(markup).toContain(

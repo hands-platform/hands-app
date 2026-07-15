@@ -13,16 +13,20 @@ describe('dashboard page model', () => {
     });
   });
 
-  it('enables the full dashboard only when details=all is explicit', () => {
+  it('keeps details=all as a lightweight index and loads only a selected diagnostic workspace', () => {
     expect(buildDashboardViewMode({ details: 'all' })).toEqual({
       detailsMode: 'all',
-      shouldRenderFullDashboard: true,
+      shouldRenderFullDashboard: false,
     });
+    expect(buildDashboardViewMode({ details: 'booking' }).shouldRenderFullDashboard).toBe(true);
+    expect(buildDashboardViewMode({ details: 'operations' }).shouldRenderFullDashboard).toBe(true);
     expect(buildDashboardViewMode({ details: 'unexpected' }).shouldRenderFullDashboard).toBe(false);
   });
 
   it('preserves range filters when building summary and full dashboard links', () => {
     expect(buildDashboardDetailsHref('all', { range: '7d' })).toBe('/?range=7d&details=all');
+    expect(buildDashboardDetailsHref('booking', { range: '7d' })).toBe('/?range=7d&details=booking');
+    expect(buildDashboardDetailsHref('operations', {})).toBe('/?details=operations');
     expect(buildDashboardDetailsHref('summary', { range: '7d', details: 'all' })).toBe('/?range=7d');
     expect(buildDashboardDetailsHref('summary', {})).toBe('/');
   });
@@ -34,7 +38,8 @@ describe('dashboard page model', () => {
 
   it('loads policy diagnostics only for the full dashboard', () => {
     expect(buildDashboardDataHrefs({})).toMatchObject({ operationalPolicyHref: null });
-    const policyHref = buildDashboardDataHrefs({ details: 'all' }).operationalPolicyHref;
+    expect(buildDashboardDataHrefs({ details: 'all' }).operationalPolicyHref).toBeNull();
+    const policyHref = buildDashboardDataHrefs({ details: 'operations' }).operationalPolicyHref;
     const policyUrl = new URL(policyHref ?? '', 'http://admin.local');
 
     expect(policyUrl.pathname).toBe('/admin/operational-policy');
@@ -78,7 +83,7 @@ describe('dashboard page model', () => {
   });
 
   it('keeps full dashboard diagnostics behind explicit details mode', () => {
-    const hrefs = buildDashboardDataHrefs({ details: 'all' });
+    const hrefs = buildDashboardDataHrefs({ details: 'operations' });
     const auditUrl = new URL(hrefs.bookingGateAuditHref ?? '', 'http://admin.local');
     const appSessionsUrl = new URL(hrefs.appSessionsHref ?? '', 'http://admin.local');
     const earningUrl = new URL(hrefs.earningsHref ?? '', 'http://admin.local');
@@ -90,18 +95,18 @@ describe('dashboard page model', () => {
 
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
     expect(auditUrl.searchParams.get('action')).toBe('booking.create.rejected');
-    expect(auditUrl.searchParams.get('take')).toBe('20');
-    expect(paymentUrl.searchParams.get('take')).toBe('25');
-    expect(earningUrl.searchParams.get('take')).toBe('25');
-    expect(refundUrl.searchParams.get('take')).toBe('25');
-    expect(payoutBatchUrl.searchParams.get('take')).toBe('25');
+    expect(auditUrl.searchParams.get('take')).toBe('10');
+    expect(paymentUrl.searchParams.get('take')).toBe('10');
+    expect(earningUrl.searchParams.get('take')).toBe('10');
+    expect(refundUrl.searchParams.get('take')).toBe('10');
+    expect(payoutBatchUrl.searchParams.get('take')).toBe('10');
     expect(notificationsUrl.pathname).toBe('/admin/notifications');
-    expect(notificationsUrl.searchParams.get('take')).toBe('20');
+    expect(notificationsUrl.searchParams.get('take')).toBe('10');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
     expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
-    expect(partnersUrl.searchParams.get('take')).toBe('25');
-    expect(appSessionsUrl.searchParams.get('take')).toBe('10');
+    expect(partnersUrl.searchParams.get('take')).toBe('12');
+    expect(appSessionsUrl.searchParams.get('take')).toBe('5');
     expect(appSessionsUrl.searchParams.has('role')).toBe(false);
   });
 
