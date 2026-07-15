@@ -57,8 +57,7 @@ describe('dashboard page model', () => {
     const hrefs = buildDashboardDataHrefs({});
     const bookingUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
 
-    expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary');
-    expect(hrefs.usersHref).toBeNull();
+    expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary?dateRange=today');
     expect(hrefs.partnersHref).toBeNull();
     expect(hrefs.appSessionsHref).toBeNull();
     expect(hrefs.notificationsHref).toBeNull();
@@ -87,7 +86,6 @@ describe('dashboard page model', () => {
     const paymentUrl = new URL(hrefs.paymentsHref ?? '', 'http://admin.local');
     const payoutBatchUrl = new URL(hrefs.payoutBatchesHref ?? '', 'http://admin.local');
     const refundUrl = new URL(hrefs.refundsHref ?? '', 'http://admin.local');
-    const usersUrl = new URL(hrefs.usersHref ?? '', 'http://admin.local');
     const partnersUrl = new URL(hrefs.partnersHref ?? '', 'http://admin.local');
 
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
@@ -101,8 +99,6 @@ describe('dashboard page model', () => {
     expect(notificationsUrl.searchParams.get('take')).toBe('20');
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(notificationsUrl.searchParams.get('to') ?? ''))).toBe(true);
-    expect(usersUrl.pathname).toBe('/admin/users');
-    expect(usersUrl.searchParams.get('take')).toBe('25');
     expect(partnersUrl.pathname).toBe('/admin/partners/list-providers');
     expect(partnersUrl.searchParams.get('take')).toBe('25');
     expect(appSessionsUrl.searchParams.get('take')).toBe('10');

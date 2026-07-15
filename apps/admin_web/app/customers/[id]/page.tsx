@@ -9,6 +9,7 @@ import {
 import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import {
   AdminReviewRecordsSection,
   reviewRecordsForCustomer,
@@ -539,7 +540,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminStageList>
       </AdminSection>
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
@@ -549,7 +550,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
           </>
         }
-        className="admin-mb-16"
+        className="customer-record-date-filter-panel admin-mb-16"
         description="Narrow booking, chat, notification, audit, and activity records without changing the saved customer data."
         id="record-date-filter"
         title="Record date filter"
@@ -611,7 +612,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </AdminFormControlLink>
           </div>
         </AdminFormGrid>
-      </AdminSection>
+        <AdminFilterSummary
+          ariaLabel="Active customer record filters"
+          labels={[
+            `Range: ${dateFilters.label}`,
+            `Type: ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}`,
+            `Sort: ${activityOrderLabel(activityOrder)}`,
+            ...(dateFilters.from ? [`From: ${dateFilters.from}`] : []),
+            ...(dateFilters.to ? [`To: ${dateFilters.to}`] : []),
+          ]}
+          tone="info"
+        />
+      </AdminFilterPanel>
 
       <AdminSection
         className="admin-mb-16"
@@ -792,7 +804,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       >
         {shouldRenderRecordArchive ? (
           <>
-            <AdminFilterPanel
+            <AdminSection
               className="customer-chat-history-section"
               description={
                 <>
@@ -801,8 +813,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 </>
               }
               id="chat-history"
-              resultLabel={`${filteredChatBookings.length} rooms`}
-              resultTone="info"
+              statusLabel={`${filteredChatBookings.length} rooms`}
+              statusTone="info"
               title="Chat history"
             >
               <AdminStageList className="customer-chat-history-list">
@@ -837,7 +849,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 totalPages={chatHistoryTotalPages}
                 totalRows={filteredChatBookings.length}
               />
-            </AdminFilterPanel>
+            </AdminSection>
 
             <AdminSection
               actions={
@@ -921,6 +933,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           >
             <AdminTraceSummary
               className="admin-mt-12"
+              defaultKind="record"
+              defaultScope={dateFilters.label}
               metrics={[
                 {
                   label: 'Chat rooms',

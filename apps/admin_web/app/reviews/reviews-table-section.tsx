@@ -88,7 +88,7 @@ export function ReviewsTableSection({
   return (
     <>
       <AdminFilterPanel
-        className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"
+        className="vuexy-review-filter-card admin-mb-16"
         id="customer-review-controls"
         resultLabel={`Showing ${pagination.totalRows} of ${totalReviewCount}`}
         resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
@@ -349,4 +349,4 @@ const reviewStatusButtonOptions = [
   { label: 'Reported', value: 'reported' },
 ] as const;
 
-const reviewDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS.filter((option) => option.value !== 'all');
+const reviewDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS;

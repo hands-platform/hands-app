@@ -1,5 +1,5 @@
 import { AdminFormControlButton, AdminFormDate, AdminFormShell } from '../../components/admin-form-controls';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
@@ -53,23 +53,23 @@ type BookingMonitorFiltersSectionProps = {
 const bookingMonitorViewCategories: readonly BookingMonitorViewCategory[] = [
   {
     key: 'realtime',
-    title: 'Realtime Bookings',
-    description: 'Live request, matching, Partner handoff, address, location, and chat repair views.',
+    title: 'Live / Today',
+    description: 'Current request, matching, Partner handoff, address, location, and chat repair queues.',
   },
   {
     key: 'completed',
-    title: 'Completed',
-    description: 'Closeout, payment, cash debt, pricing, refund, and expired booking review views.',
+    title: 'Closeout / Today',
+    description: 'Completed, payment, cash debt, pricing, refund, and expired booking closeout queues.',
   },
   {
     key: 'postMatchCancellations',
-    title: 'Post-match Cancellations',
-    description: 'Cancellation approval, evidence, no-show, and manual decision review views.',
+    title: 'Cancellation Review',
+    description: 'Cancellation approval, no-show, evidence, and manual decision queues needing review.',
   },
   {
     key: 'archive',
-    title: 'Archive',
-    description: 'Full booking history for investigation and audit review.',
+    title: 'Records / Audit',
+    description: 'Full booking history for investigation, retained evidence, and audit review.',
   },
 ];
 
@@ -136,20 +136,45 @@ export function BookingMonitorFiltersSection({
     .filter(({ options }) => options.length > 0);
   const visibleDateRangeOptions = dateRangeFilterOptions.filter((option) => option.value !== 'all');
   const showCustomDateRange = dateRangeFilter === 'custom';
+  const activeCategory = bookingMonitorViewCategories.find(
+    (category) => category.key === bookingMonitorViewCategoryByView[view],
+  );
+  const hiddenEmptyLaneCount = viewOptions.filter(
+    (option) =>
+      option.view !== view &&
+      option.view !== 'all' &&
+      (viewCounts.get(option.view) ?? 0) === 0,
+  ).length;
+  const filterSummaryLabels = bookingMonitorFilterSummaryLabels({
+    activeCategoryTitle: activeCategory?.title,
+    activeViewLabel: activeView.label,
+    baseVisibleBookingCount,
+    customDateFrom,
+    customDateTo,
+    dateRangeFilter,
+    dateRangeFilterOptions,
+    hiddenEmptyLaneCount,
+    visibleBookingCount,
+  });
 
   return (
     <AdminTablePanel
       description={(
         <>
-          Active queue: <strong>{activeView.label}</strong> - {activeView.description}
+          Current workspace: <strong>{activeView.label}</strong> - {activeView.description}
         </>
       )}
       id="booking-operation-filters"
       resultLabel={`Showing ${visibleBookingCount} of ${baseVisibleBookingCount}`}
       resultTone={view === 'all' ? 'success' : 'warning'}
-      title="Booking operation filters"
+      title="Booking workspace filters"
       footer={<p className="muted">{activeView.operatorHint}</p>}
     >
+      <AdminFilterSummary
+        ariaLabel="Active booking operation filters"
+        labels={filterSummaryLabels}
+        tone={view === 'all' ? 'success' : 'info'}
+      />
       <div className="booking-date-filter-bar admin-mb-14" aria-label="Booking list date range">
         <AdminSegmentedControl
           activeValue={dateRangeFilter}
@@ -193,26 +218,29 @@ export function BookingMonitorFiltersSection({
         {categorizedViewOptions.map(({ category, options }) => (
           <fieldset className="booking-monitor-view-category" key={category.key}>
             <legend className="booking-monitor-view-category-heading">
-              <span>{category.title}</span>
+              <div className="booking-monitor-view-category-title-row">
+                <span>{category.title}</span>
+                <span className="booking-monitor-view-category-count">
+                  {bookingMonitorCategoryBookingCount(options, viewCounts)} total
+                </span>
+              </div>
               <p>{category.description}</p>
             </legend>
-            <AdminFilterChipGroup ariaLabel={`${category.title} booking views`}>
-              {options.map((option) => (
-                <AdminFormControlButton
-                  className={[
-                    view === option.view ? 'button-primary is-active' : 'button-secondary',
-                    'booking-monitor-view-option',
-                  ].join(' ')}
-                  disabled={view === option.view}
-                  key={option.view}
-                  onClick={() => onViewChange(option.view)}
-                  title={option.description}
-                  type="button"
-                >
-                  {option.label} ({viewCounts.get(option.view) ?? 0})
-                </AdminFormControlButton>
-              ))}
-            </AdminFilterChipGroup>
+            <AdminSegmentedControl
+              activeValue={view}
+              ariaLabel={`${category.title} booking views`}
+              className="booking-monitor-view-options"
+              options={options.map((option) => ({
+                href: '#booking-operation-filters',
+                label: `${option.label} · ${viewCounts.get(option.view) ?? 0}`,
+                onClick: (event) => {
+                  event.preventDefault();
+                  onViewChange(option.view);
+                },
+                title: option.description,
+                value: option.view,
+              }))}
+            />
           </fieldset>
         ))}
       </div>
@@ -226,4 +254,73 @@ function noop() {
 
 function defaultDateRangeHrefFor(value: BookingDateRangeFilter) {
   return `?dateRange=${value}`;
+}
+
+function bookingMonitorCategoryBookingCount(
+  options: readonly BookingMonitorViewOption[],
+  viewCounts: ReadonlyMap<string, number>,
+) {
+  return options.reduce((total, option) => total + (viewCounts.get(option.view) ?? 0), 0);
+}
+
+function bookingMonitorFilterSummaryLabels({
+  activeCategoryTitle,
+  activeViewLabel,
+  baseVisibleBookingCount,
+  customDateFrom,
+  customDateTo,
+  dateRangeFilter,
+  dateRangeFilterOptions,
+  hiddenEmptyLaneCount,
+  visibleBookingCount,
+}: {
+  readonly activeCategoryTitle?: string;
+  readonly activeViewLabel: string;
+  readonly baseVisibleBookingCount: number;
+  readonly customDateFrom: string;
+  readonly customDateTo: string;
+  readonly dateRangeFilter: BookingDateRangeFilter;
+  readonly dateRangeFilterOptions: readonly BookingMonitorDateRangeFilterOption[];
+  readonly hiddenEmptyLaneCount: number;
+  readonly visibleBookingCount: number;
+}) {
+  const dateLabel = bookingMonitorDateRangeSummaryLabel({
+    customDateFrom,
+    customDateTo,
+    dateRangeFilter,
+    dateRangeFilterOptions,
+  });
+  const labels = [
+    `Queue: ${activeViewLabel}`,
+    `Period: ${dateLabel}`,
+    `Showing: ${visibleBookingCount}/${baseVisibleBookingCount}`,
+  ];
+
+  if (activeCategoryTitle) {
+    labels.push(`Workspace: ${activeCategoryTitle}`);
+  }
+
+  if (hiddenEmptyLaneCount > 0) {
+    labels.push(`${hiddenEmptyLaneCount} empty lanes hidden`);
+  }
+
+  return labels;
+}
+
+function bookingMonitorDateRangeSummaryLabel({
+  customDateFrom,
+  customDateTo,
+  dateRangeFilter,
+  dateRangeFilterOptions,
+}: {
+  readonly customDateFrom: string;
+  readonly customDateTo: string;
+  readonly dateRangeFilter: BookingDateRangeFilter;
+  readonly dateRangeFilterOptions: readonly BookingMonitorDateRangeFilterOption[];
+}) {
+  if (dateRangeFilter === 'custom') {
+    return customDateFrom && customDateTo ? `${customDateFrom} to ${customDateTo}` : 'Custom dates';
+  }
+
+  return dateRangeFilterOptions.find((option) => option.value === dateRangeFilter)?.label ?? dateRangeFilter;
 }

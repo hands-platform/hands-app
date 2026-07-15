@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 import { ActionMenuDropdownForm, ActionMenuDropdownSurface } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
+import { AdminFormControlButton, AdminFormInput, AdminFormSelect } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
-import { AdminBasicTimeline, AdminDisclosure, type AdminBasicTimelineItem } from '../../components/admin-surface';
+import { AdminBasicTimeline, AdminDisclosure, AdminSection, type AdminBasicTimelineItem } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
@@ -29,6 +29,7 @@ import {
   referralRewardDecisionLabel,
 } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
+import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 import {
   approveReferralRewardCashout,
   creditReferralReward,
@@ -43,11 +44,13 @@ type ReferralParentDetailPageProps =
   | {
       readonly audience: 'customer';
       readonly canViewDeveloperSetup?: boolean;
+      readonly financeApproverOptions?: readonly FinanceApproverOption[];
       readonly row: AdminCustomerReferralParent;
     }
   | {
       readonly audience: 'partner';
       readonly canViewDeveloperSetup?: boolean;
+      readonly financeApproverOptions?: readonly FinanceApproverOption[];
       readonly row: AdminPartnerReferralParent;
     };
 
@@ -78,7 +81,9 @@ type ReferralAttribution =
 
 type ReferralRewardActionForm = {
   readonly action: (formData: FormData) => Promise<void> | void;
+  readonly formNoValidate?: boolean;
   readonly label: string;
+  readonly requiresApproval?: boolean;
 };
 
 type ReferralRewardEvidenceItem = {
@@ -149,10 +154,10 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
       metrics={metrics}
       title={title}
     >
-      <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16"
-        resultLabel={`${props.row.totals.referralCount} referral(s)`}
-        resultTone="info"
+      <AdminSection
+        className="referral-parent-account-panel admin-mt-16"
+        statusLabel={`${props.row.totals.referralCount} referral(s)`}
+        statusTone="info"
         title="Parent account"
       >
         <AdminTraceSummary
@@ -211,7 +216,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
             },
           ]}
         />
-      </AdminFilterPanel>
+      </AdminSection>
 
       <ReferralOperationsBoard
         referralCount={props.row.referrals.length}
@@ -325,6 +330,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                 <td>
                   <ReferralRewardActions
                     audience={props.audience}
+                    financeApproverOptions={props.financeApproverOptions ?? []}
                     parentId={props.row.referrer.id}
                     reward={reward}
                   />
@@ -349,10 +355,10 @@ function ReferralRewardDecisionTimeline({
   const reviewCount = referrals.filter((referral) => referral.fraudReviewStatus !== 'CLEAR').length;
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16"
-      resultLabel={`${summary.ready.count + summary.held.count + summary.pending.count} open reward(s)`}
-      resultTone={summary.held.count > 0 || reviewCount > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info'}
+    <AdminSection
+      className="referral-reward-decision-timeline-panel admin-mt-16"
+      statusLabel={`${summary.ready.count + summary.held.count + summary.pending.count} open reward(s)`}
+      statusTone={summary.held.count > 0 || reviewCount > 0 ? 'warning' : summary.ready.count > 0 ? 'success' : 'info'}
       title="Reward decision timeline"
     >
       <AdminBasicTimeline
@@ -360,7 +366,7 @@ function ReferralRewardDecisionTimeline({
         compactMeta
         items={referralRewardDecisionTimelineItems({ qualifiedCount, referrals, reviewCount, summary })}
       />
-    </AdminFilterPanel>
+    </AdminSection>
   );
 }
 
@@ -472,10 +478,10 @@ function ReferralOperationsBoard({
   readonly summary: ReferralRewardReviewSummary;
 }) {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16"
-      resultLabel={`${summary.ready.count} ready / ${summary.held.count} held`}
-      resultTone={summary.ready.count > 0 ? 'success' : summary.held.count > 0 ? 'warning' : 'info'}
+    <AdminSection
+      className="referral-operations-board-panel admin-mt-16"
+      statusLabel={`${summary.ready.count} ready / ${summary.held.count} held`}
+      statusTone={summary.ready.count > 0 ? 'success' : summary.held.count > 0 ? 'warning' : 'info'}
       title="Referral operations board"
     >
       <AdminTraceSummary
@@ -499,7 +505,7 @@ function ReferralOperationsBoard({
           },
         ]}
       />
-    </AdminFilterPanel>
+    </AdminSection>
   );
 }
 
@@ -514,16 +520,19 @@ function referralRewardReviewMetric(key: string, label: string, summary: Referra
 
 function ReferralRewardActions({
   audience,
+  financeApproverOptions,
   parentId,
   reward,
 }: {
   readonly audience: ReferralAudienceSlug;
+  readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly parentId: string;
   readonly reward: AdminReferralReward;
 }) {
   const canApproveCashout = reward.status === 'CASHOUT_REQUESTED';
   const canMarkCashoutPaid = reward.status === 'CASHOUT_APPROVED';
   const canRequireTaxReview = reward.status === 'CASHOUT_REQUESTED' || reward.status === 'CASHOUT_APPROVED';
+  const paidApprovalUnavailable = canMarkCashoutPaid && financeApproverOptions.length === 0;
 
   if (reward.walletLedgerReference && !canApproveCashout && !canMarkCashoutPaid && !canRequireTaxReview) {
     return <span className="muted">Ledger posted</span>;
@@ -574,14 +583,20 @@ function ReferralRewardActions({
           <>
             <div className="referral-reward-action-reason">
               <span>Approving admin</span>
-              <AdminFormInput
+              <AdminFormSelect
                 className="referral-reward-action-reason-input"
-                label="Approving admin id"
+                disabled={paidApprovalUnavailable}
+                label="Separate Finance approver"
                 name="approvalAdminId"
-                placeholder="Different admin user id"
+                options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
                 required
               />
             </div>
+            {paidApprovalUnavailable ? (
+              <AdminInlineNotice role="alert" tone="warning">
+                No other Finance approver is available. Mark paid remains disabled.
+              </AdminInlineNotice>
+            ) : null}
             <div className="referral-reward-action-reason">
               <span>Transfer reference</span>
               <AdminFormInput
@@ -598,7 +613,9 @@ function ReferralRewardActions({
           {actions.map((item) => (
             <AdminFormControlButton
               className="button-secondary admin-action-item admin-action-button"
+              disabled={item.requiresApproval && paidApprovalUnavailable}
               formAction={item.action}
+              formNoValidate={item.formNoValidate}
               key={item.label}
               role="menuitem"
               type="submit"
@@ -640,12 +657,14 @@ function referralRewardActionItems({
     actions.push({
       action: markReferralRewardCashoutPaid,
       label: 'Mark paid',
+      requiresApproval: true,
     });
   }
 
   if (canRequireTaxReview) {
     actions.push({
       action: requireReferralRewardTaxReview,
+      formNoValidate: canMarkCashoutPaid,
       label: 'Require tax review',
     });
   }
@@ -672,6 +691,14 @@ function referralRewardActionItems({
   }
 
   return actions;
+}
+
+export function referralParentNeedsFinanceApprover(
+  row: AdminCustomerReferralParent | AdminPartnerReferralParent,
+) {
+  return row.referrals.some((referral) =>
+    referral.rewards.some((reward) => reward.status === 'CASHOUT_APPROVED'),
+  );
 }
 
 function referralRewardHiddenInputs({

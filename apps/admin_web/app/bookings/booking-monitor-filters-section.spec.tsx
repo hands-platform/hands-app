@@ -65,11 +65,16 @@ describe('BookingMonitorFiltersSection', () => {
     });
     const rendered = normalizedText(renderToStaticMarkup(section));
 
-    expect(rendered).toContain('Booking operation filters');
-    expect(rendered).toContain('Active queue:');
+    expect(rendered).toContain('Booking workspace filters');
+    expect(rendered).toContain('Current workspace:');
     expect(rendered).toContain('Active bookings');
     expect(rendered).toContain('Current active bookings.');
     expect(rendered).toContain('Showing 3 of 7');
+    expect(rendered).toContain('Queue: Active bookings');
+    expect(rendered).toContain('Period: Last 7 days');
+    expect(rendered).toContain('Showing: 3/7');
+    expect(rendered).toContain('Workspace: Live / Today');
+    expect(rendered).toContain('1 empty lanes hidden');
     expect(rendered).toContain('Today');
     expect(rendered).toContain('Previous day');
     expect(rendered).toContain('Last 7 days');
@@ -81,14 +86,15 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('Evidence filter');
     expect(rendered).not.toContain('Search booking/customer/Partner');
     expect(rendered).not.toContain('Clear list filters');
-    expect(rendered).toContain('Active bookings (3)');
-    expect(rendered).toContain('All bookings (7)');
-    expect(rendered).toContain('Realtime Bookings');
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Closeout ops (2)');
-    expect(rendered).toContain('Post-match Cancellations');
-    expect(rendered).toContain('Post-match cancellations (1)');
-    expect(rendered).not.toContain('No-show (0)');
+    expect(rendered).toContain('Active bookings · 3');
+    expect(rendered).toContain('All bookings · 7');
+    expect(rendered).toContain('Live / Today');
+    expect(rendered).toContain('3 total');
+    expect(rendered).toContain('Closeout / Today');
+    expect(rendered).toContain('Closeout ops · 2');
+    expect(rendered).toContain('Cancellation Review');
+    expect(rendered).toContain('Post-match cancellations · 1');
+    expect(rendered).not.toContain('No-show · 0');
     expect(rendered).toContain('Start with active bookings.');
     expect(renderToStaticMarkup(section)).toContain('aria-current="page"');
     expect(renderToStaticMarkup(section)).toContain('<fieldset class="booking-monitor-view-category">');
@@ -124,10 +130,10 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('No-show (0)');
-    expect(rendered).toContain('All bookings (7)');
-    expect(rendered).toContain('Post-match Cancellations');
-    expect(rendered).not.toContain('Post-match cancellations (0)');
+    expect(rendered).toContain('No-show · 0');
+    expect(rendered).toContain('All bookings · 7');
+    expect(rendered).toContain('Cancellation Review');
+    expect(rendered).not.toContain('Post-match cancellations · 0');
   });
 
   it('renders custom date inputs when the custom list period is selected', () => {
@@ -151,6 +157,7 @@ describe('BookingMonitorFiltersSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Custom dates');
+    expect(rendered).toContain('Period: 2026-06-01 to 2026-06-19');
     expect(markup).toContain('name="dateFrom"');
     expect(markup).toContain('name="dateTo"');
     expect(markup).toContain('value="2026-06-01"');
@@ -180,14 +187,14 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Closeout ops (2)');
-    expect(rendered).not.toContain('Realtime Bookings');
-    expect(rendered).not.toContain('Post-match Cancellations');
+    expect(rendered).toContain('Closeout / Today');
+    expect(rendered).toContain('Closeout ops · 2');
+    expect(rendered).not.toContain('Live / Today');
+    expect(rendered).not.toContain('Cancellation Review');
     expect(rendered).not.toContain('All bookings');
   });
 
-  it('uses the shared Vuexy button atom for route workspace options', () => {
+  it('uses the shared Vuexy segmented atom for route workspace filters', () => {
     const source = readFileSync('app/bookings/booking-monitor-filters-section.tsx', 'utf8');
     const markup = renderToStaticMarkup(
       BookingMonitorFiltersSection({
@@ -205,12 +212,16 @@ describe('BookingMonitorFiltersSection', () => {
     );
 
     expect(source).not.toContain('<button\n                  key={option.view}');
-    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('AdminSegmentedControl');
     expect(source).not.toContain('<div className="participant-list');
     expect(source).not.toContain('<section className="booking-monitor-view-category"');
     expect(source).toContain('<fieldset className="booking-monitor-view-category"');
     expect(source).toContain('<legend className="booking-monitor-view-category-heading">');
-    expect(markup).toContain('admin-form-control-button button button-secondary booking-monitor-view-option');
+    expect(markup).toContain('booking-date-filter-buttons booking-monitor-view-options');
+    expect(markup).toContain('booking-date-filter-button is-active');
+    expect(markup).toContain('href="#booking-operation-filters"');
   });
 
   it('uses the shared Vuexy table panel wrapper for the filter card', () => {
@@ -241,8 +252,8 @@ describe('BookingMonitorFiltersSection', () => {
       ),
     );
 
-    expect(rendered).toContain('Closeout ops (2)');
-    expect(rendered).toContain('Post-match cancellations (0)');
+    expect(rendered).toContain('Closeout ops · 2');
+    expect(rendered).toContain('Post-match cancellations · 0');
   });
 });
 

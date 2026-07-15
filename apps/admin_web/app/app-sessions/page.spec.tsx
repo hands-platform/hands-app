@@ -80,6 +80,9 @@ describe('AppSessionsPage', () => {
     expect(markup).toContain('>7<');
     expect(markup).toContain('>4<');
     expect(markup).toContain('>2<');
+    expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-record">Filtered records</span>');
     expect(markup).toContain('card admin-section vuexy-booking-table-card vuexy-booking-table-group');
   });
 

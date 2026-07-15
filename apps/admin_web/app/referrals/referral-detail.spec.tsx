@@ -2,7 +2,11 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import type { AdminCustomerReferralParent } from '../../lib/admin-api';
-import { ReferralParentDetailPage, referralParentDetailHref } from './referral-detail';
+import {
+  ReferralParentDetailPage,
+  referralParentDetailHref,
+  referralParentNeedsFinanceApprover,
+} from './referral-detail';
 
 const createdAt = '2026-06-24T10:00:00.000Z';
 const referralStoreEnvKeys = [
@@ -362,6 +366,13 @@ describe('Referral detail presentation', () => {
     );
   });
 
+  it('keeps referral detail summary panels off the legacy booking monitor filter class', () => {
+    expect(detailSource).toContain('className="referral-parent-account-panel admin-mt-16"');
+    expect(detailSource).toContain('className="referral-reward-decision-timeline-panel admin-mt-16"');
+    expect(detailSource).toContain('className="referral-operations-board-panel admin-mt-16"');
+    expect(detailSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16"');
+  });
+
   it('renders a wallet credit action only for available uncredited reward candidates', () => {
     const row: AdminCustomerReferralParent = {
       ...customerReferralParent,
@@ -438,17 +449,54 @@ describe('Referral detail presentation', () => {
         },
       ],
     };
-    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
-      /\s+/g,
-      ' ',
-    );
+    const markup = renderToStaticMarkup(
+      <ReferralParentDetailPage
+        audience="customer"
+        financeApproverOptions={[{ label: 'Finance Approver · approver@example.com', value: 'approver-2' }]}
+        row={row}
+      />,
+    ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('admin-action-dropdown referral-reward-action-dropdown');
     expect(markup).toContain('Mark paid');
     expect(markup).toContain('Require tax review');
     expect(markup).toContain('Transfer reference');
     expect(markup).toContain('name="transferRef"');
+    expect(markup).toContain('Separate Finance approver');
+    expect(markup).toContain('Finance Approver · approver@example.com');
+    expect(markup).not.toContain('Different admin user id');
     expect(markup).toContain('Cashout approved');
+    expect(referralParentNeedsFinanceApprover(row)).toBe(true);
+  });
+
+  it('fails paid closeout closed when no separate Finance approver is available', () => {
+    const row: AdminCustomerReferralParent = {
+      ...customerReferralParent,
+      referrals: [
+        {
+          ...customerReferralParent.referrals[0],
+          rewards: [
+            {
+              ...customerReferralParent.referrals[0].rewards[0],
+              status: 'CASHOUT_APPROVED',
+              walletLedgerReference: 'customer-earned-ledger-1',
+            },
+          ],
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(<ReferralParentDetailPage audience="customer" row={row} />).replace(
+      /\s+/g,
+      ' ',
+    );
+
+    expect(markup).toContain('No other Finance approver is available. Mark paid remains disabled.');
+    expect(markup).toMatch(/<button[^>]*disabled=""[^>]*><span>Mark paid<\/span><\/button>/);
+    expect(markup).toMatch(/<button[^>]*formNoValidate=""[^>]*><span>Require tax review<\/span><\/button>/);
+  });
+
+  it('does not request a Finance approver directory for non-paid referral states', () => {
+    expect(referralParentNeedsFinanceApprover(customerReferralParent)).toBe(false);
   });
 
   it('summarizes reward rows into an operator review board', () => {

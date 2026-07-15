@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import { adminGet } from '../../lib/admin-api';
 import UsageOverviewPage from './page';
+import { emptyUsageOverview } from './usage-overview-model';
 
 const pageSource = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 
@@ -35,8 +36,10 @@ describe('UsageOverviewPage', () => {
     expect(markup).toContain('Customer app-to-booking funnel');
     expect(markup).toContain('Customer segments');
     expect(markup).toContain('Action priorities');
-    expect(markup).toContain('card admin-section usage-overview-filter-panel');
-    expect(markup).not.toContain('card admin-filter-panel usage-overview-filter-panel');
+    expect(markup).toContain('card admin-filter-panel usage-overview-filter-panel admin-section');
+    expect(markup).toContain('Active usage overview filters');
+    expect(markup).toContain('Range: Last 7 days');
+    expect(markup).not.toContain('card admin-section usage-overview-filter-panel');
     expect(markup).toContain('card admin-section usage-overview-funnel-card');
     expect(markup).toContain('admin-section-body usage-overview-funnel-steps');
     expect(markup).toContain('card admin-card usage-overview-funnel-step');
@@ -54,6 +57,8 @@ describe('UsageOverviewPage', () => {
     expect(pageSource).toContain('baseClassName="usage-overview-action-item"');
     expect(pageSource).not.toContain('<AdminCard className={`usage-overview-action-item');
     expect(markup).toContain('card admin-kpi-card usage-overview-kpi-card');
+    expect(markup).toContain('class="metric-card-scope is-period"');
+    expect(markup).toContain('Last 7 days');
     expect(markup).not.toContain('<article class="card admin-card usage-overview-command-card');
     expect(markup).toContain('card admin-section usage-overview-platform-card');
     expect(markup).toContain('card admin-section usage-overview-discovery-card');
@@ -116,6 +121,49 @@ describe('UsageOverviewPage', () => {
     expect(markup).not.toContain('aria-label="Customer usage segments"><div class="card admin-card usage-overview-command-card');
   });
 
+  it('labels customer segment and action priority cards by operating scope', async () => {
+    const overview = emptyUsageOverview('7d');
+    mockedAdminGet.mockResolvedValue({
+      ...overview,
+      customerLifecycle: {
+        ...overview.customerLifecycle,
+        activeCustomerCount: 8,
+        completedCustomerCount: 3,
+        newCustomerCount: 5,
+      },
+      customerSegments: {
+        ...overview.customerSegments,
+        churnRiskCustomerCount: 1,
+        issueCustomerCount: 2,
+        newUnbookedCustomerCount: 3,
+      },
+      totals: {
+        ...overview.totals,
+        completedBookingCount: 2,
+        partnerBookingRequestCount: 10,
+        partnerProfileViewCount: 100,
+      },
+    });
+
+    const page = await UsageOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toMatch(
+      /usage-overview-segment-board-item[\s\S]*metric-card-scope is-action">Last 7 days[\s\S]*New unbooked/,
+    );
+    expect(markup).toMatch(
+      /usage-overview-segment-board-item[\s\S]*metric-card-scope is-risk">Last 7 days[\s\S]*Churn risk/,
+    );
+    expect(markup).toMatch(
+      /usage-overview-action-item[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Review problem customers/,
+    );
+    expect(markup).toMatch(
+      /usage-overview-action-item[\s\S]*metric-card-scope is-action">Pending[\s\S]*Convert new unbooked/,
+    );
+  });
+
   it('scopes usage KPI icon tones to direct MetricCard icon slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
@@ -132,6 +180,15 @@ describe('UsageOverviewPage', () => {
       expect(css).toContain(`.usage-overview-command-card.is-${tone} > .usage-overview-command-icon`);
       expect(css).not.toContain(`.usage-overview-command-card.is-${tone} .usage-overview-command-icon`);
     }
+  });
+
+  it('does not let usage command-card label selectors override scope badges', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.usage-overview-segment-board-item > div > span:not(.metric-card-scope)');
+    expect(css).toContain('.usage-overview-action-item > div > span:not(.metric-card-scope)');
+    expect(css).not.toContain('.usage-overview-segment-board-item > div > span {');
+    expect(css).not.toContain('.usage-overview-action-item > div > span,\n.finance-overview-action-item > div > span {');
   });
 
   it('scopes usage funnel meter tones to direct bar slots', () => {

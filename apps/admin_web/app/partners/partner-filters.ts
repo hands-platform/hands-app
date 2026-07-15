@@ -47,7 +47,7 @@ export function buildProviderFilters(
     kyc: readParam(params.kyc),
     location: readParam(params.location),
     security: normalizeProviderSecurityFilter(readParam(params.security)),
-    readiness: readParam(params.readiness),
+    readiness: normalizePartnerReadinessFilter(readParam(params.readiness)),
     bookingFlow: normalizePartnerBookingFlowFilter(readParam(params.bookingFlow)),
     review: normalizePartnerReviewFilter(readParam(params.review)),
     sort: readPartnerSort(readParam(params.sort)),
@@ -240,7 +240,7 @@ export function buildProviderActiveFilters(filters: ProviderFilters) {
       ? {
           kind: 'readiness',
           value: filters.readiness,
-          label: `Readiness: ${filters.readiness}`,
+          label: `Readiness: ${partnerReadinessFilterLabel(filters.readiness)}`,
           description: providerFilterDescription('readiness', filters.readiness),
         }
       : null,
@@ -393,6 +393,7 @@ export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
   return Boolean(
     filters.location ||
       filters.security ||
+      filters.readiness ||
       filters.activity ||
       (filters.review && !isPrimaryPartnerReview(filters.review)),
   );
@@ -457,6 +458,16 @@ export function partnerActivityFilterLabel(activity: string) {
     'inactive-30d': 'Inactive 30D',
   };
   return labels[activity] ?? activity;
+}
+
+export function partnerReadinessFilterLabel(readiness: string) {
+  const labels: Record<string, string> = {
+    'approved-offline': 'Approved but offline',
+    'needs-review': 'Needs review',
+    'push-missing': 'Push missing',
+    ready: 'Dispatch ready',
+  };
+  return labels[readiness] ?? readiness;
 }
 
 export function partnerProviderStatusFilterLabel(status: string) {
@@ -537,6 +548,10 @@ function normalizeProviderSecurityFilter(value: string) {
 
 function normalizePartnerActivityFilter(value: string) {
   return ['never-online', 'inactive-7d', 'inactive-30d'].includes(value) ? value : '';
+}
+
+function normalizePartnerReadinessFilter(value: string) {
+  return ['ready', 'approved-offline', 'push-missing', 'needs-review'].includes(value) ? value : '';
 }
 
 function readProviderStatusFilter(providerStatus: string, onlineStatus: string) {

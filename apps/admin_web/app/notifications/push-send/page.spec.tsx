@@ -41,14 +41,35 @@ describe('PushSendPage', () => {
     expect(markup).toContain('No manual push campaigns yet.');
   });
 
+  it('scopes push KPI cards by campaign range and delivery history', async () => {
+    const page = await PushSendPage({
+      searchParams: Promise.resolve({ campaignRange: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Last 7 days');
+    expect(markup).toContain('Delivery history');
+    expect(markup).toContain('Manual push campaigns in this period.');
+    expect(markup).toContain('Most recent manual push record.');
+    expect(markup).toContain('Recipient total across campaigns in this period.');
+    expect(markup).not.toContain('manual sends;');
+  });
+
   it('renders the partner language lock through the shared static-value form atom', async () => {
     const page = await PushSendPage({
       searchParams: Promise.resolve({
+        appDestination: 'earnings',
+        targetSegment: 'provider_inactive_last_7_days',
         targetRole: 'PROVIDER',
       }),
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain('Active push send filters');
+    expect(markup).toContain('Target: Partners');
+    expect(markup).toContain('Audience: Partners inactive for 7 days');
+    expect(markup).toContain('Open page: Earnings');
+    expect(markup).toContain('Language: Vietnamese');
     expect(markup).toContain('class="admin-form-static-value admin-form-control-labeled"');
     expect(markup).toContain('Vietnamese');
     expect(markup).not.toContain('<div class="admin-form-input"><span>Language</span>');
@@ -66,6 +87,7 @@ describe('PushSendPage', () => {
   it('uses the shared Vuexy notice card atom for send results', () => {
     expect(pageSource).toContain('AdminNoticeCard');
     expect(pageSource).toContain('AdminSectionHeader');
+    expect(pageSource).toContain('AdminFilterSummary');
     expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
     expect(pageSource).not.toContain('<div className="ops-section-header">');
     expect(pageSource).not.toContain('className={`card admin-notice-card');

@@ -33,6 +33,8 @@ import {
   AdminOverviewGrid,
   AdminOverviewGroup,
 } from '../../components/admin-overview-card';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminCard, AdminCardGrid, AdminKpiCard, AdminSection } from '../../components/admin-surface';
@@ -139,7 +141,7 @@ export default async function UsageOverviewPage({
       title="Usage Overview"
     >
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             <StatusBadge tone="success">Vietnam only</StatusBadge>
@@ -150,7 +152,7 @@ export default async function UsageOverviewPage({
         }
         className="usage-overview-filter-panel"
         description="Use bounded date windows so operators can compare app activity without broad page fetches."
-        statusLabel={overview.rangeLabel}
+        resultLabel={overview.rangeLabel}
         title="Usage range"
       >
         <AdminSegmentedControl
@@ -163,7 +165,12 @@ export default async function UsageOverviewPage({
             value: option.value,
           }))}
         />
-      </AdminSection>
+        <AdminFilterSummary
+          ariaLabel="Active usage overview filters"
+          labels={[`Range: ${overview.rangeLabel}`]}
+          tone="info"
+        />
+      </AdminFilterPanel>
 
       <AdminOverviewCommandGrid ariaLabel="Usage command summary">
         {usageHealthCards.map(({ label, value, detail, icon: Icon, tone }) => (
@@ -172,6 +179,7 @@ export default async function UsageOverviewPage({
             detail={detail}
             icon={Icon}
             label={label}
+            rangeLabel={overview.rangeLabel}
             tone={tone}
             value={value}
           />
@@ -209,6 +217,7 @@ export default async function UsageOverviewPage({
             detail={detail}
             icon={Icon}
             label={label}
+            rangeLabel={overview.rangeLabel}
             tone={tone}
             value={value}
           />
@@ -268,9 +277,9 @@ export default async function UsageOverviewPage({
 
       <PartnerDiscoveryConversionCard rows={overview.partnerUsage.discoveryConversion} />
 
-      <CustomerSegmentsBoard overview={overview} />
+      <CustomerSegmentsBoard overview={overview} rangeLabel={overview.rangeLabel} />
 
-      <ActionPrioritiesBoard overview={overview} />
+      <ActionPrioritiesBoard overview={overview} rangeLabel={overview.rangeLabel} />
 
       <AdminOverviewGrid ariaLabel="Customer and Partner usage rankings" variant="content">
         <AdminOverviewGroup
@@ -286,7 +295,7 @@ export default async function UsageOverviewPage({
           />
           <UsageRankingCard
             title="Customers by completed work"
-            description="Customers ranked by completed booking count in the selected range."
+            description="Customers listed by completed booking count in the selected range."
             emptyMessage="No completed customer bookings loaded."
             rows={overview.customerUsage.completedBookingCustomers}
             valueHeading="Completed"
@@ -326,7 +335,7 @@ export default async function UsageOverviewPage({
           />
           <UsageRankingCard
             title="Completed Partner ranking"
-            description="Partners ranked by completed bookings in the selected range."
+            description="Partners listed by completed bookings in the selected range."
             emptyMessage="No completed Partner bookings loaded."
             rows={overview.partnerUsage.completedPartners}
             valueHeading="Completed"
@@ -338,7 +347,13 @@ export default async function UsageOverviewPage({
   );
 }
 
-function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOverview }) {
+function CustomerSegmentsBoard({
+  overview,
+  rangeLabel,
+}: {
+  readonly overview: AdminUsageOverview;
+  readonly rangeLabel: string;
+}) {
   const rows = [
     {
       detail: 'New accounts in range with no booking yet',
@@ -424,23 +439,63 @@ function CustomerSegmentsBoard({ overview }: { readonly overview: AdminUsageOver
       title="Customer segments"
     >
       {rows.map(({ detail, icon: Icon, label, percent, tone, value }) => (
-        <AdminOverviewCommandCard
-          baseClassName="usage-overview-segment-board-item"
-          className={`is-${tone}`}
+        <CustomerSegmentItem
           detail={detail}
-          icon={<Icon size={17} aria-hidden="true" />}
-          iconClassName="usage-overview-command-icon"
+          icon={Icon}
           key={label}
           label={label}
-          trailing={<em>{percent}</em>}
-          value={formatNumber(value)}
+          percent={percent}
+          rangeLabel={rangeLabel}
+          tone={tone}
+          value={value}
         />
       ))}
     </AdminSection>
   );
 }
 
-function ActionPrioritiesBoard({ overview }: { readonly overview: AdminUsageOverview }) {
+function CustomerSegmentItem({
+  detail,
+  icon: Icon,
+  label,
+  percent,
+  rangeLabel,
+  tone,
+  value,
+}: {
+  readonly detail: string;
+  readonly icon: UsageCardIcon;
+  readonly label: string;
+  readonly percent: string;
+  readonly rangeLabel: string;
+  readonly tone: UsageCardTone;
+  readonly value: number;
+}) {
+  const meta = usageSegmentCardMeta(label, rangeLabel, tone);
+
+  return (
+    <AdminOverviewCommandCard
+      baseClassName="usage-overview-segment-board-item"
+      className={`is-${tone}`}
+      detail={detail}
+      icon={<Icon size={17} aria-hidden="true" />}
+      iconClassName="usage-overview-command-icon"
+      kind={meta.kind}
+      label={label}
+      scope={meta.scope}
+      trailing={<em>{percent}</em>}
+      value={formatNumber(value)}
+    />
+  );
+}
+
+function ActionPrioritiesBoard({
+  overview,
+  rangeLabel,
+}: {
+  readonly overview: AdminUsageOverview;
+  readonly rangeLabel: string;
+}) {
   const priorities = buildUsageActionPriorities(overview);
 
   return (
@@ -452,7 +507,7 @@ function ActionPrioritiesBoard({ overview }: { readonly overview: AdminUsageOver
       title="Action priorities"
     >
       {priorities.map((priority) => (
-        <ActionPriorityItem key={priority.key} priority={priority} />
+        <ActionPriorityItem key={priority.key} priority={priority} rangeLabel={rangeLabel} />
       ))}
     </AdminSection>
   );
@@ -557,11 +612,18 @@ function PartnerDiscoveryConversionCard({
   );
 }
 
-function ActionPriorityItem({ priority }: { readonly priority: UsageActionPriority }) {
+function ActionPriorityItem({
+  priority,
+  rangeLabel,
+}: {
+  readonly priority: UsageActionPriority;
+  readonly rangeLabel: string;
+}) {
   const Icon = usageActionPriorityIcons[priority.key] ?? CalendarCheck;
   const value = priority.valueLabel.includes('to-')
     ? `${formatNumber(priority.value)}%`
     : formatNumber(priority.value);
+  const meta = usageActionPriorityMeta(priority, rangeLabel);
 
   return (
     <AdminOverviewCommandCard
@@ -570,11 +632,37 @@ function ActionPriorityItem({ priority }: { readonly priority: UsageActionPriori
       detail={priority.detail}
       icon={<Icon size={17} aria-hidden="true" />}
       iconClassName="usage-overview-command-icon"
+      kind={meta.kind}
       label={priority.label}
+      scope={meta.scope}
       trailing={<em>{priority.valueLabel}</em>}
       value={value}
     />
   );
+}
+
+function usageSegmentCardMeta(label: string, rangeLabel: string, tone: UsageCardTone) {
+  if (label === 'Churn risk' || label === 'Problem signal' || tone === 'danger') {
+    return { kind: 'risk', scope: rangeLabel } as const;
+  }
+
+  if (label === 'New unbooked' || tone === 'warning') {
+    return { kind: 'action', scope: rangeLabel } as const;
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
+}
+
+function usageActionPriorityMeta(priority: UsageActionPriority, rangeLabel: string) {
+  if (priority.tone === 'danger') {
+    return { kind: 'risk', scope: 'Needs action' } as const;
+  }
+
+  if (priority.tone === 'warning') {
+    return { kind: 'action', scope: 'Pending' } as const;
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
 }
 
 function PopularServicesCard({ rows }: { readonly rows: readonly AdminUsageOverviewPopularServiceRow[] }) {
@@ -696,12 +784,14 @@ function UsageCommandCard({
   detail,
   icon: Icon,
   label,
+  rangeLabel,
   tone,
   value,
 }: {
   readonly detail: string;
   readonly icon: UsageCardIcon;
   readonly label: string;
+  readonly rangeLabel: string;
   readonly tone: UsageCardTone;
   readonly value: string;
 }) {
@@ -711,10 +801,19 @@ function UsageCommandCard({
       helper={detail}
       icon={Icon}
       iconSize={18}
+      kind={usageCommandCardKind(label, tone)}
       label={label}
+      scope={rangeLabel}
       value={value}
     />
   );
+}
+
+function usageCommandCardKind(label: string, tone: UsageCardTone) {
+  if (label === 'Churn risk' || tone === 'danger') return 'risk' as const;
+  if (label === 'Never booked' || tone === 'warning') return 'action' as const;
+
+  return 'period' as const;
 }
 
 type UsageInsightRow = {

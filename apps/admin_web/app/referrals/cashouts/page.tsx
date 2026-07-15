@@ -1,5 +1,7 @@
-import type { AdminReferralCashoutQueueRow, AdminReferralCashoutQueueSummary } from '../../../lib/admin-api';
+import type { AdminReferralCashoutQueueRow, AdminReferralCashoutQueueSummary, AdminUser } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import {
   ReferralCashoutQueuePage,
   buildReferralCashoutApiHref,
@@ -26,6 +28,25 @@ export default async function ReferralCashoutsPage({
       referralCashoutSummaryFallback(),
     ),
   ]);
+  const needsFinanceApproverDirectory = rows.some((row) => row.status === 'CASHOUT_APPROVED');
+  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
+    ? await Promise.all([
+        getCurrentAdminOperatorAccess(),
+        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
+      ])
+    : [null, []];
+  const financeApproverOptions = buildFinanceApproverOptions(
+    financeApproverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
 
-  return <ReferralCashoutQueuePage currentPage={currentPage} filters={filters} rows={rows} summary={summary} />;
+  return (
+    <ReferralCashoutQueuePage
+      currentPage={currentPage}
+      filters={filters}
+      financeApproverOptions={financeApproverOptions}
+      rows={rows}
+      summary={summary}
+    />
+  );
 }

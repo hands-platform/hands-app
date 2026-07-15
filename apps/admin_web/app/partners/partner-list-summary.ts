@@ -86,7 +86,7 @@ export function buildPartnerSummary(
     ['Wallet debt', walletDebt.toString()],
     ['Open reports', openControlItems.toString()],
     ['Device checks', deviceFollowUp.toString()],
-    ['Ready for dispatch', readyNow.toString()],
+    ['Ready now', readyNow.toString()],
   ];
 }
 

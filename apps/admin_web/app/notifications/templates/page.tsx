@@ -1,6 +1,5 @@
 import type { AdminNotificationTemplate } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
@@ -10,7 +9,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard, AdminCardGrid, AdminCardHeader, AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminCardGrid, AdminCardHeader, AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { compactValue } from '../../../lib/admin-format';
 import { updateNotificationTemplate } from './actions';
@@ -52,10 +51,34 @@ export default async function NotificationTemplatesPage({
       contentClassName="stack notification-template-page"
       description="Notification copy catalog for in-app and push messages across supported app languages."
       metrics={[
-        { label: 'Templates', value: templates.length, helper: 'Managed notification events' },
-        { label: 'Enabled', value: enabledCount, helper: 'Available to operating flows' },
-        { label: 'Customers', value: customerCount, helper: 'Customer-facing templates' },
-        { label: 'Partners', value: partnerCount, helper: 'Partner-facing templates' },
+        {
+          helper: 'Notification event records in the bounded catalog.',
+          kind: 'record',
+          label: 'Templates',
+          scope: 'Template records',
+          value: templates.length,
+        },
+        {
+          helper: 'Templates currently available to operating flows.',
+          kind: 'live',
+          label: 'Enabled',
+          scope: 'Live',
+          value: enabledCount,
+        },
+        {
+          helper: 'Customer-facing templates with language copy.',
+          kind: 'record',
+          label: 'Customers',
+          scope: 'Audience coverage',
+          value: customerCount,
+        },
+        {
+          helper: 'Partner-facing templates with language copy.',
+          kind: 'record',
+          label: 'Partners',
+          scope: 'Audience coverage',
+          value: partnerCount,
+        },
       ]}
       title="Notification Templates"
     >
@@ -71,9 +94,9 @@ export default async function NotificationTemplatesPage({
         </AdminNoticeCard>
       ) : null}
 
-      <AdminFilterPanel
+      <AdminSection
         description="Edit the copy operators expect to see before automatic notification flows are wired through the catalog."
-        resultLabel={`${templates.length} templates`}
+        statusLabel={`${templates.length} templates`}
         title="Template catalog"
       >
         <AdminCardGrid ariaLabel="Notification template cards" className="notification-template-grid">
@@ -153,7 +176,7 @@ export default async function NotificationTemplatesPage({
             </AdminCard>
           ))}
         </AdminCardGrid>
-      </AdminFilterPanel>
+      </AdminSection>
     </AdminPageTemplate>
   );
 }

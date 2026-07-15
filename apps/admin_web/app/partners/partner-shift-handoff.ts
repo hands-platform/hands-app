@@ -194,7 +194,7 @@ export function buildPartnerShiftHandoff(
     headline: topAction?.title ?? 'No urgent partner operation item',
     detail:
       topAction?.operatorAction ??
-      'The current filtered partner queue has no immediate blocker. Keep monitoring booking demand, location freshness, and cash debt.',
+      'The active filters have no immediate Partner blocker. Keep monitoring booking demand, location freshness, and cash debt.',
     primaryAction: {
       label: topAction ? 'Open partner work queue' : 'Open dispatch-ready partners',
       href: topAction?.href ?? '/partners?review=direct-ready',

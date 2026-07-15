@@ -2,17 +2,18 @@ import { Filter, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminSection } from '../../components/admin-surface';
 import { AdminTablePaginationFooter, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormActionRow,
   AdminFormGrid,
-  AdminFormInput,
+  AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
@@ -81,42 +82,76 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     <AdminPageTemplate
       description="Operational history for bookings, payments, refunds, Partner review, alerts, and policy changes."
       metrics={[
-        { label: 'Total events', value: totalEvents, helper: 'Server-counted events after the active filters.' },
         {
-          label: 'Dispatch actions',
-          value: summary.dispatch,
+          helper: 'Server-counted events after the active filters.',
+          kind: auditMetricKind(filters.range),
+          label: 'Total events',
+          scope: auditMetricScope(filters.range),
+          value: totalEvents,
+        },
+        {
           helper: 'Booking, matching, and Partner events.',
+          kind: auditMetricKind(filters.range),
+          label: 'Dispatch actions',
+          scope: auditMetricScope(filters.range),
+          value: summary.dispatch,
         },
-        { label: 'Payment actions', value: summary.payments, helper: 'Payment and refund audit records.' },
         {
-          label: 'Finance closeout',
-          value: summary.financeCloseout,
+          helper: 'Payment and refund audit records.',
+          kind: auditMetricKind(filters.range),
+          label: 'Payment actions',
+          scope: auditMetricScope(filters.range),
+          value: summary.payments,
+        },
+        {
           helper: 'Money movement and closeout records.',
+          kind: auditMetricKind(filters.range),
+          label: 'Finance closeout',
+          scope: auditMetricScope(filters.range),
+          value: summary.financeCloseout,
         },
         {
-          label: 'Service pricing',
-          value: summary.servicePricing,
           helper: 'Service, payout, tax, and pricing edits.',
+          kind: auditMetricKind(filters.range),
+          label: 'Service pricing',
+          scope: auditMetricScope(filters.range),
+          value: summary.servicePricing,
         },
         {
-          label: 'Notification actions',
-          value: summary.notifications,
           helper: 'Notification send and retry events.',
+          kind: auditMetricKind(filters.range),
+          label: 'Notification actions',
+          scope: auditMetricScope(filters.range),
+          value: summary.notifications,
         },
-        { label: 'Needs review', value: summary.needsReview, helper: 'High-priority events for operators.' },
-        { label: 'Recent hour', value: summary.recentHour, helper: 'Events created within the last hour.' },
+        {
+          helper: 'High-priority events for operators.',
+          kind: 'risk',
+          label: 'Needs review',
+          scope: 'Needs action',
+          value: summary.needsReview,
+        },
+        {
+          helper: 'Events created within the last hour.',
+          kind: 'live',
+          label: 'Recent hour',
+          scope: 'Live',
+          value: summary.recentHour,
+        },
       ]}
       title="Audit Log"
     >
       <div className="audit-log-page">
         <AuditLogCommandBoardSection items={commandBoard} />
 
-        <AdminSection
+        <AdminFilterPanel
           className="admin-mb-16"
-          title="Audit filters"
+          description="Find retained admin and system events by actor, target, operation type, review priority, and operating window."
+          resultLabel={`Showing ${logs.length} of ${totalEvents}`}
+          title="Audit operation filters"
         >
           <AdminFormGrid action="/audit-log">
-            <AdminFormInput
+            <AdminFormSearch
               className="admin-directory-filter-search"
               defaultValue={filters.q}
               label="Search"
@@ -184,7 +219,12 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               </span>
             </AdminFormActionRow>
           </AdminFormGrid>
-        </AdminSection>
+          <AdminFilterSummary
+            ariaLabel="Active audit filters"
+            labels={buildAuditActiveFilterLabels(filters)}
+            tone="info"
+          />
+        </AdminFilterPanel>
 
         <AdminTableSection
           bodyClassName="admin-table-section-body"
@@ -388,6 +428,43 @@ export function buildAuditLogApiHref(params: Record<string, string | string[] | 
 
 export function buildAuditLogSummaryApiHref(params: Record<string, string | string[] | undefined>) {
   return buildAuditLogAdminHref('/admin/audit-logs/summary', buildAuditFilters(params));
+}
+
+function buildAuditActiveFilterLabels(filters: AuditLogFilters) {
+  const labels = [`Date: ${dateRangeLabel(filters.range)}`];
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+  if (filters.bucket) {
+    labels.push(`Bucket: ${filters.bucket}`);
+  }
+  if (filters.priority) {
+    labels.push(`Priority: ${auditPriorityFilterLabel(filters.priority)}`);
+  }
+  return labels;
+}
+
+function auditMetricScope(range: AuditLogFilters['range']) {
+  return dateRangeLabel(range);
+}
+
+function auditMetricKind(range: AuditLogFilters['range']) {
+  return range === 'all' ? 'record' as const : 'period' as const;
+}
+
+function auditPriorityFilterLabel(priority: string) {
+  switch (priority) {
+    case '4':
+      return 'Review this first';
+    case '3':
+      return 'Check before close';
+    case '2':
+      return 'Follow related flow';
+    case '1':
+      return 'Reference event';
+    default:
+      return priority;
+  }
 }
 
 function buildAuditLogAdminHref(

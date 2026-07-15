@@ -39,16 +39,22 @@ export default async function PartnerCustomerEvaluationsPage({
           label: 'Total evaluations',
           value: summary.totalCount,
           helper: 'Matching partner-written customer evaluation records.',
+          kind: 'record',
+          scope: 'All records',
         },
         {
           label: 'Admin-only',
           value: 'Internal',
           helper: 'These records stay in the admin workspace only.',
+          kind: 'record',
+          scope: 'Admin-only records',
         },
         {
           label: 'Rating fields',
           value: 'None',
           helper: 'Partners write text only; customers do not receive star ratings here.',
+          kind: 'record',
+          scope: 'Policy guard',
         },
       ]}
       title="Partner Customer Evaluations"

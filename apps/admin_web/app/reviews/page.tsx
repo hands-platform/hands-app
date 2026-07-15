@@ -50,13 +50,40 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
       contentClassName="reviews-page booking-monitor"
       description="All customer-written reviews, Partner service context, and app visibility moderation in one board."
       metrics={[
-        { label: 'Total reviews', value: summary.totalCount, helper: 'Matching customer review records.' },
-        { label: 'Published', value: summary.published ?? 0, helper: 'Visible in the app.' },
-        { label: 'Held', value: summary.held ?? 0, helper: 'Not visible in the app.' },
+        {
+          label: 'Total reviews',
+          value: summary.totalCount,
+          helper: 'Matching customer review records.',
+          kind: 'record',
+          scope: 'All records',
+        },
+        {
+          label: 'Published',
+          value: summary.published ?? 0,
+          helper: 'Visible in the app.',
+          kind: 'live',
+          scope: 'Live visibility',
+        },
+        {
+          label: 'Held',
+          value: summary.held ?? 0,
+          helper: 'Not visible in the app.',
+          kind: 'risk',
+          scope: 'Needs action',
+        },
+        {
+          label: 'Reported',
+          value: summary.reported ?? 0,
+          helper: 'Customer reviews flagged for operator review.',
+          kind: 'risk',
+          scope: 'Needs action',
+        },
         {
           label: 'Average rating',
           value: (summary.averageRating ?? 0).toFixed(1),
           helper: 'Matching review average.',
+          kind: 'record',
+          scope: 'Review records',
         },
       ]}
       title="Customer Reviews"

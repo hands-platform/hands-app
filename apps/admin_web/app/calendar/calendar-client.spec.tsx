@@ -29,6 +29,10 @@ describe('CalendarClient', () => {
     const source = readFileSync('app/calendar/calendar-client.tsx', 'utf8');
 
     expect(source).toContain('AdminMetricGrid');
+    expect(source).toContain("scope: 'Current + future'");
+    expect(source).toContain("scope: 'Today'");
+    expect(source).toContain("scope: 'Next 7 days'");
+    expect(source).toContain("scope: 'Next'");
     expect(source).not.toContain('<section className="admin-metric-grid"');
   });
 

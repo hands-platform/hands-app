@@ -58,14 +58,14 @@ describe('VietnamOverviewPage', () => {
       '<section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">',
     );
     expect(markup).toContain('card admin-section vietnam-overview-map-card');
-    expect(markup).toContain('card admin-section vietnam-overview-filter-panel');
+    expect(markup).toContain('card admin-filter-panel vietnam-overview-filter-panel admin-section');
     expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-filter-summary-card');
     expect(markup).not.toContain('<article class="vietnam-overview-filter-summary-card');
     expect(pageSource).toContain('AdminSummaryCardGrid');
     expect(pageSource).not.toContain('<div className="vietnam-overview-filter-summary-grid"');
     expect(pageSource).not.toContain('<div className="vietnam-region-focus-summary-items is-realtime">');
     expect(pageSource).not.toContain('<div className="vietnam-region-focus-summary-items is-period">');
-    expect(markup).not.toContain('card admin-filter-panel vietnam-overview-filter-panel');
+    expect(markup).not.toContain('card admin-section vietnam-overview-filter-panel');
     expect(markup).toContain('card admin-section vietnam-realtime-chart-card');
     expect(pageSource).toContain('AdminRowLink');
     expect(pageSource).not.toContain('<a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>');

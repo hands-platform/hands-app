@@ -245,13 +245,24 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('href="/setup#referrals"');
   });
 
-  it('uses the shared StatusBadge atom for active referral filter labels', () => {
+  it('uses the shared filter summary atom for active referral filter labels', () => {
+    expect(dashboardSource).toContain('AdminFilterSummary');
     expect(dashboardSource).toContain('AdminFilterChipGroup');
     expect(storeSetupSource).toContain('AdminFilterChipGroup');
     expect(dashboardSource).toContain('StatusBadge');
     expect(dashboardSource).not.toContain('<div className="participant-list');
     expect(storeSetupSource).not.toContain('<div className="participant-list');
     expect(dashboardSource).not.toContain('<span className="pill pill-warn" key={filter}>');
+    expect(dashboardSource).not.toContain('<StatusBadge key={filter} tone="warning">');
+  });
+
+  it('keeps referral policy, readiness, and list filters off the legacy booking monitor filter class', () => {
+    expect(dashboardSource).toContain('className="referral-accounting-guardrails-panel admin-mt-16"');
+    expect(dashboardSource).toContain('className="referral-link-readiness-panel admin-mt-16"');
+    expect(dashboardSource).toContain('className="vuexy-customer-filter-card admin-mt-16"');
+    expect(dashboardSource).toContain('className="referral-policy-panel admin-mt-16"');
+    expect(dashboardSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16"');
+    expect(dashboardSource).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-customer-filter-card"');
   });
 
   it('uses the shared MoneyText atom for visible referral money values', () => {
@@ -445,6 +456,7 @@ describe('ReferralDashboard', () => {
     expect(markup).toContain('Search: smoke');
     expect(markup).toContain('Status: Pending');
     expect(markup).toContain('Reward: Ready rewards');
+    expect(markup).toContain('class="admin-filter-summary admin-mt-8"');
     expect(markup).toContain('href="/referrals/partners"');
     expect(markup).toContain('Clear referral filters');
     expect(markup).not.toContain('Parents appear here only after at least one referral attribution is recorded.');

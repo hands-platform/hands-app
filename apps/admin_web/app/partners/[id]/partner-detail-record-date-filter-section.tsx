@@ -7,11 +7,9 @@ import {
   AdminFormGrid,
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
-import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
-import { AdminSectionHeader } from '../../../components/admin-page-template';
-import { AdminCard } from '../../../components/admin-surface';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import { AdminTraceSummary } from '../../../components/admin-overview-card';
-import { StatusBadge } from '../../../components/status-badge';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
 import { detailActivityTypeLabel } from '../../../lib/detail-activity-filter';
@@ -50,18 +48,19 @@ export function PartnerDetailRecordDateFilterSection({
   const activityTypeLabel = detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS);
 
   return (
-    <AdminCard className="admin-mb-16" id="record-date-filter">
-      <AdminSectionHeader
-        actions={(
-          <AdminFilterChipGroup ariaLabel="Active record date filters">
-            <StatusBadge tone="info">{dateFilters.label}</StatusBadge>
-            <StatusBadge tone="neutral">{activityTypeLabel}</StatusBadge>
-            <StatusBadge tone="neutral">{activityOrderLabel(activityOrder)}</StatusBadge>
-          </AdminFilterChipGroup>
-        )}
-        description="Narrow booking, chat, app, location, payout, and verification records without changing partner data."
-        title="Record date filter"
-      />
+    <AdminFilterPanel
+      actions={(
+        <AdminFilterSummary
+          ariaLabel="Active record date filters"
+          labels={[dateFilters.label, activityTypeLabel, activityOrderLabel(activityOrder)]}
+          tone="info"
+        />
+      )}
+      className="partner-record-date-filter-panel admin-mb-16"
+      description="Narrow booking, chat, app, location, payout, and verification records without changing partner data."
+      id="record-date-filter"
+      title="Record date filter"
+    >
       <AdminFormGrid className="admin-mt-14" action={`/partners/${partnerId}`}>
         <AdminFormSelect
           className="admin-directory-filter-select"
@@ -140,6 +139,6 @@ export function PartnerDetailRecordDateFilterSection({
           },
         ]}
       />
-    </AdminCard>
+    </AdminFilterPanel>
   );
 }

@@ -20,12 +20,15 @@ import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/ope
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable, AdminTablePaginationFooter } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormActionRow,
   AdminFormGrid,
   AdminFormInput,
+  AdminFormSearch,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
@@ -467,15 +470,12 @@ export default async function PartnerControlsPage({
         )}
       </AdminSection>
 
-      <AdminSection
+      <AdminFilterPanel
         className="admin-mb-16"
         description="Dashboard links land here with the exact review lane already selected."
         id="partner-control-filters"
-        status={
-          <StatusBadgeFromPillClass pillClass={activeFilters.length ? 'pill-warn' : 'pill-success'}>
-            Showing {visibleReports.length} report(s), {visibleSanctions.length} account control(s)
-          </StatusBadgeFromPillClass>
-        }
+        resultLabel={`Showing ${visibleReports.length} report(s), ${visibleSanctions.length} account control(s)`}
+        resultTone={activeFilters.length ? 'warning' : 'success'}
         title="Control filters"
       >
         {activeFilters.length > 0 ? (
@@ -487,11 +487,10 @@ export default async function PartnerControlsPage({
         )}
         <AdminFormGrid action="/partner-controls">
           {filters.review ? <input name="review" type="hidden" value={filters.review} /> : null}
-          <AdminFormInput
+          <AdminFormSearch
             className="admin-form-control-fluid"
             defaultValue={filters.q}
-            label="Search"
-            labelVisibility="visible"
+            label="Search Partner controls"
             name="q"
             placeholder="Partner, phone, category, reason"
           />
@@ -547,18 +546,13 @@ export default async function PartnerControlsPage({
               Clear filters
             </AdminFormControlLink>
           </AdminFormActionRow>
-          {activeFilters.length > 0 ? (
-            <AdminFilterChipGroup className="full-span">
-              <StatusBadge tone="info">Active filters</StatusBadge>
-              {activeFilters.map((filter) => (
-                <StatusBadge key={`${filter.kind}-${filter.value}`} tone="warning">
-                  {filter.label}
-                </StatusBadge>
-              ))}
-            </AdminFilterChipGroup>
-          ) : null}
+          <AdminFilterSummary
+            ariaLabel="Active partner control filters"
+            className="full-span"
+            labels={activeFilters.map((filter) => filter.label)}
+          />
         </AdminFormGrid>
-      </AdminSection>
+      </AdminFilterPanel>
 
       <AdminSection
         className="admin-mb-16"

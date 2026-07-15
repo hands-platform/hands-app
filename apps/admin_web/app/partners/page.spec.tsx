@@ -41,12 +41,14 @@ describe('ProvidersPage', () => {
     expect(source).not.toContain('actions={<span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>}');
   });
 
-  it('uses the shared Vuexy trace summary atom for the current filter summary', () => {
+  it('uses the shared Vuexy trace summary atom for the active filter summary', () => {
     const source = readFileSync('app/partners/page.tsx', 'utf8');
 
     expect(source).toContain('AdminMetricGrid');
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('partnerFilterSummaryMetricMeta');
     expect(source).not.toContain('A factual snapshot of the partner rows');
+    expect(source).not.toContain('Current filtered partner set');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-14">');
     expect(source).not.toContain('<div className="grid admin-mb-16 partner-deep-summary-grid">');
     expect(source).not.toContain('<AdminKpiCard helper="Current filtered partner set"');
@@ -123,10 +125,16 @@ describe('ProvidersPage', () => {
     const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'kyc' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Current filter summary');
+    expect(markup).toContain('Partner action snapshot');
     expect(markup).toContain('card admin-section admin-mb-16 partner-current-filter-summary-card');
     expect(markup).toContain('admin-metric-grid admin-mb-16 partner-deep-summary-grid');
     expect(markup).toContain('metric-card');
+    expect(markup).toContain('metric-card-scope');
+    expect(markup).toContain('Active filters');
+    expect(markup).toContain('Needs action');
+    expect(markup).toContain('Live');
+    expect(markup).not.toContain('Current filter summary');
+    expect(markup).not.toContain('Current filtered partner set');
     expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
   });
 
@@ -150,7 +158,7 @@ describe('ProvidersPage', () => {
     const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'marketplace-ready' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).not.toContain('Current filter summary');
+    expect(markup).not.toContain('Partner action snapshot');
     expect(markup).not.toContain('partner-deep-summary-grid');
     expect(markup).not.toContain('Partner operations list');
     expect(markup).toContain('Marketplace ready');

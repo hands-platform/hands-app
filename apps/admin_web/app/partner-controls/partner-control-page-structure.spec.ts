@@ -19,6 +19,8 @@ describe('partner control page structure', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/partner-controls/page.tsx'), 'utf8');
 
     expect(pageSource).toContain('AdminFormInput');
+    expect(pageSource).toContain('AdminFilterPanel');
+    expect(pageSource).toContain('AdminFormSearch');
     expect(pageSource).toContain('AdminFormSelect');
     expect(pageSource).toContain('AdminFormTextarea');
     expect(pageSource).toContain('AdminFormControlButton');

@@ -96,13 +96,19 @@ export default async function AppSessionsPage({
         </>
       }
       description="Customer and Partner app heartbeat view for live operations, support, and version follow-up."
-      metrics={summary.map(([label, value, detail]) => ({ helper: detail, label, value }))}
+      metrics={summary.map(([label, value, detail]) => ({
+        helper: detail,
+        ...sessionSummaryMetricMeta(label),
+        label,
+        value,
+      }))}
       title="App Sessions"
     >
 
       <AppSessionsScopeSection
         activeFilterHref={sessionFilterHref(filters)}
         activeFilterLabel={activeFilterLabel}
+        filters={filters}
         loadedCount={sessions.length}
         quickFilters={sessionQuickFilters}
         totalCount={serverSummary?.totalCount ?? loadedSessions.length}
@@ -204,6 +210,24 @@ function buildSessionSummary(
     ['Expired sessions', String(serverSummary?.expired ?? expired), 'Older than the operational freshness window.'],
     ['Loaded sessions', String(loadedTotal), `${loadedLive} live session(s) in this filtered summary.`],
   ];
+}
+
+function sessionSummaryMetricMeta(label: string) {
+  const normalized = label.toLowerCase();
+
+  if (normalized.includes('live')) {
+    return { kind: 'live', scope: 'Live' } as const;
+  }
+
+  if (normalized.includes('recent')) {
+    return { kind: 'period', scope: 'Last 30 minutes' } as const;
+  }
+
+  if (normalized.includes('stale') || normalized.includes('expired')) {
+    return { kind: 'risk', scope: 'Needs action' } as const;
+  }
+
+  return { kind: 'record', scope: 'Filtered records' } as const;
 }
 
 function buildSessionCommandCards(

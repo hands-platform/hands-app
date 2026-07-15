@@ -51,7 +51,7 @@ export function PartnerLegacyOperationsTableSection({
   renderServices,
 }: PartnerLegacyOperationsTableSectionProps) {
   return (
-    <AdminTableCard className="admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-partner-table-card">
+    <AdminTableCard className="vuexy-partner-table-card admin-mt-16">
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table vuexy-partner-table partner-legacy-table"

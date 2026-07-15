@@ -36,7 +36,11 @@ import {
 } from '../../lib/operations-policy';
 import {
   buildNotificationActionConfirmation,
+  assignFinanceReviewConfirmHref,
   enablePushDeviceConfirmHref,
+  isLegacySystemNotificationReviewable,
+  legacyReviewNotificationConfirmHref,
+  notificationBackgroundJobEvidenceHref,
   type NotificationActionReturnContext,
   readNotificationConfirmationAction,
   retryNotificationConfirmHref,
@@ -56,6 +60,8 @@ import type { NotificationTableRow } from './notification-table-row';
 type NotificationPageParams = Record<string, string | string[] | undefined>;
 
 type BuildNotificationPageModelInput = {
+  readonly financeAssigneeAdminId?: string | null;
+  readonly financeAssigneeOptions?: readonly { readonly label: string; readonly value: string }[];
   readonly notificationSummary?: AdminNotificationBoardSummary | null;
   readonly notifications: readonly AdminNotification[];
   readonly operationalPolicies: readonly AdminOperationalPolicySetting[];
@@ -63,9 +69,14 @@ type BuildNotificationPageModelInput = {
 };
 
 export type NotificationDateRange = 'all' | 'today' | 'yesterday' | '7d' | '30d';
+export type NotificationIncidentState = 'all' | 'open' | 'recovered' | 'legacy' | 'reviewed';
+export type NotificationFinanceAge = 'all' | '48-72' | '72-plus';
 
 export type NotificationFilters = {
   readonly booking: string;
+  readonly financeAge: NotificationFinanceAge;
+  readonly financeOwner: string;
+  readonly incidentState: NotificationIncidentState;
   readonly range: NotificationDateRange;
   readonly review: string;
   readonly user: string;
@@ -88,6 +99,11 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
+const FINANCE_OVERDUE_TYPES = [
+  'admin.finance.bank_statement_batch.escalated',
+  'admin.finance.bank_transaction.review_escalated',
+] as const;
+const FINANCE_OVERDUE_TYPE_SET: ReadonlySet<string> = new Set(FINANCE_OVERDUE_TYPES);
 const NOTIFICATION_TABLE_PAGE_SIZE = 20;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
 const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;
@@ -102,10 +118,26 @@ export const notificationDateRangeLinks = [
   { label: 'All loaded', range: 'all' },
 ] as const satisfies readonly { label: string; range: NotificationDateRange }[];
 
+export const notificationIncidentStateLinks = [
+  { label: 'All system', state: 'all' },
+  { label: 'Open', state: 'open' },
+  { label: 'Recovered', state: 'recovered' },
+  { label: 'Legacy review', state: 'legacy' },
+  { label: 'Reviewed legacy', state: 'reviewed' },
+] as const satisfies readonly { label: string; state: NotificationIncidentState }[];
+
+export const notificationFinanceAgeLinks = [
+  { label: 'All overdue', value: 'all' },
+  { label: '48–72h', value: '48-72' },
+  { label: '72h+', value: '72-plus' },
+] as const satisfies readonly { label: string; value: NotificationFinanceAge }[];
+
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'customers or Partners with disabled push devices.',
   failed: 'latest delivery attempts that returned an FCM push failure.',
   fcm: 'notifications that attempted FCM push delivery.',
+  'finance-overdue': 'bank statement batches and assigned bank reviews unresolved for over 48 hours.',
+  'finance-overdue-history': 'resolved bank reconciliation SLA alerts retained for audit history.',
   'in-app-route': 'notifications intentionally kept in the app inbox route.',
   'needs-retry': 'notifications whose delivery path should be reviewed before retry.',
   'no-show': 'customer and Partner alerts created when operations marks a booking as no-show.',
@@ -115,12 +147,15 @@ const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   sent: 'notifications whose latest push attempt was delivered successfully.',
   skipped: 'notifications whose latest push attempt was intentionally skipped or had no available send path.',
   'stale-device': 'delivery attempts made with old push token timestamps.',
+  'system-incidents': 'Admin system and background-job alerts that require operational review.',
 };
 
 const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNotification) => boolean>> = {
   'disabled-device': hasDisabledPushDevice,
   failed: (notification) => hasLatestDeliveryStatus(notification, 'FAILED'),
   fcm: (notification) => hasDeliveryProvider(notification, 'FCM'),
+  'finance-overdue': isOpenFinanceOverdueNotification,
+  'finance-overdue-history': isResolvedFinanceOverdueNotification,
   'in-app-route': (notification) => hasDeliveryProvider(notification, 'IN_APP_ONLY'),
   'needs-retry': hasRetrySignal,
   'no-show': (notification) => notification.type === 'booking.no_show',
@@ -130,6 +165,7 @@ const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNo
   sent: (notification) => hasLatestDeliveryStatus(notification, 'SENT'),
   skipped: (notification) => hasLatestDeliveryStatus(notification, 'SKIPPED'),
   'stale-device': hasStalePushDeviceDelivery,
+  'system-incidents': (notification) => notification.type.startsWith('admin.system.'),
 };
 
 export type NotificationSummary = {
@@ -189,6 +225,21 @@ export type NotificationFcmSmokeReadiness = {
 
 export const notificationFilterLinks = [
   { label: 'All notifications', href: '/notifications?review=all', review: 'all' },
+  {
+    label: 'System incidents',
+    href: '/notifications?review=system-incidents',
+    review: 'system-incidents',
+  },
+  {
+    label: 'Finance overdue',
+    href: '/notifications?review=finance-overdue',
+    review: 'finance-overdue',
+  },
+  {
+    label: 'Finance history',
+    href: '/notifications?review=finance-overdue-history',
+    review: 'finance-overdue-history',
+  },
   { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
   {
     label: 'Disabled devices',
@@ -221,10 +272,19 @@ export const notificationFilterLinks = [
 
 export function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
   const review = readSearchParam(params.review);
+  const normalizedReview = review || DEFAULT_NOTIFICATION_REVIEW;
+  const financeReview = normalizedReview === 'finance-overdue' || normalizedReview === 'finance-overdue-history';
   return {
-    review: review || DEFAULT_NOTIFICATION_REVIEW,
     booking: readSearchParam(params.booking),
+    financeAge: financeReview
+      ? normalizeNotificationFinanceAge(readSearchParam(params.financeAge))
+      : 'all',
+    financeOwner: financeReview ? normalizeNotificationFinanceOwner(readSearchParam(params.financeOwner)) : '',
+    incidentState: normalizedReview === 'system-incidents'
+      ? normalizeNotificationIncidentState(readSearchParam(params.incidentState))
+      : 'all',
     range: normalizeNotificationDateRange(readSearchParam(params.range)),
+    review: normalizedReview,
     user: readSearchParam(params.user),
   };
 }
@@ -232,6 +292,9 @@ export function buildNotificationFilters(params: Record<string, string | string[
 export function buildNotificationListHref(
   filters: {
     readonly booking: string;
+    readonly financeAge?: NotificationFinanceAge;
+    readonly financeOwner?: string;
+    readonly incidentState?: NotificationIncidentState;
     readonly range?: NotificationDateRange;
     readonly review: string;
     readonly user?: string;
@@ -248,8 +311,28 @@ export function buildNotificationListHref(
   if (filters.booking) {
     query.set('booking', filters.booking);
   }
+  if (
+    filters.review === 'system-incidents' &&
+    filters.incidentState &&
+    filters.incidentState !== 'all'
+  ) {
+    query.set('incidentState', filters.incidentState);
+  }
   if (filters.user) {
     query.set('user', filters.user);
+  }
+  if (
+    (filters.review === 'finance-overdue' || filters.review === 'finance-overdue-history') &&
+    filters.financeAge &&
+    filters.financeAge !== 'all'
+  ) {
+    query.set('financeAge', filters.financeAge);
+  }
+  if (
+    (filters.review === 'finance-overdue' || filters.review === 'finance-overdue-history') &&
+    filters.financeOwner
+  ) {
+    query.set('financeOwner', filters.financeOwner);
   }
   if (options.page && options.page > 1) {
     query.set('page', String(options.page));
@@ -275,6 +358,15 @@ export function buildNotificationApiHref(params: Record<string, string | string[
   if (filters.user) {
     query.set('user', filters.user);
   }
+  if (filters.financeAge !== 'all') {
+    query.set('financeAge', filters.financeAge);
+  }
+  if (filters.financeOwner) {
+    query.set('financeOwner', filters.financeOwner);
+  }
+  if (filters.review === 'system-incidents' && filters.incidentState !== 'all') {
+    query.set('incidentState', filters.incidentState);
+  }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
     query.set('from', window.from.toISOString());
@@ -296,6 +388,15 @@ export function buildNotificationSummaryApiHref(params: Record<string, string | 
   }
   if (filters.user) {
     query.set('user', filters.user);
+  }
+  if (filters.financeAge !== 'all') {
+    query.set('financeAge', filters.financeAge);
+  }
+  if (filters.financeOwner) {
+    query.set('financeOwner', filters.financeOwner);
+  }
+  if (filters.review === 'system-incidents' && filters.incidentState !== 'all') {
+    query.set('incidentState', filters.incidentState);
   }
   const window = notificationDateRangeWindow(filters.range);
   if (window.from) {
@@ -337,6 +438,27 @@ function normalizeNotificationDateRange(value: string): NotificationDateRange {
   return 'today';
 }
 
+function normalizeNotificationIncidentState(value: string): NotificationIncidentState {
+  if (value === 'open' || value === 'recovered' || value === 'legacy' || value === 'reviewed') return value;
+  return 'all';
+}
+
+function normalizeNotificationFinanceAge(value: string): NotificationFinanceAge {
+  if (value === '48-72' || value === '72-plus') return value;
+  return 'all';
+}
+
+function normalizeNotificationFinanceOwner(value: string) {
+  const normalized = value.trim();
+  if (!normalized || normalized === 'all') return '';
+  if (normalized === 'unassigned') return normalized;
+  const hasControlCharacter = Array.from(normalized).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127;
+  });
+  return normalized.length <= 128 && !hasControlCharacter ? normalized : '';
+}
+
 function notificationDateRangeWindow(range: NotificationDateRange, now = new Date()) {
   const todayStart = startOfLocalDay(now);
   const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
@@ -363,16 +485,29 @@ function startOfLocalDay(value: Date) {
 }
 
 export function buildNotificationPageModel({
+  financeAssigneeAdminId,
+  financeAssigneeOptions = [],
   notificationSummary,
   notifications: rawNotifications,
   operationalPolicies,
   params,
 }: BuildNotificationPageModelInput) {
   const filters = buildNotificationFilters(params);
-  const allNotifications = sortNotifications(rawNotifications);
+  const allNotifications = filters.review === 'finance-overdue'
+    ? sortFinanceReviewNotifications(rawNotifications, 'open')
+    : filters.review === 'finance-overdue-history'
+      ? sortFinanceReviewNotifications(rawNotifications, 'resolved')
+      : sortNotifications(rawNotifications);
   const loadedCount = allNotifications.length;
-  const totalCount = notificationSummary?.totalCount ?? loadedCount;
-  const notifications = filterNotifications(allNotifications, filters);
+  const serverTotalCount = filters.review === 'system-incidents'
+    ? notificationSummary?.systemIncidentSourceTotalCount
+    : notificationSummary?.totalCount;
+  const rawTotalCount = serverTotalCount ?? loadedCount;
+  const filteredNotifications = filterNotifications(allNotifications, filters);
+  const notifications = filters.review === 'system-incidents'
+    ? groupSystemIncidentNotifications(filteredNotifications)
+    : filteredNotifications;
+  const totalCount = rawTotalCount;
   const loadedDeliveryStats = buildNotificationDeliveryStats(allNotifications);
   const deliveryStats = notificationSummary
     ? notificationDeliveryStatsFromServerSummary(notificationSummary, loadedDeliveryStats)
@@ -390,7 +525,18 @@ export function buildNotificationPageModel({
   );
   const fcmSmokeReadiness = buildNotificationFcmSmokeReadiness(allNotifications);
   const reviewState = buildNotificationReviewState(filters.review);
-  const allNotificationRows = buildNotificationTableRows(notifications, filters);
+  const actionContext: NotificationActionReturnContext = {
+    booking: filters.booking || undefined,
+    financeAge: filters.financeAge !== 'all' ? filters.financeAge : undefined,
+    financeAssigneeAdminId: financeAssigneeAdminId ?? undefined,
+    financeAssigneeOptions,
+    financeOwner: filters.financeOwner || undefined,
+    incidentState: filters.incidentState !== 'all' ? filters.incidentState : undefined,
+    range: filters.range !== 'today' ? filters.range : undefined,
+    review: filters.review,
+    user: filters.user || undefined,
+  };
+  const allNotificationRows = buildNotificationTableRows(notifications, actionContext);
   const requestedPage = readNotificationTablePage(params.page);
   const notificationPagination = notificationSummary
     ? paginateServerNotificationRows(allNotificationRows, requestedPage, totalCount)
@@ -405,16 +551,21 @@ export function buildNotificationPageModel({
       allNotifications,
       readNotificationConfirmationAction(readSearchParam(params.confirm)),
       {
+        assigneeAdminId: readSearchParam(params.assigneeAdminId),
         notificationId: readSearchParam(params.notificationId),
         pushDeviceId: readSearchParam(params.pushDeviceId),
-        review: filters.review,
-        booking: filters.booking,
+        ...actionContext,
       },
     ),
     filters,
     fcmSmokeReadiness,
     loadedCount,
-    metrics: buildNotificationMetrics(totalCount, summary, channelSummary),
+    metrics:
+      filters.review === 'system-incidents'
+        ? buildSystemIncidentMetrics(notificationSummary, allNotifications, filters)
+        : filters.review === 'finance-overdue' || filters.review === 'finance-overdue-history'
+          ? buildFinanceOverdueMetrics(totalCount, filters)
+          : buildNotificationMetrics(totalCount, summary, channelSummary),
     notificationPagination,
     notificationRows: notificationPagination.rows,
     notifications,
@@ -562,6 +713,84 @@ export function buildNotificationMetrics(
   ];
 }
 
+function buildFinanceOverdueMetrics(
+  totalCount: number,
+  filters: NotificationFilters,
+): readonly AdminPageMetric[] {
+  const resolved = filters.review === 'finance-overdue-history';
+  return [
+    {
+      href: buildNotificationListHref(filters),
+      kind: resolved ? 'record' : 'risk',
+      label: resolved ? 'Resolved Finance reviews' : 'Overdue Finance reviews',
+      scope: resolved ? notificationDateRangeLabel(filters.range) : 'Needs action',
+      value: totalCount,
+      helper: resolved
+        ? 'Resolved bank reconciliation SLA alerts retained as historical evidence.'
+        : 'Bank reconciliation reviews still unresolved more than 48 hours after import or assignment.',
+    },
+  ];
+}
+
+function buildSystemIncidentMetrics(
+  serverSummary: AdminNotificationBoardSummary | null | undefined,
+  notifications: readonly AdminNotification[],
+  filters: NotificationFilters,
+): readonly AdminPageMetric[] {
+  const fallback = groupSystemIncidentNotifications(notifications).reduce(
+    (counts, notification) => {
+      if (!notification.type.startsWith('admin.system.')) return counts;
+      counts.total += 1;
+      const incidentStatus = readString(asRecord(notification.data)?.incidentStatus);
+      if (incidentStatus === 'OPEN') counts.open += 1;
+      else if (incidentStatus === 'RECOVERED') counts.recovered += 1;
+      else if (!incidentStatus) counts.legacy += 1;
+      return counts;
+    },
+    { legacy: 0, open: 0, recovered: 0, total: 0 },
+  );
+  const rangeLabel = notificationDateRangeLabel(filters.range);
+  const incidentHref = (incidentState: NotificationIncidentState) =>
+    buildNotificationListHref({ ...filters, incidentState });
+
+  return [
+    {
+      href: incidentHref('open'),
+      kind: 'action',
+      label: 'Open incidents',
+      scope: 'Needs action',
+      value: serverSummary?.openSystemIncidentCount ?? fallback.open,
+      helper: 'Unrecovered system incidents in the selected period.',
+    },
+    {
+      href: incidentHref('recovered'),
+      kind: 'period',
+      label: 'Recovered incidents',
+      scope: rangeLabel,
+      value: serverSummary?.recoveredSystemIncidentCount ?? fallback.recovered,
+      helper: 'Source incidents confirmed recovered in the selected period.',
+    },
+    {
+      href: incidentHref('legacy'),
+      kind: 'risk',
+      label: 'Legacy review',
+      scope: 'Needs action',
+      value: serverSummary?.legacySystemIncidentCount ?? fallback.legacy,
+      helper: 'Older system alerts without persisted incident state.',
+    },
+    {
+      href: incidentHref('all'),
+      kind: 'record',
+      label: 'Incident sources',
+      scope: rangeLabel,
+      value: serverSummary?.systemIncidentCount ?? fallback.total,
+      helper: serverSummary?.systemIncidentSourceSummaryComplete === false
+        ? 'Distinct sources in the bounded incident summary; older sources may exist.'
+        : 'Distinct system incident sources in the selected period.',
+    },
+  ];
+}
+
 export function sortNotifications(notifications: readonly AdminNotification[]) {
   const priorities = new Map<AdminNotification, number>();
   const priorityFor = (notification: AdminNotification) => {
@@ -583,38 +812,174 @@ export function sortNotifications(notifications: readonly AdminNotification[]) {
   });
 }
 
+export function sortFinanceReviewNotifications(
+  notifications: readonly AdminNotification[],
+  state: 'open' | 'resolved',
+) {
+  return [...notifications].sort((left, right) => {
+    if (state === 'resolved') {
+      const resolvedDiff = financeReviewResolvedAtMs(right) - financeReviewResolvedAtMs(left);
+      if (resolvedDiff !== 0) return resolvedDiff;
+      return right.id.localeCompare(left.id);
+    }
+    const startedDiff = financeReviewStartedAtMs(left) - financeReviewStartedAtMs(right);
+    if (startedDiff !== 0) return startedDiff;
+    return left.id.localeCompare(right.id);
+  });
+}
+
+function financeReviewStartedAtMs(notification: AdminNotification) {
+  const startedAt = readString(asRecord(notification.data)?.financeReviewStartedAt);
+  const parsed = Date.parse(startedAt ?? notification.createdAt);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function financeReviewResolvedAtMs(notification: AdminNotification) {
+  const resolvedAt = readString(asRecord(notification.data)?.financeReviewResolvedAt);
+  const parsed = Date.parse(resolvedAt ?? notification.createdAt);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function notificationFinanceReviewDisplay(notification: AdminNotification) {
+  if (!isFinanceOverdueNotification(notification)) return null;
+  const data = asRecord(notification.data);
+  const owner = asRecord(data?.financeReviewOwner);
+  const ownerId = readString(owner?.id);
+  const ownerEmail = readString(owner?.email);
+  const ownerFullName = readString(owner?.fullName);
+  const rawAgeHours = Number(data?.financeReviewAgeHours);
+  const ageHours = Number.isFinite(rawAgeHours) && rawAgeHours >= 0
+    ? Math.floor(rawAgeHours)
+    : Math.max(0, Math.floor((Date.now() - financeReviewStartedAtMs(notification)) / (60 * 60 * 1000)));
+  const resolved = isResolvedFinanceOverdueNotification(notification);
+
+  return {
+    ageLabel: resolved ? `${ageHours}h to resolve` : `${ageHours}h open`,
+    ownerId,
+    ownerHelper: ownerEmail ?? (ownerId ? `Admin ${shortId(ownerId)}` : 'Assign from the Finance record'),
+    ownerLabel: ownerFullName ?? ownerEmail ?? 'Unassigned',
+    startedAt: readString(data?.financeReviewStartedAt) ?? notification.createdAt,
+  };
+}
+
+export function groupSystemIncidentNotifications(
+  notifications: readonly AdminNotification[],
+): AdminNotification[] {
+  const groups = new Map<string, {
+    notificationCount: number;
+    precomputedRecipientCount: number;
+    recipientKeys: Set<string>;
+    representative: AdminNotification;
+  }>();
+
+  for (const notification of sortNotifications(notifications)) {
+    const sourceKey = notificationSystemIncidentSourceKey(notification);
+    const existing = groups.get(sourceKey);
+    const data = asRecord(notification.data);
+    const notificationCount = positiveInteger(data?.systemIncidentNotificationCount) || 1;
+    const recipientCount = positiveInteger(data?.systemIncidentRecipientCount);
+    const recipientKey = notification.user?.id ?? notification.user?.phone ?? notification.id;
+    if (!existing) {
+      groups.set(sourceKey, {
+        notificationCount,
+        precomputedRecipientCount: recipientCount,
+        recipientKeys: new Set([recipientKey]),
+        representative: notification,
+      });
+      continue;
+    }
+    existing.notificationCount += notificationCount;
+    existing.precomputedRecipientCount = Math.max(existing.precomputedRecipientCount, recipientCount);
+    existing.recipientKeys.add(recipientKey);
+    if (notificationSystemIncidentDisplayPriority(notification)
+      > notificationSystemIncidentDisplayPriority(existing.representative)) {
+      existing.representative = notification;
+    }
+  }
+
+  return [...groups.entries()].map(([sourceKey, group]) => ({
+    ...group.representative,
+    data: {
+      ...asRecord(group.representative.data),
+      systemIncidentNotificationCount: group.notificationCount,
+      systemIncidentRecipientCount: Math.max(group.precomputedRecipientCount, group.recipientKeys.size),
+      systemIncidentSourceKey: sourceKey,
+    },
+  }));
+}
+
+function notificationSystemIncidentSourceKey(notification: AdminNotification) {
+  const data = asRecord(notification.data);
+  const persistedSourceKey = readString(data?.systemIncidentSourceKey);
+  if (persistedSourceKey) return persistedSourceKey;
+  const incidentId = readString(data?.incidentId);
+  if (incidentId) return `incident:${incidentId}`;
+  if (notification.type.startsWith('admin.system.background_job')) {
+    const queueName = readString(data?.queueName);
+    const jobId = readString(data?.jobId);
+    if (queueName && jobId) return `job:${queueName}:${jobId}`;
+  }
+  return `notification:${notification.id}`;
+}
+
+function notificationSystemIncidentDisplayPriority(notification: AdminNotification) {
+  const data = asRecord(notification.data);
+  const status = readString(data?.incidentStatus);
+  if (status === 'OPEN') return 4;
+  if (!status) return 3;
+  if (status === 'RECOVERED') return 2;
+  return 1;
+}
+
 export function buildNotificationTableRows(
   notifications: readonly AdminNotification[],
   actionContext: NotificationActionReturnContext = {},
 ): NotificationTableRow[] {
   return notifications.map((notification) => {
+    const financeReview = notificationFinanceReviewDisplay(notification);
     const partnerProfile = notification.user?.providerProfile;
     const partnerLabel = notificationPartnerLabel(partnerProfile);
     const deliveryHealth = notificationDeliveryHealth(notification);
+    const operationalHealth =
+      notificationFinanceOverdueHealth(notification) ??
+      notificationIncidentHealth(notification) ??
+      deliveryHealth;
+    const sourceRecipientCount = positiveInteger(asRecord(notification.data)?.systemIncidentRecipientCount);
+    const sourceNotificationCount = positiveInteger(asRecord(notification.data)?.systemIncidentNotificationCount);
+    const isGroupedSystemIncident = sourceNotificationCount > 1;
 
     return {
       actionLabel: `Notification actions for ${shortId(notification.id)}`,
       actions: notificationActionMenuItems(notification, actionContext, deliveryHealth),
       body: marketplaceDisplayText(notification.body),
       bookingDataHint: notificationDataHint(notification),
-      createdAt: notification.createdAt,
+      createdAt: financeReview?.startedAt ?? notification.createdAt,
       deliveryAttemptCount: notificationDeliveries(notification).length,
       deliveryRows: buildNotificationDeliveryRows(notification, actionContext),
       id: notification.id,
-      opsHint: opsHint(notification, deliveryHealth),
-      opsSignal: deliveryHealth.signalLabel,
-      partnerHref: partnerProfile ? `/partners/${partnerProfile.id}` : null,
-      partnerLabel,
-      partnerStatus: partnerProfile?.status ?? null,
-      relativeCreatedAtLabel: formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' }),
-      signalClassName: deliveryHealth.signalClassName,
+      opsHint: opsHint(notification, operationalHealth),
+      opsSignal: operationalHealth.signalLabel,
+      partnerHref: financeReview ? null : partnerProfile ? `/partners/${partnerProfile.id}` : null,
+      partnerLabel: financeReview ? null : partnerLabel,
+      partnerStatus: financeReview ? null : partnerProfile?.status ?? null,
+      relativeCreatedAtLabel: financeReview?.ageLabel ??
+        formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' }),
+      signalClassName: operationalHealth.signalClassName,
       title: marketplaceDisplayText(notification.title),
       typeLabel: marketplaceDisplayText(humanizeType(notification.type)),
       typeMeaning: typeMeaning(notification.type),
       userAvatarStatus: notificationUserAvatarStatus(notification),
-      userHref: notificationUserHref(notification),
-      userLabel: notificationUserLabel(notification),
-      userPhone: notification.user?.phone ?? 'No phone on file',
+      userHref: isGroupedSystemIncident || financeReview ? null : notificationUserHref(notification),
+      userLabel: financeReview
+        ? financeReview.ownerLabel
+        : isGroupedSystemIncident
+        ? `${sourceRecipientCount} Admin recipient${sourceRecipientCount === 1 ? '' : 's'}`
+        : notificationUserLabel(notification),
+      userPhone: financeReview
+        ? financeReview.ownerHelper
+        : isGroupedSystemIncident
+        ? `${sourceNotificationCount} retained recipient alerts`
+        : notification.user?.phone ?? 'No phone on file',
     };
   });
 }
@@ -1051,6 +1416,87 @@ type NotificationDeliveryHealth = {
   readonly signalLabel: string;
 };
 
+type NotificationOperationalHealth = Pick<
+  NotificationDeliveryHealth,
+  'hint' | 'priority' | 'signalClassName' | 'signalLabel'
+>;
+
+function notificationIncidentHealth(
+  notification: AdminNotification,
+): NotificationOperationalHealth | null {
+  const data = asRecord(notification.data);
+  const incidentStatus = readString(data?.incidentStatus);
+  if (!notification.type.startsWith('admin.system.')) return null;
+  if (!incidentStatus) {
+    return {
+      hint: readString(data?.incidentId)
+        ? 'Linked incident state is unavailable. Open the incident record and confirm its current status.'
+        : 'This legacy system alert has no linked incident record. Open Background Jobs and review the source failure.',
+      priority: 5,
+      signalClassName: 'signal signal-warn',
+      signalLabel: 'Review required',
+    };
+  }
+  if (incidentStatus === 'RECOVERED') {
+    const recoveredAt = readString(data?.incidentRecoveredAt);
+    return {
+      hint: recoveredAt
+        ? `Source incident recovered ${formatDateTime(recoveredAt)}. Delivery evidence remains separate.`
+        : 'Source incident recovered. Delivery evidence remains separate.',
+      priority: 1,
+      signalClassName: 'signal signal-ok',
+      signalLabel: 'Recovered',
+    };
+  }
+  if (incidentStatus === 'LEGACY_REVIEWED') {
+    const reviewedAt = readString(data?.legacyReviewedAt);
+    return {
+      hint: reviewedAt
+        ? `Legacy alert reviewed ${formatDateTime(reviewedAt)}. Audit evidence remains retained.`
+        : 'Legacy alert reviewed. Audit evidence remains retained.',
+      priority: 0,
+      signalClassName: 'signal signal-ok',
+      signalLabel: 'Legacy reviewed',
+    };
+  }
+  if (incidentStatus === 'OPEN') {
+    return {
+      hint: 'Source incident is still open. Review the linked incident before retrying this alert.',
+      priority: 6,
+      signalClassName: 'signal signal-warn',
+      signalLabel: 'Incident open',
+    };
+  }
+  return null;
+}
+
+function notificationFinanceOverdueHealth(
+  notification: AdminNotification,
+): NotificationOperationalHealth | null {
+  if (!isFinanceOverdueNotification(notification)) return null;
+  const data = asRecord(notification.data);
+  const ageHours = Number(data?.financeReviewAgeHours);
+  if (isResolvedFinanceOverdueNotification(notification)) {
+    return {
+      hint: Number.isFinite(ageHours)
+        ? `The linked Finance record was resolved after ${Math.max(0, Math.floor(ageHours))} hours. Retain the SLA audit evidence.`
+        : 'The linked Finance record is resolved. Keep this row as retained SLA and audit evidence.',
+      priority: 1,
+      signalClassName: 'signal signal-ok',
+      signalLabel: 'Resolved',
+    };
+  }
+  const over72 = readString(data?.financeReviewSlaBand) === 'OVER_72H' || ageHours >= 72;
+  return {
+    hint: over72
+      ? 'This review is over 72 hours old. Open the Finance record, confirm ownership, and resolve it now.'
+      : 'Open the linked Finance record, resolve or reassign the overdue review before it reaches 72 hours.',
+    priority: over72 ? 7 : 6,
+    signalClassName: over72 ? 'signal signal-danger' : 'signal signal-warn',
+    signalLabel: over72 ? 'Over 72h' : 'Over 48h',
+  };
+}
+
 function notificationDeliveryHealth(notification: AdminNotification): NotificationDeliveryHealth {
   if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return {
@@ -1114,7 +1560,11 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
 }
 
 function notificationPriority(notification: AdminNotification) {
-  return notificationDeliveryHealth(notification).priority;
+  return (
+    notificationFinanceOverdueHealth(notification) ??
+    notificationIncidentHealth(notification) ??
+    notificationDeliveryHealth(notification)
+  ).priority;
 }
 
 function notificationActionMenuItems(
@@ -1134,6 +1584,80 @@ function notificationActionMenuItems(
     });
   }
 
+  const jobEvidenceHref = notificationBackgroundJobEvidenceHref(notification);
+  if (jobEvidenceHref) {
+    actions.push({
+      description: 'Open the exact retained Background Job recorded by this system alert.',
+      href: jobEvidenceHref,
+      kind: 'link',
+      label: 'Open job evidence',
+      tone: 'neutral',
+    });
+  }
+
+  const destination = safeAdminNotificationDestination(notification);
+  if (destination && !(jobEvidenceHref && destinationPathname(destination) === '/background-jobs')) {
+    const financeReview = isFinanceOverdueNotification(notification);
+    actions.push({
+      description: financeReview
+        ? 'Open the Finance record to confirm ownership, reconcile evidence, or reassign the review.'
+        : 'Open the internal Admin record associated with this notification.',
+      href: destination,
+      kind: 'link',
+      label: financeReview
+        ? 'Open Finance review'
+        : destination.startsWith('/background-jobs/incidents/')
+        ? 'Open incident'
+        : 'Open destination',
+      tone: financeReview ? 'warning' : 'neutral',
+    });
+  }
+
+  if (
+    isFinanceOverdueNotification(notification) &&
+    !isResolvedFinanceOverdueNotification(notification) &&
+    actionContext.financeAssigneeAdminId &&
+    notificationFinanceReviewDisplay(notification)?.ownerId !== actionContext.financeAssigneeAdminId
+  ) {
+    actions.push({
+      description: 'Take ownership through the existing audited Bank Reconciliation assignment workflow.',
+      href: assignFinanceReviewConfirmHref(
+        notification.id,
+        actionContext.financeAssigneeAdminId,
+        actionContext,
+      ),
+      kind: 'link',
+      label: 'Assign to me',
+      tone: 'warning',
+    });
+  }
+
+  if (
+    isFinanceOverdueNotification(notification) &&
+    !isResolvedFinanceOverdueNotification(notification) &&
+    (actionContext.financeAssigneeOptions?.some((option) => (
+      option.value && option.value !== notificationFinanceReviewDisplay(notification)?.ownerId
+    )) ?? false)
+  ) {
+    actions.push({
+      description: 'Assign or reassign this review to another eligible Finance operator with an audited reason.',
+      href: assignFinanceReviewConfirmHref(notification.id, undefined, actionContext),
+      kind: 'link',
+      label: notificationFinanceReviewDisplay(notification)?.ownerId ? 'Reassign owner' : 'Assign owner',
+      tone: 'warning',
+    });
+  }
+
+  if (isLegacySystemNotificationReviewable(notification)) {
+    actions.push({
+      description: 'Record an audited manual review for this unlinked legacy system alert.',
+      href: legacyReviewNotificationConfirmHref(notification.id, actionContext),
+      kind: 'link',
+      label: 'Mark reviewed',
+      tone: 'warning',
+    });
+  }
+
   actions.push({
     description: 'Review send, retry, and device recovery audit events for this notification.',
     href: notificationAuditTrailHref(notification.id),
@@ -1142,15 +1666,40 @@ function notificationActionMenuItems(
     tone: 'neutral',
   });
 
-  actions.push({
-    description: deliveryHealth.retryActionDescription,
-    href: retryNotificationConfirmHref(notification.id, actionContext),
-    kind: 'link',
-    label: 'Retry',
-    tone: deliveryHealth.retryActionTone,
-  });
+  if (!notification.type.startsWith('admin.system.') && !isFinanceOverdueNotification(notification)) {
+    actions.push({
+      description: deliveryHealth.retryActionDescription,
+      href: retryNotificationConfirmHref(notification.id, actionContext),
+      kind: 'link',
+      label: 'Retry',
+      tone: deliveryHealth.retryActionTone,
+    });
+  }
 
   return actions;
+}
+
+function destinationPathname(destination: string) {
+  return destination.split(/[?#]/, 1)[0];
+}
+
+function safeAdminNotificationDestination(notification: AdminNotification) {
+  const destination = readString(asRecord(notification.data)?.destination)?.trim();
+  if (!destination || !destination.startsWith('/') || destination.startsWith('//')) return null;
+  if (
+    destination.includes('\\') ||
+    Array.from(destination).some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  ) return null;
+  try {
+    const parsed = new URL(destination, 'http://hands-admin.local');
+    if (parsed.origin !== 'http://hands-admin.local') return null;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
 }
 
 function notificationAuditTrailHref(notificationId: string) {
@@ -1163,6 +1712,15 @@ function notificationUserLabel(notification: AdminNotification) {
 }
 
 function typeMeaning(type: string) {
+  if (FINANCE_OVERDUE_TYPE_SET.has(type)) {
+    return 'Overdue Finance reconciliation review';
+  }
+  if (type.startsWith('admin.system.background_job')) {
+    return 'Background job incident alert';
+  }
+  if (type.startsWith('admin.system.')) {
+    return 'Admin system incident alert';
+  }
   if (type.includes('no_show')) {
     return 'No-show support review alert';
   }
@@ -1186,6 +1744,22 @@ function typeMeaning(type: string) {
 
 function notificationDataHint(notification: AdminNotification) {
   const data = asRecord(notification.data);
+  if (isFinanceOverdueNotification(notification)) {
+    const bankTransactionId = readString(data?.bankTransactionId);
+    const batchImportId = readString(data?.batchImportId);
+    if (bankTransactionId) return `bank transaction ${shortId(bankTransactionId)}`;
+    if (batchImportId) return `bank import ${shortId(batchImportId)}`;
+  }
+  if (notification.type.startsWith('admin.system.background_job')) {
+    const queueName = readString(data?.queueName);
+    const jobId = readString(data?.jobId);
+    const parts = [];
+    if (queueName) parts.push(`queue ${queueName}`);
+    if (jobId) parts.push(`job ${shortBackgroundJobId(jobId)}`);
+    const notificationCount = positiveInteger(data?.systemIncidentNotificationCount);
+    if (notificationCount > 1) parts.push(`${notificationCount} recipient alerts`);
+    if (parts.length > 0) return parts.join(' / ');
+  }
   if (isPartnerAlertType(notification.type) || data?.bookingId) {
     const parts = [];
     if (data?.bookingId) {
@@ -1231,6 +1805,15 @@ function notificationDataHint(notification: AdminNotification) {
   return parts.length ? `Missing: ${parts.join(' / ')}` : 'Payout setup appears complete.';
 }
 
+function shortBackgroundJobId(jobId: string) {
+  return jobId.length > 28 ? `...${jobId.slice(-24)}` : jobId;
+}
+
+function positiveInteger(value: unknown) {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
 function formatMeters(value: unknown) {
   const amount = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(amount)) {
@@ -1258,17 +1841,17 @@ function notificationBookingId(notification: AdminNotification) {
   return readString(data?.bookingId) ?? '';
 }
 
-function opsHint(notification: AdminNotification, deliveryHealth = notificationDeliveryHealth(notification)) {
-  const baseHint = opsHintBase(notification, deliveryHealth);
+function opsHint(
+  notification: AdminNotification,
+  operationalHealth: NotificationOperationalHealth = notificationDeliveryHealth(notification),
+) {
+  const baseHint = opsHintBase(operationalHealth);
   const latestAttemptLabel = latestDeliveryAttemptLabel(notification);
   return latestAttemptLabel ? `${baseHint} Latest attempt ${latestAttemptLabel}.` : baseHint;
 }
 
-function opsHintBase(
-  notification: AdminNotification,
-  deliveryHealth = notificationDeliveryHealth(notification),
-) {
-  return deliveryHealth.hint;
+function opsHintBase(operationalHealth: NotificationOperationalHealth) {
+  return operationalHealth.hint;
 }
 
 function latestDeliveryAttemptLabel(notification: AdminNotification) {
@@ -1278,6 +1861,21 @@ function latestDeliveryAttemptLabel(notification: AdminNotification) {
 
 function isPartnerAlertType(type: string) {
   return PARTNER_ALERT_TYPE_SET.has(type);
+}
+
+function isFinanceOverdueNotification(notification: AdminNotification) {
+  return FINANCE_OVERDUE_TYPE_SET.has(notification.type);
+}
+
+function isOpenFinanceOverdueNotification(notification: AdminNotification) {
+  return isFinanceOverdueNotification(notification) && !isResolvedFinanceOverdueNotification(notification);
+}
+
+function isResolvedFinanceOverdueNotification(notification: AdminNotification) {
+  return (
+    isFinanceOverdueNotification(notification) &&
+    readString(asRecord(notification.data)?.financeReviewStatus) === 'RESOLVED'
+  );
 }
 
 function isDeferredPaymentNotification(notification: AdminNotification) {

@@ -1,10 +1,16 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import {
+  AdminFinanceOperatorEvidence,
+  adminWithdrawalOperatorEvidenceLines,
+} from '../../../components/admin-finance-operator-evidence';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
+import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
   AdminFormInput,
+  AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminWithdrawalAccountingPreview } from '../../../components/admin-withdrawal-accounting-preview';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -12,6 +18,7 @@ import { MoneyText } from '../../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass, type StatusBadgeTone } from '../../../components/status-badge';
 import type { AdminProviderWalletWithdrawalRequest } from '../../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../../lib/provider-wallet-withdrawal-status-change';
+import type { FinanceApproverOption } from '../../finance-tax/finance-approver-options';
 import { shortRecordId } from './partner-detail-format';
 import {
   PartnerDetailVuexyTablePanel,
@@ -22,6 +29,7 @@ import {
 type FormAction = (formData: FormData) => void | Promise<void>;
 
 type PartnerDetailWalletWithdrawalRequestSectionProps = {
+  readonly financeApproverOptions?: readonly FinanceApproverOption[];
   readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
   readonly updateWithdrawalRequestAction: FormAction;
 };
@@ -29,6 +37,7 @@ type PartnerDetailWalletWithdrawalRequestSectionProps = {
 const headers = ['Request', 'Amount', 'Bank account', 'Status', 'Finance action'] as const;
 
 export function PartnerDetailWalletWithdrawalRequestSection({
+  financeApproverOptions = [],
   requests,
   updateWithdrawalRequestAction,
 }: PartnerDetailWalletWithdrawalRequestSectionProps) {
@@ -73,12 +82,14 @@ export function PartnerDetailWalletWithdrawalRequestSection({
                 <StatusBadgeFromPillClass pillClass={statusPillClass(request.status)}>
                   {statusLabel(request.status)}
                 </StatusBadgeFromPillClass>
+                <AdminFinanceOperatorEvidence lines={adminWithdrawalOperatorEvidenceLines(request)} />
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
               </td>
               <td>
                 <WithdrawalRequestActions
+                  financeApproverOptions={financeApproverOptions}
                   request={request}
                   updateWithdrawalRequestAction={updateWithdrawalRequestAction}
                 />
@@ -93,9 +104,11 @@ export function PartnerDetailWalletWithdrawalRequestSection({
 }
 
 function WithdrawalRequestActions({
+  financeApproverOptions,
   request,
   updateWithdrawalRequestAction,
 }: {
+  readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly request: AdminProviderWalletWithdrawalRequest;
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
@@ -195,7 +208,23 @@ function WithdrawalRequestActions({
             required
             type="url"
           />
-          <AdminFormControlButton className="button-sm button-success" type="submit">
+          <AdminFormSelect
+            disabled={financeApproverOptions.length === 0}
+            label={`Separate Finance approver for withdrawal ${request.id}`}
+            name="approvalAdminId"
+            options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
+            required
+          />
+          {financeApproverOptions.length === 0 ? (
+            <AdminInlineNotice role="alert" tone="warning">
+              No other Finance approver is available. Paid closeout remains disabled.
+            </AdminInlineNotice>
+          ) : null}
+          <AdminFormControlButton
+            className="button-sm button-success"
+            disabled={financeApproverOptions.length === 0}
+            type="submit"
+          >
             Mark paid
           </AdminFormControlButton>
         </AdminInlineActionForm>

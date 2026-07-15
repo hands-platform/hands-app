@@ -7,11 +7,19 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormGrid,
+  AdminFormSearch,
+} from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
@@ -42,6 +50,12 @@ type FilesPageSearchParams = Promise<Record<string, string | string[] | undefine
 type FileReviewServerSummary = FileReviewSummary & {
   readonly generatedAt?: string;
   readonly totalProviders: number;
+};
+type FileFilterOption = {
+  readonly active?: boolean;
+  readonly href: string;
+  readonly label: string;
+  readonly value: string;
 };
 
 const FILE_REVIEW_HEADERS = ['File', 'Partner', 'Status', 'Upload', 'Evidence', 'Actions'] as const;
@@ -82,12 +96,48 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
       contentClassName="files-page"
       description="Central review board for Partner verification files and public profile media."
       metrics={[
-        { label: 'Total files', value: summary.total, helper: 'Partner file records loaded.' },
-        { label: 'Needs review', value: summary.pendingReview, helper: 'Files not approved yet.' },
-        { label: 'Public media', value: summary.publicMedia, helper: 'Profile and gallery assets.' },
-        { label: 'Private files', value: summary.privateFiles, helper: 'Verification evidence files.' },
-        { label: 'Rejected', value: summary.rejected, helper: 'Rejected media or files.' },
-        { label: 'Upload incomplete', value: summary.uploadIncomplete, helper: 'File rows still pending upload.' },
+        {
+          label: 'Total files',
+          value: summary.total,
+          helper: 'Partner file records loaded.',
+          kind: 'record',
+          scope: 'All records',
+        },
+        {
+          label: 'Needs review',
+          value: summary.pendingReview,
+          helper: 'Files not approved yet.',
+          kind: 'action',
+          scope: 'Pending',
+        },
+        {
+          label: 'Public media',
+          value: summary.publicMedia,
+          helper: 'Profile and gallery assets.',
+          kind: 'record',
+          scope: 'Review records',
+        },
+        {
+          label: 'Private files',
+          value: summary.privateFiles,
+          helper: 'Verification evidence files.',
+          kind: 'record',
+          scope: 'Evidence records',
+        },
+        {
+          label: 'Rejected',
+          value: summary.rejected,
+          helper: 'Rejected media or files.',
+          kind: 'record',
+          scope: 'Review history',
+        },
+        {
+          label: 'Upload incomplete',
+          value: summary.uploadIncomplete,
+          helper: 'File rows still pending upload.',
+          kind: 'risk',
+          scope: 'Needs action',
+        },
       ]}
       title="Files"
     >
@@ -106,15 +156,43 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         />
       ) : null}
 
-      <FilterBar
-        action="/files"
-        defaultQuery={filters.q}
-        options={fileFilterOptions(filters)}
-        placeholder="Search Partner, file key, purpose, status"
-        queryLabel="Search files"
-        resetHref="/files"
+      <AdminFilterPanel
+        className="files-review-filter-panel admin-mb-16"
         resultLabel={`${rows.length} visible / ${summary.total} file(s)`}
-      />
+        resultTone="info"
+        title="File review filters"
+      >
+        <AdminFormGrid action="/files" className="compact-form">
+          <AdminFormSearch
+            defaultValue={filters.q}
+            label="Search files"
+            name="q"
+            placeholder="Search Partner, file key, purpose, status"
+          />
+          <AdminFormControlButton type="submit">Search</AdminFormControlButton>
+          <AdminFormControlLink className="button-secondary" href="/files">
+            Clear
+          </AdminFormControlLink>
+        </AdminFormGrid>
+        <div className="booking-date-filter-bar files-filter-group admin-mt-12">
+          <span className="files-filter-group-label">Queue</span>
+          <AdminSegmentedControl
+            activeValue={activeFileFilterValue(filters)}
+            ariaLabel="File review filter shortcuts"
+            className="files-filter-buttons"
+            options={fileFilterOptions(filters).map((option) => ({
+              href: option.href,
+              label: option.label,
+              value: option.value,
+            }))}
+          />
+        </div>
+        <AdminFilterSummary
+          ariaLabel="Active file review filters"
+          labels={fileReviewActiveFilterLabels(filters, activePage)}
+          tone="info"
+        />
+      </AdminFilterPanel>
 
       <AdminTableSection
         description="Approve or reject public media here. Private verification files remain evidence for Partner review."
@@ -239,7 +317,7 @@ function fileReviewActions(row: FileReviewRow): readonly ActionMenuItem[] {
 
 function buildFileFilters(params: Record<string, string | string[] | undefined>): FileReviewFilters {
   return {
-    kind: readSearchParam(params.kind),
+    kind: readSearchParam(params.kind) || readSearchParam(params.purpose),
     q: readSearchParam(params.q),
     review: readSearchParam(params.review),
   };
@@ -281,14 +359,86 @@ function readFileReviewPage(value: string | string[] | undefined) {
   return Number.isFinite(page) && page > 0 ? page : 1;
 }
 
-function fileFilterOptions(filters: FileReviewFilters): FilterBarOption[] {
+function fileFilterOptions(filters: FileReviewFilters): FileFilterOption[] {
   return [
-    { active: !filters.kind && !filters.review, href: '/files', label: 'All files' },
-    { active: filters.review === 'needs-review', href: '/files?review=needs-review', label: 'Needs review', tone: 'warning' },
-    { active: filters.kind === 'public-media', href: '/files?kind=public-media', label: 'Public media', tone: 'info' },
-    { active: filters.kind === 'private-verification', href: '/files?kind=private-verification', label: 'Private files', tone: 'neutral' },
-    { active: filters.review === 'approved', href: '/files?review=approved', label: 'Approved', tone: 'success' },
-    { active: filters.review === 'rejected', href: '/files?review=rejected', label: 'Rejected', tone: 'danger' },
-    { active: filters.review === 'upload-incomplete', href: '/files?review=upload-incomplete', label: 'Upload incomplete', tone: 'warning' },
+    {
+      active: !filters.kind && !filters.review,
+      href: fileFilterHref(filters, {}),
+      label: 'All files',
+      value: 'all',
+    },
+    {
+      active: filters.review === 'needs-review',
+      href: fileFilterHref(filters, { review: 'needs-review' }),
+      label: 'Needs review',
+      value: 'needs-review',
+    },
+    {
+      active: filters.kind === 'public-media',
+      href: fileFilterHref(filters, { kind: 'public-media' }),
+      label: 'Public media',
+      value: 'public-media',
+    },
+    {
+      active: filters.kind === 'private-verification',
+      href: fileFilterHref(filters, { kind: 'private-verification' }),
+      label: 'Private files',
+      value: 'private-verification',
+    },
+    {
+      active: filters.review === 'approved',
+      href: fileFilterHref(filters, { review: 'approved' }),
+      label: 'Approved',
+      value: 'approved',
+    },
+    {
+      active: filters.review === 'rejected',
+      href: fileFilterHref(filters, { review: 'rejected' }),
+      label: 'Rejected',
+      value: 'rejected',
+    },
+    {
+      active: filters.review === 'upload-incomplete',
+      href: fileFilterHref(filters, { review: 'upload-incomplete' }),
+      label: 'Upload incomplete',
+      value: 'upload-incomplete',
+    },
   ];
+}
+
+function activeFileFilterValue(filters: FileReviewFilters) {
+  return fileFilterOptions(filters).find((option) => option.active)?.value ?? 'all';
+}
+
+function fileReviewActiveFilterLabels(filters: FileReviewFilters, page: number) {
+  const activeOption = fileFilterOptions(filters).find((option) => option.active);
+  const labels = [
+    `Queue: ${activeOption?.label ?? 'All files'}`,
+    `Page: ${page}`,
+    `Rows: ${FILE_REVIEW_PROVIDER_PAGE_SIZE}`,
+  ];
+
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+
+  return labels;
+}
+
+function fileFilterHref(
+  filters: FileReviewFilters,
+  nextFilter: Partial<Pick<FileReviewFilters, 'kind' | 'review'>>,
+) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (nextFilter.kind) {
+    params.set('kind', nextFilter.kind);
+  }
+  if (nextFilter.review) {
+    params.set('review', nextFilter.review);
+  }
+  const query = params.toString();
+  return query ? `/files?${query}` : '/files';
 }

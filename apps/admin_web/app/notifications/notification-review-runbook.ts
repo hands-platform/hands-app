@@ -5,6 +5,27 @@ export type NotificationReviewRunbook = {
 };
 
 const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunbook>> = {
+  'finance-overdue': {
+    detail:
+      'These Finance records remained unresolved for more than 48 hours after import or operator assignment. Notification retry does not resolve the accounting evidence gap.',
+    primaryAction:
+      'Open the linked bank reconciliation record, resolve or reassign its review, then confirm the retained escalation audit trail.',
+    title: 'Finance review SLA',
+  },
+  'finance-overdue-history': {
+    detail:
+      'These Finance SLA alerts were resolved after their linked bank records left the open reconciliation queue.',
+    primaryAction:
+      'Use the linked Finance record and audit trail to verify when the overdue review was resolved; no delivery retry is required.',
+    title: 'Finance SLA history',
+  },
+  'system-incidents': {
+    detail:
+      'These alerts come from Admin system monitors. Review the linked incident before retrying notification delivery, because resend does not resolve the source failure.',
+    primaryAction:
+      'Open the incident, confirm whether the source job is still failing, then use its recovery evidence and audit trail to close the operational issue.',
+    title: 'System incident gate',
+  },
   'disabled-device': {
     detail:
       'A push device on this queue is disabled. Recovery should come from a fresh app token, not from blindly reusing the old token.',

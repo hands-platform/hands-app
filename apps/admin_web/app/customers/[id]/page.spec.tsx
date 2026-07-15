@@ -59,7 +59,11 @@ describe('CustomerDetailPage', () => {
     expect(markup).toContain('id="customer-record-archive-summary"');
     expect(markup).not.toContain('id="customer-booking-create-gates"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-operator-command-queue"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="record-date-filter"');
+    expect(markup).toContain('class="card admin-filter-panel customer-record-date-filter-panel admin-mb-16 admin-section" id="record-date-filter"');
+    expect(markup).toContain('Active customer record filters');
+    expect(markup).toContain('Range: All loaded records');
+    expect(markup).toContain('Type: All event types');
+    expect(markup).toContain('Sort: Newest first');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-evidence"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-operations"');
     expect(markup).not.toContain('<button type="submit">Add address note</button>');

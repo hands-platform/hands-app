@@ -11,7 +11,11 @@ import {
 } from './notification-delivery-response';
 import { notificationReviewRunbook } from './notification-review-runbook';
 
-export type NotificationConfirmationAction = 'enable-device' | 'retry';
+export type NotificationConfirmationAction =
+  | 'assign-finance-review'
+  | 'enable-device'
+  | 'retry'
+  | 'review-legacy';
 
 export type NotificationActionConfirmation = {
   readonly action: NotificationConfirmationAction;
@@ -20,10 +24,25 @@ export type NotificationActionConfirmation = {
   readonly description: string;
   readonly hiddenInputs: readonly { readonly name: string; readonly value: string }[];
   readonly id: string;
+  readonly selectInputs?: readonly {
+    readonly defaultValue?: string;
+    readonly label: string;
+    readonly name: string;
+    readonly options: readonly { readonly label: string; readonly value: string }[];
+    readonly required?: boolean;
+  }[];
   readonly supportingLinks?: readonly {
     readonly description?: string;
     readonly href: string;
     readonly label: string;
+  }[];
+  readonly textInputs?: readonly {
+    readonly label: string;
+    readonly maxLength?: number;
+    readonly minLength?: number;
+    readonly name: string;
+    readonly placeholder?: string;
+    readonly required?: boolean;
   }[];
   readonly title: string;
   readonly tone: StatusBadgeTone;
@@ -31,10 +50,18 @@ export type NotificationActionConfirmation = {
 
 export type NotificationActionReturnContext = {
   readonly booking?: string;
+  readonly financeAge?: string;
+  readonly financeAssigneeAdminId?: string;
+  readonly financeAssigneeOptions?: readonly { readonly label: string; readonly value: string }[];
+  readonly financeOwner?: string;
+  readonly incidentState?: string;
+  readonly range?: string;
   readonly review?: string;
+  readonly user?: string;
 };
 
 type NotificationConfirmationValues = NotificationActionReturnContext & {
+  readonly assigneeAdminId?: string;
   readonly notificationId: string;
   readonly pushDeviceId: string;
 };
@@ -47,6 +74,12 @@ type RetryConfirmationCopy = {
 };
 
 const FCM_SETUP_REVIEW_KEYS = new Set(['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device']);
+const BACKGROUND_JOB_EVIDENCE_QUEUES = new Set([
+  'bank-statement-escalation',
+  'booking-timeouts',
+  'notification-retry',
+  'payment-status-check',
+]);
 
 const FCM_SETUP_SUPPORTING_LINK = {
   description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
@@ -76,8 +109,52 @@ export function enablePushDeviceConfirmHref(
   ]);
 }
 
+export function legacyReviewNotificationConfirmHref(
+  notificationId: string,
+  context: NotificationActionReturnContext = {},
+) {
+  return notificationHref([
+    ...notificationReturnQueryEntries(context),
+    ['confirm', 'review-legacy'],
+    ['notificationId', notificationId],
+  ]);
+}
+
+export function assignFinanceReviewConfirmHref(
+  notificationId: string,
+  assigneeAdminId: string | undefined,
+  context: NotificationActionReturnContext = {},
+) {
+  return notificationHref([
+    ...notificationReturnQueryEntries(context),
+    ['confirm', 'assign-finance-review'],
+    ['notificationId', notificationId],
+    ['assigneeAdminId', assigneeAdminId],
+  ]);
+}
+
+export function notificationBackgroundJobEvidenceHref(notification: AdminNotification) {
+  if (!notification.type.startsWith('admin.system.background_job')) return null;
+  const data = notificationDataRecord(notification.data);
+  const queue = notificationDataString(data.queueName);
+  const jobId = notificationDataString(data.jobId);
+  if (!queue || !BACKGROUND_JOB_EVIDENCE_QUEUES.has(queue) || !jobId || jobId.length > 300) return null;
+  const query = new URLSearchParams({
+    jobId,
+    queue,
+    range: 'ALL',
+    review: 'ALL',
+  });
+  return `/background-jobs?${query.toString()}`;
+}
+
 export function readNotificationConfirmationAction(value: string): NotificationConfirmationAction | null {
-  if (value === 'enable-device' || value === 'retry') {
+  if (
+    value === 'assign-finance-review' ||
+    value === 'enable-device' ||
+    value === 'retry' ||
+    value === 'review-legacy'
+  ) {
     return value;
   }
   return null;
@@ -96,7 +173,134 @@ export function buildNotificationActionConfirmation(
     return buildRetryConfirmation(notifications, values);
   }
 
+  if (action === 'assign-finance-review') {
+    return buildFinanceReviewAssignmentConfirmation(notifications, values);
+  }
+
+  if (action === 'review-legacy') {
+    return buildLegacyReviewConfirmation(notifications, values);
+  }
+
   return buildEnableDeviceConfirmation(notifications, values);
+}
+
+function buildFinanceReviewAssignmentConfirmation(
+  notifications: readonly AdminNotification[],
+  values: NotificationConfirmationValues,
+): NotificationActionConfirmation | null {
+  const notification = notifications.find((item) => item.id === values.notificationId);
+  const source = notification ? financeReviewAssignmentSource(notification) : null;
+  if (!notification || !source) return null;
+  const data = notificationDataRecord(notification.data);
+  if (notificationDataString(data.financeReviewStatus) === 'RESOLVED') return null;
+  const currentOwner = notificationDataRecord(data.financeReviewOwner);
+  const currentOwnerId = notificationDataString(currentOwner.id);
+  if (currentOwnerId === values.assigneeAdminId) return null;
+  const selectableOwners = (values.financeAssigneeOptions ?? []).filter(
+    (option) => option.value && option.value !== currentOwnerId,
+  );
+  if (!values.assigneeAdminId && selectableOwners.length === 0) return null;
+  const returnHref = notificationReturnHref(values);
+  const destination = notificationDataString(data.destination);
+
+  return {
+    action: 'assign-finance-review',
+    cancelHref: returnHref,
+    confirmLabel: values.assigneeAdminId
+      ? currentOwnerId ? 'Reassign to me' : 'Assign to me'
+      : currentOwnerId ? 'Reassign owner' : 'Assign owner',
+    description: currentOwnerId
+      ? 'Transfer this overdue Finance review to another eligible operator. The original SLA start and prior assignment remain in the audit trail.'
+      : 'Assign this overdue Finance review to an eligible operator. The original SLA start remains unchanged.',
+    hiddenInputs: [
+      ...(values.assigneeAdminId ? [{ name: 'assigneeAdminId', value: values.assigneeAdminId }] : []),
+      { name: 'assignmentSourceId', value: source.id },
+      { name: 'assignmentSourceKind', value: source.kind },
+      { name: 'notificationId', value: notification.id },
+      { name: 'returnHref', value: returnHref },
+    ],
+    id: notification.id,
+    selectInputs: values.assigneeAdminId ? undefined : [{
+      defaultValue: selectableOwners[0]?.value,
+      label: 'Review owner',
+      name: 'assigneeAdminId',
+      options: selectableOwners,
+      required: true,
+    }],
+    supportingLinks: [
+      ...(destination?.startsWith('/finance-tax/bank-reconciliation')
+        ? [{
+            description: 'Open the source record before taking ownership if additional evidence is needed.',
+            href: destination,
+            label: 'Finance review',
+          }]
+        : []),
+      {
+        description: 'Review retained assignment and escalation evidence.',
+        href: financeReviewAuditTrailHref(source.id),
+        label: 'Audit trail',
+      },
+    ],
+    textInputs: [{
+      label: 'Assignment reason',
+      maxLength: 500,
+      minLength: 12,
+      name: 'reason',
+      placeholder: 'Why are you taking ownership of this Finance review?',
+      required: true,
+    }],
+    title: `${currentOwnerId ? 'Reassign' : 'Assign'} Finance review ${shortId(notification.id)}?`,
+    tone: 'warning',
+  };
+}
+
+function buildLegacyReviewConfirmation(
+  notifications: readonly AdminNotification[],
+  values: NotificationConfirmationValues,
+): NotificationActionConfirmation | null {
+  const notification = notifications.find((item) => item.id === values.notificationId);
+  if (!notification || !isLegacySystemNotificationReviewable(notification)) return null;
+  const returnHref = notificationReturnHref(values);
+  const jobEvidenceHref = notificationBackgroundJobEvidenceHref(notification);
+
+  return {
+    action: 'review-legacy',
+    cancelHref: returnHref,
+    confirmLabel: 'Mark reviewed',
+    description:
+      'Record that this unlinked legacy alert was manually reviewed. This does not mark a source incident recovered and does not retry notification delivery.',
+    hiddenInputs: [
+      { name: 'notificationId', value: notification.id },
+      { name: 'returnHref', value: returnHref },
+    ],
+    id: notification.id,
+    supportingLinks: [
+      {
+        description: 'Review existing notification audit evidence before completing the record.',
+        href: notificationAuditTrailHref(notification.id),
+        label: 'Audit trail',
+      },
+      {
+        description: jobEvidenceHref
+          ? 'Open the exact retained background job recorded by this legacy alert.'
+          : 'Check current background-job failures before closing an old unlinked alert.',
+        href: jobEvidenceHref ?? '/background-jobs?review=OPEN&range=ALL',
+        label: jobEvidenceHref ? 'Job evidence' : 'Background Jobs',
+      },
+    ],
+    textInputs: [
+      {
+        label: 'Review evidence',
+        maxLength: 500,
+        minLength: 12,
+        name: 'reason',
+        placeholder: 'What evidence was checked and why can this legacy alert be closed?',
+        required: true,
+      },
+    ],
+    title: `Mark legacy alert ${shortId(notification.id)} reviewed?`,
+    tone: 'warning',
+  };
 }
 
 export function filterNotificationActionConfirmationSupportingLinks(
@@ -265,9 +469,44 @@ function notificationReturnHref(context: NotificationActionReturnContext) {
 
 function notificationReturnQueryEntries(context: NotificationActionReturnContext) {
   return [
+    ['range', context.range],
     ['review', context.review],
+    ['financeAge', context.financeAge],
+    ['financeOwner', context.financeOwner],
+    ['incidentState', context.incidentState],
     ['booking', context.booking],
+    ['user', context.user],
   ] as const;
+}
+
+function financeReviewAssignmentSource(notification: AdminNotification) {
+  if (
+    notification.type !== 'admin.finance.bank_statement_batch.escalated' &&
+    notification.type !== 'admin.finance.bank_transaction.review_escalated'
+  ) {
+    return null;
+  }
+  const data = notificationDataRecord(notification.data);
+  const bankTransactionId = notificationDataString(data.bankTransactionId);
+  if (bankTransactionId) return { id: bankTransactionId, kind: 'bank-transaction' } as const;
+  const batchImportId = notificationDataString(data.batchImportId);
+  return batchImportId ? { id: batchImportId, kind: 'import-batch' } as const : null;
+}
+
+export function isLegacySystemNotificationReviewable(notification: AdminNotification) {
+  if (!notification.type.startsWith('admin.system.')) return false;
+  const data = notificationDataRecord(notification.data);
+  return !notificationDataString(data.incidentId) && !notificationDataString(data.incidentStatus);
+}
+
+function notificationDataRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function notificationDataString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function notificationHref(entries: readonly (readonly [string, string | undefined])[]) {
@@ -280,6 +519,10 @@ function notificationHref(entries: readonly (readonly [string, string | undefine
 
 function notificationAuditTrailHref(notificationId: string) {
   return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
+}
+
+function financeReviewAuditTrailHref(sourceId: string) {
+  return `/audit-log?q=${encodeURIComponent(sourceId)}&range=all`;
 }
 
 function notificationRetryDeviceSupportingLinks(latestDelivery: NotificationDelivery | undefined) {

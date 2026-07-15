@@ -308,14 +308,14 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('State');
     expect(rendered).not.toContain('Actions');
     expect(rendered).not.toContain('Status');
-    expect(rendered).toContain('Realtime Bookings');
+    expect(rendered).toContain('Live / Today Bookings');
     expect(rendered).toContain(
-      'Live requests from booking submission through matching wait before final Partner assignment.',
+      'Current requests from booking submission through matching wait before final Partner assignment.',
     );
-    expect(rendered).toContain('Post-match / In Progress');
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Post-match Cancellations / Needs Review');
-    expect(rendered).toContain('Post-match Cancellations / Resolved');
+    expect(rendered).toContain('Live In Progress');
+    expect(rendered).toContain('Closeout Records');
+    expect(rendered).toContain('Cancellation Review / Needs Action');
+    expect(rendered).toContain('Cancellation Records / Resolved');
     expect(rendered).toContain('No post-match bookings are in progress.');
     expect(rendered).toContain('No completed bookings in this result set.');
     expect(rendered).toContain('No pending post-match cancellation reviews in this result set.');
@@ -377,11 +377,11 @@ describe('BookingMonitorListSection', () => {
     const rendered = normalizedText(renderToStaticMarkup(section));
 
     expect(rendered).toContain('No bookings match filters.');
-    expect(rendered).toContain('Realtime Bookings');
-    expect(rendered).toContain('Post-match / In Progress');
-    expect(rendered).toContain('Completed');
-    expect(rendered).toContain('Post-match Cancellations / Needs Review');
-    expect(rendered).toContain('Post-match Cancellations / Resolved');
+    expect(rendered).toContain('Live / Today Bookings');
+    expect(rendered).toContain('Live In Progress');
+    expect(rendered).toContain('Closeout Records');
+    expect(rendered).toContain('Cancellation Review / Needs Action');
+    expect(rendered).toContain('Cancellation Records / Resolved');
   });
 
   it('limits visible booking table groups for route-specific workspaces', () => {
@@ -426,16 +426,16 @@ describe('BookingMonitorListSection', () => {
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Realtime Bookings');
-    expect(rendered).toContain('Post-match / In Progress');
+    expect(rendered).toContain('Live / Today Bookings');
+    expect(rendered).toContain('Live In Progress');
     expect(rendered).toContain('Waiting Customer');
     expect(rendered).toContain('Working Customer');
     expect(markup).not.toContain('id="booking-table-completed-title"');
     expect(markup).not.toContain('id="booking-table-post-match-cancellations-pending-title"');
     expect(markup).not.toContain('id="booking-table-post-match-cancellations-resolved-title"');
-    expect(markup).not.toContain('>Completed</h2>');
-    expect(markup).not.toContain('>Post-match Cancellations / Needs Review</h2>');
-    expect(markup).not.toContain('>Post-match Cancellations / Resolved</h2>');
+    expect(markup).not.toContain('>Closeout Records</h2>');
+    expect(markup).not.toContain('>Cancellation Review / Needs Action</h2>');
+    expect(markup).not.toContain('>Cancellation Records / Resolved</h2>');
     expect(rendered).not.toContain('Completed Customer');
     expect(rendered).not.toContain('Cancelled Customer');
     expect(
@@ -530,7 +530,7 @@ describe('BookingMonitorListSection', () => {
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Post-match Cancellations / Needs Review');
+    expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('Closed 13 Jun 2026, 03:20');
     expect(rendered).toContain('Admin confirmed');
     expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
@@ -543,10 +543,10 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
     expect(markup.indexOf('Cancel Customer')).toBeGreaterThan(
-      markup.indexOf('Post-match Cancellations / Needs Review'),
+      markup.indexOf('Cancellation Review / Needs Action'),
     );
     expect(markup.indexOf('Cancel Customer')).toBeLessThan(
-      markup.indexOf('Post-match Cancellations / Resolved'),
+      markup.indexOf('Cancellation Records / Resolved'),
     );
   });
 
@@ -599,7 +599,7 @@ describe('BookingMonitorListSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Manual Review Customer');
-    expect(rendered).toContain('Post-match Cancellations / Needs Review');
+    expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('Manual review');
     expect(rendered).toContain('Partner cancellation after 15m; confirm chat before closing.');
     expect(rendered).toContain('Missing chat');
@@ -625,10 +625,10 @@ describe('BookingMonitorListSection', () => {
     expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
     expect(markup.indexOf('Manual Review Customer')).toBeGreaterThan(
-      markup.indexOf('Post-match Cancellations / Needs Review'),
+      markup.indexOf('Cancellation Review / Needs Action'),
     );
     expect(markup.indexOf('Manual Review Customer')).toBeLessThan(
-      markup.indexOf('Post-match Cancellations / Resolved'),
+      markup.indexOf('Cancellation Records / Resolved'),
     );
   });
 
@@ -717,12 +717,12 @@ describe('BookingMonitorListSection', () => {
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Post-match Cancellations / Resolved');
+    expect(rendered).toContain('Cancellation Records / Resolved');
     expect(rendered).not.toContain('Admin review required');
     expect(markup).not.toContain('vuexy-booking-actions-cell');
     expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
     expect(markup.indexOf('Auto Customer')).toBeGreaterThan(
-      markup.indexOf('Post-match Cancellations / Resolved'),
+      markup.indexOf('Cancellation Records / Resolved'),
     );
   });
 
@@ -749,7 +749,7 @@ describe('BookingMonitorListSection', () => {
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Post-match Cancellations / Needs Review');
+    expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('No Show Customer');
     expect(rendered).toContain('No-show marked at');
     expect(rendered).toContain('No-show');

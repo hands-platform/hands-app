@@ -5,6 +5,7 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -14,6 +15,7 @@ import {
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -30,6 +32,7 @@ import type {
 } from '../../lib/admin-api';
 import { readSearchParam } from '../../lib/date-range';
 import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
+import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 import {
   approveReferralRewardCashout,
   markReferralRewardCashoutPaid,
@@ -49,6 +52,7 @@ export type ReferralCashoutFilters = {
 type ReferralCashoutQueuePageProps = {
   readonly currentPage: number;
   readonly filters: ReferralCashoutFilters;
+  readonly financeApproverOptions?: readonly FinanceApproverOption[];
   readonly rows: readonly AdminReferralCashoutQueueRow[];
   readonly summary: AdminReferralCashoutQueueSummary;
 };
@@ -57,6 +61,7 @@ type ReferralCashoutAction = {
   readonly action: (formData: FormData) => Promise<void>;
   readonly formNoValidate?: boolean;
   readonly label: string;
+  readonly requiresApproval?: boolean;
 };
 
 const referralCashoutPageSize = 10;
@@ -86,6 +91,7 @@ const emptyReferralCashoutSummary: AdminReferralCashoutQueueSummary = {
 export function ReferralCashoutQueuePage({
   currentPage,
   filters,
+  financeApproverOptions = [],
   rows,
   summary,
 }: ReferralCashoutQueuePageProps) {
@@ -93,6 +99,7 @@ export function ReferralCashoutQueuePage({
   const activePage = Math.min(Math.max(1, currentPage), totalPages);
   const startItem = rows.length === 0 ? 0 : (activePage - 1) * referralCashoutPageSize + 1;
   const endItem = rows.length === 0 ? 0 : startItem + rows.length - 1;
+  const statusSummaryOptions = referralCashoutStatusSummaryOptions(summary);
   const metrics: AdminPageMetric[] = [
     {
       label: 'Cashout rows',
@@ -102,7 +109,7 @@ export function ReferralCashoutQueuePage({
     {
       label: 'Cashout exposure',
       value: <MoneyText amount={summary.totalAmount} fallback="0 VND" />,
-      helper: 'Total amount in the current cashout filter.',
+      helper: 'Total amount in the active cashout filter.',
     },
     {
       label: 'Needs action',
@@ -123,7 +130,7 @@ export function ReferralCashoutQueuePage({
       }
     >
       <AdminFilterPanel
-        className="booking-monitor-filter-panel admin-mt-16"
+        className="referral-cashout-filter-panel admin-mt-16"
         resultLabel={`${summary.totalCount} cashout(s)`}
         resultTone="info"
         title="Referral cashout filters"
@@ -164,7 +171,7 @@ export function ReferralCashoutQueuePage({
           activeValue={filters.status}
           ariaLabel="Referral cashout queue summary"
           className="referral-reward-queue"
-          options={summary.statusSummaries.map((item) => ({
+          options={statusSummaryOptions.map((item) => ({
             href: buildReferralCashoutListHref(filters, { status: item.status }, 1),
             label: (
               <>
@@ -177,12 +184,17 @@ export function ReferralCashoutQueuePage({
             value: item.status,
           }))}
         />
+        <AdminFilterSummary
+          ariaLabel="Active referral cashout filters"
+          labels={referralCashoutActiveFilterLabels(filters)}
+          tone="info"
+        />
       </AdminFilterPanel>
 
       <AdminTableSection
         actions={<StatusBadge tone="neutral">{rows.length} shown</StatusBadge>}
         bodyClassName="booking-monitor"
-        className="booking-monitor-filter-panel admin-mt-16"
+        className="referral-cashout-table-panel admin-mt-16"
         description="Open only the parent detail when deeper attribution evidence is needed."
         title="Referral cashout queue"
       >
@@ -194,7 +206,11 @@ export function ReferralCashoutQueuePage({
               rowCount={rows.length}
             >
               {rows.map((row) => (
-                <ReferralCashoutTableRow key={row.id} row={row} />
+              <ReferralCashoutTableRow
+                financeApproverOptions={financeApproverOptions}
+                key={row.id}
+                row={row}
+              />
               ))}
             </AdminDataTable>
           </AdminTableScroll>
@@ -212,7 +228,13 @@ export function ReferralCashoutQueuePage({
   );
 }
 
-function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
+function ReferralCashoutTableRow({
+  financeApproverOptions,
+  row,
+}: {
+  readonly financeApproverOptions: readonly FinanceApproverOption[];
+  readonly row: AdminReferralCashoutQueueRow;
+}) {
   const creditState = referralRewardCreditState(row);
 
   return (
@@ -268,7 +290,7 @@ function ReferralCashoutTableRow({ row }: { readonly row: AdminReferralCashoutQu
         )}
       </td>
       <td>
-        <ReferralCashoutActions row={row} />
+        <ReferralCashoutActions financeApproverOptions={financeApproverOptions} row={row} />
       </td>
     </tr>
   );
@@ -322,12 +344,19 @@ function referralCashoutPayoutProfileTone(status: AdminReferralCashoutPayoutProf
   return 'warning';
 }
 
-function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQueueRow }) {
+function ReferralCashoutActions({
+  financeApproverOptions,
+  row,
+}: {
+  readonly financeApproverOptions: readonly FinanceApproverOption[];
+  readonly row: AdminReferralCashoutQueueRow;
+}) {
   const actions = referralCashoutActionsForRow(row);
   if (actions.length === 0) {
     return <span className="muted">Closed</span>;
   }
   const bankAccountId = referralCashoutBankCorrectionAccountId(row);
+  const paidApprovalUnavailable = row.status === 'CASHOUT_APPROVED' && financeApproverOptions.length === 0;
 
   return (
     <ActionMenuDropdownSurface
@@ -354,14 +383,20 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
           <>
             <div className="referral-reward-action-reason">
               <span>Approving admin</span>
-              <AdminFormInput
+              <AdminFormSelect
                 className="referral-reward-action-reason-input"
-                label="Approving admin id"
+                disabled={paidApprovalUnavailable}
+                label="Separate Finance approver"
                 name="approvalAdminId"
-                placeholder="Different admin user id"
+                options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
                 required
               />
             </div>
+            {paidApprovalUnavailable ? (
+              <AdminInlineNotice role="alert" tone="warning">
+                No other Finance approver is available. Mark paid remains disabled.
+              </AdminInlineNotice>
+            ) : null}
             <div className="referral-reward-action-reason">
               <span>Transfer reference</span>
               <AdminFormInput
@@ -378,6 +413,7 @@ function ReferralCashoutActions({ row }: { readonly row: AdminReferralCashoutQue
           {actions.map((item) => (
             <AdminFormControlButton
               className="button-secondary admin-action-item admin-action-button"
+              disabled={item.requiresApproval && paidApprovalUnavailable}
               formAction={item.action}
               formNoValidate={item.formNoValidate}
               key={item.label}
@@ -414,8 +450,8 @@ function referralCashoutActionsForStatus(status: AdminReferralRewardStatus): Ref
   }
   if (status === 'CASHOUT_APPROVED') {
     return [
-      { action: markReferralRewardCashoutPaid, label: 'Mark paid' },
-      { action: requireReferralRewardTaxReview, label: 'Require tax review' },
+      { action: markReferralRewardCashoutPaid, label: 'Mark paid', requiresApproval: true },
+      { action: requireReferralRewardTaxReview, formNoValidate: true, label: 'Require tax review' },
     ];
   }
   return [];
@@ -495,6 +531,23 @@ function referralCashoutAudienceLabel(audience: AdminReferralAudience) {
   return audience === 'PARTNER' ? 'Partner' : 'Customer';
 }
 
+function referralCashoutAudienceFilterLabel(audience: ReferralCashoutAudienceFilter) {
+  if (audience === 'customer') return 'Customers';
+  if (audience === 'partner') return 'Partners';
+  return 'All audiences';
+}
+
+function referralCashoutActiveFilterLabels(filters: ReferralCashoutFilters) {
+  const labels = [
+    `Audience: ${referralCashoutAudienceFilterLabel(filters.audience)}`,
+    `State: ${referralCashoutStatusFilterLabel(filters.status)}`,
+  ];
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+  return labels;
+}
+
 function referralCashoutStatusFilterLabel(status: ReferralCashoutStatusFilter | AdminReferralCashoutQueueSummary['statusSummaries'][number]['status']) {
   if (status === 'requested') return 'Requested';
   if (status === 'approved') return 'Cashout approved';
@@ -502,6 +555,22 @@ function referralCashoutStatusFilterLabel(status: ReferralCashoutStatusFilter | 
   if (status === 'paid') return 'Paid';
   if (status === 'all') return 'All cashouts';
   return 'Needs action';
+}
+
+function referralCashoutStatusSummaryOptions(summary: AdminReferralCashoutQueueSummary) {
+  const needsActionItems = summary.statusSummaries.filter((item) => item.status !== 'paid');
+  const needsAction = {
+    amount: needsActionItems.reduce((total, item) => total + item.amount, 0),
+    count: needsActionItems.reduce((total, item) => total + item.count, 0),
+    status: 'needs-action' as const,
+  };
+  const all = {
+    amount: summary.totalAmount,
+    count: summary.totalCount,
+    status: 'all' as const,
+  };
+
+  return [needsAction, all, ...summary.statusSummaries];
 }
 
 function normalizeReferralCashoutAudienceFilter(value: string): ReferralCashoutAudienceFilter {

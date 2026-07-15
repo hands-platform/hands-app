@@ -54,7 +54,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
             <span>OK</span>
             <div>
               <AdminEmptyState
-                message="The current filtered list has no blocking partner operation items."
+                message="The active filters have no blocking partner operation items."
                 title="No partners need immediate attention"
               />
             </div>

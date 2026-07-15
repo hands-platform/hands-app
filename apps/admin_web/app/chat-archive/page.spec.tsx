@@ -63,6 +63,9 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('99');
     expect(markup).toContain('800 customer / 434 Partner');
+    expect(markup).toContain('<span class="metric-card-scope is-record">All loaded records</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-live">Current open</span>');
+    expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
     expect(markup).toContain('Chat window previews');
     expect(markup).toContain('2 shown / 42 total');
     expect(markup).toContain('admin-section');
@@ -109,10 +112,11 @@ describe('ChatArchivePage', () => {
     const page = await ChatArchivePage({ searchParams: Promise.resolve({ range: 'all' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('admin-form-input');
+    expect(markup).toContain('admin-form-search');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('calendar-datepicker-field');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled admin-directory-filter-search');
+    expect(markup).toContain('card admin-filter-panel chat-archive-filter-panel admin-mb-16 admin-section');
+    expect(markup).toContain('admin-form-search admin-directory-filter-search');
     expect(markup).toContain('admin-form-select admin-form-control-labeled admin-directory-filter-select');
     expect(markup).toContain(
       'react-datepicker-wrapper admin-form-control-fluid calendar-datepicker-field',
@@ -122,12 +126,44 @@ describe('ChatArchivePage', () => {
     );
     expect(markup).toContain('admin-form-control-button');
     expect(markup).toContain('admin-form-control-link');
+    expect(markup).toContain('admin-filter-summary');
+    expect(markup).toContain('Active chat evidence filters');
+    expect(markup).toContain('Date: All loaded records');
     expect(markup).not.toContain('calendar-field');
     expect(markup).not.toContain('<div class="calendar-field"><span>Search</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>Booking status</span>');
     expect(markup).not.toContain('<div class="calendar-field"><span>From</span>');
     expect(markup).not.toContain('<label>Search<input');
     expect(markup).not.toContain('<label>Booking status<select');
+  });
+
+  it('summarizes active chat evidence filters for operators', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/chat-archive')) {
+        return [chatArchiveBooking()];
+      }
+
+      if (href.startsWith('/admin/bookings')) {
+        return [];
+      }
+
+      return fallback;
+    });
+
+    const page = await ChatArchivePage({
+      searchParams: Promise.resolve({
+        q: 'booking-1',
+        range: 'all',
+        sender: 'partner',
+        status: 'completed',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Date: All loaded records');
+    expect(markup).toContain('Search: booking-1');
+    expect(markup).toContain('Status: Completed');
+    expect(markup).toContain('Sender: Partner messages');
   });
 
   it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {

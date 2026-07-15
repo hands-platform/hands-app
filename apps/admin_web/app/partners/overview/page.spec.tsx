@@ -44,15 +44,17 @@ describe('PartnerOverviewPage', () => {
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="partner-overview-page"');
     expect(markup).not.toContain('usage-overview-page');
-    expect(markup).toContain('card admin-section partner-overview-filter-panel');
+    expect(markup).toContain('card admin-filter-panel partner-overview-filter-panel admin-section');
     expect(markup).toContain('booking-date-filter-buttons partner-overview-range-buttons');
     expect(markup).not.toContain('usage-overview-filter-panel');
     expect(markup).not.toContain('usage-overview-range-buttons');
-    expect(markup).not.toContain('card admin-filter-panel partner-overview-filter-panel');
+    expect(markup).not.toContain('card admin-section partner-overview-filter-panel');
     expect(markup).not.toContain('class="admin-form-control"');
     expect(markup).toContain('class="admin-form-input admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-select admin-form-control-labeled"');
     expect(markup).toContain('class="admin-form-control-button button button-primary"');
+    expect(markup).toContain('class="metric-card-scope is-live"');
+    expect(markup).toContain('Live');
     expect(pageSource).toContain('AdminFormGrid');
     expect(pageSource).not.toContain('<form className="partner-overview-filter-grid"');
     expect(pageSource).not.toContain('<form action="/partners/overview" className="partner-overview-selection-sort-form">');
@@ -272,6 +274,31 @@ describe('PartnerOverviewPage', () => {
     expect(markup).not.toContain('aria-label="Partner activity and retention"><div class="card admin-card partner-overview-command-card');
   });
 
+  it('labels partner operating, priority, and segment cards by operating scope', async () => {
+    mockedAdminGet.mockResolvedValue(partnerOverviewFixture);
+
+    const page = await PartnerOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toMatch(
+      /partner-overview-operating-card[\s\S]*metric-card-scope is-live">Live[\s\S]*Ready now/,
+    );
+    expect(markup).toMatch(
+      /partner-overview-operating-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Inactive 7D/,
+    );
+    expect(markup).toMatch(
+      /partner-overview-priority-card[\s\S]*metric-card-scope is-action">Pending[\s\S]*Selection drop-off/,
+    );
+    expect(markup).toMatch(
+      /partner-overview-priority-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Quality risk/,
+    );
+    expect(markup).toMatch(
+      /partner-overview-command-card is-warning[\s\S]*metric-card-scope is-action">Pending[\s\S]*New Pending/,
+    );
+  });
+
   it('scopes partner KPI icon tones to direct MetricCard icon slots', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
@@ -293,7 +320,8 @@ describe('PartnerOverviewPage', () => {
   it('scopes operating status typography to direct command-card children', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
-    expect(css).toContain('.partner-overview-operating-card > div > span');
+    expect(css).toContain('.partner-overview-operating-card > div > span:not(.metric-card-scope)');
+    expect(css).toContain('.partner-overview-command-card > div > span:not(.metric-card-scope)');
     expect(css).toContain('.partner-overview-operating-card > div > strong');
     expect(css).toContain('.partner-overview-operating-card > div > small');
     expect(css).toContain('.partner-overview-operating-card > div > em');

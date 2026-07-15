@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
 import {
@@ -64,6 +65,17 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(source).not.toContain('className="text-link"');
   });
 
+  it('keeps partner evaluation filters on the shared filter surface without booking-monitor filter classes', () => {
+    const source = readFileSync(
+      new URL('./partner-customer-evaluations-section.tsx', import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('AdminFilterPanel');
+    expect(source).toContain('className="vuexy-review-filter-card admin-mb-16"');
+    expect(source).not.toContain('className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"');
+  });
+
   it('renders partner-written customer evaluations as a text-only review board', () => {
     const section = PartnerCustomerEvaluationsSection({
       filters: filters(),
@@ -94,6 +106,7 @@ describe('PartnerCustomerEvaluationsSection', () => {
         '/bookings/booking-1',
         '/customers/customer-1',
         '/partners/partner-1',
+        '/reviews/partner-customer-evaluations',
         '/reviews/partner-customer-evaluations?dateRange=today',
         '/reviews/partner-customer-evaluations?dateRange=yesterday',
         '/reviews/partner-customer-evaluations?dateRange=7d',
@@ -104,7 +117,7 @@ describe('PartnerCustomerEvaluationsSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
+        'card admin-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
         'table vuexy-data-table vuexy-booking-table admin-data-table vuexy-review-table vuexy-partner-evaluation-table',
       ]),
@@ -126,6 +139,21 @@ describe('PartnerCustomerEvaluationsSection', () => {
     expect(normalizedText(section)).toContain('Apply dates');
     expect(classNamesIn(section)).toContain(
       'admin-form-control-button button button-primary booking-date-apply-button',
+    );
+  });
+
+  it('keeps the all-dates evaluation filter visible and active after clearing date filters', () => {
+    const section = PartnerCustomerEvaluationsSection({
+      filters: filters({ dateRange: 'all' }),
+      pagination: pagination([buildRow()]),
+      rows: [buildRow()],
+      totalEvaluationCount: 1,
+    });
+    const markup = renderToStaticMarkup(section);
+
+    expect(normalizedText(section)).toContain('All dates');
+    expect(markup).toContain(
+      'aria-current="page" class="booking-date-filter-button is-active" href="/reviews/partner-customer-evaluations"',
     );
   });
 });

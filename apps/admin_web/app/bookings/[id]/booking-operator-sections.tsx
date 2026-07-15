@@ -13,6 +13,7 @@ import {
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../../components/status-badge';
 import { AdminBookingDetail } from '../../../lib/admin-api';
+import type { FinanceApproverOption } from '../../finance-tax/finance-approver-options';
 import {
   captureBookingPayment,
   refundBookingPayment,
@@ -95,6 +96,7 @@ export type BookingOpsCommandCenterProps = {
   actionEvidenceGate: ActionEvidenceGate;
   actionGateByAction: Map<string, PaymentActionReadout>;
   cashDebtNeedsSettlement: boolean;
+  financeApproverOptions?: readonly FinanceApproverOption[];
 };
 
 const OPERATOR_ACTION_AVAILABILITY_HEADERS = [
@@ -192,6 +194,7 @@ export function BookingOpsCommandCenter({
   actionEvidenceGate,
   actionGateByAction,
   cashDebtNeedsSettlement,
+  financeApproverOptions = [],
 }: BookingOpsCommandCenterProps) {
   return (
     <AdminSection
@@ -298,6 +301,7 @@ export function BookingOpsCommandCenter({
               evidenceHint={`Refund action state: ${booking.payment.status}.`}
               ruleHint="Refund follows the action evidence gate above."
               requiresApproval
+              financeApproverOptions={financeApproverOptions}
             />
             {cashDebtNeedsSettlement && booking.earning?.id && (
               <BookingCashDebtSettlementForm booking={booking} />

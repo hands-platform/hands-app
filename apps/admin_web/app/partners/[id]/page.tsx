@@ -4,10 +4,12 @@ import type {
   AdminAuditLog,
   AdminManualWalletAdjustmentRow,
   AdminOperationalPolicySetting,
+  AdminOperatorIdentity,
   AdminPartnerCustomerReview,
   AdminProvider,
   AdminProviderWalletWithdrawalRequest,
   AdminReview,
+  AdminUser,
 } from '../../../lib/admin-api';
 import { adminGet, providerDocumentLabel, providerDocumentReviewHint } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
@@ -22,6 +24,7 @@ import { canViewAdminDeveloperSystem } from '../../../components/admin-developer
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminManualWalletAdjustmentHistory } from '../../../components/admin-manual-wallet-adjustment-history';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
+import { adminPayoutBatchOperatorEvidenceLines } from '../../../components/admin-finance-operator-evidence';
 import { AdminDetailGrid } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import type { AdminChatWindowMessageRole } from '../../../components/admin-chat-window';
@@ -44,6 +47,7 @@ import {
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { readSearchParam } from '../../../lib/date-range';
 import {
@@ -415,6 +419,14 @@ type ProviderDetail = AdminProvider & {
     transferRef?: string | null;
     paidAt?: string | null;
     createdAt?: string;
+    createdByAdminId?: string | null;
+    createdBy?: AdminOperatorIdentity | null;
+    lastUpdatedByAdminId?: string | null;
+    lastUpdatedBy?: AdminOperatorIdentity | null;
+    paidByAdminId?: string | null;
+    paidBy?: AdminOperatorIdentity | null;
+    approvalAdminId?: string | null;
+    approvalAdmin?: AdminOperatorIdentity | null;
   }>;
   verificationLogs?: Array<{
     id: string;
@@ -456,7 +468,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
-  const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
+  const currentOperatorAccess = await getCurrentAdminOperatorAccess();
+  const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
   const providerEndpoint =
     detailSection === 'overview'
       ? `/admin/partners/${id}/overview`
@@ -500,6 +513,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     ),
   ]);
   const partnerReviewRecords = reviewRecordsForPartner(customerReviews, partnerEvaluations, provider.id);
+  const needsFinanceApproverDirectory = walletWithdrawalRequests.some(
+    (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
+  );
+  const financeApproverUsers = needsFinanceApproverDirectory
+    ? await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+    : [];
+  const financeApproverOptions = buildFinanceApproverOptions(
+    financeApproverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const partnerDisplayLabel = providerDisplayLabel(provider);
   const cashFeeDebtTotal = cashFeeDebtAmount(provider);
@@ -1164,6 +1187,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             walletAdjustmentsHref={partnerManualAdjustmentHref}
           />
           <PartnerDetailWalletWithdrawalRequestSection
+            financeApproverOptions={financeApproverOptions}
             requests={walletWithdrawalRequests}
             updateWithdrawalRequestAction={updatePartnerWalletWithdrawalRequest}
           />
@@ -4499,6 +4523,7 @@ function buildPartnerPayoutBatchRows(
     ),
     href: `/payouts#${batch.id}`,
     id: batch.id,
+    operatorEvidence: adminPayoutBatchOperatorEvidenceLines(batch),
     paidLine: batch.paidAt ? `Paid ${formatDate(batch.paidAt)}` : null,
     paidLineNode: batch.paidAt ? (
       <>

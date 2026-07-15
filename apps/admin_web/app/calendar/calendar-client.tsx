@@ -283,16 +283,32 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
         metrics={[
           {
             helper: 'Filtered across the active calendar categories.',
+            kind: 'live',
             label: 'Visible events',
+            scope: 'Current + future',
             value: metrics.total,
           },
-          { helper: 'Events scheduled for the current day.', label: 'Today', value: metrics.today },
+          {
+            helper: 'Events scheduled for the current day.',
+            kind: 'period',
+            label: 'Today',
+            scope: 'Today',
+            value: metrics.today,
+          },
           {
             helper: 'Upcoming working blocks and operator reminders.',
+            kind: 'period',
             label: 'Next 7 days',
+            scope: 'Next 7 days',
             value: metrics.upcoming,
           },
-          { helper: 'The next visible event on the board.', label: 'Next up', value: metrics.nextLabel },
+          {
+            helper: 'The next visible event on the board.',
+            kind: 'action',
+            label: 'Next up',
+            scope: 'Next',
+            value: metrics.nextLabel,
+          },
         ]}
       />
 

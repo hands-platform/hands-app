@@ -1,8 +1,8 @@
 import { vi } from 'vitest';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { adminPost } from '../../lib/admin-api';
-import { enablePushDevice, retryNotification } from './actions';
+import { adminPost, adminPostOrThrow } from '../../lib/admin-api';
+import { assignFinanceReview, enablePushDevice, retryNotification, reviewLegacyNotification } from './actions';
 import {
   notificationActionReturnHref,
   sanitizeNotificationReturnHref,
@@ -18,15 +18,18 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../../lib/admin-api', () => ({
   adminPost: vi.fn(),
+  adminPostOrThrow: vi.fn(),
 }));
 
 const mockedAdminPost = vi.mocked(adminPost);
+const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
 const mockedRedirect = vi.mocked(redirect);
 const mockedRevalidatePath = vi.mocked(revalidatePath);
 
 describe('notification server actions', () => {
   beforeEach(() => {
     mockedAdminPost.mockResolvedValue(undefined);
+    mockedAdminPostOrThrow.mockResolvedValue(undefined);
   });
 
   it('retries a notification, refreshes admin views, and returns to the active queue', async () => {
@@ -67,9 +70,61 @@ describe('notification server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith('/notifications?review=disabled-device');
   });
 
+  it('records a legacy review reason and returns to the legacy queue', async () => {
+    const formData = new FormData();
+    formData.set('notificationId', 'notification-legacy');
+    formData.set('reason', ' Reviewed retained queue evidence. ');
+    formData.set('returnHref', '/notifications?review=system-incidents&incidentState=legacy');
+
+    await reviewLegacyNotification(formData);
+
+    expect(mockedAdminPost).toHaveBeenCalledWith(
+      '/admin/notifications/notification-legacy/review-legacy',
+      { reason: 'Reviewed retained queue evidence.' },
+      null,
+    );
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/notifications');
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/audit-log');
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/notifications?review=system-incidents&incidentState=legacy',
+    );
+  });
+
+  it.each([
+    ['bank-transaction', 'bank-tx-1', '/admin/bank-reconciliation/bank-tx-1/review-assignment'],
+    ['import-batch', 'batch-1', '/admin/bank-reconciliation/import-batches/batch-1/assignment'],
+  ])('assigns a Finance %s review through the existing audited API', async (sourceKind, sourceId, path) => {
+    const formData = new FormData();
+    formData.set('assigneeAdminId', 'finance-owner-1');
+    formData.set('assignmentSourceId', sourceId);
+    formData.set('assignmentSourceKind', sourceKind);
+    formData.set('reason', ' Taking ownership of overdue evidence. ');
+    formData.set(
+      'returnHref',
+      '/notifications?range=all&review=finance-overdue&financeAge=72-plus&financeOwner=unassigned',
+    );
+
+    await assignFinanceReview(formData);
+
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(path, {
+      assigneeAdminId: 'finance-owner-1',
+      reason: 'Taking ownership of overdue evidence.',
+    });
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/finance-tax/bank-reconciliation');
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/notifications?range=all&review=finance-overdue&financeAge=72-plus&financeOwner=unassigned&financeAssignmentNotice=assigned',
+    );
+  });
+
   it('requires form identifiers before calling admin APIs', async () => {
     await expect(retryNotification(new FormData())).rejects.toThrow('notificationId is required');
     await expect(enablePushDevice(new FormData())).rejects.toThrow('pushDeviceId is required');
+    await expect(reviewLegacyNotification(new FormData())).rejects.toThrow('notificationId is required');
+    await expect(assignFinanceReview(new FormData())).rejects.toThrow('assigneeAdminId is required');
+
+    const missingReason = new FormData();
+    missingReason.set('notificationId', 'notification-legacy');
+    await expect(reviewLegacyNotification(missingReason)).rejects.toThrow('reason is required');
 
     expect(mockedAdminPost).not.toHaveBeenCalled();
     expect(mockedRevalidatePath).not.toHaveBeenCalled();

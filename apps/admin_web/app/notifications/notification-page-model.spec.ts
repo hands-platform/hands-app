@@ -16,12 +16,15 @@ import {
   buildNotificationTableRows,
   emptyNotificationMessage,
   filterNotifications,
+  groupSystemIncidentNotifications,
   isStalePushDeviceDelivery,
   notificationFilterDescription,
   notificationFilterLinks,
+  notificationFinanceAgeLinks,
   notificationDateRangeLabel,
   notificationDateRangeLinks,
   notificationReviewRunbook,
+  sortFinanceReviewNotifications,
   sortNotifications,
 } from './notification-page-model';
 import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
@@ -885,6 +888,37 @@ describe('notification page model', () => {
     });
   });
 
+  it('replaces delivery KPIs with state-linked system incident KPIs', () => {
+    const model = buildNotificationPageModel({
+      notifications: [],
+      notificationSummary: {
+        generatedAt: '2026-06-27T00:00:00.000Z',
+        legacySystemIncidentCount: 4,
+        openSystemIncidentCount: 2,
+        recoveredSystemIncidentCount: 1,
+        systemIncidentCount: 7,
+        totalCount: 2,
+      },
+      operationalPolicies: [],
+      params: { incidentState: 'open', range: '7d', review: 'system-incidents' },
+    });
+
+    expect(model.metrics.map((metric) => [metric.label, metric.value, metric.scope])).toEqual([
+      ['Open incidents', 2, 'Needs action'],
+      ['Recovered incidents', 1, 'Last 7 days'],
+      ['Legacy review', 4, 'Needs action'],
+      ['Incident sources', 7, 'Last 7 days'],
+    ]);
+    expect(model.metrics.map((metric) => metric.href)).toEqual([
+      '/notifications?range=7d&review=system-incidents&incidentState=open',
+      '/notifications?range=7d&review=system-incidents&incidentState=recovered',
+      '/notifications?range=7d&review=system-incidents&incidentState=legacy',
+      '/notifications?range=7d&review=system-incidents',
+    ]);
+    expect(model.metrics.some((metric) => metric.label === 'Pending')).toBe(false);
+    expect(model.metrics.some((metric) => metric.label === 'Sent')).toBe(false);
+  });
+
   it('builds the FCM route model with retry confirmation guidance', () => {
     const model = buildNotificationPageModel({
       notifications: [
@@ -1229,15 +1263,172 @@ describe('notification page model', () => {
     });
   });
 
+  it('adds a safe internal incident action and rejects external notification destinations', () => {
+    const incidentRow = buildNotificationTableRows([notification({
+      data: {
+        destination: '/background-jobs/incidents/incident-open-1',
+        incidentId: 'incident-open-1',
+      },
+      deliveries: [],
+      id: 'notification-incident',
+      type: 'admin.system.background_job.failed',
+    })])[0];
+    const externalRow = buildNotificationTableRows([notification({
+      data: { destination: '//evil.example/collect' },
+      deliveries: [],
+      id: 'notification-external',
+      type: 'admin.system.background_job.failed',
+    })])[0];
+
+    expect(incidentRow?.actions.find((action) => action.label === 'Open incident')).toMatchObject({
+      href: '/background-jobs/incidents/incident-open-1',
+      kind: 'link',
+    });
+    expect(externalRow?.actions.some((action) => (
+      action.label === 'Open incident' || action.label === 'Open destination'
+    ))).toBe(false);
+  });
+
+  it('keeps overdue Finance alerts in an action-only queue without delivery retry', () => {
+    const notifications = [
+      notification({
+        data: {
+          bankTransactionId: 'bank-review-1',
+          destination: '/finance-tax/bank-reconciliation/bank-review-1',
+          financeReviewAgeHours: 76,
+          financeReviewOwner: {
+            email: 'finance.owner@hands.test',
+            fullName: 'Finance Owner',
+            id: 'admin-finance-owner',
+          },
+          financeReviewSlaBand: 'OVER_72H',
+          financeReviewStartedAt: '2026-07-10T02:00:00.000Z',
+        },
+        deliveries: [],
+        id: 'notification-finance-review',
+        type: 'admin.finance.bank_transaction.review_escalated',
+      }),
+      notification({
+        data: {
+          batchImportId: 'batch-1',
+          destination: '/finance-tax/bank-reconciliation/import-batches/batch-1',
+          financeReviewResolvedAt: '2026-07-15T05:00:00.000Z',
+          financeReviewStatus: 'RESOLVED',
+        },
+        deliveries: [],
+        id: 'notification-finance-batch',
+        type: 'admin.finance.bank_statement_batch.escalated',
+      }),
+      notification({ deliveries: [], id: 'notification-booking', type: 'booking.matched' }),
+    ];
+
+    expect(filterNotifications(notifications, { booking: '', review: 'finance-overdue' })).toHaveLength(1);
+    expect(filterNotifications(notifications, { booking: '', review: 'finance-overdue-history' })).toHaveLength(1);
+    const row = buildNotificationTableRows(notifications, {
+      financeAge: '72-plus',
+      financeAssigneeAdminId: 'admin-current-owner',
+      financeAssigneeOptions: [
+        { label: 'Finance Owner', value: 'admin-finance-owner' },
+        { label: 'Current Admin', value: 'admin-current-owner' },
+      ],
+      financeOwner: 'unassigned',
+      range: 'all',
+      review: 'finance-overdue',
+    })[0];
+    expect(row).toMatchObject({
+      createdAt: '2026-07-10T02:00:00.000Z',
+      opsSignal: 'Over 72h',
+      relativeCreatedAtLabel: '76h open',
+      typeMeaning: 'Overdue Finance reconciliation review',
+      userLabel: 'Finance Owner',
+      userPhone: 'finance.owner@hands.test',
+    });
+    expect(row?.actions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        href: '/finance-tax/bank-reconciliation/bank-review-1',
+        label: 'Open Finance review',
+        tone: 'warning',
+      }),
+      expect.objectContaining({
+        href: '/audit-log?bucket=Notification&q=notification-finance-review&range=all',
+        label: 'Audit trail',
+      }),
+      expect.objectContaining({
+        href: expect.stringContaining('confirm=assign-finance-review'),
+        label: 'Assign to me',
+        tone: 'warning',
+      }),
+      expect.objectContaining({
+        href: expect.stringContaining('confirm=assign-finance-review'),
+        label: 'Reassign owner',
+        tone: 'warning',
+      }),
+    ]));
+    expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);
+    expect(buildNotificationTableRows([notifications[1]!])[0]).toMatchObject({
+      opsSignal: 'Resolved',
+      typeMeaning: 'Overdue Finance reconciliation review',
+    });
+  });
+
+  it('orders open Finance reviews oldest first and resolved history newest first', () => {
+    const older = notification({
+      createdAt: '2026-07-12T00:00:00.000Z',
+      data: { financeReviewStartedAt: '2026-07-08T00:00:00.000Z' },
+      deliveries: [],
+      id: 'finance-older',
+      type: 'admin.finance.bank_transaction.review_escalated',
+    });
+    const newer = notification({
+      createdAt: '2026-07-11T00:00:00.000Z',
+      data: { financeReviewStartedAt: '2026-07-09T00:00:00.000Z' },
+      deliveries: [],
+      id: 'finance-newer',
+      type: 'admin.finance.bank_statement_batch.escalated',
+    });
+    const resolvedEarlier = notification({
+      data: {
+        financeReviewResolvedAt: '2026-07-13T00:00:00.000Z',
+        financeReviewStatus: 'RESOLVED',
+      },
+      deliveries: [],
+      id: 'finance-resolved-earlier',
+      type: 'admin.finance.bank_transaction.review_escalated',
+    });
+    const resolvedLater = notification({
+      data: {
+        financeReviewResolvedAt: '2026-07-14T00:00:00.000Z',
+        financeReviewStatus: 'RESOLVED',
+      },
+      deliveries: [],
+      id: 'finance-resolved-later',
+      type: 'admin.finance.bank_statement_batch.escalated',
+    });
+
+    expect(sortFinanceReviewNotifications([newer, older], 'open').map((item) => item.id)).toEqual([
+      'finance-older',
+      'finance-newer',
+    ]);
+    expect(
+      sortFinanceReviewNotifications([resolvedEarlier, resolvedLater], 'resolved').map((item) => item.id),
+    ).toEqual(['finance-resolved-later', 'finance-resolved-earlier']);
+  });
+
   it('keeps review descriptions and empty table messages stable', () => {
     expect(buildNotificationFilters({ booking: 'booking-1', review: 'failed' })).toEqual({
       booking: 'booking-1',
+      financeAge: 'all',
+      financeOwner: '',
+      incidentState: 'all',
       range: 'today',
       review: 'failed',
       user: '',
     });
     expect(buildNotificationFilters({})).toEqual({
       booking: '',
+      financeAge: 'all',
+      financeOwner: '',
+      incidentState: 'all',
       range: 'today',
       review: 'needs-retry',
       user: '',
@@ -1319,6 +1510,21 @@ describe('notification page model', () => {
       label: 'Stale devices',
       review: 'stale-device',
     });
+    expect(notificationFilterLinks.find((item) => item.review === 'system-incidents')).toEqual({
+      href: '/notifications?review=system-incidents',
+      label: 'System incidents',
+      review: 'system-incidents',
+    });
+    expect(notificationFilterLinks.find((item) => item.review === 'finance-overdue')).toEqual({
+      href: '/notifications?review=finance-overdue',
+      label: 'Finance overdue',
+      review: 'finance-overdue',
+    });
+    expect(notificationFilterLinks.find((item) => item.review === 'finance-overdue-history')).toEqual({
+      href: '/notifications?review=finance-overdue-history',
+      label: 'Finance history',
+      review: 'finance-overdue-history',
+    });
     expect(notificationFilterDescription('failed')).toBe(
       'latest delivery attempts that returned an FCM push failure.',
     );
@@ -1327,6 +1533,15 @@ describe('notification page model', () => {
     );
     expect(notificationFilterDescription('stale-device')).toBe(
       'delivery attempts made with old push token timestamps.',
+    );
+    expect(notificationFilterDescription('system-incidents')).toBe(
+      'Admin system and background-job alerts that require operational review.',
+    );
+    expect(notificationFilterDescription('finance-overdue')).toBe(
+      'bank statement batches and assigned bank reviews unresolved for over 48 hours.',
+    );
+    expect(notificationFilterDescription('finance-overdue-history')).toBe(
+      'resolved bank reconciliation SLA alerts retained for audit history.',
     );
     expect(notificationFilterDescription('unknown')).toBe('all notification records.');
     expect(emptyNotificationMessage('', undefined, (value) => `short-${value}`)).toBe(
@@ -1355,12 +1570,246 @@ describe('notification page model', () => {
     expect(notificationReviewRunbook('pending')).toMatchObject({
       title: 'Worker path gate',
     });
+    expect(notificationReviewRunbook('system-incidents')).toMatchObject({
+      title: 'System incident gate',
+    });
+    expect(notificationReviewRunbook('finance-overdue')).toMatchObject({
+      title: 'Finance review SLA',
+    });
+    expect(notificationReviewRunbook('finance-overdue-history')).toMatchObject({
+      title: 'Finance SLA history',
+    });
     expect(notificationReviewRunbook('unknown')).toBeNull();
+  });
+
+  it('keeps Admin system incident filtering and labels separate from customer notifications', () => {
+    const notifications = [
+      notification({
+        data: { destination: '/background-jobs/incidents/incident-open-1' },
+        deliveries: [],
+        id: 'system-incident',
+        type: 'admin.system.background_job.failed',
+      }),
+      notification({ deliveries: [], id: 'customer-booking', type: 'booking.matched' }),
+    ];
+
+    expect(
+      filterNotifications(notifications, { booking: '', review: 'system-incidents' }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(['system-incident']);
+    expect(buildNotificationTableRows(notifications).find((row) => row.id === 'system-incident')).toMatchObject({
+      typeMeaning: 'Background job incident alert',
+    });
+
+    const apiUrl = new URL(
+      buildNotificationApiHref({ range: 'all', review: 'system-incidents' }),
+      'http://admin.local',
+    );
+    expect(apiUrl.searchParams.get('review')).toBe('system-incidents');
+  });
+
+  it('separates source incident state from notification delivery evidence', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: {
+          incidentId: 'incident-open',
+          incidentRecoveredAt: null,
+          incidentStatus: 'OPEN',
+        },
+        deliveries: [],
+        id: 'system-open',
+        type: 'admin.system.background_job.failed',
+      }),
+      notification({
+        data: {
+          incidentId: 'incident-recovered',
+          incidentRecoveredAt: '2026-07-14T05:04:00.000Z',
+          incidentStatus: 'RECOVERED',
+        },
+        deliveries: [],
+        id: 'system-recovered',
+        type: 'admin.system.background_job.failed',
+      }),
+    ]);
+
+    expect(rows.find((row) => row.id === 'system-open')).toMatchObject({
+      deliveryAttemptCount: 0,
+      opsHint: 'Source incident is still open. Review the linked incident before retrying this alert.',
+      opsSignal: 'Incident open',
+      signalClassName: 'signal signal-warn',
+    });
+    expect(rows.find((row) => row.id === 'system-recovered')).toMatchObject({
+      deliveryAttemptCount: 0,
+      opsHint: expect.stringContaining('Source incident recovered'),
+      opsSignal: 'Recovered',
+      signalClassName: 'signal signal-ok',
+    });
+  });
+
+  it('does not present legacy unlinked system alerts as pending delivery work', () => {
+    const row = buildNotificationTableRows([
+      notification({
+        data: {
+          destination: '/background-jobs',
+          jobId: 'repeat:background-job-failure-monitor:1783980324023',
+          queueName: 'bank-statement-escalation',
+        },
+        deliveries: [],
+        id: 'legacy-system-alert',
+        type: 'admin.system.background_job.failed',
+      }),
+    ])[0];
+
+    expect(row).toMatchObject({
+      deliveryAttemptCount: 0,
+      bookingDataHint: 'queue bank-statement-escalation / job ...re-monitor:1783980324023',
+      opsHint:
+        'This legacy system alert has no linked incident record. Open Background Jobs and review the source failure.',
+      opsSignal: 'Review required',
+      signalClassName: 'signal signal-warn',
+    });
+    expect(row?.actions.find((action) => action.label === 'Mark reviewed')).toMatchObject({
+      href: '/notifications?confirm=review-legacy&notificationId=legacy-system-alert',
+      tone: 'warning',
+    });
+    expect(row?.actions.find((action) => action.label === 'Open job evidence')).toMatchObject({
+      href: '/background-jobs?jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023&queue=bank-statement-escalation&range=ALL&review=ALL',
+    });
+    expect(row?.actions.some((action) => action.label === 'Open destination')).toBe(false);
+    expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);
+  });
+
+  it('groups fully loaded system alerts by source while retaining recipient evidence', () => {
+    const jobOne = 'repeat:background-job-failure-monitor:1783980324023';
+    const jobTwo = 'repeat:background-job-failure-monitor:1783980024023';
+    const sourceNotifications = [
+      notification({
+        data: { jobId: jobOne, queueName: 'bank-statement-escalation' },
+        deliveries: [],
+        id: 'job-one-recipient-one',
+        type: 'admin.system.background_job.failed',
+        user: { id: 'admin-1', phone: '+84900000001', roles: ['ADMIN'] },
+      }),
+      notification({
+        data: { jobId: jobOne, queueName: 'bank-statement-escalation' },
+        deliveries: [],
+        id: 'job-one-recipient-two',
+        type: 'admin.system.background_job.failed',
+        user: { id: 'admin-2', phone: '+84900000002', roles: ['ADMIN'] },
+      }),
+      notification({
+        data: { jobId: jobTwo, queueName: 'bank-statement-escalation' },
+        deliveries: [],
+        id: 'job-two-recipient-one',
+        type: 'admin.system.background_job.failed',
+        user: { id: 'admin-1', phone: '+84900000001', roles: ['ADMIN'] },
+      }),
+      notification({
+        data: { jobId: jobTwo, queueName: 'bank-statement-escalation' },
+        deliveries: [],
+        id: 'job-two-recipient-two',
+        type: 'admin.system.background_job.failed',
+        user: { id: 'admin-2', phone: '+84900000002', roles: ['ADMIN'] },
+      }),
+    ];
+
+    expect(groupSystemIncidentNotifications(sourceNotifications)).toHaveLength(2);
+
+    const model = buildNotificationPageModel({
+      notificationSummary: {
+        generatedAt: '2026-07-14T06:00:00.000Z',
+        legacySystemIncidentCount: 2,
+        openSystemIncidentCount: 0,
+        recoveredSystemIncidentCount: 0,
+        systemIncidentCount: 2,
+        systemIncidentNotificationCount: 4,
+        systemIncidentSourceSummaryComplete: true,
+        systemIncidentSourceTotalCount: 2,
+        totalCount: 4,
+      },
+      notifications: sourceNotifications,
+      operationalPolicies: [],
+      params: { incidentState: 'legacy', review: 'system-incidents' },
+    });
+
+    expect(model.notifications).toHaveLength(2);
+    expect(model.notificationPagination).toMatchObject({ totalRows: 2, from: 1, to: 2 });
+    expect(model.notificationRows).toHaveLength(2);
+    expect(model.notificationRows[0]).toMatchObject({
+      userLabel: '2 Admin recipients',
+      userPhone: '2 retained recipient alerts',
+    });
+    expect(model.notificationRows[0]?.bookingDataHint).toContain('2 recipient alerts');
+  });
+
+  it('preserves server source counts and paginates beyond the loaded incident page', () => {
+    const sourceNotification = notification({
+      data: {
+        jobId: 'repeat:background-job-failure-monitor:1783980324023',
+        queueName: 'bank-statement-escalation',
+        systemIncidentNotificationCount: 6,
+        systemIncidentRecipientCount: 3,
+        systemIncidentSourceKey: 'job:bank-statement-escalation:repeat:background-job-failure-monitor:1783980324023',
+      },
+      deliveries: [],
+      id: 'server-representative',
+      type: 'admin.system.background_job.failed',
+      user: { id: 'admin-1', phone: '+84900000001', roles: ['ADMIN'] },
+    });
+
+    const model = buildNotificationPageModel({
+      notificationSummary: {
+        generatedAt: '2026-07-14T06:00:00.000Z',
+        legacySystemIncidentCount: 45,
+        openSystemIncidentCount: 0,
+        recoveredSystemIncidentCount: 0,
+        systemIncidentCount: 45,
+        systemIncidentNotificationCount: 120,
+        systemIncidentSourceSummaryComplete: true,
+        systemIncidentSourceTotalCount: 45,
+        totalCount: 45,
+      },
+      notifications: [sourceNotification],
+      operationalPolicies: [],
+      params: { incidentState: 'legacy', review: 'system-incidents' },
+    });
+
+    expect(model.totalCount).toBe(45);
+    expect(model.notificationPagination).toMatchObject({ from: 1, to: 1, totalPages: 3, totalRows: 45 });
+    expect(model.notificationRows[0]).toMatchObject({
+      userLabel: '3 Admin recipients',
+      userPhone: '6 retained recipient alerts',
+    });
+    expect(model.notificationRows[0]?.bookingDataHint).toContain('6 recipient alerts');
+  });
+
+  it('keeps reviewed legacy alerts as retained records without repeat review or retry actions', () => {
+    const row = buildNotificationTableRows([notification({
+      data: {
+        incidentStatus: 'LEGACY_REVIEWED',
+        legacyReviewedAt: '2026-07-14T06:00:00.000Z',
+      },
+      deliveries: [],
+      id: 'reviewed-legacy-alert',
+      type: 'admin.system.background_job.failed',
+    })])[0];
+
+    expect(row).toMatchObject({
+      opsHint: expect.stringContaining('Legacy alert reviewed'),
+      opsSignal: 'Legacy reviewed',
+      signalClassName: 'signal signal-ok',
+    });
+    expect(row?.actions.some((action) => action.label === 'Mark reviewed')).toBe(false);
+    expect(row?.actions.some((action) => action.label === 'Retry')).toBe(false);
   });
 
   it('keeps direct user notification links bounded by user id on list and summary APIs', () => {
     expect(buildNotificationFilters({ range: 'all', review: 'all', user: 'user-1' })).toEqual({
       booking: '',
+      financeAge: 'all',
+      financeOwner: '',
+      incidentState: 'all',
       range: 'all',
       review: 'all',
       user: 'user-1',
@@ -1379,6 +1828,87 @@ describe('notification page model', () => {
     const summaryUrl = new URL(summaryHref, 'http://admin.local');
     expect(summaryUrl.pathname).toBe('/admin/notifications/summary');
     expect(summaryUrl.searchParams.get('user')).toBe('user-1');
+  });
+
+  it('keeps Finance SLA age and owner filters on list, page, and summary URLs', () => {
+    expect(notificationFinanceAgeLinks.map((item) => item.value)).toEqual(['all', '48-72', '72-plus']);
+    expect(buildNotificationFilters({
+      financeAge: '72-plus',
+      financeOwner: 'admin-owner-1',
+      range: 'all',
+      review: 'finance-overdue',
+    })).toMatchObject({
+      financeAge: '72-plus',
+      financeOwner: 'admin-owner-1',
+      review: 'finance-overdue',
+    });
+    expect(buildNotificationListHref({
+      booking: '',
+      financeAge: '72-plus',
+      financeOwner: 'admin-owner-1',
+      range: 'all',
+      review: 'finance-overdue',
+    })).toBe(
+      '/notifications?range=all&review=finance-overdue&financeAge=72-plus&financeOwner=admin-owner-1',
+    );
+    expect(buildNotificationApiHref({
+      financeAge: '48-72',
+      financeOwner: 'unassigned',
+      range: 'all',
+      review: 'finance-overdue',
+    })).toBe(
+      '/admin/notifications?take=20&review=finance-overdue&financeAge=48-72&financeOwner=unassigned',
+    );
+    expect(buildNotificationSummaryApiHref({
+      financeAge: '72-plus',
+      financeOwner: 'admin-owner-1',
+      range: 'all',
+      review: 'finance-overdue-history',
+    })).toBe(
+      '/admin/notifications/summary?review=finance-overdue-history&financeAge=72-plus&financeOwner=admin-owner-1',
+    );
+    expect(buildNotificationFilters({
+      financeAge: 'invalid',
+      financeOwner: 'admin-owner-1',
+      review: 'failed',
+    })).toMatchObject({ financeAge: 'all', financeOwner: '' });
+  });
+
+  it('keeps system incident state filters on list and summary server queries', () => {
+    expect(
+      buildNotificationFilters({ review: 'system-incidents', incidentState: 'open' }),
+    ).toMatchObject({ incidentState: 'open', review: 'system-incidents' });
+    expect(
+      buildNotificationFilters({ review: 'failed', incidentState: 'open' }).incidentState,
+    ).toBe('all');
+    expect(
+      buildNotificationListHref({
+        booking: '',
+        incidentState: 'legacy',
+        review: 'system-incidents',
+      }),
+    ).toBe('/notifications?review=system-incidents&incidentState=legacy');
+    expect(
+      buildNotificationListHref({
+        booking: '',
+        incidentState: 'reviewed',
+        review: 'system-incidents',
+      }),
+    ).toBe('/notifications?review=system-incidents&incidentState=reviewed');
+
+    const listUrl = new URL(
+      buildNotificationApiHref({ review: 'system-incidents', incidentState: 'recovered' }),
+      'http://admin.local',
+    );
+    const summaryUrl = new URL(
+      buildNotificationSummaryApiHref({ review: 'system-incidents', incidentState: 'recovered' }),
+      'http://admin.local',
+    );
+    expect(listUrl.searchParams.get('incidentState')).toBe('recovered');
+    expect(summaryUrl.searchParams.get('incidentState')).toBe('recovered');
+    expect(
+      buildNotificationFilters({ review: 'system-incidents', incidentState: 'reviewed' }).incidentState,
+    ).toBe('reviewed');
   });
 
   it('builds shared review state from the active notification queue', () => {

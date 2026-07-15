@@ -10,6 +10,7 @@ describe('PartnerLegacyOperationsTableSection', () => {
 
     expect(source).toContain('AdminTableCard');
     expect(source).not.toContain('AdminCard');
+    expect(source).not.toContain('admin-filter-panel booking-monitor-filter-panel');
     expect(source).not.toContain(
       'admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
     );
@@ -44,7 +45,7 @@ describe('PartnerLegacyOperationsTableSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-card vuexy-booking-table-card vuexy-booking-table-group admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-partner-table-card',
+        'card admin-card vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mt-16',
         'admin-avatar-status-dot is-online',
         'admin-table-scroll',
         'table-link',

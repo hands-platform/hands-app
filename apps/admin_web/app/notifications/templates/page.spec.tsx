@@ -39,6 +39,19 @@ describe('NotificationTemplatesPage', () => {
     expect(markup).toContain('href="/notifications/push-send"');
   });
 
+  it('scopes template KPI cards as records, live availability, and audience coverage', async () => {
+    const page = await NotificationTemplatesPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Template records');
+    expect(markup).toContain('Live');
+    expect(markup).toContain('Audience coverage');
+    expect(markup).toContain('Notification event records in the bounded catalog.');
+    expect(markup).toContain('Templates currently available to operating flows.');
+    expect(markup).not.toContain('Managed notification events');
+    expect(markup).not.toContain('Available to operating flows');
+  });
+
   it('uses the shared Vuexy notice card atom for template results', () => {
     expect(pageSource).toContain('AdminCard');
     expect(pageSource).toContain('AdminCardHeader');
@@ -54,6 +67,8 @@ describe('NotificationTemplatesPage', () => {
 
   it('uses the shared Vuexy card grid atom for template cards', () => {
     expect(pageSource).toContain('AdminCardGrid');
+    expect(pageSource).toContain('AdminSection');
+    expect(pageSource).not.toContain('AdminFilterPanel');
     expect(pageSource).not.toContain('<div className="notification-template-grid">');
   });
 

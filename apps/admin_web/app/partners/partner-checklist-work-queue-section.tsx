@@ -106,7 +106,7 @@ function partnerChecklistAvatarStatus(provider: AdminProvider) {
 function PartnerChecklistQueueEmptyState() {
   return (
     <AdminEmptyState
-      message="The current filter has no visible blockers. Keep monitoring dispatch demand and live booking pressure."
+      message="The active filters have no visible blockers. Keep monitoring dispatch demand and live booking pressure."
       title="No partner work queue items"
     />
   );

@@ -406,41 +406,41 @@ function ParticipantRows({ rows }: ParticipantRowsProps) {
             linkClassName="table-link"
           />
           <div>
-            <div className="filter-row">
+            <AdminFilterChipGroup ariaLabel={`${row.partner} participation evidence`}>
               <StatusBadgeFromPillClass pillClass={row.evidenceTone}>{row.evidenceLabel}</StatusBadgeFromPillClass>
               <StatusBadgeFromPillClass pillClass={row.roleTone}>{row.role}</StatusBadgeFromPillClass>
               <StatusBadgeFromPillClass pillClass={row.statusTone}>{row.status}</StatusBadgeFromPillClass>
-            </div>
+            </AdminFilterChipGroup>
             <p className="muted admin-mt-6">{row.evidenceDetail}</p>
             <p className="muted">{row.decision}</p>
           </div>
           <div>
-            <div className="filter-row">
+            <AdminFilterChipGroup ariaLabel={`${row.partner} eligibility decision`}>
               <StatusBadgeFromPillClass pillClass={row.eligibilityTone}>{row.eligibilityLabel}</StatusBadgeFromPillClass>
               <StatusBadgeFromPillClass pillClass={row.choiceTone}>{row.choiceState}</StatusBadgeFromPillClass>
-            </div>
+            </AdminFilterChipGroup>
             <p className="muted admin-mt-6">{row.eligibilityReason}</p>
             <p className="muted">{row.operatorStatus}</p>
             <p className="muted">{row.eligibilityNextStep}</p>
           </div>
           <div>
             <strong className="booking-settlement-ledger-value">{row.distance}</strong>
-            <div className="filter-row admin-mt-6">
+            <AdminFilterChipGroup ariaLabel={`${row.partner} distance policy`} className="admin-mt-6">
               <StatusBadgeFromPillClass pillClass={row.distancePolicyTone}>
                 {row.distancePolicyLabel}
               </StatusBadgeFromPillClass>
-            </div>
+            </AdminFilterChipGroup>
             <p className="muted">{row.distancePolicyHelper}</p>
             <p className="muted">{participantTiming(row)}</p>
           </div>
           <div>
-            <div className="filter-row">
+            <AdminFilterChipGroup ariaLabel={`${row.partner} participation facts`}>
               {row.facts.map((fact) => (
                 <StatusBadgeFromPillClass pillClass={fact.tone} key={`${row.id}-${fact.label}`}>
                   {fact.label}: {fact.value}
                 </StatusBadgeFromPillClass>
               ))}
-            </div>
+            </AdminFilterChipGroup>
             <p className="muted admin-mt-8">{row.operatorUse}</p>
           </div>
         </AdminCard>

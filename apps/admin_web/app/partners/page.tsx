@@ -88,6 +88,7 @@ import {
   buildPartnerAccountActionConfirmation,
   readPartnerAccountConfirmationAction,
 } from './partner-account-action-confirmation';
+import { partnerDirectoryMetricMeta, partnerFilterSummaryMetricMeta } from './partner-metric-meta';
 import {
   buildPartnerReviewActionConfirmation,
   readPartnerReviewConfirmationAction,
@@ -302,31 +303,41 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <AdminSection
             actions={<StatusBadge tone="info">{partnerSortLabel(filters.sort)}</StatusBadge>}
             className="admin-mb-16 partner-current-filter-summary-card"
-            description="Current partner rows loaded on this page before export, review, dispatch checks, or account follow-up."
-            title="Current filter summary"
+            description="Active filters split ready supply, pending approval, dispatch risk, and retained partner records."
+            title="Partner action snapshot"
           >
             <AdminTraceSummary
               className="admin-mt-14"
-              metrics={deepPartnerOps.filterSummary.map((item) => ({
-                action: item.href ? (
-                  <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
-                    <ArrowRight aria-hidden="true" size={14} />
-                    Open subset
-                  </AdminFormControlLink>
-                ) : null,
-                detail: item.detail,
-                label: item.label,
-                value: item.value,
-              }))}
+              metrics={deepPartnerOps.filterSummary.map((item) => {
+                const meta = partnerFilterSummaryMetricMeta(item.label);
+
+                return {
+                  action: item.href ? (
+                    <AdminFormControlLink className="button-secondary partner-summary-action" href={item.href}>
+                      <ArrowRight aria-hidden="true" size={14} />
+                      Open subset
+                    </AdminFormControlLink>
+                  ) : null,
+                  detail: item.detail,
+                  ...meta,
+                  label: item.label,
+                  value: item.value,
+                };
+              })}
             />
           </AdminSection>
           <AdminMetricGrid
             className="admin-mb-16 partner-deep-summary-grid"
-            metrics={deepPartnerOps.summary.map(([label, value]) => ({
-              helper: 'Current filtered partner set',
-              label,
-              value,
-            }))}
+            metrics={deepPartnerOps.summary.map(([label, value]) => {
+              const meta = partnerDirectoryMetricMeta(label);
+
+              return {
+                helper: `${meta.scope} partner signal`,
+                ...meta,
+                label,
+                value,
+              };
+            })}
           />
         </>
       ) : null}

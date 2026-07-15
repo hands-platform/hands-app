@@ -8,9 +8,9 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminDisclosure } from '../../components/admin-surface';
-import { StatusBadge } from '../../components/status-badge';
 
 import { buildPartnerListHref, partnerSortLabel, type ProviderFilters } from './partner-filters';
 
@@ -45,20 +45,17 @@ export function PartnerFilterBoard({
   return (
     <AdminFilterPanel
       className="vuexy-partner-filter-card admin-mb-16"
+      description="Separate ready-now Partners, offline risk, approval work, booking flow, and partner records."
       id="partner-directory-controls"
-      resultLabel={`${filteredCount} of ${totalCount}`}
-      title="Filters"
+      resultLabel={`${filteredCount} visible / ${totalCount} total`}
+      title="Partner operations filters"
       footer={
         <div className="vuexy-partner-filter-footer admin-directory-filter-footer">
-          {activeFilters.length > 0 ? (
-            <div className="vuexy-partner-active-filters" aria-label="Active partner filters">
-              {activeFilters.map((filter) => (
-                <StatusBadge key={`${filter.kind}-${filter.value}`} tone="warning">
-                  {filter.label}
-                </StatusBadge>
-              ))}
-            </div>
-          ) : null}
+          <AdminFilterSummary
+            ariaLabel="Active partner filters"
+            className="vuexy-partner-active-filters"
+            labels={activeFilters.map((filter) => filter.label)}
+          />
           <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/partners">
             Clear filters
           </AdminFormControlLink>
@@ -110,7 +107,7 @@ export function PartnerFilterBoard({
           </div>
         </div>
         <div className="booking-date-filter-bar vuexy-partner-filter-strip" aria-label="Partner sort filters">
-          <span className="vuexy-partner-filter-group-label">Partner sort</span>
+          <span className="vuexy-partner-filter-group-label">Ready now / Records sort</span>
           <AdminSegmentedControl
             activeValue={filters.sort}
             ariaLabel="Partner sort"
@@ -126,9 +123,16 @@ export function PartnerFilterBoard({
           <AdminDisclosure className="vuexy-partner-filter-details" open>
             <summary>
               <span>More filters</span>
-              <small>Location, device/session, booking flow, and review lane</small>
+              <small>Ready now, offline risk, device/session, booking flow, and review lane</small>
             </summary>
             <div className="vuexy-partner-advanced-filter-grid">
+              <AdminFormSelect
+                className="admin-directory-filter-select"
+                defaultValue={filters.readiness}
+                label="Readiness"
+                name="readiness"
+                options={partnerReadinessFilterOptions}
+              />
               <AdminFormSelect
                 className="admin-directory-filter-select"
                 defaultValue={filters.location}
@@ -169,7 +173,7 @@ export function PartnerFilterBoard({
         ) : null}
         <div className="vuexy-partner-filter-meta" aria-label="Partner filter status">
           <span className="muted">
-            Showing {filteredCount} of {totalCount} matching partners
+            Showing {filteredCount} of {totalCount} matching partners under the active filters
             {filters.sort !== 'ops-priority' ? ` - sorted by ${partnerSortLabel(filters.sort)}` : ''}
           </span>
           <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/operations-policy">
@@ -241,6 +245,14 @@ const partnerActivityFilterOptions = [
   { label: 'Never online', value: 'never-online' },
   { label: 'Inactive 7D', value: 'inactive-7d' },
   { label: 'Inactive 30D', value: 'inactive-30d' },
+] as const;
+
+const partnerReadinessFilterOptions = [
+  { label: 'All readiness', value: '' },
+  { label: 'Dispatch ready', value: 'ready' },
+  { label: 'Approved but offline', value: 'approved-offline' },
+  { label: 'Push missing', value: 'push-missing' },
+  { label: 'Needs review', value: 'needs-review' },
 ] as const;
 
 const partnerBookingFlowFilterOptions = [

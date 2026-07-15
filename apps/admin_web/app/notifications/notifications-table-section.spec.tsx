@@ -231,6 +231,20 @@ describe('NotificationsTableSection', () => {
     expect(textContent(section)).toContain('No notifications currently match this queue.');
   });
 
+  it('supports Finance SLA headers without changing the shared row contract', () => {
+    const section = NotificationsTableSection({
+      emptyMessage: 'No overdue Finance reviews.',
+      headers: ['SLA started', 'Owner', 'Source', 'Review', 'SLA status', 'Alert evidence', 'Action'],
+      rows: [buildRow()],
+    });
+
+    const rendered = normalizedText(section);
+    expect(rendered).toContain('SLA started');
+    expect(rendered).toContain('Owner');
+    expect(rendered).toContain('SLA status');
+    expect(rendered).toContain('Alert evidence');
+  });
+
   it('renders rounded pagination when table pagination is provided', () => {
     const section = NotificationsTableSection({
       emptyMessage: 'No notifications loaded.',

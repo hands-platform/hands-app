@@ -42,6 +42,33 @@ describe('DashboardPage', () => {
     expect(dashboardSource).not.toMatch(/<div className="service-trace-summary(?: [^"]*)?">/);
   });
 
+  it('lets dashboard trace summaries declare a default operating scope and card kind', () => {
+    expect(dashboardSource).toContain('readonly defaultKind?:');
+    expect(dashboardSource).toContain('readonly defaultScope?: ReactNode;');
+    expect(dashboardSource).toContain('kind: metric.kind ?? defaultKind');
+    expect(dashboardSource).toContain('scope: metric.scope ?? defaultScope');
+    expect(dashboardSource).toContain('defaultScope={selectedRangeLabel}');
+    expect(dashboardSource).toContain('defaultScope="Live"');
+    expect(dashboardSource).toContain('defaultKind="risk"');
+  });
+
+  it('keeps dashboard trace summary groups scoped unless metrics carry their own scope', () => {
+    const traceSummaryTags = dashboardSource.match(/<DashboardTraceSummary[\s\S]*?\/>/g) ?? [];
+    const unscopedTags = traceSummaryTags.filter(
+      (tag) => !tag.includes('defaultScope=') && !tag.includes('coreOperatingCounters'),
+    );
+    const untypedTags = traceSummaryTags.filter(
+      (tag) => !tag.includes('defaultKind=') && !tag.includes('coreOperatingCounters'),
+    );
+
+    expect(unscopedTags).toEqual([]);
+    expect(untypedTags).toEqual([]);
+  });
+
+  it('does not use vague current view copy in operator-facing dashboard messages', () => {
+    expect(dashboardSource).not.toContain('current view');
+  });
+
   it('uses the shared DateTimeText atom for dashboard booking evidence sample dates', () => {
     expect(dashboardSource).toContain('DateTimeText');
     expect(dashboardSource).toContain('<DateTimeText fallback="unknown" value={bookingRequestOpenedAt(booking)} />');
@@ -127,13 +154,13 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('<span>Range earnings</span><strong>1</strong>');
+    expect(markup).toContain('<span>Gross</span><strong>300.000 VND</strong>');
     expect(markup).toContain('<span>Refund evidence</span><strong>42</strong>');
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
-    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds/summary?range=today', expect.any(Object));
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', null);
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/refunds/summary?range=today', null);
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/cash-settlement-summary?range=today',
-      expect.any(Object),
+      null,
     );
   });
 
@@ -153,7 +180,11 @@ describe('DashboardPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
-    expect(hrefs).toContain('/admin/dashboard/summary');
+    expect(markup).toContain('<h3>Dashboard data</h3>');
+    expect(markup).toContain('Data unavailable');
+    expect(markup).toContain('<span>Ready Partners</span><strong>Unavailable</strong>');
+    expect(markup).not.toContain('<span>Ready Partners</span><strong>0</strong>');
+    expect(hrefs).toContain('/admin/dashboard/summary?dateRange=today');
     expect(hrefs).not.toContain('/admin/users');
     expect(hrefs).not.toContain('/admin/partners?view=list');
     expect(hrefs).not.toContain('/admin/app-sessions?role=PROVIDER&take=5');
@@ -192,8 +223,9 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('<h3>Finance closeout</h3><strong>7 item(s)</strong>');
-    expect(markup).toContain('<span class="pill pill-neutral">7 payout batch(es)</span>');
+    expect(markup).toContain('<span>Payout waiting</span><strong>7</strong>');
+    expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
+    expect(markup).toContain('Data unavailable');
   });
 
   it('uses notification summary for default dashboard failed notification counters', async () => {
@@ -245,7 +277,7 @@ describe('DashboardPage', () => {
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary') {
+      if (href === '/admin/dashboard/summary?dateRange=today') {
         return dashboardSummary;
       }
       if (typeof href === 'string' && href.startsWith('/admin/notifications/summary?')) {
@@ -263,14 +295,33 @@ describe('DashboardPage', () => {
       expect.stringMatching(/^\/admin\/notifications\/summary\?/),
       null,
     );
-    expect(markup).toContain('<h3>Notifications</h3><strong>19 failed</strong>');
-    expect(markup).toContain('<span class="pill pill-warn">1 lane needs action</span>');
-    expect(markup).toMatch(/href="\/notifications\?review=failed"[^>]*>[\s\S]*?Open top priority/);
+    expect(markup).toContain('<h3>Notifications</h3><strong class="ops-task-card-value">19 failed</strong>');
+    expect(markup).toContain('Data unavailable');
+    expect(markup).toContain('href="/notifications?review=failed"');
   });
 
   it('routes unavailable Partner supply to the Partner Overview availability queue', async () => {
     const dashboardSummary: AdminDashboardSummary = {
       generatedAt: '2026-06-28T00:00:00.000Z',
+      bookingActivity: {
+        live: {
+          active: 16,
+          arrived: 1,
+          customerChoice: 5,
+          inService: 3,
+          matched: 0,
+          onTheWay: 0,
+          openMatching: 12,
+        },
+        period: {
+          cancelled: 2,
+          completed: 8,
+          expired: 1,
+          noShow: 0,
+          refunded: 1,
+          total: 25,
+        },
+      },
       appPresence: {
         activeBookingCustomers: 0,
         disabledPushCustomers: 0,
@@ -312,7 +363,7 @@ describe('DashboardPage', () => {
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary') {
+      if (href === '/admin/dashboard/summary?dateRange=today') {
         return dashboardSummary;
       }
       return fallback;
@@ -327,6 +378,12 @@ describe('DashboardPage', () => {
     expect(markup).toContain(
       'href="/partners/overview?range=7d&amp;selectionIssue=availability&amp;selectionSort=response"',
     );
+    expect(markup).toContain('<span>Waiting for Partner</span><strong>12</strong>');
+    expect(markup).toContain('<span>Customer choice</span><strong>5</strong>');
+    expect(markup).toContain('<span>In service</span><strong>3</strong>');
+    expect(markup).toContain('<span>Booking requests</span><strong>25</strong>');
+    expect(markup).toContain('<span>Completed</span><strong>8</strong>');
+    expect(markup).toContain('<span class="metric-card-scope is-risk">Stale</span>');
   });
 
   it('marks stale Partner supply as a refresh lane instead of available', async () => {
@@ -373,7 +430,7 @@ describe('DashboardPage', () => {
       timestamp: '2026-06-28T00:00:00.000Z',
     } as AdminExternalReadiness);
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/dashboard/summary') {
+      if (href === '/admin/dashboard/summary?dateRange=today') {
         return dashboardSummary;
       }
       return fallback;
@@ -386,8 +443,8 @@ describe('DashboardPage', () => {
 
     expect(markup).toContain('<h3>Partner supply</h3>');
     expect(markup).toContain('<span class="pill pill-warn">Refresh</span>');
-    expect(markup).toContain('3 location pin(s) need refresh before dispatch.');
     expect(markup).toContain('href="/partners?review=location"');
+    expect(markup).not.toContain('3 location pin(s) need refresh before dispatch.');
   });
 
   it('uses payment summary for default dashboard payment hold counters', async () => {
@@ -425,6 +482,82 @@ describe('DashboardPage', () => {
     expect(markup).toContain('<span>Payment holds</span><strong>13</strong>');
   });
 
+  it('renders exact database action queues when bounded booking samples are empty', async () => {
+    const dashboardSummary: AdminDashboardSummary = {
+      generatedAt: new Date().toISOString(),
+      actionQueue: {
+        completedPaymentHolds: 2,
+        completedWithoutSettlement: 4,
+        completedWithoutSettlementBacklog: 1,
+        completedWithoutSettlementRecent: 3,
+        customerChoice: 3,
+        matchingExpired: 5,
+        matchingWithoutParticipants: 7,
+      },
+      appPresence: {
+        activeBookingCustomers: 0,
+        disabledPushCustomers: 0,
+        liveActiveBookingCustomers: 0,
+        liveAppCustomers: 0,
+        liveAppPartners: 0,
+        liveOpenMatchingCustomers: 0,
+        reachableCustomers: 0,
+        recentCustomerSessions: 0,
+        staleCustomerSessions: 0,
+        totalCustomers: 0,
+      },
+      partnerSupply: {
+        approvedVerification: 0,
+        bankApproved: 0,
+        blocked: 0,
+        cashDebtPartners: 0,
+        firstRevenue: 0,
+        kycApproved: 0,
+        level2Active: 0,
+        liveSessions: 0,
+        noLocation: 0,
+        offline: 0,
+        online: 0,
+        onlineAvailable: 0,
+        onlineAvailableSoon: 0,
+        onlineBusy: 0,
+        pendingVerification: 0,
+        staleLocation: 0,
+        supplyPressureLabel: 'No supply',
+        total: 0,
+        withdrawalProfileReady: 0,
+      },
+    };
+
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: new Date().toISOString(),
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/dashboard/summary?dateRange=today') {
+        return dashboardSummary;
+      }
+      return fallback;
+    });
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('<h3>Matching exceptions</h3>');
+    expect(markup).toContain('<strong class="ops-task-card-value">5 expired / 7 no Partner</strong>');
+    expect(markup).toContain('href="/bookings?view=attention"');
+    expect(markup).toContain('<h3>Customer choice</h3>');
+    expect(markup).toContain('<strong class="ops-task-card-value">3 booking(s)</strong>');
+    expect(markup).toContain('href="/bookings?view=customer-choice"');
+    expect(markup).toContain('<h3>Completed closeout</h3>');
+    expect(markup).toContain('<strong class="ops-task-card-value">2 hold / 3 recent</strong>');
+    expect(markup).toContain('href="/bookings?view=closeout"');
+    expect(markup).toContain('<span>Settlement gaps</span><strong>4</strong>');
+    expect(markup).toContain('<h2 id="dashboard-money-status-title">Money status</h2>');
+    expect(markup).toContain('<span>Settlement backlog</span><strong>1</strong>');
+  });
+
   it('renders primary command panels with the shared Vuexy admin section shell', async () => {
     mockedApiGet.mockResolvedValue({
       checks: [],
@@ -439,11 +572,8 @@ describe('DashboardPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('<h1>Start Shift</h1>');
-    expect(markup).toContain('Live start-of-shift workspace');
-    expect(markup).toContain('Work red/yellow lanes first.');
-    expect(markup).toContain('Live counters for bookings, app presence, supply, payments, and cash debt.');
-    expect(markup).toContain('Current live queues stay visible; dated totals follow the selected window.');
-    expect(markup).toContain('Full dashboard opens focused review lanes without loading them on Start Shift.');
+    expect(markup).not.toContain('Live start-of-shift workspace');
+    expect(markup).not.toContain('Current priorities, live service, money risk');
     expect(markup).not.toContain('<h1>HANDS Operations</h1>');
     expect(markup).not.toContain('Daily command center');
     expect(markup).toContain('href="/notifications"');
@@ -452,65 +582,63 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('href="/audit-log"');
     expect(markup).toContain('Operations History');
     expect(markup).toContain('href="/operations-handoff"');
-    expect(markup.indexOf('Operations History')).toBeLessThan(
-      markup.indexOf('id="dashboard-operations-command-board"'),
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-needs-action-now"',
     );
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-core-operating-counters"',
+      '<h2 id="dashboard-needs-action-now-title">Needs action now</h2>',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-core-operating-counters-title">Core operating counters</h2>',
+      'class="card admin-section admin-mt-20" id="dashboard-live-now"',
     );
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-operations-command-board"',
+      '<h2 id="dashboard-live-now-title">Live now</h2>',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-operations-command-board-title">Operations command board</h2>',
+      'class="card admin-section admin-mt-20" id="dashboard-money-status"',
     );
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-current-action-order"',
+      '<h2 id="dashboard-money-status-title">Money status</h2>',
     );
     expect(markup).toContain(
-      '<h2 id="dashboard-current-action-order-title">Current action order</h2>',
+      'class="card admin-section admin-mt-20" id="dashboard-today-work"',
     );
-    expect(markup).toContain('Follow this order now. Older shift context stays in Operations Handoff.');
-    expect(markup).toContain('Past review order');
-    expect(markup).toContain('href="/operations-handoff#operations-handoff-review-order"');
-    expect(markup).toContain('Now');
-    expect(markup).toContain('Next');
-    expect(markup).toContain('Watch');
-    expect(markup).toContain('href="/operations-handoff"');
-    expect(markup.indexOf('id="dashboard-operations-command-board"')).toBeLessThan(
-      markup.indexOf('id="dashboard-current-action-order"'),
+    expect(markup).toContain('<h2 id="dashboard-today-work-title">Today work</h2>');
+    expect(markup).toContain(
+      'class="card admin-section admin-mt-20" id="dashboard-today-result"',
     );
-    expect(markup.indexOf('id="dashboard-current-action-order"')).toBeLessThan(
-      markup.indexOf('id="dashboard-core-operating-counters"'),
+    expect(markup).toContain('<h2 id="dashboard-today-result-title">Today result</h2>');
+    expect(markup.indexOf('id="dashboard-needs-action-now"')).toBeLessThan(
+      markup.indexOf('id="dashboard-live-now"'),
     );
+    expect(markup.indexOf('id="dashboard-live-now"')).toBeLessThan(
+      markup.indexOf('id="dashboard-money-status"'),
+    );
+    expect(markup.indexOf('id="dashboard-money-status"')).toBeLessThan(
+      markup.indexOf('id="dashboard-today-work"'),
+    );
+    expect(markup.indexOf('id="dashboard-today-work"')).toBeLessThan(
+      markup.indexOf('id="dashboard-today-result"'),
+    );
+    expect(markup).not.toContain('id="dashboard-operations-command-board"');
+    expect(markup).not.toContain('id="dashboard-current-action-order"');
+    expect(markup).not.toContain('id="dashboard-core-operating-counters"');
     expect(markup).not.toContain('id="dashboard-booking-participant-flow"');
     expect(markup).not.toContain('id="dashboard-evidence-drilldown"');
     expect(markup).not.toContain('id="dashboard-booking-evidence-command-queue"');
-    expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-date-range"',
-    );
-    expect(markup).toContain('<h2 id="dashboard-date-range-title">Start Shift window</h2>');
-    expect(markup).not.toContain('Dashboard date range');
+    expect(markup).not.toContain('id="dashboard-booking-diagnostics"');
+    expect(markup).not.toContain('id="dashboard-full-diagnostics"');
+    expect(markup).not.toContain('id="dashboard-date-range"');
     expect(markup).not.toContain('operating handoff');
     expect(markup).not.toContain('finance handoff');
     expect(markup).toContain(
-      'class="card admin-section admin-mt-20" id="dashboard-on-demand-detail"',
+      'class="card admin-section admin-mt-20 start-shift-diagnostics-entry" id="dashboard-on-demand-detail"',
     );
-    expect(markup).toContain(
-      '<h2 id="dashboard-on-demand-detail-title">More operating detail</h2>',
-    );
-    expect(markup).toContain('Full dashboard opens focused review lanes without loading them on Start Shift.');
-    expect(markup).toContain('Live radar');
-    expect(markup).toContain('href="/?details=all#dashboard-live-operations-radar"');
-    expect(markup).toContain('Dispatch evidence');
-    expect(markup).toContain('href="/?details=all#dashboard-booking-participant-flow"');
-    expect(markup).toContain('Partner supply');
-    expect(markup).toContain('href="/?details=all#dashboard-partner-supply-status"');
-    expect(markup).toContain('Finance closeout');
-    expect(markup).toContain('href="/?details=all#dashboard-finance-closeout-status"');
+    expect(markup).toContain('<h2 id="dashboard-on-demand-detail-title">Diagnostics</h2>');
+    expect(markup).toContain('href="/?details=all"');
+    expect(markup).toContain('Booking records');
+    expect(markup).toContain('Partner records');
+    expect(markup).toContain('Finance records');
     expect(markup).not.toContain('Detailed dashboard loaded on demand');
     expect(markup).not.toContain('API source:');
     expect(markup).not.toContain('setup readiness');
@@ -528,7 +656,6 @@ describe('DashboardPage', () => {
     expect(markup).not.toContain('location readiness');
     expect(markup).not.toContain('payout readiness');
     expect(markup).not.toContain('onboarding readiness');
-    expect(markup).toContain('href="/bookings?view=chat"');
     expect(markup).not.toContain('href="/chat-archive"');
   });
 
@@ -648,6 +775,16 @@ describe('DashboardPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
+    expect(markup).toContain(
+      'aria-label="Booking diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-booking-diagnostics"',
+    );
+    expect(markup).toContain('<strong>Booking diagnostics</strong>');
+    expect(markup).toContain(
+      'aria-label="Full operating diagnostics" class="card admin-card admin-disclosure start-shift-diagnostics" id="dashboard-full-diagnostics"',
+    );
+    expect(markup).toContain('<strong>Full diagnostics</strong>');
+    expect(markup).not.toContain('id="dashboard-booking-diagnostics" open=""');
+    expect(markup).not.toContain('id="dashboard-full-diagnostics" open=""');
     expect(markup).toContain(
       'class="card admin-section admin-mt-20" id="dashboard-booking-participant-flow"',
     );

@@ -103,6 +103,26 @@ describe('PartnerDetailPayoutOperationsSection', () => {
           createdLine: 'Created 20 Jun 2026, 10:00',
           href: '/payouts?payoutId=batch-1',
           id: 'batch-1',
+          operatorEvidence: [
+            {
+              fallbackId: 'creator-1',
+              key: 'created-by',
+              label: 'Created by',
+              operator: { fullName: 'Finance Creator', id: 'creator-1' },
+            },
+            {
+              fallbackId: 'maker-1',
+              key: 'paid-by',
+              label: 'Paid by',
+              operator: { fullName: 'Finance Maker', id: 'maker-1' },
+            },
+            {
+              fallbackId: 'approver-2',
+              key: 'approved-by',
+              label: 'Approved by',
+              operator: { fullName: 'Finance Approver', id: 'approver-2' },
+            },
+          ],
           paidLine: 'Paid 20 Jun 2026, 11:00',
           status: 'PAID',
           totalNetLabel: '380,000 VND',
@@ -124,6 +144,9 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(rendered).toContain('Settlement ref settlement-1');
     expect(rendered).toContain('Recent payout batches');
     expect(rendered).toContain('380,000 VND');
+    expect(rendered).toContain('Created by Finance Creator');
+    expect(rendered).toContain('Paid by Finance Maker');
+    expect(rendered).toContain('Approved by Finance Approver');
     expect(rendered).toContain('Hold');
     expect(rendered).toContain('Gate');
     expect(rendered).toContain('Earning');

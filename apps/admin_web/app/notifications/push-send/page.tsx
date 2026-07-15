@@ -9,7 +9,7 @@ import {
   AdminTablePaginationFooter,
   AdminTableScroll,
 } from '../../../components/admin-data-table';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import { AdminTablePanel } from '../../../components/admin-table-panel';
 import {
   AdminFormControlButton,
@@ -24,7 +24,7 @@ import {
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
-import { AdminCard, AdminNoticeCard } from '../../../components/admin-surface';
+import { AdminCard, AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { shortId } from '../../../lib/admin-format';
@@ -157,23 +157,35 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
       description="Manual push workspace with recipient preview before creating persistent in-app notifications and FCM deliveries."
       metrics={[
         {
+          helper: 'Manual push campaigns in this period.',
+          kind: campaignRange === 'all' ? 'record' : 'period',
           label: 'Campaigns',
+          scope: campaignRangeLabel,
           value: totalCampaigns,
-          helper: `${campaignRangeLabel} manual sends; ${campaigns.length} loaded`,
         },
         {
-          label: 'Last send',
-          value: campaigns[0] ? shortId(campaigns[0].id) : '-',
           helper: campaigns[0] ? (
-            <DateTimeText value={campaigns[0].sentAt ?? campaigns[0].createdAt} />
+            <>
+              Most recent manual push record. <DateTimeText value={campaigns[0].sentAt ?? campaigns[0].createdAt} />
+            </>
           ) : (
-            'No campaign yet'
+            'Most recent manual push record.'
           ),
+          kind: 'record',
+          label: 'Last send',
+          scope: 'Delivery history',
+          value: campaigns[0] ? shortId(campaigns[0].id) : '-',
         },
         {
+          helper: (
+            <>
+              Recipient total across campaigns in this period. {totalNotifications} notifications.
+            </>
+          ),
+          kind: campaignRange === 'all' ? 'record' : 'period',
           label: 'Recipients',
+          scope: campaignRangeLabel,
           value: totalRecipients,
-          helper: `${totalNotifications} notifications in ${campaignRangeLabel}`,
         },
       ]}
       title="Push Send"
@@ -190,10 +202,10 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
         </AdminNoticeCard>
       ) : null}
 
-      <AdminFilterPanel
+      <AdminSection
         description="Preview recipients first, then send. Direct user sends require an exact user id."
-        resultLabel={preview ? `${preview.willSendCount} ready` : 'Preview required'}
-        resultTone={preview ? (preview.willSendCount ? 'success' : 'warning') : 'info'}
+        statusLabel={preview ? `${preview.willSendCount} ready` : 'Preview required'}
+        statusTone={preview ? (preview.willSendCount ? 'success' : 'warning') : 'info'}
         title="Create push campaign"
       >
         <AdminFormGrid className="notification-push-preview-form" method="get">
@@ -252,6 +264,18 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
           />
           <AdminFormControlButton>Preview recipients</AdminFormControlButton>
         </AdminFormGrid>
+        <AdminFilterSummary
+          ariaLabel="Active push send filters"
+          labels={pushSendActiveFilterLabels({
+            appDestination,
+            campaignRangeLabel,
+            locale,
+            targetRole,
+            targetSegment,
+            targetUserId,
+          })}
+          tone="info"
+        />
 
         {preview ? (
           <AdminCard className="notification-push-preview-card">
@@ -313,7 +337,7 @@ export default async function PushSendPage({ searchParams }: { searchParams?: Pu
             </AdminFormShell>
           </AdminCard>
         ) : null}
-      </AdminFilterPanel>
+      </AdminSection>
 
       <AdminTablePanel
         resultLabel={`${campaigns.length} loaded of ${totalCampaigns} total`}
@@ -416,6 +440,36 @@ function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
+function pushSendActiveFilterLabels({
+  appDestination,
+  campaignRangeLabel,
+  locale,
+  targetRole,
+  targetSegment,
+  targetUserId,
+}: {
+  readonly appDestination: string;
+  readonly campaignRangeLabel: string;
+  readonly locale: string;
+  readonly targetRole: string;
+  readonly targetSegment: string;
+  readonly targetUserId: string;
+}) {
+  const labels = [
+    `Target: ${targetRole === 'PROVIDER' ? 'Partners' : 'Customers'}`,
+    `Audience: ${pushSegmentLabel(targetSegment, targetRole)}`,
+    `Open page: ${pushDestinationLabel(appDestination, targetRole)}`,
+    `Language: ${pushLocaleLabel(locale, targetRole)}`,
+    `Campaign rows: ${campaignRangeLabel}`,
+  ];
+
+  if (targetUserId) {
+    labels.push(`Specific user: ${targetUserId}`);
+  }
+
+  return labels;
+}
+
 function normalizeTargetRole(value: string) {
   return value === 'PROVIDER' ? 'PROVIDER' : 'CUSTOMER';
 }
@@ -462,4 +516,11 @@ function pushDestinationLabel(value: string, targetRole?: string) {
         ? CUSTOMER_DESTINATION_OPTIONS
         : [...CUSTOMER_DESTINATION_OPTIONS, ...PARTNER_DESTINATION_OPTIONS];
   return options.find((option) => option.value === value)?.label ?? 'Home / Notification center';
+}
+
+function pushLocaleLabel(value: string, targetRole?: string) {
+  if (targetRole === 'PROVIDER') {
+    return 'Vietnamese';
+  }
+  return LOCALE_OPTIONS.find((option) => option.value === value)?.label ?? 'Default language';
 }

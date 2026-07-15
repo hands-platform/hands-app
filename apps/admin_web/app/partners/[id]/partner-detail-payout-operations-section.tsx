@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import {
+  AdminFinanceOperatorEvidence,
+  type AdminFinanceOperatorEvidenceLine,
+} from '../../../components/admin-finance-operator-evidence';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminSectionHeader } from '../../../components/admin-page-template';
 import { AdminDetailGrid, AdminTaskCard, AdminTaskGrid } from '../../../components/admin-surface';
@@ -57,6 +61,7 @@ export type PartnerPayoutBatchRow = {
   readonly createdLineNode?: ReactNode;
   readonly href: string;
   readonly id: string;
+  readonly operatorEvidence?: readonly AdminFinanceOperatorEvidenceLine[];
   readonly paidLine?: string | null;
   readonly paidLineNode?: ReactNode;
   readonly status: string;
@@ -272,6 +277,7 @@ export function PartnerDetailPayoutOperationsSection({
                     <StatusBadgeFromPillClass pillClass={payoutBatchPill(batch.status)}>
                       {batch.status}
                     </StatusBadgeFromPillClass>
+                    <AdminFinanceOperatorEvidence lines={batch.operatorEvidence ?? []} />
                   </td>
                   <td>
                     <span className="muted">{batch.createdLineNode ?? batch.createdLine}</span>

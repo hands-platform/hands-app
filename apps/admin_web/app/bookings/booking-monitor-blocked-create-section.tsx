@@ -3,6 +3,7 @@ import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-ta
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormGridFields,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSection } from '../../components/admin-surface';
@@ -72,7 +73,7 @@ export function BookingMonitorBlockedCreateSection({
       description="Booking create requests stopped before payment authorization and matching. These records are evidence for support follow-up, not customer or Partner priority decisions."
       title="Blocked booking attempts"
     >
-      <div className="filter-grid admin-mt-14">
+      <AdminFormGridFields className="admin-mt-14">
         <AdminFormSelect
           label="Create gate filter"
           name="gateFilter"
@@ -90,7 +91,7 @@ export function BookingMonitorBlockedCreateSection({
             Clear create gate
           </AdminFormControlButton>
         </div>
-      </div>
+      </AdminFormGridFields>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table admin-mt-14"

@@ -29,6 +29,11 @@ describe('BookingMonitorLiveStatusSection', () => {
     const source = readFileSync(join(process.cwd(), 'app/bookings/booking-monitor-live-status-section.tsx'), 'utf8');
 
     expect(markup.match(/class="metric-card"/g) ?? []).toHaveLength(2);
+    expect(markup).toContain('class="metric-card-scope is-live"');
+    expect(markup).toContain('class="metric-card-scope is-risk"');
+    expect(markup).toContain('Live');
+    expect(markup).toContain('Needs action');
+    expect(markup).not.toContain('Booking monitor summary');
     expect(markup).toContain('admin-metric-grid');
     expect(source).toContain('AdminMetricGrid');
     expect(source).not.toContain('<section className="grid">');

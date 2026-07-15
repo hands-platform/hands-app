@@ -18,6 +18,7 @@ describe('NotificationFilterBoardSection', () => {
       activeBookingLabel: 'book-1234',
       activeFilterDescription: 'latest delivery attempts that returned an FCM push failure.',
       activeFilterLabel: 'Failed sends',
+      activeIncidentState: 'all',
       activeReview: 'failed',
       activeReviewRunbook: {
         detail: 'The latest send attempt failed.',
@@ -28,6 +29,7 @@ describe('NotificationFilterBoardSection', () => {
       activeRangeLabel: 'Last 7 days',
       clearHref: '/notifications?range=7d&review=all',
       filteredCount: 2,
+      incidentStateLinks: [],
       links: buildLinks('7d'),
       rangeLinks: buildRangeLinks(),
       totalCount: 10,
@@ -38,6 +40,10 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('Notification operation filters');
     expect(rendered).toContain('Active range: Last 7 days');
     expect(rendered).toContain('Active queue: Failed sends');
+    expect(rendered).toContain('Range: Last 7 days');
+    expect(rendered).toContain('Queue: Failed sends');
+    expect(rendered).toContain('Rows: 2/10');
+    expect(rendered).toContain('Booking: book-1234');
     expect(rendered).toContain('latest delivery attempts that returned an FCM push failure.');
     expect(rendered).toContain('Retry gate');
     expect(rendered).toContain('The latest send attempt failed.');
@@ -56,8 +62,11 @@ describe('NotificationFilterBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'booking-date-filter-button is-active',
-        'pill pill-success',
         'pill pill-warn',
+        'pill pill-info',
+        'booking-date-filter-bar notification-review-filter-bar',
+        'notification-filter-group-label',
+        'booking-date-filter-buttons notification-review-filter-buttons',
       ]),
     );
   });
@@ -67,12 +76,14 @@ describe('NotificationFilterBoardSection', () => {
       activeBookingLabel: null,
       activeFilterDescription: null,
       activeFilterLabel: 'All notifications',
+      activeIncidentState: 'all',
       activeReview: 'all',
       activeReviewRunbook: null,
       activeRange: 'today',
       activeRangeLabel: 'Today',
       clearHref: '/notifications?review=all',
       filteredCount: 10,
+      incidentStateLinks: [],
       links: buildLinks(),
       rangeLinks: buildRangeLinks(),
       totalCount: 10,
@@ -84,19 +95,123 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page', 'page']);
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['booking-date-filter-button is-active', 'pill pill-warn']),
+      expect.arrayContaining(['booking-date-filter-button is-active', 'pill pill-success']),
     );
   });
 
-  it('uses shared badge atoms for runbook and review filter chips', () => {
+  it('renders server-backed system incident state controls only when supplied', () => {
+    const section = NotificationFilterBoardSection({
+      activeBookingLabel: null,
+      activeFilterDescription: 'Admin system alerts.',
+      activeFilterLabel: 'System incidents',
+      activeIncidentState: 'open',
+      activeReview: 'system-incidents',
+      activeReviewRunbook: null,
+      activeRange: 'today',
+      activeRangeLabel: 'Today',
+      clearHref: '/notifications?review=all',
+      filteredCount: 2,
+      incidentStateLinks: [
+        { href: '/notifications?review=system-incidents', label: 'All system', state: 'all' },
+        {
+          href: '/notifications?review=system-incidents&incidentState=open',
+          label: 'Open',
+          state: 'open',
+        },
+        {
+          href: '/notifications?review=system-incidents&incidentState=recovered',
+          label: 'Recovered',
+          state: 'recovered',
+        },
+        {
+          href: '/notifications?review=system-incidents&incidentState=legacy',
+          label: 'Legacy review',
+          state: 'legacy',
+        },
+      ],
+      links: buildLinks(),
+      rangeLinks: buildRangeLinks(),
+      totalCount: 2,
+    });
+
+    const rendered = normalizedText(section);
+    expect(rendered).toContain('Incident state');
+    expect(rendered).toContain('Incident: Open');
+    expect(rendered).toContain('Recovered');
+    expect(rendered).toContain('Legacy review');
+    expect(hrefsIn(section)).toContain('/notifications?review=system-incidents&incidentState=open');
+  });
+
+  it('renders Finance SLA age and owner controls only when supplied', () => {
+    const section = NotificationFilterBoardSection({
+      activeBookingLabel: null,
+      activeFilterDescription: 'Overdue Finance reviews.',
+      activeFilterLabel: 'Finance overdue',
+      activeFinanceAge: '72-plus',
+      activeIncidentState: 'all',
+      activeReview: 'finance-overdue',
+      activeReviewRunbook: null,
+      activeRange: 'all',
+      activeRangeLabel: 'All loaded',
+      clearHref: '/notifications?range=all&review=all',
+      filteredCount: 2,
+      financeAgeLinks: [
+        { href: '/notifications?range=all&review=finance-overdue', label: 'All overdue', value: 'all' },
+        { href: '/notifications?range=all&review=finance-overdue&financeAge=48-72', label: '48–72h', value: '48-72' },
+        { href: '/notifications?range=all&review=finance-overdue&financeAge=72-plus', label: '72h+', value: '72-plus' },
+      ],
+      financeOwner: 'admin-owner-1',
+      financeOwnerLinks: [
+        { href: '/notifications?range=all&review=finance-overdue', label: 'All (5)', value: '' },
+        {
+          href: '/notifications?range=all&review=finance-overdue&financeOwner=admin-owner-1',
+          label: 'My reviews (2)',
+          value: 'admin-owner-1',
+        },
+        {
+          href: '/notifications?range=all&review=finance-overdue&financeOwner=unassigned',
+          label: 'Unassigned (3)',
+          value: 'unassigned',
+        },
+      ],
+      financeOwnerOptions: [
+        { label: 'All owners (5)', value: '' },
+        { label: 'Unassigned (3)', value: 'unassigned' },
+        { label: 'Finance Owner (2)', value: 'admin-owner-1' },
+      ],
+      incidentStateLinks: [],
+      links: buildLinks(),
+      rangeLinks: buildRangeLinks(),
+      totalCount: 2,
+    });
+
+    const rendered = normalizedText(section);
+    expect(rendered).toContain('SLA age');
+    expect(rendered).toContain('SLA: 72h+');
+    expect(rendered).toContain('Owner: Finance Owner');
+    expect(rendered).toContain('Review owner');
+    expect(rendered).toContain('Apply owner');
+    expect(rendered).toContain('Owner workload');
+    expect(rendered).toContain('My reviews (2)');
+    expect(rendered).toContain('Unassigned (3)');
+    expect(hrefsIn(section)).toContain(
+      '/notifications?range=all&review=finance-overdue&financeOwner=admin-owner-1',
+    );
+    expect(hrefsIn(section)).toContain(
+      '/notifications?range=all&review=finance-overdue&financeAge=72-plus',
+    );
+  });
+
+  it('uses shared segmented controls for date and review filters', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/notifications/notification-filter-board-section.tsx'),
       'utf8',
     );
 
     expect(source).toContain('StatusBadge');
-    expect(source).toContain('AdminFilterChipGroup');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).toContain('AdminSegmentedControl');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('<div className="participant-list');

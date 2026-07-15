@@ -44,6 +44,10 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
           currency: 'VND',
           id: 'withdrawal-request-2',
           paidAt: '2026-06-26T09:00:00.000Z',
+          reviewedByAdminId: 'finance-maker-1',
+          paidBy: { id: 'finance-maker-1', fullName: 'Finance Maker' },
+          approvalAdminId: 'finance-approver-2',
+          approvalAdmin: { id: 'finance-approver-2', fullName: 'Finance Approver' },
           providerProfileId: 'provider-1',
           status: 'PAID',
           transferRef: 'VCB-PAID-1',
@@ -65,6 +69,8 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
     expect(rendered).toContain('Reject');
     expect(rendered).toContain('300.000 VND');
     expect(rendered).toContain('Ref VCB-PAID-1');
+    expect(rendered).toContain('Paid by Finance Maker');
+    expect(rendered).toContain('Approved by Finance Approver');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-detail-review-card admin-mb-16 admin-section',
@@ -77,6 +83,31 @@ describe('PartnerDetailWalletWithdrawalRequestSection', () => {
         'admin-form-control-button button button-sm button-danger',
       ]),
     );
+  });
+
+  it('requires a separate Finance approver before paid closeout from partner detail', () => {
+    const request = {
+      amount: 650000,
+      bankAccount: null,
+      bankAccountId: null,
+      createdAt: '2026-07-15T09:00:00.000Z',
+      currency: 'VND',
+      id: 'withdrawal-approved',
+      providerProfileId: 'provider-1',
+      status: 'APPROVED',
+    } satisfies AdminProviderWalletWithdrawalRequest;
+    const section = PartnerDetailWalletWithdrawalRequestSection({
+      financeApproverOptions: [{ label: 'Finance Approver', value: 'finance-approver-2' }],
+      requests: [request],
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Separate Finance approver for withdrawal withdrawal-approved');
+    expect(rendered).toContain('Finance Approver');
+    expect(sectionSource).toContain('name="approvalAdminId"');
+    expect(sectionSource).toContain('disabled={financeApproverOptions.length === 0}');
   });
 
   it('shows bank correction requests as partner-pending instead of finance-approvable', () => {

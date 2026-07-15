@@ -255,38 +255,38 @@ const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
     countTone: 'pill-neutral',
     description:
-      'Live requests from booking submission through matching wait before final Partner assignment.',
+      'Current requests from booking submission through matching wait before final Partner assignment.',
     emptyMessage: 'No realtime bookings are waiting.',
     key: 'pre-match',
-    title: 'Realtime Bookings',
+    title: 'Live / Today Bookings',
   },
   {
     countTone: 'pill-info',
-    description: 'Matched bookings currently moving through dispatch and service.',
+    description: 'Live matched bookings currently moving through dispatch, arrival, and service.',
     emptyMessage: 'No post-match bookings are in progress.',
     key: 'post-match-in-progress',
-    title: 'Post-match / In Progress',
+    title: 'Live In Progress',
   },
   {
     countTone: 'pill-success',
-    description: 'Completed bookings ready for normal closeout review.',
+    description: 'Completed booking records ready for normal payment, earning, and closeout review.',
     emptyMessage: 'No completed bookings in this result set.',
     key: 'completed',
-    title: 'Completed',
+    title: 'Closeout Records',
   },
   {
     countTone: 'pill-warn',
     description: 'Partner-side cancellations and no-show reviews still needing admin evidence review.',
     emptyMessage: 'No pending post-match cancellation reviews in this result set.',
     key: 'post-match-cancellations-pending',
-    title: 'Post-match Cancellations / Needs Review',
+    title: 'Cancellation Review / Needs Action',
   },
   {
     countTone: 'pill-success',
     description: 'Approved, held, or auto-approved cancellation decisions retained for audit.',
     emptyMessage: 'No resolved post-match cancellation decisions in this result set.',
     key: 'post-match-cancellations-resolved',
-    title: 'Post-match Cancellations / Resolved',
+    title: 'Cancellation Records / Resolved',
   },
 ];
 
@@ -421,7 +421,9 @@ function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly Boo
         className: metric.tone,
         detail: metric.helper,
         key: metric.label,
+        kind: 'action',
         label: metric.label,
+        scope: 'Needs action',
         value: metric.value,
       }))}
     />

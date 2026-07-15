@@ -27,6 +27,8 @@ import {
   AdminFormSelect,
 } from '../../../components/admin-form-controls';
 import { AdminEmptyState } from '../../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import {
   AdminMiniMetricStrip,
   AdminOverviewCommandCard,
@@ -117,7 +119,7 @@ export default async function PartnerOverviewPage({
       title="Partner Overview"
     >
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             <StatusBadge tone="success">Vietnam supply</StatusBadge>
@@ -128,7 +130,7 @@ export default async function PartnerOverviewPage({
         }
         className="partner-overview-filter-panel"
         description="Default view stays focused on current supply and bounded operating windows."
-        statusLabel={overview.rangeLabel}
+        resultLabel={overview.rangeLabel}
         title="Partner supply range"
       >
         <AdminSegmentedControl
@@ -192,7 +194,11 @@ export default async function PartnerOverviewPage({
           </AdminFormControlButton>
         </AdminFormGrid>
         {activeFilters.length > 0 ? (
-          <div className="partner-overview-active-filters" aria-label="Active partner overview filters">
+          <AdminFilterSummary
+            ariaLabel="Active partner overview filters"
+            className="partner-overview-active-filters"
+            labels={[]}
+          >
             <span>Active filters</span>
             {activeFilters.map((filter) => (
               <a aria-label={`Remove ${filter.label} filter ${filter.value}`} key={filter.key} href={filter.removeHref}>
@@ -204,14 +210,19 @@ export default async function PartnerOverviewPage({
             <a className="is-reset" href={partnerOverviewHref(range)}>
               Clear all
             </a>
-          </div>
+          </AdminFilterSummary>
         ) : null}
-      </AdminSection>
+      </AdminFilterPanel>
 
       {overview.summaryKpis.length > 0 ? (
         <AdminOverviewCommandGrid ariaLabel="Partner supply summary">
           {overview.summaryKpis.map((kpi, index) => (
-            <PartnerKpiCard key={kpi.key} icon={summaryIcons[index % summaryIcons.length]} kpi={kpi} />
+            <PartnerKpiCard
+              key={kpi.key}
+              icon={summaryIcons[index % summaryIcons.length]}
+              kpi={kpi}
+              rangeLabel={overview.rangeLabel}
+            />
           ))}
         </AdminOverviewCommandGrid>
       ) : null}
@@ -240,7 +251,12 @@ export default async function PartnerOverviewPage({
       {overview.activityRetention.cards.length > 0 ? (
         <AdminOverviewGrid ariaLabel="Partner activity and retention" variant="segment">
           {overview.activityRetention.cards.map((kpi, index) => (
-            <PartnerKpiCard key={kpi.key} icon={activityIcons[index % activityIcons.length]} kpi={kpi} />
+            <PartnerKpiCard
+              key={kpi.key}
+              icon={activityIcons[index % activityIcons.length]}
+              kpi={kpi}
+              rangeLabel={overview.rangeLabel}
+            />
           ))}
         </AdminOverviewGrid>
       ) : null}
@@ -277,7 +293,7 @@ export default async function PartnerOverviewPage({
       {overview.segments.length > 0 ? (
         <AdminOverviewGrid ariaLabel="Partner segments" variant="segment">
           {overview.segments.map((segment) => (
-            <PartnerSegmentCard key={segment.key} segment={segment} />
+            <PartnerSegmentCard key={segment.key} rangeLabel={overview.rangeLabel} segment={segment} />
           ))}
         </AdminOverviewGrid>
       ) : null}
@@ -360,21 +376,49 @@ const selectionSortOptions = [
 function PartnerKpiCard({
   icon: Icon,
   kpi,
+  rangeLabel,
 }: {
   readonly icon: typeof Users;
   readonly kpi: AdminPartnerOverviewKpi;
+  readonly rangeLabel: string;
 }) {
   const tone = kpi.value === null ? 'neutral' : kpi.value > 0 ? 'primary' : 'neutral';
+  const meta = partnerOverviewKpiMeta(kpi, rangeLabel);
 
   return (
     <AdminKpiCard
       className={`partner-overview-kpi-card is-${tone}`}
       helper={kpi.detail}
       icon={Icon}
+      kind={meta.kind}
       label={kpi.label}
+      scope={meta.scope}
       value={formatKpiValue(kpi)}
     />
   );
+}
+
+function partnerOverviewKpiMeta(kpi: AdminPartnerOverviewKpi, rangeLabel: string) {
+  const normalized = `${kpi.key} ${kpi.label}`.toLowerCase();
+
+  if (normalized.includes('ready') || normalized.includes('eligible') || normalized.includes('online')) {
+    return { kind: 'live', scope: 'Live' } as const;
+  }
+
+  if (
+    normalized.includes('risk') ||
+    normalized.includes('inactive') ||
+    normalized.includes('wallet') ||
+    normalized.includes('quality')
+  ) {
+    return { kind: 'risk', scope: rangeLabel } as const;
+  }
+
+  if (normalized.includes('approval') || normalized.includes('verification') || normalized.includes('pending')) {
+    return { kind: 'action', scope: 'Pending' } as const;
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
 }
 
 function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartnerOverviewOperatingStatusCard[] }) {
@@ -389,6 +433,7 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
       {cards.length > 0 ? (
         cards.map((card) => {
           const Icon = partnerOperatingStatusIcons[card.key] ?? RadioTower;
+          const meta = partnerOperatingStatusMeta(card);
 
           return (
             <AdminOverviewCommandCard
@@ -400,7 +445,9 @@ function OperatingStatusBoard({ cards }: { readonly cards: readonly AdminPartner
               icon={<Icon size={18} aria-hidden="true" />}
               iconClassName="partner-overview-command-icon"
               key={card.key}
+              kind={meta.kind}
               label={card.label}
+              scope={meta.scope}
               value={formatNumber(card.count)}
             >
               <em>
@@ -501,6 +548,7 @@ function PartnerPriorityBoard({
     >
         {cards.map((card) => {
           const Icon = card.icon;
+          const meta = partnerPriorityCardMeta(card);
 
           return (
             <AdminOverviewCommandCard
@@ -512,7 +560,9 @@ function PartnerPriorityBoard({
               icon={<Icon size={20} aria-hidden="true" />}
               iconClassName="partner-overview-command-icon"
               key={card.key}
+              kind={meta.kind}
               label={card.label}
+              scope={meta.scope}
               value={card.value}
             >
               <em>
@@ -942,8 +992,15 @@ function ActionRow({ row }: { readonly row: AdminPartnerOverviewActionRow }) {
   );
 }
 
-function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOverviewSegment }) {
+function PartnerSegmentCard({
+  rangeLabel,
+  segment,
+}: {
+  readonly rangeLabel: string;
+  readonly segment: AdminPartnerOverviewSegment;
+}) {
   const Icon = partnerSegmentIcons[segment.key] ?? Activity;
+  const meta = partnerSegmentCardMeta(segment, rangeLabel);
 
   return (
     <AdminOverviewCommandCard
@@ -952,12 +1009,65 @@ function PartnerSegmentCard({ segment }: { readonly segment: AdminPartnerOvervie
       detail={segment.explanation}
       icon={<Icon size={20} aria-hidden="true" />}
       iconClassName="partner-overview-command-icon"
+      kind={meta.kind}
       label={segment.label}
+      scope={meta.scope}
       value={formatNumber(segment.count)}
     >
       <AdminTextLink href={segment.href}>{segment.recommendedAction}</AdminTextLink>
     </AdminOverviewCommandCard>
   );
+}
+
+function partnerOperatingStatusMeta(card: AdminPartnerOverviewOperatingStatusCard) {
+  if (card.key === 'ready-now' || card.key === 'busy-now' || card.key === 'available-soon') {
+    return { kind: 'live', scope: 'Live' } as const;
+  }
+
+  if (card.key === 'inactive-7d' || card.key === 'offline' || card.tone === 'danger') {
+    return { kind: 'risk', scope: 'Needs action' } as const;
+  }
+
+  return { kind: 'record', scope: 'Current queue' } as const;
+}
+
+function partnerPriorityCardMeta(card: PartnerPriorityCardConfig) {
+  if (card.key === 'wallet-risk' || card.key === 'quality-risk' || card.tone === 'danger') {
+    return card.tone === 'success'
+      ? ({ kind: 'live', scope: 'Current queue' } as const)
+      : ({ kind: 'risk', scope: 'Needs action' } as const);
+  }
+
+  if (card.tone === 'warning') {
+    return { kind: 'action', scope: 'Pending' } as const;
+  }
+
+  return { kind: 'live', scope: 'Live' } as const;
+}
+
+function partnerSegmentCardMeta(segment: AdminPartnerOverviewSegment, rangeLabel: string) {
+  const normalized = `${segment.key} ${segment.label}`.toLowerCase();
+
+  if (
+    normalized.includes('pending') ||
+    normalized.includes('documents') ||
+    normalized.includes('payout-blocked')
+  ) {
+    return { kind: 'action', scope: 'Pending' } as const;
+  }
+
+  if (
+    normalized.includes('risk') ||
+    normalized.includes('negative') ||
+    normalized.includes('cancellation') ||
+    normalized.includes('no-show') ||
+    normalized.includes('low-rating') ||
+    normalized.includes('blocked')
+  ) {
+    return { kind: 'risk', scope: 'Needs action' } as const;
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
 }
 
 const partnerSegmentIcons: Record<string, typeof WalletCards> = {

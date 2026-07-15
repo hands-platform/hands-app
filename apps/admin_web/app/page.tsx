@@ -2,9 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
   BellRing,
-  BookOpenCheck,
   CalendarClock,
-  ChevronDown,
   FileClock,
   ListChecks,
   Settings2,
@@ -20,6 +18,8 @@ import { DateTimeText } from '../components/date-time-text';
 import {
   AdminActionCard,
   AdminDetailGrid,
+  AdminDisclosure,
+  AdminDisclosureCard,
   AdminNotePanel,
   AdminSection,
   AdminTaskBreakdown,
@@ -53,7 +53,6 @@ import {
   AdminProvider,
   AdminRefund,
   AdminRefundSummary,
-  AdminUser,
   adminGet,
 } from '../lib/admin-api';
 import {
@@ -96,6 +95,7 @@ import {
 } from './dashboard-page-model';
 
 const DASHBOARD_INFO_HEADERS = ['Metric', 'Value'] as const;
+const DASHBOARD_SUMMARY_STALE_MS = 5 * 60_000;
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -111,15 +111,62 @@ type DashboardTraceSummaryMetric = {
   readonly helper?: ReactNode;
   readonly href?: string;
   readonly key?: string;
+  readonly kind?: 'action' | 'live' | 'period' | 'record' | 'risk';
   readonly label: ReactNode;
+  readonly scope?: ReactNode;
   readonly value: ReactNode;
 };
 
+type DashboardSourceState = 'available' | 'stale' | 'unavailable';
+
+function dashboardSourceState(value: unknown, generatedAt?: string | null): DashboardSourceState {
+  if (value === null || value === undefined) {
+    return 'unavailable';
+  }
+  if (!generatedAt) {
+    return 'available';
+  }
+  const generatedAtMs = Date.parse(generatedAt);
+  if (!Number.isFinite(generatedAtMs)) {
+    return 'stale';
+  }
+  return Date.now() - generatedAtMs > DASHBOARD_SUMMARY_STALE_MS ? 'stale' : 'available';
+}
+
+function dashboardMetricWithSourceState(
+  metric: DashboardTraceSummaryMetric,
+  state: DashboardSourceState,
+  refreshHref: string,
+): DashboardTraceSummaryMetric {
+  if (state === 'available') {
+    return metric;
+  }
+  return {
+    ...metric,
+    helper: state === 'stale' ? 'Refresh to load current data.' : 'This data source did not respond.',
+    href: refreshHref,
+    kind: 'risk',
+    scope: state === 'stale' ? 'Stale' : 'Data unavailable',
+    value: state === 'stale' ? metric.value : 'Unavailable',
+  };
+}
+
+function combinedDashboardSourceState(states: readonly DashboardSourceState[]): DashboardSourceState {
+  if (states.includes('unavailable')) {
+    return 'unavailable';
+  }
+  return states.includes('stale') ? 'stale' : 'available';
+}
+
 function DashboardTraceSummary({
   className,
+  defaultKind,
+  defaultScope,
   metrics,
 }: {
   readonly className?: string;
+  readonly defaultKind?: DashboardTraceSummaryMetric['kind'];
+  readonly defaultScope?: ReactNode;
   readonly metrics: readonly DashboardTraceSummaryMetric[];
 }) {
   return (
@@ -131,7 +178,9 @@ function DashboardTraceSummary({
         detail: metric.helper,
         href: metric.href,
         key: metric.key,
+        kind: metric.kind ?? defaultKind,
         label: metric.label,
+        scope: metric.scope ?? defaultScope,
         value: metric.value,
       }))}
     />
@@ -160,9 +209,51 @@ function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   };
 }
 
+function emptyEarningSummary(): AdminEarningSummary {
+  return {
+    availableNetAmount: 0,
+    count: 0,
+    currency: 'VND',
+    grossAmount: 0,
+    netAmount: 0,
+    paidNetAmount: 0,
+    pendingNetAmount: 0,
+    platformFee: 0,
+    withholdingAmount: 0,
+  };
+}
+
 function emptyDashboardSummary(): AdminDashboardSummary {
   return {
     generatedAt: new Date(0).toISOString(),
+    actionQueue: {
+      completedPaymentHolds: 0,
+      completedWithoutSettlement: 0,
+      completedWithoutSettlementBacklog: 0,
+      completedWithoutSettlementRecent: 0,
+      customerChoice: 0,
+      matchingExpired: 0,
+      matchingWithoutParticipants: 0,
+    },
+    bookingActivity: {
+      live: {
+        active: 0,
+        arrived: 0,
+        customerChoice: 0,
+        inService: 0,
+        matched: 0,
+        onTheWay: 0,
+        openMatching: 0,
+      },
+      period: {
+        cancelled: 0,
+        completed: 0,
+        expired: 0,
+        noShow: 0,
+        refunded: 0,
+        total: 0,
+      },
+    },
     appPresence: {
       activeBookingCustomers: 0,
       disabledPushCustomers: 0,
@@ -314,6 +405,14 @@ type OperationsCommandBoardItem = {
   checks: string[];
 };
 
+type StartShiftWorkItem = {
+  count: number;
+  href: string;
+  label: string;
+  scope: string;
+  tone: DashboardTone;
+};
+
 type BookingEvidenceCommandQueueItem = {
   lane: string;
   status: string;
@@ -356,7 +455,7 @@ const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: s
 
 function buildFullDashboardData(input: {
   activePayoutBatches: AdminPayoutBatch[];
-  appPresence: ReturnType<typeof buildAppPresence>;
+  appPresence: AdminDashboardSummary['appPresence'];
   appSessions: AdminAppSession[];
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   bookings: AdminBooking[];
@@ -370,7 +469,7 @@ function buildFullDashboardData(input: {
   matchingControl: ReturnType<typeof buildMatchingControlRoom>;
   notifications: AdminNotification[];
   operationalPolicies: AdminOperationalPolicySetting[];
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  partnerSupply: AdminDashboardSummary['partnerSupply'];
   payoutBatches: AdminPayoutBatch[];
   payments: AdminPayment[];
   providers: AdminProvider[];
@@ -451,29 +550,25 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const shouldRenderFullDashboard = dashboardViewMode.shouldRenderFullDashboard;
   const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
-    dashboardSummary,
-    users,
+    dashboardSummaryResponse,
     providers,
     bookings,
     payments,
-    paymentSummary,
-    earnings,
+    paymentSummaryResponse,
+    earningsResponse,
     earningRows,
     refunds,
-    refundSummary,
+    refundSummaryResponse,
     notifications,
-    notificationSummary,
+    notificationSummaryResponse,
     payoutBatches,
-    payoutBatchSummary,
+    payoutBatchSummaryResponse,
     appSessions,
     auditLogs,
-    cashSettlementSummary,
+    cashSettlementSummaryResponse,
     operationalPolicies,
   ] = await Promise.all([
-    adminGet<AdminDashboardSummary>(dashboardDataHrefs.dashboardSummaryHref, emptyDashboardSummary()),
-    dashboardDataHrefs.usersHref
-      ? adminGet<AdminUser[]>(dashboardDataHrefs.usersHref, [])
-      : Promise.resolve([]),
+    adminGet<AdminDashboardSummary | null>(dashboardDataHrefs.dashboardSummaryHref, null),
     dashboardDataHrefs.partnersHref
       ? adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, [])
       : Promise.resolve([]),
@@ -482,24 +577,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ? adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, [])
       : Promise.resolve([]),
     adminGet<AdminPaymentSummary | null>(dashboardDataHrefs.paymentSummaryHref, null),
-    adminGet<AdminEarningSummary>(dashboardDataHrefs.earningsSummaryHref, {
-      count: 0,
-      grossAmount: 0,
-      platformFee: 0,
-      withholdingAmount: 0,
-      netAmount: 0,
-      pendingNetAmount: 0,
-      availableNetAmount: 0,
-      paidNetAmount: 0,
-      currency: 'VND',
-    }),
+    adminGet<AdminEarningSummary | null>(dashboardDataHrefs.earningsSummaryHref, null),
     dashboardDataHrefs.earningsHref
       ? adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, [])
       : Promise.resolve([]),
     dashboardDataHrefs.refundsHref
       ? adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, [])
       : Promise.resolve([]),
-    adminGet<AdminRefundSummary>(dashboardDataHrefs.refundsSummaryHref, EMPTY_REFUND_SUMMARY),
+    adminGet<AdminRefundSummary | null>(dashboardDataHrefs.refundsSummaryHref, null),
     dashboardDataHrefs.notificationsHref
       ? adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, [])
       : Promise.resolve([]),
@@ -514,14 +599,58 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     dashboardDataHrefs.bookingGateAuditHref
       ? adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, [])
       : Promise.resolve([]),
-    adminGet<AdminCashSettlementSummary>(
-      dashboardDataHrefs.cashSettlementSummaryHref,
-      emptyCashSettlementSummary(),
-    ),
+    adminGet<AdminCashSettlementSummary | null>(dashboardDataHrefs.cashSettlementSummaryHref, null),
     dashboardDataHrefs.operationalPolicyHref
       ? adminGet<AdminOperationalPolicySetting[]>(dashboardDataHrefs.operationalPolicyHref, [])
       : Promise.resolve([]),
   ]);
+
+  const dashboardSummary = dashboardSummaryResponse ?? emptyDashboardSummary();
+  const paymentSummary = paymentSummaryResponse;
+  const earnings = earningsResponse ?? emptyEarningSummary();
+  const refundSummary = refundSummaryResponse ?? EMPTY_REFUND_SUMMARY;
+  const notificationSummary = notificationSummaryResponse;
+  const payoutBatchSummary = payoutBatchSummaryResponse;
+  const cashSettlementSummary = cashSettlementSummaryResponse ?? emptyCashSettlementSummary();
+  const dashboardRefreshHref = buildDashboardDetailsHref(dashboardViewMode.detailsMode, params);
+  const dashboardSummaryState = dashboardSourceState(
+    dashboardSummaryResponse,
+    dashboardSummaryResponse?.generatedAt,
+  );
+  const paymentSummaryState = dashboardSourceState(
+    paymentSummaryResponse,
+    paymentSummaryResponse?.generatedAt,
+  );
+  const earningSummaryState = dashboardSourceState(earningsResponse, earningsResponse?.generatedAt);
+  const refundSummaryState = dashboardSourceState(
+    refundSummaryResponse,
+    refundSummaryResponse?.generatedAt,
+  );
+  const notificationSummaryState = dashboardSourceState(
+    notificationSummaryResponse,
+    notificationSummaryResponse?.generatedAt,
+  );
+  const payoutSummaryState = dashboardSourceState(
+    payoutBatchSummaryResponse,
+    payoutBatchSummaryResponse?.generatedAt,
+  );
+  const cashSummaryState = dashboardSourceState(
+    cashSettlementSummaryResponse,
+    cashSettlementSummaryResponse?.generatedAt,
+  );
+  const dashboardSourceStates = [
+    { label: 'Operations', state: dashboardSummaryState },
+    { label: 'Payments', state: paymentSummaryState },
+    { label: 'Earnings', state: earningSummaryState },
+    { label: 'Refunds', state: refundSummaryState },
+    { label: 'Notifications', state: notificationSummaryState },
+    { label: 'Payouts', state: payoutSummaryState },
+    { label: 'Cash settlements', state: cashSummaryState },
+  ] as const;
+  const unavailableDashboardSources = dashboardSourceStates.filter(
+    (source) => source.state === 'unavailable',
+  );
+  const staleDashboardSources = dashboardSourceStates.filter((source) => source.state === 'stale');
 
   const queue = buildOpsQueue({
     providers,
@@ -544,15 +673,32 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const rangePayments = payments;
   const paymentHoldCount =
     paymentSummary?.authorized ?? payments.filter((payment) => payment.status === 'AUTHORIZED').length;
-  const rangeEarningRows = earningRows;
   const rangePaymentCount = paymentSummary?.totalCount ?? rangePayments.length;
-  const rangeEarningCount = earnings.count ?? rangeEarningRows.length;
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
-  const rangeBookingCreateRejections = bookingCreateRejections;
   const bookingCreateGateSummary = buildBookingCreateGateSummary(bookingCreateRejections);
-  const rangeBookingCreateGateSummary = buildBookingCreateGateSummary(rangeBookingCreateRejections);
-  const bookingOps = buildBookingOpsInsights(rangeBookings);
-  const liveBookingOps = buildBookingOpsInsights(bookings);
+  const sampledBookingOps = buildBookingOpsInsights(rangeBookings);
+  const periodBookingActivity = dashboardSummary.bookingActivity?.period;
+  const bookingOps = periodBookingActivity
+    ? {
+        ...sampledBookingOps,
+        cancelled: periodBookingActivity.cancelled,
+        completed: periodBookingActivity.completed,
+        expired: periodBookingActivity.expired,
+        noShowFormal: periodBookingActivity.noShow,
+        noShowSignal: periodBookingActivity.noShow,
+        refunded: periodBookingActivity.refunded,
+        total: periodBookingActivity.total,
+      }
+    : sampledBookingOps;
+  const sampledLiveBookingOps = buildBookingOpsInsights(bookings);
+  const liveBookingActivity = dashboardSummary.bookingActivity?.live;
+  const liveBookingOps = liveBookingActivity
+    ? {
+        ...sampledLiveBookingOps,
+        active: liveBookingActivity.active,
+        openMatching: liveBookingActivity.openMatching,
+      }
+    : sampledLiveBookingOps;
   const liveBookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
@@ -566,16 +712,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     failedNotifications,
   });
   const marketplaceParticipantSnapshot = buildMarketplaceParticipantSnapshot(bookings);
-  const appPresence = shouldRenderFullDashboard
-    ? buildAppPresence(users, bookings, appSessions)
-    : dashboardSummary.appPresence;
+  const appPresence = dashboardSummary.appPresence;
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
-  const partnerSupply = shouldRenderFullDashboard
-    ? buildPartnerSupplyInsights(providers, bookings, appSessions, cashDebtRows, cashSettlementSummary)
-    : dashboardPartnerSupplyWithLiveFinance(dashboardSummary.partnerSupply, {
-        activeDemand: activeBookings.length,
-        cashSettlementSummary,
-      });
+  const partnerSupply = dashboardPartnerSupplyWithLiveFinance(dashboardSummary.partnerSupply, {
+    activeDemand: liveBookingActivity?.active ?? activeBookings.length,
+    cashSettlementSummary,
+  });
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
   const activePayoutBatchCount = payoutBatchSummary?.open ?? activePayoutBatches.length;
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies, partnerSupply);
@@ -591,17 +733,119 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     activePayoutBatches,
     activePayoutBatchCount,
   });
-  const operationsCommandBoardAttentionCount = operationsCommandBoard.filter((item) => item.tone !== 'ok').length;
+  const dataReliabilityCommandItem: OperationsCommandBoardItem | null = unavailableDashboardSources.length
+    ? {
+        checks: unavailableDashboardSources.map((source) => source.label),
+        detail: 'One or more summary sources did not respond. Refresh before treating zero values as clear.',
+        href: dashboardRefreshHref,
+        lane: 'Dashboard data',
+        owner: 'Setup',
+        status: 'Data unavailable',
+        tone: 'danger',
+        value: `${unavailableDashboardSources.length} source(s)`,
+      }
+    : staleDashboardSources.length
+      ? {
+          checks: staleDashboardSources.map((source) => source.label),
+          detail: 'One or more summary sources are older than five minutes.',
+          href: dashboardRefreshHref,
+          lane: 'Dashboard data',
+          owner: 'Setup',
+          status: 'Stale',
+          tone: 'warn',
+          value: `${staleDashboardSources.length} source(s)`,
+        }
+      : null;
+  const recentSettlementGapCount =
+    dashboardSummary.actionQueue?.completedWithoutSettlementRecent ??
+    dashboardSummary.actionQueue?.completedWithoutSettlement ??
+    0;
+  const settlementBacklogCount =
+    dashboardSummary.actionQueue?.completedWithoutSettlementBacklog ?? 0;
+  const settlementGapCount =
+    dashboardSummary.actionQueue?.completedWithoutSettlement ??
+    recentSettlementGapCount + settlementBacklogCount;
+  const exactActionQueueItems: OperationsCommandBoardItem[] = dashboardSummary.actionQueue
+    ? [
+        ...(dashboardSummary.actionQueue.matchingExpired > 0 ||
+        dashboardSummary.actionQueue.matchingWithoutParticipants > 0
+          ? [
+              {
+                checks: [
+                  `${dashboardSummary.actionQueue.matchingExpired} expired`,
+                  `${dashboardSummary.actionQueue.matchingWithoutParticipants} without Partner`,
+                ],
+                detail: 'Open matching bookings need dispatch review now.',
+                href: '/bookings?view=attention',
+                lane: 'Matching exceptions',
+                owner: 'Dispatch' as const,
+                status: 'Needs action',
+                tone: 'danger' as const,
+                value: `${dashboardSummary.actionQueue.matchingExpired} expired / ${dashboardSummary.actionQueue.matchingWithoutParticipants} no Partner`,
+              },
+            ]
+          : []),
+        ...(dashboardSummary.actionQueue.customerChoice > 0
+          ? [
+              {
+                checks: ['Accepted Partner options', 'Customer final decision'],
+                detail: 'Customers have Partner options and are waiting to make the final choice.',
+                href: '/bookings?view=customer-choice',
+                lane: 'Customer choice',
+                owner: 'Support' as const,
+                status: 'Waiting',
+                tone: 'warn' as const,
+                value: `${dashboardSummary.actionQueue.customerChoice} booking(s)`,
+              },
+            ]
+          : []),
+        ...(dashboardSummary.actionQueue.completedPaymentHolds > 0 || recentSettlementGapCount > 0
+          ? [
+              {
+                checks: [
+                  `${dashboardSummary.actionQueue.completedPaymentHolds} payment hold(s)`,
+                  `${recentSettlementGapCount} recent missing settlement(s)`,
+                ],
+                detail: 'Bookings completed in the last 24 hours need payment or settlement closeout review.',
+                href: '/bookings?view=closeout',
+                lane: 'Completed closeout',
+                owner: 'Finance' as const,
+                status: 'Needs action',
+                tone: 'danger' as const,
+                value: `${dashboardSummary.actionQueue.completedPaymentHolds} hold / ${recentSettlementGapCount} recent`,
+              },
+            ]
+          : []),
+      ]
+    : [];
+  const sampledLanesCoveredByExactSummary = new Set([
+    'Live booking command',
+    'Customer final choice',
+    'Finance closeout',
+  ]);
+  const operationsAttentionItems =
+    dashboardSummaryState === 'unavailable'
+      ? []
+      : operationsCommandBoard.filter(
+          (item) =>
+            (item.tone === 'danger' || item.tone === 'warn') &&
+            (!dashboardSummary.actionQueue || !sampledLanesCoveredByExactSummary.has(item.lane)),
+        );
+  const immediateCommandItems = [
+    ...(dataReliabilityCommandItem ? [dataReliabilityCommandItem] : []),
+    ...(dashboardSummaryState === 'unavailable' ? [] : exactActionQueueItems),
+    ...operationsAttentionItems,
+  ].slice(0, 5);
+  const immediateCommandHrefs = new Set(immediateCommandItems.map((item) => item.href));
+  const operationsCommandBoardAttentionCount = immediateCommandItems.length;
   const operationsCommandBoardAttentionLabel =
-    operationsCommandBoardAttentionCount === 0
-      ? 'All lanes clear'
-      : operationsCommandBoardAttentionCount === 1
-        ? '1 lane needs action'
-        : `${operationsCommandBoardAttentionCount} lanes need action`;
-  const currentActionOrder = operationsCommandBoard.slice(0, 3).map((item, index) => ({
-    item,
-    step: ['Now', 'Next', 'Watch'][index] ?? `Step ${index + 1}`,
-  }));
+    unavailableDashboardSources.length > 0
+      ? `${unavailableDashboardSources.length} unavailable`
+      : staleDashboardSources.length > 0
+        ? 'Stale'
+        : operationsCommandBoardAttentionCount === 0
+      ? 'Clear'
+      : `${operationsCommandBoardAttentionCount} open`;
   const fullDashboardData = shouldRenderFullDashboard
     ? buildFullDashboardData({
         activePayoutBatches,
@@ -630,131 +874,250 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       })
     : null;
 
-  const metrics = [
-    [
-      'Total bookings',
-      rangeBookings.length.toString(),
-      `${selectedRangeLabel} bookings in the selected dashboard window.`,
-    ],
-    [
-      'Open matching',
-      bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length.toString(),
-      'Live counter: Customer is waiting for Partner response.',
-    ],
-    ['Active bookings', activeBookings.length.toString(), 'Bookings that still need operational visibility.'],
-    [
-      'Completed bookings',
-      bookingOps.completed.toString(),
-      `${selectedRangeLabel} finished services ready for payment/review closeout.`,
-    ],
-    [
-      'Cancelled bookings',
-      bookingOps.cancelled.toString(),
-      `${selectedRangeLabel} cancelled requests needing refund/release review.`,
-    ],
-    [
-      'Expired bookings',
-      bookingOps.expired.toString(),
-      `${selectedRangeLabel} expired requests that should have payment release and customer follow-up checked.`,
-    ],
-    [
-      'No-show records',
-      bookingOps.noShowSignal.toString(),
-      `${selectedRangeLabel} formal NO_SHOW bookings plus overdue matched bookings without chat records.`,
-    ],
-    [
-      'Closeout checks',
-      bookingOps.completedCloseoutChecks.toString(),
-      `${selectedRangeLabel} completed bookings missing capture, earning, tax, fee, or wallet impact records.`,
-    ],
-    [
-      'Blocked create attempts',
-      rangeBookingCreateRejections.length.toString(),
-      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerDistanceGate} customer distance, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
-    ],
-    ['Online Partners', partnerSupply.online.toString(), 'Supply currently visible to customers.'],
-    [
-      'Pending verification',
-      partnerSupply.pendingVerification.toString(),
-      'Partners waiting for admin approval.',
-    ],
-    [
-      'Customers in app',
-      appPresence.liveAppCustomers.toString(),
-      'Customers with recent app activity in the active window.',
-    ],
-    [
-      'Live matching customers',
-      appPresence.liveOpenMatchingCustomers.toString(),
-      'Customers currently in app while waiting for Partner matching.',
-    ],
-    [
-      'Partners in app',
-      appPresence.liveAppPartners.toString(),
-      'Partners with recent app activity in the active window.',
-    ],
-    [
-      'Active customers',
-      appPresence.activeBookingCustomers.toString(),
-      'Unique customers currently attached to active bookings.',
-    ],
-    ['Payment holds', paymentHoldCount.toString(), 'Authorized payments not yet captured or released.'],
-    [
-      'Failed notifications',
-      failedNotificationCount.toString(),
-      `${selectedRangeLabel} delivery failures that may need retry or disabled-device review.`,
-    ],
-    [
-      'Available payout',
-      money(earnings.availableNetAmount, earnings.currency),
-      'Partner earnings ready for payout batching.',
-    ],
-    [
-      'Cash debt',
-      money(cashDebtAmount, earnings.currency),
-      `${cashSettlementSummary.providerCount} Partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking final acceptance, service start, and payout release.`,
-    ],
-    [
-      'Open payout batches',
-      activePayoutBatchCount.toString(),
-      `${selectedRangeLabel} draft, processing, failed, or held payout batches needing finance visibility.`,
-    ],
-    [
-      'Action queue',
-      queue.length.toString(),
-      'Prioritized items assembled from booking, payment, Partner, and notification state.',
-    ],
+  const liveNowMetrics = ([
+    {
+      href: '/bookings?view=matching',
+      kind: 'live',
+      label: 'Waiting for Partner',
+      scope: liveBookingOps.openMatching > 0 ? 'Waiting' : 'Clear',
+      value: liveBookingOps.openMatching,
+    },
+    {
+      href: '/bookings?view=customer-choice',
+      kind: 'live',
+      label: 'Customer choice',
+      scope:
+        (liveBookingActivity?.customerChoice ?? liveBookingDeepDive.customerFinalSelection) > 0
+          ? 'Waiting'
+          : 'Clear',
+      value: liveBookingActivity?.customerChoice ?? liveBookingDeepDive.customerFinalSelection,
+    },
+    {
+      href: '/bookings?view=in-service',
+      kind: 'live',
+      label: 'In service',
+      scope: 'Live',
+      value: liveBookingActivity?.inService ?? bookings.filter((booking) => booking.status === 'IN_SERVICE').length,
+    },
+    {
+      href: '/usage-overview?segment=live-customers',
+      kind: 'live',
+      label: 'Customers in app',
+      scope: 'Live',
+      value: appPresence.liveAppCustomers,
+    },
+    {
+      href: '/partners?availability=ready',
+      kind: 'live',
+      label: 'Ready Partners',
+      scope: partnerSupply.onlineAvailable > 0 ? 'Ready' : 'Check',
+      value: partnerSupply.onlineAvailable,
+    },
+    {
+      href: '/partners/overview?range=today',
+      kind: 'live',
+      label: 'Partners in app',
+      scope: 'Live',
+      value: appPresence.liveAppPartners,
+    },
+  ] satisfies DashboardTraceSummaryMetric[]).map((metric) =>
+    dashboardMetricWithSourceState(metric, dashboardSummaryState, dashboardRefreshHref),
+  );
+  const urgentMoneyIssueCount = [
+    paymentHoldCount,
+    recentSettlementGapCount,
+    refundSummary.openCount,
+    cashSettlementSummary.rowCount,
+    activePayoutBatchCount,
+  ].filter((count) => count > 0).length;
+  const moneyBacklogLaneCount = settlementBacklogCount > 0 ? 1 : 0;
+  const moneyMetricSourceStates: DashboardSourceState[] = [
+    paymentSummaryState,
+    dashboardSummaryState,
+    refundSummaryState,
+    cashSummaryState,
+    cashSummaryState,
+    payoutSummaryState,
+    earningSummaryState,
   ];
-  const coreOperatingCounterLabels = [
-    'Total bookings',
-    'Open matching',
-    'Active bookings',
-    'Completed bookings',
-    'Cancelled bookings',
-    'No-show records',
-    'Blocked create attempts',
-    'Customers in app',
-    'Live matching customers',
-    'Partners in app',
-    'Online Partners',
-    'Payment holds',
-    'Cash debt',
+  const moneyStatusMetrics = ([
+    {
+      href: '/payments?review=authorized',
+      kind: paymentHoldCount > 0 ? 'risk' : 'record',
+      label: 'Payment holds',
+      scope: paymentHoldCount > 0 ? 'Needs action' : 'Clear',
+      value: paymentHoldCount,
+    },
+    {
+      href: '/bookings?view=closeout',
+      kind: recentSettlementGapCount > 0 ? 'risk' : settlementBacklogCount > 0 ? 'action' : 'record',
+      label: 'Settlement gaps',
+      scope:
+        recentSettlementGapCount > 0
+          ? 'Needs action'
+          : settlementBacklogCount > 0
+            ? 'Backlog'
+            : 'Clear',
+      value: settlementGapCount,
+    },
+    {
+      href: '/refunds?review=open',
+      kind: refundSummary.openCount > 0 ? 'risk' : 'record',
+      label: 'Open refunds',
+      scope: refundSummary.openCount > 0 ? 'Needs action' : 'Clear',
+      value: refundSummary.openCount,
+    },
+    {
+      href: '/cash-settlements',
+      kind: cashSettlementSummary.rowCount > 0 ? 'risk' : 'record',
+      label: 'Cash debt',
+      scope: cashSettlementSummary.rowCount > 0 ? 'Needs action' : 'Clear',
+      value: money(cashDebtAmount, earnings.currency),
+    },
+    {
+      href: '/cash-settlements',
+      kind: cashSettlementSummary.providerCount > 0 ? 'risk' : 'record',
+      label: 'Debt Partners',
+      scope: cashSettlementSummary.providerCount > 0 ? 'Blocked' : 'Clear',
+      value: cashSettlementSummary.providerCount,
+    },
+    {
+      href: '/payouts',
+      kind: activePayoutBatchCount > 0 ? 'action' : 'record',
+      label: 'Payout waiting',
+      scope: activePayoutBatchCount > 0 ? 'Waiting' : 'Clear',
+      value: activePayoutBatchCount,
+    },
+    {
+      href: '/earnings',
+      kind: 'period',
+      label: 'Available payout',
+      scope: selectedRangeLabel,
+      value: money(earnings.availableNetAmount, earnings.currency),
+    },
+  ] satisfies DashboardTraceSummaryMetric[]).map((metric, index) =>
+    dashboardMetricWithSourceState(
+      metric,
+      moneyMetricSourceStates[index] ?? 'unavailable',
+      dashboardRefreshHref,
+    ),
+  );
+  const partnerLevel2ReviewCount = Math.max(0, partnerSupply.total - partnerSupply.level2Active);
+  const todayWorkCandidates: StartShiftWorkItem[] = [
+    {
+      count: settlementBacklogCount,
+      href: '/finance-closeout',
+      label: 'Settlement backlog',
+      scope: 'Backlog',
+      tone: 'info',
+    },
+    {
+      count: partnerSupply.pendingVerification,
+      href: '/partners?review=marketplace-ready',
+      label: 'Partner approvals',
+      scope: 'Pending',
+      tone: 'warn',
+    },
+    {
+      count: partnerLevel2ReviewCount,
+      href: '/partners?review=acceptance-blocked',
+      label: 'Level 2 review',
+      scope: 'Pending',
+      tone: 'warn',
+    },
+    {
+      count: partnerSupply.staleLocation + partnerSupply.noLocation,
+      href: '/partners?review=location',
+      label: 'Location refresh',
+      scope: 'Refresh',
+      tone: 'warn',
+    },
+    {
+      count: failedNotificationCount,
+      href: '/notifications?review=failed',
+      label: 'Failed notifications',
+      scope: 'Retry',
+      tone: 'warn',
+    },
+    {
+      count: appPresence.disabledPushCustomers,
+      href: '/customers?review=push',
+      label: 'Customer push disabled',
+      scope: 'Review',
+      tone: 'info',
+    },
+    {
+      count: bookingOps.cancelled + bookingOps.noShowSignal,
+      href: '/bookings?view=attention',
+      label: 'Customer follow-up',
+      scope: 'Today',
+      tone: 'info',
+    },
   ];
-  const coreOperatingCounters = coreOperatingCounterLabels
-    .map((counterLabel) => {
-      const counter = metrics.find(([label]) => label === counterLabel);
-
-      if (!counter) {
-        return null;
-      }
-
-      return {
-        label: counter[0],
-        value: counter[1],
-        helper: counter[2],
-      };
-    })
-    .filter((counter): counter is { label: string; value: string; helper: string } => Boolean(counter));
+  const todayWorkItems = todayWorkCandidates
+    .filter((item) => item.count > 0 && !immediateCommandHrefs.has(item.href))
+    .slice(0, 6);
+  const todayResultSourceStates: DashboardSourceState[] = [
+    dashboardSummaryState,
+    dashboardSummaryState,
+    dashboardSummaryState,
+    paymentSummaryState,
+    earningSummaryState,
+    earningSummaryState,
+  ];
+  const todayResultMetrics = ([
+    {
+      href: '/bookings',
+      kind: 'period',
+      label: 'Booking requests',
+      scope: selectedRangeLabel,
+      value: bookingOps.total,
+    },
+    {
+      href: '/bookings?view=completed',
+      kind: 'period',
+      label: 'Completed',
+      scope: selectedRangeLabel,
+      value: bookingOps.completed,
+    },
+    {
+      href: '/bookings?view=cancelled',
+      kind: 'period',
+      label: 'Cancelled',
+      scope: selectedRangeLabel,
+      value: bookingOps.cancelled,
+    },
+    {
+      href: '/payments',
+      kind: 'period',
+      label: 'Payments',
+      scope: selectedRangeLabel,
+      value: rangePaymentCount,
+    },
+    {
+      href: '/earnings',
+      kind: 'period',
+      label: 'Gross',
+      scope: selectedRangeLabel,
+      value: money(earnings.grossAmount, earnings.currency),
+    },
+    {
+      href: '/earnings',
+      kind: 'period',
+      label: 'Platform fee',
+      scope: selectedRangeLabel,
+      value: money(earnings.platformFee, earnings.currency),
+    },
+  ] satisfies DashboardTraceSummaryMetric[]).map((metric, index) =>
+    dashboardMetricWithSourceState(
+      metric,
+      todayResultSourceStates[index] ?? 'unavailable',
+      dashboardRefreshHref,
+    ),
+  );
+  const moneyStatusState = combinedDashboardSourceState(moneyMetricSourceStates);
+  const todayWorkState = dashboardSummaryState;
+  const todayResultState = combinedDashboardSourceState(todayResultSourceStates);
   return (
     <AdminPageTemplate
       actions={
@@ -767,13 +1130,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <FileClock size={16} aria-hidden="true" />
             Operations History
           </AdminFormControlLink>
-          <details className="tax-finance-workflow-dropdown admin-page-header-more-dropdown">
+          <AdminDisclosure
+            ariaLabel="More Start Shift actions"
+            className="tax-finance-workflow-dropdown admin-page-header-more-dropdown"
+          >
             <summary
               aria-label="More Start Shift actions"
-              className="admin-form-control-button button button-secondary tax-finance-workflow-dropdown-trigger"
+              className="admin-form-control-summary button-secondary tax-finance-workflow-dropdown-trigger"
             >
               <span>More actions</span>
-              <ChevronDown aria-hidden="true" size={16} />
             </summary>
             <div className="admin-action-menu tax-finance-workflow-dropdown-menu" role="menu">
               <Link
@@ -802,132 +1167,263 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 Notifications
               </Link>
             </div>
-          </details>
+          </AdminDisclosure>
         </>
       }
       contentClassName="dashboard-page"
-      description="Live start-of-shift workspace for current bookings, Partner supply, payment holds, cash debt, notifications, and closeout."
       title="Start Shift"
     >
       <AdminSection
         actions={
-          <AdminFormControlLink href={operationsCommandBoard[0]?.href ?? '/bookings'}>
+          <AdminFormControlLink href={immediateCommandItems[0]?.href ?? '/bookings'}>
             <ListChecks size={16} aria-hidden="true" />
             Open top priority
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="Work red/yellow lanes first. Then clear live booking, Partner supply, payment, notification, and follow-up checks."
-        id="dashboard-operations-command-board"
+        id="dashboard-needs-action-now"
         status={
-          <StatusBadge tone={operationsCommandBoardAttentionCount > 0 ? 'warning' : 'success'}>
+          <StatusBadge
+            tone={
+              unavailableDashboardSources.length > 0
+                ? 'danger'
+                : operationsCommandBoardAttentionCount > 0 || staleDashboardSources.length > 0
+                  ? 'warning'
+                  : 'success'
+            }
+          >
             {operationsCommandBoardAttentionLabel}
           </StatusBadge>
         }
-        title="Operations command board"
+        title="Needs action now"
       >
-        <AdminTaskGrid className="admin-mt-14">
-          {operationsCommandBoard.map((item) => (
+        {immediateCommandItems.length > 0 ? (
+          <AdminTaskGrid className="start-shift-action-grid">
+            {immediateCommandItems.map((item) => (
             <AdminActionCard
-              className={dashboardToneCardClass(item.tone)}
+              actionLabel="Open"
+              className={`start-shift-action-item ${dashboardToneCardClass(item.tone)}`}
               href={item.href}
               key={item.lane}
               leading={
-                <>
-                  <small>{item.owner}</small>
-                  <StatusBadgeFromPillClass pillClass={dashboardTonePillClass(item.tone)}>{item.status}</StatusBadgeFromPillClass>
-                </>
+                <StatusBadgeFromPillClass pillClass={dashboardTonePillClass(item.tone)}>{item.status}</StatusBadgeFromPillClass>
               }
               title={item.lane}
+              value={item.value}
               variant="ops-task"
-            >
-              <strong>{item.value}</strong>
-              <p>{item.detail}</p>
-              <AdminFilterChipGroup className="admin-mt-10">
-                {item.checks.map((check) => (
-                  <StatusBadge key={check} tone="neutral">
-                    {check}
-                  </StatusBadge>
-                ))}
-              </AdminFilterChipGroup>
-            </AdminActionCard>
-          ))}
-        </AdminTaskGrid>
-      </AdminSection>
-
-      <AdminSection
-        actions={
-          <AdminFormControlLink href="/operations-handoff#operations-handoff-review-order">
-            <FileClock size={16} aria-hidden="true" />
-            Past review order
-          </AdminFormControlLink>
-        }
-        className="admin-mt-20"
-        description="Follow this order now. Older shift context stays in Operations Handoff."
-        id="dashboard-current-action-order"
-        title="Current action order"
-      >
-        <AdminTaskGrid className="admin-mt-14">
-          {currentActionOrder.map(({ item, step }) => (
-            <AdminActionCard
-              actionLabel="Open"
-              className={dashboardToneCardClass(item.tone)}
-              detail={item.detail}
-              href={item.href}
-              key={`${step}-${item.lane}`}
-              leading={
-                <>
-                  <small>{step}</small>
-                  <StatusBadgeFromPillClass pillClass={dashboardTonePillClass(item.tone)}>
-                    {item.status}
-                  </StatusBadgeFromPillClass>
-                </>
-              }
-              title={item.lane}
-              variant="ops-task"
-            >
-              <AdminFilterChipGroup className="admin-mt-10">
-                <StatusBadge tone="neutral">{item.owner}</StatusBadge>
-                <StatusBadge tone="neutral">{item.value}</StatusBadge>
-              </AdminFilterChipGroup>
-            </AdminActionCard>
-          ))}
-        </AdminTaskGrid>
+            />
+            ))}
+          </AdminTaskGrid>
+        ) : (
+          <AdminEmptyState framed message="No urgent work is open." title="Clear" />
+        )}
       </AdminSection>
 
       <AdminSection
         actions={
           <AdminFormControlLink href="/bookings">
             <CalendarClock size={16} aria-hidden="true" />
-            Open booking monitor
+            Booking monitor
           </AdminFormControlLink>
         }
         className="admin-mt-20"
-        description="Live counters for bookings, app presence, supply, payments, and cash debt."
-        id="dashboard-core-operating-counters"
-        title="Core operating counters"
+        id="dashboard-live-now"
+        status={
+          <StatusBadge
+            tone={
+              dashboardSummaryState === 'unavailable'
+                ? 'danger'
+                : dashboardSummaryState === 'stale'
+                  ? 'warning'
+                  : 'info'
+            }
+          >
+            {dashboardSummaryState === 'unavailable'
+              ? 'Data unavailable'
+              : dashboardSummaryState === 'stale'
+                ? 'Stale'
+                : 'Live'}
+          </StatusBadge>
+        }
+        title="Live now"
       >
-        <DashboardTraceSummary className="admin-mt-12" metrics={coreOperatingCounters} />
-        <div className="actions admin-mt-12">
-          <AdminFormControlLink href="/bookings?view=matching">
-            <BellRing size={16} aria-hidden="true" />
-            Matching wait
+        <DashboardTraceSummary
+          className="start-shift-metric-strip"
+          defaultKind="live"
+          defaultScope="Live"
+          metrics={liveNowMetrics}
+        />
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <AdminFormControlLink href="/finance-overview">
+            Open finance
           </AdminFormControlLink>
-          <AdminFormControlLink href="/bookings?view=no-show">
-            <BookOpenCheck size={16} aria-hidden="true" />
-            No-show evidence
-          </AdminFormControlLink>
-          <AdminTextLink href="/usage-overview?segment=live-customers">
-            Live customer pattern
-          </AdminTextLink>
-          <AdminTextLink href="/cash-settlements">
-            Cash settlement gate
-          </AdminTextLink>
-        </div>
+        }
+        className="admin-mt-20"
+        id="dashboard-money-status"
+        status={
+          <StatusBadge
+            tone={
+              moneyStatusState === 'unavailable'
+                ? 'danger'
+                : moneyStatusState === 'stale' || urgentMoneyIssueCount > 0 || moneyBacklogLaneCount > 0
+                  ? 'warning'
+                  : 'success'
+            }
+          >
+            {moneyStatusState === 'unavailable'
+              ? 'Data unavailable'
+              : moneyStatusState === 'stale'
+                ? 'Stale'
+                : urgentMoneyIssueCount > 0
+                  ? `${urgentMoneyIssueCount} needs action`
+                  : moneyBacklogLaneCount > 0
+                    ? `${moneyBacklogLaneCount} backlog`
+                    : 'Clear'}
+          </StatusBadge>
+        }
+        title="Money status"
+      >
+        <DashboardTraceSummary
+          className="start-shift-metric-strip"
+          defaultKind="risk"
+          defaultScope="Needs action"
+          metrics={moneyStatusMetrics}
+        />
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <>
+            {todayWorkState === 'available' ? null : (
+              <AdminFormControlLink href={dashboardRefreshHref}>Refresh</AdminFormControlLink>
+            )}
+            <AdminFormControlLink href="/operations-handoff">
+              <FileClock size={16} aria-hidden="true" />
+              Past records
+            </AdminFormControlLink>
+          </>
+        }
+        className="admin-mt-20"
+        id="dashboard-today-work"
+        status={
+          <StatusBadge
+            tone={
+              todayWorkState === 'unavailable'
+                ? 'danger'
+                : todayWorkState === 'stale'
+                  ? 'warning'
+                  : todayWorkItems.length > 0
+                    ? 'info'
+                    : 'success'
+            }
+          >
+            {todayWorkState === 'unavailable'
+              ? 'Data unavailable'
+              : todayWorkState === 'stale'
+                ? 'Stale'
+                : todayWorkItems.length === 0
+                  ? 'Clear'
+                  : todayWorkItems.length === 1
+                    ? '1 queue'
+                    : `${todayWorkItems.length} queues`}
+          </StatusBadge>
+        }
+        title="Today work"
+      >
+        {todayWorkState === 'unavailable' ? (
+          <AdminEmptyState
+            framed
+            message="Work queues could not be verified."
+            title="Data unavailable"
+          />
+        ) : todayWorkItems.length > 0 ? (
+          <DashboardTraceSummary
+            className="start-shift-metric-strip"
+            defaultKind="action"
+            defaultScope="Pending"
+            metrics={todayWorkItems.map((item) => ({
+              href: item.href,
+              kind: item.tone === 'warn' || item.tone === 'danger' ? 'action' : 'record',
+              label: item.label,
+              scope: item.scope,
+              value: item.count,
+            }))}
+          />
+        ) : (
+          <AdminEmptyState
+            framed
+            message={
+              todayWorkState === 'stale'
+                ? 'Refresh before confirming that no additional queue is open.'
+                : 'No additional work queue is open.'
+            }
+            title={todayWorkState === 'stale' ? 'Stale' : 'Clear'}
+          />
+        )}
+      </AdminSection>
+
+      <AdminSection
+        actions={
+          <AdminFilterChipGroup ariaLabel="Today result range">
+            {dashboardRangeLinks.map((link) => (
+              filters.range === link.range ? (
+                <StatusBadgeLink href={link.href} key={link.range} tone="info">
+                  {link.label}
+                </StatusBadgeLink>
+              ) : (
+                <AdminTextLink href={link.href} key={link.range}>
+                  {link.label}
+                </AdminTextLink>
+              )
+            ))}
+          </AdminFilterChipGroup>
+        }
+        className="admin-mt-20"
+        id="dashboard-today-result"
+        status={
+          <StatusBadge
+            tone={
+              todayResultState === 'unavailable'
+                ? 'danger'
+                : todayResultState === 'stale'
+                  ? 'warning'
+                  : 'info'
+            }
+          >
+            {todayResultState === 'unavailable'
+              ? 'Data unavailable'
+              : todayResultState === 'stale'
+                ? 'Stale'
+                : selectedRangeLabel}
+          </StatusBadge>
+        }
+        title="Today result"
+      >
+        <DashboardTraceSummary
+          className="start-shift-metric-strip"
+          defaultKind="period"
+          defaultScope={selectedRangeLabel}
+          metrics={todayResultMetrics}
+        />
       </AdminSection>
 
       {fullDashboardData ? (
-        <>
+        <AdminDisclosureCard
+          ariaLabel="Booking diagnostics"
+          className="start-shift-diagnostics"
+          id="dashboard-booking-diagnostics"
+        >
+          <summary className="start-shift-diagnostics-summary">
+            <span>
+              <strong>Booking diagnostics</strong>
+              <small>Participant, evidence, and closeout records</small>
+            </span>
+            <StatusBadge tone="info">Loaded</StatusBadge>
+          </summary>
+          <div className="start-shift-diagnostics-body">
       <AdminSection
         actions={
           <AdminFilterChipGroup>
@@ -949,6 +1445,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       >
         <DashboardTraceSummary
           className="admin-mt-12"
+          defaultKind="live"
+          defaultScope="Live"
           metrics={[
             {
               label: 'Open marketplace bookings',
@@ -1032,6 +1530,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       >
         <DashboardTraceSummary
           className="admin-mt-12"
+          defaultKind="risk"
+          defaultScope="Needs action"
           metrics={[
             {
               label: 'Booking create gates',
@@ -1148,53 +1648,24 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </AdminTaskGrid>
       </AdminSection>
-        </>
+          </div>
+        </AdminDisclosureCard>
       ) : null}
 
-      <AdminSection
-        actions={<StatusBadge tone="info">{selectedRangeLabel}</StatusBadge>}
-        className="admin-mt-20"
-        description="Current live queues stay visible; dated totals follow the selected window."
-        id="dashboard-date-range"
-        title="Start Shift window"
-      >
-        <div className="actions admin-mt-12">
-          {dashboardRangeLinks.map((link) => (
-            filters.range === link.range ? (
-              <StatusBadgeLink href={link.href} key={link.range} tone="info">
-                {link.label}
-              </StatusBadgeLink>
-            ) : (
-              <AdminTextLink href={link.href} key={link.range}>
-                {link.label}
-              </AdminTextLink>
-            )
-          ))}
-        </div>
-        <DashboardTraceSummary
-          className="admin-mt-12"
-          metrics={[
-            {
-              label: 'Range bookings',
-              value: rangeBookings.length,
-              helper: 'Records included in demand and status analysis.',
-            },
-            {
-              label: 'Range payments',
-              value: rangePaymentCount,
-              helper: 'Payment method mix for the selected window.',
-            },
-            {
-              label: 'Range earnings',
-              value: rangeEarningCount,
-              helper: 'Earning rows created in the selected window.',
-            },
-          ]}
-        />
-      </AdminSection>
-
       {fullDashboardData ? (
-        <>
+        <AdminDisclosureCard
+          ariaLabel="Full operating diagnostics"
+          className="start-shift-diagnostics"
+          id="dashboard-full-diagnostics"
+        >
+          <summary className="start-shift-diagnostics-summary">
+            <span>
+              <strong>Full diagnostics</strong>
+              <small>Supply, policy, queue, audit, and closeout records</small>
+            </span>
+            <StatusBadge tone="info">Loaded</StatusBadge>
+          </summary>
+          <div className="start-shift-diagnostics-body">
           <AdminSection
             actions={
               <AdminFormControlLink href="/operations-handoff">
@@ -1309,7 +1780,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-policy-outcome-pulse"
             title="Policy outcome pulse"
           >
-            <DashboardTraceSummary className="admin-mt-12" metrics={fullDashboardData.policyOutcome.metrics} />
+            <DashboardTraceSummary
+              className="admin-mt-12"
+              defaultKind="period"
+              defaultScope={selectedRangeLabel}
+              metrics={fullDashboardData.policyOutcome.metrics}
+            />
             <AdminTaskGrid className="admin-mt-14">
               {fullDashboardData.policyOutcome.cards.map((card) => (
                 <AdminActionCard
@@ -1355,6 +1831,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminNotePanel>
             <DashboardTraceSummary
               className="admin-mt-14"
+              defaultKind="action"
+              defaultScope="Needs action"
               metrics={fullDashboardData.shiftBriefing.stats.map((stat) => ({
                 className: `ops-task-breakdown-item ops-task-breakdown-${stat.tone}`,
                 helper: stat.helper,
@@ -1453,7 +1931,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             id="dashboard-matching-control-room"
             title="Matching control room"
           >
-            <DashboardTraceSummary className="admin-mt-12" metrics={matchingControl.metrics} />
+            <DashboardTraceSummary
+              className="admin-mt-12"
+              defaultKind="live"
+              defaultScope="Live"
+              metrics={matchingControl.metrics}
+            />
             <AdminDetailGrid className="admin-mt-14">
               <AdminNotePanel>
                 <AdminSectionHeader
@@ -1533,6 +2016,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           >
             <DashboardTraceSummary
               className="admin-mt-12"
+              defaultKind="risk"
+              defaultScope="Live"
               metrics={[
                 {
                   label: 'Active overrides',
@@ -1685,6 +2170,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </AdminFormControlLink>
               </AdminFilterChipGroup>
               <DashboardTraceSummary
+                defaultKind="risk"
+                defaultScope={selectedRangeLabel}
                 metrics={[
                   {
                     label: 'Matching escalations',
@@ -1803,6 +2290,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               title="Booking status control"
             >
               <DashboardTraceSummary
+                defaultKind="period"
+                defaultScope={selectedRangeLabel}
                 metrics={[
                   { label: 'Total', value: bookingOps.total, helper: 'All bookings' },
                   { label: 'Matching wait', value: bookingOps.openMatching, helper: 'Customer waiting' },
@@ -1944,6 +2433,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               title="Partner supply status"
             >
               <DashboardTraceSummary
+                defaultKind="live"
+                defaultScope="Live"
                 metrics={[
                   { label: 'Total Partners', value: partnerSupply.total, helper: 'All registered Partner profiles' },
                   {
@@ -2062,7 +2553,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 <AdminNotePanel>
                   <AdminEmptyState
                     framed
-                    message="Verified Partners, wallet debt, location freshness, payout follow-up, and app contactability are clear in the current view."
+                    message="Verified Partners, wallet debt, location freshness, payout follow-up, and app contactability are clear under the active filters."
                     title="No Partner blocker is currently visible."
                   />
                 </AdminNotePanel>
@@ -2070,6 +2561,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </AdminTaskGrid>
             <DashboardTraceSummary
               className="admin-mt-14"
+              defaultKind="risk"
+              defaultScope="Live"
               metrics={[
                 {
                   label: 'Blocked now',
@@ -2204,6 +2697,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               title="Operations checklist queue"
             >
               <DashboardTraceSummary
+                defaultKind="action"
+                defaultScope="Needs action"
                 metrics={[
                   {
                     label: 'Immediate checks',
@@ -2313,7 +2808,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </AdminDataTable>
             </AdminSection>
           </AdminDetailGrid>
-        </>
+          </div>
+        </AdminDisclosureCard>
       ) : (
         <AdminSection
           actions={
@@ -2321,49 +2817,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               Load full dashboard
             </AdminFormControlLink>
           }
-          className="admin-mt-20"
-          description="Full dashboard opens focused review lanes without loading them on Start Shift."
+          className="admin-mt-20 start-shift-diagnostics-entry"
           id="dashboard-on-demand-detail"
-          title="More operating detail"
+          status={<StatusBadge tone="neutral">Not loaded</StatusBadge>}
+          title="Diagnostics"
         >
-          <AdminTaskGrid>
-            {[
-              {
-                title: 'Live radar',
-                value: 'Now',
-                detail: 'Realtime booking, Partner supply, alert, and finance lanes.',
-                href: `${buildDashboardDetailsHref('all', params)}#dashboard-live-operations-radar`,
-              },
-              {
-                title: 'Dispatch evidence',
-                value: 'Evidence',
-                detail: 'Participant flow, retained signals, and evidence queue shortcuts.',
-                href: `${buildDashboardDetailsHref('all', params)}#dashboard-booking-participant-flow`,
-              },
-              {
-                title: 'Partner supply',
-                value: 'Supply',
-                detail: 'Online supply, location freshness, verification, and contactability.',
-                href: `${buildDashboardDetailsHref('all', params)}#dashboard-partner-supply-status`,
-              },
-              {
-                title: 'Finance closeout',
-                value: 'Money',
-                detail: 'Payment, cash settlement, payout, wallet, and closeout signals.',
-                href: `${buildDashboardDetailsHref('all', params)}#dashboard-finance-closeout-status`,
-              },
-            ].map((item) => (
-              <AdminActionCard
-                actionLabel="Open detail"
-                detail={item.detail}
-                href={item.href}
-                key={item.title}
-                title={item.title}
-                value={item.value}
-                variant="ops-task"
-              />
-            ))}
-          </AdminTaskGrid>
+          <AdminFilterChipGroup ariaLabel="Direct operating records">
+            <AdminTextLink href="/bookings">Booking records</AdminTextLink>
+            <AdminTextLink href="/partners/overview">Partner records</AdminTextLink>
+            <AdminTextLink href="/finance-overview">Finance records</AdminTextLink>
+            <AdminTextLink href="/operations-handoff">Operations History</AdminTextLink>
+          </AdminFilterChipGroup>
         </AdminSection>
       )}
     </AdminPageTemplate>
@@ -2381,7 +2845,7 @@ function buildMatchingControlRoom(
   providers: AdminProvider[],
   settings: AdminOperationalPolicySetting[],
   partnerSupplySummary?: Pick<
-    ReturnType<typeof buildPartnerSupplyInsights>,
+    AdminDashboardSummary['partnerSupply'],
     'online' | 'onlineAvailable' | 'staleLocation'
   >,
 ) {
@@ -2595,7 +3059,7 @@ function buildMatchingControlRoom(
         label: 'Fresh online supply',
         value: String(freshOnlinePartnerCount),
         helper: hasProviderRows
-          ? `Online Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`
+          ? `Ready Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`
           : 'Partner supply total comes from the current Start Shift summary.',
       },
     ],
@@ -3074,8 +3538,8 @@ function buildOperationsCommandBoard(input: {
   bookingOps: ReturnType<typeof buildBookingOpsInsights>;
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   matchingControl: ReturnType<typeof buildMatchingControlRoom>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  appPresence: AdminDashboardSummary['appPresence'];
+  partnerSupply: AdminDashboardSummary['partnerSupply'];
   cashSettlementSummary: AdminCashSettlementSummary;
   failedNotificationCount: number;
   failedNotifications: AdminNotification[];
@@ -3522,8 +3986,8 @@ function buildLiveOperationsRadar(input: {
   bookingOps: ReturnType<typeof buildBookingOpsInsights>;
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   matchingControl: ReturnType<typeof buildMatchingControlRoom>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  appPresence: AdminDashboardSummary['appPresence'];
+  partnerSupply: AdminDashboardSummary['partnerSupply'];
   cashSettlementSummary: AdminCashSettlementSummary;
   failedNotifications: AdminNotification[];
   activePayoutBatches: AdminPayoutBatch[];
@@ -3882,144 +4346,6 @@ function buildPaymentMethodMix(payments: AdminPayment[]) {
   }
 
   return [...buckets.values()].sort((left, right) => right.count - left.count || right.amount - left.amount);
-}
-
-function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions: AdminAppSession[]) {
-  const customers = users.filter((user) => Boolean(user.customerProfile));
-  const customerSessions = sessions.filter((session) => session.role === 'CUSTOMER');
-  const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER');
-  const liveCustomerUserIds = new Set(
-    customerSessions
-      .filter((session) => appSessionState(session) === 'live')
-      .map((session) => session.userId),
-  );
-  const livePartnerUserIds = new Set(
-    partnerSessions.filter((session) => appSessionState(session) === 'live').map((session) => session.userId),
-  );
-  const recentCustomerSessions = customerSessions.filter(
-    (session) => appSessionState(session) === 'recent',
-  ).length;
-  const staleCustomerSessions = customerSessions.filter(
-    (session) => appSessionState(session) === 'stale',
-  ).length;
-  const reachableCustomers = customers.filter((user) =>
-    (user.pushDevices ?? []).some((device) => device.enabled),
-  ).length;
-  const disabledPushCustomers = customers.filter(
-    (user) =>
-      (user.pushDevices ?? []).length > 0 && !(user.pushDevices ?? []).some((device) => device.enabled),
-  ).length;
-  const liveCustomerPhones = new Set(
-    customers
-      .filter((user) => liveCustomerUserIds.has(user.id))
-      .map((user) => user.phone)
-      .filter(Boolean),
-  );
-  const activeBookingCustomerPhones = new Set(
-    bookings
-      .filter((booking) => activeBookingStatuses.has(booking.status))
-      .map((booking) => booking.customerProfile?.user?.phone)
-      .filter(isNonEmptyString),
-  );
-  const openMatchingCustomerPhones = new Set(
-    bookings
-      .filter((booking) => booking.status === 'OPEN_MATCHING')
-      .map((booking) => booking.customerProfile?.user?.phone)
-      .filter(isNonEmptyString),
-  );
-  const liveActiveBookingCustomers = countSetIntersection(liveCustomerPhones, activeBookingCustomerPhones);
-  const liveOpenMatchingCustomers = countSetIntersection(liveCustomerPhones, openMatchingCustomerPhones);
-
-  return {
-    totalCustomers: customers.length,
-    liveAppCustomers: liveCustomerUserIds.size,
-    liveAppPartners: livePartnerUserIds.size,
-    recentCustomerSessions,
-    staleCustomerSessions,
-    reachableCustomers,
-    disabledPushCustomers,
-    activeBookingCustomers: activeBookingCustomerPhones.size,
-    liveActiveBookingCustomers,
-    liveOpenMatchingCustomers,
-  };
-}
-
-function countSetIntersection(left: Set<string>, right: Set<string>) {
-  let count = 0;
-  left.forEach((value) => {
-    if (right.has(value)) count += 1;
-  });
-  return count;
-}
-
-function isNonEmptyString(value: string | null | undefined): value is string {
-  return Boolean(value);
-}
-
-function buildPartnerSupplyInsights(
-  providers: AdminProvider[],
-  bookings: AdminBooking[],
-  sessions: AdminAppSession[],
-  cashDebtRows: AdminEarning[],
-  cashSettlementSummary: AdminCashSettlementSummary,
-) {
-  const now = Date.now();
-  const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER');
-  const livePartnerUserIds = new Set(
-    partnerSessions.filter((session) => appSessionState(session) === 'live').map((session) => session.userId),
-  );
-  const cashDebtPartnerIds = new Set(cashDebtRows.map((earning) => earning.providerProfileId));
-  const activeDemand = bookings.filter((booking) => activeBookingStatuses.has(booking.status)).length;
-  const onlineAvailable = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const firstRevenuePartners = providers.filter(providerHasFirstRevenue);
-
-  const staleLocation = providers.filter((provider) => {
-    if (!provider.currentLocationUpdatedAt) {
-      return false;
-    }
-    const updatedAt = Date.parse(provider.currentLocationUpdatedAt);
-    return Number.isFinite(updatedAt) && now - updatedAt > 30 * 60_000;
-  }).length;
-
-  const noLocation = providers.filter(
-    (provider) =>
-      provider.currentLat === null ||
-      provider.currentLat === undefined ||
-      provider.currentLng === null ||
-      provider.currentLng === undefined,
-  ).length;
-
-  return {
-    total: providers.length,
-    online: providers.filter((provider) => provider.status.startsWith('ONLINE')).length,
-    onlineAvailable,
-    onlineBusy: providers.filter((provider) => provider.status === 'ONLINE_BUSY').length,
-    onlineAvailableSoon: providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE_SOON').length,
-    offline: providers.filter((provider) => provider.status === 'OFFLINE').length,
-    liveSessions: livePartnerUserIds.size,
-    staleLocation,
-    noLocation,
-    cashDebtPartners: cashSettlementSummary.providerCount,
-    pendingVerification: providers.filter((provider) => provider.verification?.status === 'SUBMITTED').length,
-    approvedVerification: providers.filter((provider) => provider.verification?.status === 'APPROVED').length,
-    kycApproved: providers.filter((provider) => provider.kyc?.status === 'APPROVED').length,
-    bankApproved: providers.filter((provider) =>
-      (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED'),
-    ).length,
-    firstRevenue: firstRevenuePartners.length,
-    withdrawalProfileReady: firstRevenuePartners.filter((provider) =>
-      Boolean(provider.residentialAddress?.trim()),
-    ).length,
-    level2Active: providers.filter(
-      (provider) => provider.kyc?.status === 'APPROVED' && provider.verification?.status === 'APPROVED',
-    ).length,
-    blocked: providers.filter((provider) => {
-      const activeSanction = (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE');
-      return Boolean(provider.blockedAt) || activeSanction || cashDebtPartnerIds.has(provider.id);
-    }).length,
-    supplyPressureLabel:
-      onlineAvailable > 0 ? `${(activeDemand / onlineAvailable).toFixed(1)}x` : 'No supply',
-  };
 }
 
 function buildPartnerOpsQueue(
@@ -4691,7 +5017,7 @@ function buildDashboardCommandSignals(input: {
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
         ? 'Partner verification, reports, account controls, or KYC needs admin attention.'
-        : 'No Partner review blocker in the current view.',
+        : 'No Partner review blocker under the active filters.',
       action: 'Open Partners',
       href: '/partners',
       priority:
@@ -5210,8 +5536,8 @@ function buildShiftCommandBriefing(input: {
   commandSignals: DashboardCommandSignal[];
   bookingOps: ReturnType<typeof buildBookingOpsInsights>;
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  appPresence: AdminDashboardSummary['appPresence'];
+  partnerSupply: AdminDashboardSummary['partnerSupply'];
   matchingControl: ReturnType<typeof buildMatchingControlRoom>;
   failedNotifications: AdminNotification[];
   cashSettlementSummary: AdminCashSettlementSummary;
@@ -5238,7 +5564,7 @@ function buildShiftCommandBriefing(input: {
     detail:
       firstQueueItem?.recommendedAction ??
       firstSignal?.detail ??
-      'The current view has no critical blocker. Keep the dispatch and finance lanes under observation.',
+      'The active filters have no critical blocker. Keep the dispatch and finance lanes under observation.',
     primaryAction: {
       label: firstQueueItem
         ? 'Open checklist item'
@@ -5298,8 +5624,8 @@ function buildShiftCommandBriefing(input: {
 function buildOperatorStartChecklist(input: {
   queue: OpsQueueItem[];
   bookingOps: ReturnType<typeof buildBookingOpsInsights>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  appPresence: AdminDashboardSummary['appPresence'];
+  partnerSupply: AdminDashboardSummary['partnerSupply'];
   matchingControl: ReturnType<typeof buildMatchingControlRoom>;
   failedNotifications: AdminNotification[];
   cashSettlementSummary: AdminCashSettlementSummary;

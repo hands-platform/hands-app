@@ -66,7 +66,7 @@ export function PartnerCustomerEvaluationsSection({
   return (
     <>
       <AdminFilterPanel
-        className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"
+        className="vuexy-review-filter-card admin-mb-16"
         description="Partner-written customer evaluations are internal admin records. Partners can write text only, without customer-facing star ratings."
         id="partner-customer-evaluation-controls"
         resultLabel={`Showing ${pagination.totalRows} of ${totalEvaluationCount}`}
@@ -250,7 +250,7 @@ const partnerEvaluationPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) =
   value: String(option),
 }));
 
-const partnerEvaluationDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS.filter((option) => option.value !== 'all');
+const partnerEvaluationDateButtonOptions = REVIEW_DATE_RANGE_OPTIONS;
 
 const partnerEvaluationSortOptions = [
   { value: 'newest', label: 'Newest request' },

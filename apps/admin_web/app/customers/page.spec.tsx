@@ -69,6 +69,10 @@ describe('CustomersPage', () => {
     expect(markup).toContain('Female 4 / Male 2 / Other 0 / Not captured 1');
     expect(markup).toContain('Female 8 / Male 4 / Other 1 / Not captured 0');
     expect(markup).toContain('Female 25 / Male 12 / Other 3 / Not captured 4');
+    expect(markup).toContain('class="metric-card-scope is-record"');
+    expect(markup).toContain('class="metric-card-scope is-live"');
+    expect(markup).toContain('All records');
+    expect(markup).toContain('Last 30 days');
   });
 
   it('uses shared Vuexy secondary button links for page header actions', () => {

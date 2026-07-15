@@ -1,8 +1,11 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationActionConfirmation,
+  assignFinanceReviewConfirmHref,
   enablePushDeviceConfirmHref,
   filterNotificationActionConfirmationSupportingLinks,
+  legacyReviewNotificationConfirmHref,
+  notificationBackgroundJobEvidenceHref,
   readNotificationConfirmationAction,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
@@ -29,6 +32,90 @@ const notification = {
 } as AdminNotification;
 
 describe('notification action confirmation', () => {
+  it('builds an audited assign-to-me confirmation for an overdue Finance review', () => {
+    const financeNotification = {
+      ...notification,
+      data: {
+        bankTransactionId: 'bank-tx-1',
+        destination: '/finance-tax/bank-reconciliation/bank-tx-1',
+        financeReviewOwner: { id: 'finance-owner-old' },
+        financeReviewStatus: 'OPEN',
+      },
+      id: 'finance-notification-1',
+      type: 'admin.finance.bank_transaction.review_escalated',
+    } as AdminNotification;
+    const href = assignFinanceReviewConfirmHref(financeNotification.id, 'finance-owner-current', {
+      financeAge: '72-plus',
+      financeOwner: 'unassigned',
+      range: 'all',
+      review: 'finance-overdue',
+    });
+
+    expect(href).toContain('confirm=assign-finance-review');
+    expect(href).toContain('financeAge=72-plus');
+    const confirmation = buildNotificationActionConfirmation(
+      [financeNotification],
+      'assign-finance-review',
+      {
+        assigneeAdminId: 'finance-owner-current',
+        financeAge: '72-plus',
+        financeOwner: 'unassigned',
+        notificationId: financeNotification.id,
+        pushDeviceId: '',
+        range: 'all',
+        review: 'finance-overdue',
+      },
+    );
+
+    expect(confirmation).toMatchObject({
+      action: 'assign-finance-review',
+      confirmLabel: 'Reassign to me',
+      hiddenInputs: expect.arrayContaining([
+        { name: 'assigneeAdminId', value: 'finance-owner-current' },
+        { name: 'assignmentSourceId', value: 'bank-tx-1' },
+        { name: 'assignmentSourceKind', value: 'bank-transaction' },
+      ]),
+      textInputs: [expect.objectContaining({ name: 'reason', required: true })],
+    });
+    expect(confirmation?.supportingLinks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        href: '/audit-log?q=bank-tx-1&range=all',
+        label: 'Audit trail',
+      }),
+    ]));
+    expect(confirmation?.cancelHref).toBe(
+      '/notifications?range=all&review=finance-overdue&financeAge=72-plus&financeOwner=unassigned',
+    );
+
+    const ownerConfirmation = buildNotificationActionConfirmation(
+      [financeNotification],
+      'assign-finance-review',
+      {
+        financeAssigneeOptions: [
+          { label: 'Current owner', value: 'finance-owner-old' },
+          { label: 'Finance Two', value: 'finance-owner-2' },
+          { label: 'Finance Three', value: 'finance-owner-3' },
+        ],
+        notificationId: financeNotification.id,
+        pushDeviceId: '',
+        review: 'finance-overdue',
+      },
+    );
+    expect(ownerConfirmation).toMatchObject({
+      confirmLabel: 'Reassign owner',
+      selectInputs: [{
+        defaultValue: 'finance-owner-2',
+        label: 'Review owner',
+        name: 'assigneeAdminId',
+        options: [
+          { label: 'Finance Two', value: 'finance-owner-2' },
+          { label: 'Finance Three', value: 'finance-owner-3' },
+        ],
+        required: true,
+      }],
+    });
+  });
+
   it('builds a retry confirmation for a loaded notification', () => {
     const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
       notificationId: notification.id,
@@ -327,6 +414,7 @@ describe('notification action confirmation', () => {
   it('reads only supported confirmation actions', () => {
     expect(readNotificationConfirmationAction('retry')).toBe('retry');
     expect(readNotificationConfirmationAction('enable-device')).toBe('enable-device');
+    expect(readNotificationConfirmationAction('review-legacy')).toBe('review-legacy');
     expect(readNotificationConfirmationAction('delete')).toBeNull();
   });
 
@@ -337,6 +425,97 @@ describe('notification action confirmation', () => {
     expect(enablePushDeviceConfirmHref('device 1')).toBe(
       '/notifications?confirm=enable-device&pushDeviceId=device%201',
     );
+    expect(legacyReviewNotificationConfirmHref('notification 1')).toBe(
+      '/notifications?confirm=review-legacy&notificationId=notification%201',
+    );
+  });
+
+  it('requires review evidence before closing an unlinked legacy system alert', () => {
+    const legacyNotification = {
+      ...notification,
+      data: {
+        destination: '/background-jobs',
+        jobId: 'repeat:background-job-failure-monitor:1783980324023',
+        queueName: 'bank-statement-escalation',
+      },
+      deliveries: [],
+      id: 'notification-legacy',
+      type: 'admin.system.background_job.failed',
+    } as AdminNotification;
+    const confirmation = buildNotificationActionConfirmation(
+      [legacyNotification],
+      'review-legacy',
+      {
+        incidentState: 'legacy',
+        notificationId: legacyNotification.id,
+        pushDeviceId: '',
+        range: '7d',
+        review: 'system-incidents',
+      },
+    );
+
+    expect(confirmation).toMatchObject({
+      action: 'review-legacy',
+      cancelHref: '/notifications?range=7d&review=system-incidents&incidentState=legacy',
+      confirmLabel: 'Mark reviewed',
+      textInputs: [
+        expect.objectContaining({ minLength: 12, name: 'reason', required: true }),
+      ],
+      tone: 'warning',
+    });
+    expect(confirmation?.description).toContain('does not mark a source incident recovered');
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          href: '/background-jobs?jobId=repeat%3Abackground-job-failure-monitor%3A1783980324023&queue=bank-statement-escalation&range=ALL&review=ALL',
+          label: 'Job evidence',
+        }),
+        expect.objectContaining({ href: expect.stringContaining('/audit-log?bucket=Notification') }),
+      ]),
+    );
+  });
+
+  it('only builds exact job evidence links for allowlisted queues and bounded ids', () => {
+    const base = {
+      ...notification,
+      type: 'admin.system.background_job.failed',
+    } as AdminNotification;
+
+    expect(notificationBackgroundJobEvidenceHref({
+      ...base,
+      data: { jobId: 'job-1', queueName: 'notification-retry' },
+    })).toBe('/background-jobs?jobId=job-1&queue=notification-retry&range=ALL&review=ALL');
+    expect(notificationBackgroundJobEvidenceHref({
+      ...base,
+      data: { jobId: 'job-1', queueName: 'arbitrary-queue' },
+    })).toBeNull();
+    expect(notificationBackgroundJobEvidenceHref({
+      ...base,
+      data: { jobId: 'x'.repeat(301), queueName: 'notification-retry' },
+    })).toBeNull();
+  });
+
+  it('does not allow linked or already reviewed incidents through the legacy confirmation', () => {
+    const linked = {
+      ...notification,
+      data: { incidentId: 'incident-1' },
+      id: 'notification-linked',
+      type: 'admin.system.background_job.failed',
+    } as AdminNotification;
+    const reviewed = {
+      ...linked,
+      data: { incidentStatus: 'LEGACY_REVIEWED' },
+      id: 'notification-reviewed',
+    } as AdminNotification;
+
+    expect(buildNotificationActionConfirmation([linked], 'review-legacy', {
+      notificationId: linked.id,
+      pushDeviceId: '',
+    })).toBeNull();
+    expect(buildNotificationActionConfirmation([reviewed], 'review-legacy', {
+      notificationId: reviewed.id,
+      pushDeviceId: '',
+    })).toBeNull();
   });
 
   it('preserves active queue context in confirmation URLs and cancel links', () => {

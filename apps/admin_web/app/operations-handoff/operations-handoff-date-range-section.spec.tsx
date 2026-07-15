@@ -5,10 +5,13 @@ import { OperationsHandoffDateRangeSection } from './operations-handoff-date-ran
 import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 
 describe('OperationsHandoffDateRangeSection', () => {
-  it('uses shared Vuexy badge atoms for the selected date range label', () => {
+  it('uses the shared filter panel result badge for the selected date range label', () => {
     const source = readFileSync('app/operations-handoff/operations-handoff-date-range-section.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterPanel');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('resultLabel={dateRangeLabel(range)}');
+    expect(source).not.toContain('AdminSection');
     expect(source).not.toContain('<span className="pill pill-info">{dateRangeLabel(range)}</span>');
   });
 
@@ -24,6 +27,8 @@ describe('OperationsHandoffDateRangeSection', () => {
 
     expect(textContent(section)).toContain('Operations history range');
     expect(textContent(section)).toContain('Last 7 days');
+    expect(textContent(section)).toContain('Range: Last 7 days');
+    expect(textContent(section)).toContain('Detail mode: Summary');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/operations-handoff?range=all',
@@ -35,7 +40,7 @@ describe('OperationsHandoffDateRangeSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'card admin-section admin-mt-16 admin-mb-16 operations-handoff-date-range-card',
+        'card admin-filter-panel admin-mt-16 admin-mb-16 operations-handoff-date-range-card admin-section',
         'actions',
       ]),
     );
@@ -53,5 +58,6 @@ describe('OperationsHandoffDateRangeSection', () => {
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=30d"');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;range=90d"');
     expect(markup).toContain('button-primary');
+    expect(markup).toContain('Detail mode: All records');
   });
 });

@@ -46,6 +46,8 @@ export function ServiceBookingFinanceTraceSection({
       title="Recent booking finance records"
     >
       <AdminTraceSummary
+        defaultKind="record"
+        defaultScope="Recent records"
         metrics={[
           {
             label: 'Payment total',
@@ -67,7 +69,12 @@ export function ServiceBookingFinanceTraceSection({
             label: 'Wallet movement',
             value: <MoneyText amount={summary.walletAmount} currency={summary.currency} />,
           },
-          { label: 'Missing records', value: `${summary.missingTraceCount} row(s)` },
+          {
+            label: 'Missing records',
+            kind: summary.missingTraceCount ? 'risk' : 'record',
+            scope: summary.missingTraceCount ? 'Needs action' : 'Recent records',
+            value: `${summary.missingTraceCount} row(s)`,
+          },
         ]}
       />
       {rows.length ? (

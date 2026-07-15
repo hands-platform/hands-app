@@ -100,8 +100,10 @@ describe('BookingMonitorBlockedCreateSection', () => {
     );
 
     expect(source).toContain('AdminFormSelect');
+    expect(source).toContain('AdminFormGridFields');
     expect(source).toContain('AdminFormControlButton');
     expect(source).not.toContain('<select');
+    expect(source).not.toContain('className="filter-grid admin-mt-14"');
     expect(source).not.toContain('<button className="button button-secondary" type="button"');
   });
 

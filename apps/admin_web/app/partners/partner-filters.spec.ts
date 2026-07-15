@@ -87,6 +87,29 @@ describe('partner filters', () => {
     });
   });
 
+  it('normalizes readiness drilldowns and labels them for operators', () => {
+    const filters = buildProviderFilters({
+      readiness: 'ready',
+      sort: 'wallet-debt',
+    });
+    const unsafeFilters = buildProviderFilters({ readiness: 'DROP TABLE partners' });
+
+    expect(filters.readiness).toBe('ready');
+    expect(unsafeFilters.readiness).toBe('');
+    expect(buildProviderActiveFilters(filters).map((filter) => filter.label)).toContain(
+      'Readiness: Dispatch ready',
+    );
+    expect(buildPartnerListHref(filters, { sort: 'last-work' })).toBe(
+      '/partners?readiness=ready&sort=last-work',
+    );
+    expect(buildPartnerDataHrefs(filters)).toEqual({
+      listHref: '/admin/partners/list-providers?take=25',
+      listIsServerPaginated: false,
+      summaryHref: '/admin/partners/list-providers/summary',
+      summaryMatchesVisibleFilter: false,
+    });
+  });
+
   it('keeps partner directory hydration bounded while summary count is loaded separately', () => {
     const filters = buildProviderFilters({});
 
@@ -276,7 +299,7 @@ describe('partner filters', () => {
     });
   });
 
-  it.each<keyof ProviderFilters>(['location', 'security'])(
+  it.each<keyof ProviderFilters>(['location', 'security', 'readiness'])(
     'opens advanced operational filters when %s is active',
     (key) => {
       const filters = { ...buildProviderFilters({}), [key]: 'active' };

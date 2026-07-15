@@ -8,6 +8,7 @@ import { AdminDirectoryFilterForm } from '../../components/admin-directory-filte
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -22,7 +23,7 @@ import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, type AdminPageMetric } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { AdminDisclosure } from '../../components/admin-surface';
+import { AdminDisclosure, AdminSection } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
@@ -219,10 +220,10 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
 
 function ReferralAccountingGuardrailsPanel() {
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16"
-      resultLabel="Accounting"
-      resultTone="info"
+    <AdminSection
+      className="referral-accounting-guardrails-panel admin-mt-16"
+      statusLabel="Accounting"
+      statusTone="info"
       title="Referral accounting guardrails"
     >
       <AdminTraceSummary
@@ -253,7 +254,7 @@ function ReferralAccountingGuardrailsPanel() {
           },
         ]}
       />
-    </AdminFilterPanel>
+    </AdminSection>
   );
 }
 
@@ -267,10 +268,10 @@ function ReferralLinkReadinessPanel({
   const audienceLabel = referralAudienceLabel(audience);
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16"
-      resultLabel="Store setup"
-      resultTone="info"
+    <AdminSection
+      className="referral-link-readiness-panel admin-mt-16"
+      statusLabel="Store setup"
+      statusTone="info"
       title="Referral link readiness"
     >
       <AdminTraceSummary
@@ -295,7 +296,7 @@ function ReferralLinkReadinessPanel({
           },
         ]}
       />
-    </AdminFilterPanel>
+    </AdminSection>
   );
 }
 
@@ -319,18 +320,18 @@ function ReferralListFilterPanel({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-customer-filter-card"
+      className="vuexy-customer-filter-card admin-mt-16"
       resultLabel={`${filteredCount} of ${totalCount}`}
       resultTone={activeFilters.length > 0 ? 'warning' : 'info'}
       title="Referral list filters"
       footer={
         activeFilters.length > 0 ? (
           <div className="vuexy-customer-filter-footer admin-directory-filter-footer">
-            {activeFilters.map((filter) => (
-              <StatusBadge key={filter} tone="warning">
-                {filter}
-              </StatusBadge>
-            ))}
+            <AdminFilterSummary
+              ariaLabel="Active referral filters"
+              className="vuexy-customer-active-filters"
+              labels={activeFilters}
+            />
           </div>
         ) : null
       }
@@ -400,11 +401,11 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
   const platformFeeVatLabel = formatBpsPercent(policy.platformFeeVatRateBps);
 
   return (
-    <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16"
+    <AdminSection
+      className="referral-policy-panel admin-mt-16"
       description={`${label} policy can be edited here. Policy changes are audited and should stay tied to an operator reason.`}
-      resultLabel={policy.enabled ? 'Enabled' : 'Disabled'}
-      resultTone={policy.enabled ? 'success' : 'neutral'}
+      statusLabel={policy.enabled ? 'Enabled' : 'Disabled'}
+      statusTone={policy.enabled ? 'success' : 'neutral'}
       title="Referral policy"
     >
       <AdminTraceSummary
@@ -460,7 +461,7 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
       />
       <ReferralPolicyActions />
       <ReferralPolicyForm label={label} policy={policy} />
-    </AdminFilterPanel>
+    </AdminSection>
   );
 }
 
@@ -1038,13 +1039,11 @@ function ReferralEmptyState({
           message={`${totalCount} parent account${totalCount === 1 ? ' exists' : 's exist'}, but none match the current filters.`}
           title={`No matching ${audienceLabel} referral parents`}
         />
-        <AdminFilterChipGroup ariaLabel="Active referral filters" className="admin-mt-8">
-          {activeFilters.map((filter) => (
-            <StatusBadge key={filter} tone="warning">
-              {filter}
-            </StatusBadge>
-          ))}
-        </AdminFilterChipGroup>
+        <AdminFilterSummary
+          ariaLabel="Active referral filters"
+          className="admin-mt-8"
+          labels={activeFilters}
+        />
         {clearHref ? (
           <AdminTextLink className="admin-mt-8" href={clearHref}>
             Clear referral filters

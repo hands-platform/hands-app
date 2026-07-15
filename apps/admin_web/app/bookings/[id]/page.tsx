@@ -190,9 +190,11 @@ import {
   AdminNotification,
   AdminOperationalPolicySetting,
   AdminProvider,
+  AdminUser,
   adminGet,
 } from '../../../lib/admin-api';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import { OPERATIONAL_POLICY_KEYS } from '../../../lib/operations-policy';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
@@ -291,6 +293,20 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   if (!booking) {
     notFound();
   }
+
+  const needsFinanceApproverDirectory = Boolean(
+    booking.payment?.id && booking.payment.status !== 'REFUNDED' && booking.payment.status !== 'RELEASED',
+  );
+  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
+    ? await Promise.all([
+        getCurrentAdminOperatorAccess(),
+        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
+      ])
+    : [null, []];
+  const financeApproverOptions = buildFinanceApproverOptions(
+    financeApproverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
 
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
@@ -598,6 +614,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     badges: opsCommandCenter.badges,
     booking,
     cashDebtNeedsSettlement: opsCommandCenter.cashDebtNeedsSettlement,
+    financeApproverOptions,
     finalGateReason,
     instruction: opsCommandCenter.instruction,
   };

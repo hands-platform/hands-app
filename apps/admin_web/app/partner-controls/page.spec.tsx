@@ -43,7 +43,7 @@ describe('PartnerControlsPage', () => {
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-unblock-board"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-unblock-playbook"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-block-matrix"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-filters"');
+    expect(markup).toContain('class="card admin-filter-panel admin-mb-16 admin-section" id="partner-control-filters"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-checklist"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-create-report"');
     expect(markup).toContain('class="card admin-section admin-mb-16" id="partner-control-reports"');
@@ -53,6 +53,7 @@ describe('PartnerControlsPage', () => {
   it('uses shared Vuexy status badge atoms instead of raw partner control pill markup', () => {
     expect(partnerControlsSource).toContain("from '../../components/status-badge'");
     expect(partnerControlsSource).toContain('AdminFilterChipGroup');
+    expect(partnerControlsSource).toContain('AdminFilterSummary');
     expect(partnerControlsSource).toContain('StatusBadge');
     expect(partnerControlsSource).toContain('StatusBadgeFromPillClass');
     expect(partnerControlsSource).not.toContain('statusBadgeToneFromPillClass');
@@ -120,6 +121,19 @@ describe('PartnerControlsPage', () => {
     expect(markup).not.toContain('calendar-field');
     expect(partnerControlsSource).not.toContain('partner-control-form-field');
     expect(partnerControlsSource).not.toContain('<div className="calendar-field');
+  });
+
+  it('renders active partner control filters through the shared filter summary atom', async () => {
+    const page = await PartnerControlsPage({
+      searchParams: Promise.resolve({ q: 'cash', sanction: 'ACTIVE', status: 'OPEN' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('aria-label="Active partner control filters"');
+    expect(markup).toContain('class="admin-filter-summary full-span"');
+    expect(markup).toContain('Search: cash');
+    expect(markup).toContain('Report: OPEN');
+    expect(markup).toContain('Control: ACTIVE');
   });
 
   it('uses the shared table pagination footer for reports and account controls', () => {

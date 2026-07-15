@@ -104,8 +104,36 @@ describe('Referral cashout queue', () => {
     );
 
     expect(cashoutQueueSource).toContain('AdminSegmentedControl');
+    expect(cashoutQueueSource).toContain('AdminFilterSummary');
     expect(markup).toContain('booking-date-filter-buttons referral-reward-queue');
     expect(markup).toContain('booking-date-filter-button is-active');
+    expect(markup).toContain('Active referral cashout filters');
+    expect(markup).toContain('Audience: All audiences');
+    expect(markup).toContain('State: Cashout approved');
+  });
+
+  it('shows default needs-action and all-cashout queue filters as selectable states', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'all', q: '', status: 'needs-action' }}
+        rows={[row]}
+        summary={summary}
+      />,
+    ).replace(/\s+/g, ' ');
+
+    expect(markup).toContain('Needs action');
+    expect(markup).toContain('All cashouts');
+    expect(markup).toContain('4 · <span class="money-text money-text-positive">105.000 VND</span>');
+    expect(markup).toContain(
+      'aria-current="page" class="booking-date-filter-button is-active" href="/referrals/cashouts"',
+    );
+    expect(markup).toContain('href="/referrals/cashouts?status=all"');
+  });
+
+  it('keeps cashout exposure scoped to the active filter instead of vague current-copy', () => {
+    expect(cashoutQueueSource).toContain('Total amount in the active cashout filter.');
+    expect(cashoutQueueSource).not.toContain('current cashout filter');
   });
 
   it('uses the shared StatusBadge atom for the queue count chip', () => {
@@ -118,9 +146,34 @@ describe('Referral cashout queue', () => {
     expect(cashoutQueueSource).not.toContain('className="admin-filter-form"');
   });
 
+  it('keeps the cashout filter panel off the legacy booking monitor filter class', () => {
+    expect(cashoutQueueSource).toContain('className="referral-cashout-filter-panel admin-mt-16"');
+    expect(cashoutQueueSource).not.toContain(
+      '<AdminFilterPanel\n        className="booking-monitor-filter-panel admin-mt-16"',
+    );
+  });
+
   it('uses the shared Vuexy action dropdown surface for cashout decision forms', () => {
     expect(cashoutQueueSource).toContain('ActionMenuDropdownSurface');
     expect(cashoutQueueSource).not.toContain('<details className="admin-action-dropdown referral-reward-action-dropdown">');
+  });
+
+  it('uses a separate Finance approver select for paid cashout closeout', () => {
+    const markup = renderToStaticMarkup(
+      <ReferralCashoutQueuePage
+        currentPage={1}
+        filters={{ audience: 'all', q: '', status: 'approved' }}
+        financeApproverOptions={[{ label: 'Finance Approver · approver@example.com', value: 'approver-2' }]}
+        rows={[row]}
+        summary={summary}
+      />,
+    );
+
+    expect(markup).toContain('Separate Finance approver');
+    expect(markup).toContain('Finance Approver · approver@example.com');
+    expect(markup).not.toContain('Different admin user id');
+    expect(cashoutQueueSource).toContain("requiresApproval: true");
+    expect(cashoutQueueSource).toContain('disabled={item.requiresApproval && paidApprovalUnavailable}');
   });
 
   it('uses the shared Vuexy button atom for cashout decision submit actions', () => {
@@ -198,7 +251,7 @@ describe('Referral cashout queue', () => {
 
     expect(markup).toContain('Referral Cashouts');
     expect(markup).toContain(
-      'card admin-section vuexy-booking-table-card vuexy-booking-table-group booking-monitor-filter-panel admin-mt-16',
+      'card admin-section vuexy-booking-table-card vuexy-booking-table-group referral-cashout-table-panel admin-mt-16',
     );
     expect(markup).not.toContain('admin-filter-panel-eyebrow">Queue');
     expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Apply filters');

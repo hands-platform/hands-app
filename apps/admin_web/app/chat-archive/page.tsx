@@ -20,6 +20,8 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminStageList } from '../../components/admin-stage-item';
 import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
@@ -30,7 +32,7 @@ import {
   AdminFormActionRow,
   AdminFormDate,
   AdminFormGrid,
-  AdminFormInput,
+  AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -178,27 +180,43 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         {
           label: 'Rooms loaded',
           value: totalRooms.toString(),
+          kind: 'record',
+          scope: dateFilters.label,
           helper: `${rooms.length} shown / ${dateFilters.label}`,
         },
         {
           label: 'Messages',
           value: summary.messageCount.toString(),
+          kind: 'record',
+          scope: dateFilters.label,
           helper: `${summary.customerMessages} customer / ${summary.partnerMessages} Partner`,
         },
-        { label: 'Completed rooms', value: summary.completedRooms.toString(), helper: 'Service done' },
+        {
+          label: 'Completed rooms',
+          value: summary.completedRooms.toString(),
+          kind: 'record',
+          scope: dateFilters.label,
+          helper: 'Service done',
+        },
         {
           label: 'Active rooms',
           value: summary.activeRooms.toString(),
+          kind: 'live',
+          scope: 'Current open',
           helper: 'Open operational flow',
         },
         {
           label: 'Empty rooms',
           value: summary.emptyRooms.toString(),
+          kind: 'risk',
+          scope: 'Needs action',
           helper: 'Chat room exists but no message',
         },
         {
           label: 'Missing rooms',
           value: repairSummary.missingRooms.toString(),
+          kind: 'risk',
+          scope: 'Needs action',
           helper: 'Matched booking needs a chat room',
         },
         {
@@ -206,19 +224,25 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           value: 'None',
           valueDateTimeFallback: 'None',
           valueDateTimeValue: summary.latestMessageAt,
+          kind: 'record',
+          scope: 'Latest record',
           helper: 'Newest loaded message',
         },
       ]}
       title="Chat Evidence Search"
     >
 
-      <AdminSection className="admin-mb-16" title="Chat evidence filters">
+      <AdminFilterPanel
+        className="chat-archive-filter-panel admin-mb-16"
+        resultLabel={`${rooms.length} room(s), ${summary.messageCount} message(s)`}
+        resultTone="info"
+        title="Chat evidence filters"
+      >
         <AdminFormGrid action="/chat-archive">
-          <AdminFormInput
+          <AdminFormSearch
             className="admin-directory-filter-search"
             defaultValue={filters.q}
-            label="Search"
-            labelVisibility="visible"
+            label="Search chat evidence"
             name="q"
             placeholder="Booking, room, customer, Partner, message"
           />
@@ -294,7 +318,12 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             </span>
           </AdminFormActionRow>
         </AdminFormGrid>
-      </AdminSection>
+        <AdminFilterSummary
+          ariaLabel="Active chat evidence filters"
+          labels={buildChatArchiveActiveFilterLabels(filters, dateFilters)}
+          tone="info"
+        />
+      </AdminFilterPanel>
 
       <AdminTableSection
         actions={
@@ -554,6 +583,50 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </AdminSection>
     </AdminPageTemplate>
   );
+}
+
+function buildChatArchiveActiveFilterLabels(filters: ChatArchiveFilters, dateFilters: DetailDateFilters) {
+  const labels = [`Date: ${dateFilters.label}`];
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+  if (filters.status) {
+    labels.push(`Status: ${chatArchiveStatusFilterLabel(filters.status)}`);
+  }
+  if (filters.sender) {
+    labels.push(`Sender: ${chatArchiveSenderFilterLabel(filters.sender)}`);
+  }
+  return labels;
+}
+
+function chatArchiveStatusFilterLabel(status: string) {
+  switch (status) {
+    case 'active':
+      return 'Active or matching';
+    case 'completed':
+      return 'Completed';
+    case 'closed':
+      return 'Cancelled / expired / refunded';
+    case 'no-message':
+      return 'Room without messages';
+    case 'missing-room':
+      return 'Matched without room';
+    default:
+      return status;
+  }
+}
+
+function chatArchiveSenderFilterLabel(sender: string) {
+  switch (sender) {
+    case 'customer':
+      return 'Customer messages';
+    case 'partner':
+      return 'Partner messages';
+    case 'admin':
+      return 'Admin/system messages';
+    default:
+      return sender;
+  }
 }
 
 function buildChatArchiveSummaryView(

@@ -8,8 +8,8 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminDirectoryFilterForm } from '../../components/admin-directory-filter-form';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
-import { StatusBadge } from '../../components/status-badge';
 import { buildCustomerListHref, type CustomerFilters } from './customer-filters';
 
 type CustomerFilterBoardProps = {
@@ -30,24 +30,20 @@ export function CustomerFilterBoard({
   return (
     <AdminFilterPanel
       className="vuexy-customer-filter-card admin-mb-16"
+      description="Separate today activity, reservation risk, customer segments, and history without loading every record."
       id="customer-directory-controls"
-      resultLabel={`${filteredCount} of ${totalCount}`}
-      title="Filters"
+      resultLabel={`${filteredCount} visible / ${totalCount} total`}
+      title="Customer operations filters"
       footer={
         <div className="vuexy-customer-filter-footer admin-directory-filter-footer">
-          {activeFilters.length > 0 ? (
-            <>
-              {activeFilters.map((filter) => (
-                <StatusBadge key={filter} tone="warning">
-                  {filter}
-                </StatusBadge>
-              ))}
-            </>
-          ) : (
-            <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/customers">
-              Clear filters
-            </AdminFormControlLink>
-          )}
+          <AdminFilterSummary
+            ariaLabel="Active customer filters"
+            className="vuexy-customer-active-filters"
+            labels={activeFilters}
+          />
+          <AdminFormControlLink className="admin-directory-filter-button is-ghost" href="/customers">
+            Clear filters
+          </AdminFormControlLink>
         </div>
       }
     >
@@ -94,7 +90,7 @@ export function CustomerFilterBoard({
             filters={filters}
             fromKey="joinedFrom"
             fromLabel="Sign-up from"
-            label="Sign-up Date"
+            label="Sign-up records"
             rangeKey="joinedRange"
             toKey="joinedTo"
             toLabel="Sign-up to"
@@ -103,7 +99,7 @@ export function CustomerFilterBoard({
             filters={filters}
             fromKey="lastBookingFrom"
             fromLabel="Last reservation from"
-            label="Last Reservation"
+            label="Reservation risk / history"
             rangeKey="lastBookingRange"
             toKey="lastBookingTo"
             toLabel="Last reservation to"
@@ -112,7 +108,7 @@ export function CustomerFilterBoard({
             filters={filters}
             fromKey="lastLoginFrom"
             fromLabel="Last login from"
-            label="Last Login Date"
+            label="Today active / login history"
             rangeKey="lastLoginRange"
             toKey="lastLoginTo"
             toLabel="Last login to"
@@ -195,7 +191,7 @@ function CustomerDateButtonGroup({
 function CustomerReservationSortGroup({ filters }: { readonly filters: CustomerFilters }) {
   return (
     <div className="booking-date-filter-bar vuexy-customer-date-filter-group is-compact">
-      <span className="vuexy-customer-filter-group-label">Reservation Count</span>
+      <span className="vuexy-customer-filter-group-label">Customer segments / history sort</span>
       <AdminSegmentedControl
         activeValue={filters.sort}
         ariaLabel="Reservation count sort"
@@ -229,6 +225,7 @@ const genderFilterOptions = [
 ] as const;
 
 const customerDateRangeButtonOptions = [
+  { label: 'All dates', value: '' },
   { label: 'Today', value: 'today' },
   { label: 'Previous day', value: 'yesterday' },
   { label: 'Last 7 days', value: '7d' },

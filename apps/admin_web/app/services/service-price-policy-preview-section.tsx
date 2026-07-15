@@ -51,6 +51,8 @@ export function ServicePricePolicyPreviewSection({
       title="Price policy change preview"
     >
       <AdminTraceSummary
+        defaultKind="record"
+        defaultScope="Policy preview"
         metrics={[
           { label: 'Previewed options', value: rows.length },
           {
@@ -69,7 +71,12 @@ export function ServicePricePolicyPreviewSection({
             label: 'Both + step',
             value: <MoneyText amount={summary.balancedStepCommission} currency={summary.currency} />,
           },
-          { label: 'Missing base rule', value: summary.missingBaseRuleCount },
+          {
+            label: 'Missing base rule',
+            kind: summary.missingBaseRuleCount ? 'risk' : 'record',
+            scope: summary.missingBaseRuleCount ? 'Needs action' : 'Policy preview',
+            value: summary.missingBaseRuleCount,
+          },
         ]}
       />
       {rows.length ? (

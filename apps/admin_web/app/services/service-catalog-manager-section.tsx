@@ -64,13 +64,13 @@ export function ServiceCatalogManagerSection({
         title="Service catalog"
       >
 
-        <div className="admin-filter-panel-body service-catalog-toolbar">
+        <div className="service-catalog-toolbar">
           <p className="muted">
             Showing {groups.length} of {totalGroupCount} service type(s). Prices use 100,000 VND steps.
           </p>
         </div>
 
-        <AdminCardGrid ariaLabel="Service menu cards" className="admin-filter-panel-body service-menu-card-grid">
+        <AdminCardGrid ariaLabel="Service menu cards" className="service-menu-card-grid">
           {groups.length ? (
             groups.map((group) => <ServiceCatalogCard group={group} key={group.key} />)
           ) : (

@@ -7,6 +7,7 @@ export type { NotificationTableRow } from './notification-table-row';
 
 type NotificationsTableSectionProps = {
   readonly emptyMessage: string;
+  readonly headers?: readonly string[];
   readonly hrefForPage?: (page: number) => string;
   readonly pagination?: NotificationTablePagination;
   readonly rows: readonly NotificationTableRow[];
@@ -14,6 +15,7 @@ type NotificationsTableSectionProps = {
 
 export function NotificationsTableSection({
   emptyMessage,
+  headers = ['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action'],
   hrefForPage,
   pagination,
   rows,
@@ -23,7 +25,7 @@ export function NotificationsTableSection({
       <AdminTableScroll>
         <AdminDataTable
           emptyMessage={emptyMessage}
-          headers={['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action']}
+          headers={headers}
           rowCount={rows.length}
         >
           {rows.map((row) => (

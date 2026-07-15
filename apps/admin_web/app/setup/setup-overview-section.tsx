@@ -51,26 +51,40 @@ export function SetupOverviewSection({
 
       <AdminMetricGrid
         metrics={[
-          { label: 'Current blockers', value: currentStage.blockers, helper: currentStage.helper },
+          {
+            label: 'Current blockers',
+            value: currentStage.blockers,
+            helper: currentStage.helper,
+            kind: currentStage.blockers ? 'risk' : 'record',
+            scope: 'Developer readiness',
+          },
           {
             label: 'Ready',
             value: summary.ready,
             helper: 'External groups configured enough for local/E2E use.',
+            kind: 'record',
+            scope: 'Developer readiness',
           },
           {
             label: 'Partial',
             value: summary.partial,
             helper: 'Some values exist, but production values are missing.',
+            kind: 'record',
+            scope: 'Developer readiness',
           },
           {
             label: 'Blocked',
             value: summary.blocked,
             helper: 'Cannot run real E2E until required values are set.',
+            kind: summary.blocked ? 'risk' : 'record',
+            scope: summary.blocked ? 'Needs action' : 'Developer readiness',
           },
           {
             label: 'Missing values',
             value: summary.missing,
             helper: 'Secret values are never displayed here.',
+            kind: summary.missing ? 'risk' : 'record',
+            scope: summary.missing ? 'Needs action' : 'Developer readiness',
           },
         ]}
       />

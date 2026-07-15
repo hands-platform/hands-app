@@ -14,8 +14,16 @@ describe('audit log page content', () => {
   });
 
   it('uses shared directory filter atoms instead of calendar field classes', () => {
+    expect(source).toContain('AdminFilterPanel');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).toContain('AdminFormSearch');
+    expect(source).toContain('title="Audit operation filters"');
+    expect(source).toContain('ariaLabel="Active audit filters"');
+    expect(source).toContain('buildAuditActiveFilterLabels(filters)');
     expect(source).toContain('className="admin-directory-filter-search"');
     expect(source).toContain('className="admin-directory-filter-select"');
+    expect(source).not.toContain('<AdminSection\n          className="admin-mb-16"\n          title="Audit filters"');
+    expect(source).not.toContain('AdminFormInput\n              className="admin-directory-filter-search"');
     expect(source).not.toContain('className="calendar-field"');
   });
 
@@ -40,5 +48,14 @@ describe('audit log page content', () => {
     expect(source).not.toContain('Trace this row');
     expect(source).not.toContain('delivery health');
     expect(source).not.toMatch(/\breadiness\b/i);
+  });
+
+  it('labels audit metrics as filtered records, live recent activity, or needs-action review', () => {
+    expect(source).toContain('scope: auditMetricScope(filters.range)');
+    expect(source).toContain('kind: auditMetricKind(filters.range)');
+    expect(source).toContain("scope: 'Needs action'");
+    expect(source).toContain("kind: 'risk'");
+    expect(source).toContain("scope: 'Live'");
+    expect(source).toContain("kind: 'live'");
   });
 });

@@ -1,8 +1,8 @@
 import { CalendarDays } from 'lucide-react';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
-import { AdminSection } from '../../components/admin-surface';
-import { StatusBadge } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
 
@@ -24,12 +24,10 @@ export function OperationsHandoffDateRangeSection({
   range,
 }: OperationsHandoffDateRangeSectionProps) {
   return (
-    <AdminSection
-      actions={
-        <StatusBadge tone="info">{dateRangeLabel(range)}</StatusBadge>
-      }
+    <AdminFilterPanel
       className="admin-mt-16 admin-mb-16 operations-handoff-date-range-card"
       description="Review dated booking, chat, finance, alert, and operator-note records for the selected historical window."
+      resultLabel={dateRangeLabel(range)}
       title="Operations history range"
     >
       <div className="actions">
@@ -49,7 +47,12 @@ export function OperationsHandoffDateRangeSection({
           );
         })}
       </div>
-    </AdminSection>
+      <AdminFilterSummary
+        ariaLabel="Active operations handoff filters"
+        labels={[`Range: ${dateRangeLabel(range)}`, `Detail mode: ${detailsMode === 'all' ? 'All records' : 'Summary'}`]}
+        tone="info"
+      />
+    </AdminFilterPanel>
   );
 }
 

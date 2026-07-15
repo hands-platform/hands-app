@@ -59,11 +59,28 @@ export function ServiceTypeCoverageBoardSection({
     >
       <AdminTraceSummary
         className="admin-mt-12"
+        defaultKind="record"
+        defaultScope="Policy guard"
         metrics={[
           { label: 'Service types checked', value: rows.length },
-          { label: 'Missing duration options', value: summary.missingDurationCount },
-          { label: 'Missing base payout', value: summary.missingBasePayoutCount },
-          { label: 'Hidden Partner prices', value: summary.hiddenPartnerPriceCount },
+          {
+            label: 'Missing duration options',
+            kind: summary.missingDurationCount ? 'risk' : 'record',
+            scope: summary.missingDurationCount ? 'Needs action' : 'Policy guard',
+            value: summary.missingDurationCount,
+          },
+          {
+            label: 'Missing base payout',
+            kind: summary.missingBasePayoutCount ? 'risk' : 'record',
+            scope: summary.missingBasePayoutCount ? 'Needs action' : 'Policy guard',
+            value: summary.missingBasePayoutCount,
+          },
+          {
+            label: 'Hidden Partner prices',
+            kind: summary.hiddenPartnerPriceCount ? 'risk' : 'record',
+            scope: summary.hiddenPartnerPriceCount ? 'Needs action' : 'Policy guard',
+            value: summary.hiddenPartnerPriceCount,
+          },
           {
             label: 'Net company fee',
             value: <MoneyText amount={summary.netCompanyFee} currency={summary.currency} />,

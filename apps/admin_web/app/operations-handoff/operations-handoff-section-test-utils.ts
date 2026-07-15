@@ -67,6 +67,8 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminCard',
       'AdminDataTable',
       'AdminEmptyState',
+      'AdminFilterPanel',
+      'AdminFilterSummary',
       'AdminMetricGrid',
       'AdminKpiCard',
       'AdminPersonCell',
@@ -75,6 +77,7 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
       'AdminTaskGrid',
       'MoneyText',
       'MetricCard',
+      'StatusBadge',
     ].includes(component.name)
   ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});

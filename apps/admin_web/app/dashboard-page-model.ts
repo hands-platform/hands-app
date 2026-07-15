@@ -28,7 +28,6 @@ export type DashboardDataHrefs = {
   readonly payoutBatchesHref: string | null;
   readonly refundsHref: string | null;
   readonly refundsSummaryHref: string;
-  readonly usersHref: string | null;
 };
 
 const DASHBOARD_BOOKING_TAKE = 50;
@@ -41,7 +40,6 @@ const DASHBOARD_SUMMARY_NOTIFICATION_TAKE = 5;
 const DASHBOARD_SUMMARY_AUDIT_TAKE = 5;
 const DASHBOARD_SUMMARY_FINANCE_TAKE = 5;
 const DASHBOARD_SUMMARY_APP_SESSION_TAKE = 5;
-const DASHBOARD_USER_TAKE = 25;
 const DASHBOARD_PARTNER_TAKE = 25;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DASHBOARD_OPERATIONAL_POLICY_KEYS = [
@@ -74,7 +72,7 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const range = buildDashboardRange(params);
   const limits = dashboardDataLimits(viewMode);
   return {
-    dashboardSummaryHref: '/admin/dashboard/summary',
+    dashboardSummaryHref: `/admin/dashboard/summary?${new URLSearchParams({ dateRange: range }).toString()}`,
     cashSettlementSummaryHref: buildDashboardRangeScopedHref(
       '/admin/cash-settlement-summary',
       {},
@@ -125,9 +123,6 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
       ? buildDashboardRangeScopedHref('/admin/refunds', { take: String(limits.finance) }, range)
       : null,
     refundsSummaryHref: buildDashboardRangeScopedHref('/admin/refunds/summary', {}, range),
-    usersHref: viewMode.shouldRenderFullDashboard
-      ? `/admin/users?${new URLSearchParams({ take: String(DASHBOARD_USER_TAKE) }).toString()}`
-      : null,
   };
 }
 

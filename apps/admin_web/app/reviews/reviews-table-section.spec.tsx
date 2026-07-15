@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
 import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
@@ -66,6 +67,14 @@ describe('ReviewsTableSection', () => {
     expect(reviewRowActionsSource).not.toContain('<section className="review-edit-form-card"');
   });
 
+  it('keeps review filter panels on the shared filter surface without booking-monitor filter classes', () => {
+    const source = readFileSync(new URL('./reviews-table-section.tsx', import.meta.url), 'utf8');
+
+    expect(source).toContain('AdminFilterPanel');
+    expect(source).toContain('className="vuexy-review-filter-card admin-mb-16"');
+    expect(source).not.toContain('className="booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16"');
+  });
+
   it('renders the Vuexy customer review board with controls, rating, status, and action links', () => {
     const section = ReviewsTableSection({
       csvHref: 'data:text/csv;charset=utf-8,Review',
@@ -84,6 +93,7 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Held');
     expect(rendered).toContain('Follow-up');
     expect(rendered).toContain('Reported');
+    expect(rendered).toContain('All dates');
     expect(rendered).toContain('Today');
     expect(rendered).toContain('Previous day');
     expect(rendered).toContain('Last 7 days');
@@ -139,7 +149,7 @@ describe('ReviewsTableSection', () => {
         'admin-form-control-button button button-primary admin-directory-filter-button',
         'admin-form-control-link button button-secondary admin-directory-filter-export',
         'booking-date-filter-buttons vuexy-review-sort-buttons',
-        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
+        'card admin-filter-panel vuexy-review-filter-card admin-mb-16 admin-section',
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-review-card admin-section',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-offline',
@@ -215,6 +225,21 @@ describe('ReviewsTableSection', () => {
         'admin-form-control-button button button-primary booking-date-apply-button',
       ]),
     );
+  });
+
+  it('keeps the all-dates review filter visible and active after clearing date filters', () => {
+    const section = ReviewsTableSection({
+      csvHref: 'data:text/csv;charset=utf-8,Review',
+      emptyMessage: 'No customer reviews loaded.',
+      filters: filters({ dateRange: 'all' }),
+      pagination: pagination([]),
+      rows: [],
+      totalReviewCount: 1,
+    });
+    const markup = renderToStaticMarkup(section);
+
+    expect(normalizedText(section)).toContain('All dates');
+    expect(markup).toContain('aria-current="page" class="booking-date-filter-button is-active" href="/reviews"');
   });
 
   it('renders the empty state when there are no review rows', () => {

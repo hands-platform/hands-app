@@ -5,11 +5,12 @@ import { buildProviderActiveFilters, buildProviderFilters, type ProviderFilters 
 import { PartnerFilterBoard } from './partner-filter-board';
 
 describe('PartnerFilterBoard', () => {
-  it('uses shared Vuexy badge atoms for active filter chips', () => {
+  it('uses shared Vuexy filter summary atoms for active filter chips', () => {
     const source = readFileSync('app/partners/partner-filter-board.tsx', 'utf8');
 
-    expect(source).toContain('StatusBadge');
+    expect(source).toContain('AdminFilterSummary');
     expect(source).not.toContain('<span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>');
+    expect(source).not.toContain('<StatusBadge key={`${filter.kind}-${filter.value}`}');
   });
 
   it('does not keep stale partner filter card selectors in global CSS', () => {
@@ -39,8 +40,9 @@ describe('PartnerFilterBoard', () => {
     );
 
     expect(rendered).toContain('card admin-filter-panel vuexy-partner-filter-card admin-mb-16');
-    expect(rendered).toContain('Filters');
-    expect(rendered).toContain('4 of 12');
+    expect(rendered).toContain('Partner operations filters');
+    expect(rendered).toContain('Separate ready-now Partners, offline risk, approval work, booking flow, and partner records.');
+    expect(rendered).toContain('4 visible / 12 total');
     expect(rendered).toContain('vuexy-partner-filter-grid');
     expect(rendered).toContain('admin-directory-filter-grid');
     expect(rendered).toContain('vuexy-partner-filter-group admin-directory-filter-group is-primary');
@@ -51,7 +53,7 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('State');
     expect(rendered).toContain('Verification');
     expect(rendered).toContain('KYC');
-    expect(rendered).toContain('Partner sort');
+    expect(rendered).toContain('Ready now / Records sort');
     expect(rendered).toContain('Checklist');
     expect(rendered).toContain('Last work');
     expect(rendered).toContain('Bookings');
@@ -61,12 +63,15 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Location freshness: 30m');
+    expect(rendered).toContain('matching partners under the active filters');
+    expect(rendered).not.toContain('current operations view');
     expect(rendered).toContain('Search: linh');
     expect(rendered).toContain('State: Online available');
     expect(rendered).not.toContain('Status: ONLINE_AVAILABLE');
     expect(rendered).toContain('Review: Unapproved Partners');
     expect(rendered).toContain('Sort: booking count');
     expect(rendered).toContain('Active partner filters');
+    expect(rendered).toContain('class="admin-filter-summary vuexy-partner-active-filters"');
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('type="hidden" name="sort" value="booking-count"');
     expect(rendered).toContain('type="hidden" name="review" value="unapproved"');
@@ -81,7 +86,6 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).not.toContain('Booking flow');
     expect(rendered).not.toContain('Review lane');
     expect(rendered).not.toContain('Partner pages');
-    expect(rendered).not.toContain('Partner filters');
     expect(rendered).not.toContain('Start with approval');
   });
 
@@ -133,6 +137,34 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Review: Marketplace ready');
     expect(rendered).not.toContain('Tax profile optional');
     expect(rendered).not.toContain('type="hidden" name="review"');
+  });
+
+  it('surfaces readiness drilldowns as an editable advanced filter instead of dropping them on apply', () => {
+    const filters = providerFilters({
+      readiness: 'ready',
+      sort: 'wallet-debt',
+    });
+    const rendered = renderToStaticMarkup(
+      PartnerFilterBoard({
+        activeFilters: buildProviderActiveFilters(filters),
+        csvDownloadName: 'hands-partners-readiness-ready.csv',
+        csvHref: 'data:text/csv,partner',
+        filteredCount: 2,
+        filters,
+        locationFreshnessLabel: 'Location freshness: 30m',
+        showAdvancedFilters: true,
+        totalCount: 12,
+      }),
+    );
+
+    expect(rendered).toContain('More filters');
+    expect(rendered).toContain('Readiness');
+    expect(rendered).toContain('Dispatch ready');
+    expect(rendered).toContain('Approved but offline');
+    expect(rendered).toContain('Readiness: Dispatch ready');
+    expect(rendered).toContain('name="readiness"');
+    expect(rendered).not.toContain('type="hidden" name="readiness"');
+    expect(rendered).toContain('href="/partners?readiness=ready&amp;sort=last-work"');
   });
 });
 

@@ -20,6 +20,8 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminOverviewGrid } from '../../components/admin-overview-card';
 import { AdminMetricGrid, AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
@@ -275,7 +277,7 @@ export default async function MarketingAnalyticsPage({
       title="Marketing Analytics"
     >
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             <StatusBadge tone="info">{overview.rangeLabel}</StatusBadge>
@@ -339,7 +341,12 @@ export default async function MarketingAnalyticsPage({
             Apply campaign
           </AdminFormControlButton>
         </AdminFormGrid>
-      </AdminSection>
+        <AdminFilterSummary
+          ariaLabel="Active marketing filters"
+          labels={marketingAnalyticsActiveFilterLabels(filters)}
+          tone="info"
+        />
+      </AdminFilterPanel>
 
       <ManualSpendForm filters={filters} />
 
@@ -351,7 +358,9 @@ export default async function MarketingAnalyticsPage({
           helper: detail,
           icon,
           iconSize: 18,
+          kind: 'period',
           label,
+          scope: overview.rangeLabel,
           value,
         }))}
       />
@@ -536,6 +545,28 @@ function MarketingBreakdownLoader({ filters }: { filters: ReturnType<typeof norm
       </AdminFormControlLink>
     </AdminSection>
   );
+}
+
+function marketingAnalyticsActiveFilterLabels(filters: ReturnType<typeof normalizeMarketingAnalyticsFilters>) {
+  const labels = [
+    `Range: ${marketingFilterOptionLabel(marketingAnalyticsRangeOptions, filters.range)}`,
+    `Source: ${marketingFilterOptionLabel(marketingAnalyticsSourceOptions, filters.source ?? 'all')}`,
+    `Platform: ${marketingFilterOptionLabel(marketingAnalyticsPlatformOptions, filters.platform ?? 'all')}`,
+    `Region: ${marketingFilterOptionLabel(marketingAnalyticsRegionOptions, filters.regionCode ?? 'all')}`,
+  ];
+
+  if (filters.campaignId) {
+    labels.push(`Campaign: ${filters.campaignId}`);
+  }
+
+  return labels;
+}
+
+function marketingFilterOptionLabel<T extends string>(
+  options: readonly { readonly value: T; readonly label: string }[],
+  value: T,
+) {
+  return options.find((option) => option.value === value)?.label ?? value;
 }
 
 function FilterButtons<T extends string>({

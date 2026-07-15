@@ -28,6 +28,7 @@ import {
 import type { VietnamOverviewLiveMapProps } from './vietnam-overview-live-map';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminOverviewGrid, AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminSegmentedControl } from '../../components/admin-segmented-control';
@@ -452,7 +453,7 @@ export default async function VietnamOverviewPage({
             actions={<span>{activeRegion ? 'Focused map below' : 'Top 5'}</span>}
             bodyClassName="vietnam-realtime-region-bars"
             className="vietnam-realtime-chart-card"
-            description="Regions ranked by bookings, active customers, ready Partners, and offline supply."
+            description="Regions ordered by bookings, active customers, ready Partners, and offline supply."
             title="Regional live load"
           >
             {topRealtimeRegionRows.map(({ counts, region, load, href }) => {
@@ -525,7 +526,7 @@ export default async function VietnamOverviewPage({
           </div>
       </AdminSection>
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             {activeRegion ? (
@@ -565,7 +566,7 @@ export default async function VietnamOverviewPage({
             itemClassName="vietnam-overview-filter-summary-card"
             items={periodFilterSummary}
           />
-      </AdminSection>
+      </AdminFilterPanel>
 
       {activeRegion ? (
         <AdminSection
@@ -631,7 +632,9 @@ export default async function VietnamOverviewPage({
             icon={Icon}
             iconSize={18}
             key={label}
+            kind={vietnamOverviewMetricKind(tone)}
             label={label}
+            scope={overview.rangeLabel}
             value={value}
           />
         ))}
@@ -793,6 +796,13 @@ export default async function VietnamOverviewPage({
       </AdminSection>
     </AdminPageTemplate>
   );
+}
+
+function vietnamOverviewMetricKind(tone: string) {
+  if (tone === 'danger') return 'risk' as const;
+  if (tone === 'warning') return 'action' as const;
+
+  return 'period' as const;
 }
 
 type VietnamRegionMetricTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger';

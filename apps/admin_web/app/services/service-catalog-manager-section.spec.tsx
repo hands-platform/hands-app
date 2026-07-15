@@ -103,7 +103,7 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).toContain('AdminDrawerSurface');
     expect(sectionSource).toContain('AdminDrawerFormGrid');
     expect(sectionSource).toContain('AdminFormControlLink');
-    expect(sectionSource).not.toContain('<div className="admin-filter-panel-body service-menu-card-grid">');
+    expect(sectionSource).not.toContain('admin-filter-panel-body');
     expect(sectionSource).not.toContain('<a className="button');
     expect(sectionSource).not.toContain('<a aria-label="Close service dialog" className="calendar-icon-button"');
     expect(sectionSource).not.toContain('<form action={createServiceDurationSet} className="calendar-form-grid service-menu-dialog-form">');

@@ -39,10 +39,17 @@ export function ServiceBookingExposureGuardSection({
       title="Customer booking exposure guard"
     >
       <AdminTraceSummary
+        defaultKind="record"
+        defaultScope="Policy guard"
         metrics={[
           { label: 'Active duration options', value: activeServiceCount },
           { label: 'Rules configured', value: payoutRuleCount },
-          { label: 'Record gaps', value: traceGapCount },
+          {
+            label: 'Record gaps',
+            kind: traceGapCount ? 'risk' : 'record',
+            scope: traceGapCount ? 'Needs action' : 'Policy guard',
+            value: traceGapCount,
+          },
           { label: 'Projected policy checks', value: policyCheckCount },
         ]}
       />

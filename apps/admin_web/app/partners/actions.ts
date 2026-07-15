@@ -163,9 +163,14 @@ export async function updatePartnerWalletWithdrawalRequest(formData: FormData) {
   const attachmentUrl = readOptionalFormString(formData, 'attachmentUrl');
   const adminNote = readOptionalFormString(formData, 'adminNote');
   const correctionReason = readOptionalFormString(formData, 'correctionReason');
+  const approvalAdminId = readOptionalFormString(formData, 'approvalAdminId');
+  if (status === 'PAID' && !approvalAdminId) {
+    throw new Error('Provider wallet withdrawal paid closeout requires approval from a different admin');
+  }
 
   await adminPatchOrThrow(`/admin/provider-wallet/withdrawal-requests/${requestId}`, {
     status,
+    approvalAdminId: approvalAdminId || undefined,
     transferRef: transferRef || undefined,
     bankTransferDate: bankTransferDate || undefined,
     attachmentFileId: attachmentFileId || undefined,

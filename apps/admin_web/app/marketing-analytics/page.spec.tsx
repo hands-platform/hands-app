@@ -50,10 +50,24 @@ describe('MarketingAnalyticsPage', () => {
   });
 
   it('uses shared admin form atoms for campaign and manual spend controls', async () => {
-    const page = await MarketingAnalyticsPage({ searchParams: Promise.resolve({}) });
+    const page = await MarketingAnalyticsPage({
+      searchParams: Promise.resolve({
+        campaignId: 'campaign-smoke',
+        platform: 'android',
+        range: '30d',
+        regionCode: 'hcm',
+        source: 'google',
+      }),
+    });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('admin-form-grid form-grid marketing-analytics-campaign-form');
+    expect(markup).toContain('Active marketing filters');
+    expect(markup).toContain('Range: 30 days');
+    expect(markup).toContain('Source: Google');
+    expect(markup).toContain('Platform: Android');
+    expect(markup).toContain('Region: Ho Chi Minh City');
+    expect(markup).toContain('Campaign: campaign-smoke');
     expect(markup).toContain('admin-form-grid form-grid marketing-spend-form');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('admin-form-select');
@@ -83,12 +97,13 @@ describe('MarketingAnalyticsPage', () => {
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('class="marketing-analytics-page"');
     expect(markup).not.toContain('usage-overview-page');
-    expect(markup).toContain('card admin-section marketing-analytics-filter-panel');
+    expect(markup).toContain('card admin-filter-panel marketing-analytics-filter-panel admin-section');
     expect(markup).not.toContain('usage-overview-filter-panel marketing-analytics-filter-panel');
     expect(markup).toContain('booking-date-filter-buttons marketing-analytics-range-buttons');
     expect(markup).not.toContain('booking-date-filter-buttons usage-overview-range-buttons');
     expect(markup).toContain('card admin-section marketing-spend-panel');
     expect(markup).toContain('card admin-kpi-card marketing-analytics-metric');
+    expect(markup).toContain('<span class="metric-card-scope is-period">Last 7 days</span>');
     expect(markup).not.toContain('vietnam-overview-metric');
     expect(markup).toContain('class="metric-card"');
     expect(markup).not.toContain('<article class="card admin-kpi-card metric-card marketing-analytics-metric');
