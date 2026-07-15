@@ -53,6 +53,7 @@ const VietnamOverviewLiveMap = dynamicComponent<VietnamOverviewLiveMapProps>(
 );
 
 type VietnamOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type VietnamOverviewView = 'live' | 'period';
 
 const emptyVietnamOverview: AdminVietnamOverviewSummary = {
   generatedAt: new Date(0).toISOString(),
@@ -107,6 +108,7 @@ export default async function VietnamOverviewPage({
   searchParams?: VietnamOverviewPageSearchParams;
 }) {
   const params = await searchParams;
+  const view = normalizeVietnamOverviewView(params?.view);
   const range = normalizeVietnamOverviewRange(params?.range);
   const activeSignalKeys = normalizeVietnamOverviewSignalFilters(params?.signals);
   const activeSignalSet = new Set<VietnamOverviewMetricDotKey>(activeSignalKeys);
@@ -115,10 +117,12 @@ export default async function VietnamOverviewPage({
       `/admin/vietnam-overview/summary?range=${range}`,
       emptyVietnamOverview,
     ),
-    adminGet<AdminVietnamOverviewRealtimePointFeed>(
-      vietnamOverviewRealtimePointsApiHref(),
-      emptyVietnamOverviewRealtimePointFeed,
-    ),
+    view === 'live'
+      ? adminGet<AdminVietnamOverviewRealtimePointFeed>(
+          vietnamOverviewRealtimePointsApiHref(),
+          emptyVietnamOverviewRealtimePointFeed,
+        )
+      : Promise.resolve(emptyVietnamOverviewRealtimePointFeed),
   ]);
   const regions = overview.regions;
   const regionalSampleLimit = overview.regionalSampleLimit ?? 50;
@@ -137,8 +141,8 @@ export default async function VietnamOverviewPage({
         (left, right) => vietnamRegionOperatingScore(right) - vietnamRegionOperatingScore(left),
       );
   const maxRegionOperatingScore = Math.max(1, ...visibleRegions.map(vietnamRegionOperatingScore));
-  const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions);
-  const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys });
+  const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions, view);
+  const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys, view });
   const metricTotals = activeRegion ?? overview.totals;
   const customerMetricScopeLabel = activeRegion ? `${activeRegion.shortName} customers` : 'stored customers';
   const periodClosedWorkCount = metricTotals.completedBookingCount + metricTotals.cancellationCount;
@@ -401,10 +405,44 @@ export default async function VietnamOverviewPage({
 
   return (
     <AdminPageTemplate
+      actions={
+        <AdminSegmentedControl
+          activeValue={view}
+          ariaLabel="Vietnam overview workspace"
+          options={[
+            {
+              href: vietnamOverviewHrefWithState({
+                range,
+                regionCode: activeRegionCode,
+                signalKeys: activeSignalKeys,
+                view: 'live',
+              }),
+              label: 'Live map',
+              value: 'live',
+            },
+            {
+              href: vietnamOverviewHrefWithState({
+                range,
+                regionCode: activeRegionCode,
+                signalKeys: activeSignalKeys,
+                view: 'period',
+              }),
+              label: 'Period report',
+              value: 'period',
+            },
+          ]}
+        />
+      }
       contentClassName="vietnam-overview-page"
-      description="Realtime operating map for saved customer addresses, active customers, ready Partners, offline Partners, 7-day inactive Partners, and active bookings across Vietnam. Period metrics are summarized below without paid map lookup."
+      description={
+        view === 'live'
+          ? 'Current saved customer locations, Partner readiness, offline supply, and active booking service addresses.'
+          : 'Exact national period totals with a bounded regional location sample for trend and closeout review.'
+      }
       title="Vietnam Overview"
     >
+      {view === 'live' ? (
+      <>
       <AdminOverviewGrid
         ariaLabel="Realtime Vietnam operations dashboard"
         baseClassName="vietnam-realtime-dashboard"
@@ -527,6 +565,11 @@ export default async function VietnamOverviewPage({
           </div>
       </AdminSection>
 
+      </>
+      ) : null}
+
+      {view === 'period' ? (
+      <>
       <AdminFilterPanel
         actions={
           <>
@@ -556,6 +599,7 @@ export default async function VietnamOverviewPage({
                 range: option.value,
                 regionCode: activeRegionCode,
                 signalKeys: activeSignalKeys,
+                view,
               }),
               label: option.label,
               value: option.value,
@@ -729,7 +773,7 @@ export default async function VietnamOverviewPage({
                                 : regionFocusHrefs[region.regionCode]
                             }
                           >
-                            {isFocusedRegion ? 'Clear focus' : 'Focus on map'}
+                            {isFocusedRegion ? 'Clear focus' : 'Focus region'}
                           </a>
                         </div>
                       </div>
@@ -796,6 +840,8 @@ export default async function VietnamOverviewPage({
           </AdminDataTable>
         </AdminTableScroll>
       </AdminSection>
+      </>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -824,6 +870,11 @@ function VietnamRegionMetricCell({
 }
 
 const vietnamOverviewAllSignalKeys = vietnamOverviewRealtimeMetricDotLegend.map((item) => item.key);
+
+function normalizeVietnamOverviewView(value: string | string[] | undefined): VietnamOverviewView {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate === 'period' ? 'period' : 'live';
+}
 
 function normalizeVietnamOverviewSignalFilters(
   value: string | string[] | undefined,
@@ -857,6 +908,7 @@ function vietnamOverviewRegionFocusHrefs(
   range: ReturnType<typeof normalizeVietnamOverviewRange>,
   signalKeys: readonly VietnamOverviewMetricDotKey[],
   regions: readonly AdminVietnamOverview['regions'][number][],
+  view: VietnamOverviewView,
 ) {
   return regions.reduce(
     (hrefs, region) => ({
@@ -865,6 +917,7 @@ function vietnamOverviewRegionFocusHrefs(
         range,
         regionCode: region.regionCode,
         signalKeys,
+        view,
       }),
     }),
     {} as Record<string, string>,
@@ -875,12 +928,18 @@ function vietnamOverviewHrefWithState({
   range,
   regionCode,
   signalKeys,
+  view = 'live',
 }: {
   readonly range: ReturnType<typeof normalizeVietnamOverviewRange>;
   readonly regionCode?: string | null;
   readonly signalKeys: readonly VietnamOverviewMetricDotKey[];
+  readonly view?: VietnamOverviewView;
 }) {
   const params = new URLSearchParams({ range });
+
+  if (view === 'period') {
+    params.set('view', 'period');
+  }
 
   if (regionCode) {
     params.set('region', regionCode);
@@ -918,6 +977,7 @@ function vietnamOverviewSignalHref(
     range,
     regionCode,
     signalKeys: normalizedNextSignalKeys,
+    view: 'live',
   });
 }
 

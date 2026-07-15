@@ -27,6 +27,7 @@ const mapClustersSource = readFileSync(
 
 describe('VietnamOverviewPage', () => {
   beforeEach(() => {
+    mockedAdminGet.mockReset();
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
   });
 
@@ -38,7 +39,7 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).not.toContain("import { VietnamOverviewLiveMap } from './vietnam-overview-live-map';");
   });
 
-  it('renders the realtime map and period report with shared Vuexy section surfaces', async () => {
+  it('renders only the realtime workspace by default with shared Vuexy section surfaces', async () => {
     const page = await VietnamOverviewPage({
       searchParams: Promise.resolve({ range: 'today' }),
     });
@@ -47,6 +48,8 @@ describe('VietnamOverviewPage', () => {
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/vietnam-overview/summary?range=today', expect.any(Object));
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/vietnam-overview/realtime-points?take=50', expect.any(Object));
     expect(markup).toContain('Vietnam Overview');
+    expect(markup).toContain('Live map');
+    expect(markup).toContain('Period report');
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('card admin-card vietnam-realtime-widget');
     expect(markup).not.toContain('<article class="vietnam-realtime-widget');
@@ -58,8 +61,8 @@ describe('VietnamOverviewPage', () => {
       '<section className="vietnam-realtime-dashboard" aria-label="Realtime Vietnam operations dashboard">',
     );
     expect(markup).toContain('card admin-section vietnam-overview-map-card');
-    expect(markup).toContain('card admin-filter-panel vietnam-overview-filter-panel admin-section');
-    expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-filter-summary-card');
+    expect(markup).not.toContain('card admin-filter-panel vietnam-overview-filter-panel admin-section');
+    expect(markup).not.toContain('card admin-card admin-summary-card vietnam-overview-filter-summary-card');
     expect(markup).not.toContain('<article class="vietnam-overview-filter-summary-card');
     expect(pageSource).toContain('AdminSummaryCardGrid');
     expect(pageSource).not.toContain('<div className="vietnam-overview-filter-summary-grid"');
@@ -69,15 +72,14 @@ describe('VietnamOverviewPage', () => {
     expect(markup).toContain('card admin-section vietnam-realtime-chart-card');
     expect(pageSource).toContain('AdminRowLink');
     expect(pageSource).not.toContain('<a key={region.regionCode} className="vietnam-realtime-region-row" href={href}>');
-    expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
-    expect(markup).toContain('card admin-kpi-card vietnam-overview-metric');
-    expect(markup).toContain('class="metric-card"');
+    expect(markup).not.toContain('card admin-section vietnam-overview-period-report-card');
+    expect(markup).not.toContain('card admin-kpi-card vietnam-overview-metric');
     expect(markup).not.toContain('<article class="card admin-kpi-card metric-card vietnam-overview-metric');
-    expect(markup).toContain('card admin-section vietnam-overview-region-card');
-    expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-region-insight-card');
+    expect(markup).not.toContain('card admin-section vietnam-overview-region-card');
+    expect(markup).not.toContain('card admin-card admin-summary-card vietnam-overview-region-insight-card');
     expect(markup).not.toContain('<article class="vietnam-overview-region-insight-card');
     expect(pageSource).not.toContain('<div className="vietnam-overview-region-insight-grid"');
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table vietnam-overview-table');
+    expect(markup).not.toContain('table vuexy-data-table vuexy-booking-table admin-data-table vietnam-overview-table');
     expect(pageSource).toContain('AdminDataTable');
     expect(pageSource).toContain('AdminTableScroll');
     expect(pageSource).toContain('AdminEmptyState');
@@ -100,6 +102,29 @@ describe('VietnamOverviewPage', () => {
     expect(pageSource).not.toContain('<table className="table vuexy-data-table vietnam-overview-table">');
   });
 
+  it('renders period reports without requesting realtime map points', async () => {
+    const page = await VietnamOverviewPage({
+      searchParams: Promise.resolve({ range: 'today', view: 'period' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/vietnam-overview/summary?range=today', expect.any(Object));
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/vietnam-overview/realtime-points?take=50',
+      expect.any(Object),
+    );
+    expect(markup).toContain('Period metrics range');
+    expect(markup).toContain('card admin-section vietnam-overview-period-report-card');
+    expect(markup).toContain('card admin-kpi-card vietnam-overview-metric');
+    expect(markup).toContain('class="metric-card"');
+    expect(markup).toContain('card admin-section vietnam-overview-region-card');
+    expect(markup).toContain('card admin-card admin-summary-card vietnam-overview-region-insight-card');
+    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table vietnam-overview-table');
+    expect(markup).not.toContain('card admin-card vietnam-realtime-widget');
+    expect(markup).not.toContain('card admin-section vietnam-overview-map-card');
+    expect(markup).toContain('/vietnam-overview?range=7d&amp;view=period');
+  });
+
   it('renders a focused region summary with the shared Vuexy section surface', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/vietnam-overview/summary?range=today') {
@@ -109,7 +134,7 @@ describe('VietnamOverviewPage', () => {
       return fallback;
     });
     const page = await VietnamOverviewPage({
-      searchParams: Promise.resolve({ range: 'today', region: 'hcm' }),
+      searchParams: Promise.resolve({ range: 'today', region: 'hcm', view: 'period' }),
     });
     const markup = renderToStaticMarkup(page);
 
