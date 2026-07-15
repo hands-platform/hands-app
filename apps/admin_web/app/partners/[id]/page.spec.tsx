@@ -289,9 +289,32 @@ describe('ProviderDetailPage data loading', () => {
     });
     const approvalMarkup = renderToStaticMarkup(approvalPage);
 
-    expect(approvalMarkup).toContain('Partner approval dossier');
+    expect(approvalMarkup).toContain('Partner approval decision');
     expect(approvalMarkup).toContain('Partner registration dossier');
+    expect(approvalMarkup).toContain('KYC decision');
+    expect(approvalMarkup).not.toContain('Required approval evidence');
+    expect(approvalMarkup).not.toContain('Review history');
     expect(approvalMarkup).not.toContain('Partner wallet detail');
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
+    ).toBe(false);
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments')),
+    ).toBe(false);
+
+    mockedAdminGet.mockClear();
+    const evidencePage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-dossier' }),
+      searchParams: Promise.resolve({ dossier: 'evidence', section: 'dossier' }),
+    });
+    const evidenceMarkup = renderToStaticMarkup(evidencePage);
+
+    expect(evidenceMarkup).toContain('Partner evidence records');
+    expect(evidenceMarkup).toContain('Evidence records');
+    expect(evidenceMarkup).toContain('Required approval evidence');
+    expect(evidenceMarkup).toContain('Review history');
+    expect(evidenceMarkup).not.toContain('Partner registration dossier');
+    expect(evidenceMarkup).not.toContain('Partner wallet detail');
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/provider-wallet/withdrawal-requests')),
     ).toBe(false);

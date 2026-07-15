@@ -1617,8 +1617,13 @@ if (providerLinkMatch) {
         },
         {
           query: 'section=dossier',
-          markers: ['Partner approval dossier', 'Dossier workspace view', 'Partner registration dossier'],
-          excludedMarkers: ['Partner wallet detail'],
+          markers: ['Partner approval decision', 'Dossier workspace view', 'Partner registration dossier', 'KYC decision'],
+          excludedMarkers: ['Partner evidence records', 'Review history', 'Partner wallet detail'],
+        },
+        {
+          query: 'section=dossier&dossier=evidence',
+          markers: ['Partner evidence records', 'Evidence records', 'Required approval evidence', 'Review history'],
+          excludedMarkers: ['Partner registration dossier', 'Partner wallet detail'],
         },
         {
           query: 'section=dossier&dossier=finance',

@@ -356,7 +356,7 @@ type PartnerDispatchPolicy = {
 type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
 type PartnerControlView = 'work' | 'reference';
 type PartnerAccessView = 'readiness' | 'diagnostics';
-type PartnerDossierView = 'approval' | 'finance';
+type PartnerDossierView = 'approval' | 'evidence' | 'finance';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
   missingDocuments: string[];
 };
@@ -414,7 +414,8 @@ function readPartnerAccessView(
 function readPartnerDossierView(
   params: Record<string, string | string[] | undefined>,
 ): PartnerDossierView {
-  return readSearchParam(params.dossier) === 'finance' ? 'finance' : 'approval';
+  const dossierView = readSearchParam(params.dossier);
+  return dossierView === 'evidence' || dossierView === 'finance' ? dossierView : 'approval';
 }
 
 function buildPartnerDetailWorkspaceHref(
@@ -426,8 +427,8 @@ function buildPartnerDetailWorkspaceHref(
   if (section === 'control' && view === 'reference') {
     query.set('control', 'reference');
   }
-  if (section === 'dossier' && view === 'finance') {
-    query.set('dossier', 'finance');
+  if (section === 'dossier' && (view === 'evidence' || view === 'finance')) {
+    query.set('dossier', view);
   }
   if (section === 'access' && view === 'diagnostics') {
     query.set('access', 'diagnostics');
@@ -1248,20 +1249,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {detailSection === 'dossier' ? (
       <PartnerDetailSectionGroup
-        description="Level 2 approval evidence and finance records are separate bounded workspaces."
+        description="Approval decisions, retained evidence, and finance records are separate bounded workspaces."
         eyebrow="Dossier"
         id="partner-dossier-section"
         status={
           dossierView === 'finance'
             ? `${walletWithdrawalRequests.length + partnerManualAdjustmentRows.length} finance record(s)`
+            : dossierView === 'evidence'
+              ? `${reviewHistoryRows.length + partnerTypedDocumentRows.length + partnerPublicMediaRows.length} evidence record(s)`
             : reviewChecklist.ready && registrationDossier.ready
               ? 'Level 2 ready'
               : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
         }
-        title={dossierView === 'finance' ? 'Partner finance records' : 'Partner approval dossier'}
+        title={
+          dossierView === 'finance'
+            ? 'Partner finance records'
+            : dossierView === 'evidence'
+              ? 'Partner evidence records'
+              : 'Partner approval decision'
+        }
       >
         <AdminSection
-          description="Open only the approval or finance evidence needed for the current operator task."
+          description="Open only the decision, retained evidence, or finance records needed for the current task."
           id="partner-dossier-workspace-selector"
           title="Dossier workspace view"
         >
@@ -1270,7 +1279,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               aria-current={dossierView === 'approval' ? 'page' : undefined}
               href={buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'approval')}
             >
-              Approval evidence
+              Approval decision
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={dossierView === 'evidence' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'dossier', 'evidence')}
+            >
+              Evidence records
             </AdminFormControlLink>
             <AdminFormControlLink
               aria-current={dossierView === 'finance' ? 'page' : undefined}
@@ -1285,8 +1300,23 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <>
         <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
         <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
+        <PartnerDetailKycDecisionSection
+          canApprove={canApproveKyc}
+          cccdNumberLast4={provider.kyc?.cccdNumberLast4}
+          evidence={kycEvidence}
+          rejectionReason={provider.kyc?.rejectionReason}
+          reviewActions={partnerKycReviewActions}
+          reviewedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.reviewedAt} />}
+          status={provider.kyc?.status}
+          submittedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />}
+        />
         <PartnerDetailLevelPathSection plan={levelPlan} />
         <PartnerDetailResubmissionGuidanceSection plan={resubmissionPlan} />
+          </>
+        ) : null}
+
+        {dossierView === 'evidence' ? (
+          <>
         <PartnerDetailReviewHistorySection
           rows={reviewHistoryRows}
           totalCount={provider.verificationLogs?.length ?? 0}
@@ -1300,17 +1330,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <PartnerDetailBasicProfileCard
               note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
               rows={partnerBasicProfileRows}
-            />
-
-            <PartnerDetailKycDecisionSection
-              canApprove={canApproveKyc}
-              cccdNumberLast4={provider.kyc?.cccdNumberLast4}
-              evidence={kycEvidence}
-              rejectionReason={provider.kyc?.rejectionReason}
-              reviewActions={partnerKycReviewActions}
-              reviewedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.reviewedAt} />}
-              status={provider.kyc?.status}
-              submittedLabel={<DateTimeText fallback="Missing" value={provider.kyc?.submittedAt} />}
             />
 
             <PartnerDetailServicePricingSection
