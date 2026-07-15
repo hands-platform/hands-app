@@ -31,6 +31,89 @@ $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run api:smoke
 ```
 
+For a smaller, self-cleaning check of the real CASH booking path, build the API and run:
+
+```powershell
+npm.cmd run build --workspace @massage-vn/api
+npm.cmd run bookings:cash-lifecycle-smoke
+```
+
+To verify the same reconciled fixture through the authenticated Admin Web detail pages, keep the local
+Admin Web and its API running, configure the normal Admin smoke login variables, and run:
+
+```powershell
+npm.cmd run bookings:cash-lifecycle-admin-smoke
+```
+
+For the smallest self-cleaning Customer App and Partner App contract path, run:
+
+```powershell
+npm.cmd run mobile:paired-e2e
+```
+
+This isolated smoke creates one marketplace CASH booking and verifies the same API paths used by both Flutter apps: Customer creation, Partner open-list visibility, join and acceptance, Customer final Partner selection, two-way chat, Partner start/completion, and completed history visibility for both roles. It also checks the resulting settlement journal and removes every fixture in `finally`. It refuses production or real payment-gateway environments.
+
+This adds direct assertions for the Partner bank deposit, General Ledger, and Bank Reconciliation detail
+routes, plus the refunded CASH booking's Settlement Audit and Reversal detail, while the fixture exists.
+The Admin smoke acquires the regular operator session, does not print or persist the session cookie, and
+the lifecycle script still removes all fixture data in `finally`.
+
+Online payment clearing is intentionally separate because CASH must not create a gateway clearing row.
+To verify MoMo and VNPay open-period refunds, plus a CARD closed-period refund that preserves the original
+settlement and creates a separate reversal record, then open its Payment Clearing, Settlement Audit, and
+Reversal evidence through Admin Web, run:
+
+```powershell
+npm.cmd run payments:lifecycle-admin-smoke
+```
+
+This isolated smoke uses a dedicated local API port and temporary customer, Partner, KYC, service,
+booking, and accounting records. It calls the customer and Partner HTTP APIs for booking creation,
+first-pick acceptance, start, and completion. It also verifies pre-match cancellation, admin no-show
+review, and dual-admin refund behavior. The checks cover CASH payment release/capture/refund, Partner
+wallet debt and reversal, settlement snapshots, blocked no-show payment review, and balanced settlement
+and reversal journals. A final completed booking verifies Partner debt recovery through a maker-created
+bank deposit request, separate finance approval, debt allocation, company bank transaction matching,
+balanced deposit journal, and restored Partner wallet. The script then removes all fixtures. It refuses
+to run in production or while real MoMo/VNPay gateway flags are enabled.
+
+To verify a Partner wallet withdrawal from request through dual-admin paid closeout, immutable and
+balanced General Ledger journals, company-bank outflow, and Bank Reconciliation, run:
+
+```powershell
+npm.cmd run build --workspace @massage-vn/api
+npm.cmd run finance:provider-withdrawal-admin-smoke
+```
+
+The smoke accepts only a local Postgres target, starts an isolated API on port `3004` by default, and
+removes its users, wallet entries, withdrawal, journals, bank transaction, match, and audit evidence in
+`finally`. The Admin variant also checks the Payouts list, both withdrawal journals, and the matched Bank
+Reconciliation detail through the authenticated Admin Web session. It never calls a real bank API.
+
+Historical `PAID` withdrawals created before persistent withdrawal journals can be audited with the
+dry-run-only default command:
+
+```powershell
+npm.cmd run finance:provider-withdrawal-journal-backfill
+```
+
+Apply only after every row is eligible and `blocked` is `0`:
+
+```powershell
+npm.cmd run finance:provider-withdrawal-journal-backfill -- --apply --actor-id=<admin-user-id>
+```
+
+The backfill refuses production and remote databases, requires an existing Admin actor, blocks CLOSED
+monthly periods, validates the paid wallet debit and bank-transfer evidence, never modifies an existing
+POSTED journal, and writes one Admin audit record per repaired withdrawal.
+
+For a temporary Admin UI evidence review, run the same smoke in an interactive terminal with
+`npm.cmd run bookings:cash-lifecycle-smoke -- --preview`. The first pause exposes the open CASH debt in
+Cash Settlements. Press Enter to complete the deposit lifecycle; the second pause exposes direct local
+Admin routes for the Partner bank deposit, its general-ledger journal, and the matched bank transaction.
+Press Enter again to stop the isolated API and run the normal complete cleanup. Do not use preview mode
+in unattended automation.
+
 For a smaller FCM-push-only check after Firebase Admin credentials and a real device token are available:
 
 ```powershell

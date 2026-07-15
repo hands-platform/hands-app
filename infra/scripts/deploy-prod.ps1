@@ -1,7 +1,8 @@
 param(
   [string]$EnvFile = ".env",
+  [string]$ComposeFile = "docker-compose.prod.yml",
   [switch]$SkipBuild,
-  [switch]$SkipSeed,
+  [switch]$IncludeSeed,
   [switch]$SkipSmoke
 )
 
@@ -26,27 +27,37 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw "Node.js is not installed or not available on PATH."
 }
 
+$resolvedEnvFile = (Resolve-Path -LiteralPath $EnvFile).Path
+$resolvedComposeFile = (Resolve-Path -LiteralPath $ComposeFile).Path
+
 Run-Step "Validate environment" {
-  node infra/scripts/check-env.mjs $EnvFile
+  node infra/scripts/check-env.mjs $resolvedEnvFile
 }
 
-$compose = @("compose", "-f", "docker-compose.prod.yml")
+$env:HANDS_ENV_FILE = $resolvedEnvFile
+$compose = @("compose", "--env-file", $resolvedEnvFile, "-f", $resolvedComposeFile)
 
 if ($SkipBuild) {
-  Run-Step "Start production compose" {
-    docker @compose up -d
-  }
+  Write-Host "Using existing production images."
 } else {
-  Run-Step "Build and start production compose" {
-    docker @compose up -d --build
+  Run-Step "Build production images" {
+    docker @compose build
   }
+}
+
+Run-Step "Start production data services" {
+  docker @compose up -d postgres redis minio
 }
 
 Run-Step "Run Prisma migrations" {
-  docker @compose exec api npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+  docker @compose run --rm api npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
 }
 
-if (-not $SkipSeed) {
+Run-Step "Start production application services" {
+  docker @compose up -d
+}
+
+if ($IncludeSeed) {
   Run-Step "Seed demo data" {
     docker @compose exec api npm run prisma:seed --workspace @massage-vn/api
   }

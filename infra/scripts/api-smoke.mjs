@@ -3,10 +3,15 @@ import {
   AccountingJournalBatchStatus,
   AccountingJournalSourceType,
   CompanyBankAccountStatus,
+  PaymentFeePayer,
+  PaymentFeeRuleType,
+  PaymentFeeTreatment,
+  PaymentMethod,
   PrismaClient,
   ProviderBankAccountStatus,
   ProviderWalletLedgerType,
   Role,
+  TaxPolicyStatus,
 } from '@prisma/client';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
@@ -266,6 +271,7 @@ async function assertWithholdingRemittanceLifecycle({
   const remittanceTransferRef = `SMOKE-WHT-${Date.now()}`;
   const remittanceEvidenceUrl = 'https://evidence.example.test/api-smoke/withholding-remittance.pdf';
   const partnerWithholdingTotal = 105000;
+  let paymentFeePolicyVersionId = null;
 
   try {
     await prisma.accountingJournalBatch.deleteMany({
@@ -273,6 +279,31 @@ async function assertWithholdingRemittanceLifecycle({
     });
     await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
     await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
+    const paymentFeePolicy = await prisma.paymentFeePolicyVersion.create({
+      data: {
+        name: `API smoke CARD payment fee ${Date.now()}`,
+        status: TaxPolicyStatus.ACTIVE,
+        effectiveFrom: new Date('2099-11-01T00:00:00.000Z'),
+        effectiveTo: new Date('2099-11-30T23:59:59.999Z'),
+        notes: 'Temporary payment fee evidence for withholding remittance lifecycle smoke.',
+        rules: {
+          create: {
+            method: PaymentMethod.CARD,
+            feeType: PaymentFeeRuleType.RATE,
+            rateBps: 0,
+            fixedAmount: 0,
+            payer: PaymentFeePayer.HANDS,
+            treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          },
+        },
+      },
+      include: { rules: true },
+    });
+    paymentFeePolicyVersionId = paymentFeePolicy.id;
+    const paymentFeeRule = paymentFeePolicy.rules[0];
+    if (!paymentFeeRule) {
+      throw new Error('Withholding remittance smoke payment fee policy did not create its CARD rule.');
+    }
     await prisma.bookingSettlementSnapshot.create({
       data: {
         sourceKey: snapshotSourceKey,
@@ -293,6 +324,22 @@ async function assertWithholdingRemittanceLifecycle({
         platformVatRateBps: 1000,
         platformFeeNetRevenue: 177273,
         companyOutputVat: 17727,
+        paymentFeePolicyVersionId,
+        paymentFeeRateBps: paymentFeeRule.rateBps,
+        paymentFeeFixedAmount: paymentFeeRule.fixedAmount,
+        paymentProcessingFee: 0,
+        paymentFeePayer: paymentFeeRule.payer,
+        paymentFeeTreatment: paymentFeeRule.treatment,
+        paymentFeeRuleSnapshot: {
+          policyName: paymentFeePolicy.name,
+          ruleId: paymentFeeRule.id,
+          method: paymentFeeRule.method,
+          feeType: paymentFeeRule.feeType,
+          rateBps: paymentFeeRule.rateBps,
+          fixedAmount: paymentFeeRule.fixedAmount,
+          payer: paymentFeeRule.payer,
+          treatment: paymentFeeRule.treatment,
+        },
         monthlyPeriod: period,
         metadata: {
           smoke: true,
@@ -417,6 +464,10 @@ async function assertWithholdingRemittanceLifecycle({
     });
     await prisma.bookingSettlementSnapshot.deleteMany({ where: { sourceKey: snapshotSourceKey } });
     await prisma.monthlyTaxClosing.deleteMany({ where: { period, currency } });
+    if (paymentFeePolicyVersionId) {
+      await prisma.paymentFeeRule.deleteMany({ where: { policyVersionId: paymentFeePolicyVersionId } });
+      await prisma.paymentFeePolicyVersion.deleteMany({ where: { id: paymentFeePolicyVersionId } });
+    }
     await prisma.$disconnect();
   }
 }
@@ -3451,7 +3502,11 @@ if (
 ) {
   throw new Error(`Cash debt split booking ledgers were not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
-const adminCashSettlementEarnings = await getJson('/admin/cash-settlement-earnings', adminAuth.accessToken);
+const cashSettlementBookingQuery = encodeURIComponent(walletDebtBooking.id);
+const adminCashSettlementEarnings = await getJson(
+  `/admin/cash-settlement-earnings?q=${cashSettlementBookingQuery}`,
+  adminAuth.accessToken,
+);
 const cashSettlementDebtRow = adminCashSettlementEarnings.find(
   (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,
 );
@@ -3462,7 +3517,10 @@ if (!cashSettlementDebtRow || cashSettlementDebtRow.payoutBatchId) {
     )}`,
   );
 }
-const adminCashSettlementSummary = await getJson('/admin/cash-settlement-summary', adminAuth.accessToken);
+const adminCashSettlementSummary = await getJson(
+  `/admin/cash-settlement-summary?q=${cashSettlementBookingQuery}`,
+  adminAuth.accessToken,
+);
 if (
   adminCashSettlementSummary.rowCount < 1 ||
   adminCashSettlementSummary.providerCount < 1 ||
@@ -3516,11 +3574,97 @@ await expectRequestFailure(
   400,
 );
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
-await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
-  settlementRef: cashDebtSettlementRef,
-  settlementNotes: 'Smoke test cash fee deposit reference',
-  settlementMethod: 'PARTNER_DEPOSIT',
-});
+const cashDebtDepositRequest = await postJson(
+  '/admin/provider-wallet/deposit-requests',
+  adminAuth.accessToken,
+  {
+    providerProfileId: walletDebtProviderAuth.user.providerProfile.id,
+    amount: Math.abs(cashDebtEarning.netAmount),
+    bankTransactionId: cashDebtSettlementRef,
+    depositDate: new Date().toISOString(),
+    attachmentUrl: `http://localhost:9000/api-smoke-evidence/${cashDebtSettlementRef}.pdf`,
+    notes: 'Smoke test cash fee deposit evidence',
+  },
+);
+if (
+  cashDebtDepositRequest.status !== 'REQUESTED' ||
+  cashDebtDepositRequest.requestedByAdminId !== adminAuth.user.id
+) {
+  throw new Error(
+    `Cash fee deposit request was not persisted for separate approval: ${JSON.stringify(cashDebtDepositRequest)}`,
+  );
+}
+await expectRequestFailure(
+  'Partner bank deposit rejects same-admin approval',
+  () =>
+    postJson(
+      `/admin/provider-wallet/deposit-requests/${cashDebtDepositRequest.id}/approve`,
+      adminAuth.accessToken,
+    ),
+  400,
+);
+const cashDebtDepositApproval = await postJson(
+  `/admin/provider-wallet/deposit-requests/${cashDebtDepositRequest.id}/approve`,
+  financeApproverAuth.accessToken,
+);
+if (
+  cashDebtDepositApproval.request?.status !== 'EXECUTED' ||
+  cashDebtDepositApproval.request?.approvedByAdminId !== financeApproverAuth.user.id ||
+  cashDebtDepositApproval.ledger?.amount !== Math.abs(cashDebtEarning.netAmount)
+) {
+  throw new Error(
+    `Cash fee deposit approval did not create the expected Wallet evidence: ${JSON.stringify(
+      cashDebtDepositApproval,
+    )}`,
+  );
+}
+const cashDebtDepositAllocation = await postJson(
+  `/admin/provider-wallet/deposit-requests/${cashDebtDepositRequest.id}/cash-debt-allocations`,
+  adminAuth.accessToken,
+  {
+    earningId: cashDebtEarning.id,
+    amount: Math.abs(cashDebtEarning.netAmount),
+    notes: 'Smoke test approved deposit allocation to cash debt',
+  },
+);
+if (
+  cashDebtDepositAllocation.cashDebtFullyAllocated !== true ||
+  cashDebtDepositAllocation.remainingReceivableRecovery !== 0 ||
+  cashDebtDepositAllocation.remainingDebtAmount !== 0
+) {
+  throw new Error(
+    `Cash fee deposit was not fully allocated to the selected debt: ${JSON.stringify(
+      cashDebtDepositAllocation,
+    )}`,
+  );
+}
+const cashDebtDepositDetail = await getJson(
+  `/admin/provider-wallet/deposit-requests/${cashDebtDepositRequest.id}`,
+  adminAuth.accessToken,
+);
+if (
+  cashDebtDepositDetail.remainingReceivableRecovery !== 0 ||
+  cashDebtDepositDetail.request?.cashDebtAllocations?.length !== 1 ||
+  cashDebtDepositDetail.ledger?.reference !== cashDebtSettlementRef ||
+  cashDebtDepositDetail.journal?.totalDebit !== cashDebtDepositDetail.journal?.totalCredit
+) {
+  throw new Error(
+    `Cash fee deposit detail did not preserve Wallet, GL, and allocation evidence: ${JSON.stringify(
+      cashDebtDepositDetail,
+    )}`,
+  );
+}
+if (
+  cashDebtDepositDetail.auditLogs?.filter(
+    (log) => log.action === 'partner_bank_deposit.cash_debt_allocate',
+  ).length !== 1
+) {
+  throw new Error(
+    `Cash fee deposit allocation audit evidence was not visible: ${JSON.stringify(
+      cashDebtDepositDetail.auditLogs,
+    )}`,
+  );
+}
 const adminEarningsAfterCashSettlement = await getJson('/admin/earnings', adminAuth.accessToken);
 const settledCashDebtEarning = adminEarningsAfterCashSettlement.find(
   (earning) => earning.id === cashDebtEarning.id,
@@ -3539,11 +3683,15 @@ const cashDebtSettlementLedger = settledCashDebtEarning.walletLedgerEntries?.fin
   (entry) => entry.type === 'CASH_FEE_DEBT_SETTLED',
 );
 if (
-  !cashDebtSettlementLedger ||
-  cashDebtSettlementLedger.amount !== Math.abs(cashDebtEarning.netAmount) ||
-  cashDebtSettlementLedger.reference !== cashDebtSettlementRef
+  cashDebtSettlementLedger ||
+  cashDebtDepositDetail.ledger?.type !== 'PARTNER_BANK_DEPOSIT_RECEIVED' ||
+  cashDebtDepositDetail.ledger?.amount !== Math.abs(cashDebtEarning.netAmount)
 ) {
-  throw new Error(`Cash fee settlement ledger was not recorded: ${JSON.stringify(settledCashDebtEarning)}`);
+  throw new Error(
+    `Approved deposit allocation should reuse deposit Wallet evidence without a duplicate debt-settled entry: ${JSON.stringify(
+      { cashDebtDepositDetail, settledCashDebtEarning },
+    )}`,
+  );
 }
 const walletDebtProviderSummaryAfterSettlement = await getJson(
   '/provider/earnings/summary',
@@ -3870,7 +4018,6 @@ if (completedSettlementSnapshot.paymentProcessingFee > 0) {
     side: 'CREDIT',
   });
 }
-const manualWalletAdjustmentApprovalId = `SMOKE-MANUAL-WALLET-${Date.now()}`;
 const manualWalletAdjustmentAmount = 10000;
 const manualWalletAdjustmentPayload = {
   ownerType: 'CUSTOMER',
@@ -3879,18 +4026,50 @@ const manualWalletAdjustmentPayload = {
   adjustmentType: 'CUSTOMER_COMPENSATION',
   amount: manualWalletAdjustmentAmount,
   reason: 'API smoke customer compensation credit without bank cash, revenue, or output VAT.',
-  approvalId: manualWalletAdjustmentApprovalId,
-  approvalAdminId: financeApproverAuth.user.id,
 };
 let manualWalletDualApprovalGuardsReady = false;
-const manualWalletSameAdminFailure = await expectRequestFailure(
-  'Manual wallet adjustment rejects same-admin approval',
+const manualWalletLegacyBypassId = `SMOKE-LEGACY-BYPASS-${Date.now()}`;
+// Intentional legacy caller: this proves the compatibility route cannot execute an arbitrary approval id.
+const manualWalletLegacyBypassFailure = await expectRequestFailure(
+  'Legacy manual wallet adjustment rejects arbitrary approval ids',
   () =>
     postJson('/admin/wallet-adjustments', adminAuth.accessToken, {
       ...manualWalletAdjustmentPayload,
-      approvalId: `${manualWalletAdjustmentApprovalId}-SAME-ADMIN`,
+      approvalId: manualWalletLegacyBypassId,
       approvalAdminId: adminAuth.user.id,
     }),
+  404,
+);
+if (!manualWalletLegacyBypassFailure.includes(`request ${manualWalletLegacyBypassId} was not found`)) {
+  throw new Error(
+    `Legacy manual wallet adjustment bypass guard returned unexpected message: ${manualWalletLegacyBypassFailure}`,
+  );
+}
+const manualWalletAdjustmentRequest = await postJson(
+  '/admin/wallet-adjustment-requests',
+  adminAuth.accessToken,
+  manualWalletAdjustmentPayload,
+);
+if (
+  manualWalletAdjustmentRequest.status !== 'REQUESTED' ||
+  manualWalletAdjustmentRequest.requestedByAdminId !== adminAuth.user.id ||
+  manualWalletAdjustmentRequest.ledgerEntryId
+) {
+  throw new Error(
+    `Manual wallet adjustment request was not persisted safely: ${JSON.stringify(
+      manualWalletAdjustmentRequest,
+    )}`,
+  );
+}
+const manualWalletAdjustmentApprovalId = manualWalletAdjustmentRequest.id;
+const manualWalletSameAdminFailure = await expectRequestFailure(
+  'Manual wallet adjustment rejects same-admin approval',
+  () =>
+    postJson(
+      `/admin/wallet-adjustment-requests/${encodeURIComponent(manualWalletAdjustmentApprovalId)}/approve`,
+      adminAuth.accessToken,
+      {},
+    ),
   400,
 );
 if (!manualWalletSameAdminFailure.includes('Manual wallet adjustment requires approval from a different admin')) {
@@ -3901,11 +4080,11 @@ if (!manualWalletSameAdminFailure.includes('Manual wallet adjustment requires ap
 const manualWalletNonFinanceFailure = await expectRequestFailure(
   'Manual wallet adjustment rejects non-finance approver',
   () =>
-    postJson('/admin/wallet-adjustments', adminAuth.accessToken, {
-      ...manualWalletAdjustmentPayload,
-      approvalId: `${manualWalletAdjustmentApprovalId}-NON-FINANCE`,
-      approvalAdminId: nonFinanceAdminAuth.user.id,
-    }),
+    postJson(
+      `/admin/wallet-adjustment-requests/${encodeURIComponent(manualWalletAdjustmentApprovalId)}/approve`,
+      nonFinanceAdminAuth.accessToken,
+      {},
+    ),
   400,
 );
 if (!manualWalletNonFinanceFailure.includes('Manual wallet adjustment requires approval from a finance approver')) {
@@ -3935,11 +4114,13 @@ if (
   );
 }
 const manualWalletAdjustmentResult = await postJson(
-  '/admin/wallet-adjustments',
-  adminAuth.accessToken,
-  manualWalletAdjustmentPayload,
+  `/admin/wallet-adjustment-requests/${encodeURIComponent(manualWalletAdjustmentApprovalId)}/approve`,
+  financeApproverAuth.accessToken,
+  {},
 );
 if (
+  manualWalletAdjustmentResult.request?.status !== 'EXECUTED' ||
+  manualWalletAdjustmentResult.request?.approvedByAdminId !== financeApproverAuth.user.id ||
   manualWalletAdjustmentResult.ledger?.amount !== manualWalletAdjustmentAmount ||
   manualWalletAdjustmentResult.preview?.afterBalance !== manualWalletAdjustmentPreview.afterBalance ||
   manualWalletAdjustmentResult.preview?.bankCashAmount !== 0 ||
@@ -3947,7 +4128,7 @@ if (
   manualWalletAdjustmentResult.preview?.platformRevenueAmount !== 0
 ) {
   throw new Error(
-    `Manual wallet adjustment create did not preserve preview accounting: ${JSON.stringify({
+    `Manual wallet adjustment approval did not preserve preview accounting: ${JSON.stringify({
       manualWalletAdjustmentPreview,
       manualWalletAdjustmentResult,
     })}`,

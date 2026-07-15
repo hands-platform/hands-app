@@ -255,4 +255,4 @@ Write-Utf8NoBom -Path $summaryPath -Content $summary
 Write-Host "HANDS Android upload keys are ready."
 Write-Host "Secret folder: $secretRootFull"
 Write-Host "Summary: $summaryPath"
-Write-Host "Next: run flutter build apk --release in apps/customer_app and apps/provider_app."
+Write-Host "Next: run flutter build appbundle --release in apps/customer_app and apps/provider_app for Play Console upload."

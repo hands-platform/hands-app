@@ -166,11 +166,9 @@ const pages = [
     path: '/',
     markers: [
       'HANDS Admin',
-      'HANDS Operations',
       'Calendar',
       'Vietnam Overview',
       'Marketing Analytics',
-      'Command',
       'Bookings',
       'All Bookings',
       'Completed',
@@ -178,25 +176,23 @@ const pages = [
       'Partners',
       'Customers',
       'Finance',
-      'Core operating counters',
-      'Total bookings',
-      'Open matching',
-      'Active bookings',
-      'Completed bookings',
-      'Cancelled bookings',
-      'No-show records',
-      'Blocked create attempts',
+      'Start Shift',
+      'Needs action now',
+      'Live now',
+      'Money status',
+      'Today work',
+      'Today result',
+      'Booking requests',
+      'Matching exceptions',
+      'Waiting for Partner',
+      'Completed',
+      'Cancelled',
       'Customers in app',
       'Partners in app',
-      'Online Partners',
+      'Ready Partners',
       'Payment holds',
       'Cash debt',
-      'Operations command board',
-      'Booking participant flow',
-      'Evidence drilldown',
-      'Booking evidence command queue',
-      'Dashboard date range',
-      'More operating detail',
+      'Diagnostics',
       'Load full dashboard',
     ],
   },
@@ -204,20 +200,27 @@ const pages = [
     path: '/?details=all',
     markers: [
       'HANDS Admin',
-      'HANDS Operations',
-      'Core operating counters',
-      'Total bookings',
-      'Open matching',
-      'Active bookings',
-      'Completed bookings',
-      'Cancelled bookings',
-      'No-show records',
-      'Blocked create attempts',
+      'Start Shift',
+      'Needs action now',
+      'Live now',
+      'Money status',
+      'Today work',
+      'Today result',
+      'Booking requests',
+      'Matching exceptions',
+      'Waiting for Partner',
+      'Completed',
+      'Cancelled',
+      'No-show evidence',
       'Customers in app',
       'Partners in app',
-      'Online Partners',
+      'Ready Partners',
       'Payment holds',
       'Cash debt',
+      'Booking diagnostics',
+      'Dispatch evidence map',
+      'Retained evidence signals',
+      'Evidence queue shortcuts',
       'Hourly booking demand',
       'Regional booking demand',
       'Shift command briefing',
@@ -227,7 +230,7 @@ const pages = [
   {
     path: '/calendar',
     markers: [
-      'Operations Calendar',
+      'Calendar',
       'Visible events',
       'Mini calendar',
       'Event Filters',
@@ -245,9 +248,8 @@ const pages = [
       'Marketing Analytics',
       'Marketing filters',
       'Acquisition funnel',
-      'Source performance',
-      'Region performance',
-      'Campaign performance',
+      'Breakdown tables',
+      'Dimension rows are not loaded by default',
       'No live ad API',
     ],
   },
@@ -259,9 +261,9 @@ const pages = [
       'Open matching',
       'Matched',
       'Follow-up queue',
-      'Booking operation filters',
-      'Realtime Bookings',
-      'Post-match / In Progress',
+      'Booking workspace filters',
+      'Live / Today Bookings',
+      'Live In Progress',
       'Request Time',
       'Customer',
       'Requested',
@@ -275,8 +277,8 @@ const pages = [
     path: '/bookings/completed',
     markers: [
       'Completed Bookings',
-      'Completed closeout flow',
-      'Booking operation filters',
+      'Closeout Records',
+      'Booking workspace filters',
       'Completed',
       'Completed Bookings',
       'Payment ops',
@@ -287,11 +289,10 @@ const pages = [
     path: '/bookings/post-match-cancellations',
     markers: [
       'Post-match Cancellations',
-      'Admin checks chat evidence',
-      'Needs admin review',
-      'Auto-approved',
-      'Fee restored',
-      'Booking operation filters',
+      'Cancellation Review / Needs Action',
+      'Cancellation Records / Resolved',
+      'Evidence missing',
+      'Booking workspace filters',
     ],
   },
   {
@@ -373,16 +374,16 @@ const pages = [
   {
     path: '/customers',
     markers: [
-      'Customer Management',
+      'Customers',
       'Total customers',
       'Joined today',
       'Active today',
       'Active in 30 days',
-      'Filters',
+      'Customer operations filters',
       'Sign-up Date',
-      'Last Reservation',
+      'Reservation risk / history',
       'Last Login Date',
-      'Reservation Count',
+      'Reservation count sort',
       'Customer directory',
       'Customer',
       'Country',
@@ -914,7 +915,7 @@ const pages = [
       'Work',
       'Wallet',
       'Account',
-      'Filters',
+      'Partner operations filters',
       'Partner sort',
     ],
   },
@@ -1017,7 +1018,7 @@ const pages = [
       'Realtime Vietnam operating map',
       'Realtime signal legend',
       'Active customers',
-      'Online Partners',
+      'Ready Partners',
       'Active bookings',
       'Period metrics range',
     ],
@@ -1035,7 +1036,15 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
 
-const explicitSmokePaths = ((env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
+const directSmokePages = parseDirectSmokePages(env.ADMIN_WEB_SMOKE_DIRECT_PAGES);
+pages.push(...directSmokePages);
+const runDirectSmoke = directSmokePages.length > 0;
+
+const explicitSmokePaths = (
+  (env.ADMIN_WEB_SMOKE_PATHS ?? '') ||
+  requestedSmokeArgs.join(',') ||
+  directSmokePages.map((page) => page.path).join(',')
+)
   .split(',')
   .map((path) => path.trim())
   .filter(Boolean);
@@ -1138,6 +1147,54 @@ async function loadSmokeCookieHeader() {
   return sessionCookie;
 }
 
+function parseDirectSmokePages(rawValue) {
+  if (!rawValue?.trim()) {
+    return [];
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(rawValue);
+  } catch {
+    throw new Error('ADMIN_WEB_SMOKE_DIRECT_PAGES must be valid JSON.');
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 20) {
+    throw new Error('ADMIN_WEB_SMOKE_DIRECT_PAGES must contain between 1 and 20 page assertions.');
+  }
+
+  return parsed.map((page, index) => {
+    if (!page || typeof page !== 'object' || Array.isArray(page)) {
+      throw new Error(`ADMIN_WEB_SMOKE_DIRECT_PAGES[${index}] must be an object.`);
+    }
+    if (
+      typeof page.path !== 'string' ||
+      !page.path.startsWith('/') ||
+      page.path.startsWith('//') ||
+      page.path.includes('\\') ||
+      page.path.includes('..') ||
+      /%2e/i.test(page.path) ||
+      /\s/.test(page.path)
+    ) {
+      throw new Error(`ADMIN_WEB_SMOKE_DIRECT_PAGES[${index}].path must be a local admin route.`);
+    }
+    if (!Array.isArray(page.markers) || page.markers.length === 0 || page.markers.length > 30) {
+      throw new Error(`ADMIN_WEB_SMOKE_DIRECT_PAGES[${index}].markers must contain 1 to 30 strings.`);
+    }
+
+    const markers = page.markers.map((marker, markerIndex) => {
+      if (typeof marker !== 'string' || marker.trim().length === 0 || marker.length > 500) {
+        throw new Error(
+          `ADMIN_WEB_SMOKE_DIRECT_PAGES[${index}].markers[${markerIndex}] must be a non-empty string up to 500 characters.`,
+        );
+      }
+      return marker;
+    });
+
+    return { path: page.path, markers };
+  });
+}
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -1225,7 +1282,10 @@ for (const page of smokePages) {
   const body = await fetchPage(page.path);
   pageBodies.set(page.path, body);
   if (!runBudgetSmoke) {
-    const missing = page.markers.filter((marker) => !body.includes(marker));
+    const visibleText = runDirectSmoke ? visibleTextFromHtml(body) : '';
+    const missing = page.markers.filter(
+      (marker) => !body.includes(marker) && (!runDirectSmoke || !visibleText.includes(marker)),
+    );
     if (missing.length > 0) {
       throw new Error(`${page.path} is missing expected markers: ${missing.join(', ')}`);
     }
@@ -1298,7 +1358,7 @@ async function runSupportFollowUps(followUp, parentPath, body) {
   }
 }
 
-if (!runBudgetSmoke) {
+if (!runBudgetSmoke && !runDirectSmoke) {
 const providersBody =
   shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
     ? await fetchPage('/providers')
@@ -1380,7 +1440,7 @@ if (customerLinkMatch) {
   const customerPath = `/customers/${customerLinkMatch[1]}`;
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
-    'Customer detail',
+    'Customer Detail',
     'Customer operating picture',
     'Customer booking situation board',
     'Current / In Progress',
@@ -1393,11 +1453,12 @@ if (customerLinkMatch) {
     'Customer contact and evidence',
     'Customer account operations',
     'Saved addresses',
-    'Chat history',
+    'Chat and audit record',
     'All customer chats',
-    'Admin archive for every matched booking',
-    'Recent customer notifications',
-    'Customer audit trail',
+    'Record archive summary',
+    'Matched booking chat archives retained for admin evidence',
+    'Customer notification delivery rows',
+    'Audit logs',
   ];
   const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
   if (missing.length > 0) {

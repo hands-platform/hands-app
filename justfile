@@ -63,6 +63,12 @@ safe-check:
     git status --short --branch
     npm.cmd run verify:api:fast
     npm.cmd run verify:admin:fast
+    npm.cmd run supabase:schema:check
+    npm.cmd run supabase:location-exposure-smoke:test
+    npm.cmd run supabase:key-validity:test
+    npm.cmd run supabase:reachability:test
+    npm.cmd run external:check:report:test
+    npm.cmd run external:check:release:test
     npm.cmd run authority:check
 
 # Focused API wallet and booking tests.

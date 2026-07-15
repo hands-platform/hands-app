@@ -6,7 +6,8 @@ COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/admin_web/package.json apps/admin_web/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --prefer-offline --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 COPY . .
 ENV DATABASE_URL=postgresql://massage:massage@postgres:5432/massage_vn?schema=public

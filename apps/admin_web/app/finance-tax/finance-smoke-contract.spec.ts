@@ -58,5 +58,61 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/bank-reconciliation'), 'finance-tax/bank-reconciliation')");
     expect(scriptSource).toContain("firstDetailPath(pageBodies.get('/finance-tax/booking-settlement-audit'), 'finance-tax/booking-settlement-audit')");
     expect(scriptSource).toContain("routePrefix: 'finance-tax/settlement-reversals'");
+    expect(scriptSource).toContain('ADMIN_WEB_SMOKE_DIRECT_PAGES');
+    expect(scriptSource).toContain('parseDirectSmokePages');
+    expect(scriptSource).toContain('runDirectSmoke');
+    expect(scriptSource).toContain('visibleTextFromHtml(body)');
+    expect(scriptSource).toContain('directSmokePages.map((page) => page.path)');
+    expect(scriptSource).toContain('path must be a local admin route');
+  });
+
+  it('connects the CASH lifecycle to direct Finance evidence page assertions', () => {
+    const scriptSource = readFileSync(
+      resolve(root, 'infra/scripts/cash-booking-lifecycle-smoke.mjs'),
+      'utf8',
+    );
+
+    expect(scriptSource).toContain("process.argv.includes('--admin-evidence')");
+    expect(scriptSource).toContain('verifyAdminWebEvidence');
+    expect(scriptSource).toContain('Partner Bank Deposit Detail');
+    expect(scriptSource).toContain('General Ledger Detail');
+    expect(scriptSource).toContain('Bank Reconciliation Detail');
+    expect(scriptSource).toContain('Match approved by Cash Booking Smoke Finance Approver');
+    expect(scriptSource).toContain('runAdminWebDirectSmoke');
+    expect(scriptSource).toContain('settlementAuditLinked');
+    expect(scriptSource).toContain('openPeriodRefundJournalLinked');
+  });
+
+  it('connects online payment clearing and reversal evidence to authenticated Admin details', () => {
+    const scriptSource = readFileSync(resolve(root, 'infra/scripts/payment-lifecycle-smoke.mjs'), 'utf8');
+    const helperSource = readFileSync(
+      resolve(root, 'infra/scripts/lib/admin-web-direct-smoke.mjs'),
+      'utf8',
+    );
+
+    expect(scriptSource).toContain("process.argv.includes('--admin-evidence')");
+    expect(scriptSource).toContain('Payment Clearing Detail');
+    expect(scriptSource).toContain('Booking Settlement Audit Detail');
+    expect(scriptSource).toContain('Settlement Reversal Detail');
+    expect(scriptSource).toContain('paymentClearingLinked');
+    expect(scriptSource).toContain('runAdminWebDirectSmoke');
+    expect(helperSource).toContain('ADMIN_WEB_SMOKE_DIRECT_PAGES');
+    expect(helperSource).toContain("stdio: 'inherit'");
+  });
+
+  it('connects Provider wallet withdrawal paid closeout to GL and bank reconciliation evidence', () => {
+    const scriptSource = readFileSync(
+      resolve(root, 'infra/scripts/provider-wallet-withdrawal-lifecycle-smoke.mjs'),
+      'utf8',
+    );
+
+    expect(scriptSource).toContain("process.argv.includes('--admin-evidence')");
+    expect(scriptSource).toContain('lockJournalImmutable');
+    expect(scriptSource).toContain('paidJournalBalanced');
+    expect(scriptSource).toContain('withdrawalRequestId');
+    expect(scriptSource).toContain('accountingJournalEntryId');
+    expect(scriptSource).toContain('General Ledger Detail');
+    expect(scriptSource).toContain('Bank Reconciliation Detail');
+    expect(scriptSource).toContain('runAdminWebDirectSmoke');
   });
 });

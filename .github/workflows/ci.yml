@@ -39,8 +39,8 @@ jobs:
       - name: Test API
         run: npm run api:test
 
-      - name: Test Admin Web security
-        run: npm run test --workspace @massage-vn/admin-web -- app/api/admin/session/login/route.spec.ts app/api/admin/session/logout/route.spec.ts app/api/admin/session/me/route.spec.ts app/api/admin/realtime-token/route.spec.ts lib/admin-web-middleware.spec.ts
+      - name: Test Admin Web
+        run: npm run test --workspace @massage-vn/admin-web
 
       - name: Typecheck API
         run: npm run typecheck --workspace @massage-vn/api
@@ -60,7 +60,19 @@ jobs:
         run: |
           node --check infra/scripts/api-smoke.mjs
           node --check infra/scripts/check-env.mjs
+          node --check infra/scripts/supabase-location-exposure-smoke.mjs
           node --check apps/api/prisma/seed.js
+
+      - name: Supabase security contract
+        run: |
+          npm run supabase:schema:check
+          npm run supabase:location-exposure-smoke:test
+          npm run supabase:reachability:test
+
+      - name: External setup report contract
+        run: |
+          npm run external:check:report:test
+          npm run external:check:release:test
 
       - name: Environment template check
         run: node infra/scripts/check-env.mjs .env.example

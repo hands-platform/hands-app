@@ -40,9 +40,9 @@ Existing local run flags still apply:
 Auth backend modes:
 
 - `AUTH_BACKEND=nest` keeps the current NestJS OTP/JWT flow and is the default for MVP stability.
-- `AUTH_BACKEND=supabase` routes mobile OTP request and verification through Supabase Auth. Use this only after Supabase phone OTP is configured and the backend API is running with the matching Supabase JWT secret.
+- `AUTH_BACKEND=supabase` routes mobile OTP request and verification through Supabase Auth. Use this only after Supabase phone OTP is configured and the backend API has the matching project URL and publishable key. Keep the legacy JWT secret configured while the project still issues or accepts shared-secret tokens.
 
-The API now accepts Supabase Auth JWTs when `SUPABASE_JWT_SECRET` is configured. Supabase users are mapped to local Nest users through `User.supabaseUserId`, and phone OTP users are linked by phone number when possible.
+The API accepts legacy shared-secret Supabase JWTs through `SUPABASE_JWT_SECRET`. When a project issues signing-key tokens, the API falls back to the Supabase Auth `/auth/v1/user` endpoint using `SUPABASE_URL` and the publishable key, then requires the verified Auth user ID to match the token subject before any local user synchronization. Supabase users are mapped to local Nest users through `User.supabaseUserId`, and phone OTP users are linked by phone number when possible.
 
 Mobile Supabase OTP flow uses a bridge session:
 
@@ -205,14 +205,13 @@ This is a drift guard for the migration draft; it does not replace running the S
 
 Current `hands-staging` status:
 
-- Project URL: `https://adzpstrkpzwpukuboxzj.supabase.co`
-- SQL bundle: applied
-- PostgREST grants patch: applied
-- REST table access: verified with service role
-- Storage buckets: `hands-public`, `hands-private`
-- Local API Supabase auth smoke: passing
-- Mobile OTP switch: Supabase Phone Auth send smoke reached the test device; synthetic API exchange smoke passes; real OTP verify waits for a captured 6 digit code
-- Planned SMS provider path: keep Vonage for the current Phone Auth E2E pass; SMS sender-channel refinement is deferred while provider fallback delivery is acceptable for smoke setup
+- The checked-in schema/RLS bundle and synthetic API exchange smoke pass locally.
+- The project was restored and reported healthy on 2026-07-14; URL, publishable key, and server key checks pass.
+- The remote database reports Postgres `17.6.1.121`; the hosted Postgres 14 support deadline does not affect this project. A later `17.6.1.141` patch upgrade is available but was not applied during the security recovery.
+- `2026-07-14-restrict-provider-location-exposure.sql` and `2026-07-14-restrict-default-postgrest-privileges.sql` are applied to the remote main database.
+- `npm.cmd run supabase:location-exposure-smoke` returns explicit anonymous denial for both `provider_locations` and `nearby_providers`, while server-key checks still return success.
+- Real Customer Phone Auth OTP send/verify, signing-key token validation, Nest token exchange, and protected `/customer/me` access passed on 2026-07-14.
+- The same local identity was normalized to Vietnam E.164, retained its Customer profile, gained a Partner profile, passed Admin approval, and synced the Supabase `PROVIDER` role. A final fresh Partner OTP verify and protected `/provider/me` request remain pending because Vonage Vietnam delivery used TTS voice fallback and subsequent repeated requests did not arrive. Stop retries until the `HANDS` sender is registered or an approved Vietnam SMS provider is connected.
 
 Rollback during staging is simple: create a fresh staging Supabase project and rerun the generated bundle. Do not run destructive SQL against production-like data until backup/restore has been tested.
 

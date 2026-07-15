@@ -68,8 +68,8 @@ const registrationItems = [
     env: [
       envItem(
         'SUPABASE_URL',
-        'https://adzpstrkpzwpukuboxzj.supabase.co',
-        env.SUPABASE_URL === 'https://adzpstrkpzwpukuboxzj.supabase.co',
+        'https://<project-ref>.supabase.co',
+        isSupabaseProjectUrl(env.SUPABASE_URL),
       ),
       envItem('SUPABASE_ANON_KEY', '<anon-public-key>', hasValue(env.SUPABASE_ANON_KEY)),
       envItem('SUPABASE_JWT_SECRET', '<project-jwt-secret>', isSecretLikeValue(env.SUPABASE_JWT_SECRET)),
@@ -85,7 +85,11 @@ const registrationItems = [
       'Keep the service role key only in the API environment.',
       'Keep Phone Auth/SMS out of this core step; it is tracked separately with the chosen SMS provider.',
     ],
-    verify: ['npm.cmd run supabase:sql:pack', 'npm.cmd run external:check:supabase'],
+    verify: [
+      'npm.cmd run supabase:sql:pack',
+      'npm.cmd run external:check:supabase',
+      'npm.cmd run supabase:location-exposure-smoke',
+    ],
   },
   {
     order: 3,
@@ -368,6 +372,27 @@ const registrationItems = [
         '<local-secret-keystore-path>',
         hasValue(env.ANDROID_PROVIDER_UPLOAD_KEYSTORE),
       ),
+      envItem(
+        'REFERRAL_PUBLIC_BASE_URL',
+        'https://hands.vn',
+        env.REFERRAL_PUBLIC_BASE_URL === 'https://hands.vn',
+      ),
+      envItem(
+        'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+        'https://play.google.com/store/apps/details?id=com.massagevn.customer.customer_app',
+        isPlayStoreUrl(
+          env.REFERRAL_CUSTOMER_ANDROID_STORE_URL,
+          'com.massagevn.customer.customer_app',
+        ),
+      ),
+      envItem(
+        'REFERRAL_PARTNER_ANDROID_STORE_URL',
+        'https://play.google.com/store/apps/details?id=com.massagevn.provider.provider_app',
+        isPlayStoreUrl(
+          env.REFERRAL_PARTNER_ANDROID_STORE_URL,
+          'com.massagevn.provider.provider_app',
+        ),
+      ),
     ],
     setup: [
       'Create separate upload keys for the HANDS customer and partner apps.',
@@ -377,10 +402,14 @@ const registrationItems = [
       'Copy apps/provider_app/android/key.properties.example to apps/provider_app/android/key.properties and fill local secret values.',
       'Release builds automatically use android/key.properties when it exists and fall back to debug signing for local MVP builds.',
       'Record SHA-1 and SHA-256 fingerprints for any provider that requires Android app restrictions.',
+      'Create both Play Console app listings before referral launch, then use the exact package-specific Google Play URLs.',
+      'Keep iOS referral Store URLs deferred until iOS customer and Partner release preparation starts.',
     ],
     verify: [
-      'cd apps/customer_app && flutter build apk --release',
-      'cd apps/provider_app && flutter build apk --release',
+      'cd apps/customer_app && flutter build appbundle --release',
+      'cd apps/provider_app && flutter build appbundle --release',
+      'npm.cmd run external:check:referrals',
+      'npm.cmd run referrals:public-link-smoke -- --dry-run',
     ],
   },
   {
@@ -409,14 +438,28 @@ const registrationItems = [
     purpose: 'Vietnam card/bank payment authorization and refund testing.',
     consolePath: 'VNPay Merchant Portal > Integration credentials',
     env: [
+      envItem('VNPAY_GATEWAY_ENABLED', 'false', hasValue(env.VNPAY_GATEWAY_ENABLED)),
       envItem('VNPAY_TMN_CODE', '<vnpay-tmn-code>', hasValue(env.VNPAY_TMN_CODE)),
       envItem('VNPAY_HASH_SECRET', '<vnpay-hash-secret>', hasValue(env.VNPAY_HASH_SECRET)),
+      envItem(
+        'VNPAY_PAYMENT_URL',
+        'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+        hasValue(env.VNPAY_PAYMENT_URL),
+      ),
+      envItem(
+        'VNPAY_API_URL',
+        'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction',
+        hasValue(env.VNPAY_API_URL),
+      ),
+      envItem('VNPAY_RETURN_URL', '<public-https-return-url>', hasValue(env.VNPAY_RETURN_URL)),
+      envItem('VNPAY_SERVER_IP', '<api-public-ip>', hasValue(env.VNPAY_SERVER_IP)),
     ],
     setup: [
       'Start with sandbox credentials.',
-      'Register local callback http://localhost:3000/api/payments/VNPAY/callback for local E2E.',
-      'Register production callback https://api.hands.vn/api/payments/VNPAY/callback after API hosting is ready.',
-      'Confirm return URLs after domains are chosen.',
+      'Keep VNPAY_GATEWAY_ENABLED=false until signed sandbox checkout, IPN, query recovery, and asynchronous refund E2E pass.',
+      'Register a VNPay-reachable HTTPS IPN URL using GET /api/payments/VNPAY/callback; localhost cannot receive provider IPN requests.',
+      'Register production IPN https://api.hands.vn/api/payments/VNPAY/callback only after API hosting and TLS are ready.',
+      'Set VNPAY_RETURN_URL to the public customer return page and VNPAY_SERVER_IP to the API egress/public IP used for query and refund requests.',
     ],
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
@@ -562,10 +605,29 @@ function isHttpsUrl(value) {
     return false;
   }
   try {
-    return new URL(normalized).protocol === 'https:';
+    const url = new URL(normalized);
+    return url.protocol === 'https:' && !url.username && !url.password;
   } catch {
     return false;
   }
+}
+
+function isSupabaseProjectUrl(value) {
+  if (!isHttpsUrl(value)) {
+    return false;
+  }
+
+  const hostname = new URL(String(value).trim()).hostname.toLowerCase();
+  return /^[a-z0-9]{10,}\.supabase\.co$/.test(hostname);
+}
+
+function isPlayStoreUrl(value, expectedPackageId) {
+  if (!isHttpsUrl(value)) {
+    return false;
+  }
+
+  const url = new URL(String(value).trim());
+  return url.hostname === 'play.google.com' && url.searchParams.get('id') === expectedPackageId;
 }
 
 function normalizePath(value) {

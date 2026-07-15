@@ -12,6 +12,14 @@ Canonical operator order:
 - `infra/env/hands-staging.env.example`
 - `infra/setup/.generated/hands-external-registration-pack.md`
 
+Before a staging or production release, run the combined fail-closed gate:
+
+```powershell
+npm.cmd run external:check:release
+```
+
+The command succeeds only when strict external configuration and live public DNS/TLS/HTTPS checks both pass. Its output contains blocker names and next actions, but does not copy configured credential values.
+
 ## Business Identity
 
 - App: `HANDS`
@@ -26,12 +34,12 @@ Canonical operator order:
 | Area            | Status                                                                                                     | Next action                                                         |
 | --------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | GitHub          | Connected to HANDS org repo                                                                                | Keep pushing `develop`                                              |
-| Supabase        | Staging project created, SQL applied, API exchange smoke passes, Phone Auth send smoke reached test device | Capture OTP and finish real OTP verify smoke                        |
+| Supabase        | `hands-staging` is active; core URL/key checks pass, anonymous exact-location/RPC access is denied, real Customer Phone Auth plus Nest exchange passed, and the Partner account was linked, approved, and role-synced on 2026-07-14 | Keep broad mobile rollout staged until a fresh Partner OTP can be received and exchanged |
 | MapTiler        | Local/staging key configured and live style check passes                                                   | Keep key out of Git                                                 |
 | Geoapify        | Local/staging key configured and Vietnam geocoding check passes                                            | Keep key out of Git                                                 |
 | Firebase        | FCM allowed for push only                                                                                  | Do not use Firebase DB/Auth/Firestore                               |
 | Push            | Server-side FCM path live-smoked with a registered device                                                  | Keep broad rollout behind audit evidence and token freshness checks |
-| SMS             | Vonage credentials send OTP through current provider route                                                 | SMS sender-channel refinement deferred                              |
+| SMS             | Supabase and mobile clients request SMS through Vonage, but Vietnam delivery fell back to a TTS call and repeated requests reached the provider delivery/rate-limit boundary | Register the `HANDS` sender for Vietnam or connect an approved Vietnam SMS provider before retrying live Partner OTP |
 | Referrals       | Admin policy and public link scaffolding exist                                                            | Store URLs and attribution smoke deferred                           |
 | Storage         | Local MinIO upload/read smoke passes                                                                       | Supabase Storage S3/R2 production choice later                      |
 | Android signing | Local helper ready                                                                                         | Production keystores stay in secrets folder                         |
@@ -52,6 +60,8 @@ REFERRAL_CUSTOMER_IOS_STORE_URL=
 REFERRAL_PARTNER_ANDROID_STORE_URL=
 REFERRAL_PARTNER_IOS_STORE_URL=
 ```
+
+For the current Android MVP release gate, `REFERRAL_PUBLIC_BASE_URL` and both Android Store URLs are required. The Google Play URLs must target `com.massagevn.customer.customer_app` and `com.massagevn.provider.provider_app`. The iOS Store URLs remain visible but deferred until the customer and Partner iOS apps enter release preparation.
 
 ```dotenv
 AUTH_BACKEND=nest
@@ -94,6 +104,7 @@ cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:check
 npm.cmd run external:check:push
+npm.cmd run external:check:network:dry-run
 npm.cmd run security:secrets
 npm.cmd run notifications:push-data-contract
 npm.cmd run notifications:retry-audit-contract
@@ -104,6 +115,28 @@ npm.cmd run fcm:push-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --preflight
 npm.cmd run external:check:maps
 npm.cmd run external:check:referrals
+```
+
+Owner sequencing decision (2026-07-14): the project remains local-first until product completeness reaches at least 95%. Server purchase, hosting, public DNS/TLS, merchant sandbox registration, live Partner OTP delivery, and store-link E2E are intentionally deferred. Keep their gates fail-closed, but do not run them as routine local-development checks.
+
+After the 95% gate, server purchase, final DNS records, and certificates are active, run the live read-only network smoke. It verifies DNS resolution, certificate validity, HTTPS-only redirects, the public/Admin roots, and `/api/health/ready` including database and Redis readiness:
+
+```powershell
+npm.cmd run external:check:network
+```
+
+DNS/TLS deployment contract:
+
+- Point `hands.vn` and `www.hands.vn` to the public TLS edge serving referral links.
+- Point `api.hands.vn` to the same edge/API origin and preserve `/api/*` plus `/socket.io/*`.
+- Point `admin.hands.vn` to the Admin Web origin. Do not route its Next.js `/api/admin/*` handlers to Nest.
+- Provision a trusted certificate for every hostname before registering MoMo/VNPay production callbacks.
+- Forward `Host` and `X-Forwarded-Proto: https` from the TLS edge to the Compose Nginx origin.
+- Keep `VNPAY_GATEWAY_ENABLED=false` until the public callback, signed checkout, query recovery, and refund smoke all pass.
+
+The repository cannot create registrar records or certificates without access to the PA Vietnam and hosting accounts. Those external changes remain fail-closed release blockers until `npm.cmd run external:check:network` passes.
+
+```powershell
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices
 ```
 
@@ -120,7 +153,7 @@ For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `d
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
 
-Payment gateway credentials are intentionally last in the external setup order:
+Payment gateway credentials are intentionally deferred until the 95% local-completeness gate and public HTTPS hosting are ready:
 
 Referral store links are deferred until referral E2E. Public referral link clicks should only route to the correct customer or Partner app store URL by device platform; they must not call SMS, maps, push, payment, or wallet-credit APIs on click.
 
@@ -128,16 +161,35 @@ Referral store links are deferred until referral E2E. Public referral link click
 MOMO_PARTNER_CODE=
 MOMO_ACCESS_KEY=
 MOMO_SECRET_KEY=
+MOMO_BASE_URL=https://test-payment.momo.vn
+MOMO_IPN_URL=
+MOMO_REDIRECT_URL=
+MOMO_HTTP_TIMEOUT_MS=30000
+MOMO_GATEWAY_ENABLED=false
+VNPAY_GATEWAY_ENABLED=false
 VNPAY_TMN_CODE=
 VNPAY_HASH_SECRET=
+VNPAY_PAYMENT_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_API_URL=https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+VNPAY_RETURN_URL=
+VNPAY_SERVER_IP=
 ```
+
+Keep `MOMO_GATEWAY_ENABLED=false` until signed sandbox checkout, IPN replay,
+transaction-query recovery, capture/cancel, refund, and refund-query recovery all pass.
+MoMo gateway calls enforce the provider's documented 30-second minimum timeout.
+
+Keep `VNPAY_GATEWAY_ENABLED=false` until signed sandbox checkout, GET IPN,
+status-query recovery, and asynchronous refund E2E all pass. VNPay must call a
+public HTTPS `GET /api/payments/VNPAY/callback` endpoint; a localhost callback is
+not provider-reachable.
 
 ## Production Notes
 
 - `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
 - If using `FIREBASE_SERVICE_ACCOUNT_JSON`, provide raw or base64 Firebase service account JSON with `project_id`, `client_email`, and `private_key`.
 - If using `GOOGLE_APPLICATION_CREDENTIALS` for FCM, point it to an existing valid service account JSON file available to the API process or Docker container.
-- Keep production app login on the existing safe path until Supabase Phone Auth OTP verify plus Nest API exchange both pass.
+- Real Customer Phone Auth OTP verification and Nest API exchange passed against `hands-staging` on 2026-07-14. The same HANDS identity now has a preserved Customer profile plus an approved Partner profile, and Supabase `PROVIDER` app metadata sync passed. Final Partner OTP receive/verify and `/provider/me` remain blocked by the external Vietnam SMS sender route; keep production app login on the existing safe path until that last live gate passes.
 - Use `PUSH_PROVIDER=in_app_only` for inbox-only local work; use `PUSH_PROVIDER=fcm` only during intentional FCM push E2E or staging rollout.
 - Customers never carry negative wallet balances in MVP.
 - Partner cash-fee debt can create a negative wallet and block final acceptance, service start, and payout release until settlement.

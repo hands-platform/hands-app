@@ -417,7 +417,7 @@ Write-Host ""
 Write-Host "== Local Verification Summary =="
 $results | Format-Table -AutoSize
 
-$failed = $results | Where-Object { $_.Status -eq "FAIL" }
+$failed = @($results | Where-Object { $_.Status -eq "FAIL" })
 Pop-Location
 
 if ($failed.Count -gt 0) {

@@ -116,6 +116,7 @@ function Invoke-Preflight {
 
 function Invoke-Api {
   Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npx.cmd prisma validate --schema apps/api/prisma/schema.prisma"
+  Invoke-Check "api policy coverage" "npm.cmd run api:policy-coverage"
   Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
   Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
@@ -214,7 +215,7 @@ try {
   Write-Host "== Scope Verification Summary =="
   $results | Format-Table -AutoSize
 
-  $failed = $results | Where-Object { $_.Status -eq "FAIL" }
+  $failed = @($results | Where-Object { $_.Status -eq "FAIL" })
   if ($failed.Count -gt 0) {
     exit 1
   }

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
@@ -7,23 +7,40 @@ import {
   firebaseProjectAlignment,
   firebaseProjectAlignmentActions,
 } from './lib/firebase-project-alignment.mjs';
+import {
+  buildExternalSetupNextActions,
+  referralReleaseReadiness,
+  shouldCheckSupabaseReachability,
+} from './lib/external-setup-report.mjs';
+import { checkSupabaseProjectReachability } from './lib/supabase-project-reachability.mjs';
+import { checkSupabaseApiKeyValidity } from './lib/supabase-api-key-validity.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
+const paymentAdaptersPath = resolve(repoRoot, 'apps', 'api', 'src', 'payments', 'adapters.ts');
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const strict = process.argv.includes('--strict');
 const phase = process.argv.find((arg) => arg.startsWith('--phase='))?.slice('--phase='.length) ?? 'advisory';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const projectAlignment = firebaseProjectAlignment(env, { repoRoot });
+const dockerContractCommand = 'npm.cmd run docker:contract';
 
 const checks = [];
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
 const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
+const momoEndpointEnvKeys = ['MOMO_BASE_URL', 'MOMO_IPN_URL', 'MOMO_REDIRECT_URL'];
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
+const vnpayEndpointEnvKeys = ['VNPAY_PAYMENT_URL', 'VNPAY_API_URL', 'VNPAY_RETURN_URL'];
+const adminWebSecretEnvKeys = [
+  'ADMIN_WEB_API_TOKEN_SECRET',
+  'ADMIN_REALTIME_TOKEN_SECRET',
+  'ADMIN_WEB_SESSION_COOKIE_SECRET',
+];
+const productionPublicUrlEnvKeys = ['PUBLIC_WEB_URL', 'API_PUBLIC_URL', 'ADMIN_PUBLIC_URL'];
 const supportedSmsProviders = new Set(['vonage', 'viettel', 'fpt', 'custom']);
 const momoCredentialsFix =
-  'Create or open the MoMo Merchant Portal sandbox integration, copy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/MOMO/callback. Production callback: https://api.hands.vn/api/payments/MOMO/callback.';
+  'Create or open the MoMo Merchant Portal sandbox integration, copy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY into the ignored env file, then register the public HTTPS IPN and customer return URLs.';
 const vnpayCredentialsFix =
-  'Create or open the VNPay Merchant Portal sandbox integration, copy VNPAY_TMN_CODE and VNPAY_HASH_SECRET into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/VNPAY/callback. Production callback: https://api.hands.vn/api/payments/VNPAY/callback.';
+  'Create or open the VNPay Merchant Portal sandbox integration, copy VNPAY_TMN_CODE and VNPAY_HASH_SECRET into the ignored env file, then register a provider-reachable HTTPS GET IPN URL at /api/payments/VNPAY/callback. Localhost cannot receive VNPay IPN requests; register https://api.hands.vn/api/payments/VNPAY/callback only after API hosting and TLS are ready.';
 const smsProviderFix =
   'Create or open the Vonage SMS dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER to vonage, viettel, fpt, or custom before Supabase Phone Auth E2E.';
 const smsApiUrlFix =
@@ -45,15 +62,9 @@ const storageRequiredEnvKeys = [
   'S3_PUBLIC_BASE_URL',
 ];
 const storageSplitBucketEnvKeys = ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET'];
-const referralStoreEnvKeys = [
-  'REFERRAL_PUBLIC_BASE_URL',
-  'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
-  'REFERRAL_CUSTOMER_IOS_STORE_URL',
-  'REFERRAL_PARTNER_ANDROID_STORE_URL',
-  'REFERRAL_PARTNER_IOS_STORE_URL',
-];
+const referralReadiness = referralReleaseReadiness(env);
 const referralStoreFix =
-  'Set REFERRAL_PUBLIC_BASE_URL and customer/Partner Android/iOS store URLs before referral link E2E. Keep automatic referral payout disabled; use the audited admin credit action for wallet posting until automatic payout is explicitly approved.';
+  'Set REFERRAL_PUBLIC_BASE_URL and the Google Play URLs for com.massagevn.customer.customer_app and com.massagevn.provider.provider_app before the current Android referral link E2E. Keep automatic referral payout disabled; use the audited admin credit action for wallet posting until automatic payout is explicitly approved.';
 const validPhases = new Set([
   'advisory',
   'supabase-core',
@@ -304,6 +315,46 @@ addPhaseRequired(
 
 addRecommended(
   'payments',
+  'Real MoMo gateway adapter',
+  paymentGatewayAdapterImplemented('MomoPaymentAdapter'),
+  'Connect the tested MoMo gateway client before accepting MoMo bookings.',
+);
+addRecommended(
+  'payments',
+  'Real VNPay gateway adapter',
+  paymentGatewayAdapterImplemented('VnpayPaymentAdapter'),
+  'Replace the VNPay placeholder with a tested sandbox gateway implementation before accepting VNPay bookings.',
+);
+addPhaseRequired(
+  'payments',
+  'Real MoMo gateway adapter',
+  paymentGatewayAdapterImplemented('MomoPaymentAdapter'),
+  'Connect the tested MoMo gateway client to authorization, status, capture/cancel, refund, and refund-query recovery before sandbox E2E.',
+  ['payments', 'production'],
+);
+addPhaseRequired(
+  'payments',
+  'Real VNPay gateway adapter',
+  paymentGatewayAdapterImplemented('VnpayPaymentAdapter'),
+  'Keep VNPAY_GATEWAY_ENABLED=false until signed checkout, IPN/status recovery, matching recovery, and asynchronous refund pass sandbox E2E.',
+  ['payments', 'production'],
+);
+addPhaseRequired(
+  'payments',
+  'MoMo gateway explicitly enabled',
+  hasExpectedValue('MOMO_GATEWAY_ENABLED', 'true'),
+  'Set MOMO_GATEWAY_ENABLED=true only after filling the sandbox credentials and HTTPS endpoints and passing checkout, IPN, status, capture/cancel, refund, and refund-query recovery tests.',
+  ['payments', 'production'],
+);
+addPhaseRequired(
+  'payments',
+  'VNPay gateway explicitly enabled',
+  hasExpectedValue('VNPAY_GATEWAY_ENABLED', 'true'),
+  'Set VNPAY_GATEWAY_ENABLED=true only after sandbox checkout, IPN, status recovery, and asynchronous refund E2E pass.',
+  ['payments', 'production'],
+);
+addRecommended(
+  'payments',
   'MoMo credentials',
   allHaveValue(momoEnvKeys),
   momoCredentialsFix,
@@ -317,6 +368,19 @@ addPhaseRequired(
 );
 addRecommended(
   'payments',
+  'MoMo HTTPS endpoints',
+  allAreHttpsUrls(momoEndpointEnvKeys),
+  'Set MOMO_BASE_URL, MOMO_IPN_URL, and MOMO_REDIRECT_URL to the HTTPS sandbox endpoints registered with MoMo.',
+);
+addPhaseRequired(
+  'payments',
+  'MoMo HTTPS endpoints',
+  allAreHttpsUrls(momoEndpointEnvKeys),
+  'Register HTTPS IPN and redirect URLs with MoMo and set MOMO_BASE_URL, MOMO_IPN_URL, and MOMO_REDIRECT_URL before sandbox E2E.',
+  ['payments', 'production'],
+);
+addRecommended(
+  'payments',
   'VNPay credentials',
   allHaveValue(vnpayEnvKeys),
   vnpayCredentialsFix,
@@ -326,6 +390,39 @@ addPhaseRequired(
   'VNPay credentials',
   allHaveValue(vnpayEnvKeys),
   vnpayCredentialsFix,
+  ['payments', 'production'],
+);
+addRecommended(
+  'payments',
+  'VNPay HTTPS endpoints and server IP',
+  allAreHttpsUrls(vnpayEndpointEnvKeys) && hasValue('VNPAY_SERVER_IP'),
+  'Set the VNPay payment, transaction API, customer return URLs, and the registered merchant server IP before sandbox E2E.',
+);
+addPhaseRequired(
+  'payments',
+  'VNPay HTTPS endpoints and server IP',
+  allAreHttpsUrls(vnpayEndpointEnvKeys) && hasValue('VNPAY_SERVER_IP'),
+  'Set VNPAY_PAYMENT_URL, VNPAY_API_URL, VNPAY_RETURN_URL, and VNPAY_SERVER_IP before sandbox E2E.',
+  ['payments', 'production'],
+);
+addRecommended(
+  'payments',
+  'Unverified payment callbacks disabled',
+  unverifiedPaymentCallbacksDisabled(),
+  'Keep ALLOW_UNVERIFIED_PAYMENT_CALLBACKS unset or false. Enable it only for an intentional local fixture callback.',
+);
+addPhaseRequired(
+  'payments',
+  'Unverified payment callbacks disabled',
+  unverifiedPaymentCallbacksDisabled(),
+  'Set ALLOW_UNVERIFIED_PAYMENT_CALLBACKS=false before payment sandbox or production E2E.',
+  ['payments', 'production'],
+);
+addPhaseRequired(
+  'payments',
+  'Placeholder payment authorizations disabled',
+  placeholderPaymentAuthorizationsDisabled(),
+  'Set ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS=false before payment sandbox or production E2E.',
   ['payments', 'production'],
 );
 
@@ -345,21 +442,83 @@ addPhaseRequired(
 
 addRecommended(
   'referrals',
-  'Referral app store URLs',
-  allAreHttpsUrls(referralStoreEnvKeys),
-  'Deferred: fill public referral base URL and app store URLs before customer/Partner referral E2E.',
+  'Android referral app store URLs',
+  referralReadiness.android,
+  'Fill the public referral base URL and exact customer/Partner Google Play package URLs before referral E2E.',
+);
+addDeferred(
+  'referrals',
+  'iOS referral app store URLs',
+  referralReadiness.ios,
+  'Deferred until HANDS customer and Partner iOS apps enter release preparation.',
 );
 addPhaseRequired(
   'referrals',
-  'Referral app store URLs for referral E2E',
-  allAreHttpsUrls(referralStoreEnvKeys),
+  'Android referral app store URLs for referral E2E',
+  referralReadiness.android,
   referralStoreFix,
   ['referrals', 'production'],
 );
 
+addRecommended(
+  'admin-security',
+  'Admin Web scoped token and session secrets',
+  allHaveDistinctSecretValues(adminWebSecretEnvKeys),
+  'Set separate non-placeholder ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
+);
+addPhaseRequired(
+  'admin-security',
+  'Admin Web scoped token and session secrets',
+  allHaveDistinctSecretValues(adminWebSecretEnvKeys),
+  'Production requires separate non-placeholder ADMIN_WEB_API_TOKEN_SECRET, ADMIN_REALTIME_TOKEN_SECRET, and ADMIN_WEB_SESSION_COOKIE_SECRET values.',
+  ['production'],
+);
+addPhaseRequired(
+  'production-network',
+  'Production public HTTPS URLs',
+  allAreHttpsUrls(productionPublicUrlEnvKeys),
+  'Set PUBLIC_WEB_URL, API_PUBLIC_URL, and ADMIN_PUBLIC_URL to their final HTTPS origins before DNS/TLS E2E.',
+  ['production'],
+);
+
+if (shouldCheckSupabaseReachability({ phase, strict })) {
+  const reachability = await checkSupabaseProjectReachability(env.SUPABASE_URL);
+  addCheck(
+    'supabase',
+    'Supabase project hostname resolves',
+    reachability.dnsResolved,
+    'Confirm the active project in Supabase Dashboard and copy its current Project URL into the ignored environment file.',
+  );
+  addCheck(
+    'supabase',
+    'Supabase HTTPS endpoint responds',
+    reachability.httpsReachable,
+    'Restore or unpause the active Supabase project, then verify its HTTPS endpoint before SQL, location, or OTP E2E.',
+  );
+
+  if (reachability.httpsReachable) {
+    const [anonKeyValidity, serviceKeyValidity] = await Promise.all([
+      checkSupabaseApiKeyValidity(env.SUPABASE_URL, env.SUPABASE_ANON_KEY),
+      checkSupabaseApiKeyValidity(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY),
+    ]);
+    addCheck(
+      'supabase',
+      'Supabase anonymous API key is accepted by the active project',
+      anonKeyValidity.valid,
+      'Copy the active project publishable/anon key into the ignored environment file; do not expose it in browser-facing logs.',
+    );
+    addCheck(
+      'supabase',
+      'Supabase server API key is accepted by the active project',
+      serviceKeyValidity.valid,
+      'Rotate or replace SUPABASE_SERVICE_ROLE_KEY with the active project server-side secret, then restart the API. Keep it out of client bundles.',
+    );
+  }
+}
+
 const scopedChecks = checks.filter((check) => checkIncludedInPhase(check.category));
-const requiredFailures = scopedChecks.filter((check) => check.required && check.status !== 'PASS');
-const recommendedFailures = scopedChecks.filter((check) => !check.required && check.status !== 'PASS');
+const requiredFailures = scopedChecks.filter((check) => check.required && check.status === 'FAIL');
+const recommendedFailures = scopedChecks.filter((check) => !check.required && check.status === 'WARN');
 
 const result = {
   ok: requiredFailures.length === 0 && (!strict || recommendedFailures.length === 0),
@@ -367,7 +526,12 @@ const result = {
   envFile: envFileExists ? envPath : null,
   phase,
   checks: scopedChecks,
-  nextActions: buildNextActions(requiredFailures, recommendedFailures),
+  nextActions: buildExternalSetupNextActions({
+    phase,
+    requiredFailures,
+    recommendedFailures,
+    dockerContractCommand,
+  }),
 };
 
 console.log(JSON.stringify(result, null, 2));
@@ -396,6 +560,52 @@ function addRecommended(category, name, passed, fix) {
   });
 }
 
+function addDeferred(category, name, ready, fix) {
+  checks.push({
+    category,
+    name,
+    required: false,
+    status: ready ? 'PASS' : 'DEFERRED',
+    fix,
+  });
+}
+
+function unverifiedPaymentCallbacksDisabled() {
+  return String(env.ALLOW_UNVERIFIED_PAYMENT_CALLBACKS ?? '')
+    .trim()
+    .toLowerCase() !== 'true';
+}
+
+function placeholderPaymentAuthorizationsDisabled() {
+  return String(env.ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS ?? '')
+    .trim()
+    .toLowerCase() !== 'true';
+}
+
+function paymentGatewayAdapterImplemented(adapterName) {
+  if (!existsSync(paymentAdaptersPath)) {
+    return false;
+  }
+  const source = readFileSync(paymentAdaptersPath, 'utf8');
+  if (adapterName === 'MomoPaymentAdapter') {
+    return (
+      source.includes('MOMO_GATEWAY_ENABLED') &&
+      source.includes('MomoGatewayClient') &&
+      source.includes("return this.client().refundPayment") &&
+      source.includes("return this.client().queryRefund")
+    );
+  }
+  if (adapterName === 'VnpayPaymentAdapter') {
+    return (
+      source.includes('VNPAY_GATEWAY_ENABLED') &&
+      source.includes('VnpayGatewayClient') &&
+      source.includes('requestRefund') &&
+      source.includes('checkRefund')
+    );
+  }
+  return !new RegExp(`class\\s+${adapterName}\\s+extends\\s+PlaceholderRedirectAdapter`).test(source);
+}
+
 function addPhaseRequired(category, name, passed, fix, phases) {
   if (!phases.includes(phase)) {
     return;
@@ -419,21 +629,6 @@ function checkIncludedInPhase(category) {
   };
 
   return (phaseCategories[phase] ?? new Set(['workspace'])).has(category);
-}
-
-function buildNextActions(requiredFailures, recommendedFailures) {
-  const actions = [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix);
-  if (phase === 'push') {
-    actions.push('Run npm.cmd run fcm:credentials-check to verify Firebase Admin credential file contents.');
-    actions.push(
-      'Run npm.cmd run docker:contract to verify Docker service URLs and Firebase Admin credential mount paths.',
-    );
-    actions.push('Run npm.cmd run fcm:token-smoke -- --dry-run to verify token registration smoke inputs.');
-    actions.push(
-      'Run npm.cmd run fcm:push-smoke -- --dry-run for config-only readiness after Firebase Admin credentials are configured.',
-    );
-  }
-  return [...new Set(actions)];
 }
 
 function hasValue(key) {
@@ -465,7 +660,7 @@ function isHttpsUrl(key) {
   }
   try {
     const url = new URL(value);
-    return url.protocol === 'https:';
+    return url.protocol === 'https:' && !url.username && !url.password;
   } catch {
     return false;
   }
@@ -480,6 +675,11 @@ function hasVietnamE164Phone(key) {
 
 function allHaveValue(keys) {
   return keys.every(hasValue);
+}
+
+function allHaveDistinctSecretValues(keys) {
+  const values = keys.map((key) => String(env[key] ?? '').trim());
+  return keys.every(hasSecretLikeValue) && new Set(values).size === values.length;
 }
 
 function allAreHttpsUrls(keys) {

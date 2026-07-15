@@ -95,7 +95,7 @@ npm.cmd run external:check:production
 | Monorepo and GitHub workflow    | Done   | Repo is under `hands-platform/hands-app`, branch `develop`, modular commit flow active.                                                                                                                                                                                                                                                                                                   | None. Keep every stable step commit-ready.                                                          |
 | Final authority guard           | Done   | Final MVP rules are documented and protected by `authority:check`.                                                                                                                                                                                                                                                                                                                        | None unless product policy changes.                                                                 |
 | Firebase scope                  | Active | Firebase is allowed only for FCM push. Firebase DB/Auth/Firestore remain outside MVP. Firebase Admin credentials and mobile Android configs are aligned for the current FCM smoke path.                                                                                                                                                                                                   | Decide production FCM rollout timing separately.                                                    |
-| Supabase core                   | Active | Supabase URL, anon, service role, JWT, schema/RLS pack, synthetic Supabase JWT API exchange smoke, and Phone Auth OTP send smoke are tracked. NestJS remains business authority.                                                                                                                                                                                                          | Finish real OTP verify after capturing a 6 digit code; keep SMS sender-channel refinement deferred. |
+| Supabase core                   | Active | `hands-staging` was restored on 2026-07-14. Core URL/key checks pass, the exact Partner-location and default PostgREST privilege patches are applied remotely, anonymous table/RPC access is denied, service-role access remains available, real Customer Phone Auth plus Nest exchange passed, and the same identity was linked to an approved Partner profile with Supabase role sync. NestJS remains business authority. | Register a Vietnam SMS sender and complete fresh Partner OTP verify plus `/provider/me` before any broad mobile auth rollout. |
 | Map/location                    | Active | MapTiler and Geoapify are configured locally; `external:check:maps` and the live style/geocoding check pass.                                                                                                                                                                                                                                                                              | Decide when to replace remaining placeholder map visuals with final MapLibre screens.               |
 | Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. Date-range `Today` filters use the Vietnam business day. | Continue adding depth inside existing command lanes before creating new top-level pages.            |
 | Customers admin                 | Active | Customer list/detail exists with factual records. No customer scoring.                                                                                                                                                                                                                                                                                                                    | Decide which fields are must-show above the fold.                                                   |
@@ -133,8 +133,9 @@ These items should be proposed to the owner before implementation.
    - Option A: Supabase Phone Auth plus Vonage SMS first.
    - Option B: FCM push first.
    - Option C: MoMo/VNPay sandbox first.
-   - Current: FCM push smoke, Supabase JWT API exchange smoke, and Supabase Phone Auth OTP send smoke are usable locally; real Phone Auth verify waits for a captured 6 digit code, and SMS sender-channel cleanup is deferred.
-   - Recommended: keep Phone Auth behind explicit smoke checks until OTP verify plus API exchange pass; keep payment gateway sandbox last.
+   - Current: FCM push smoke, Supabase JWT API exchange smoke, real Customer Phone Auth plus Nest exchange, and Partner local linking/approval/Supabase role sync pass. The final Partner OTP exchange is externally blocked because Vonage Vietnam delivery fell back to voice and repeated sends did not arrive.
+   - Owner decision (2026-07-14): defer server purchase, public hosting, DNS/TLS, live Partner OTP delivery, payment gateway sandbox E2E, and store-link E2E until local product completeness is at least 95%.
+   - Recommended: keep every external integration fail-closed and disabled while local product work continues. Resume with hosting and DNS/TLS first, then Partner OTP delivery, payment callbacks, and store-link E2E.
 
 5. Legacy Provider wording/routes
    - Option A: keep internal names and only enforce visible Partner copy.
@@ -149,7 +150,7 @@ Configured or locally usable:
 - Geoapify API key with Vietnam geocoding check passing
 - Supabase core values
 - Supabase JWT API exchange smoke and role-boundary contract
-- Supabase Phone Auth OTP send path with `AUTH_BACKEND=supabase`
+- Supabase Phone Auth Customer OTP send/verify and Nest exchange path with `AUTH_BACKEND=supabase`
 - Vonage credentials for the current Phone Auth OTP send smoke
 - FCM project config, Firebase Admin server credentials, and Android client configs
 - Registered-device FCM live smoke for a non-payment notification
@@ -157,16 +158,18 @@ Configured or locally usable:
 - Local MinIO/S3-compatible storage upload/read smoke passing
 - Local in-app notifications
 - Local/dev OTP path
+- Customer and Partner Android upload keystores, read-only alias validation, and independently signed release APK/AAB builds
 
-Deferred for production-like E2E:
+Deferred until local product completeness is at least 95% and server purchase begins:
 
-- Supabase Phone Auth real OTP verify with a captured 6 digit code
-- Vonage SMS sender-channel refinement so OTP arrives as SMS instead of provider fallback voice
+- Vonage `HANDS` sender registration for Vietnam, or a switch to an approved Vietnam SMS provider through the Supabase Send SMS Hook, followed by fresh Partner OTP verify and `/provider/me`
 - MoMo merchant sandbox credentials
 - VNPay merchant sandbox credentials
 - Production storage/CDN values
 - Final DNS/TLS/deployment cutover
-- Production Android release signing verification
+
+The read-only production network smoke is available as `npm.cmd run external:check:network`. Do not treat its expected DNS failure as an active local-development defect before server purchase. Resume it at the 95% release-readiness gate; it checks DNS resolution, TLS certificate validity, HTTPS-only redirects, public/Admin roots, and API `/api/health/ready` including database and Redis readiness.
+- Play Console app creation, upload-key fingerprint registration, and production AAB upload verification
 
 ## Recommended Next Work Queue
 
@@ -184,8 +187,8 @@ Do not implement these automatically. Propose the selected slice first, then pro
 4. Cash settlement operations proposal
    - Decide production finance SLA, accepted deposit evidence, admin offset approval rule, and customer-support wording for partner settlement delays.
 
-5. External integration plan
-   - Prepare exact account/credential checklist for Vonage, FCM, MoMo, VNPay, storage/CDN, and deployment.
+5. External integration plan (deferred until 95% local completeness)
+   - At the release-readiness gate, prepare the exact server, DNS/TLS, Vonage or Vietnam SMS provider, MoMo, VNPay, storage/CDN, Play Console, and deployment checklist.
 
 ## Code Rules
 

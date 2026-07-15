@@ -25,6 +25,12 @@ services:
         condition: service_healthy
     expose:
       - "3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 -O - http://127.0.0.1:3000/api/health/ready | grep -q '\"ok\":true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   admin_web:
     build:
@@ -36,17 +42,26 @@ services:
       ADMIN_API_BASE_URL: http://api:3000/api
       PORT: 3000
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     expose:
       - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   nginx:
     image: nginx:1.27-alpine
     depends_on:
-      - api
-      - admin_web
+      api:
+        condition: service_healthy
+      admin_web:
+        condition: service_healthy
     ports:
-      - "80:80"
+      - "${HANDS_NGINX_BIND_ADDRESS:-127.0.0.1}:${HANDS_NGINX_HTTP_PORT:-80}:80"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 

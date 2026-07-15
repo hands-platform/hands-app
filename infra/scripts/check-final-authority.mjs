@@ -445,6 +445,7 @@ function checkAdminVisibleCopyGuardIsStrict() {
     'script syntax: admin visible copy',
     'admin visible copy',
     'npm.cmd run admin:visible-copy',
+    '$failed = @($results | Where-Object { $_.Status -eq "FAIL" })',
   ]);
 
   const verifyScope = read('infra/scripts/verify-scope.ps1');
@@ -452,7 +453,17 @@ function checkAdminVisibleCopyGuardIsStrict() {
     'admin visible copy',
     'script syntax: admin visible copy',
     'admin visible copy check',
+    'api policy coverage',
+    'npm.cmd run api:policy-coverage',
+    '$failed = @($results | Where-Object { $_.Status -eq "FAIL" })',
   ]);
+
+  const ci = read('.github/workflows/ci.yml');
+  requireMarkers('.github/workflows/ci.yml', ci, [
+    '- name: Test Admin Web',
+    'run: npm run test --workspace @massage-vn/admin-web',
+  ]);
+  rejectMarker('.github/workflows/ci.yml', ci, 'Test Admin Web security');
 
   const setupDoctor = read('infra/scripts/setup-doctor.mjs');
   requireMarkers('infra/scripts/setup-doctor.mjs', setupDoctor, [
@@ -537,14 +548,14 @@ function checkAdminDashboardOperationsCoverage() {
   const dashboardDoc = read('docs/architecture/operations-dashboard.md');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
   const requiredKpis = [
-    'Total bookings',
-    'Open matching',
-    'Completed bookings',
-    'Cancelled bookings',
-    'No-show records',
+    'Booking requests',
+    'Waiting for Partner',
+    'Completed',
+    'Cancelled',
+    'No-show evidence',
     'Customers in app',
     'Partners in app',
-    'Online Partners',
+    'Ready Partners',
     'Hourly booking demand',
     'Regional booking demand',
     'Shift command briefing',

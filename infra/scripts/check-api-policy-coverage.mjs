@@ -224,7 +224,7 @@ const requiredCoverage = [
       'Cash settlement queue did not expose the open wallet debt row',
       'Cash settlement summary did not expose open wallet debt totals',
       'Negative cash fee settlement requires a reference',
-      'Cash fee settlement ledger was not recorded',
+      'Approved deposit allocation should reuse deposit Wallet evidence without a duplicate debt-settled entry',
       'Cash fee settlement did not unblock provider wallet',
     ],
   },

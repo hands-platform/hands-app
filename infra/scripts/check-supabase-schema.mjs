@@ -82,6 +82,18 @@ const forbiddenSchemaFragments = [
     label: 'authenticated table write grant',
     pattern: /grant\s+select\s*,\s*insert\s*,\s*update\s*,\s*delete\s+on\s+table[\s\S]*?to\s+authenticated\s*;/i,
   },
+  {
+    label: 'anonymous exact provider location table grant',
+    pattern: /grant\s+select\s+on\s+table[^;]*public\.provider_locations[^;]*to\s+anon\s*;/i,
+  },
+  {
+    label: 'browser role nearby provider RPC execution grant',
+    pattern: /grant\s+execute\s+on\s+function\s+public\.nearby_providers[^;]*to\s+(?:anon|authenticated|anon\s*,\s*authenticated)/i,
+  },
+  {
+    label: 'time-only provider location read policy',
+    pattern: /create\s+policy\s+"recent provider locations read"[\s\S]*?updated_at\s*>=\s*now\(\)\s*-\s*interval/i,
+  },
 ];
 
 rejectPatterns(forbiddenSchemaFragments, 'Supabase core schema still contains forbidden MVP field');
@@ -116,6 +128,28 @@ requireSchemaFragments([
   {
     label: 'authenticated read-only table grant',
     pattern: /grant\s+select\s+on\s+table[\s\S]*?to\s+authenticated\s*;/i,
+  },
+  {
+    label: 'provider location owner or admin read policy',
+    pattern: /create\s+policy\s+"provider locations owner or admin read"[\s\S]*?p\.user_id\s*=\s*auth\.uid\(\)/i,
+  },
+  {
+    label: 'browser role nearby provider RPC revoke',
+    pattern: /revoke\s+execute\s+on\s+function\s+public\.nearby_providers[\s\S]*?from\s+public\s*,\s*anon\s*,\s*authenticated/i,
+  },
+  {
+    label: 'server-only nearby provider RPC grant',
+    pattern: /grant\s+execute\s+on\s+function\s+public\.nearby_providers[^;]*to\s+service_role\s*;/i,
+  },
+  {
+    label: 'future Data API table grants default to private',
+    pattern:
+      /alter\s+default\s+privileges\s+for\s+role\s+postgres\s+in\s+schema\s+public[\s\S]*?revoke\s+select\s*,\s*insert\s*,\s*update\s*,\s*delete\s+on\s+tables\s+from\s+anon\s*,\s*authenticated\s*,\s*service_role/i,
+  },
+  {
+    label: 'future Data API function execution defaults to private',
+    pattern:
+      /alter\s+default\s+privileges\s+for\s+role\s+postgres\s+in\s+schema\s+public[\s\S]*?revoke\s+execute\s+on\s+functions\s+from\s+public\s*,\s*anon\s*,\s*authenticated\s*,\s*service_role/i,
   },
 ]);
 

@@ -235,7 +235,14 @@ if (!usageOverviewPageModelSource.includes(": 'today';")) {
   });
 }
 
-if (!notificationListSource.includes('take: normalizeNotificationBoardTake(options.take),')) {
+const notificationTakeIsBounded =
+  notificationListSource.includes('take: normalizeNotificationBoardTake(options.take),') ||
+  (
+    notificationListSource.includes('const take = normalizeNotificationBoardTake(options.take);') &&
+    /const args:\s*Prisma\.NotificationFindManyArgs\s*=\s*\{[\s\S]*?\btake,/.test(notificationListSource)
+  );
+
+if (!notificationTakeIsBounded) {
   violations.push({
     area: 'admin notification query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -443,11 +450,16 @@ if (!adminServiceSource.includes('const skip = adminCustomerDirectorySkip(option
   });
 }
 
-if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = 10;')) {
+const customerDetailBookingLimitMatch = /export const ADMIN_CUSTOMER_DETAIL_BOOKING_LIMIT = (\d+);/.exec(
+  adminCustomerSelectsSource,
+);
+const customerDetailBookingLimit = Number(customerDetailBookingLimitMatch?.[1] ?? Number.NaN);
+
+if (!Number.isInteger(customerDetailBookingLimit) || customerDetailBookingLimit < 1 || customerDetailBookingLimit > 10) {
   violations.push({
     area: 'admin customer detail query',
     file: 'apps/api/src/admin/admin-customer-selects.ts',
-    message: 'Customer detail booking relations must keep a 10-row guard.',
+    message: 'Customer detail booking relations must keep a bounded 1-10 row guard.',
   });
 }
 

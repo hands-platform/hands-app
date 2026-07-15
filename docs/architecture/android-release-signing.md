@@ -50,7 +50,22 @@ cd C:\dev\massage-on-demand-vn\apps\provider_app
 flutter build apk --release
 ```
 
-The Gradle files automatically use `android/key.properties` when it exists. If it is missing, local MVP release builds fall back to debug signing so emulator testing is not blocked.
+For Play Console upload bundles:
+
+```powershell
+cd C:\dev\massage-on-demand-vn\apps\customer_app
+flutter build appbundle --release
+
+cd C:\dev\massage-on-demand-vn\apps\provider_app
+flutter build appbundle --release
+```
+
+The ignored upload artifacts are written to each app's
+`build/app/outputs/bundle/release/app-release.aab`. Confirm the signer certificate
+against the matching SHA-1/SHA-256 values in
+`C:\dev\hands-secrets\android-signing\android-signing-summary.txt` before upload.
+
+The Gradle files automatically use `android/key.properties` when it exists. Debug builds remain available without it, but every release task fails closed when signing credentials are missing. Release builds never fall back to the debug signing key.
 
 ## Environment Values
 
@@ -65,8 +80,16 @@ Then verify:
 
 ```powershell
 cd C:\dev\massage-on-demand-vn
+npm.cmd run android:signing:check
 npm.cmd run external:check:production
 ```
+
+`android:signing:check` is read-only. It checks both Gradle fail-closed contracts,
+the ignored `key.properties` files, environment-to-keystore path alignment, and
+each configured alias with `keytool` without printing passwords. CI or a machine
+without signing credentials can run `npm.cmd run android:signing:check:static`.
+
+Both Android apps fail closed for release tasks. `assembleRelease`, `bundleRelease`, and Flutter release builds stop when `android/key.properties` is absent; they never fall back to the debug signing key. Debug builds remain available without release credentials.
 
 ## Play Console Notes
 
