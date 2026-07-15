@@ -352,7 +352,7 @@ type PartnerDispatchPolicy = {
   backupRadiusMeters: number;
   locationFreshnessMinutes: number;
 };
-type PartnerDetailSection = 'overview' | 'full';
+type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
   missingDocuments: string[];
 };
@@ -375,7 +375,22 @@ function readPartnerDetailSection(
   params: Record<string, string | string[] | undefined>,
 ): PartnerDetailSection {
   const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
-  return rawSection === 'full' ? 'full' : 'overview';
+  if (rawSection === 'control' || rawSection === 'bookings' || rawSection === 'access' || rawSection === 'dossier') {
+    return rawSection;
+  }
+  if (rawSection !== 'full') {
+    return 'overview';
+  }
+  if (readSearchParam(params.deviceAction) || readSearchParam(params.controlAction)) {
+    return 'access';
+  }
+  if (readSearchParam(params.reviewAction)) {
+    return 'dossier';
+  }
+  if (readSearchParam(params.confirm)) {
+    return 'control';
+  }
+  return 'full';
 }
 
 type ProviderDetail = AdminProvider & {
@@ -470,10 +485,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const activityOrder = readDetailActivityOrder(detailSearchParams);
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canLoadPartnerDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
+  const isPartnerWorkspaceIndex = detailSection === 'full';
   const providerEndpoint =
-    detailSection === 'overview'
+    detailSection === 'overview' || isPartnerWorkspaceIndex
       ? `/admin/partners/${id}/overview`
-      : `/admin/partners/${id}?includeDiagnostics=${canLoadPartnerDiagnostics ? 'true' : 'false'}`;
+      : `/admin/partners/${id}?includeDiagnostics=${
+          canLoadPartnerDiagnostics && detailSection === 'access' ? 'true' : 'false'
+        }`;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(providerEndpoint, null),
     adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
@@ -488,6 +506,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     return <PartnerDetailFastOverview dispatchPolicy={dispatchPolicy} provider={provider} />;
   }
 
+  if (isPartnerWorkspaceIndex) {
+    return <PartnerDetailWorkspaceIndex provider={provider} />;
+  }
+
   const reviewQuery = new URLSearchParams({
     providerProfileId: provider.id,
     take: String(PARTNER_DETAIL_REVIEW_RECORD_LIMIT),
@@ -498,20 +520,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     take: '10',
   }).toString();
   const partnerManualAdjustmentHref = `/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(provider.id)}`;
-  const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] = await Promise.all([
-    adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, []),
-    adminGet<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, []),
-    adminGet<AdminProviderWalletWithdrawalRequest[]>(
-      `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
-      [],
-    ),
-    adminGet<AdminManualWalletAdjustmentRow[]>(
-      `/admin/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(
-        provider.id,
-      )}&take=${PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
-      [],
-    ),
-  ]);
+  const shouldLoadControlRecords = detailSection === 'control';
+  const shouldLoadFinanceRecords = detailSection === 'dossier';
+  const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] =
+    await Promise.all([
+      shouldLoadControlRecords
+        ? adminGet<AdminReview[]>(`/admin/reviews?${reviewQuery}`, [])
+        : Promise.resolve<AdminReview[]>([]),
+      shouldLoadControlRecords
+        ? adminGet<AdminPartnerCustomerReview[]>(`/admin/partner-customer-reviews?${reviewQuery}`, [])
+        : Promise.resolve<AdminPartnerCustomerReview[]>([]),
+      shouldLoadFinanceRecords
+        ? adminGet<AdminProviderWalletWithdrawalRequest[]>(
+            `/admin/provider-wallet/withdrawal-requests?${walletWithdrawalQuery}`,
+            [],
+          )
+        : Promise.resolve<AdminProviderWalletWithdrawalRequest[]>([]),
+      shouldLoadFinanceRecords
+        ? adminGet<AdminManualWalletAdjustmentRow[]>(
+            `/admin/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(
+              provider.id,
+            )}&take=${PARTNER_DETAIL_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
+            [],
+          )
+        : Promise.resolve<AdminManualWalletAdjustmentRow[]>([]),
+    ]);
   const partnerReviewRecords = reviewRecordsForPartner(customerReviews, partnerEvaluations, provider.id);
   const needsFinanceApproverDirectory = walletWithdrawalRequests.some(
     (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
@@ -744,7 +777,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'record_id', 'partner_id', 'partner_phone'],
   );
-  const partnerOperationsQuickRail = buildPartnerOperationsQuickRail({
+  const partnerOperationsQuickRail = routePartnerDetailWorkspaceItems(provider.id, buildPartnerOperationsQuickRail({
     activityRecordCount: filteredPartnerActivityRecords.length,
     activityTypeLabel: detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
@@ -759,7 +792,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     payoutStatus: payoutOps.status,
     responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
     unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detailNode,
-  });
+  }));
   const partnerUsageRegionSummary = buildPartnerUsageRegionSummary({
     bookingArchive: partnerBookingArchive,
     devices: provider.devices ?? [],
@@ -774,7 +807,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     (sum, record) => sum + readPartnerChatMessages(record.booking).length,
     0,
   );
-  const partnerOperatorFirstRead = buildPartnerOperatorFirstRead({
+  const partnerOperatorFirstRead = routePartnerDetailWorkspaceItems(provider.id, buildPartnerOperatorFirstRead({
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
     bookingRecordCount: partnerBookingArchive.length,
     cashDebtLabel: <MoneyText amount={cashFeeDebtTotal} />,
@@ -798,8 +831,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     payoutStatus: payoutOps.status,
     responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
     userPhone: provider.user?.phone,
-  });
-  const detailBaseHref = `/partners/${provider.id}?section=full`;
+  }));
+  const detailBaseHref = `/partners/${provider.id}?section=${detailSection}`;
   const accountConfirmation = buildPartnerAccountActionConfirmation(
     [provider],
     readPartnerAccountConfirmationAction(readSearchParam(detailSearchParams.confirm)),
@@ -828,14 +861,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     { cancelHref: detailBaseHref },
   );
 
-  const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? (
+  const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (
     <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
   ) : null;
-  const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? (
+  const partnerRecordDateFilterSection = detailSection === 'bookings' ? (
+    <PartnerDetailRecordDateFilterSection
+      activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
+      activityOrder={activityOrder}
+      activityType={activityType}
+      dateFilters={dateFilters}
+      filteredActivityCount={filteredPartnerActivityRecords.length}
+      filteredActivityCsvHref={filteredActivityCsvHref}
+      filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
+      partnerId={provider.id}
+      totalActivityCount={partnerActivityRecords.length}
+      totalBookingArchiveCount={partnerBookingArchive.length}
+    />
+  ) : null;
+  const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'control' ? (
     <PartnerDetailReferenceDetails
-      helper="Digest, master facts, indexes, and filter controls are still available, but no longer compete with approval work."
-      label="Reference summaries and filters"
-      status="6 blocks"
+      helper="Digest, master facts, indexes, ledger, and checklist remain available without competing with approval work."
+      label="Reference summaries"
+      status="5 blocks"
     >
       <PartnerDetailOperationsDigestSection
         description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
@@ -853,27 +900,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
       <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
       <PartnerDetailOperatingChecklistSection pillClassForTone={partnerOpsPillClass} rows={partnerOperatingChecklist} />
-      <PartnerDetailRecordDateFilterSection
-        activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
-        activityOrder={activityOrder}
-        activityType={activityType}
-        dateFilters={dateFilters}
-        filteredActivityCount={filteredPartnerActivityRecords.length}
-        filteredActivityCsvHref={filteredActivityCsvHref}
-        filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
-        partnerId={provider.id}
-        totalActivityCount={partnerActivityRecords.length}
-        totalBookingArchiveCount={partnerBookingArchive.length}
-      />
     </PartnerDetailReferenceDetails>
   ) : null;
-  const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics ? (
+  const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'bookings' ? (
     <PartnerDetailBookingOpsLedgerSection
       rows={partnerBookingOpsLedgerRows}
       statusPillClass={partnerBookingStatusPillClass}
     />
   ) : null;
-  const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? (
+  const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (
     <PartnerDetailDeviceSessionActivitySection
       cardClassForTone={partnerOpsCardClass}
       deviceRows={partnerDeviceRows}
@@ -984,6 +1019,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {partnerCommandSnapshotDiagnosticSection}
 
+      {detailSection === 'control' ? (
       <PartnerDetailSectionGroup
         description="Approval, hold, review records, and staff follow-up come first. Secondary digest and index blocks stay available below as reference material."
         eyebrow="Control"
@@ -1021,7 +1057,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         />
         {partnerReferenceDiagnosticSection}
       </PartnerDetailSectionGroup>
+      ) : null}
 
+      {detailSection === 'bookings' ? (
       <PartnerDetailSectionGroup
         description="Booking rows, first-pick and marketplace gate evidence, retained chat, and booking operations records for this Partner."
         eyebrow="Bookings"
@@ -1029,6 +1067,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         status={`${partnerBookingArchive.length} booking record(s)`}
         title="Booking and chat evidence"
       >
+        {partnerRecordDateFilterSection}
         <PartnerDetailBookingJourneySection
           description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
           emptyDetail="Use a wider date range to show older booking rows."
@@ -1060,7 +1099,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         />
         {partnerBookingOpsLedgerDiagnosticSection}
       </PartnerDetailSectionGroup>
+      ) : null}
 
+      {detailSection === 'access' ? (
       <PartnerDetailSectionGroup
         description="App activity, device reachability, readiness decisions, acceptance repair, reports, and access controls."
         eyebrow="Access"
@@ -1090,7 +1131,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
         />
       </PartnerDetailSectionGroup>
+      ) : null}
 
+      {detailSection === 'dossier' ? (
       <PartnerDetailSectionGroup
         description="Level 2 approval evidence comes first. Finance-only withdrawal, wallet, and finance records stay available below without blocking matching readiness."
         eyebrow="Dossier"
@@ -1213,6 +1256,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </AdminDetailGrid>
         </PartnerDetailReferenceDetails>
       </PartnerDetailSectionGroup>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -1283,12 +1327,12 @@ function partnerDetailReviewActionConfirmHref(
   target: { readonly bankAccountId?: string; readonly documentId?: string; readonly fileId?: string } = {},
 ) {
   return partnerReviewActionConfirmHref(providerId, action, target, {
-    baseHref: `/partners/${providerId}?section=full`,
+    baseHref: partnerDetailWorkspaceHref(providerId, 'dossier'),
   });
 }
 
 function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly ActionMenuItem[] {
-  const detailBaseHref = `/partners/${provider.id}?section=full`;
+  const detailBaseHref = partnerDetailWorkspaceHref(provider.id, 'control');
   const syncDisabled = provider.verification?.status !== 'APPROVED';
   const actions: ActionMenuItem[] = [
     {
@@ -1385,6 +1429,121 @@ function buildPartnerStatusCards(
   ];
 }
 
+function partnerDetailWorkspaceHref(
+  providerId: string,
+  section: Exclude<PartnerDetailSection, 'overview' | 'full'>,
+  hash = '',
+) {
+  return `/partners/${encodeURIComponent(providerId)}?section=${section}${hash}`;
+}
+
+function routePartnerDetailWorkspaceItems<T extends { readonly href: string }>(
+  providerId: string,
+  items: readonly T[],
+): T[] {
+  return items.map((item) => {
+    if (!item.href.startsWith('#')) {
+      return item;
+    }
+    return {
+      ...item,
+      href: partnerDetailWorkspaceHref(
+        providerId,
+        partnerDetailWorkspaceForAnchor(item.href),
+        item.href,
+      ),
+    };
+  });
+}
+
+function partnerDetailWorkspaceForAnchor(
+  anchor: string,
+): Exclude<PartnerDetailSection, 'overview' | 'full'> {
+  if (anchor.includes('booking') || anchor.includes('chat')) {
+    return 'bookings';
+  }
+  if (
+    anchor.includes('location') ||
+    anchor.includes('app-activity') ||
+    anchor.includes('partner-access') ||
+    anchor.includes('readiness')
+  ) {
+    return 'access';
+  }
+  if (
+    anchor.includes('cash-debt') ||
+    anchor.includes('payout') ||
+    anchor.includes('kyc') ||
+    anchor.includes('document') ||
+    anchor.includes('service-pricing') ||
+    anchor.includes('bank') ||
+    anchor.includes('tax')
+  ) {
+    return 'dossier';
+  }
+  return 'control';
+}
+
+function PartnerDetailWorkspaceIndex({ provider }: { provider: ProviderDetail }) {
+  const partnerName = providerDisplayLabel(provider);
+  const bookingSummary = provider.bookingSummary;
+  const bookingRecordCount = bookingSummary
+    ? bookingSummary.preferredBookingCount +
+      bookingSummary.participatingBookingCount +
+      bookingSummary.selectedBookingCount
+    : 0;
+  const workspaceItems = [
+    {
+      detail: 'Approvals, reports, customer reviews, staff notes, and connected operations records.',
+      href: partnerDetailWorkspaceHref(provider.id, 'control'),
+      label: 'Control',
+      value: provider.status,
+    },
+    {
+      detail: 'Booking journey, matching gates, retained chat, and booking evidence bundles.',
+      href: partnerDetailWorkspaceHref(provider.id, 'bookings'),
+      label: 'Bookings',
+      value: `${bookingRecordCount} linked`,
+    },
+    {
+      detail: 'App activity, devices, sessions, location readiness, reports, and access controls.',
+      href: partnerDetailWorkspaceHref(provider.id, 'access'),
+      label: 'Access',
+      value: provider.currentLocationUpdatedAt ? 'Location recorded' : 'Location missing',
+    },
+    {
+      detail: 'KYC, documents, service pricing, wallet, withdrawal, payout, bank, and tax evidence.',
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier'),
+      label: 'Dossier',
+      value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
+    },
+  ] as const;
+
+  return (
+    <AdminPageTemplate
+      actions={
+        <>
+          <AdminFormControlLink href="/partners">Back to partners</AdminFormControlLink>
+          <AdminTextLink href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
+            All Partner chats
+          </AdminTextLink>
+        </>
+      }
+      contentClassName="partners-page partner-detail-page"
+      description="Open one bounded workspace at a time. The overview remains the fastest first read."
+      title={partnerName}
+    >
+      <PartnerDetailSummaryRailSection
+        description="Each workspace keeps one operator job together instead of rendering the complete Partner record in a single response."
+        id="partner-detail-workspace-index"
+        items={workspaceItems}
+        statusLabel="Choose workspace"
+        title="Partner detail workspaces"
+      />
+    </AdminPageTemplate>
+  );
+}
+
 function PartnerDetailFastOverview({
   dispatchPolicy,
   provider,
@@ -1396,7 +1555,6 @@ function PartnerDetailFastOverview({
     provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   );
   const fullHref = `/partners/${provider.id}?section=full`;
-  const fullSectionHref = (hash: string) => `${fullHref}${hash}`;
   const primaryBank = primaryBankAccount(provider);
   const kycEvidence = buildPartnerKycEvidence(provider);
   const payoutOps = buildProviderPayoutOps(provider);
@@ -1427,7 +1585,7 @@ function PartnerDetailFastOverview({
       detail: kycEvidence.allRequiredApproved
         ? 'Required identity evidence is approved.'
         : `${kycEvidence.missingDocuments.length} required document(s) need approval.`,
-      href: fullSectionHref('#kyc'),
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#kyc'),
       tone: kycEvidence.allRequiredApproved ? 'pill-success' : 'pill-warn',
     },
     {
@@ -1443,28 +1601,28 @@ function PartnerDetailFastOverview({
               </>
             )
           : 'No partner cash-fee debt is loaded.',
-      href: fullSectionHref('#cash-debt-origin'),
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#cash-debt-origin'),
       tone: cashDebt > 0 ? 'pill-danger' : 'pill-success',
     },
     {
       label: 'Payout',
       value: payoutOps.status,
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
-      href: fullSectionHref('#payout'),
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#payout'),
       tone: partnerOpsPillClass(payoutOps.tone),
     },
     {
       label: 'Bookings',
       value: `${completedBookingCount} completed`,
       detail: `${liveBookingCount} active record(s), ${bookingArchive.length} recent linked booking record(s).`,
-      href: fullSectionHref('#partner-booking-journey'),
+      href: partnerDetailWorkspaceHref(provider.id, 'bookings', '#partner-booking-journey'),
       tone: liveBookingCount ? 'pill-info' : 'pill-neutral',
     },
     {
       label: 'Chat archive',
       value: `${chatRoomCount} room(s)`,
       detail: `${chatMessageCount} retained message(s) for admin review.`,
-      href: fullSectionHref('#partner-chat-retention-ledger'),
+      href: partnerDetailWorkspaceHref(provider.id, 'bookings', '#partner-chat-retention-ledger'),
       tone: chatRoomCount ? 'pill-info' : 'pill-neutral',
     },
     {
@@ -1474,14 +1632,14 @@ function PartnerDetailFastOverview({
         provider.currentLat && provider.currentLng
           ? partnerLocationSavedLabel()
           : 'No latest partner location pin is saved.',
-      href: fullSectionHref('#location'),
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#location'),
       tone: hasFreshLocation ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Services',
       value: `${servicePricing.readyCount} bookable`,
       detail: `${servicePricing.rows.length} partner service option(s) loaded.`,
-      href: fullSectionHref('#service-pricing'),
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#service-pricing'),
       tone: servicePricing.readyCount ? 'pill-success' : 'pill-warn',
     },
     {
@@ -1490,7 +1648,7 @@ function PartnerDetailFastOverview({
       valueDateTimeFallback: 'No access',
       valueDateTimeValue: latestAccessAt,
       detail: `${provider.sessions?.length ?? 0} session(s), ${enabledPushDevices} enabled device(s).`,
-      href: fullSectionHref('#app-activity'),
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#app-activity'),
       tone: latestAccessAt ? 'pill-info' : 'pill-neutral',
     },
   ];
@@ -1535,7 +1693,7 @@ function PartnerDetailFastOverview({
     payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'No payout blocker is loaded for this partner.',
   ];
   const nextOperatorActionLinks: PartnerDetailFastOverviewLink[] = [
-    { href: fullHref, label: 'Full dossier' },
+    { href: fullHref, label: 'Detail workspaces' },
     { href: '/cash-settlements', label: 'Cash settlements' },
     { href: '/payouts', label: 'Payout batches' },
   ];
@@ -2820,7 +2978,7 @@ function buildPartnerOperatingChecklist(
         ? (provider.blockedReason ?? 'Account is held by admin.')
         : 'No account hold is currently recorded.',
       nextAction: provider.blockedAt ? 'Review account hold' : 'No account action',
-      href: `/partners/${provider.id}?section=full#admin`,
+      href: partnerDetailWorkspaceHref(provider.id, 'control', '#admin'),
       tone: provider.blockedAt ? 'blocked' : 'done',
     },
     {
@@ -2834,7 +2992,7 @@ function buildPartnerOperatingChecklist(
           ? `Missing approved document(s): ${missingKycDocs.join(', ')}.`
           : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}.`,
       nextAction: missingKycDocs.length > 0 ? 'Review documents' : 'Check verification',
-      href: `/partners/${provider.id}?section=full#kyc`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#kyc'),
       tone:
         provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
           ? 'done'
@@ -2851,7 +3009,7 @@ function buildPartnerOperatingChecklist(
       nextAction: bookingAcceptance.canJoinMarketplace
         ? 'Ready for customer choice'
         : 'Resolve participation gate',
-      href: `/partners/${provider.id}?section=full#booking-chat-records`,
+      href: partnerDetailWorkspaceHref(provider.id, 'bookings', '#booking-chat-records'),
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
     },
     {
@@ -2863,7 +3021,7 @@ function buildPartnerOperatingChecklist(
       detail: `${providerServicePricing.rows.length} service row(s) loaded. Prices must respect admin minimum and step policy.`,
       nextAction:
         providerServicePricing.readyCount > 0 ? 'Ready for service selection' : 'Fix service pricing',
-      href: `/partners/${provider.id}?section=full#service-pricing`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#service-pricing'),
       tone: providerServicePricing.readyCount > 0 ? 'done' : 'blocked',
     },
     {
@@ -2883,7 +3041,7 @@ function buildPartnerOperatingChecklist(
           : !locationFresh
             ? 'Ask app reopen/location update'
             : 'Register device token',
-      href: `/partners/${provider.id}?section=full#app-activity`,
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#app-activity'),
       tone: locationFresh && enabledPushCount > 0 ? 'done' : 'pending',
     },
   ];
@@ -3162,7 +3320,7 @@ function buildPartnerAcceptanceRepairCommand(
         'First earning exists, so address, agreements, bank details, and payout holds must be reviewed before withdrawal.',
       operatorAction:
         'Do not block the first job retroactively, but keep payout locked until withdrawal requirements are complete.',
-      href: `/partners/${provider.id}?section=full#payout`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#payout'),
       actionLabel: 'Open payout gate',
       tone: 'pending',
     });
@@ -3206,25 +3364,25 @@ function partnerAcceptanceRepairStep(
     },
     'Identity and approval': {
       owner: 'KYC',
-      href: `/partners/${provider.id}?section=full#kyc`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#kyc'),
       actionLabel: 'Open KYC',
       tone: 'blocked',
     },
     'Bank account': {
       owner: 'Finance',
-      href: `/partners/${provider.id}?section=full#bank`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#bank'),
       actionLabel: 'Open bank',
       tone: 'blocked',
     },
     'Online and reachable': {
       owner: 'Ops',
-      href: `/partners/${provider.id}?section=full#partner-access-section`,
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#partner-access-section'),
       actionLabel: 'Open app activity',
       tone: 'pending',
     },
     'Location freshness': {
       owner: 'Dispatch',
-      href: `/partners/${provider.id}?section=full#location`,
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#location'),
       actionLabel: 'Open location',
       tone: 'pending',
     },
@@ -3348,7 +3506,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
           ? 'Bank account is approved for future withdrawal requests.'
           : 'Bank details are reviewed later when the Partner requests wallet withdrawal.',
       action: identityGate?.ok ? 'Review KYC evidence' : 'Finish KYC review',
-      href: `/partners/${provider.id}?section=full#kyc`,
+      href: partnerDetailWorkspaceHref(provider.id, 'dossier', '#kyc'),
       tone: identityGate?.ok ? 'done' : 'blocked',
       bookingBlocked: !identityGate?.ok,
     },
@@ -3364,7 +3522,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
         : 'Partner may be excluded from nearby marketplace matching or show unreliable distance.',
       payoutImpact: 'No direct payout impact, but location history can support dispute review.',
       action: locationGate?.ok ? 'Open location history' : 'Ask partner to open app',
-      href: `/partners/${provider.id}?section=full#location`,
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#location'),
       tone: locationGate?.ok ? 'done' : 'pending',
       bookingBlocked: !locationGate?.ok,
     },
@@ -3380,7 +3538,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
         : 'Partner may miss the 10 minute first-pick window or marketplace invite.',
       payoutImpact: 'No direct payout impact.',
       action: reachableGate?.ok ? 'Open app activity' : 'Check app activity',
-      href: `/partners/${provider.id}?section=full#partner-access-section`,
+      href: partnerDetailWorkspaceHref(provider.id, 'access', '#partner-access-section'),
       tone: reachableGate?.ok ? 'done' : 'pending',
       bookingBlocked: !reachableGate?.ok,
     },
@@ -3415,7 +3573,9 @@ function buildPartnerAcceptanceUnblockPlaybook(
         ? 'No withdrawal profile blocker is currently visible.'
         : 'Blocks manual withdrawal/deposit release until address, bank, required agreements, and holds are complete.',
       action: hasFirstRevenue ? 'Open payout gate' : 'Review payout policy',
-      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/cash-settlements',
+      href: hasFirstRevenue
+        ? partnerDetailWorkspaceHref(provider.id, 'dossier', '#payout')
+        : '/cash-settlements',
       tone: payoutGateOpen ? 'done' : 'pending',
       bookingBlocked: false,
     },

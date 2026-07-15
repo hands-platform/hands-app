@@ -953,7 +953,7 @@ describe('notification page model', () => {
       expect.arrayContaining([
         {
           description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup#notifications',
+          href: '/setup?commands=all#notifications',
           label: 'FCM setup',
         },
       ]),

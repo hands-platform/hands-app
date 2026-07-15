@@ -52,7 +52,7 @@ describe('ProviderDetailPage data loading', () => {
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
   });
 
-  it('renders the full partner detail header on the shared Vuexy page surface', async () => {
+  it('renders the lightweight partner workspace index on the shared Vuexy page surface', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -63,7 +63,7 @@ describe('ProviderDetailPage data loading', () => {
       updatedAt: null,
     });
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (href === '/admin/partners/partner-1?includeDiagnostics=true') {
+      if (href === '/admin/partners/partner-1/overview') {
         return partnerDetail();
       }
       if (href.startsWith('/admin/operational-policy')) {
@@ -80,7 +80,10 @@ describe('ProviderDetailPage data loading', () => {
 
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Partner One');
+    expect(markup).toContain('Partner detail workspaces');
+    expect(markup).toContain('Choose workspace');
     expect(markup).toContain('All Partner chats');
+    expect(markup).not.toContain('Partner control workspace');
     expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
   });
 
@@ -99,7 +102,7 @@ describe('ProviderDetailPage data loading', () => {
     await expect(
       ProviderDetailPage({
         params: Promise.resolve({ id: 'partner-no-diagnostics' }),
-        searchParams: Promise.resolve({ section: 'full' }),
+        searchParams: Promise.resolve({ section: 'access' }),
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
@@ -111,6 +114,65 @@ describe('ProviderDetailPage data loading', () => {
       '/admin/partners/partner-no-diagnostics?includeDiagnostics=true',
       null,
     );
+  });
+
+  it('loads deep access diagnostics only for Master Admin operators', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    await expect(
+      ProviderDetailPage({
+        params: Promise.resolve({ id: 'partner-master-diagnostics' }),
+        searchParams: Promise.resolve({ section: 'access' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/partners/partner-master-diagnostics?includeDiagnostics=true',
+      null,
+    );
+  });
+
+  it('keeps booking record filters visible and scoped to the bookings workspace', async () => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: ['PARTNERS_DETAIL'],
+      email: 'ops@example.com',
+      fullName: 'Ops',
+      id: 'ops-1',
+      phone: null,
+      roles: ['ADMIN'],
+      updatedAt: null,
+    });
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/partners/partner-bookings?includeDiagnostics=false') {
+        return partnerDetail();
+      }
+      if (href.startsWith('/admin/operational-policy')) {
+        return [];
+      }
+      return fallback;
+    });
+
+    const page = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-bookings' }),
+      searchParams: Promise.resolve({ range: '30d', section: 'bookings' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Booking and chat evidence');
+    expect(markup).toContain('Record date filter');
+    expect(markup).toContain('Filtered booking archive');
+    expect(markup).toContain('Filtered activity');
+    expect(markup).toContain('type="hidden" name="section" value="bookings"');
+    expect(markup).toContain('/partners/partner-1?section=bookings');
   });
 
   it('keeps partner overview on the lightweight endpoint without diagnostics flags', async () => {
@@ -166,34 +228,34 @@ describe('ProviderDetailPage data loading', () => {
     expect(providerDetailSource).toContain('canLoadPartnerDiagnostics');
     expect(providerDetailSource).not.toContain('AdminDeveloperSystemSection');
     expect(providerDetailSource).toContain(
-      'const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? (',
+      "const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (",
     );
     expect(providerDetailSource).toContain(
-      'const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? (',
+      "const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'control' ? (",
     );
     expect(providerDetailSource).toContain(
-      'const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics ? (',
+      "const partnerBookingOpsLedgerDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'bookings' ? (",
     );
     expect(providerDetailSource).toContain(
-      'const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? (',
+      "const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? (",
     );
     expect(
-      providerDetailSource.indexOf('const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics ? ('),
+      providerDetailSource.indexOf("const partnerCommandSnapshotDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? ("),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailCommandSnapshotSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? ('),
+      providerDetailSource.indexOf("const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'control' ? ("),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailFullRecordIndexSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics ? ('),
+      providerDetailSource.indexOf("const partnerReferenceDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'control' ? ("),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailOperatingLedgerSection'),
     );
     expect(
-      providerDetailSource.indexOf('const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics ? ('),
+      providerDetailSource.indexOf("const partnerDeviceSessionDiagnosticSection = canLoadPartnerDiagnostics && detailSection === 'access' ? ("),
     ).toBeLessThan(
       providerDetailSource.indexOf('<PartnerDetailDeviceSessionActivitySection'),
     );

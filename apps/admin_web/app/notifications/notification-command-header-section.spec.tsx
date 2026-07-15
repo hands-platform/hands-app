@@ -14,7 +14,7 @@ describe('NotificationCommandHeaderSection', () => {
     expect(rendered).toContain('Delivery signal');
     expect(rendered).toContain('Retry checks');
     expect(rendered).not.toContain('FCM setup');
-    expect(hrefsIn(section)).not.toContain('/setup#notifications');
+    expect(hrefsIn(section)).not.toContain('/setup?commands=all#notifications');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'ops-section-header admin-section-header',
@@ -30,7 +30,7 @@ describe('NotificationCommandHeaderSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('FCM setup');
-    expect(hrefsIn(section)).toContain('/setup#notifications');
+    expect(hrefsIn(section)).toContain('/setup?commands=all#notifications');
     expect(classNamesIn(section)).toContain('pill pill-neutral');
   });
 

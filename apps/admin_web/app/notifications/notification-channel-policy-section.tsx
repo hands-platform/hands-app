@@ -141,7 +141,7 @@ export function NotificationChannelPolicySection({
               <AdminFilterChipGroup ariaLabel="FCM diagnosis links" className="admin-mt-6">
                 {shouldShowFcmDiagnosis ? (
                   <>
-                    <StatusBadgeLink href="/setup#notifications" tone="info">
+                    <StatusBadgeLink href="/setup?commands=all#notifications" tone="info">
                       Credential setup
                     </StatusBadgeLink>
                     <StatusBadgeLink href="/notifications?review=disabled-device" tone="warning">

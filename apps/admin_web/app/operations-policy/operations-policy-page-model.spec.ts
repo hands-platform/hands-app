@@ -12,6 +12,7 @@ describe('operations policy page model', () => {
 
     expect(plan.detailsMode).toBe('summary');
     expect(plan.shouldRenderFullDiagnostics).toBe(false);
+    expect(plan.shouldRenderAdvancedIndex).toBe(false);
     expect(bookingsUrl.pathname).toBe('/admin/bookings');
     expect(bookingsUrl.searchParams.get('take')).toBe('3');
     expect(plan.providersHref).toBeNull();
@@ -19,20 +20,39 @@ describe('operations policy page model', () => {
     expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
   });
 
-  it('keeps the previous larger diagnostics window behind details=all', () => {
+  it('keeps details=all as a lightweight advanced review index', () => {
     const plan = buildOperationsPolicyLoadPlan({ details: 'all' });
     const bookingsUrl = new URL(plan.bookingsHref, 'http://admin.local');
-    expect(plan.providersHref).not.toBeNull();
-    const providersUrl = new URL(plan.providersHref!, 'http://admin.local');
     const policyAuditUrl = new URL(plan.policyAuditHref, 'http://admin.local');
     const bookingGateAuditUrl = new URL(plan.bookingGateAuditHref, 'http://admin.local');
 
     expect(plan.detailsMode).toBe('all');
-    expect(plan.shouldRenderFullDiagnostics).toBe(true);
-    expect(bookingsUrl.searchParams.get('take')).toBe('50');
-    expect(providersUrl.searchParams.get('take')).toBe('100');
-    expect(policyAuditUrl.searchParams.get('take')).toBe('20');
-    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('50');
+    expect(plan.shouldRenderAdvancedIndex).toBe(true);
+    expect(plan.shouldRenderFullDiagnostics).toBe(false);
+    expect(bookingsUrl.searchParams.get('take')).toBe('3');
+    expect(plan.providersHref).toBeNull();
+    expect(policyAuditUrl.searchParams.get('take')).toBe('3');
+    expect(bookingGateAuditUrl.searchParams.get('take')).toBe('3');
+  });
+
+  it('scopes matching, decision, and audit workspaces to bounded data windows', () => {
+    const matching = buildOperationsPolicyLoadPlan({ details: 'matching' });
+    const decisions = buildOperationsPolicyLoadPlan({ details: 'decisions' });
+    const audit = buildOperationsPolicyLoadPlan({ details: 'audit' });
+
+    expect(new URL(matching.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(matching.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+    expect(matching.shouldRenderMatchingReview).toBe(true);
+
+    expect(new URL(decisions.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('15');
+    expect(new URL(decisions.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(decisions.shouldRenderDecisionReview).toBe(true);
+
+    expect(new URL(audit.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('10');
+    expect(audit.providersHref).toBeNull();
+    expect(new URL(audit.policyAuditHref, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(audit.bookingGateAuditHref, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(audit.shouldRenderAuditReview).toBe(true);
   });
 
   it('falls back to the compact sample when full diagnostics are not allowed', () => {
@@ -51,6 +71,9 @@ describe('operations policy page model', () => {
 
   it('builds stable summary and full diagnostics links', () => {
     expect(buildOperationsPolicyDetailsHref('all')).toBe('/operations-policy?details=all');
+    expect(buildOperationsPolicyDetailsHref('matching')).toBe('/operations-policy?details=matching');
+    expect(buildOperationsPolicyDetailsHref('decisions')).toBe('/operations-policy?details=decisions');
+    expect(buildOperationsPolicyDetailsHref('audit')).toBe('/operations-policy?details=audit');
     expect(buildOperationsPolicyDetailsHref('summary')).toBe('/operations-policy');
   });
 });

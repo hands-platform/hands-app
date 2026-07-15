@@ -1,6 +1,7 @@
 import { Settings } from 'lucide-react';
 import { canViewAdminDeveloperSystem } from '../../components/admin-developer-system-section';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import {
@@ -92,42 +93,50 @@ export default async function OperationsPolicyPage({
     adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
   ]);
   const auditLogs = [...policyAuditLogs, ...bookingGateAuditLogs];
-  const shouldRenderFullDiagnostics = loadPlan.shouldRenderFullDiagnostics;
+  const shouldRenderAdvancedIndex = loadPlan.shouldRenderAdvancedIndex;
+  const shouldRenderMatchingReview = loadPlan.shouldRenderMatchingReview;
+  const shouldRenderDecisionReview = loadPlan.shouldRenderDecisionReview;
+  const shouldRenderAuditReview = loadPlan.shouldRenderAuditReview;
+  const needsProviderReview = shouldRenderMatchingReview || shouldRenderDecisionReview;
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = operationsPolicyNotice(params);
-  const matchingPlaybook = buildMatchingPlaybook((key) => policyDisplayByKey(settings, key));
+  const matchingPlaybook = shouldRenderMatchingReview
+    ? buildMatchingPlaybook((key) => policyDisplayByKey(settings, key))
+    : null;
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
-  const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
+  const acceptanceMatrix = needsProviderReview
+    ? buildBookingAcceptanceMatrix(settings, providers)
+    : null;
   const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
   const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
-  const policySimulation = shouldRenderFullDiagnostics
+  const policySimulation = shouldRenderMatchingReview
     ? buildPolicySimulation(settings, bookings, providers)
     : null;
-  const impactDashboard = shouldRenderFullDiagnostics
+  const impactDashboard = shouldRenderMatchingReview
     ? buildPolicyImpactDashboard(settings, bookings)
     : null;
-  const policyEffectAnalysis = shouldRenderFullDiagnostics
+  const policyEffectAnalysis = shouldRenderMatchingReview
     ? buildPolicyOutcomeEffect(settings, bookings)
     : null;
-  const policyDrilldown = shouldRenderFullDiagnostics ? buildPolicyDrilldown(bookings, settings) : null;
-  const policyAuditRows = shouldRenderFullDiagnostics ? operationalPolicyAuditRows(auditLogs) : null;
-  const supplySensitivity = shouldRenderFullDiagnostics
+  const policyDrilldown = shouldRenderMatchingReview ? buildPolicyDrilldown(bookings, settings) : null;
+  const policyAuditRows = shouldRenderAuditReview ? operationalPolicyAuditRows(auditLogs) : null;
+  const supplySensitivity = needsProviderReview
     ? buildPolicySupplySensitivity(settings, bookings, providers)
     : null;
-  const matchingStageImpactPreview = shouldRenderFullDiagnostics
+  const matchingStageImpactPreview = shouldRenderMatchingReview
     ? buildMatchingStageImpactPreview(settings, bookings, providers)
     : null;
-  const policyEnforcementTrace = shouldRenderFullDiagnostics
+  const policyEnforcementTrace = shouldRenderAuditReview
     ? buildPolicyEnforcementTrace(settings)
     : null;
-  const ownerDecisionBacklog = shouldRenderFullDiagnostics ? operationsOwnerDecisionBacklog() : null;
+  const ownerDecisionBacklog = shouldRenderDecisionReview ? operationsOwnerDecisionBacklog() : null;
   const ownerDecisionPressure =
-    shouldRenderFullDiagnostics && supplySensitivity
+    shouldRenderDecisionReview && supplySensitivity && acceptanceMatrix
       ? buildOwnerDecisionPressure(bookings, providers, supplySensitivity, acceptanceMatrix)
       : null;
-  const shouldRenderDecisionEditor = shouldRenderFullDiagnostics;
+  const shouldRenderDecisionEditor = shouldRenderDecisionReview;
 
   return (
     <AdminPageTemplate
@@ -158,9 +167,9 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyRecommendedValueReviewSection review={recommendationReview} />
 
-      {shouldRenderFullDiagnostics ? (
+      {shouldRenderMatchingReview ? (
         <>
-          <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix} />
+          <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix!} />
 
           <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity!} />
 
@@ -168,7 +177,6 @@ export default async function OperationsPolicyPage({
 
           <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
 
-          <OperationsPolicyEnforcementTraceSection trace={policyEnforcementTrace!} />
         </>
       ) : null}
 
@@ -191,7 +199,7 @@ export default async function OperationsPolicyPage({
               key={setting.key}
               setting={setting}
               bookings={bookings}
-              diagnosticsMode={shouldRenderFullDiagnostics ? 'full' : 'summary'}
+              diagnosticsMode={shouldRenderMatchingReview ? 'full' : 'summary'}
             />
           ))}
           {matchingSettings.length === 0 ? (
@@ -211,7 +219,7 @@ export default async function OperationsPolicyPage({
         </AdminDetailGrid>
       </AdminSection>
 
-      {shouldRenderFullDiagnostics ? (
+      {shouldRenderMatchingReview ? (
         <>
           <OperationsPolicyLiveSimulatorSection simulation={policySimulation!} />
 
@@ -222,11 +230,9 @@ export default async function OperationsPolicyPage({
 
           <OperationsPolicyDrilldownSection drilldown={policyDrilldown!} />
 
-          <OperationsPolicyAuditTrailSection rows={policyAuditRows!} />
-
-          <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
+          <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook!} />
         </>
-      ) : canLoadFullDiagnostics ? (
+      ) : canLoadFullDiagnostics && !shouldRenderAdvancedIndex ? (
         <AdminSection
           actions={
             <AdminFormControlLink className="button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
@@ -237,6 +243,35 @@ export default async function OperationsPolicyPage({
           description="The default policy page keeps live editing and gate checks fast. Open advanced review when checking simulations, audit trail, drilldown, and owner decision pressure."
           title="Advanced policy review"
         />
+      ) : null}
+
+      {shouldRenderAuditReview ? (
+        <>
+          <OperationsPolicyEnforcementTraceSection trace={policyEnforcementTrace!} />
+          <OperationsPolicyAuditTrailSection rows={policyAuditRows!} />
+        </>
+      ) : null}
+
+      {shouldRenderAdvancedIndex ? (
+        <AdminSection
+          className="admin-mb-16"
+          description="Open one bounded workspace at a time. Matching review covers simulation and supply, decision review contains owner-editable choices, and audit review keeps retained policy evidence."
+          statusLabel="Choose workspace"
+          statusTone="info"
+          title="Advanced policy review"
+        >
+          <AdminFilterChipGroup ariaLabel="Advanced policy workspaces">
+            <AdminFormControlLink href={buildOperationsPolicyDetailsHref('matching')}>
+              Matching review
+            </AdminFormControlLink>
+            <AdminFormControlLink href={buildOperationsPolicyDetailsHref('decisions')}>
+              Decision review
+            </AdminFormControlLink>
+            <AdminFormControlLink href={buildOperationsPolicyDetailsHref('audit')}>
+              Audit review
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
       ) : null}
 
       <AdminSection
@@ -288,7 +323,7 @@ export default async function OperationsPolicyPage({
         )}
       </AdminSection>
 
-      {shouldRenderFullDiagnostics && ownerDecisionBacklog && ownerDecisionPressure ? (
+      {shouldRenderDecisionReview && ownerDecisionBacklog && ownerDecisionPressure ? (
         <>
           <OperationsPolicyNextChoicesSection />
 

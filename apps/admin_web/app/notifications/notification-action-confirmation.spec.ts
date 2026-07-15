@@ -553,7 +553,7 @@ describe('notification action confirmation', () => {
       expect.arrayContaining([
         {
           description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup#notifications',
+          href: '/setup?commands=all#notifications',
           label: 'FCM setup',
         },
       ]),
@@ -574,7 +574,7 @@ describe('notification action confirmation', () => {
       expect.arrayContaining([
         {
           description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup#notifications',
+          href: '/setup?commands=all#notifications',
           label: 'FCM setup',
         },
       ]),
@@ -595,7 +595,7 @@ describe('notification action confirmation', () => {
       expect.arrayContaining([
         {
           description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup#notifications',
+          href: '/setup?commands=all#notifications',
           label: 'FCM setup',
         },
       ]),
@@ -617,7 +617,7 @@ describe('notification action confirmation', () => {
       expect.arrayContaining([
         {
           description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-          href: '/setup#notifications',
+          href: '/setup?commands=all#notifications',
           label: 'FCM setup',
         },
       ]),
@@ -633,7 +633,7 @@ describe('notification action confirmation', () => {
 
     expect(confirmation?.supportingLinks).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ href: '/setup#notifications', label: 'FCM setup' }),
+        expect.objectContaining({ href: '/setup?commands=all#notifications', label: 'FCM setup' }),
       ]),
     );
 
@@ -642,7 +642,7 @@ describe('notification action confirmation', () => {
 
     expect(filtered?.supportingLinks).toEqual(
       expect.not.arrayContaining([
-        expect.objectContaining({ href: '/setup#notifications', label: 'FCM setup' }),
+        expect.objectContaining({ href: '/setup?commands=all#notifications', label: 'FCM setup' }),
       ]),
     );
     expect(filtered?.supportingLinks).toEqual(

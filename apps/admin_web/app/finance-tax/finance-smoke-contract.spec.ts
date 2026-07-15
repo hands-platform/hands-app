@@ -36,7 +36,8 @@ describe('finance admin smoke contract', () => {
     expect(scriptSource).toContain('Settlement reversal rows');
     expect(scriptSource).toContain('Stored monthly closing rows');
     expect(scriptSource).toContain('VAT rate breakdown');
-    expect(scriptSource).toContain('Fees by payment method');
+    expect(scriptSource).toContain('Fees by payer');
+    expect(scriptSource).toContain('Fees by treatment');
     expect(scriptSource).toContain('Partner monthly withholding rows');
     expect(scriptSource).toContain('runFinanceDetailRouteSmoke');
     expect(scriptSource).toContain('Payment Clearing Detail');

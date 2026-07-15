@@ -17,7 +17,7 @@ export function NotificationCommandHeaderSection({
           <StatusBadge tone="info">Delivery signal</StatusBadge>
           <StatusBadge tone="warning">Retry checks</StatusBadge>
           {canViewDiagnostics ? (
-            <StatusBadgeLink href="/setup#notifications" tone="neutral">
+            <StatusBadgeLink href="/setup?commands=all#notifications" tone="neutral">
               FCM setup
             </StatusBadgeLink>
           ) : null}

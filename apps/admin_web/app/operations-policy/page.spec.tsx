@@ -120,7 +120,7 @@ describe('OperationsPolicyPage', () => {
     expect(markup).toContain('Open setup checks');
   });
 
-  it('renders decision policy editors in full diagnostics mode', async () => {
+  it('renders decision policy editors only in the decision review workspace', async () => {
     mockedGetAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -158,12 +158,34 @@ describe('OperationsPolicyPage', () => {
       return fallback;
     });
 
-    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'all' }) });
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'decisions' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('First-pick Partner response window');
     expect(markup).toContain('First-pick acceptance contract');
     expect((markup.match(/<form/g) ?? []).length).toBe(2);
+  });
+
+  it('keeps details=all as a bounded workspace index for Master Admins', async () => {
+    mockedGetAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'all' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Choose workspace');
+    expect(markup).toContain('/operations-policy?details=matching');
+    expect(markup).toContain('/operations-policy?details=decisions');
+    expect(markup).toContain('/operations-policy?details=audit');
+    expect(markup).not.toContain('Policy sensitivity preview');
+    expect(markup).not.toContain('Policy audit trail');
   });
 
   it('uses shared Vuexy badge atoms for page header counters', () => {

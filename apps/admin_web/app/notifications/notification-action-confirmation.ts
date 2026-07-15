@@ -83,7 +83,7 @@ const BACKGROUND_JOB_EVIDENCE_QUEUES = new Set([
 
 const FCM_SETUP_SUPPORTING_LINK = {
   description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-  href: '/setup#notifications',
+  href: '/setup?commands=all#notifications',
   label: 'FCM setup',
 } as const;
 

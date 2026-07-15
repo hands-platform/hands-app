@@ -62,6 +62,7 @@ export function PartnerDetailRecordDateFilterSection({
       title="Record date filter"
     >
       <AdminFormGrid className="admin-mt-14" action={`/partners/${partnerId}`}>
+        <input name="section" type="hidden" value="bookings" />
         <AdminFormSelect
           className="admin-directory-filter-select"
           defaultValue={dateFilters.range}
@@ -108,7 +109,10 @@ export function PartnerDetailRecordDateFilterSection({
             <Download aria-hidden="true" size={16} />
             Export activity CSV
           </AdminFormControlLink>
-          <AdminFormControlLink className="admin-directory-filter-button is-ghost" href={`/partners/${partnerId}`}>
+          <AdminFormControlLink
+            className="admin-directory-filter-button is-ghost"
+            href={`/partners/${partnerId}?section=bookings`}
+          >
             <X aria-hidden="true" size={16} />
             Clear
           </AdminFormControlLink>

@@ -20,6 +20,9 @@ const criticalSmokePaths = [
   '/marketing-analytics',
   '/operations-policy',
   '/operations-policy?details=all',
+  '/operations-policy?details=matching',
+  '/operations-policy?details=decisions',
+  '/operations-policy?details=audit',
 ];
 const budgetSmokePaths = [
   '/',
@@ -128,7 +131,7 @@ function notificationEmptyQueueMarkers(review) {
 
 const notificationFcmSupportFollowUps = [
   {
-    hrefPattern: /href="([^"]*\/setup#notifications)"/,
+    hrefPattern: /href="([^"]*\/setup\?commands=all#notifications)"/,
     label: 'FCM setup support link',
     markers: ['External setup', 'FCM push notifications', 'npm.cmd run fcm:token-recovery-smoke'],
   },
@@ -265,7 +268,7 @@ const pages = [
   },
   {
     path: '/?range=7d',
-    markers: ['HANDS Admin', 'Dashboard date range', 'Last 7 days', 'More operating detail'],
+    markers: ['Start Shift', 'Needs action now', 'Today result', 'Last 7 days'],
   },
   {
     path: '/marketing-analytics',
@@ -325,8 +328,8 @@ const pages = [
     markers: [
       'Booking Monitor',
       'Matching ops',
-      'Matching flow timeline',
-      'Dispatch Partner repair shortcuts',
+      'Booking workspace filters',
+      'Current workspace:',
     ],
   },
   { path: '/bookings?view=attention', markers: ['Booking Monitor', 'Follow-up queue'] },
@@ -336,66 +339,72 @@ const pages = [
     markers: [
       'Booking Monitor',
       'Stage 2 marketplace',
-      'Marketplace booking coverage board',
-      'Bookings with participant history',
-      'Marketplace participant ledger',
-      'Marketplace record boundary',
-      'Actual participation rows',
-      'Pre-finalization wallet gate',
-      'Customer choice evidence',
-      'Customer-selectable reason',
-      'Why not selectable',
-      'Marketplace operating queue',
-      'First-pick timer control',
-      'Partner participation pool',
-      'Customer final selection lane',
-      'Wallet unblock lane',
-      'All participant records',
-      'Selected marketplace Partner',
-      'Customer final choice',
-      'Marketplace participation gate',
-      'Participant rows only',
-      'Blocked wallet joins are not participant records',
-      'Customer-selected final Partner only',
-      'A negative-wallet Partner may see marketplace requests, but final acceptance, service start, and payout release wait until settlement.',
-      'Participant evidence',
+      'Booking workspace filters',
+      'Current workspace:',
     ],
   },
-  { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice', 'Customer Choice'] },
+  {
+    path: '/bookings?view=customer-choice',
+    markers: ['Booking Monitor', 'Stage 3 choice', 'Booking workspace filters', 'Current workspace:'],
+  },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
   { path: '/bookings?view=no-supply', markers: ['Booking Monitor', 'No supply'] },
-  { path: '/bookings?view=chat-evidence', markers: ['Booking Monitor', 'Chat evidence'] },
-  { path: '/bookings?view=evidence-missing', markers: ['Booking Monitor', 'Evidence missing'] },
-  { path: '/bookings?view=refund-review', markers: ['Booking Monitor', 'Refund review'] },
+  {
+    path: '/bookings/post-match-cancellations?view=chat-evidence',
+    markers: ['Post-match Cancellations', 'Chat evidence', 'Booking workspace filters'],
+  },
+  {
+    path: '/bookings/post-match-cancellations?view=evidence-missing',
+    markers: ['Post-match Cancellations', 'Evidence missing', 'Booking workspace filters'],
+  },
+  {
+    path: '/bookings/completed?view=refund-review',
+    markers: ['Completed Bookings', 'Refund review', 'Booking workspace filters'],
+  },
   {
     path: '/bookings?view=blocked-create&gate=customer-gps',
-    markers: ['Booking Monitor', 'Create gate filter', 'Optional GPS evidence'],
+    markers: ['Booking Monitor', 'Blocked create', 'Booking workspace filters', 'Current workspace:'],
   },
   { path: '/bookings?view=address', markers: ['Booking Monitor', 'Address check'] },
-  { path: '/bookings?view=manual-decision', markers: ['Booking Monitor', 'Manual decision'] },
-  { path: '/bookings?view=payment', markers: ['Booking Monitor', 'Payment ops'] },
-  { path: '/bookings?view=cash-debt', markers: ['Booking Monitor', 'Cash fee debt'] },
+  {
+    path: '/bookings/post-match-cancellations?view=manual-decision',
+    markers: ['Post-match Cancellations', 'Manual decision', 'Booking workspace filters'],
+  },
+  {
+    path: '/bookings/completed?view=payment',
+    markers: ['Completed Bookings', 'Payment ops', 'Booking workspace filters'],
+  },
+  {
+    path: '/bookings/completed?view=cash-debt',
+    markers: ['Completed Bookings', 'Cash debt', 'Booking workspace filters'],
+  },
   { path: '/bookings?view=location', markers: ['Booking Monitor', 'Location ops'] },
-  { path: '/bookings?view=chat', markers: ['Booking Monitor', 'Chat handoff'] },
+  { path: '/bookings?view=chat', markers: ['Booking Monitor', 'Chat live'] },
   { path: '/bookings?view=chat-repair', markers: ['Booking Monitor', 'Chat repair'] },
   {
     path: '/bookings?view=all&evidence=money',
-    markers: ['Booking Monitor', 'Evidence filter', 'Payment / wallet check'],
+    markers: ['Booking Monitor', 'All bookings', 'Booking workspace filters'],
   },
   {
     path: '/bookings?view=all&evidence=chat',
-    markers: ['Booking Monitor', 'Evidence filter', 'Chat archive check'],
+    markers: ['Booking Monitor', 'All bookings', 'Booking workspace filters'],
   },
   {
-    path: '/bookings?view=closeout',
-    markers: ['Booking Monitor', 'Closeout ops', 'earning, tax, platform fee, or wallet ledger'],
+    path: '/bookings/completed?view=closeout',
+    markers: ['Completed Bookings', 'Closeout ops', 'Booking workspace filters'],
   },
   {
-    path: '/bookings?view=pricing',
-    markers: ['Booking Monitor', 'Pricing ops', 'active service payout matrix'],
+    path: '/bookings/completed?view=pricing',
+    markers: ['Completed Bookings', 'Pricing ops', 'Booking workspace filters'],
   },
-  { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
-  { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
+  {
+    path: '/bookings/completed?view=expired',
+    markers: ['Completed Bookings', 'Expired', 'Booking workspace filters'],
+  },
+  {
+    path: '/bookings/post-match-cancellations?view=no-show',
+    markers: ['Post-match Cancellations', 'No-show', 'Booking workspace filters'],
+  },
   {
     path: '/customers',
     markers: [
@@ -421,45 +430,44 @@ const pages = [
   {
     path: '/chat-archive',
     markers: [
-      'Chat Archive',
-      'Chat archive index',
+      'Chat Evidence Search',
+      'Chat evidence filters',
       'Chat integrity repair queue',
-      'Message transcript preview',
-      'Export messages CSV',
-      'Message transcript preview',
+      'Chat evidence index',
+      'Chat window previews',
     ],
   },
   {
     path: '/chat-archive?sender=partner&range=30d',
-    markers: ['Chat Archive', 'Sender', 'Message transcript preview'],
+    markers: ['Chat Evidence Search', 'Chat evidence filters', 'Sender', 'Chat evidence index'],
   },
   {
     path: '/chat-archive?status=missing-room',
-    markers: ['Chat Archive', 'Matched without room', 'Chat integrity repair queue', 'Missing room'],
+    markers: ['Chat Evidence Search', 'Matched without room', 'Chat integrity repair queue', 'Missing room'],
   },
   {
     path: '/chat-archive?status=no-message',
-    markers: ['Chat Archive', 'Room without messages', 'Chat integrity repair queue', 'Empty room'],
+    markers: ['Chat Evidence Search', 'Room without messages', 'Chat integrity repair queue', 'Empty room'],
   },
   {
     path: '/customers?sort=booking-count',
-    markers: ['Customer Management', 'Sorted by reservations many first', 'Customer directory'],
+    markers: ['Customers', 'Sorted by reservations many first', 'Customer directory'],
   },
   {
     path: '/customers?sort=booking-count-asc',
-    markers: ['Customer Management', 'Sorted by reservations few first', 'Customer directory'],
+    markers: ['Customers', 'Sorted by reservations few first', 'Customer directory'],
   },
   {
     path: '/customers?joinedRange=today',
-    markers: ['Customer Management', 'Sign-up date: Today', 'Customer directory'],
+    markers: ['Customers', 'Sign-up date: Today', 'Customer directory'],
   },
   {
     path: '/customers?lastBookingRange=7d',
-    markers: ['Customer Management', 'Last reservation: Last 7 days', 'Customer directory'],
+    markers: ['Customers', 'Last reservation: Last 7 days', 'Customer directory'],
   },
   {
     path: '/customers?lastLoginRange=30d',
-    markers: ['Customer Management', 'Last login date: Last month', 'Customer directory'],
+    markers: ['Customers', 'Last login date: Last month', 'Customer directory'],
   },
   {
     path: '/operations-policy',
@@ -484,48 +492,79 @@ const pages = [
       'MVP authority baseline',
       'Confirmed service address required',
       'No auto assignment',
-      'Booking-address radius',
-      'View demand, block finalization',
+      'Advanced policy review',
+      'Choose workspace',
+      'Matching review',
+      'Decision review',
+      'Audit review',
+      'Live matching policy',
+      'Operator decisions',
+    ],
+  },
+  {
+    path: '/operations-policy?details=matching',
+    markers: [
+      'Operations Policy',
       'Final partner choice control matrix',
       'Current partner acceptance impact',
       'Policy sensitivity preview',
       'Matching stage impact preview',
+      'Live policy simulator',
+      'Live matching policy',
+    ],
+  },
+  {
+    path: '/operations-policy?details=decisions',
+    markers: [
+      'Operations Policy',
+      'Operator decisions',
+      'Recommended next choices',
       'Owner decision backlog',
       'Current decision pressure',
-      'Action gate policy checklist',
-      'Action gate policies are aligned',
-      'Cash fee clearance',
-      'Payout batch cycle',
+      'Change reason',
+    ],
+  },
+  {
+    path: '/operations-policy?details=audit',
+    markers: [
+      'Operations Policy',
       'Policy enforcement evidence',
       'API touchpoint: POST /customer/bookings',
       'Server owner: BookingsService.createBooking',
-      'Live matching policy',
+      'Recent policy audit trail',
       'id="action-gate-policy-checklist"',
-      'id="matching-stage-impact"',
-      'Change reason',
     ],
   },
   {
     path: '/operations-handoff',
     markers: [
-      'Operations Handoff',
-      'Handoff date range',
-      'Immediate action queue',
-      'Finance handoff action map',
-      'Unified activity stream',
-      'Export activity CSV',
-      'Shift brief',
-      'Save handoff note',
-      'Latest operator notes',
-      'Booking handoff queue',
-      'Customer handoff',
-      'Partner handoff',
-      'Finance and chat closeout',
+      'Operations History',
+      'Operations history range',
+      'Review order',
+      'Operations review checklist',
+      'Historical issue signals',
+      'Finance history review',
+      'Period brief',
+      'Operations history notes',
+      'Detailed history lists',
+      'Load full history details',
     ],
   },
   {
     path: '/operations-handoff?range=7d',
-    markers: ['Operations Handoff', 'Handoff date range', 'Last 7 days', 'Unified activity stream'],
+    markers: ['Operations History', 'Operations history range', 'Last 7 days', 'Detailed history lists'],
+  },
+  {
+    path: '/operations-handoff?details=all&range=7d',
+    markers: [
+      'Operations History',
+      'Operations history range',
+      'Unified activity stream',
+      'Booking history queue',
+      'Customer history',
+      'Partner history',
+      'Finance and chat closeout',
+    ],
   },
   {
     path: '/cash-settlements',
@@ -672,7 +711,8 @@ const pages = [
     markers: [
       'Payment Fees',
       'Payment fee period',
-      'Fees by payment method',
+      'Active payment fee policy',
+      'Historical remediation preview',
       'Fees by payer',
       'Fees by treatment',
     ],
@@ -720,7 +760,10 @@ const pages = [
       'Closeout reconciliation board',
     ],
   },
-  { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
+  {
+    path: '/coupons',
+    markers: ['Coupons', 'Create coupons', 'Live checkout coupons', 'Upcoming coupon launches', 'Coupon records'],
+  },
   {
     path: '/earnings',
     markers: [
@@ -761,8 +804,7 @@ const pages = [
       'Payment operation filters',
       'Payment date range',
       'Payment callback attempt ledger',
-      'Payment action execution map',
-      'Open detail',
+      'Payment operations',
     ],
   },
   {
@@ -799,7 +841,7 @@ const pages = [
       'Payment callback attempt ledger',
     ],
   },
-  { path: '/refunds', markers: ['Refunds', 'Refund command board', 'Refund action execution map'] },
+  { path: '/refunds', markers: ['Refunds', 'Refund command board', 'Refund operation filters', 'Refund operations'] },
   {
     path: '/refunds?range=7d',
     markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'],
@@ -836,7 +878,7 @@ const pages = [
   },
   {
     path: '/notifications?review=fcm',
-    markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
+    markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'Delivery operations queue'],
     followUps: [notificationFcmRetryFollowUp('fcm', 'FCM route gate', 'FCM retry confirmation')],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
@@ -871,7 +913,7 @@ const pages = [
       'Partners can see marketplace requests while the wallet is negative.',
       'Payout command queue',
       'Payout inclusion audit',
-      'Payout action execution map',
+      'Payout batch list',
     ],
   },
   {
@@ -902,7 +944,7 @@ const pages = [
     path: '/app-sessions',
     markers: [
       'App Sessions',
-      'Session scope',
+      'App session filters',
       'Session command board',
       'Session check queue',
       'Latest app sessions',
@@ -961,9 +1003,9 @@ const pages = [
   { path: '/partners?review=direct-ready', markers: ['Partners', 'Direct request ready'] },
   {
     path: '/partners?review=marketplace-ready',
-    markers: ['Partners', 'Marketplace ready', 'List-first partner control view'],
+    markers: ['Partners', 'Marketplace ready', 'Partner operations filters'],
   },
-  { path: '/partners?review=marketplace-blocked', markers: ['Partners', 'Marketplace repair'] },
+  { path: '/partners?review=marketplace-blocked', markers: ['Partners', 'Dispatch repair'] },
   { path: '/partners?review=reports', markers: ['Partners', 'Reports/controls'] },
   {
     path: '/partners?bookingFlow=first-pick',
@@ -1005,20 +1047,11 @@ const pages = [
     path: '/services',
     markers: [
       'Service catalog',
-      'Duration pricing matrix',
-      'Customer booking exposure guard',
-      'Service type coverage board',
-      'Missing duration options',
-      'Pricing health',
-      'Booking readiness queue',
-      'Service payout ledger',
-      'Partner payout',
-      'VAT',
-      'Withholding',
-      'Actual company commission',
-      'Create service with duration options',
-      '60, 90, and 120 minute options',
-      'Price step',
+      'Add service',
+      'service type(s)',
+      'active option(s)',
+      'payout rule(s)',
+      'Prices use 100,000 VND steps.',
     ],
   },
   {
@@ -1049,7 +1082,7 @@ const pages = [
     ],
   },
   {
-    path: '/setup#notifications',
+    path: '/setup?commands=all#notifications',
     markers: [
       'External setup',
       'FCM push notifications',
@@ -1393,7 +1426,7 @@ if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
   for (const providerPath of providerDetailPaths) {
     const providerBody = await fetchPage(providerPath);
-    const overviewMarkers = ['Fast operations overview', 'Open full dossier'];
+    const overviewMarkers = ['Fast operations overview', 'Detail workspaces'];
     const missingOverviewMarkers = overviewMarkers.filter((marker) => !providerBody.includes(marker));
     if (missingOverviewMarkers.length > 0) {
       throw new Error(
@@ -1406,35 +1439,13 @@ if (providerLinkMatch) {
     const fullProviderPath = `${providerPath}?section=full`;
     const fullProviderBody = await fetchPage(fullProviderPath);
     const providerMarkers = [
-      'Partner operator command queue',
-      'Partner command summary',
-      'Partner recent operations timeline',
-      'Partner operations digest',
-      'Partner booking journey',
-      'Partner connected operations records',
-      'Partner booking evidence bundles',
-      'Partner operator notes',
-      'Partner master facts',
-      'Partner full record index',
-      'Partner operating ledger',
-      'Partner chat retention ledger',
-      'Customer final selection creates the Partner chat',
-      'Booking and chat records',
+      'Partner detail workspaces',
+      'Choose workspace',
+      'Control',
+      'Bookings',
+      'Access',
+      'Dossier',
       'All Partner chats',
-      'Recent app and operations activity',
-      'Partner daily activity digest',
-      'Marketplace booking gate decision',
-      'Marketplace participation',
-      'Direct first-pick',
-      'Partner app message',
-      'Marketplace visibility',
-      'Partner approval, KYC, document, service profile, public media, finance follow-up, and hold decisions are shown here for handoff and audit.',
-      'id="payout"',
-      'id="kyc"',
-      'id="service-pricing"',
-      'id="bank"',
-      'id="tax"',
-      'id="location"',
     ];
     const missing = providerMarkers.filter((marker) => !fullProviderBody.includes(marker));
     if (missing.length > 0) {
@@ -1443,19 +1454,55 @@ if (providerLinkMatch) {
     assertNoLegacyVisibleLanguage(fullProviderPath, fullProviderBody);
     console.log(`PASS ${fullProviderPath}`);
 
-    const filteredProviderPath = `${providerPath}?section=full&range=30d`;
-    const filteredProviderBody = await fetchPage(filteredProviderPath);
-    const filteredProviderMarkers = ['Record date filter', 'Filtered booking archive', 'Filtered activity'];
-    const missingFilteredProviderMarkers = filteredProviderMarkers.filter(
-      (marker) => !filteredProviderBody.includes(marker),
-    );
-    if (missingFilteredProviderMarkers.length > 0) {
-      throw new Error(
-        `${filteredProviderPath} is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
+    if (providerPath.startsWith('/partners/')) {
+      const workspaceChecks = [
+        {
+          section: 'control',
+          markers: ['Partner control workspace', 'Partner operator command queue', 'Partner operations digest'],
+        },
+        {
+          section: 'bookings',
+          markers: ['Booking and chat evidence', 'Partner booking journey', 'Partner chat retention ledger'],
+        },
+        {
+          section: 'access',
+          markers: ['App activity and readiness', 'Recent app and operations activity', 'Marketplace booking gate decision'],
+        },
+        {
+          section: 'dossier',
+          markers: ['Approval, profile, and finance dossier', 'Partner registration dossier', 'Partner wallet detail'],
+        },
+      ];
+
+      for (const workspace of workspaceChecks) {
+        const workspacePath = `${providerPath}?section=${workspace.section}`;
+        const workspaceBody = await fetchPage(workspacePath);
+        const missingWorkspaceMarkers = workspace.markers.filter(
+          (marker) => !workspaceBody.includes(marker),
+        );
+        if (missingWorkspaceMarkers.length > 0) {
+          throw new Error(
+            `${workspacePath} is missing expected markers: ${missingWorkspaceMarkers.join(', ')}`,
+          );
+        }
+        assertNoLegacyVisibleLanguage(workspacePath, workspaceBody);
+        console.log(`PASS ${workspacePath}`);
+      }
+
+      const filteredProviderPath = `${providerPath}?section=bookings&range=30d`;
+      const filteredProviderBody = await fetchPage(filteredProviderPath);
+      const filteredProviderMarkers = ['Record date filter', 'Filtered booking archive', 'Filtered activity'];
+      const missingFilteredProviderMarkers = filteredProviderMarkers.filter(
+        (marker) => !filteredProviderBody.includes(marker),
       );
+      if (missingFilteredProviderMarkers.length > 0) {
+        throw new Error(
+          `${filteredProviderPath} is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
+        );
+      }
+      assertNoLegacyVisibleLanguage(filteredProviderPath, filteredProviderBody);
+      console.log(`PASS ${filteredProviderPath}`);
     }
-    assertNoLegacyVisibleLanguage(filteredProviderPath, filteredProviderBody);
-    console.log(`PASS ${filteredProviderPath}`);
   }
 }
 

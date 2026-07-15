@@ -94,7 +94,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
-        '/setup#notifications',
+        '/setup?commands=all#notifications',
         '/notifications?review=disabled-device',
         '/notifications?review=stale-device',
         '/notifications?review=pending',
