@@ -897,6 +897,18 @@ const pages = [
     ],
   },
   {
+    path: '/files?review=needs-review',
+    markers: ['Files', 'Needs review', 'Queue: Needs review', 'Review queue'],
+  },
+  {
+    path: '/files?kind=private-verification',
+    markers: ['Files', 'Private files', 'Queue: Private files', 'Review queue'],
+  },
+  {
+    path: '/files?q=smoke',
+    markers: ['Files', 'Search: smoke', 'Review queue'],
+  },
+  {
     path: '/payouts',
     markers: [
       'Partner Payouts',

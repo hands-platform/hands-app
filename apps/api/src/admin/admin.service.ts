@@ -200,6 +200,7 @@ import {
   adminProviderDetailSelect,
   adminProviderDetailWithoutDiagnosticsSelect,
   adminProviderDirectorySelect,
+  adminFileReviewItemSelect,
   adminProviderFileReviewSelect,
   adminProviderFileReviewWhere,
   adminProviderListSelect,
@@ -1945,6 +1946,14 @@ type AdminPartnerControlProviderListOptions = {
 };
 
 type AdminFileReviewProviderListOptions = {
+  skip?: number | string | null;
+  take?: number | string | null;
+};
+
+type AdminFileReviewItemListOptions = {
+  kind?: string | null;
+  q?: string | null;
+  review?: string | null;
   skip?: number | string | null;
   take?: number | string | null;
 };
@@ -6895,6 +6904,59 @@ export class AdminService {
       take: boundedAdminListLimit(options.take, ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT),
       select: adminProviderFileReviewSelect,
     });
+  }
+
+  async listFileReviewItems(options: AdminFileReviewItemListOptions = {}) {
+    const skip = boundedAdminListSkip(options.skip);
+    const take = boundedAdminListLimit(options.take, ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT);
+    const where = adminFileReviewItemWhere(options);
+    const [files, totalCount] = await Promise.all([
+      this.prisma.fileAsset.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        ...(skip > 0 ? { skip } : {}),
+        take,
+        select: adminFileReviewItemSelect,
+      }),
+      this.prisma.fileAsset.count({ where }),
+    ]);
+
+    return {
+      rows: files.flatMap((file) => {
+        const partner =
+          file.providerVerification?.providerProfile ?? file.owner?.providerProfile ?? null;
+        if (!partner) {
+          return [];
+        }
+        const kind = file.providerVerificationId ? 'private-verification' : 'public-media';
+        return [
+          {
+            contentType: file.contentType,
+            createdAt: file.createdAt,
+            id: file.id,
+            key: file.key,
+            kind,
+            partner: {
+              displayName: partner.displayName,
+              id: partner.id,
+              status: partner.status,
+              userId: partner.user.id,
+              userFullName: partner.user.fullName,
+              userPhone: partner.user.phone,
+            },
+            purpose: file.purpose,
+            reviewReason: file.reviewReason,
+            reviewStatus: file.reviewStatus,
+            sizeBytes: file.sizeBytes,
+            uploadedAt: file.uploadedAt,
+            uploadStatus: file.uploadStatus,
+            url: kind === 'public-media' ? file.url : null,
+            visibility: file.visibility,
+          },
+        ];
+      }),
+      totalCount,
+    };
   }
 
   async fileReviewSummary() {
@@ -19013,6 +19075,159 @@ function adminFileReviewFileWhere(): Prisma.FileAssetWhereInput {
   return {
     OR: [adminFileReviewPrivateFileWhere(), adminFileReviewPublicMediaWhere()],
   };
+}
+
+function adminFileReviewItemWhere(
+  options: AdminFileReviewItemListOptions,
+): Prisma.FileAssetWhereInput {
+  const kind = normalizeFileReviewKind(options.kind);
+  const stateWhere = adminFileReviewStateWhere(options.review);
+  const privateWhere = {
+    AND: [adminFileReviewPrivateFileWhere(), stateWhere],
+  } satisfies Prisma.FileAssetWhereInput;
+  const publicWhere = {
+    AND: [
+      adminFileReviewPublicMediaWhere(),
+      stateWhere,
+      { owner: { is: { providerProfile: { isNot: null } } } },
+    ],
+  } satisfies Prisma.FileAssetWhereInput;
+  const scopeWhere =
+    kind === 'private-verification'
+      ? privateWhere
+      : kind === 'public-media'
+        ? publicWhere
+        : ({ OR: [privateWhere, publicWhere] } satisfies Prisma.FileAssetWhereInput);
+  const query = normalizeNullable(options.q);
+  if (!query) {
+    return scopeWhere;
+  }
+
+  return {
+    AND: [
+      scopeWhere,
+      {
+        OR: [
+          ...adminFileReviewFileSearchConditions(query),
+          {
+            owner: {
+              is: {
+                OR: [
+                  { fullName: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                  { phone: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                  {
+                    providerProfile: {
+                      is: { displayName: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          {
+            providerVerification: {
+              is: {
+                providerProfile: {
+                  is: {
+                    OR: [
+                      { displayName: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                      {
+                        user: {
+                          is: {
+                            OR: [
+                              { fullName: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                              { phone: { contains: query, mode: Prisma.QueryMode.insensitive } },
+                            ],
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function adminFileReviewFileSearchConditions(query: string): Prisma.FileAssetWhereInput[] {
+  const conditions: Prisma.FileAssetWhereInput[] = [
+    { key: { contains: query, mode: Prisma.QueryMode.insensitive } },
+    { contentType: { contains: query, mode: Prisma.QueryMode.insensitive } },
+    { reviewReason: { contains: query, mode: Prisma.QueryMode.insensitive } },
+  ];
+  const matchingPurposes = adminFileReviewPurposeSearch(query);
+  if (matchingPurposes.length > 0) {
+    conditions.push({ purpose: { in: matchingPurposes } });
+  }
+  const matchingStatus = adminFileReviewStatusSearch(query);
+  if (matchingStatus) {
+    conditions.push(matchingStatus);
+  }
+  return conditions;
+}
+
+function adminFileReviewStateWhere(reviewValue: string | null | undefined): Prisma.FileAssetWhereInput {
+  const review = normalizeNullable(reviewValue);
+  if (review === 'needs-review') {
+    return { reviewStatus: { in: [FileReviewStatus.PENDING_REVIEW, FileReviewStatus.REJECTED] } };
+  }
+  if (review === 'approved') {
+    return { reviewStatus: FileReviewStatus.APPROVED };
+  }
+  if (review === 'rejected') {
+    return { reviewStatus: FileReviewStatus.REJECTED };
+  }
+  if (review === 'upload-incomplete') {
+    return { uploadStatus: { not: FileUploadStatus.UPLOADED } };
+  }
+  return {};
+}
+
+function normalizeFileReviewKind(value: string | null | undefined) {
+  const kind = normalizeNullable(value);
+  return kind === 'private-verification' || kind === 'public-media' ? kind : null;
+}
+
+function adminFileReviewPurposeSearch(query: string): FilePurpose[] {
+  const normalized = query.toLowerCase();
+  const purposes: FilePurpose[] = [];
+  if (normalized.includes('verification')) {
+    purposes.push(FilePurpose.PROVIDER_VERIFICATION);
+  }
+  if (normalized.includes('gallery')) {
+    purposes.push(FilePurpose.PROVIDER_GALLERY);
+  }
+  if (normalized.includes('profile')) {
+    purposes.push(FilePurpose.PROFILE_IMAGE);
+  }
+  return purposes;
+}
+
+function adminFileReviewStatusSearch(query: string): Prisma.FileAssetWhereInput | null {
+  const normalized = query.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  if (normalized === 'approved') {
+    return { reviewStatus: FileReviewStatus.APPROVED };
+  }
+  if (normalized === 'rejected') {
+    return { reviewStatus: FileReviewStatus.REJECTED };
+  }
+  if (normalized === 'pendingreview') {
+    return { reviewStatus: FileReviewStatus.PENDING_REVIEW };
+  }
+  if (normalized === 'uploaded') {
+    return { uploadStatus: FileUploadStatus.UPLOADED };
+  }
+  if (normalized === 'uploadfailed' || normalized === 'failed') {
+    return { uploadStatus: FileUploadStatus.FAILED };
+  }
+  if (normalized === 'uploadpending') {
+    return { uploadStatus: FileUploadStatus.PENDING };
+  }
+  return null;
 }
 
 function normalizeMarketingSpendAmount(value: unknown) {

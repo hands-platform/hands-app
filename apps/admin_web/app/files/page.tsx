@@ -23,7 +23,7 @@ import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadge } from '../../components/status-badge';
-import type { AdminProvider } from '../../lib/admin-api';
+import type { AdminFileReviewList } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { formatBytes, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
@@ -38,7 +38,8 @@ import {
 } from '../partners/partner-review-action-confirmation';
 import { approvePublicMediaDescription, rejectPublicMediaDescription } from '../partners/partner-action-copy';
 import {
-  buildFileReviewRows,
+  buildFileReviewConfirmationProviders,
+  buildFileReviewItemRows,
   buildFileReviewSummary,
   filterFileReviewRows,
   type FileReviewFilters,
@@ -65,22 +66,27 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
   const params = (await searchParams) ?? {};
   const filters = buildFileFilters(params);
   const activePage = readFileReviewPage(params.page);
-  const [providers, serverSummary] = await Promise.all([
-    adminGet<AdminProvider[]>(buildFileReviewProviderApiHref(activePage), []),
+  const [reviewPage, serverSummary] = await Promise.all([
+    adminGet<AdminFileReviewList>(buildFileReviewItemApiHref(activePage, filters), {
+      rows: [],
+      totalCount: 0,
+    }),
     adminGet<FileReviewServerSummary | null>('/admin/files/review-summary', null),
   ]);
-  const allRows = buildFileReviewRows(providers);
+  const allRows = buildFileReviewItemRows(reviewPage.rows);
   const rows = filterFileReviewRows(allRows, filters);
-  const summary = serverSummary ?? { ...buildFileReviewSummary(allRows), totalProviders: providers.length };
-  const totalPages = Math.max(1, Math.ceil(summary.totalProviders / FILE_REVIEW_PROVIDER_PAGE_SIZE));
+  const summary = serverSummary ?? { ...buildFileReviewSummary(allRows), totalProviders: 0 };
+  const totalPages = Math.max(1, Math.ceil(reviewPage.totalCount / FILE_REVIEW_PROVIDER_PAGE_SIZE));
   const visibleFrom =
-    summary.totalProviders === 0 || rows.length === 0 ? 0 : (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + 1;
-  const visibleTo =
-    summary.totalProviders === 0 || rows.length === 0
+    reviewPage.totalCount === 0 || rows.length === 0
       ? 0
-      : Math.min(summary.totalProviders, (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + rows.length);
+      : (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + 1;
+  const visibleTo =
+    reviewPage.totalCount === 0 || rows.length === 0
+      ? 0
+      : Math.min(reviewPage.totalCount, (activePage - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE + rows.length);
   const confirmation = buildPartnerReviewActionConfirmation(
-    providers,
+    buildFileReviewConfirmationProviders(reviewPage.rows),
     readPartnerReviewConfirmationAction(readSearchParam(params.reviewAction)),
     {
       bankAccountId: '',
@@ -158,7 +164,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
 
       <AdminFilterPanel
         className="files-review-filter-panel admin-mb-16"
-        resultLabel={`${rows.length} visible / ${summary.total} file(s)`}
+        resultLabel={`${rows.length} visible / ${reviewPage.totalCount} file(s)`}
         resultTone="info"
         title="File review filters"
       >
@@ -214,13 +220,13 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
         </AdminTableScroll>
         <AdminTablePaginationFooter
           activePage={activePage}
-          ariaLabel="File review provider pages"
+          ariaLabel="File review pages"
           from={visibleFrom}
           hrefForPage={(page) => buildFileReviewPageHref(params, page)}
           paginationClassName="admin-mt-16"
           to={visibleTo}
           totalPages={totalPages}
-          totalRows={summary.totalProviders}
+          totalRows={reviewPage.totalCount}
         />
       </AdminTableSection>
     </AdminPageTemplate>
@@ -323,13 +329,26 @@ function buildFileFilters(params: Record<string, string | string[] | undefined>)
   };
 }
 
-function buildFileReviewProviderApiHref(page: number) {
+function buildFileReviewItemApiHref(page: number, filters: FileReviewFilters) {
   const skip = (Math.max(1, page) - 1) * FILE_REVIEW_PROVIDER_PAGE_SIZE;
   const query = new URLSearchParams({ take: String(FILE_REVIEW_PROVIDER_PAGE_SIZE) });
   if (skip > 0) {
     query.set('skip', String(skip));
   }
-  return `/admin/files/review-providers?${query.toString()}`;
+  appendFileReviewFilters(query, filters);
+  return `/admin/files/review-items?${query.toString()}`;
+}
+
+function appendFileReviewFilters(query: URLSearchParams, filters: FileReviewFilters) {
+  if (filters.q) {
+    query.set('q', filters.q);
+  }
+  if (filters.kind) {
+    query.set('kind', filters.kind);
+  }
+  if (filters.review) {
+    query.set('review', filters.review);
+  }
 }
 
 function buildFileReviewPageHref(

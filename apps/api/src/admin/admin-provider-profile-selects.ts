@@ -84,25 +84,6 @@ export const adminProviderFileReviewWhere = {
   ],
 } satisfies Prisma.ProviderProfileWhereInput;
 
-export const adminProviderFileReviewPushDeviceSelect = {
-  id: true,
-  role: true,
-  platform: true,
-  enabled: true,
-  lastSeenAt: true,
-  createdAt: true,
-  deliveries: {
-    orderBy: { attemptedAt: 'desc' },
-    take: 1,
-    select: {
-      id: true,
-      status: true,
-      attemptedAt: true,
-      provider: true,
-    },
-  },
-} satisfies Prisma.PushDeviceSelect;
-
 export const adminProviderFileReviewSelect = {
   id: true,
   displayName: true,
@@ -112,11 +93,6 @@ export const adminProviderFileReviewSelect = {
       id: true,
       phone: true,
       fullName: true,
-      pushDevices: {
-        orderBy: adminProviderPushDeviceReachabilityOrder,
-        take: 2,
-        select: adminProviderFileReviewPushDeviceSelect,
-      },
       fileAssets: {
         where: {
           purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
@@ -140,26 +116,46 @@ export const adminProviderFileReviewSelect = {
       },
     },
   },
-  sessions: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 2,
+} satisfies Prisma.ProviderProfileSelect;
+
+const adminFileReviewPartnerSelect = {
+  id: true,
+  displayName: true,
+  status: true,
+  user: {
     select: {
       id: true,
-      lastSeenAt: true,
-      suspicious: true,
-    },
-  },
-  devices: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 2,
-    select: {
-      id: true,
-      deviceId: true,
-      enabled: true,
-      lastSeenAt: true,
+      fullName: true,
+      phone: true,
     },
   },
 } satisfies Prisma.ProviderProfileSelect;
+
+export const adminFileReviewItemSelect = {
+  id: true,
+  key: true,
+  url: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  providerVerificationId: true,
+  createdAt: true,
+  owner: {
+    select: {
+      providerProfile: { select: adminFileReviewPartnerSelect },
+    },
+  },
+  providerVerification: {
+    select: {
+      providerProfile: { select: adminFileReviewPartnerSelect },
+    },
+  },
+} satisfies Prisma.FileAssetSelect;
 
 export const adminProviderOperationsPolicyPushDeviceSelect = {
   id: true,

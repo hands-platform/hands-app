@@ -6702,6 +6702,9 @@ describe('AdminService query orchestration', () => {
     expect(select.reports).toBeUndefined();
     expect(select.sanctions).toBeUndefined();
     expect(select.auditLogs).toBeUndefined();
+    expect(select.sessions).toBeUndefined();
+    expect(select.devices).toBeUndefined();
+    expect(select.user.select.pushDevices).toBeUndefined();
     expect(select.user.select.fileAssets.take).toBe(20);
     expect(select.verification.select.files.take).toBe(20);
   });
@@ -6722,6 +6725,122 @@ describe('AdminService query orchestration', () => {
         take: 25,
       }),
     );
+  });
+
+  it('paginates file review rows directly and returns only compact Partner identity', async () => {
+    const prisma = {
+      fileAsset: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            contentType: 'image/jpeg',
+            createdAt: new Date('2026-07-01T00:00:00.000Z'),
+            id: 'file-public-1',
+            key: 'partners/linh/gallery.jpg',
+            owner: {
+              providerProfile: {
+                displayName: 'Linh Partner',
+                id: 'partner-1',
+                status: 'ONLINE_AVAILABLE',
+                user: {
+                  fullName: 'Linh',
+                  id: 'user-1',
+                  phone: '+84900000000',
+                },
+              },
+            },
+            providerVerification: null,
+            providerVerificationId: null,
+            purpose: 'PROVIDER_GALLERY',
+            reviewReason: null,
+            reviewStatus: 'PENDING_REVIEW',
+            sizeBytes: 1024,
+            uploadedAt: new Date('2026-07-01T00:00:00.000Z'),
+            uploadStatus: 'UPLOADED',
+            url: 'https://cdn.example.test/gallery.jpg',
+            visibility: 'PUBLIC',
+          },
+        ]),
+        count: vi.fn().mockResolvedValue(11),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listFileReviewItems({
+        kind: 'public-media',
+        q: 'gallery',
+        review: 'needs-review',
+        skip: '10',
+        take: '10',
+      }),
+    ).resolves.toEqual({
+      rows: [
+        expect.objectContaining({
+          id: 'file-public-1',
+          kind: 'public-media',
+          partner: {
+            displayName: 'Linh Partner',
+            id: 'partner-1',
+            status: 'ONLINE_AVAILABLE',
+            userFullName: 'Linh',
+            userId: 'user-1',
+            userPhone: '+84900000000',
+          },
+          url: 'https://cdn.example.test/gallery.jpg',
+        }),
+      ],
+      totalCount: 11,
+    });
+
+    const query = prisma.fileAsset.findMany.mock.calls[0][0];
+    expect(query).toEqual(expect.objectContaining({ skip: 10, take: 10 }));
+    expect(JSON.stringify(query.where)).toContain('gallery');
+    expect(JSON.stringify(query.where)).toContain('PENDING_REVIEW');
+    expect(query.select.owner.select.providerProfile.select.user.select).toEqual({
+      fullName: true,
+      id: true,
+      phone: true,
+    });
+    expect(query.select.owner.select.providerProfile.select.user.select.pushDevices).toBeUndefined();
+  });
+
+  it('never returns a stored private file URL from the compact review list', async () => {
+    const prisma = {
+      fileAsset: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            contentType: 'image/jpeg',
+            createdAt: new Date('2026-07-01T00:00:00.000Z'),
+            id: 'file-private-1',
+            key: 'private/partner-1/identity.jpg',
+            owner: null,
+            providerVerification: {
+              providerProfile: {
+                displayName: 'Private Partner',
+                id: 'partner-1',
+                status: 'OFFLINE',
+                user: { fullName: null, id: 'user-1', phone: '+84900000000' },
+              },
+            },
+            providerVerificationId: 'verification-1',
+            purpose: 'PROVIDER_VERIFICATION',
+            reviewReason: null,
+            reviewStatus: 'PENDING_REVIEW',
+            sizeBytes: 2048,
+            uploadedAt: new Date('2026-07-01T00:00:00.000Z'),
+            uploadStatus: 'UPLOADED',
+            url: 'https://private.example.test/identity.jpg',
+            visibility: 'PRIVATE',
+          },
+        ]),
+        count: vi.fn().mockResolvedValue(1),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.listFileReviewItems({ kind: 'private-verification', take: '10' });
+
+    expect(result.rows[0]).toEqual(expect.objectContaining({ kind: 'private-verification', url: null }));
   });
 
   it('counts file review summary without hydrating partner rows', async () => {

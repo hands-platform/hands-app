@@ -697,6 +697,17 @@ export class AdminController {
     return this.admin.listFileReviewProviders({ skip, take });
   }
 
+  @Get('files/review-items')
+  fileReviewItems(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('kind') kind?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listFileReviewItems({ kind, q, review, skip, take });
+  }
+
   @Get('files/review-summary')
   fileReviewSummary() {
     return this.admin.fileReviewSummary();

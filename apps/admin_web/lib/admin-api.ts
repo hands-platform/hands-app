@@ -989,6 +989,35 @@ export type AdminProviderSummary = {
   totalCount: number;
 };
 
+export type AdminFileReviewItem = {
+  contentType: string;
+  createdAt: string;
+  id: string;
+  key: string;
+  kind: 'private-verification' | 'public-media';
+  partner: {
+    displayName: string;
+    id: string;
+    status: string;
+    userFullName?: string | null;
+    userId?: string;
+    userPhone?: string | null;
+  };
+  purpose: string;
+  reviewReason?: string | null;
+  reviewStatus: string;
+  sizeBytes?: number | null;
+  uploadedAt?: string | null;
+  uploadStatus: string;
+  url?: string | null;
+  visibility: string;
+};
+
+export type AdminFileReviewList = {
+  rows: AdminFileReviewItem[];
+  totalCount: number;
+};
+
 export type AdminProvider = {
   id: string;
   userId?: string;

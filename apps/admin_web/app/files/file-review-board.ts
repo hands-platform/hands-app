@@ -1,4 +1,4 @@
-import type { AdminProvider } from '../../lib/admin-api';
+import type { AdminFileReviewItem, AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { partnerDisplayText } from '../../lib/admin-copy';
 
@@ -52,6 +52,50 @@ export function buildFileReviewRows(providers: readonly AdminProvider[]): FileRe
     ...buildPrivateFileRows(provider),
     ...buildPublicMediaRows(provider),
   ]).sort(compareFileReviewRows);
+}
+
+export function buildFileReviewItemRows(items: readonly AdminFileReviewItem[]): FileReviewRow[] {
+  return items.map((item) => fileReviewItemRow(item)).sort(compareFileReviewRows);
+}
+
+export function buildFileReviewConfirmationProviders(
+  items: readonly AdminFileReviewItem[],
+): AdminProvider[] {
+  const publicItemsByPartner = new Map<string, AdminFileReviewItem[]>();
+  for (const item of items) {
+    if (item.kind !== 'public-media') continue;
+    const partnerItems = publicItemsByPartner.get(item.partner.id) ?? [];
+    partnerItems.push(item);
+    publicItemsByPartner.set(item.partner.id, partnerItems);
+  }
+
+  return [...publicItemsByPartner.values()].map((partnerItems) => {
+    const first = partnerItems[0]!;
+    return {
+      displayName: first.partner.displayName,
+      id: first.partner.id,
+      status: first.partner.status,
+      user: {
+        id: first.partner.userId,
+        fullName: first.partner.userFullName,
+        ...(first.partner.userPhone ? { phone: first.partner.userPhone } : {}),
+        fileAssets: partnerItems.map((item) => ({
+          contentType: item.contentType,
+          createdAt: item.createdAt,
+          id: item.id,
+          key: item.key,
+          purpose: item.purpose,
+          reviewReason: item.reviewReason,
+          reviewStatus: item.reviewStatus,
+          sizeBytes: item.sizeBytes,
+          uploadedAt: item.uploadedAt,
+          uploadStatus: item.uploadStatus,
+          url: item.url,
+          visibility: item.visibility,
+        })),
+      },
+    };
+  });
 }
 
 export function filterFileReviewRows(
@@ -157,6 +201,42 @@ function publicMediaRow(provider: AdminProvider, file: PartnerPublicMedia): File
     uploadedAt: file.uploadedAt ?? file.createdAt ?? null,
     uploadStatus,
     visibility: file.visibility,
+  };
+}
+
+function fileReviewItemRow(item: AdminFileReviewItem): FileReviewRow {
+  return {
+    contentType: item.contentType,
+    fileHref:
+      item.kind === 'private-verification'
+        ? `/files/${encodeURIComponent(item.id)}/open`
+        : item.url ?? null,
+    id: item.id,
+    key: item.key,
+    kind: item.kind,
+    kindLabel: item.kind === 'private-verification' ? 'Private verification' : 'Public media',
+    needsReview: item.reviewStatus !== 'APPROVED',
+    partnerHref: `/partners/${item.partner.id}${
+      item.kind === 'private-verification' ? '#documents' : '#media'
+    }`,
+    partnerId: item.partner.id,
+    partnerName: partnerDisplayText(
+      item.partner.displayName || item.partner.userFullName || item.partner.userPhone || item.partner.id,
+    ),
+    partnerAvatarStatus: adminAvatarStatusFromSignals({
+      fallbackOnline:
+        item.partner.status === 'ONLINE_AVAILABLE' || item.partner.status === 'ONLINE_AVAILABLE_SOON',
+      working: item.partner.status === 'ONLINE_BUSY',
+    }),
+    purposeLabel: fileReviewPurposeLabel(item.purpose),
+    reviewReason: item.reviewReason ?? null,
+    reviewStatus: item.reviewStatus,
+    sizeBytes: item.sizeBytes ?? null,
+    statusLabel: item.reviewStatus,
+    statusTone: reviewTone(item.reviewStatus, item.uploadStatus),
+    uploadedAt: item.uploadedAt ?? item.createdAt,
+    uploadStatus: item.uploadStatus,
+    visibility: item.visibility,
   };
 }
 

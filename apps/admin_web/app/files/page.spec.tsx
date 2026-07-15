@@ -31,7 +31,7 @@ describe('FilesPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
     const markup = renderToStaticMarkup(page);
 
-    expect(hrefs).toContain('/admin/files/review-providers?take=10&skip=20');
+    expect(hrefs).toContain('/admin/files/review-items?take=10&skip=20');
     expect(hrefs).toContain('/admin/files/review-summary');
     expect(markup).toContain('Review queue');
     expect(markup).toContain('<span class="metric-card-scope is-record">All records</span>');
@@ -46,7 +46,7 @@ describe('FilesPage', () => {
     expect(pageSource).toContain('AdminTableSection');
     expect(pageSource).not.toContain('className="vuexy-booking-table-card vuexy-booking-table-group"');
     expect(pageSource).toContain('AdminTablePaginationFooter');
-    expect(pageSource).toContain('ariaLabel="File review provider pages"');
+    expect(pageSource).toContain('ariaLabel="File review pages"');
     expect(pageSource).not.toContain('import { AdminRoundedPagination }');
     expect(pageSource).not.toContain('<AdminRoundedPagination');
   });
@@ -68,7 +68,12 @@ describe('FilesPage', () => {
       searchParams: Promise.resolve({ purpose: 'public-media', q: 'smoke' }),
     });
     const markup = renderToStaticMarkup(page);
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
+    expect(hrefs).toContain(
+      '/admin/files/review-items?take=10&q=smoke&kind=public-media',
+    );
+    expect(hrefs).toContain('/admin/files/review-summary');
     expect(markup).toContain('value="smoke"');
     expect(markup).toContain('Active file review filters');
     expect(markup).toContain('Queue: Public media');
@@ -82,6 +87,18 @@ describe('FilesPage', () => {
     expect(markup).toContain('booking-date-filter-bar files-filter-group');
     expect(markup).toContain('booking-date-filter-buttons files-filter-buttons');
     expect(markup).toContain('booking-date-filter-button is-active');
+  });
+
+  it('sends review queues to both the paged list and filtered summary count', async () => {
+    await FilesPage({
+      searchParams: Promise.resolve({ review: 'upload-incomplete' }),
+    });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+    expect(hrefs).toContain(
+      '/admin/files/review-items?take=10&review=upload-incomplete',
+    );
+    expect(hrefs).toContain('/admin/files/review-summary');
   });
 
   it('uses the shared DateTimeText atom for uploaded file timestamps', () => {

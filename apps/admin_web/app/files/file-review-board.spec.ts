@@ -1,5 +1,7 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import {
+  buildFileReviewConfirmationProviders,
+  buildFileReviewItemRows,
   buildFileReviewRows,
   buildFileReviewSummary,
   fileReviewPurposeLabel,
@@ -123,6 +125,61 @@ describe('file review board', () => {
     expect(fileReviewPurposeLabel('PROFILE_PHOTO')).toBe('Profile Photo');
     expect(fileReviewPurposeLabel('PROVIDER_VERIFICATION')).toBe('Partner Verification');
     expect(fileReviewPurposeLabel(null)).toBe('Unlabeled file');
+  });
+
+  it('maps compact API items without exposing private URLs and preserves public action evidence', () => {
+    const items = [
+      {
+        contentType: 'image/jpeg',
+        createdAt: '2026-07-01T00:00:00.000Z',
+        id: 'private-file',
+        key: 'private/identity.jpg',
+        kind: 'private-verification' as const,
+        partner: {
+          displayName: 'Linh Partner',
+          id: 'partner-1',
+          status: 'OFFLINE',
+          userId: 'user-1',
+        },
+        purpose: 'PROVIDER_VERIFICATION',
+        reviewStatus: 'PENDING_REVIEW',
+        uploadStatus: 'UPLOADED',
+        url: null,
+        visibility: 'PRIVATE',
+      },
+      {
+        contentType: 'image/jpeg',
+        createdAt: '2026-07-02T00:00:00.000Z',
+        id: 'public-file',
+        key: 'partners/linh/gallery.jpg',
+        kind: 'public-media' as const,
+        partner: {
+          displayName: 'Linh Partner',
+          id: 'partner-1',
+          status: 'ONLINE_AVAILABLE',
+          userId: 'user-1',
+        },
+        purpose: 'PROVIDER_GALLERY',
+        reviewStatus: 'PENDING_REVIEW',
+        uploadStatus: 'UPLOADED',
+        url: 'https://cdn.example.test/gallery.jpg',
+        visibility: 'PUBLIC',
+      },
+    ];
+
+    const rows = buildFileReviewItemRows(items);
+    expect(rows.map((row) => [row.id, row.fileHref, row.partnerAvatarStatus])).toEqual([
+      ['public-file', 'https://cdn.example.test/gallery.jpg', 'online'],
+      ['private-file', '/files/private-file/open', 'offline'],
+    ]);
+    expect(buildFileReviewConfirmationProviders(items)).toEqual([
+      expect.objectContaining({
+        id: 'partner-1',
+        user: expect.objectContaining({
+          fileAssets: [expect.objectContaining({ id: 'public-file' })],
+        }),
+      }),
+    ]);
   });
 });
 

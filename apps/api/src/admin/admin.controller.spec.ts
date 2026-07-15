@@ -9,6 +9,7 @@ import type { AdminService } from './admin.service';
 describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: vi.fn(),
+    listFileReviewItems: vi.fn(),
     listFileReviewProviders: vi.fn(),
     fileReviewSummary: vi.fn(),
     getMarketingOverview: vi.fn(),
@@ -2372,6 +2373,26 @@ describe('AdminController notification and push actions', () => {
       path: 'files/review-providers',
     });
     expect(admin.listFileReviewProviders).toHaveBeenCalledWith({ skip: '50', take: '25' });
+  });
+
+  it('exposes file review items as a file-paged GET list', async () => {
+    admin.listFileReviewItems.mockResolvedValue({ rows: [{ id: 'file-1' }], totalCount: 1 });
+
+    await expect(
+      controller.fileReviewItems('10', '20', 'gallery', 'public-media', 'needs-review'),
+    ).resolves.toEqual({ rows: [{ id: 'file-1' }], totalCount: 1 });
+
+    expect(routeMetadata('fileReviewItems')).toEqual({
+      method: RequestMethod.GET,
+      path: 'files/review-items',
+    });
+    expect(admin.listFileReviewItems).toHaveBeenCalledWith({
+      kind: 'public-media',
+      q: 'gallery',
+      review: 'needs-review',
+      skip: '20',
+      take: '10',
+    });
   });
 
   it('exposes file review summary as a separate aggregate endpoint', async () => {
