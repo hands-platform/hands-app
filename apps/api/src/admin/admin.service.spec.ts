@@ -1,5 +1,6 @@
 import {
   AccountingJournalBatchStatus,
+  AccountingJournalEntrySide,
   AccountingJournalSourceType,
   AdminOperatorPermissionCategory,
   BookingSettlementStatus,
@@ -7,17 +8,21 @@ import {
   BankReconciliationStatus,
   BookingMatchSource,
   BookingPaymentClearingStatus,
+  BookingPaymentClearingEntryType,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   BookingStatus,
   CompanyBankAccountStatus,
   EarningStatus,
   MonthlyTaxClosingStatus,
+  ManualWalletAdjustmentRequestStatus,
+  PartnerBankDepositRequestStatus,
   ParticipantStatus,
   PayoutBatchStatus,
   PaymentStatus,
   CompanyBankTransactionType,
   PaymentFeePayer,
+  PaymentFeeRuleType,
   PaymentFeeTreatment,
   PaymentMethod,
   ProviderBankAccountStatus,
@@ -27,7 +32,9 @@ import {
   ProviderSanctionStatus,
   ProviderStatus,
   ProviderTaxProfileStatus,
+  ProviderWalletWithdrawalRequestStatus,
   ProviderWalletLedgerType,
+  Prisma,
   CustomerWalletLedgerType,
   ReferralAttributionStatus,
   ReferralAudience,
@@ -143,7 +150,9 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerBookingRequestEvent: {
@@ -249,10 +258,12 @@ describe('AdminService partner overview request events', () => {
       },
       providerProfile: {
         count: vi.fn().mockResolvedValue(2),
-        findMany: vi.fn().mockResolvedValue([
-          providerRow('critical-wallet', 'Critical Wallet Partner'),
-          providerRow('high-inactive', 'High Inactive Partner'),
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            providerRow('critical-wallet', 'Critical Wallet Partner'),
+            providerRow('high-inactive', 'High Inactive Partner'),
+          ]),
       },
       review: {
         aggregate: vi.fn().mockResolvedValue({ _avg: { rating: null }, _count: { rating: 0 } }),
@@ -281,7 +292,9 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerBookingRequestEvent: {
@@ -371,7 +384,9 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerBookingRequestEvent: {
@@ -602,7 +617,9 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerBookingRequestEvent: {
@@ -628,7 +645,9 @@ describe('AdminService partner overview request events', () => {
         selectionSort: 'response',
       }),
     );
-    expect(overview.selectionFriction.rows.map((row) => row.partnerId)).toEqual(['provider-viewed-not-booked']);
+    expect(overview.selectionFriction.rows.map((row) => row.partnerId)).toEqual([
+      'provider-viewed-not-booked',
+    ]);
     expect(overview).toEqual(
       expect.objectContaining({
         selectionFriction: expect.objectContaining({
@@ -734,7 +753,9 @@ describe('AdminService partner overview request events', () => {
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerEarning: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { grossAmount: null, netAmount: null, platformFee: null } }),
         groupBy: vi.fn().mockResolvedValue([]),
       },
       providerBookingRequestEvent: {
@@ -742,11 +763,13 @@ describe('AdminService partner overview request events', () => {
           .fn()
           .mockResolvedValueOnce([{ providerProfileId: 'provider-list-viewer' }])
           .mockResolvedValueOnce([{ providerProfileId: 'provider-detail-viewer' }]),
-        findMany: vi.fn().mockResolvedValue([
-          { metadata: { durationSeconds: 40 } },
-          { metadata: { durationSeconds: 80 } },
-          { metadata: { durationSeconds: 'invalid' } },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { metadata: { durationSeconds: 40 } },
+            { metadata: { durationSeconds: 80 } },
+            { metadata: { durationSeconds: 'invalid' } },
+          ]),
       },
       notification: {
         groupBy: vi.fn().mockResolvedValue([]),
@@ -945,10 +968,7 @@ describe('AdminService query orchestration', () => {
           phone: '+84900000001',
           roles: [Role.ADMIN],
           adminOperatorPermission: {
-            categories: [
-              AdminOperatorPermissionCategory.BOOKINGS,
-              AdminOperatorPermissionCategory.CUSTOMERS,
-            ],
+            categories: [AdminOperatorPermissionCategory.BOOKINGS, AdminOperatorPermissionCategory.CUSTOMERS],
             updatedAt: new Date('2026-07-01T01:00:00.000Z'),
           },
         }),
@@ -957,10 +977,7 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(service.getAdminOperatorAccess('admin-token-user', 'operator@hands.vn')).resolves.toEqual({
-      categories: [
-        AdminOperatorPermissionCategory.BOOKINGS,
-        AdminOperatorPermissionCategory.CUSTOMERS,
-      ],
+      categories: [AdminOperatorPermissionCategory.BOOKINGS, AdminOperatorPermissionCategory.CUSTOMERS],
       email: 'operator@hands.vn',
       fullName: 'Operator One',
       id: 'operator-1',
@@ -971,6 +988,7 @@ describe('AdminService query orchestration', () => {
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: {
+        id: 'admin-token-user',
         roles: { has: Role.ADMIN },
         OR: [{ id: 'operator@hands.vn' }, { email: 'operator@hands.vn' }, { phone: 'operator@hands.vn' }],
       },
@@ -993,7 +1011,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.getAdminOperatorAccess('admin-token-user', 'master@hands.vn')).resolves.toMatchObject({
+    await expect(
+      service.getAdminOperatorAccess('admin-token-user', 'master@hands.vn'),
+    ).resolves.toMatchObject({
       categories: expect.arrayContaining([
         AdminOperatorPermissionCategory.BOOKINGS,
         AdminOperatorPermissionCategory.BOOKINGS_REALTIME,
@@ -1794,7 +1814,24 @@ describe('AdminService query orchestration', () => {
         count: vi.fn().mockResolvedValue(12),
       },
       booking: {
-        count: vi.fn().mockResolvedValue(5),
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6),
+        groupBy: vi
+          .fn()
+          .mockResolvedValueOnce([
+            { status: BookingStatus.OPEN_MATCHING, _count: { _all: 2 } },
+            { status: BookingStatus.IN_SERVICE, _count: { _all: 3 } },
+          ])
+          .mockResolvedValueOnce([
+            { status: BookingStatus.COMPLETED, _count: { _all: 7 } },
+            { status: BookingStatus.CANCELLED, _count: { _all: 1 } },
+          ]),
       },
       providerEarning: {
         groupBy: vi.fn().mockResolvedValue([{ providerProfileId: 'provider-1' }]),
@@ -1822,7 +1859,7 @@ describe('AdminService query orchestration', () => {
       user: {
         count: vi.fn().mockResolvedValueOnce(9).mockResolvedValueOnce(2),
       },
-      $queryRaw: vi.fn().mockResolvedValue([
+      $queryRaw: vi.fn().mockResolvedValueOnce([
         {
           activeBookingCustomers: 2n,
           liveActiveBookingCustomers: 2n,
@@ -1832,7 +1869,7 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.dashboardSummary()).resolves.toMatchObject({
+    await expect(service.dashboardSummary('today')).resolves.toMatchObject({
       appPresence: {
         activeBookingCustomers: 2,
         disabledPushCustomers: 2,
@@ -1844,6 +1881,28 @@ describe('AdminService query orchestration', () => {
         recentCustomerSessions: 3,
         staleCustomerSessions: 4,
         totalCustomers: 12,
+      },
+      bookingActivity: {
+        live: {
+          active: 5,
+          customerChoice: 4,
+          inService: 3,
+          openMatching: 2,
+        },
+        period: {
+          cancelled: 1,
+          completed: 7,
+          total: 8,
+        },
+      },
+      actionQueue: {
+        completedPaymentHolds: 1,
+        completedWithoutSettlement: 11,
+        completedWithoutSettlementBacklog: 6,
+        completedWithoutSettlementRecent: 5,
+        customerChoice: 4,
+        matchingExpired: 2,
+        matchingWithoutParticipants: 3,
       },
       partnerSupply: {
         approvedVerification: 4,
@@ -1879,9 +1938,63 @@ describe('AdminService query orchestration', () => {
       by: ['providerProfileId'],
       where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
     });
-    expect(prisma.booking.count).toHaveBeenCalledWith({
+    expect(prisma.booking.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ['status'],
+      _count: { _all: true },
       where: { status: { in: expect.any(Array) } },
     });
+    expect(prisma.booking.groupBy).toHaveBeenNthCalledWith(2, {
+      by: ['status'],
+      _count: { _all: true },
+      where: expect.any(Object),
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        participants: {
+          some: {
+            status: { in: [ParticipantStatus.ACCEPTED, ParticipantStatus.SELECTED] },
+          },
+        },
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.OPEN_MATCHING,
+        expiresAt: { lte: expect.any(Date) },
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.OPEN_MATCHING,
+        participants: { none: {} },
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.COMPLETED,
+        payment: { is: { status: PaymentStatus.AUTHORIZED } },
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.COMPLETED,
+        settlementSnapshot: { is: null },
+        OR: [
+          { closedAt: { gte: expect.any(Date) } },
+          { closedAt: null, updatedAt: { gte: expect.any(Date) } },
+        ],
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledWith({
+      where: {
+        status: BookingStatus.COMPLETED,
+        settlementSnapshot: { is: null },
+        OR: [{ closedAt: { lt: expect.any(Date) } }, { closedAt: null, updatedAt: { lt: expect.any(Date) } }],
+      },
+    });
+    expect(prisma.booking.count).toHaveBeenCalledTimes(6);
     expect(prisma.appSession.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         by: ['userId'],
@@ -2023,7 +2136,12 @@ describe('AdminService query orchestration', () => {
         by: ['customerProfileId'],
         where: expect.objectContaining({
           status: {
-            in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED, BookingStatus.REFUNDED],
+            in: [
+              BookingStatus.CANCELLED,
+              BookingStatus.NO_SHOW,
+              BookingStatus.EXPIRED,
+              BookingStatus.REFUNDED,
+            ],
           },
         }),
         _count: { _all: true },
@@ -2110,7 +2228,9 @@ describe('AdminService query orchestration', () => {
     expect((prisma.$queryRaw.mock.calls[2]?.[0] as { sql?: string })?.sql).toContain('::"BookingStatus"');
     expect((prisma.$queryRaw.mock.calls[3]?.[0] as { sql?: string })?.sql).toContain('HAVING COUNT(*) = 1');
     expect((prisma.$queryRaw.mock.calls[4]?.[0] as { sql?: string })?.sql).toContain('HAVING COUNT(*) >= 3');
-    expect((prisma.$queryRaw.mock.calls[5]?.[0] as { sql?: string })?.sql).toContain('COUNT(DISTINCT "customerProfileId")');
+    expect((prisma.$queryRaw.mock.calls[5]?.[0] as { sql?: string })?.sql).toContain(
+      'COUNT(DISTINCT "customerProfileId")',
+    );
   });
 
   it('filters chat archive rows server-side and clamps requested limits', async () => {
@@ -3119,7 +3239,8 @@ describe('AdminService query orchestration', () => {
 
   it('includes manual marketing spend in overview cost metrics', async () => {
     const prisma = {
-      $queryRaw: vi.fn().mockResolvedValue([
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([
         {
           firstBookingCompleted: 1n,
           repeatBookingCompleted: 1n,
@@ -3961,6 +4082,10 @@ describe('AdminService query orchestration', () => {
           payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
         }),
         update: vi.fn().mockResolvedValue({ id: 'booking-1' }),
+      },
+      payment: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'payment-1', status: PaymentStatus.CAPTURED }),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     };
     const earnings = {
@@ -7303,6 +7428,78 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('hydrates bounded partner detail payout batches with maker and approver identities', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({
+          devices: [],
+          id: 'provider-1',
+          payoutBatches: [
+            {
+              id: 'payout-1',
+              status: PayoutBatchStatus.PAID,
+              totalNetAmount: 500000,
+            },
+          ],
+          sessions: [],
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockImplementation((args: { where?: { action?: unknown } }) => {
+          if (args.where?.action) {
+            return Promise.resolve([
+              {
+                action: 'payout_batch.update',
+                actorId: 'finance-maker-1',
+                metadata: {
+                  approvalAdminId: 'finance-approver-2',
+                  status: PayoutBatchStatus.PAID,
+                },
+                target: 'payout_batch:payout-1',
+              },
+              {
+                action: 'payout_batch.create',
+                actorId: 'finance-creator-1',
+                metadata: {},
+                target: 'payout_batch:payout-1',
+              },
+            ]);
+          }
+          return Promise.resolve([]);
+        }),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { email: 'creator@hands.vn', fullName: 'Finance Creator', id: 'finance-creator-1' },
+          { email: 'maker@hands.vn', fullName: 'Finance Maker', id: 'finance-maker-1' },
+          { email: 'approver@hands.vn', fullName: 'Finance Approver', id: 'finance-approver-2' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const detail = await service.getProviderDetail('provider-1');
+
+    expect(detail.payoutBatches).toEqual([
+      expect.objectContaining({
+        approvalAdmin: expect.objectContaining({ fullName: 'Finance Approver' }),
+        approvalAdminId: 'finance-approver-2',
+        createdBy: expect.objectContaining({ fullName: 'Finance Creator' }),
+        paidBy: expect.objectContaining({ fullName: 'Finance Maker' }),
+        paidByAdminId: 'finance-maker-1',
+      }),
+    ]);
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        action: { in: ['payout_batch.create', 'payout_batch.update'] },
+        target: { in: ['payout_batch:payout-1'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { action: true, actorId: true, metadata: true, target: true },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
+  });
+
   it('starts partner audit log lookup while shared device lookup is still pending', async () => {
     const sharedDevices = deferred<unknown[]>();
     const providerProfile = {
@@ -7547,6 +7744,7 @@ describe('AdminService query orchestration', () => {
       callbackVerified: 10,
       captured: 5,
       cashDebt: 4,
+      generatedAt: expect.any(String),
       linkedRefunds: 8,
       needsAction: 7,
       pendingCash: 3,
@@ -7650,13 +7848,14 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(service.refundSummary({ range: 'today' })).resolves.toEqual({
-      totalCount: 24,
-      requestedCount: 8,
-      refundedBookingCount: 3,
-      needsUpdateCount: 5,
       completedCount: 6,
+      generatedAt: expect.any(String),
+      needsUpdateCount: 5,
       openCount: 10,
       outcomeLinkedCount: 4,
+      refundedBookingCount: 3,
+      requestedCount: 8,
+      totalCount: 24,
     });
 
     expect(prisma.refund.count).toHaveBeenCalledWith(
@@ -7730,135 +7929,544 @@ describe('AdminService query orchestration', () => {
     expect(earnings.adminSummary).toHaveBeenCalledWith({ range: 'today' });
   });
 
-  it('delegates partner bank deposit approvals to the earnings service with actor id', async () => {
-    const prisma = {
-      user: {
-        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
-      },
-      adminAuditLog: {
-        create: vi.fn(),
-      },
+  it('persists a partner bank deposit request without writing wallet or GL entries', async () => {
+    const request = {
+      id: 'deposit-request-1',
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      currency: 'VND',
+      bankTransactionId: 'BIDV-20260629-001',
+      depositDate: new Date('2026-06-29T09:30:00.000Z'),
+      requestedBeforeBalance: -170000,
+      requestedAfterBalance: 830000,
+      requestedReceivableRecovery: 170000,
+      requestedWalletLiabilityIncrease: 830000,
     };
-    const earnings = {
-      recordPartnerBankDeposit: vi.fn().mockResolvedValue({
-        id: 'wallet-deposit-1',
-        providerProfileId: 'provider-1',
-        amount: 1000000,
-        currency: 'VND',
-        reference: 'BIDV-20260629-001',
-        sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
-      }),
+    const tx = {
+      providerProfile: { findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }) },
+      providerWalletLedgerEntry: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: -170000 } }),
+      },
+      partnerBankDepositRequest: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(request),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
     };
+    const prisma = { ...tx, $transaction: vi.fn((callback) => callback(tx)) };
+    const earnings = { recordPartnerBankDeposit: vi.fn() };
     const service = createAdminService(prisma, { earnings });
 
     await expect(
-      service.recordPartnerBankDeposit('admin-user-1', {
+      service.createPartnerBankDepositRequest('maker-admin', {
         providerProfileId: 'provider-1',
         amount: 1000000,
         bankTransactionId: 'BIDV-20260629-001',
         depositDate: '2026-06-29T09:30:00.000Z',
         attachmentFileId: 'file-deposit-proof-1',
-        approvalAdminId: 'finance-admin-2',
       }),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        id: 'wallet-deposit-1',
+    ).resolves.toEqual(request);
+
+    expect(tx.partnerBankDepositRequest.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        requestedByAdminId: 'maker-admin',
+        requestedBeforeBalance: -170000,
+        requestedAfterBalance: 830000,
+        requestedReceivableRecovery: 170000,
+        requestedWalletLiabilityIncrease: 830000,
+      }),
+    });
+    expect(earnings.recordPartnerBankDeposit).not.toHaveBeenCalled();
+  });
+
+  it('returns a conflict when concurrent makers reuse the same Partner bank reference', async () => {
+    const duplicateError = new Prisma.PrismaClientKnownRequestError('Duplicate bank reference', {
+      clientVersion: '6.19.3',
+      code: 'P2002',
+    });
+    const prisma = { $transaction: vi.fn().mockRejectedValue(duplicateError) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createPartnerBankDepositRequest('maker-admin', {
         providerProfileId: 'provider-1',
         amount: 1000000,
+        bankTransactionId: 'BIDV-20260629-001',
+        depositDate: '2026-06-29T09:30:00.000Z',
+        attachmentFileId: 'file-deposit-proof-1',
       }),
+    ).rejects.toThrow(
+      'A partner bank deposit request already exists for this Partner and bank reference',
     );
+  });
 
-    expect(earnings.recordPartnerBankDeposit).toHaveBeenCalledWith({
+  it('executes an approved partner bank deposit into wallet, balanced GL, and audit atomically', async () => {
+    const request = {
+      id: 'deposit-request-1',
       providerProfileId: 'provider-1',
       amount: 1000000,
+      currency: 'VND',
       bankTransactionId: 'BIDV-20260629-001',
-      depositDate: '2026-06-29T09:30:00.000Z',
+      depositDate: new Date('2026-06-29T09:30:00.000Z'),
+      bankAccount: 'BIDV 123456789',
       attachmentFileId: 'file-deposit-proof-1',
-      adminId: 'admin-user-1',
+      attachmentUrl: null,
+      notes: 'Confirmed',
+      requestedByAdminId: 'maker-admin',
+      status: PartnerBankDepositRequestStatus.REQUESTED,
+    };
+    const ledger = {
+      id: 'wallet-deposit-1',
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      currency: 'VND',
+      reference: 'BIDV-20260629-001',
+      sourceKey: 'partner-bank-deposit:provider-1:BIDV-20260629-001',
+      metadata: {
+        allocation: {
+          currentWalletBalance: -170000,
+          currentNegativeWalletAmount: 170000,
+          depositAmount: 1000000,
+          amountAppliedToNegativeWallet: 170000,
+          amountCreditedToWalletLiability: 830000,
+          resultingWalletBalance: 830000,
+        },
+      },
+    };
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'approver-admin' }) },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue(request),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({ ...request, status: PartnerBankDepositRequestStatus.EXECUTED }),
+      },
+      accountingJournalBatch: { upsert: vi.fn().mockResolvedValue({ id: 'journal-1' }) },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = { ...tx, $transaction: vi.fn((callback) => callback(tx)) };
+    const earnings = { recordPartnerBankDeposit: vi.fn().mockResolvedValue(ledger) };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(
+      service.approvePartnerBankDepositRequest('approver-admin', 'deposit-request-1'),
+    ).resolves.toMatchObject({
+      ledger: { id: 'wallet-deposit-1' },
+      journal: { id: 'journal-1' },
+      allocation: {
+        amountAppliedToNegativeWallet: 170000,
+        amountCreditedToWalletLiability: 830000,
+      },
     });
-    expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'finance-admin-2', roles: { has: Role.FINANCE_APPROVER } },
-      select: { id: true },
+
+    expect(earnings.recordPartnerBankDeposit).toHaveBeenCalledWith(
+      expect.objectContaining({ adminId: 'approver-admin', providerProfileId: 'provider-1' }),
+      tx,
+    );
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ totalDebit: 1000000, totalCredit: 1000000 }),
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('allocates approved deposit receivable recovery to cash debt without another wallet or GL entry', async () => {
+    const request = {
+      id: 'deposit-request-1',
+      providerProfileId: 'provider-1',
+      currency: 'VND',
+      bankTransactionId: 'BIDV-20260629-001',
+      requestedReceivableRecovery: 170000,
+      ledgerEntryId: 'wallet-deposit-1',
+      journalBatchId: 'journal-1',
+      status: PartnerBankDepositRequestStatus.EXECUTED,
+    };
+    const earning = {
+      id: 'earning-1',
+      providerProfileId: 'provider-1',
+      bookingId: 'booking-1',
+      netAmount: -170000,
+      currency: 'VND',
+      status: EarningStatus.PENDING,
+    };
+    const allocation = {
+      id: 'allocation-1',
+      partnerBankDepositRequestId: request.id,
+      providerEarningId: earning.id,
+      amount: 170000,
+      currency: 'VND',
+      allocatedByAdminId: 'finance-admin',
+    };
+    const tx = {
+      partnerBankDepositRequest: { findUnique: vi.fn().mockResolvedValue(request) },
+      providerEarning: {
+        findUnique: vi.fn().mockResolvedValue(earning),
+        update: vi.fn().mockResolvedValue({ ...earning, status: EarningStatus.PAID }),
+      },
+      partnerBankDepositCashDebtAllocation: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue(allocation),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = { ...tx, $transaction: vi.fn((callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.allocatePartnerBankDepositCashDebt('finance-admin', request.id, {
+        earningId: earning.id,
+        amount: 170000,
+        notes: 'Bank evidence allocated',
+      }),
+    ).resolves.toMatchObject({
+      allocation: { id: 'allocation-1' },
+      cashDebtFullyAllocated: true,
+      remainingDebtAmount: 0,
+      remainingReceivableRecovery: 0,
     });
-    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+
+    expect(tx.providerEarning.update).toHaveBeenCalledWith({
+      where: { id: earning.id },
       data: expect.objectContaining({
-        actorId: 'admin-user-1',
-        action: 'provider_wallet.bank_deposit_received',
-        target: 'provider_wallet_ledger:wallet-deposit-1',
+        status: EarningStatus.PAID,
+        settlementMethod: 'PARTNER_DEPOSIT',
+        settlementRef: request.bankTransactionId,
+      }),
+    });
+    expect(tx).not.toHaveProperty('providerWalletLedgerEntry');
+    expect(tx).not.toHaveProperty('accountingJournalBatch');
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'partner_bank_deposit.cash_debt_allocate',
         metadata: expect.objectContaining({
-          approvalAdminId: 'finance-admin-2',
+          notes: 'Bank evidence allocated',
+          createsWalletLedgerEntry: false,
+          createsAccountingJournalEntry: false,
         }),
       }),
     });
   });
 
-  it('rejects partner bank deposits without separate approval before writing wallet ledger', async () => {
-    const prisma = {
-      user: {
-        findFirst: vi.fn(),
-      },
-      adminAuditLog: {
-        create: vi.fn(),
-      },
-    };
-    const earnings = {
-      recordPartnerBankDeposit: vi.fn(),
-    };
-    const service = createAdminService(prisma, { earnings });
-    const input = {
-      providerProfileId: 'provider-1',
-      amount: 1000000,
-      bankTransactionId: 'BIDV-20260629-001',
-      depositDate: '2026-06-29T09:30:00.000Z',
-      attachmentFileId: 'file-deposit-proof-1',
-    };
+  it('rejects Partner deposit cash-debt allocation without a sufficient audit reason', async () => {
+    const transaction = vi.fn();
+    const service = createAdminService({ $transaction: transaction });
 
-    await expect(service.recordPartnerBankDeposit('admin-user-1', input)).rejects.toThrow(
-      'Partner bank deposit requires approval from a different admin',
-    );
     await expect(
-      service.recordPartnerBankDeposit('admin-user-1', {
-        ...input,
-        approvalAdminId: 'admin-user-1',
-      } as never),
-    ).rejects.toThrow('Partner bank deposit requires approval from a different admin');
-
-    expect(prisma.user.findFirst).not.toHaveBeenCalled();
-    expect(earnings.recordPartnerBankDeposit).not.toHaveBeenCalled();
-    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+      service.allocatePartnerBankDepositCashDebt('finance-admin', 'deposit-request-1', {
+        earningId: 'earning-1',
+        amount: 170000,
+        notes: 'too short',
+      }),
+    ).rejects.toThrow('Cash debt allocation requires an audit reason of at least 12 characters');
+    expect(transaction).not.toHaveBeenCalled();
   });
 
-  it('rejects partner bank deposits approved by an admin without finance approver authority', async () => {
+  it('keeps partially allocated cash debt open and rejects allocation beyond deposit recovery', async () => {
+    const request = {
+      id: 'deposit-request-1',
+      providerProfileId: 'provider-1',
+      currency: 'VND',
+      bankTransactionId: 'BIDV-20260629-001',
+      requestedReceivableRecovery: 100000,
+      ledgerEntryId: 'wallet-deposit-1',
+      journalBatchId: 'journal-1',
+      status: PartnerBankDepositRequestStatus.EXECUTED,
+    };
+    const earning = {
+      id: 'earning-1',
+      providerProfileId: 'provider-1',
+      bookingId: 'booking-1',
+      netAmount: -170000,
+      currency: 'VND',
+      status: EarningStatus.PENDING,
+    };
+    const tx = {
+      partnerBankDepositRequest: { findUnique: vi.fn().mockResolvedValue(request) },
+      providerEarning: { findUnique: vi.fn().mockResolvedValue(earning), update: vi.fn() },
+      partnerBankDepositCashDebtAllocation: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({ id: 'allocation-1', amount: 70000, currency: 'VND' }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const service = createAdminService({ ...tx, $transaction: vi.fn((callback) => callback(tx)) });
+
+    await expect(
+      service.allocatePartnerBankDepositCashDebt('finance-admin', request.id, {
+        earningId: earning.id,
+        amount: 70000,
+        notes: 'Allocate partial bank evidence',
+      }),
+    ).resolves.toMatchObject({ cashDebtFullyAllocated: false, remainingDebtAmount: 100000 });
+    expect(tx.providerEarning.update).not.toHaveBeenCalled();
+
+    await expect(
+      service.allocatePartnerBankDepositCashDebt('finance-admin', request.id, {
+        earningId: earning.id,
+        amount: 100001,
+        notes: 'Allocation exceeds approved recovery',
+      }),
+    ).rejects.toThrow('Allocation exceeds the deposit receivable recovery remaining');
+  });
+
+  it('paginates the Partner deposit reconciliation queue and reports the remaining bank evidence amount', async () => {
+    const request = {
+      id: 'deposit-request-1',
+      providerProfileId: 'provider-1',
+      amount: 200000,
+      currency: 'VND',
+      bankTransactionId: 'VCB-20260629-001',
+      depositDate: new Date('2026-06-29T04:00:00.000Z'),
+      requestedReceivableRecovery: 100000,
+      status: PartnerBankDepositRequestStatus.EXECUTED,
+      journalBatchId: 'journal-1',
+      executedAt: new Date(Date.now() - 6 * 60 * 60_000),
+      createdAt: new Date(Date.now() - 7 * 60 * 60_000),
+      requestedByAdminId: 'maker-admin',
+      approvedByAdminId: 'approver-admin',
+      rejectedByAdminId: null,
+      cashDebtAllocations: [{ amount: 70000 }],
+      providerProfile: {
+        id: 'provider-1',
+        displayName: 'Partner One',
+        user: { id: 'user-1', fullName: 'Partner One', email: null, phone: '+84900000001' },
+      },
+    };
     const prisma = {
-      user: {
-        findFirst: vi.fn().mockResolvedValue(null),
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ openAmount: 150000n, openCount: 1n }])
+        .mockResolvedValueOnce([{ id: request.id }]),
+      partnerBankDepositRequest: {
+        findMany: vi.fn().mockResolvedValue([request]),
+        groupBy: vi.fn().mockResolvedValue([
+          { status: PartnerBankDepositRequestStatus.EXECUTED, _count: { _all: 1 } },
+        ]),
+      },
+      accountingJournalEntry: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            batchId: 'journal-1',
+            amount: 200000,
+            bankReconciliationMatches: [{ amount: 50000 }],
+          },
+        ]),
       },
       adminAuditLog: {
-        create: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([{
+          id: 'deposit-assignment-1',
+          actorId: 'master-admin',
+          createdAt: new Date('2026-07-14T05:00:00.000Z'),
+          metadata: {
+            assigneeAdminId: 'finance-operator',
+            assignedAt: '2026-07-14T05:00:00.000Z',
+            assignedByAdminId: 'master-admin',
+            reason: 'Own overdue deposit evidence',
+          },
+          target: `partner_bank_deposit_request:${request.id}`,
+          actor: { id: 'master-admin', email: 'master@hands.test', fullName: 'Master Admin' },
+        }]),
+      },
+      user: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([
+            { id: 'maker-admin', email: 'maker@hands.test', fullName: 'Deposit Maker' },
+            { id: 'approver-admin', email: 'approver@hands.test', fullName: 'Finance Approver' },
+          ])
+          .mockResolvedValueOnce([
+            { id: 'finance-operator', email: 'operator@hands.test', fullName: 'Finance Operator' },
+            { id: 'master-admin', email: 'master@hands.test', fullName: 'Master Admin' },
+          ]),
       },
     };
-    const earnings = {
-      recordPartnerBankDeposit: vi.fn(),
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listPartnerBankDepositRequestHistory({
+        period: '2026-06',
+        review: 'needs-reconciliation',
+        skip: 0,
+        take: 25,
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          id: request.id,
+          allocatedCashDebtAmount: 70000,
+          reconciliationMatchedAmount: 50000,
+          reconciliationRemainingAmount: 150000,
+          reconciliationReviewAssignment: {
+            assigneeAdminId: 'finance-operator',
+            assignee: { fullName: 'Finance Operator' },
+          },
+          reconciliationSlaStatus: 'WITHIN_24H',
+          reconciliationWaitingHours: expect.any(Number),
+          reconciliationStatus: 'PARTIALLY_MATCHED',
+          requestedBy: { fullName: 'Deposit Maker' },
+          approvedBy: { fullName: 'Finance Approver' },
+          rejectedBy: null,
+        },
+      ],
+      pagination: { skip: 0, take: 25, total: 1 },
+      reconciliationSummary: { openAmount: 150000, openCount: 1, period: '2026-06' },
+    });
+
+    expect(prisma.partnerBankDepositRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: [request.id] } } }),
+    );
+    expect(prisma.accountingJournalEntry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ batchId: { in: ['journal-1'] } }),
+      }),
+    );
+    expect(prisma.user.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('filters Partner deposit reconciliation ownership and SLA before pagination', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      partnerBankDepositRequest: {
+        findMany: vi.fn().mockResolvedValue([]),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      accountingJournalEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+      user: { findMany: vi.fn().mockResolvedValue([]) },
     };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerBankDepositRequestHistory({
+      assigneeAdminId: 'finance-operator-1',
+      review: 'needs-reconciliation',
+      sla: 'escalate',
+      skip: 0,
+      take: 25,
+    })).resolves.toMatchObject({
+      items: [],
+      pagination: { skip: 0, take: 25, total: 0 },
+    });
+
+    const queries = prisma.$queryRaw.mock.calls.map((call) => call[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    });
+    const queryText = queries.map((query) => query.sql ?? query.text ?? '').join('\n');
+    const queryValues = queries.flatMap((query) => query.values ?? []);
+    expect(queryText).toContain('latestPartnerBankDepositAssignments');
+    expect(queryText).toContain('assigneeAdminId');
+    expect(queryText).toContain("INTERVAL '48 hours'");
+    expect(queryValues).toContain('finance-operator-1');
+    expect(queryValues).toContain('escalate');
+    expect(queryText).toContain('LIMIT');
+    expect(queryText).toContain('OFFSET');
+  });
+
+  it('rejects Partner deposit owner filters outside the reconciliation queue', async () => {
+    const prisma = {
+      partnerBankDepositRequest: { groupBy: vi.fn() },
+      $queryRaw: vi.fn(),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerBankDepositRequestHistory({
+      owner: 'unassigned',
+      review: 'all',
+    })).rejects.toThrow(
+      'Partner bank deposit owner and SLA filters require needs-reconciliation review',
+    );
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('hydrates deposit request and cash-debt allocation operators in the detail response', async () => {
+    const request = {
+      id: 'deposit-request-detail',
+      providerProfileId: 'provider-1',
+      requestedByAdminId: 'maker-admin',
+      approvedByAdminId: 'approver-admin',
+      rejectedByAdminId: null,
+      ledgerEntryId: null,
+      journalBatchId: null,
+      requestedReceivableRecovery: 100000,
+      providerProfile: {
+        id: 'provider-1',
+        displayName: 'Partner One',
+        user: { id: 'partner-user', fullName: 'Partner One', email: null, phone: '+84900000001' },
+      },
+      cashDebtAllocations: [
+        {
+          id: 'allocation-1',
+          amount: 40000,
+          allocatedByAdminId: 'allocator-admin',
+          providerEarning: { id: 'earning-1' },
+        },
+      ],
+    };
+    const prisma = {
+      partnerBankDepositRequest: { findUnique: vi.fn().mockResolvedValue(request) },
+      providerEarning: { findMany: vi.fn().mockResolvedValue([]) },
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'maker-admin', email: 'maker@hands.test', fullName: 'Deposit Maker' },
+          { id: 'approver-admin', email: 'approver@hands.test', fullName: 'Finance Approver' },
+          { id: 'allocator-admin', email: 'allocator@hands.test', fullName: 'Debt Allocator' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const detail = await service.getPartnerBankDepositRequestDetail(request.id);
+
+    expect(detail).toMatchObject({
+      request: {
+        requestedBy: { fullName: 'Deposit Maker' },
+        approvedBy: { fullName: 'Finance Approver' },
+        rejectedBy: null,
+      },
+      allocatedCashDebtAmount: 40000,
+      remainingReceivableRecovery: 60000,
+    });
+    expect(detail.request.cashDebtAllocations).toHaveLength(1);
+    expect(detail.request.cashDebtAllocations[0]).toMatchObject({
+      allocatedBy: { fullName: 'Debt Allocator' },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks direct Partner deposit mark-paid so deposit accounting cannot be posted twice', async () => {
+    const earnings = { markPaid: vi.fn() };
+    const service = createAdminService({}, { earnings });
+
+    await expect(
+      service.markEarningPaid('admin-1', 'earning-1', {
+        settlementMethod: 'PARTNER_DEPOSIT',
+        settlementRef: 'BANK-001',
+      }),
+    ).rejects.toThrow('Approved Partner deposits must be allocated from the deposit request detail');
+    expect(earnings.markPaid).not.toHaveBeenCalled();
+  });
+
+  it('blocks maker self-approval before writing partner wallet or GL entries', async () => {
+    const request = {
+      id: 'deposit-request-1',
+      requestedByAdminId: 'maker-admin',
+      status: PartnerBankDepositRequestStatus.REQUESTED,
+    };
+    const tx = {
+      partnerBankDepositRequest: { findUnique: vi.fn().mockResolvedValue(request) },
+      accountingJournalBatch: { upsert: vi.fn() },
+    };
+    const prisma = { ...tx, $transaction: vi.fn((callback) => callback(tx)) };
+    const earnings = { recordPartnerBankDeposit: vi.fn() };
     const service = createAdminService(prisma, { earnings });
 
     await expect(
-      service.recordPartnerBankDeposit('admin-user-1', {
-        providerProfileId: 'provider-1',
-        amount: 1000000,
-        bankTransactionId: 'BIDV-20260629-001',
-        depositDate: '2026-06-29T09:30:00.000Z',
-        attachmentFileId: 'file-deposit-proof-1',
-        approvalAdminId: 'support-user-2',
-      } as never),
-    ).rejects.toThrow('Partner bank deposit requires approval from a finance approver');
-
-    expect(prisma.user.findFirst).toHaveBeenCalledWith({
-      where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
-      select: { id: true },
-    });
+      service.approvePartnerBankDepositRequest('maker-admin', 'deposit-request-1'),
+    ).rejects.toThrow('Partner bank deposit requires approval from a different admin');
     expect(earnings.recordPartnerBankDeposit).not.toHaveBeenCalled();
-    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
   });
 
   it('previews customer manual promotion credits without creating revenue or bank movement', async () => {
@@ -7902,8 +8510,394 @@ describe('AdminService query orchestration', () => {
     });
   });
 
-  it('creates partner manual bonus credits as wallet ledger plus admin audit without touching bank cash', async () => {
+  it('persists a manual wallet adjustment request without writing wallet or accounting ledgers', async () => {
+    const request = {
+      id: 'wallet-request-1',
+      ownerType: 'PARTNER',
+      ownerId: 'provider-1',
+      direction: 'CREDIT',
+      adjustmentType: 'PARTNER_BONUS',
+      amount: 200000,
+      currency: 'VND',
+      reason: 'Partner recovery bonus',
+      requestedBeforeBalance: 0,
+      requestedAfterBalance: 200000,
+      requiresAttachment: false,
+    };
     const tx = {
+      providerProfile: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }) },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn(),
+      },
+      manualWalletAdjustmentRequest: { create: vi.fn().mockResolvedValue(request) },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-request' }) },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createManualWalletAdjustmentRequest('maker-admin', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 200000,
+        reason: 'Partner recovery bonus',
+      }),
+    ).resolves.toBe(request);
+
+    expect(tx.manualWalletAdjustmentRequest.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        requestedByAdminId: 'maker-admin',
+        requestedBeforeBalance: 0,
+        requestedAfterBalance: 200000,
+        requestedWalletDelta: 200000,
+      }),
+    });
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'maker-admin',
+        action: 'wallet_adjustment_request.create',
+        target: 'manual_wallet_adjustment_request:wallet-request-1',
+      }),
+    });
+  });
+
+  it('hydrates wallet adjustment request operator identities with one bounded user lookup', async () => {
+    const requests = [
+      {
+        id: 'wallet-request-executed',
+        requestedByAdminId: 'maker-admin',
+        approvedByAdminId: 'approver-admin',
+        rejectedByAdminId: null,
+        status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+      },
+      {
+        id: 'wallet-request-rejected',
+        requestedByAdminId: 'maker-admin',
+        approvedByAdminId: null,
+        rejectedByAdminId: 'rejecter-admin',
+        status: ManualWalletAdjustmentRequestStatus.REJECTED,
+      },
+    ];
+    const prisma = {
+      manualWalletAdjustmentRequest: { findMany: vi.fn().mockResolvedValue(requests) },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'maker-admin', email: 'maker@hands.test', fullName: 'Wallet Maker' },
+          { id: 'approver-admin', email: 'approver@hands.test', fullName: 'Finance Approver' },
+          { id: 'rejecter-admin', email: 'rejecter@hands.test', fullName: 'Finance Reviewer' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listManualWalletAdjustmentRequests({ status: 'EXECUTED', take: '25', skip: '0' }),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        id: 'wallet-request-executed',
+        requestedBy: expect.objectContaining({ fullName: 'Wallet Maker' }),
+        approvedBy: expect.objectContaining({ fullName: 'Finance Approver' }),
+        rejectedBy: null,
+      }),
+      expect.objectContaining({
+        id: 'wallet-request-rejected',
+        requestedBy: expect.objectContaining({ fullName: 'Wallet Maker' }),
+        approvedBy: null,
+        rejectedBy: expect.objectContaining({ fullName: 'Finance Reviewer' }),
+      }),
+    ]);
+    expect(prisma.manualWalletAdjustmentRequest.findMany).toHaveBeenCalledWith({
+      where: { status: ManualWalletAdjustmentRequestStatus.EXECUTED },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: 0,
+      take: 25,
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['maker-admin', 'approver-admin', 'rejecter-admin'] },
+      },
+      select: { id: true, email: true, fullName: true },
+    });
+  });
+
+  it('allows the legacy POST compatibility path to approve only as the signed-in approver', async () => {
+    const service = createAdminService({});
+    const approve = vi
+      .spyOn(service, 'approveManualWalletAdjustmentRequest')
+      .mockResolvedValue({ request: { id: 'wallet-request-legacy' } } as never);
+    const input = {
+      ownerType: 'PARTNER' as const,
+      ownerId: 'provider-1',
+      direction: 'CREDIT' as const,
+      adjustmentType: 'PARTNER_BONUS' as const,
+      amount: 200000,
+      reason: 'Partner recovery bonus',
+      approvalId: 'wallet-request-legacy',
+      approvalAdminId: 'finance-admin',
+    };
+
+    await expect(
+      service.approveManualWalletAdjustmentFromLegacyRoute('finance-admin', input),
+    ).resolves.toEqual({ request: { id: 'wallet-request-legacy' } });
+    expect(approve).toHaveBeenCalledWith('finance-admin', 'wallet-request-legacy', input);
+
+    await expect(
+      service.approveManualWalletAdjustmentFromLegacyRoute('maker-admin', input),
+    ).rejects.toThrow('requires the signed-in finance approver');
+  });
+
+  it('blocks a legacy POST payload that does not match its persisted approval request', async () => {
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin' }) },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'wallet-request-legacy-mismatch',
+          ownerType: 'PARTNER',
+          ownerId: 'provider-1',
+          direction: 'CREDIT',
+          adjustmentType: 'PARTNER_BONUS',
+          amount: 200000,
+          currency: 'VND',
+          reason: 'Original approved request',
+          monthlyPeriod: null,
+          attachmentUrl: null,
+          requestedBeforeBalance: 0,
+          requestedByAdminId: 'maker-admin',
+          status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+        }),
+        updateMany: vi.fn(),
+      },
+      providerWalletLedgerEntry: { create: vi.fn() },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.approveManualWalletAdjustmentFromLegacyRoute('finance-admin', {
+        ownerType: 'PARTNER',
+        ownerId: 'provider-1',
+        direction: 'CREDIT',
+        adjustmentType: 'PARTNER_BONUS',
+        amount: 900000,
+        reason: 'Tampered request amount',
+        approvalId: 'wallet-request-legacy-mismatch',
+        approvalAdminId: 'finance-admin',
+      }),
+    ).rejects.toThrow('does not match the persisted approval request');
+
+    expect(tx.manualWalletAdjustmentRequest.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('executes an approved wallet request atomically with wallet ledger and GL evidence', async () => {
+    const storedRequest = {
+      id: 'wallet-request-1',
+      ownerType: 'PARTNER',
+      ownerId: 'provider-1',
+      direction: 'CREDIT',
+      adjustmentType: 'PARTNER_BONUS',
+      amount: 200000,
+      currency: 'VND',
+      reason: 'Partner recovery bonus',
+      monthlyPeriod: null,
+      attachmentUrl: null,
+      requestedBeforeBalance: 0,
+      requestedByAdminId: 'maker-admin',
+      status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+    };
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin' }) },
+      providerProfile: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }) },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+        create: vi.fn().mockResolvedValue({ id: 'provider-ledger-1', amount: 200000, currency: 'VND' }),
+      },
+      accountingJournalBatch: { upsert: vi.fn().mockResolvedValue({ id: 'journal-1' }) },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue(storedRequest),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({
+          ...storedRequest,
+          status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+          ledgerEntryId: 'provider-ledger-1',
+        }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.approveManualWalletAdjustmentRequest('finance-admin', 'wallet-request-1'),
+    ).resolves.toMatchObject({
+      request: { status: ManualWalletAdjustmentRequestStatus.EXECUTED, ledgerEntryId: 'provider-ledger-1' },
+      ledger: { id: 'provider-ledger-1' },
+    });
+
+    expect(tx.user.findFirst).toHaveBeenCalledWith({
+      where: { id: 'finance-admin', roles: { has: Role.FINANCE_APPROVER } },
+      select: { id: true },
+    });
+    expect(tx.manualWalletAdjustmentRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'wallet-request-1', status: ManualWalletAdjustmentRequestStatus.REQUESTED },
+      data: expect.objectContaining({
+        approvedByAdminId: 'finance-admin',
+        status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+      }),
+    });
+    expect(tx.providerWalletLedgerEntry.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sourceKey: 'manual-wallet-adjustment:PARTNER:provider-1:wallet-request-1',
+        reference: 'wallet-request-1',
+      }),
+    });
+    expect(tx.accountingJournalBatch.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks approval when the wallet balance changed after the request was submitted', async () => {
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin' }) },
+      providerProfile: { findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }) },
+      providerWalletLedgerEntry: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 50000 } }),
+        create: vi.fn(),
+      },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'wallet-request-stale',
+          ownerType: 'PARTNER',
+          ownerId: 'provider-1',
+          direction: 'CREDIT',
+          adjustmentType: 'PARTNER_BONUS',
+          amount: 200000,
+          currency: 'VND',
+          reason: 'Partner recovery bonus',
+          monthlyPeriod: null,
+          attachmentUrl: null,
+          requestedBeforeBalance: 0,
+          requestedByAdminId: 'maker-admin',
+          status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.approveManualWalletAdjustmentRequest('finance-admin', 'wallet-request-stale'),
+    ).rejects.toThrow('Wallet balance changed after this request');
+
+    expect(tx.manualWalletAdjustmentRequest.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('blocks a manual wallet adjustment maker from approving their own request', async () => {
+    const tx = {
+      user: { findFirst: vi.fn() },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'wallet-request-self-approval',
+          requestedByAdminId: 'maker-admin',
+          status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+        }),
+        updateMany: vi.fn(),
+      },
+      providerWalletLedgerEntry: { create: vi.fn() },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.approveManualWalletAdjustmentRequest('maker-admin', 'wallet-request-self-approval'),
+    ).rejects.toThrow('requires approval from a different admin');
+
+    expect(tx.user.findFirst).not.toHaveBeenCalled();
+    expect(tx.manualWalletAdjustmentRequest.updateMany).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a pending manual wallet adjustment without writing wallet or accounting ledgers', async () => {
+    const storedRequest = {
+      id: 'wallet-request-reject',
+      requestedByAdminId: 'maker-admin',
+      status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+    };
+    const rejectedRequest = {
+      ...storedRequest,
+      status: ManualWalletAdjustmentRequestStatus.REJECTED,
+      rejectedByAdminId: 'finance-admin',
+      decisionReason: 'Evidence does not support the adjustment',
+    };
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin' }) },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue(storedRequest),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(rejectedRequest),
+      },
+      providerWalletLedgerEntry: { create: vi.fn() },
+      customerWalletLedgerEntry: { create: vi.fn() },
+      accountingJournalBatch: { upsert: vi.fn() },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-reject' }) },
+    };
+    const prisma = { $transaction: vi.fn(async (callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.rejectManualWalletAdjustmentRequest(
+        'finance-admin',
+        'wallet-request-reject',
+        'Evidence does not support the adjustment',
+      ),
+    ).resolves.toBe(rejectedRequest);
+
+    expect(tx.manualWalletAdjustmentRequest.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'wallet-request-reject',
+        status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+      },
+      data: expect.objectContaining({
+        decisionReason: 'Evidence does not support the adjustment',
+        rejectedByAdminId: 'finance-admin',
+        status: ManualWalletAdjustmentRequestStatus.REJECTED,
+      }),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'wallet_adjustment_request.reject',
+        actorId: 'finance-admin',
+        target: 'manual_wallet_adjustment_request:wallet-request-reject',
+      }),
+    });
+    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.customerWalletLedgerEntry.create).not.toHaveBeenCalled();
+    expect(tx.accountingJournalBatch.upsert).not.toHaveBeenCalled();
+  });
+
+  it('creates partner manual bonus credits as wallet ledger plus admin audit without touching bank cash', async () => {
+    const storedRequest = {
+      id: 'approval-1',
+      ownerType: 'PARTNER',
+      ownerId: 'provider-1',
+      direction: 'CREDIT',
+      adjustmentType: 'PARTNER_BONUS',
+      amount: 200000,
+      currency: 'VND',
+      reason: 'Excellent customer recovery',
+      monthlyPeriod: null,
+      attachmentUrl: null,
+      requestedBeforeBalance: 0,
+      requestedByAdminId: 'admin-user-1',
+      status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+    };
+    const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
       providerProfile: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
       },
@@ -7919,6 +8913,15 @@ describe('AdminService query orchestration', () => {
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
       },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue(storedRequest),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({
+          ...storedRequest,
+          status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+          ledgerEntryId: 'ledger-1',
+        }),
+      },
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
@@ -7929,7 +8932,7 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
+      service.approveManualWalletAdjustmentFromLegacyRoute('finance-admin-2', {
         ownerType: 'PARTNER',
         ownerId: 'provider-1',
         direction: 'CREDIT',
@@ -7940,6 +8943,7 @@ describe('AdminService query orchestration', () => {
         approvalAdminId: 'finance-admin-2',
       }),
     ).resolves.toMatchObject({
+      request: { status: ManualWalletAdjustmentRequestStatus.EXECUTED },
       ledger: { id: 'ledger-1', amount: 200000 },
       preview: {
         walletDelta: 200000,
@@ -7999,20 +9003,43 @@ describe('AdminService query orchestration', () => {
         totalDebit: 200000,
       }),
     });
-    const journalUpdateEntries = vi.mocked(tx.accountingJournalBatch.upsert).mock.calls[0]?.[0]
-      .update.entries;
+    const journalUpdateEntries = vi.mocked(tx.accountingJournalBatch.upsert).mock.calls[0]?.[0].update
+      .entries;
     expect(Object.keys(journalUpdateEntries)).toEqual(['deleteMany', 'create']);
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        actorId: 'admin-user-1',
+        actorId: 'finance-admin-2',
         action: 'wallet_ledger.manual_adjustment.create',
         target: 'provider_wallet_ledger:ledger-1',
+      }),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'wallet_adjustment_request.execute',
+        metadata: expect.objectContaining({ approvalChannel: 'LEGACY_COMPAT' }),
+        target: 'manual_wallet_adjustment_request:approval-1',
       }),
     });
   });
 
   it('creates customer manual promotion credits as wallet ledger plus journal without creating revenue', async () => {
+    const storedRequest = {
+      id: 'approval-customer-1',
+      ownerType: 'CUSTOMER',
+      ownerId: 'customer-1',
+      direction: 'CREDIT',
+      adjustmentType: 'PROMOTION_CREDIT',
+      amount: 100000,
+      currency: 'VND',
+      reason: 'Launch coupon correction',
+      monthlyPeriod: null,
+      attachmentUrl: null,
+      requestedBeforeBalance: 0,
+      requestedByAdminId: 'admin-user-1',
+      status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+    };
     const tx = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
       customerProfile: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'customer-1' }),
       },
@@ -8028,6 +9055,15 @@ describe('AdminService query orchestration', () => {
       accountingJournalBatch: {
         upsert: vi.fn().mockResolvedValue({ id: 'journal-batch-1' }),
       },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue(storedRequest),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue({
+          ...storedRequest,
+          status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+          ledgerEntryId: 'customer-ledger-1',
+        }),
+      },
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-1' }),
       },
@@ -8038,17 +9074,9 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
-        ownerType: 'CUSTOMER',
-        ownerId: 'customer-1',
-        direction: 'CREDIT',
-        adjustmentType: 'PROMOTION_CREDIT',
-        amount: 100000,
-        reason: 'Launch coupon correction',
-        approvalId: 'approval-customer-1',
-        approvalAdminId: 'finance-admin-2',
-      }),
+      service.approveManualWalletAdjustmentRequest('finance-admin-2', 'approval-customer-1'),
     ).resolves.toMatchObject({
+      request: { status: ManualWalletAdjustmentRequestStatus.EXECUTED },
       ledger: { id: 'customer-ledger-1', amount: 100000 },
       preview: {
         walletDelta: 100000,
@@ -8115,53 +9143,32 @@ describe('AdminService query orchestration', () => {
     });
     expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        actorId: 'admin-user-1',
+        actorId: 'finance-admin-2',
         action: 'wallet_ledger.manual_adjustment.create',
         target: 'customer_wallet_ledger:customer-ledger-1',
       }),
     });
-  });
-
-  it('rejects manual wallet adjustments approved by the same admin before writing a ledger', async () => {
-    const tx = {
-      providerProfile: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'provider-1' }),
-      },
-      providerWalletLedgerEntry: {
-        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
-        create: vi.fn(),
-      },
-      adminAuditLog: {
-        create: vi.fn(),
-      },
-    };
-    const prisma = {
-      $transaction: vi.fn(async (callback) => callback(tx)),
-    };
-    const service = createAdminService(prisma);
-
-    await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
-        ownerType: 'PARTNER',
-        ownerId: 'provider-1',
-        direction: 'CREDIT',
-        adjustmentType: 'PARTNER_BONUS',
-        amount: 200000,
-        reason: 'Same admin cannot self-approve',
-        approvalId: 'approval-1',
-        approvalAdminId: 'admin-user-1',
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'wallet_adjustment_request.execute',
+        metadata: expect.objectContaining({ approvalChannel: 'REQUEST_APPROVAL' }),
+        target: 'manual_wallet_adjustment_request:approval-customer-1',
       }),
-    ).rejects.toThrow('Manual wallet adjustment requires approval from a different admin');
-
-    expect(tx.providerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
-    expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
-    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+    });
   });
 
   it('rejects manual wallet adjustments approved by an admin without finance approver authority before writing a ledger', async () => {
     const tx = {
       user: {
         findFirst: vi.fn().mockResolvedValue(null),
+      },
+      manualWalletAdjustmentRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'approval-1',
+          requestedByAdminId: 'admin-user-1',
+          status: ManualWalletAdjustmentRequestStatus.REQUESTED,
+        }),
+        updateMany: vi.fn(),
       },
       providerProfile: {
         findUniqueOrThrow: vi.fn(),
@@ -8180,16 +9187,7 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
-        ownerType: 'PARTNER',
-        ownerId: 'provider-1',
-        direction: 'CREDIT',
-        adjustmentType: 'PARTNER_BONUS',
-        amount: 200000,
-        reason: 'Approver must be finance admin',
-        approvalId: 'approval-1',
-        approvalAdminId: 'support-user-2',
-      }),
+      service.approveManualWalletAdjustmentRequest('support-user-2', 'approval-1'),
     ).rejects.toThrow('Manual wallet adjustment requires approval from a finance approver');
 
     expect(tx.user.findFirst).toHaveBeenCalledWith({
@@ -8197,6 +9195,7 @@ describe('AdminService query orchestration', () => {
       select: { id: true },
     });
     expect(tx.providerProfile.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(tx.manualWalletAdjustmentRequest.updateMany).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
     expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
@@ -8254,6 +9253,7 @@ describe('AdminService query orchestration', () => {
               adjustmentType: 'PARTNER_BONUS',
               beforeBalance: 0,
               afterBalance: 200000,
+              approvalAdminId: 'finance-admin-2',
               approvalId: 'approval-partner-1',
               affects: { walletLiability: true, revenue: false },
             },
@@ -8261,6 +9261,44 @@ describe('AdminService query orchestration', () => {
               displayName: 'Smoke Partner',
               user: { fullName: 'Smoke Partner Legal', phone: '+84222222222' },
             },
+          },
+        ]),
+      },
+      manualWalletAdjustmentRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            approvedByAdminId: 'finance-admin-2',
+            id: 'approval-partner-1',
+            requestedByAdminId: 'wallet-maker-1',
+          },
+          {
+            approvedByAdminId: 'finance-admin-3',
+            id: 'approval-customer-1',
+            requestedByAdminId: 'wallet-maker-2',
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'finance-admin-2',
+            email: 'approver@example.com',
+            fullName: 'Finance Approver',
+          },
+          {
+            id: 'finance-admin-3',
+            email: 'approver-3@example.com',
+            fullName: 'Finance Approver Three',
+          },
+          {
+            id: 'wallet-maker-1',
+            email: 'maker-1@example.com',
+            fullName: 'Wallet Maker One',
+          },
+          {
+            id: 'wallet-maker-2',
+            email: 'maker-2@example.com',
+            fullName: 'Wallet Maker Two',
           },
         ]),
       },
@@ -8275,6 +9313,17 @@ describe('AdminService query orchestration', () => {
         direction: 'CREDIT',
         adjustmentType: 'PARTNER_BONUS',
         amount: 200000,
+        approvalAdmin: {
+          id: 'finance-admin-2',
+          email: 'approver@example.com',
+          fullName: 'Finance Approver',
+        },
+        requestedByAdminId: 'wallet-maker-1',
+        requestedBy: {
+          id: 'wallet-maker-1',
+          email: 'maker-1@example.com',
+          fullName: 'Wallet Maker One',
+        },
         beforeBalance: 0,
         afterBalance: 200000,
       }),
@@ -8285,6 +9334,18 @@ describe('AdminService query orchestration', () => {
         direction: 'CREDIT',
         adjustmentType: 'PROMOTION_CREDIT',
         amount: 100000,
+        approvalAdminId: 'finance-admin-3',
+        approvalAdmin: {
+          id: 'finance-admin-3',
+          email: 'approver-3@example.com',
+          fullName: 'Finance Approver Three',
+        },
+        requestedByAdminId: 'wallet-maker-2',
+        requestedBy: {
+          id: 'wallet-maker-2',
+          email: 'maker-2@example.com',
+          fullName: 'Wallet Maker Two',
+        },
         beforeBalance: 0,
         afterBalance: 100000,
       }),
@@ -8317,6 +9378,18 @@ describe('AdminService query orchestration', () => {
     );
     expect(prisma.providerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('take');
     expect(prisma.providerWalletLedgerEntry.findMany.mock.calls[0][0]).not.toHaveProperty('skip');
+    expect(prisma.manualWalletAdjustmentRequest.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['approval-partner-1', 'approval-customer-1'] } },
+      select: { id: true, approvedByAdminId: true, requestedByAdminId: true },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: ['finance-admin-2', 'wallet-maker-1', 'finance-admin-3', 'wallet-maker-2'],
+        },
+      },
+      select: { id: true, email: true, fullName: true },
+    });
   });
 
   it('summarizes manual wallet adjustment history with count queries only', async () => {
@@ -8377,6 +9450,7 @@ describe('AdminService query orchestration', () => {
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-invalid-url' }),
       },
+      manualWalletAdjustmentRequest: { create: vi.fn() },
     };
     const prisma = {
       $transaction: vi.fn(async (callback) => callback(tx)),
@@ -8384,18 +9458,17 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
+      service.createManualWalletAdjustmentRequest('admin-user-1', {
         ownerType: 'PARTNER',
         ownerId: 'provider-1',
         direction: 'CREDIT',
         adjustmentType: 'PARTNER_BONUS',
         amount: 10000000,
         reason: 'High-value correction',
-        approvalId: 'approval-high',
-        approvalAdminId: 'finance-admin-2',
       }),
     ).rejects.toThrow('Attachment is required for this manual wallet adjustment');
 
+    expect(tx.manualWalletAdjustmentRequest.create).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
 
@@ -8416,6 +9489,7 @@ describe('AdminService query orchestration', () => {
       adminAuditLog: {
         create: vi.fn().mockResolvedValue({ id: 'audit-invalid-url' }),
       },
+      manualWalletAdjustmentRequest: { create: vi.fn() },
     };
     const prisma = {
       $transaction: vi.fn(async (callback) => callback(tx)),
@@ -8423,19 +9497,18 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
+      service.createManualWalletAdjustmentRequest('admin-user-1', {
         ownerType: 'PARTNER',
         ownerId: 'provider-1',
         direction: 'CREDIT',
         adjustmentType: 'PARTNER_BONUS',
         amount: 10000000,
         reason: 'High-value correction with invalid evidence URL',
-        approvalId: 'approval-high',
-        approvalAdminId: 'finance-admin-2',
         attachmentUrl: 'javascript:alert(1)',
       }),
     ).rejects.toThrow('Attachment URL must use http or https');
 
+    expect(tx.manualWalletAdjustmentRequest.create).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
 
@@ -8448,6 +9521,7 @@ describe('AdminService query orchestration', () => {
         aggregate: vi.fn(),
         create: vi.fn(),
       },
+      manualWalletAdjustmentRequest: { create: vi.fn() },
     };
     const prisma = {
       $transaction: vi.fn(async (callback) => callback(tx)),
@@ -8455,18 +9529,17 @@ describe('AdminService query orchestration', () => {
     const service = createAdminService(prisma);
 
     await expect(
-      service.createManualWalletAdjustment('admin-user-1', {
+      service.createManualWalletAdjustmentRequest('admin-user-1', {
         ownerType: 'PARTNER',
         ownerId: 'missing-provider',
         direction: 'CREDIT',
         adjustmentType: 'PARTNER_BONUS',
         amount: 100000,
         reason: 'Missing owner should not write ledger',
-        approvalId: 'approval-missing-owner',
-        approvalAdminId: 'finance-admin-2',
       }),
     ).rejects.toThrow('Manual wallet adjustment owner was not found');
 
+    expect(tx.manualWalletAdjustmentRequest.create).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.aggregate).not.toHaveBeenCalled();
     expect(tx.providerWalletLedgerEntry.create).not.toHaveBeenCalled();
   });
@@ -8598,6 +9671,59 @@ describe('AdminService query orchestration', () => {
           }),
         }),
       }),
+    });
+  });
+
+  it('hydrates withdrawal reviewer, payout executor, and separate approver identities for admin lists', async () => {
+    const earnings = {
+      listProviderWalletWithdrawalRequestsForAdmin: vi.fn().mockResolvedValue([
+        {
+          id: 'withdrawal-request-1',
+          status: ProviderWalletWithdrawalRequestStatus.PAID,
+          reviewedByAdminId: 'finance-maker-1',
+          metadata: { bankPayout: { completedByAdminId: 'finance-maker-1' } },
+        },
+      ]),
+    };
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            target: 'provider_wallet_withdrawal_request:withdrawal-request-1',
+            metadata: { approvalAdminId: 'finance-approver-2' },
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'finance-maker-1', email: 'maker@hands.test', fullName: 'Finance Maker' },
+          { id: 'finance-approver-2', email: 'approver@hands.test', fullName: 'Finance Approver' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(service.listProviderWalletWithdrawalRequests({ take: 10 })).resolves.toEqual([
+      expect.objectContaining({
+        id: 'withdrawal-request-1',
+        reviewedBy: expect.objectContaining({ fullName: 'Finance Maker' }),
+        paidBy: expect.objectContaining({ fullName: 'Finance Maker' }),
+        approvalAdminId: 'finance-approver-2',
+        approvalAdmin: expect.objectContaining({ fullName: 'Finance Approver' }),
+      }),
+    ]);
+
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        action: 'provider_wallet.withdrawal_request.update',
+        target: { in: ['provider_wallet_withdrawal_request:withdrawal-request-1'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { metadata: true, target: true },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['finance-maker-1', 'finance-approver-2'] } },
+      select: { id: true, email: true, fullName: true },
     });
   });
 
@@ -8769,6 +9895,963 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('lists missing booking settlements with bounded server pagination and age/search filters', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-13T00:00:00.000Z'));
+    const gapAt = new Date('2026-07-09T00:00:00.000Z');
+    const prisma = {
+      booking: {
+        count: vi.fn().mockResolvedValue(51),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'booking-gap-1',
+            status: BookingStatus.COMPLETED,
+            createdAt: gapAt,
+            updatedAt: gapAt,
+            closedAt: null,
+            customerProfile: { id: 'customer-1', user: { fullName: 'Customer One', phone: '0901' } },
+            selectedProvider: {
+              id: 'partner-1',
+              displayName: 'Partner One',
+              user: { fullName: null, phone: '0902' },
+            },
+            payment: {
+              id: 'payment-1',
+              amount: 500000,
+              currency: 'VND',
+              method: PaymentMethod.CARD,
+              status: PaymentStatus.CAPTURED,
+            },
+            earning: {
+              id: 'earning-1',
+              paidAt: null,
+              payoutBatchId: null,
+              status: EarningStatus.AVAILABLE,
+            },
+            _count: {
+              platformFeeLogs: 0,
+              services: 1,
+              taxLogs: 0,
+              walletLedgerEntries: 0,
+            },
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    try {
+      await expect(
+        service.listBookingSettlementGaps({
+          age: '3-7d',
+          paymentMethod: 'card',
+          period: '2026-07',
+          q: ' Customer ',
+          skip: '20',
+          take: '999',
+          track: 'canonical',
+        }),
+      ).resolves.toMatchObject({
+        generatedAt: '2026-07-13T00:00:00.000Z',
+        hasNext: true,
+        items: [
+          expect.objectContaining({
+            ageBucket: '3_TO_7_DAYS',
+            gapAt: '2026-07-09T00:00:00.000Z',
+            id: 'booking-gap-1',
+            repairTrack: 'canonical',
+          }),
+        ],
+        skip: 20,
+        take: 50,
+        total: 51,
+      });
+
+      expect(prisma.booking.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+          skip: 20,
+          take: 50,
+          select: expect.objectContaining({
+            customerProfile: expect.any(Object),
+            payment: expect.any(Object),
+            selectedProvider: expect.any(Object),
+          }),
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              { status: BookingStatus.COMPLETED },
+              { settlementSnapshot: { is: null } },
+              { payment: { is: { method: PaymentMethod.CARD } } },
+              {
+                OR: [
+                  {
+                    closedAt: {
+                      gte: new Date('2026-06-30T17:00:00.000Z'),
+                      lt: new Date('2026-07-31T17:00:00.000Z'),
+                    },
+                  },
+                  {
+                    closedAt: null,
+                    updatedAt: {
+                      gte: new Date('2026-06-30T17:00:00.000Z'),
+                      lt: new Date('2026-07-31T17:00:00.000Z'),
+                    },
+                  },
+                ],
+              },
+              expect.objectContaining({ OR: expect.any(Array) }),
+              expect.objectContaining({
+                OR: expect.arrayContaining([
+                  {
+                    closedAt: expect.objectContaining({
+                      gte: new Date('2026-07-06T00:00:00.000Z'),
+                      lt: new Date('2026-07-10T00:00:00.000Z'),
+                    }),
+                  },
+                ]),
+              }),
+              expect.objectContaining({ OR: expect.any(Array) }),
+            ]),
+          }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('summarizes settlement gaps into recent and backlog age buckets with the oldest timestamp', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-13T00:00:00.000Z'));
+    const prisma = {
+      booking: {
+        count: vi
+          .fn()
+          .mockResolvedValueOnce(2)
+          .mockResolvedValueOnce(3)
+          .mockResolvedValueOnce(4)
+          .mockResolvedValueOnce(5)
+          .mockResolvedValueOnce(6)
+          .mockResolvedValueOnce(7)
+          .mockResolvedValueOnce(8)
+          .mockResolvedValueOnce(9),
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({
+            closedAt: new Date('2026-07-01T00:00:00.000Z'),
+            updatedAt: new Date('2026-07-02T00:00:00.000Z'),
+          })
+          .mockResolvedValueOnce({ closedAt: null, updatedAt: new Date('2026-06-30T00:00:00.000Z') }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    try {
+      await expect(service.bookingSettlementGapSummary()).resolves.toEqual({
+        age24To72Hours: 3,
+        age3To7Days: 4,
+        age7DaysPlus: 5,
+        backlog: 12,
+        canonical: 6,
+        evidenceBlocked: 8,
+        generatedAt: '2026-07-13T00:00:00.000Z',
+        historicalReady: 7,
+        manualReview: 9,
+        oldestGapAt: '2026-06-30T00:00:00.000Z',
+        recent: 2,
+        total: 14,
+      });
+
+      expect(prisma.booking.count).toHaveBeenCalledTimes(8);
+      expect(prisma.booking.count).toHaveBeenNthCalledWith(
+        6,
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                earning: { is: { paidAt: { not: null }, status: EarningStatus.PAID } },
+              }),
+            ]),
+          }),
+        }),
+      );
+      expect(prisma.booking.count).toHaveBeenNthCalledWith(
+        7,
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                AND: expect.arrayContaining([{ earning: { is: { status: EarningStatus.PAID } } }]),
+              }),
+            ]),
+          }),
+        }),
+      );
+      expect(prisma.booking.findFirst).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('aggregates a bounded read-only dry-run for historical settlement gaps', async () => {
+    const prisma = {
+      booking: {
+        count: vi.fn().mockResolvedValue(2),
+        findMany: vi.fn().mockResolvedValue([{ id: 'historical-gap-1' }, { id: 'historical-gap-2' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'previewBookingSettlementGapRepair').mockImplementation(async (bookingId) => {
+      const isFirst = bookingId === 'historical-gap-1';
+      const amount = isFirst ? 400_000 : 500_000;
+      return {
+        blockers: isFirst ? [] : [{ code: 'MONTHLY_PERIOD_FINALIZED', message: 'Period is closed.' }],
+        bookingId,
+        bookingStatus: BookingStatus.COMPLETED,
+        canRepair: isFirst,
+        completedAt: '2026-06-10T03:00:00.000Z',
+        currency: 'VND',
+        customer: null,
+        earning: null,
+        historicalEvidenceSummary: null,
+        historicalSettlementDryRun: {
+          amounts: {
+            companyOutputVat: isFirst ? 0 : 8_000,
+            customerWalletCreditAmount: 0,
+            customerWalletDebitAmount: 0,
+            partnerPitAmount: 20_000,
+            partnerTaxableRevenue: amount,
+            partnerVatAmount: 0,
+            partnerWalletDelta: 300_000,
+            partnerWithholdingTotal: 20_000,
+            paymentProcessingFee: 0,
+            platformFeeNetRevenue: 80_000,
+          },
+          currency: 'VND',
+          customerPaymentAmount: amount,
+          journal: {
+            entries: [],
+            reconciliationDelta: isFirst ? 0 : 100,
+            totalCredit: amount,
+            totalDebit: amount,
+          },
+          metadata: {},
+          monthlyPeriod: '2026-06',
+          partnerPayoutAmount: amount - 100_000,
+          paymentFeeFixedAmount: 0,
+          paymentFeePayer: PaymentFeePayer.HANDS,
+          paymentFeePolicyVersionId: isFirst ? null : 'payment-fee-policy-1',
+          paymentFeeRateBps: 0,
+          paymentFeeRuleSnapshot: isFirst
+            ? { method: PaymentMethod.MOMO, reason: 'NO_ACTIVE_PAYMENT_FEE_POLICY' }
+            : { ruleId: 'payment-fee-rule-1' },
+          paymentFeeTreatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+          platformFeeGross: isFirst ? 80_000 : 88_000,
+          platformFeePolicyVersionId: isFirst ? null : 'platform-fee-policy-1',
+          platformFeeRuleSnapshot: isFirst
+            ? { source: 'SERVICE_PAYOUT_RULE', lines: [{ ruleId: 'payout-rule-1', vatBps: 0 }] }
+            : { ruleId: 'platform-fee-rule-1' },
+          platformVatRateBps: isFirst ? 0 : 800,
+        },
+        monthlyClosingStatus: isFirst ? null : MonthlyTaxClosingStatus.CLOSED,
+        monthlyPeriod: '2026-06',
+        partner: null,
+        payment: {
+          amount,
+          currency: 'VND',
+          id: `payment-${bookingId}`,
+          method: isFirst ? PaymentMethod.MOMO : PaymentMethod.CASH,
+          status: PaymentStatus.CAPTURED,
+        },
+        preservesExistingEarningLifecycle: true,
+        repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION',
+        serviceCount: 1,
+        settlementSnapshotId: null,
+      } as never;
+    });
+
+    await expect(
+      service.bookingSettlementGapDryRun({ period: '2026-06', take: '500' }),
+    ).resolves.toMatchObject({
+      blockerCodes: { MONTHLY_PERIOD_FINALIZED: 1 },
+      counts: {
+        blocked: 1,
+        companyOutputVatPositive: 1,
+        companyOutputVatZero: 1,
+        eligible: 1,
+        journalBalanced: 2,
+        paymentFeeDefaulted: 1,
+        paymentFeePolicyMatched: 1,
+        platformVatEvidenceReady: 2,
+        platformVatExplicitZeroServiceRule: 1,
+        platformVatUnexplainedZero: 0,
+        platformVatZeroFromPolicy: 0,
+        reconciliationReview: 1,
+      },
+      evaluated: 2,
+      paymentMethods: { CASH: 1, MOMO: 1 },
+      policyGate: {
+        issues: expect.arrayContaining([
+          expect.objectContaining({ code: 'PAYMENT_FEE_POLICY_DEFAULTED', count: 1 }),
+          expect.objectContaining({ code: 'PREVIEW_BLOCKED', count: 1 }),
+          expect.objectContaining({ code: 'JOURNAL_RECONCILIATION_REVIEW', count: 1 }),
+        ]),
+        status: 'REVIEW_REQUIRED',
+      },
+      periodStatuses: { CLOSED: 1, OPEN_OR_UNLINKED: 1 },
+      recoveryBatches: [
+        expect.objectContaining({
+          batchKey: 'cash-1',
+          bookingIds: ['historical-gap-2'],
+          executionStatus: 'REVIEW_REQUIRED',
+          paymentMethod: PaymentMethod.CASH,
+          recordCount: 1,
+        }),
+        expect.objectContaining({
+          batchKey: 'momo-1',
+          bookingIds: ['historical-gap-1'],
+          executionStatus: 'REVIEW_REQUIRED',
+          paymentMethod: PaymentMethod.MOMO,
+          recordCount: 1,
+        }),
+      ],
+      totalMatched: 2,
+      truncated: false,
+    });
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ select: { id: true }, take: 100 }),
+    );
+  });
+
+  it('blocks dry-run approval only when zero platform VAT lacks retained rule or policy evidence', async () => {
+    const prisma = {
+      booking: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([{ id: 'historical-gap-unexplained-vat' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'previewBookingSettlementGapRepair').mockResolvedValue({
+      blockers: [],
+      bookingId: 'historical-gap-unexplained-vat',
+      canRepair: true,
+      completedAt: '2026-06-10T03:00:00.000Z',
+      historicalSettlementDryRun: {
+        amounts: {
+          companyOutputVat: 0,
+          partnerWithholdingTotal: 20_000,
+          paymentProcessingFee: 0,
+          platformFeeNetRevenue: 80_000,
+        },
+        customerPaymentAmount: 400_000,
+        journal: { reconciliationDelta: 0, totalCredit: 400_000, totalDebit: 400_000 },
+        partnerPayoutAmount: 300_000,
+        paymentFeePolicyVersionId: 'payment-fee-policy-1',
+        paymentFeeRuleSnapshot: { ruleId: 'payment-fee-rule-1' },
+        platformFeeGross: 80_000,
+        platformFeePolicyVersionId: null,
+        platformFeeRuleSnapshot: null,
+        platformVatRateBps: 0,
+      },
+      monthlyClosingStatus: null,
+      monthlyPeriod: '2026-06',
+      payment: { method: PaymentMethod.MOMO },
+    } as never);
+
+    await expect(service.bookingSettlementGapDryRun({ take: 1 })).resolves.toMatchObject({
+      counts: {
+        platformVatEvidenceReady: 0,
+        platformVatExplicitZeroServiceRule: 0,
+        platformVatUnexplainedZero: 1,
+        platformVatZeroFromPolicy: 0,
+      },
+      policyGate: {
+        issues: [
+          expect.objectContaining({ code: 'PLATFORM_VAT_EVIDENCE_UNEXPLAINED', count: 1 }),
+        ],
+        status: 'REVIEW_REQUIRED',
+      },
+      recoveryBatches: [expect.objectContaining({ executionStatus: 'REVIEW_REQUIRED' })],
+    });
+  });
+
+  it('previews settlement repair eligibility without writing finance records', async () => {
+    const occurredAt = new Date('2026-07-10T03:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-gap-1',
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.COMPLETED,
+          createdAt: occurredAt,
+          updatedAt: occurredAt,
+          closedAt: occurredAt,
+          customerProfile: { id: 'customer-1', user: { fullName: 'Customer One', phone: '0901' } },
+          selectedProvider: {
+            id: 'partner-1',
+            displayName: 'Partner One',
+            user: { fullName: null, phone: '0902' },
+          },
+          payment: {
+            id: 'payment-1',
+            amount: 500_000,
+            currency: 'VND',
+            method: PaymentMethod.CARD,
+            status: PaymentStatus.CAPTURED,
+          },
+          earning: {
+            id: 'earning-1',
+            status: EarningStatus.AVAILABLE,
+            grossAmount: 500_000,
+            platformFee: 100_000,
+            withholdingAmount: 35_000,
+            netAmount: 365_000,
+            currency: 'VND',
+            paidAt: null,
+            payoutBatchId: null,
+          },
+          settlementSnapshot: null,
+          _count: { services: 1 },
+        }),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.REVIEWED }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.previewBookingSettlementGapRepair('booking-gap-1')).resolves.toMatchObject({
+      bookingId: 'booking-gap-1',
+      blockers: [],
+      canRepair: true,
+      completedAt: occurredAt.toISOString(),
+      currency: 'VND',
+      monthlyClosingStatus: MonthlyTaxClosingStatus.REVIEWED,
+      monthlyPeriod: '2026-07',
+      preservesExistingEarningLifecycle: true,
+      repairMode: 'CANONICAL_COMPLETION_SETTLEMENT',
+      serviceCount: 1,
+    });
+    expect(prisma.monthlyTaxClosing.findUnique).toHaveBeenCalledWith({
+      where: { period_currency: { period: '2026-07', currency: 'VND' } },
+      select: { status: true },
+    });
+  });
+
+  it('blocks direct repair for finalized periods and payout-locked earnings', async () => {
+    const occurredAt = new Date('2026-06-10T03:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'booking-gap-locked',
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.COMPLETED,
+          createdAt: occurredAt,
+          updatedAt: occurredAt,
+          closedAt: occurredAt,
+          customerProfile: { id: 'customer-1', user: { fullName: null, phone: '0901' } },
+          selectedProvider: {
+            id: 'partner-1',
+            displayName: 'Partner One',
+            user: { fullName: null, phone: '0902' },
+          },
+          payment: {
+            id: 'payment-1',
+            amount: 500_000,
+            currency: 'VND',
+            method: PaymentMethod.CARD,
+            status: PaymentStatus.CAPTURED,
+          },
+          earning: {
+            id: 'earning-1',
+            status: EarningStatus.PAID,
+            grossAmount: 500_000,
+            platformFee: 100_000,
+            withholdingAmount: 35_000,
+            netAmount: 365_000,
+            currency: 'VND',
+            paidAt: occurredAt,
+            payoutBatchId: 'payout-1',
+          },
+          settlementSnapshot: null,
+          _count: { services: 1 },
+        }),
+      },
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({ status: MonthlyTaxClosingStatus.CLOSED }),
+      },
+    };
+    const earnings = {
+      previewPaidBookingSettlementReconstruction: vi.fn().mockResolvedValue({
+        canReconstruct: false,
+        blockers: [
+          {
+            code: 'PLATFORM_FEE_LOG_AMBIGUOUS',
+            message: 'Exactly one retained platform fee log is required.',
+          },
+        ],
+        evidence: null,
+        evidenceSummary: { platformFeeLogCount: 0, taxLogCount: 1, walletLedgerEntryCount: 2 },
+      }),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(service.previewBookingSettlementGapRepair('booking-gap-locked')).resolves.toMatchObject({
+      canRepair: false,
+      blockers: expect.arrayContaining([
+        expect.objectContaining({ code: 'PLATFORM_FEE_LOG_AMBIGUOUS' }),
+        expect.objectContaining({ code: 'MONTHLY_PERIOD_FINALIZED' }),
+      ]),
+      repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION',
+    });
+  });
+
+  it('repairs an eligible settlement through the canonical completion path with dual approval and audit', async () => {
+    const occurredAt = new Date('2026-07-10T03:00:00.000Z');
+    const booking = {
+      id: 'booking-gap-1',
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'partner-1',
+      status: BookingStatus.COMPLETED,
+      createdAt: occurredAt,
+      updatedAt: occurredAt,
+      closedAt: occurredAt,
+      customerProfile: { id: 'customer-1', user: { fullName: 'Customer One', phone: '0901' } },
+      selectedProvider: {
+        id: 'partner-1',
+        displayName: 'Partner One',
+        user: { fullName: null, phone: '0902' },
+      },
+      payment: {
+        id: 'payment-1',
+        amount: 500_000,
+        currency: 'VND',
+        method: PaymentMethod.CARD,
+        status: PaymentStatus.CAPTURED,
+      },
+      earning: {
+        id: 'earning-1',
+        status: EarningStatus.AVAILABLE,
+        grossAmount: 500_000,
+        platformFee: 100_000,
+        withholdingAmount: 35_000,
+        netAmount: 365_000,
+        currency: 'VND',
+        paidAt: null,
+        payoutBatchId: null,
+      },
+      settlementSnapshot: null,
+      _count: { services: 1 },
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'audit-requested-1' })
+          .mockResolvedValueOnce({ id: 'audit-completed-1' }),
+      },
+      booking: { findUnique: vi.fn().mockResolvedValue(booking) },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-1',
+          sourceKey: 'booking-settlement:booking-gap-1',
+          monthlyPeriod: '2026-07',
+        }),
+      },
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+    };
+    const earnings = {
+      createForCompletedBooking: vi.fn().mockResolvedValue({ id: 'earning-1' }),
+    };
+    const service = createAdminService(prisma, { earnings });
+    vi.spyOn(service, 'verifyBookingSettlementRepair').mockResolvedValue({
+      blockingFailures: [],
+      bookingId: 'booking-gap-1',
+      checkedAt: occurredAt,
+      checks: [],
+      passed: true,
+      repairMode: 'CANONICAL_COMPLETION_SETTLEMENT',
+      snapshotId: 'settlement-1',
+      status: 'PASSED',
+    });
+
+    await expect(
+      service.repairBookingSettlementGap('admin-1', 'booking-gap-1', {
+        approvalAdminId: 'finance-admin-2',
+        reason: 'Restore missing completion settlement',
+      }),
+    ).resolves.toEqual({
+      approvalAdminId: 'finance-admin-2',
+      auditLogId: 'audit-completed-1',
+      bookingId: 'booking-gap-1',
+      checkpoint: expect.objectContaining({ passed: true, status: 'PASSED' }),
+      earningId: 'earning-1',
+      repairMode: 'CANONICAL_COMPLETION_SETTLEMENT',
+      repaired: true,
+      settlementSnapshotId: 'settlement-1',
+    });
+
+    expect(earnings.createForCompletedBooking).toHaveBeenCalledWith('booking-gap-1', 'partner-1', {
+      preserveExistingLifecycle: true,
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledTimes(2);
+    expect(prisma.adminAuditLog.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({
+        action: 'booking_settlement_gap.repaired',
+        actorId: 'admin-1',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          settlementSnapshotId: 'settlement-1',
+        }),
+        target: 'booking:booking-gap-1',
+      }),
+    });
+  });
+
+  it('reconstructs a paid settlement from retained evidence without invoking canonical earning mutation', async () => {
+    const occurredAt = new Date('2026-06-10T03:00:00.000Z');
+    const booking = {
+      id: 'booking-gap-paid',
+      customerProfileId: 'customer-1',
+      selectedProviderId: 'partner-1',
+      status: BookingStatus.COMPLETED,
+      createdAt: occurredAt,
+      updatedAt: occurredAt,
+      closedAt: occurredAt,
+      customerProfile: { id: 'customer-1', user: { fullName: 'Customer One', phone: '0901' } },
+      selectedProvider: {
+        id: 'partner-1',
+        displayName: 'Partner One',
+        user: { fullName: null, phone: '0902' },
+      },
+      payment: {
+        id: 'payment-1',
+        amount: 400_000,
+        currency: 'VND',
+        method: PaymentMethod.MOMO,
+        status: PaymentStatus.CAPTURED,
+      },
+      earning: {
+        id: 'earning-paid-1',
+        status: EarningStatus.PAID,
+        grossAmount: 400_000,
+        platformFee: 80_000,
+        withholdingAmount: 20_000,
+        netAmount: 300_000,
+        currency: 'VND',
+        paidAt: occurredAt,
+        payoutBatchId: 'payout-1',
+      },
+      settlementSnapshot: null,
+      _count: { services: 1 },
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'audit-requested-1' })
+          .mockResolvedValueOnce({ id: 'audit-completed-1' }),
+      },
+      booking: { findUnique: vi.fn().mockResolvedValue(booking) },
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-paid-1',
+          sourceKey: 'booking-settlement:booking-gap-paid',
+          monthlyPeriod: '2026-06',
+        }),
+      },
+      monthlyTaxClosing: { findUnique: vi.fn().mockResolvedValue(null) },
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+    };
+    const earnings = {
+      createForCompletedBooking: vi.fn(),
+      previewPaidBookingSettlementReconstruction: vi.fn().mockResolvedValue({
+        canReconstruct: true,
+        blockers: [],
+        evidence: { bookingId: 'booking-gap-paid' },
+        evidenceSummary: { platformFeeLogCount: 1, taxLogCount: 1, walletLedgerEntryCount: 2 },
+      }),
+      reconstructPaidBookingSettlement: vi.fn().mockResolvedValue({
+        earningId: 'earning-paid-1',
+        settlementSnapshot: { id: 'settlement-paid-1' },
+      }),
+    };
+    const service = createAdminService(prisma, { earnings });
+    vi.spyOn(service, 'verifyBookingSettlementRepair').mockRejectedValue(
+      new Error('checkpoint read failed'),
+    );
+
+    await expect(
+      service.repairBookingSettlementGap('admin-1', 'booking-gap-paid', {
+        approvalAdminId: 'finance-admin-2',
+        reason: 'Reconstruct historical paid settlement evidence',
+      }),
+    ).resolves.toMatchObject({
+      bookingId: 'booking-gap-paid',
+      checkpoint: expect.objectContaining({
+        blockingFailures: ['CHECKPOINT_UNAVAILABLE'],
+        passed: false,
+        status: 'FAILED',
+      }),
+      earningId: 'earning-paid-1',
+      repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION',
+      repaired: true,
+      settlementSnapshotId: 'settlement-paid-1',
+    });
+    expect(earnings.reconstructPaidBookingSettlement).toHaveBeenCalledWith('booking-gap-paid', 'partner-1', {
+      actorId: 'admin-1',
+      approvalAdminId: 'finance-admin-2',
+      reason: 'Reconstruct historical paid settlement evidence',
+    });
+    expect(earnings.createForCompletedBooking).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({
+        action: 'booking_settlement_gap.historical_reconstructed',
+        actorId: 'admin-1',
+        metadata: expect.objectContaining({
+          checkpointBlockingFailures: ['CHECKPOINT_UNAVAILABLE'],
+          checkpointStatus: 'FAILED',
+        }),
+        target: 'booking:booking-gap-paid',
+      }),
+    });
+  });
+
+  it('passes the post-repair checkpoint when historical journal, clearing, and retained evidence reconcile', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-paid-1',
+          sourceKey: 'booking-settlement:booking-gap-paid',
+          bookingId: 'booking-gap-paid',
+          paymentId: 'payment-1',
+          providerEarningId: 'earning-paid-1',
+          paymentMethod: PaymentMethod.MOMO,
+          currency: 'VND',
+          customerPaymentAmount: 400_000,
+          partnerPayoutAmount: 300_000,
+          partnerWithholdingTotal: 20_000,
+          platformFeeGross: 80_000,
+          providerTaxLogIds: ['tax-1'],
+          providerPlatformFeeLogId: 'fee-1',
+          providerWalletLedgerEntryIds: ['wallet-earning-1', 'wallet-paid-1'],
+          metadata: { historicalReconstruction: true },
+          accountingJournalBatches: [
+            {
+              id: 'journal-1',
+              sourceKey: 'accounting-journal:booking-settlement:booking-gap-paid',
+              sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+              sourceId: 'settlement-paid-1',
+              settlementSnapshotId: 'settlement-paid-1',
+              status: AccountingJournalBatchStatus.POSTED,
+              totalDebit: 400_000,
+              totalCredit: 400_000,
+              metadata: { reconciliationDelta: 0 },
+              entries: [
+                { side: AccountingJournalEntrySide.DEBIT, amount: 400_000 },
+                { side: AccountingJournalEntrySide.CREDIT, amount: 300_000 },
+                { side: AccountingJournalEntrySide.CREDIT, amount: 20_000 },
+                { side: AccountingJournalEntrySide.CREDIT, amount: 80_000 },
+              ],
+            },
+          ],
+          paymentClearingEntries: [
+            {
+              id: 'clearing-1',
+              sourceKey: 'booking-payment-clearing:booking-gap-paid:settlement',
+              type: BookingPaymentClearingEntryType.SETTLEMENT_POSTED,
+              status: BookingPaymentClearingStatus.OPEN,
+              paymentId: 'payment-1',
+              settlementSnapshotId: 'settlement-paid-1',
+              amount: 400_000,
+              currency: 'VND',
+            },
+          ],
+          providerEarning: {
+            id: 'earning-paid-1',
+            status: EarningStatus.PAID,
+            paidAt: new Date('2026-06-10T03:00:00.000Z'),
+            grossAmount: 400_000,
+            netAmount: 300_000,
+            currency: 'VND',
+            platformFeeLogs: [{ id: 'fee-1' }],
+            taxLogs: [{ id: 'tax-1' }],
+            walletLedgerEntries: [
+              {
+                id: 'wallet-earning-1',
+                type: ProviderWalletLedgerType.BOOKING_EARNING,
+                amount: 300_000,
+              },
+              {
+                id: 'wallet-paid-1',
+                type: ProviderWalletLedgerType.PAYOUT_PAID,
+                amount: -300_000,
+              },
+            ],
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.verifyBookingSettlementRepair('booking-gap-paid');
+
+    expect(result).toMatchObject({
+      blockingFailures: [],
+      bookingId: 'booking-gap-paid',
+      passed: true,
+      repairMode: 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION',
+      snapshotId: 'settlement-paid-1',
+      status: 'PASSED',
+    });
+    expect(result.checks.every((check) => check.passed)).toBe(true);
+  });
+
+  it('accepts a cash settlement checkpoint without an external payment clearing entry', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-cash-1',
+          sourceKey: 'booking-settlement:booking-cash-1',
+          bookingId: 'booking-cash-1',
+          paymentId: 'payment-cash-1',
+          providerEarningId: 'earning-cash-1',
+          paymentMethod: PaymentMethod.CASH,
+          currency: 'VND',
+          customerPaymentAmount: 400_000,
+          partnerPayoutAmount: 320_000,
+          partnerWithholdingTotal: 0,
+          platformFeeGross: 80_000,
+          providerTaxLogIds: null,
+          providerPlatformFeeLogId: null,
+          providerWalletLedgerEntryIds: null,
+          metadata: null,
+          accountingJournalBatches: [
+            {
+              id: 'journal-cash-1',
+              sourceKey: 'accounting-journal:booking-settlement:booking-cash-1',
+              sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+              sourceId: 'settlement-cash-1',
+              settlementSnapshotId: 'settlement-cash-1',
+              status: AccountingJournalBatchStatus.POSTED,
+              totalDebit: 80_000,
+              totalCredit: 80_000,
+              metadata: { reconciliationDelta: 0 },
+              entries: [
+                { side: AccountingJournalEntrySide.DEBIT, amount: 80_000 },
+                { side: AccountingJournalEntrySide.CREDIT, amount: 80_000 },
+              ],
+            },
+          ],
+          paymentClearingEntries: [],
+          providerEarning: {
+            id: 'earning-cash-1',
+            status: EarningStatus.AVAILABLE,
+            paidAt: null,
+            grossAmount: 400_000,
+            netAmount: -80_000,
+            currency: 'VND',
+            platformFeeLogs: [],
+            taxLogs: [],
+            walletLedgerEntries: [],
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.verifyBookingSettlementRepair('booking-cash-1');
+
+    expect(result.passed).toBe(true);
+    expect(result.checks.find((check) => check.code === 'PAYMENT_CLEARING_EXPECTATION')).toMatchObject({
+      actual: 0,
+      expected: 0,
+      passed: true,
+    });
+  });
+
+  it('fails the post-repair checkpoint when journal or clearing evidence is inconsistent', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'settlement-broken-1',
+          sourceKey: 'booking-settlement:booking-broken-1',
+          bookingId: 'booking-broken-1',
+          paymentId: 'payment-broken-1',
+          providerEarningId: 'earning-broken-1',
+          paymentMethod: PaymentMethod.CARD,
+          currency: 'VND',
+          customerPaymentAmount: 400_000,
+          partnerPayoutAmount: 300_000,
+          partnerWithholdingTotal: 20_000,
+          platformFeeGross: 80_000,
+          providerTaxLogIds: null,
+          providerPlatformFeeLogId: null,
+          providerWalletLedgerEntryIds: null,
+          metadata: null,
+          accountingJournalBatches: [
+            {
+              id: 'journal-broken-1',
+              sourceKey: 'accounting-journal:booking-settlement:booking-broken-1',
+              sourceType: AccountingJournalSourceType.BOOKING_SETTLEMENT,
+              sourceId: 'settlement-broken-1',
+              settlementSnapshotId: 'settlement-broken-1',
+              status: AccountingJournalBatchStatus.POSTED,
+              totalDebit: 400_000,
+              totalCredit: 390_000,
+              metadata: { reconciliationDelta: 10_000 },
+              entries: [
+                { side: AccountingJournalEntrySide.DEBIT, amount: 400_000 },
+                { side: AccountingJournalEntrySide.CREDIT, amount: 390_000 },
+              ],
+            },
+          ],
+          paymentClearingEntries: [],
+          providerEarning: {
+            id: 'earning-broken-1',
+            status: EarningStatus.AVAILABLE,
+            paidAt: null,
+            grossAmount: 400_000,
+            netAmount: 300_000,
+            currency: 'VND',
+            platformFeeLogs: [],
+            taxLogs: [],
+            walletLedgerEntries: [],
+          },
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.verifyBookingSettlementRepair('booking-broken-1');
+
+    expect(result).toMatchObject({
+      passed: false,
+      status: 'FAILED',
+    });
+    expect(result.blockingFailures).toEqual(
+      expect.arrayContaining([
+        'JOURNAL_BALANCED',
+        'RECONCILIATION_DELTA_ZERO',
+        'PAYMENT_CLEARING_EXPECTATION',
+      ]),
+    );
+  });
+
+  it('rejects settlement repair approval by the acting admin', async () => {
+    const service = createAdminService({});
+
+    await expect(
+      service.repairBookingSettlementGap('admin-1', 'booking-gap-1', {
+        approvalAdminId: 'admin-1',
+        reason: 'Restore missing completion settlement',
+      }),
+    ).rejects.toThrow('Booking settlement repair requires approval from a different admin');
+  });
+
   it('lists booking settlement snapshots with bounded range and review filters', async () => {
     const prisma = {
       bookingSettlementSnapshot: {
@@ -8830,6 +10913,47 @@ describe('AdminService query orchestration', () => {
     expect(listSelect).not.toHaveProperty('metadata');
   });
 
+  it('keeps the payment fee evidence queue bounded to the selected monthly period', async () => {
+    const prisma = {
+      bookingSettlementSnapshot: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'settlement-fee-review-1' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listBookingSettlementSnapshots({
+        period: '2026-07',
+        paymentMethod: 'momo',
+        range: 'all',
+        review: 'payment-fee-evidence',
+        take: '25',
+      }),
+    ).resolves.toEqual([{ id: 'settlement-fee-review-1' }]);
+
+    expect(prisma.bookingSettlementSnapshot.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          paymentFeePolicyVersionId: true,
+          paymentFeeRuleSnapshot: true,
+        }),
+        take: 25,
+        where: {
+          AND: [
+            { monthlyPeriod: '2026-07' },
+            { paymentMethod: PaymentMethod.MOMO },
+            {
+              OR: [
+                { paymentFeePolicyVersionId: null },
+                { paymentFeeRuleSnapshot: { path: ['reason'], not: Prisma.JsonNull } },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+  });
+
   it('loads one booking settlement snapshot with the finance audit select', async () => {
     const prisma = {
       bookingSettlementSnapshot: {
@@ -8838,7 +10962,9 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    await expect(service.getBookingSettlementSnapshot('settlement-1')).resolves.toEqual({ id: 'settlement-1' });
+    await expect(service.getBookingSettlementSnapshot('settlement-1')).resolves.toEqual({
+      id: 'settlement-1',
+    });
 
     expect(prisma.bookingSettlementSnapshot.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -9352,7 +11478,9 @@ describe('AdminService query orchestration', () => {
   it('lists active company bank accounts for manual reconciliation imports', async () => {
     const prisma = {
       companyBankAccount: {
-        findMany: vi.fn().mockResolvedValue([{ id: 'bank-account-1', status: CompanyBankAccountStatus.ACTIVE }]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: 'bank-account-1', status: CompanyBankAccountStatus.ACTIVE }]),
       },
     };
     const service = createAdminService(prisma);
@@ -9377,22 +11505,252 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('creates a masked company bank account with separate approval and audit evidence', async () => {
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      companyBankAccount: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({
+          accountNumberLast4: '1234',
+          accountNumberMasked: '****1234',
+          bankName: 'VCB',
+          currency: 'VND',
+          id: 'bank-account-1',
+          name: 'Operations VND',
+          status: CompanyBankAccountStatus.ACTIVE,
+        }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.createCompanyBankAccount('admin-user-1', {
+      accountNumberLast4: '1234',
+      accountNumberMasked: ' ****1234 ',
+      approvalAdminId: 'finance-admin-2',
+      bankName: ' VCB ',
+      currency: 'vnd',
+      name: ' Operations VND ',
+      operatorReason: 'Reviewed treasury account evidence',
+    })).resolves.toMatchObject({ id: 'bank-account-1', status: CompanyBankAccountStatus.ACTIVE });
+
+    expect(prisma.companyBankAccount.findFirst).toHaveBeenCalledWith({
+      where: {
+        accountNumberLast4: '1234',
+        bankName: { equals: 'VCB', mode: 'insensitive' },
+        currency: 'VND',
+        status: { not: CompanyBankAccountStatus.DISABLED },
+      },
+      select: { id: true },
+    });
+    expect(prisma.companyBankAccount.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        accountNumberLast4: '1234',
+        accountNumberMasked: '****1234',
+        bankName: 'VCB',
+        currency: 'VND',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          createdByAdminId: 'admin-user-1',
+          operatorReason: 'Reviewed treasury account evidence',
+        }),
+        name: 'Operations VND',
+        status: CompanyBankAccountStatus.ACTIVE,
+      }),
+      select: expect.objectContaining({ id: true }),
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_account.create',
+        actorId: 'admin-user-1',
+        metadata: expect.objectContaining({ approvalAdminId: 'finance-admin-2' }),
+        target: 'company_bank_account:bank-account-1',
+      }),
+    });
+  });
+
+  it('rejects unmasked full company bank account numbers before persistence', async () => {
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      companyBankAccount: { findFirst: vi.fn(), create: vi.fn() },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.createCompanyBankAccount('admin-user-1', {
+      accountNumberLast4: '5678',
+      accountNumberMasked: '12345678',
+      approvalAdminId: 'finance-admin-2',
+      bankName: 'VCB',
+      currency: 'VND',
+      name: 'Unsafe account',
+      operatorReason: 'Reviewed treasury account evidence',
+    })).rejects.toThrow('Full bank account numbers must not be stored');
+    expect(prisma.companyBankAccount.findFirst).not.toHaveBeenCalled();
+    expect(prisma.companyBankAccount.create).not.toHaveBeenCalled();
+  });
+
+  it('updates account name and status atomically while retaining before and after audit evidence', async () => {
+    const updatedAt = new Date('2026-07-15T01:00:00.000Z');
+    const existing = {
+      accountNumberLast4: '1234',
+      accountNumberMasked: '****1234',
+      bankName: 'VCB',
+      currency: 'VND',
+      id: 'bank-account-1',
+      metadata: { createdByAdminId: 'admin-user-0' },
+      name: 'Operations VND',
+      status: CompanyBankAccountStatus.ACTIVE,
+      updatedAt,
+      _count: { transactions: 4 },
+    };
+    const result = {
+      accountNumberLast4: '1234',
+      accountNumberMasked: '****1234',
+      bankName: 'VCB',
+      currency: 'VND',
+      id: 'bank-account-1',
+      name: 'Treasury VND',
+      status: CompanyBankAccountStatus.INACTIVE,
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      companyBankAccount: {
+        findUnique: vi.fn().mockResolvedValueOnce(existing).mockResolvedValueOnce(result),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.updateCompanyBankAccount('admin-user-1', 'bank-account-1', {
+      approvalAdminId: 'finance-admin-2',
+      name: ' Treasury VND ',
+      operatorReason: 'Archive after treasury owner review',
+      status: CompanyBankAccountStatus.INACTIVE,
+    })).resolves.toEqual(result);
+
+    expect(prisma.companyBankAccount.updateMany).toHaveBeenCalledWith({
+      where: { id: 'bank-account-1', updatedAt },
+      data: expect.objectContaining({
+        name: 'Treasury VND',
+        status: CompanyBankAccountStatus.INACTIVE,
+        metadata: expect.objectContaining({
+          createdByAdminId: 'admin-user-0',
+          lastApprovalAdminId: 'finance-admin-2',
+          lastOperatorReason: 'Archive after treasury owner review',
+          lastUpdatedByAdminId: 'admin-user-1',
+        }),
+      }),
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_account.update',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          before: expect.objectContaining({ name: 'Operations VND', status: CompanyBankAccountStatus.ACTIVE }),
+          after: expect.objectContaining({ name: 'Treasury VND', status: CompanyBankAccountStatus.INACTIVE }),
+        }),
+        target: 'company_bank_account:bank-account-1',
+      }),
+    });
+  });
+
+  it('blocks bank identity changes after transaction history exists', async () => {
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      companyBankAccount: {
+        findUnique: vi.fn().mockResolvedValue({
+          accountNumberLast4: '1234',
+          accountNumberMasked: '****1234',
+          bankName: 'VCB',
+          currency: 'VND',
+          id: 'bank-account-1',
+          metadata: null,
+          name: 'Operations VND',
+          status: CompanyBankAccountStatus.ACTIVE,
+          updatedAt: new Date('2026-07-15T01:00:00.000Z'),
+          _count: { transactions: 1 },
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.updateCompanyBankAccount('admin-user-1', 'bank-account-1', {
+      approvalAdminId: 'finance-admin-2',
+      bankName: 'ACB',
+      operatorReason: 'Correct bank after treasury review',
+    })).rejects.toThrow('Bank identity and currency cannot be changed after transactions exist');
+    expect(prisma.companyBankAccount.updateMany).not.toHaveBeenCalled();
+  });
+
   it('lists bank reconciliation transactions with bounded occurrence filters and match counts only', async () => {
     const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            actor: {
+              email: 'master@hands.test',
+              fullName: 'Master Admin',
+              id: 'master-admin-1',
+            },
+            actorId: 'master-admin-1',
+            createdAt: new Date('2026-07-15T03:00:00.000Z'),
+            id: 'assignment-1',
+            metadata: {
+              assignedAt: '2026-07-15T03:00:00.000Z',
+              assignedByAdminId: 'master-admin-1',
+              assigneeAdminId: 'finance-operator-1',
+              reason: 'Review unmatched bank evidence',
+            },
+            target: 'bank_transaction:bank-tx-1',
+          },
+        ]),
+      },
       companyBankTransaction: {
         findMany: vi.fn().mockResolvedValue([{ id: 'bank-tx-1' }]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            email: 'finance@hands.test',
+            fullName: 'Finance Operator',
+            id: 'finance-operator-1',
+          },
+          {
+            email: 'master@hands.test',
+            fullName: 'Master Admin',
+            id: 'master-admin-1',
+          },
+        ]),
       },
     };
     const service = createAdminService(prisma);
 
     await expect(
       service.listBankReconciliationTransactions({
+        q: 'VCB-500',
         range: '7d',
         review: 'unmatched',
         skip: '50',
         take: '75',
       }),
-    ).resolves.toEqual([{ id: 'bank-tx-1' }]);
+    ).resolves.toEqual([
+      {
+        id: 'bank-tx-1',
+        reviewAssignment: {
+          assignedAt: '2026-07-15T03:00:00.000Z',
+          assignedByAdminId: 'master-admin-1',
+          assignee: {
+            email: 'finance@hands.test',
+            fullName: 'Finance Operator',
+            id: 'finance-operator-1',
+          },
+          assigneeAdminId: 'finance-operator-1',
+          reason: 'Review unmatched bank evidence',
+        },
+      },
+    ]);
 
     expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -9406,6 +11764,14 @@ describe('AdminService query orchestration', () => {
           AND: expect.arrayContaining([
             expect.objectContaining({ occurredAt: expect.objectContaining({ gte: expect.any(Date) }) }),
             { status: BankReconciliationStatus.UNMATCHED },
+            {
+              OR: [
+                { transferRef: { contains: 'VCB-500', mode: 'insensitive' } },
+                { counterpartyName: { contains: 'VCB-500', mode: 'insensitive' } },
+                { description: { contains: 'VCB-500', mode: 'insensitive' } },
+                { sourceKey: { contains: 'VCB-500', mode: 'insensitive' } },
+              ],
+            },
           ]),
         }),
       }),
@@ -9424,6 +11790,372 @@ describe('AdminService query orchestration', () => {
         name: true,
       }),
     );
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      distinct: ['target'],
+      orderBy: [{ target: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      select: expect.objectContaining({ target: true }),
+      where: {
+        action: 'company_bank_transaction.review_assignment',
+        target: { in: ['bank_transaction:bank-tx-1'] },
+      },
+    });
+  });
+
+  it('summarizes paid withdrawal candidates for visible outflows in one bounded aggregate query', async () => {
+    const transactions = [
+      {
+        id: 'bank-outflow-strong',
+        occurredAt: new Date(Date.now() - 50 * 60 * 60 * 1000),
+        status: BankReconciliationStatus.UNMATCHED,
+        type: CompanyBankTransactionType.OUTFLOW,
+      },
+      {
+        id: 'bank-outflow-none',
+        occurredAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        status: BankReconciliationStatus.PARTIALLY_MATCHED,
+        type: CompanyBankTransactionType.OUTFLOW,
+      },
+      {
+        id: 'bank-inflow-ignored-by-candidate-query',
+        occurredAt: new Date(),
+        status: BankReconciliationStatus.UNMATCHED,
+        type: CompanyBankTransactionType.INFLOW,
+      },
+    ];
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          bankTransactionId: 'bank-outflow-strong',
+          candidateCount: 3n,
+          strongCount: 1n,
+        },
+      ]),
+      adminAuditLog: { findMany: vi.fn().mockResolvedValue([]) },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue(transactions),
+      },
+      user: { findMany: vi.fn() },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listBankReconciliationTransactions({ range: '30d', review: 'outflow', take: 10 }),
+    ).resolves.toEqual([
+      {
+        ...transactions[0],
+        withdrawalCandidateSummary: {
+          candidateCount: 3,
+          confidence: 'STRONG',
+          reviewCount: 2,
+          slaStatus: 'OVER_48H',
+          strongCount: 1,
+          waitingHours: 50,
+        },
+      },
+      {
+        ...transactions[1],
+        withdrawalCandidateSummary: {
+          candidateCount: 0,
+          confidence: 'NONE',
+          reviewCount: 0,
+          slaStatus: 'OVER_24H',
+          strongCount: 0,
+          waitingHours: 25,
+        },
+      },
+      transactions[2],
+    ]);
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('COUNT(*) FILTER');
+    expect(queryText).toContain('NOT EXISTS');
+    expect(queryText).toContain('withdrawalRequestId');
+    expect(queryText).toContain('GROUP BY bank."id"');
+    expect(query.values).toContain('bank-outflow-strong');
+    expect(query.values).toContain('bank-outflow-none');
+    expect(query.values).not.toContain('bank-inflow-ignored-by-candidate-query');
+    expect(query.values).toContain(ProviderWalletWithdrawalRequestStatus.PAID);
+  });
+
+  it('filters withdrawal candidates before pagination and preserves the ranked bank row order', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          bankTransactionId: 'bank-outflow-2',
+          candidateCount: 2n,
+          reviewAssignedAt: new Date('2026-07-14T03:00:00.000Z'),
+          reviewAssignedByAdminId: 'master-admin-1',
+          reviewAssigneeAdminId: 'finance-operator-1',
+          reviewAssignmentReason: 'Review missing evidence',
+          strongCount: 1n,
+        },
+        { bankTransactionId: 'bank-outflow-1', candidateCount: 1n, strongCount: 1n },
+      ]),
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'bank-outflow-1',
+            occurredAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            status: BankReconciliationStatus.UNMATCHED,
+            type: CompanyBankTransactionType.OUTFLOW,
+          },
+          {
+            id: 'bank-outflow-2',
+            occurredAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+            status: BankReconciliationStatus.UNMATCHED,
+            type: CompanyBankTransactionType.OUTFLOW,
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            email: 'finance-operator-1@hands.test',
+            fullName: 'Finance Operator One',
+            id: 'finance-operator-1',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const rows = await service.listBankReconciliationTransactions({
+      assigneeAdminId: 'finance-operator-1',
+      assignment: 'assigned',
+      candidate: 'strong',
+      q: 'VCB-OUT',
+      range: '30d',
+      review: 'unmatched',
+      skip: 10,
+      take: 25,
+    });
+
+    expect(rows.map((row) => row.id)).toEqual(['bank-outflow-2', 'bank-outflow-1']);
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        reviewAssignment: {
+          assignedAt: '2026-07-14T03:00:00.000Z',
+          assignedByAdminId: 'master-admin-1',
+          assignee: {
+            email: 'finance-operator-1@hands.test',
+            fullName: 'Finance Operator One',
+            id: 'finance-operator-1',
+          },
+          assigneeAdminId: 'finance-operator-1',
+          reason: 'Review missing evidence',
+        },
+        withdrawalCandidateSummary: {
+          candidateCount: 2,
+          confidence: 'STRONG',
+          reviewCount: 1,
+          reviewAssignment: {
+            assignedAt: '2026-07-14T03:00:00.000Z',
+            assignedByAdminId: 'master-admin-1',
+            assignee: {
+              email: 'finance-operator-1@hands.test',
+              fullName: 'Finance Operator One',
+              id: 'finance-operator-1',
+            },
+            assigneeAdminId: 'finance-operator-1',
+            reason: 'Review missing evidence',
+          },
+          slaStatus: 'OVER_48H',
+          strongCount: 1,
+          waitingHours: 72,
+        },
+      }),
+    );
+    expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith({
+      select: expect.objectContaining({ id: true }),
+      where: { id: { in: ['bank-outflow-2', 'bank-outflow-1'] } },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      select: { email: true, fullName: true, id: true },
+      where: { id: { in: ['finance-operator-1'] } },
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; text?: string; values?: unknown[] };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('WITH withdrawal_candidates AS');
+    expect(queryText).toContain('candidates."strongCount" > 0');
+    expect(queryText).toContain('ORDER BY candidates."occurredAt" ASC');
+    expect(queryText).toContain('LEFT JOIN LATERAL');
+    expect(queryText).toContain('OFFSET');
+    expect(queryText).toContain('LIMIT');
+    expect(query.values).toContain('%VCB-OUT%');
+    expect(query.values).toContain('company_bank_transaction.review_assignment');
+    expect(query.values).toContain('finance-operator-1');
+    expect(query.values).toContain(10);
+    expect(query.values).toContain(25);
+  });
+
+  it('uses the same withdrawal candidate condition for reconciliation summary totals', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        { amount: 900000n, count: 2n, matchedCount: 0n, unmatchedCount: 2n },
+      ]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.bankReconciliationSummary({
+        assignment: 'unassigned',
+        candidate: 'review',
+        range: '7d',
+        review: 'unmatched',
+      }),
+    ).resolves.toEqual({
+      amount: 900000,
+      count: 2,
+      currency: 'VND',
+      matchedCount: 0,
+      unmatchedCount: 2,
+    });
+
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; text?: string };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('candidates."candidateCount" > 0');
+    expect(queryText).toContain('candidates."strongCount" = 0');
+    expect(queryText).toContain('SUM(candidates."amount")');
+    expect(queryText).toContain('IS NULL');
+  });
+
+  it('summarizes all withdrawal candidate priorities in one aggregate query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          assignedCount: 4n,
+          assignments: [
+            {
+              assigneeAdminId: 'finance-operator-1',
+              count: 3,
+              over24hCount: 2,
+              over48hCount: 1,
+            },
+            {
+              assigneeAdminId: 'finance-operator-2',
+              count: 1,
+              over24hCount: 0,
+              over48hCount: 0,
+            },
+          ],
+          eligibleCount: 7n,
+          noneAmount: 300000n,
+          noneCount: 3n,
+          oldestReviewOccurredAt: new Date('2026-07-13T04:00:00.000Z'),
+          oldestStrongOccurredAt: new Date('2026-07-12T03:00:00.000Z'),
+          reviewAmount: 450000n,
+          reviewCount: 2n,
+          reviewOver24hCount: 1n,
+          reviewOver48hCount: 0n,
+          strongAmount: 800000n,
+          strongCount: 2n,
+          strongOver24hCount: 2n,
+          strongOver48hCount: 1n,
+          unassignedCount: 3n,
+        },
+      ]),
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            email: 'finance-operator-1@hands.test',
+            fullName: 'Finance Operator One',
+            id: 'finance-operator-1',
+          },
+          {
+            email: 'finance-operator-2@hands.test',
+            fullName: 'Finance Operator Two',
+            id: 'finance-operator-2',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.bankReconciliationWithdrawalCandidateSummary({ q: 'VCB-OUT', range: '30d' }),
+    ).resolves.toEqual({
+      assignedCount: 4,
+      assignments: [
+        {
+          assignee: {
+            email: 'finance-operator-1@hands.test',
+            fullName: 'Finance Operator One',
+            id: 'finance-operator-1',
+          },
+          assigneeAdminId: 'finance-operator-1',
+          count: 3,
+          over24hCount: 2,
+          over48hCount: 1,
+        },
+        {
+          assignee: {
+            email: 'finance-operator-2@hands.test',
+            fullName: 'Finance Operator Two',
+            id: 'finance-operator-2',
+          },
+          assigneeAdminId: 'finance-operator-2',
+          count: 1,
+          over24hCount: 0,
+          over48hCount: 0,
+        },
+      ],
+      currency: 'VND',
+      eligibleCount: 7,
+      noneAmount: 300000,
+      noneCount: 3,
+      oldestReviewOccurredAt: '2026-07-13T04:00:00.000Z',
+      oldestStrongOccurredAt: '2026-07-12T03:00:00.000Z',
+      reviewAmount: 450000,
+      reviewCount: 2,
+      reviewOver24hCount: 1,
+      reviewOver48hCount: 0,
+      strongAmount: 800000,
+      strongCount: 2,
+      strongOver24hCount: 2,
+      strongOver48hCount: 1,
+      unassignedCount: 3,
+    });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      select: { email: true, fullName: true, id: true },
+      where: { id: { in: ['finance-operator-1', 'finance-operator-2'] } },
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; text?: string; values?: unknown[] };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('WITH withdrawal_candidates AS');
+    expect(queryText).toContain('COUNT(*) FILTER');
+    expect(queryText).toContain('"strongAmount"');
+    expect(queryText).toContain('"reviewAmount"');
+    expect(queryText).toContain('"noneAmount"');
+    expect(queryText).toContain('MIN(candidates."occurredAt")');
+    expect(queryText).toContain('assignment_groups');
+    expect(queryText).toContain('"unassignedCount"');
+    expect(queryText).toContain("INTERVAL '24 hours'");
+    expect(queryText).toContain("INTERVAL '48 hours'");
+    expect(query.values).toContain('%VCB-OUT%');
+  });
+
+  it('keeps the Finance Overview 90-day candidate range instead of falling back to today', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+    };
+    const service = createAdminService(prisma);
+
+    await service.bankReconciliationWithdrawalCandidateSummary({ range: '90d' });
+
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as { values?: unknown[] };
+    const dateBounds = (query.values ?? []).filter((value): value is Date => value instanceof Date);
+    expect(dateBounds).toHaveLength(2);
+    const spanMs = dateBounds[1].getTime() - dateBounds[0].getTime();
+    expect(spanMs).toBeGreaterThanOrEqual(89 * 24 * 60 * 60_000);
+    expect(spanMs).toBeLessThanOrEqual(90 * 24 * 60 * 60_000);
   });
 
   it('summarizes bank reconciliation transactions without loading transaction rows', async () => {
@@ -9458,21 +12190,219 @@ describe('AdminService query orchestration', () => {
       companyBankTransaction: {
         findUnique: vi.fn().mockResolvedValue({
           id: 'bank-tx-1',
+          metadata: {
+            approvalAdminId: 'hidden-create-approver',
+            batchImportId: 'batch-import-1',
+            ignoreApprovedByAdminId: 'finance-admin-2',
+            ignoredAt: '2026-07-14T01:00:00.000Z',
+            ignoredByAdminId: 'admin-user-1',
+            ignoreReason: 'Duplicate imported statement row',
+            importedByAdminId: 'hidden-importer',
+            operatorReason: 'Verified statement evidence.',
+            sourceFileName: 'vcb-2026-07-14.csv',
+          },
           reconciliationMatches: [{ id: 'match-1', amount: 900000 }],
         }),
+      },
+      adminAuditLog: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([
+            {
+              action: 'bank_reconciliation.match.reverse',
+              actor: {
+                id: 'reversal-maker-3',
+                email: 'reversal-maker@hands.test',
+                fullName: 'Reversal Maker',
+              },
+              actorId: 'reversal-maker-3',
+              createdAt: new Date('2026-07-14T02:05:00.000Z'),
+              metadata: {
+                approvalAdminId: 'reversal-approver-3',
+                matchId: 'match-1',
+                bankStatusBefore: BankReconciliationStatus.MATCHED,
+                bankStatusAfter: BankReconciliationStatus.UNMATCHED,
+                reason: 'Matched against the wrong clearing source.',
+              },
+            },
+            {
+              action: 'bank_reconciliation.match.create',
+              actor: {
+                id: 'admin-user-1',
+                email: 'maker@hands.test',
+                fullName: 'Maker Admin',
+              },
+              actorId: 'admin-user-1',
+              createdAt: new Date('2026-07-14T01:05:00.000Z'),
+              metadata: {
+                approvalAdminId: 'finance-admin-2',
+                matchId: 'match-1',
+                bankStatusBefore: BankReconciliationStatus.UNMATCHED,
+                bankStatusAfter: BankReconciliationStatus.MATCHED,
+              },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              id: 'assignment-2',
+              actor: {
+                id: 'admin-user-1',
+                email: 'maker@hands.test',
+                fullName: 'Maker Admin',
+              },
+              actorId: 'admin-user-1',
+              createdAt: new Date('2026-07-14T00:30:00.000Z'),
+              metadata: {
+                assignedAt: '2026-07-14T00:30:00.000Z',
+                assigneeAdminId: 'owner-admin-2',
+                assignedByAdminId: 'admin-user-1',
+                previousAssigneeAdminId: 'owner-admin-1',
+                reason: 'Reassigned for Finance closeout.',
+              },
+            },
+          ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'finance-admin-2',
+            email: 'approver@hands.test',
+            fullName: 'Finance Approver',
+          },
+          {
+            id: 'admin-user-1',
+            email: 'maker@hands.test',
+            fullName: 'Maker Admin',
+          },
+          {
+            id: 'owner-admin-1',
+            email: 'first-owner@hands.test',
+            fullName: 'First Owner',
+          },
+          {
+            id: 'owner-admin-2',
+            email: 'current-owner@hands.test',
+            fullName: 'Current Owner',
+          },
+          {
+            id: 'hidden-create-approver',
+            email: 'import-approver@hands.test',
+            fullName: 'Import Approver',
+          },
+          {
+            id: 'hidden-importer',
+            email: 'importer@hands.test',
+            fullName: 'Bank Importer',
+          },
+          {
+            id: 'reversal-approver-3',
+            email: 'reversal-approver@hands.test',
+            fullName: 'Reversal Approver',
+          },
+        ]),
       },
     };
     const service = createAdminService(prisma);
 
     await expect(service.bankReconciliationTransactionDetail('bank-tx-1')).resolves.toEqual({
       id: 'bank-tx-1',
-      reconciliationMatches: [{ id: 'match-1', amount: 900000 }],
+      creationEvidence: {
+        approvalAdmin: {
+          email: 'import-approver@hands.test',
+          fullName: 'Import Approver',
+          id: 'hidden-create-approver',
+        },
+        approvalAdminId: 'hidden-create-approver',
+        batchImportId: 'batch-import-1',
+        csvRowNumber: null,
+        importedBy: {
+          email: 'importer@hands.test',
+          fullName: 'Bank Importer',
+          id: 'hidden-importer',
+        },
+        importedByAdminId: 'hidden-importer',
+        operatorReason: 'Verified statement evidence.',
+        sourceFileName: 'vcb-2026-07-14.csv',
+      },
+      assignmentHistory: [
+        {
+          id: 'assignment-2',
+          assignedAt: '2026-07-14T00:30:00.000Z',
+          assignee: {
+            id: 'owner-admin-2',
+            email: 'current-owner@hands.test',
+            fullName: 'Current Owner',
+          },
+          assignedBy: {
+            id: 'admin-user-1',
+            email: 'maker@hands.test',
+            fullName: 'Maker Admin',
+          },
+          previousAssignee: {
+            id: 'owner-admin-1',
+            email: 'first-owner@hands.test',
+            fullName: 'First Owner',
+          },
+          reason: 'Reassigned for Finance closeout.',
+        },
+      ],
+      ignoreEvidence: {
+        approvalAdmin: {
+          email: 'approver@hands.test',
+          fullName: 'Finance Approver',
+          id: 'finance-admin-2',
+        },
+        approvalAdminId: 'finance-admin-2',
+        ignoredAt: '2026-07-14T01:00:00.000Z',
+        ignoredBy: {
+          email: 'maker@hands.test',
+          fullName: 'Maker Admin',
+          id: 'admin-user-1',
+        },
+        ignoredByAdminId: 'admin-user-1',
+        reason: 'Duplicate imported statement row',
+      },
+      reconciliationMatches: [
+        {
+          id: 'match-1',
+          amount: 900000,
+          metadata: {
+            auditAction: 'bank_reconciliation.match.reverse',
+            auditActorEmail: 'reversal-maker@hands.test',
+            auditActorId: 'reversal-maker-3',
+            auditActorName: 'Reversal Maker',
+            auditAt: '2026-07-14T02:05:00.000Z',
+            approvalAdminEmail: 'reversal-approver@hands.test',
+            approvalAdminId: 'reversal-approver-3',
+            approvalAdminName: 'Reversal Approver',
+            bankStatusBefore: BankReconciliationStatus.MATCHED,
+            bankStatusAfter: BankReconciliationStatus.UNMATCHED,
+            matchActorEmail: 'maker@hands.test',
+            matchActorId: 'admin-user-1',
+            matchActorName: 'Maker Admin',
+            matchApprovalAdminEmail: 'approver@hands.test',
+            matchApprovalAdminId: 'finance-admin-2',
+            matchApprovalAdminName: 'Finance Approver',
+            matchAuditAt: '2026-07-14T01:05:00.000Z',
+            reversalApprovalAdminEmail: 'reversal-approver@hands.test',
+            reversalApprovalAdminId: 'reversal-approver-3',
+            reversalApprovalAdminName: 'Reversal Approver',
+            reversalReason: 'Matched against the wrong clearing source.',
+            reversedAuditAt: '2026-07-14T02:05:00.000Z',
+            reversedByAdminEmail: 'reversal-maker@hands.test',
+            reversedByAdminId: 'reversal-maker-3',
+            reversedByAdminName: 'Reversal Maker',
+          },
+        },
+      ],
+      withdrawalCandidates: [],
     });
 
     expect(prisma.companyBankTransaction.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'bank-tx-1' },
         select: expect.objectContaining({
+          metadata: true,
           reconciliationMatches: expect.objectContaining({
             orderBy: { matchedAt: 'desc' },
             select: expect.objectContaining({
@@ -9482,6 +12412,153 @@ describe('AdminService query orchestration', () => {
               status: true,
             }),
           }),
+        }),
+      }),
+    );
+    expect(prisma.adminAuditLog.findMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        OR: [
+          {
+            action: 'bank_reconciliation.match.create',
+            target: 'bank_transaction:bank-tx-1',
+          },
+          {
+            action: 'bank_reconciliation.match.reverse',
+            target: { in: ['bank_reconciliation_match:match-1'] },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: {
+        action: true,
+        actorId: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+        createdAt: true,
+        metadata: true,
+      },
+    });
+    expect(prisma.adminAuditLog.findMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        action: 'company_bank_transaction.review_assignment',
+        target: 'bank_transaction:bank-tx-1',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 50,
+      select: {
+        id: true,
+        actorId: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+        createdAt: true,
+        metadata: true,
+      },
+    });
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: expect.arrayContaining([
+            'finance-admin-2',
+            'owner-admin-2',
+            'admin-user-1',
+            'owner-admin-1',
+            'hidden-create-approver',
+            'hidden-importer',
+            'reversal-approver-3',
+          ]),
+        },
+      },
+      select: { id: true, email: true, fullName: true },
+    });
+  });
+
+  it('suggests bounded unreconciled paid withdrawals for an outgoing bank transaction', async () => {
+    const prisma = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          amount: 500000,
+          currency: 'VND',
+          id: 'bank-out-1',
+          metadata: null,
+          occurredAt: new Date('2026-07-15T03:00:00.000Z'),
+          reconciliationMatches: [],
+          status: BankReconciliationStatus.UNMATCHED,
+          transferRef: 'BANK-OUT-500',
+          type: CompanyBankTransactionType.OUTFLOW,
+        }),
+      },
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            amount: 500000,
+            createdAt: new Date('2026-07-14T03:00:00.000Z'),
+            currency: 'VND',
+            id: 'withdrawal-strong',
+            paidAt: new Date('2026-07-15T02:00:00.000Z'),
+            providerProfile: {
+              displayName: 'Strong Partner',
+              user: { fullName: 'Partner User' },
+            },
+            providerProfileId: 'provider-1',
+            transferRef: 'bank-out-500',
+          },
+          {
+            amount: 520000,
+            createdAt: new Date('2026-07-10T03:00:00.000Z'),
+            currency: 'VND',
+            id: 'withdrawal-review',
+            paidAt: new Date('2026-07-10T03:00:00.000Z'),
+            providerProfile: {
+              displayName: null,
+              user: { fullName: 'Review Partner' },
+            },
+            providerProfileId: 'provider-2',
+            transferRef: 'OTHER-REF',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.bankReconciliationTransactionDetail('bank-out-1')).resolves.toMatchObject({
+      withdrawalCandidates: [
+        {
+          amount: 500000,
+          amountDelta: 0,
+          confidence: 'STRONG',
+          exactAmount: true,
+          id: 'withdrawal-strong',
+          providerLabel: 'Strong Partner',
+          transferRefMatch: true,
+        },
+        {
+          amount: 520000,
+          amountDelta: 20000,
+          confidence: 'REVIEW',
+          exactAmount: false,
+          id: 'withdrawal-review',
+          providerLabel: 'Review Partner',
+          transferRefMatch: false,
+        },
+      ],
+    });
+
+    expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+        where: expect.objectContaining({
+          currency: 'VND',
+          status: ProviderWalletWithdrawalRequestStatus.PAID,
+          bankReconciliationMatches: {
+            none: {
+              status: {
+                in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+              },
+            },
+          },
         }),
       }),
     );
@@ -9500,6 +12577,7 @@ describe('AdminService query orchestration', () => {
         }),
       },
       companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([]),
         create: vi.fn().mockResolvedValue({ id: 'bank-tx-1', amount: 900000 }),
       },
       adminAuditLog: {
@@ -9519,6 +12597,7 @@ describe('AdminService query orchestration', () => {
         approvalAdminId: 'finance-admin-2',
         counterpartyName: 'Demo Customer',
         description: 'Manual import from bank statement',
+        operatorReason: 'Reviewed against VCB transfer evidence',
       }),
     ).resolves.toEqual({ id: 'bank-tx-1', amount: 900000 });
 
@@ -9531,8 +12610,11 @@ describe('AdminService query orchestration', () => {
         description: 'Manual import from bank statement',
         metadata: expect.objectContaining({
           approvalAdminId: 'finance-admin-2',
+          duplicateCandidateIds: [],
+          duplicateReviewConfirmed: false,
           importedByAdminId: 'admin-user-1',
           manualImport: true,
+          operatorReason: 'Reviewed against VCB transfer evidence',
         }),
         occurredAt: new Date('2026-06-30T05:00:00.000Z'),
         sourceKey: 'manual-bank-transaction:bank-account-1:INFLOW:VCB-900',
@@ -9548,10 +12630,1525 @@ describe('AdminService query orchestration', () => {
         action: 'company_bank_transaction.manual_create',
         metadata: expect.objectContaining({
           approvalAdminId: 'finance-admin-2',
+          duplicateCandidateIds: [],
+          duplicateReviewConfirmed: false,
+          operatorReason: 'Reviewed against VCB transfer evidence',
         }),
         target: 'company_bank_transaction:bank-tx-1',
       }),
     });
+  });
+
+  it('blocks potential duplicate bank imports until an operator explicitly confirms review', async () => {
+    const duplicateCandidate = {
+      id: 'bank-tx-existing',
+      amount: 900000,
+      counterpartyName: 'Demo Customer',
+      occurredAt: new Date('2026-06-30T04:58:00.000Z'),
+      status: BankReconciliationStatus.UNMATCHED,
+      transferRef: 'VCB-899',
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      companyBankAccount: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-account-1',
+          currency: 'VND',
+          status: CompanyBankAccountStatus.ACTIVE,
+        }),
+      },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([duplicateCandidate]),
+        create: vi.fn().mockResolvedValue({ id: 'bank-tx-new', amount: 900000 }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      approvalAdminId: 'finance-admin-2',
+      amount: 900000,
+      bankAccountId: 'bank-account-1',
+      counterpartyName: 'Demo Customer',
+      occurredAt: '2026-06-30T05:00:00.000Z',
+      transferRef: 'VCB-900',
+      type: CompanyBankTransactionType.INFLOW,
+    };
+
+    await expect(service.createCompanyBankTransaction('admin-user-1', input)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
+        candidates: [duplicateCandidate],
+      }),
+    });
+    expect(prisma.companyBankTransaction.create).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+
+    await expect(
+      service.createCompanyBankTransaction('admin-user-1', {
+        ...input,
+        confirmPotentialDuplicate: true,
+      }),
+    ).resolves.toEqual({ id: 'bank-tx-new', amount: 900000 });
+    expect(prisma.companyBankTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            duplicateCandidateIds: ['bank-tx-existing'],
+            duplicateReviewConfirmed: true,
+          }),
+        }),
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.manual_create',
+        metadata: expect.objectContaining({
+          duplicateCandidateIds: ['bank-tx-existing'],
+          duplicateReviewConfirmed: true,
+        }),
+      }),
+    });
+  });
+
+  it('classifies bank statement rows without saving and detects duplicates inside the batch', async () => {
+    const prisma = {
+      companyBankAccount: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-account-1',
+          currency: 'VND',
+          status: CompanyBankAccountStatus.ACTIVE,
+        }),
+      },
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const preview = await service.previewCompanyBankTransactionBatch({
+      rows: [
+        {
+          amount: '900,000',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '2026-06-30T05:00:00.000Z',
+          rowNumber: 1,
+          transferRef: 'VCB-CSV-900',
+          type: 'INFLOW',
+        },
+        {
+          amount: '900000',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '2026-06-30T05:05:00.000Z',
+          rowNumber: 2,
+          transferRef: 'VCB-CSV-900',
+          type: 'INFLOW',
+        },
+        {
+          amount: 'invalid',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '31/02/2026 08:00:00',
+          rowNumber: 3,
+          type: 'INFLOW',
+        },
+        {
+          amount: '1.250.000 VND',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '14/07/2026 08:30:15',
+          rowNumber: 4,
+          transferRef: 'VCB-CSV-1250',
+          type: 'INFLOW',
+        },
+      ],
+    });
+
+    expect(preview.summary).toEqual({
+      exactDuplicate: 1,
+      invalid: 1,
+      new: 2,
+      potentialDuplicate: 0,
+      total: 4,
+    });
+    expect(preview.rows).toEqual([
+      expect.objectContaining({ classification: 'NEW', rowNumber: 1 }),
+      expect.objectContaining({
+        batchCandidateRowNumbers: [1],
+        classification: 'EXACT_DUPLICATE',
+        rowNumber: 2,
+      }),
+      expect.objectContaining({ classification: 'INVALID', rowNumber: 3 }),
+      expect.objectContaining({
+        classification: 'NEW',
+        normalized: expect.objectContaining({
+          amount: 1250000,
+          occurredAt: '2026-07-14T01:30:15.000Z',
+        }),
+        rowNumber: 4,
+      }),
+    ]);
+    expect(prisma.companyBankAccount.findUnique).toHaveBeenCalledTimes(1);
+    expect(prisma.companyBankTransaction.create).not.toHaveBeenCalled();
+  });
+
+  it('imports only reviewed valid bank statement rows and skips exact duplicates', async () => {
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-batch' }) },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'previewCompanyBankTransactionBatch').mockResolvedValue({
+      rows: [
+        {
+          batchCandidateRowNumbers: [],
+          candidates: [],
+          classification: 'NEW',
+          errors: [],
+          normalized: {
+            amount: 900000,
+            bankAccountId: 'bank-account-1',
+            counterpartyName: null,
+            currency: 'VND',
+            description: null,
+            occurredAt: '2026-06-30T05:00:00.000Z',
+            sourceKey: 'manual-bank-transaction:bank-account-1:INFLOW:VCB-CSV-1',
+            transferRef: 'VCB-CSV-1',
+            type: CompanyBankTransactionType.INFLOW,
+            valueDate: null,
+          },
+          rowNumber: 1,
+        },
+        {
+          batchCandidateRowNumbers: [],
+          candidates: [{ id: 'existing-bank-row' }],
+          classification: 'EXACT_DUPLICATE',
+          errors: [],
+          normalized: {
+            amount: 900000,
+            bankAccountId: 'bank-account-1',
+            counterpartyName: null,
+            currency: 'VND',
+            description: null,
+            occurredAt: '2026-06-30T05:00:00.000Z',
+            sourceKey: 'manual-bank-transaction:bank-account-1:INFLOW:VCB-CSV-2',
+            transferRef: 'VCB-CSV-2',
+            type: CompanyBankTransactionType.INFLOW,
+            valueDate: null,
+          },
+          rowNumber: 2,
+        },
+      ],
+      summary: { exactDuplicate: 1, invalid: 0, new: 1, potentialDuplicate: 0, total: 2 },
+    } as never);
+    vi.spyOn(service, 'createCompanyBankTransaction').mockResolvedValue({ id: 'bank-tx-imported' } as never);
+
+    const result = await service.importCompanyBankTransactionBatch('admin-user-1', {
+      approvalAdminId: 'finance-admin-2',
+      mappingPreset: 'VCB',
+      operatorReason: 'Reviewed VCB statement rows for import',
+      rows: [
+        {
+          amount: '900000',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '2026-06-30T05:00:00.000Z',
+          rowNumber: 1,
+          transferRef: 'VCB-CSV-1',
+          type: 'INFLOW',
+        },
+        {
+          amount: '900000',
+          bankAccountId: 'bank-account-1',
+          occurredAt: '2026-06-30T05:00:00.000Z',
+          rowNumber: 2,
+          transferRef: 'VCB-CSV-2',
+          type: 'INFLOW',
+        },
+      ],
+      sourceFileName: 'C:\\fake-path\\VCB-June.csv',
+      sourceFileSha256: 'a'.repeat(64),
+    });
+
+    expect(result).toMatchObject({ batchImportId: expect.any(String), importedCount: 1, skippedCount: 1 });
+    expect(service.createCompanyBankTransaction).toHaveBeenCalledTimes(1);
+    expect(service.createCompanyBankTransaction).toHaveBeenCalledWith(
+      'admin-user-1',
+      expect.objectContaining({
+        approvalAdminId: 'finance-admin-2',
+        operatorReason: 'Reviewed VCB statement rows for import',
+        transferRef: 'VCB-CSV-1',
+      }),
+      expect.objectContaining({
+        batchImportId: result.batchImportId,
+        csvRowNumber: 1,
+        mappingPreset: 'VCB',
+        sourceFileName: 'VCB-June.csv',
+        sourceFileSha256: 'a'.repeat(64),
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.batch_import',
+        metadata: expect.objectContaining({
+          batchImportId: result.batchImportId,
+          importedCount: 1,
+          mappingPreset: 'VCB',
+          operatorReason: 'Reviewed VCB statement rows for import',
+          requestedCount: 2,
+          skippedCount: 1,
+          sourceFileName: 'VCB-June.csv',
+          sourceFileSha256: 'a'.repeat(64),
+        }),
+        target: `company_bank_transaction_batch:${result.batchImportId}`,
+      }),
+    });
+  });
+
+  it('lists bounded bank statement import history with operator and approver identities', async () => {
+    const createdAt = new Date('2026-07-14T02:00:00.000Z');
+    const prisma = {
+      adminAuditLog: {
+        count: vi.fn().mockResolvedValue(1),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            action: 'company_bank_transaction.batch_import',
+            actor: { id: 'maker-1', email: 'maker@example.com', fullName: 'Finance Maker', phone: null },
+            createdAt,
+            id: 'audit-1',
+            metadata: {
+              approvalAdminId: 'approver-1',
+              batchImportId: 'batch-1',
+              importedCount: 2,
+              mappingPreset: 'VCB',
+              requestedCount: 3,
+              rowResults: [
+                { classification: 'NEW', rowNumber: 2, status: 'IMPORTED', transactionId: 'bank-tx-open' },
+                { classification: 'NEW', rowNumber: 3, status: 'IMPORTED', transactionId: 'bank-tx-matched' },
+                { classification: 'EXACT_DUPLICATE', rowNumber: 4, status: 'SKIPPED' },
+              ],
+              skippedCount: 1,
+              sourceFileName: 'VCB-July.csv',
+              sourceFileSha256: 'b'.repeat(64),
+            },
+            target: 'company_bank_transaction_batch:batch-1',
+          },
+        ]),
+      },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'bank-tx-open', status: BankReconciliationStatus.UNMATCHED },
+          { id: 'bank-tx-matched', status: BankReconciliationStatus.MATCHED },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'approver-1', email: 'approver@example.com', fullName: 'Finance Approver' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listCompanyBankTransactionImportBatches({ q: 'VCB-July', range: '7d', skip: '0', take: '100' }),
+    ).resolves.toEqual({
+      items: [
+        expect.objectContaining({
+          approvalAdminId: 'approver-1',
+          approver: { id: 'approver-1', email: 'approver@example.com', fullName: 'Finance Approver' },
+          batchImportId: 'batch-1',
+          importedCount: 2,
+          mappingPreset: 'VCB',
+          operator: expect.objectContaining({ id: 'maker-1', fullName: 'Finance Maker' }),
+          reconciliationNeedsActionCount: 1,
+          reconciliationProgressPercent: 50,
+          reconciliationTransactionCount: 2,
+          reconciledTransactionCount: 1,
+          requestedCount: 3,
+          skippedCount: 1,
+          sourceFileName: 'VCB-July.csv',
+          sourceFileSha256: 'b'.repeat(64),
+        }),
+      ],
+      pagination: { skip: 0, take: 20, total: 1 },
+    });
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        where: expect.objectContaining({ AND: expect.any(Array) }),
+      }),
+    );
+    expect(prisma.adminAuditLog.count).toHaveBeenCalledWith({ where: expect.objectContaining({ AND: expect.any(Array) }) });
+    const historyWhere = prisma.adminAuditLog.findMany.mock.calls[0][0].where;
+    expect(JSON.stringify(historyWhere)).toContain('sourceFileName');
+    expect(JSON.stringify(historyWhere)).toContain('VCB-July');
+    expect(JSON.stringify(historyWhere)).toContain('createdAt');
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['approver-1'] } },
+      select: { id: true, email: true, fullName: true },
+    });
+    expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['bank-tx-open', 'bank-tx-matched'] } },
+      select: { id: true, status: true },
+    });
+  });
+
+  it('filters bank statement import history by live reconciliation state before pagination', async () => {
+    const createdAt = new Date('2026-07-01T02:00:00.000Z');
+    const auditLog = {
+      action: 'company_bank_transaction.batch_import',
+      actor: { id: 'maker-1', email: 'maker@example.com', fullName: 'Finance Maker', phone: null },
+      createdAt,
+      id: 'audit-open',
+      metadata: {
+        approvalAdminId: 'approver-1',
+        batchImportId: 'batch-open',
+        importedCount: 1,
+        mappingPreset: 'VCB',
+        requestedCount: 1,
+        rowResults: [
+          { classification: 'NEW', rowNumber: 2, status: 'IMPORTED', transactionId: 'bank-tx-open' },
+        ],
+        skippedCount: 0,
+        sourceFileName: 'VCB-Open.csv',
+        sourceFileSha256: 'd'.repeat(64),
+      },
+      target: 'company_bank_transaction_batch:batch-open',
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: 'audit-open', total: 1n }]),
+      adminAuditLog: {
+        count: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([auditLog]),
+      },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'bank-tx-open', status: BankReconciliationStatus.UNMATCHED },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'approver-1', email: 'approver@example.com', fullName: 'Finance Approver' },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listCompanyBankTransactionImportBatches({
+        q: 'VCB',
+        range: '30d',
+        review: 'needs-reconciliation',
+        skip: '0',
+        take: '10',
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          batchImportId: 'batch-open',
+          reconciliationNeedsActionCount: 1,
+          reconciliationProgressPercent: 0,
+          reconciliationSlaStatus: 'ESCALATE',
+          reconciliationWaitingHours: expect.any(Number),
+        },
+      ],
+      pagination: { skip: 0, take: 10, total: 1 },
+    });
+    expect(prisma.adminAuditLog.count).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['audit-open'] } },
+      select: expect.any(Object),
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('reconciliation_batches');
+    expect(query.values).toContain(BankReconciliationStatus.UNMATCHED);
+    expect(query.values).toContain(BankReconciliationStatus.PARTIALLY_MATCHED);
+    expect(queryText).toContain('openCount');
+    expect(queryText).toContain('LIMIT');
+    expect(queryText).toContain('OFFSET');
+  });
+
+  it('lists stale open bank statement import batches oldest first', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: null, total: 0n }]),
+      adminAuditLog: {
+        count: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      companyBankTransaction: { findMany: vi.fn().mockResolvedValue([]) },
+      user: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.listCompanyBankTransactionImportBatches({
+        range: 'all',
+        review: 'stale',
+        skip: 0,
+        take: 10,
+      }),
+    ).resolves.toMatchObject({
+      items: [],
+      pagination: { skip: 0, take: 10, total: 0 },
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('logs."createdAt" <=');
+    expect(queryText).toContain('filtered_logs."createdAt" ASC');
+    expect(query.values?.some((value) => value instanceof Date)).toBe(true);
+  });
+
+  it('lists escalated bank statement imports older than 48 hours first', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: null, total: 0n }]),
+      adminAuditLog: { count: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
+      companyBankTransaction: { findMany: vi.fn().mockResolvedValue([]) },
+      user: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listCompanyBankTransactionImportBatches({
+      range: 'all',
+      review: 'escalated',
+      skip: 0,
+      take: 10,
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('logs."createdAt" <=');
+    expect(queryText).toContain('filtered_logs."createdAt" ASC');
+    expect(query.values?.some((value) => value instanceof Date)).toBe(true);
+  });
+
+  it('summarizes open bank statement import batches for the Admin work card', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          batchCount: 6n,
+          escalatedNeedsReconciliationCount: 1n,
+          needsReconciliationCount: 2n,
+          noTransactionCount: 1n,
+          oldestOpenImportedAt: new Date('2026-07-01T00:00:00.000Z'),
+          reconciledCount: 3n,
+          staleNeedsReconciliationCount: 1n,
+        },
+      ]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.companyBankTransactionImportBatchSummary()).resolves.toEqual({
+      batchCount: 6,
+      escalatedNeedsReconciliationCount: 1,
+      needsReconciliationCount: 2,
+      noTransactionCount: 1,
+      oldestOpenImportedAt: new Date('2026-07-01T00:00:00.000Z'),
+      reconciledCount: 3,
+      staleNeedsReconciliationCount: 1,
+    });
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('needsReconciliationCount');
+    expect(queryText).toContain('oldestOpenImportedAt');
+    expect(queryText).toContain('staleNeedsReconciliationCount');
+    expect(queryText).toContain('escalatedNeedsReconciliationCount');
+    expect(queryText).toContain('AdminAuditLog');
+    expect(query.values).toContain('company_bank_transaction.batch_import');
+    expect(query.values?.some((value) => value instanceof Date)).toBe(true);
+  });
+
+  it('creates one persistent in-app escalation for an assigned open batch older than 48 hours', async () => {
+    const now = new Date('2026-07-14T04:00:00.000Z');
+    const importedAt = new Date('2026-07-12T03:00:00.000Z');
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'escalation-audit-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      notification: {
+        create: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+      },
+      user: {
+        findFirst: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([{ id: 'finance-operator-1' }]),
+      },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        assigneeAdminId: 'finance-operator-1',
+        batchImportId: 'batch-escalate-1',
+        importedAt,
+        importerAdminId: 'finance-maker-1',
+        openTransactionCount: 2n,
+      }]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionImportBatchEscalations(now),
+    ).resolves.toEqual({
+      escalatedCount: 1,
+      missingRecipientCount: 0,
+      scannedCount: 1,
+      skippedCount: 0,
+    });
+    expect(tx.$queryRaw).toHaveBeenCalledOnce();
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        type: 'admin.finance.bank_statement_batch.escalated',
+        userId: 'finance-operator-1',
+      }),
+    }));
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.batch_escalation',
+        actorId: 'finance-operator-1',
+        metadata: expect.objectContaining({
+          notificationId: 'notification-1',
+          openTransactionCount: 2,
+          source: 'system_sweep',
+        }),
+        target: 'company_bank_transaction_batch:batch-escalate-1',
+      }),
+    }));
+    expect(tx.user.findFirst).not.toHaveBeenCalled();
+
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('reconciliation."openTransactionCount" > 0');
+    expect(queryText).toContain('NOT EXISTS');
+    expect(queryText).toContain('LIMIT');
+    expect(query.values).toContain('company_bank_transaction.batch_escalation');
+    expect(query.values).toContain(50);
+    expect(
+      query.values?.some(
+        (value) => value instanceof Date && value.toISOString() === '2026-07-12T04:00:00.000Z',
+      ),
+    ).toBe(true);
+  });
+
+  it('falls back to a Master Admin when an unassigned batch importer is no longer an operator', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'escalation-audit-2' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      notification: {
+        create: vi.fn().mockResolvedValue({ id: 'notification-2' }),
+      },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'master-admin-1' }),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        assigneeAdminId: null,
+        batchImportId: 'batch-unassigned-1',
+        importedAt: new Date('2026-07-10T00:00:00.000Z'),
+        importerAdminId: 'former-admin-1',
+        openTransactionCount: 1n,
+      }]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionImportBatchEscalations(
+        new Date('2026-07-14T04:00:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ escalatedCount: 1, missingRecipientCount: 0 });
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ userId: 'master-admin-1' }),
+    }));
+  });
+
+  it('rechecks escalation evidence under the database lock before creating a notification', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({ id: 'existing-escalation-audit' }),
+      },
+      notification: { create: vi.fn() },
+      user: { findFirst: vi.fn(), findMany: vi.fn() },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        assigneeAdminId: null,
+        batchImportId: 'batch-race-1',
+        importedAt: new Date('2026-07-10T00:00:00.000Z'),
+        importerAdminId: 'finance-maker-1',
+        openTransactionCount: 1n,
+      }]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionImportBatchEscalations(
+        new Date('2026-07-14T04:00:00.000Z'),
+      ),
+    ).resolves.toEqual({
+      escalatedCount: 0,
+      missingRecipientCount: 0,
+      scannedCount: 1,
+      skippedCount: 1,
+    });
+    expect(tx.notification.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('creates one in-app escalation for the current assigned bank review after 48 hours', async () => {
+    const now = new Date('2026-07-15T04:00:00.000Z');
+    const assignedAt = new Date('2026-07-13T03:00:00.000Z');
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'review-escalation-audit-1' }),
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'assignment-audit-1',
+            metadata: { assigneeAdminId: 'finance-operator-1' },
+          })
+          .mockResolvedValueOnce(null),
+      },
+      companyBankTransaction: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'bank-review-1',
+          status: BankReconciliationStatus.UNMATCHED,
+        }),
+      },
+      notification: { create: vi.fn().mockResolvedValue({ id: 'notification-review-1' }) },
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-operator-1' }) },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        assigneeAdminId: 'finance-operator-1',
+        assignedAt,
+        assignmentAuditLogId: 'assignment-audit-1',
+        bankTransactionId: 'bank-review-1',
+        bankTransactionStatus: BankReconciliationStatus.UNMATCHED,
+      }]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.syncCompanyBankTransactionReviewEscalations(now)).resolves.toEqual({
+      escalatedCount: 1,
+      missingRecipientCount: 0,
+      scannedCount: 1,
+      skippedCount: 0,
+    });
+    expect(tx.companyBankTransaction.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'bank-review-1' }),
+    }));
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        type: 'admin.finance.bank_transaction.review_escalated',
+        userId: 'finance-operator-1',
+      }),
+    }));
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.review_escalation',
+        metadata: expect.objectContaining({ assignmentAuditLogId: 'assignment-audit-1' }),
+        target: 'bank_transaction:bank-review-1',
+      }),
+    }));
+    expect(tx.companyBankTransaction).not.toHaveProperty('update');
+
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('latest_assignments');
+    expect(queryText).toContain('assignmentAuditLogId');
+    expect(queryText).toContain('NOT EXISTS');
+    expect(query.values).toContain('company_bank_transaction.review_escalation');
+    expect(query.values).toContain(50);
+    expect(
+      query.values?.some(
+        (value) => value instanceof Date && value.toISOString() === '2026-07-13T04:00:00.000Z',
+      ),
+    ).toBe(true);
+  });
+
+  it('skips a review escalation when the same assignment was already escalated', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn(),
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'assignment-audit-1',
+            metadata: { assigneeAdminId: 'finance-operator-1' },
+          })
+          .mockResolvedValueOnce({ id: 'existing-review-escalation' }),
+      },
+      companyBankTransaction: { findFirst: vi.fn() },
+      notification: { create: vi.fn() },
+      user: { findFirst: vi.fn() },
+    };
+    const candidate = {
+      assigneeAdminId: 'finance-operator-1',
+      assignedAt: new Date('2026-07-10T00:00:00.000Z'),
+      assignmentAuditLogId: 'assignment-audit-1',
+      bankTransactionId: 'bank-review-1',
+      bankTransactionStatus: BankReconciliationStatus.PARTIALLY_MATCHED,
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([candidate]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionReviewEscalations(
+        new Date('2026-07-15T04:00:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ escalatedCount: 0, skippedCount: 1 });
+    expect(tx.adminAuditLog.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        metadata: { equals: 'assignment-audit-1', path: ['assignmentAuditLogId'] },
+      }),
+    }));
+    expect(tx.companyBankTransaction.findFirst).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('skips a stale review escalation candidate after the transaction is reassigned', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'assignment-audit-new',
+          metadata: { assigneeAdminId: 'finance-operator-2' },
+        }),
+      },
+      companyBankTransaction: { findFirst: vi.fn() },
+      notification: { create: vi.fn() },
+      user: { findFirst: vi.fn() },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        assigneeAdminId: 'finance-operator-1',
+        assignedAt: new Date('2026-07-10T00:00:00.000Z'),
+        assignmentAuditLogId: 'assignment-audit-old',
+        bankTransactionId: 'bank-review-1',
+        bankTransactionStatus: BankReconciliationStatus.UNMATCHED,
+      }]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionReviewEscalations(
+        new Date('2026-07-15T04:00:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ escalatedCount: 0, skippedCount: 1 });
+    expect(tx.adminAuditLog.findFirst).toHaveBeenCalledOnce();
+    expect(tx.companyBankTransaction.findFirst).not.toHaveBeenCalled();
+    expect(tx.notification.create).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('escalates an overdue Partner deposit reconciliation without changing finance state', async () => {
+    const now = new Date('2026-07-15T04:00:00.000Z');
+    const candidate = {
+      assigneeAdminId: null,
+      assignedAt: null,
+      assignmentAuditLogId: null,
+      partnerBankDepositRequestId: 'deposit-request-1',
+      reviewStartedAt: new Date('2026-07-13T00:00:00.000Z'),
+    };
+    const tx = {
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ pg_advisory_xact_lock: null }])
+        .mockResolvedValueOnce([]),
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankReconciliationMatches: [{ amount: 50000 }],
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'deposit-escalation-audit-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      notification: { create: vi.fn().mockResolvedValue({ id: 'deposit-escalation-notification-1' }) },
+      partnerBankDepositRequest: {
+        findFirst: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankTransactionId: 'VCB-20260713-001',
+          id: 'deposit-request-1',
+          journalBatchId: 'journal-1',
+        }),
+      },
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'master-admin-1' }) },
+    };
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([candidate]),
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.syncPartnerBankDepositReconciliationEscalations(now)).resolves.toEqual({
+      escalatedCount: 1,
+      missingRecipientCount: 0,
+      scannedCount: 1,
+      skippedCount: 0,
+    });
+    expect(tx.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        data: expect.objectContaining({
+          financeReviewStatus: 'OPEN',
+          partnerBankDepositRequestId: 'deposit-request-1',
+        }),
+        type: 'admin.finance.partner_bank_deposit.reconciliation_escalated',
+        userId: 'master-admin-1',
+      }),
+    }));
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'partner_bank_deposit.reconciliation_escalation',
+        metadata: expect.objectContaining({ remainingAmount: 150000 }),
+        target: 'partner_bank_deposit_request:deposit-request-1',
+      }),
+    }));
+    expect(tx.partnerBankDepositRequest).not.toHaveProperty('update');
+    expect(tx.accountingJournalEntry).not.toHaveProperty('update');
+    const query = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      sql?: string;
+      text?: string;
+      values?: unknown[];
+    };
+    const queryText = query.sql ?? query.text ?? '';
+    expect(queryText).toContain('openPartnerBankDeposits');
+    expect(queryText).toContain('financeReviewStatus');
+    expect(queryText).toContain('LIMIT');
+    expect(query.values).toContain(50);
+  });
+
+  it('resolves a Partner deposit escalation only after bank evidence is fully matched', async () => {
+    const resolvedAt = new Date('2026-07-15T05:00:00.000Z');
+    const notification = {
+      data: {
+        bankTransactionId: 'VCB-20260713-001',
+        financeReviewStatus: 'OPEN',
+        partnerBankDepositRequestId: 'deposit-request-1',
+      },
+      id: 'deposit-escalation-notification-1',
+      type: 'admin.finance.partner_bank_deposit.reconciliation_escalated',
+      userId: 'finance-operator-1',
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankReconciliationMatches: [{ amount: 200000 }],
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'deposit-resolution-audit-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      companyBankTransaction: { count: vi.fn(), findUnique: vi.fn() },
+      notification: {
+        findUnique: vi.fn().mockResolvedValue(notification),
+        update: vi.fn().mockResolvedValue({ id: notification.id }),
+      },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          amount: 200000,
+          journalBatchId: 'journal-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+        }),
+      },
+    };
+    const prisma = {
+      notification: { findMany: vi.fn().mockResolvedValue([notification]) },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionReviewEscalationResolutions(resolvedAt),
+    ).resolves.toEqual({ openCount: 0, resolvedCount: 1, scannedCount: 1, skippedCount: 0 });
+    expect(tx.companyBankTransaction.findUnique).not.toHaveBeenCalled();
+    expect(tx.notification.update).toHaveBeenCalledWith({
+      where: { id: notification.id },
+      data: {
+        data: expect.objectContaining({
+          financeReviewResolvedAt: resolvedAt.toISOString(),
+          financeReviewStatus: 'RESOLVED',
+          partnerBankDepositRequestId: 'deposit-request-1',
+        }),
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'partner_bank_deposit.reconciliation_escalation_resolved',
+        metadata: expect.objectContaining({
+          notificationId: notification.id,
+          partnerBankDepositRequestId: 'deposit-request-1',
+        }),
+        target: `notification:${notification.id}`,
+      }),
+    });
+  });
+
+  it('moves a resolved bank review escalation to retained history without changing finance data', async () => {
+    const resolvedAt = new Date('2026-07-15T05:00:00.000Z');
+    const notification = {
+      data: {
+        bankTransactionId: 'bank-review-1',
+        destination: '/finance-tax/bank-reconciliation/bank-review-1',
+        financeReviewStatus: 'OPEN',
+      },
+      id: 'notification-review-1',
+      type: 'admin.finance.bank_transaction.review_escalated',
+      userId: 'finance-operator-1',
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'resolution-audit-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      companyBankTransaction: {
+        count: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue({ status: BankReconciliationStatus.MATCHED }),
+      },
+      notification: {
+        findUnique: vi.fn().mockResolvedValue(notification),
+        update: vi.fn().mockResolvedValue({ id: notification.id }),
+      },
+    };
+    const prisma = {
+      notification: { findMany: vi.fn().mockResolvedValue([notification]) },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionReviewEscalationResolutions(resolvedAt),
+    ).resolves.toEqual({ openCount: 0, resolvedCount: 1, scannedCount: 1, skippedCount: 0 });
+    expect(tx.notification.update).toHaveBeenCalledWith({
+      where: { id: 'notification-review-1' },
+      data: {
+        data: expect.objectContaining({
+          bankTransactionId: 'bank-review-1',
+          financeReviewResolvedAt: resolvedAt.toISOString(),
+          financeReviewStatus: 'RESOLVED',
+        }),
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.review_escalation_resolved',
+        actorId: 'finance-operator-1',
+        metadata: expect.objectContaining({
+          bankTransactionId: 'bank-review-1',
+          notificationId: 'notification-review-1',
+          source: 'system_sweep',
+        }),
+        target: 'notification:notification-review-1',
+      }),
+    });
+    expect(tx.companyBankTransaction).not.toHaveProperty('update');
+  });
+
+  it('keeps an escalated bank statement batch open while any imported transaction is unresolved', async () => {
+    const notification = {
+      data: { batchImportId: 'batch-1', financeReviewStatus: 'OPEN' },
+      id: 'notification-batch-1',
+      type: 'admin.finance.bank_statement_batch.escalated',
+      userId: 'finance-operator-1',
+    };
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([{ pg_advisory_xact_lock: null }]),
+      adminAuditLog: { create: vi.fn(), findFirst: vi.fn() },
+      companyBankTransaction: {
+        count: vi.fn().mockResolvedValue(1),
+        findUnique: vi.fn(),
+      },
+      notification: {
+        findUnique: vi.fn().mockResolvedValue(notification),
+        update: vi.fn(),
+      },
+    };
+    const prisma = {
+      notification: { findMany: vi.fn().mockResolvedValue([notification]) },
+      $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.syncCompanyBankTransactionReviewEscalationResolutions(
+        new Date('2026-07-15T05:00:00.000Z'),
+      ),
+    ).resolves.toEqual({ openCount: 1, resolvedCount: 0, scannedCount: 1, skippedCount: 0 });
+    expect(tx.companyBankTransaction.count).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        metadata: { equals: 'batch-1', path: ['batchImportId'] },
+      }),
+    }));
+    expect(tx.notification.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('returns read-only bank statement batch rows linked to imported transactions', async () => {
+    const createdAt = new Date('2026-07-14T02:00:00.000Z');
+    const prisma = {
+      adminAuditLog: {
+        findFirst: vi.fn().mockResolvedValue({
+          action: 'company_bank_transaction.batch_import',
+          actor: { id: 'maker-1', email: 'maker@example.com', fullName: 'Finance Maker', phone: null },
+          createdAt,
+          id: 'audit-1',
+          metadata: {
+            approvalAdminId: 'approver-1',
+            batchImportId: 'batch-1',
+            importedCount: 1,
+            mappingPreset: 'GENERIC',
+            requestedCount: 2,
+            rowResults: [
+              { classification: 'NEW', rowNumber: 2, status: 'IMPORTED', transactionId: 'bank-tx-1' },
+              { classification: 'EXACT_DUPLICATE', rowNumber: 3, status: 'SKIPPED' },
+              { classification: 'INVALID', rowNumber: 0, status: 'SKIPPED' },
+            ],
+            skippedCount: 1,
+            sourceFileName: 'statement.csv',
+            sourceFileSha256: 'c'.repeat(64),
+          },
+          target: 'company_bank_transaction_batch:batch-1',
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'batch-assignment-1',
+            actorId: 'master-admin-1',
+            actor: {
+              id: 'master-admin-1',
+              email: 'master@example.com',
+              fullName: 'Master Admin',
+            },
+            createdAt: new Date('2026-07-14T03:00:00.000Z'),
+            metadata: {
+              assigneeAdminId: 'finance-owner-1',
+              assignedAt: '2026-07-14T03:00:00.000Z',
+              previousAssigneeAdminId: null,
+              reason: 'Own the statement reconciliation queue.',
+            },
+          },
+        ]),
+      },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            amount: 900000,
+            currency: 'VND',
+            id: 'bank-tx-1',
+            occurredAt: createdAt,
+            status: BankReconciliationStatus.UNMATCHED,
+            transferRef: 'VCB-1',
+            type: CompanyBankTransactionType.INFLOW,
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'master-admin-1',
+            email: 'master@example.com',
+            fullName: 'Master Admin',
+          },
+          {
+            id: 'finance-owner-1',
+            email: 'owner@example.com',
+            fullName: 'Finance Owner',
+          },
+        ]),
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'approver-1',
+          email: 'approver@example.com',
+          fullName: 'Finance Approver',
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.companyBankTransactionImportBatchDetail('batch-1')).resolves.toMatchObject({
+      approver: { id: 'approver-1', fullName: 'Finance Approver' },
+      assignmentHistory: [
+        {
+          id: 'batch-assignment-1',
+          assignee: { id: 'finance-owner-1', fullName: 'Finance Owner' },
+          assignedBy: { id: 'master-admin-1', fullName: 'Master Admin' },
+          previousAssignee: null,
+          reason: 'Own the statement reconciliation queue.',
+        },
+      ],
+      batchImportId: 'batch-1',
+      reconciliationNeedsActionCount: 1,
+      reconciliationProgressPercent: 0,
+      reconciliationTransactionCount: 1,
+      reconciledTransactionCount: 0,
+      rows: [
+        {
+          classification: 'NEW',
+          rowNumber: 2,
+          status: 'IMPORTED',
+          transaction: { id: 'bank-tx-1', amount: 900000 },
+          transactionId: 'bank-tx-1',
+        },
+        {
+          classification: 'EXACT_DUPLICATE',
+          rowNumber: 3,
+          status: 'SKIPPED',
+          transaction: null,
+          transactionId: null,
+        },
+      ],
+    });
+    expect(prisma.companyBankTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: ['bank-tx-1'] } } }),
+    );
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        action: 'company_bank_transaction.batch_assignment',
+        target: 'company_bank_transaction_batch:batch-1',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 50,
+      select: {
+        id: true,
+        actorId: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+        createdAt: true,
+        metadata: true,
+      },
+    });
+  });
+
+  it('assigns an escalated bank statement batch with audit evidence and an in-app notification', async () => {
+    const createdAt = new Date('2026-07-01T02:00:00.000Z');
+    const baseMetadata = {
+      batchImportId: 'batch-assign-1',
+      importedCount: 1,
+      requestedCount: 1,
+      rowResults: [
+        { classification: 'NEW', rowNumber: 2, status: 'IMPORTED', transactionId: 'bank-tx-1' },
+      ],
+      skippedCount: 0,
+      sourceFileName: 'statement.csv',
+      sourceFileSha256: 'f'.repeat(64),
+    };
+    const batchLog = {
+      action: 'company_bank_transaction.batch_import',
+      actor: { id: 'maker-1', email: 'maker@example.com', fullName: 'Finance Maker', phone: null },
+      createdAt,
+      id: 'audit-batch-1',
+      metadata: baseMetadata,
+      target: 'company_bank_transaction_batch:batch-assign-1',
+    };
+    const assignedMetadata = {
+      ...baseMetadata,
+      assigneeAdminId: 'finance-operator-1',
+      assignedAt: '2026-07-14T03:00:00.000Z',
+      assignedByAdminId: 'master-admin-1',
+    };
+    const prisma = {
+      $transaction: vi.fn(async (operations: Array<Promise<unknown>>) => Promise.all(operations)),
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'assignment-audit-1' }),
+        findMany: vi.fn().mockResolvedValue([]),
+        findFirst: vi.fn()
+          .mockResolvedValueOnce(batchLog)
+          .mockResolvedValueOnce({ ...batchLog, metadata: assignedMetadata }),
+        update: vi.fn().mockResolvedValue({ ...batchLog, metadata: assignedMetadata }),
+      },
+      companyBankTransaction: {
+        findMany: vi.fn().mockResolvedValue([{
+          amount: 900000,
+          currency: 'VND',
+          id: 'bank-tx-1',
+          occurredAt: createdAt,
+          status: BankReconciliationStatus.UNMATCHED,
+          transferRef: 'VCB-1',
+          type: CompanyBankTransactionType.INFLOW,
+        }]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([]),
+        findFirst: vi.fn().mockResolvedValue({
+          adminOperatorPermission: {
+            categories: [AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
+          },
+          email: 'operator@example.com',
+          fullName: 'Finance Operator',
+          id: 'finance-operator-1',
+          roles: [Role.ADMIN],
+        }),
+        findUnique: vi.fn().mockResolvedValue({
+          email: 'operator@example.com',
+          fullName: 'Finance Operator',
+          id: 'finance-operator-1',
+        }),
+      },
+    };
+    const notifications = {
+      createInApp: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+    };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(service.assignCompanyBankTransactionImportBatch(
+      'master-admin-1',
+      'batch-assign-1',
+      { assigneeAdminId: 'finance-operator-1', reason: 'Own the overdue queue' },
+    )).resolves.toMatchObject({
+      assignee: { id: 'finance-operator-1', fullName: 'Finance Operator' },
+      assignmentAuditLogId: 'assignment-audit-1',
+      batchImportId: 'batch-assign-1',
+      notification: { id: 'notification-1', inAppOnly: true },
+    });
+    expect(prisma.adminAuditLog.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: { metadata: expect.objectContaining({ assigneeAdminId: 'finance-operator-1' }) },
+      where: { id: 'audit-batch-1' },
+    }));
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.batch_assignment',
+        actorId: 'master-admin-1',
+      }),
+    }));
+    expect(notifications.createInApp).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'admin.finance.bank_statement_batch.escalated',
+      userId: 'finance-operator-1',
+    }));
+  });
+
+  it('rejects a bank statement batch assignee without reconciliation permission', async () => {
+    const prisma = {
+      adminAuditLog: { findFirst: vi.fn().mockResolvedValue({ id: 'batch-log-1', metadata: {} }) },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          adminOperatorPermission: { categories: [] },
+          email: 'operator@example.com',
+          fullName: 'Operator',
+          id: 'operator-1',
+          roles: [Role.ADMIN],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.assignCompanyBankTransactionImportBatch(
+      'master-admin-1',
+      'batch-1',
+      { assigneeAdminId: 'operator-1', reason: 'Assign queue owner' },
+    )).rejects.toThrow('does not have Bank Reconciliation access');
+  });
+
+  it('assigns an open bank transaction review without changing its reconciliation status', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'review-assignment-audit-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          status: BankReconciliationStatus.UNMATCHED,
+        }),
+      },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          adminOperatorPermission: {
+            categories: [AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
+          },
+          email: 'operator@example.com',
+          fullName: 'Finance Operator',
+          id: 'finance-operator-1',
+          roles: [Role.ADMIN],
+        }),
+      },
+    };
+    const notifications = {
+      createInApp: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+    };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(
+      service.assignCompanyBankTransactionReview('master-admin-1', 'bank-tx-1', {
+        assigneeAdminId: 'finance-operator-1',
+        reason: 'Review missing withdrawal evidence',
+      }),
+    ).resolves.toMatchObject({
+      assignee: { id: 'finance-operator-1', fullName: 'Finance Operator' },
+      assignmentAuditLogId: 'review-assignment-audit-1',
+      bankTransactionId: 'bank-tx-1',
+      notification: { id: 'notification-1', inAppOnly: true },
+    });
+    expect(prisma.companyBankTransaction).not.toHaveProperty('update');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'company_bank_transaction.review_assignment',
+        actorId: 'master-admin-1',
+        metadata: expect.objectContaining({
+          assigneeAdminId: 'finance-operator-1',
+          bankStatus: BankReconciliationStatus.UNMATCHED,
+          bankTransactionId: 'bank-tx-1',
+        }),
+        target: 'bank_transaction:bank-tx-1',
+      }),
+    });
+    expect(notifications.createInApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'admin.finance.bank_transaction.review_assigned',
+        userId: 'finance-operator-1',
+      }),
+    );
+  });
+
+  it('assigns an open Partner deposit reconciliation without changing wallet, bank, or GL state', async () => {
+    const prisma = {
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankReconciliationMatches: [{ amount: 50000 }],
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'deposit-review-assignment-1' }),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankTransactionId: 'VCB-20260715-001',
+          id: 'deposit-request-1',
+          journalBatchId: 'journal-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+        }),
+      },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          adminOperatorPermission: {
+            categories: [AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
+          },
+          email: 'operator@example.com',
+          fullName: 'Finance Operator',
+          id: 'finance-operator-1',
+          roles: [Role.ADMIN],
+        }),
+      },
+    };
+    const notifications = {
+      createInApp: vi.fn().mockResolvedValue({ id: 'notification-1' }),
+    };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(
+      service.assignPartnerBankDepositReconciliationReview('master-admin-1', 'deposit-request-1', {
+        assigneeAdminId: 'finance-operator-1',
+        reason: 'Own overdue deposit reconciliation',
+      }),
+    ).resolves.toMatchObject({
+      assignee: { id: 'finance-operator-1', fullName: 'Finance Operator' },
+      assignmentAuditLogId: 'deposit-review-assignment-1',
+      partnerBankDepositRequestId: 'deposit-request-1',
+    });
+    expect(prisma.partnerBankDepositRequest).not.toHaveProperty('update');
+    expect(prisma.accountingJournalEntry).not.toHaveProperty('update');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'partner_bank_deposit.reconciliation_assignment',
+        actorId: 'master-admin-1',
+        metadata: expect.objectContaining({
+          assigneeAdminId: 'finance-operator-1',
+          remainingAmount: 150000,
+        }),
+        target: 'partner_bank_deposit_request:deposit-request-1',
+      }),
+    });
+    expect(notifications.createInApp).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'admin.finance.partner_bank_deposit.reconciliation_assigned',
+      userId: 'finance-operator-1',
+    }));
+  });
+
+  it('rejects assignment after a Partner bank deposit is fully reconciled', async () => {
+    const prisma = {
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankReconciliationMatches: [{ amount: 200000 }],
+        }),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          amount: 200000,
+          bankTransactionId: 'VCB-20260715-001',
+          id: 'deposit-request-1',
+          journalBatchId: 'journal-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+        }),
+      },
+      user: {
+        findFirst: vi.fn().mockResolvedValue({
+          adminOperatorPermission: {
+            categories: [AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION],
+          },
+          id: 'finance-operator-1',
+          roles: [Role.ADMIN],
+        }),
+      },
+    };
+    const notifications = { createInApp: vi.fn() };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(
+      service.assignPartnerBankDepositReconciliationReview('master-admin-1', 'deposit-request-1', {
+        assigneeAdminId: 'finance-operator-1',
+        reason: 'Own overdue deposit reconciliation',
+      }),
+    ).rejects.toThrow('Partner bank deposit is already fully reconciled');
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+    expect(notifications.createInApp).not.toHaveBeenCalled();
   });
 
   it('rejects manual company bank transactions without separate finance approval', async () => {
@@ -9722,6 +14319,394 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('resolves an executed Partner bank deposit request to its bank cash journal debit', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 150000,
+          currency: 'VND',
+          status: BankReconciliationStatus.UNMATCHED,
+          type: CompanyBankTransactionType.INFLOW,
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'bank-tx-1', status: BankReconciliationStatus.MATCHED }),
+      },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'deposit-request-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+          journalBatchId: 'deposit-journal-1',
+        }),
+      },
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'bank-cash-entry-1' }),
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-cash-entry-1',
+          amount: 150000,
+          currency: 'VND',
+          side: AccountingJournalEntrySide.DEBIT,
+          accountCode: 'company_bank_cash',
+          batch: { sourceType: AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT },
+        }),
+      },
+      bankReconciliationMatch: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 0 } })
+          .mockResolvedValueOnce({ _sum: { amount: 0 } })
+          .mockResolvedValue({ _sum: { amount: 150000 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'match-1',
+          bankTransactionId: 'bank-tx-1',
+          accountingJournalEntryId: 'bank-cash-entry-1',
+          amount: 150000,
+        }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        partnerBankDepositRequestId: 'deposit-request-1',
+        amount: 150000,
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).resolves.toMatchObject({
+      match: { id: 'match-1', accountingJournalEntryId: 'bank-cash-entry-1' },
+      bankTransaction: { status: BankReconciliationStatus.MATCHED },
+    });
+
+    expect(tx.accountingJournalEntry.findFirst).toHaveBeenCalledWith({
+      where: {
+        batchId: 'deposit-journal-1',
+        side: AccountingJournalEntrySide.DEBIT,
+        accountCode: 'company_bank_cash',
+      },
+      select: { id: true },
+    });
+    expect(tx.bankReconciliationMatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        accountingJournalEntryId: 'bank-cash-entry-1',
+        sourceKey: 'bank-reconciliation-match:bank-tx-1:partner-bank-deposit:bank-cash-entry-1',
+        metadata: expect.objectContaining({
+          sourceType: 'partner-bank-deposit',
+          partnerBankDepositRequestId: 'deposit-request-1',
+        }),
+      }),
+    });
+  });
+
+  it('rejects Partner bank deposit journals matched to an outflow or non-bank-cash entry', async () => {
+    const accountingJournalEntry = {
+      findFirst: vi.fn().mockResolvedValue({ id: 'bank-cash-entry-1' }),
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'bank-cash-entry-1',
+        amount: 150000,
+        currency: 'VND',
+        side: AccountingJournalEntrySide.DEBIT,
+        accountCode: 'company_bank_cash',
+        batch: { sourceType: AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT },
+      }),
+    };
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 150000,
+          currency: 'VND',
+          status: BankReconciliationStatus.UNMATCHED,
+          type: CompanyBankTransactionType.OUTFLOW,
+        }),
+      },
+      partnerBankDepositRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'deposit-request-1',
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+          journalBatchId: 'deposit-journal-1',
+        }),
+      },
+      accountingJournalEntry,
+      bankReconciliationMatch: { aggregate: vi.fn(), create: vi.fn() },
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        partnerBankDepositRequestId: 'deposit-request-1',
+        amount: 150000,
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).rejects.toThrow('Partner bank deposit journals can only match bank inflows');
+
+    tx.companyBankTransaction.findUnique.mockResolvedValue({
+      id: 'bank-tx-1',
+      amount: 150000,
+      currency: 'VND',
+      status: BankReconciliationStatus.UNMATCHED,
+      type: CompanyBankTransactionType.INFLOW,
+    });
+    accountingJournalEntry.findUnique.mockResolvedValue({
+      id: 'bank-cash-entry-1',
+      amount: 150000,
+      currency: 'VND',
+      side: AccountingJournalEntrySide.CREDIT,
+      accountCode: 'partner_wallet_liability',
+      batch: { sourceType: AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT },
+    });
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        accountingJournalEntryId: 'bank-cash-entry-1',
+        amount: 150000,
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).rejects.toThrow('Partner bank deposits must match the company bank cash debit entry');
+    expect(tx.bankReconciliationMatch.create).not.toHaveBeenCalled();
+  });
+
+  it('links a paid Provider withdrawal bank outflow to both the request and its paid bank cash journal', async () => {
+    const withdrawal = {
+      id: 'withdrawal-1',
+      amount: 120000,
+      createdAt: new Date('2026-07-13T03:00:00.000Z'),
+      currency: 'VND',
+      paidAt: new Date('2026-07-14T02:00:00.000Z'),
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+      transferRef: 'VCB-OUT-120',
+    };
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 120000,
+          currency: 'VND',
+          occurredAt: new Date('2026-07-14T03:00:00.000Z'),
+          status: BankReconciliationStatus.UNMATCHED,
+          transferRef: 'vcb-out-120',
+          type: CompanyBankTransactionType.OUTFLOW,
+        }),
+        update: vi.fn().mockResolvedValue({ id: 'bank-tx-1', status: BankReconciliationStatus.MATCHED }),
+      },
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue(withdrawal),
+      },
+      accountingJournalEntry: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'withdrawal-bank-credit-1' }),
+      },
+      bankReconciliationMatch: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValueOnce({ _sum: { amount: 0 } })
+          .mockResolvedValueOnce({ _sum: { amount: 0 } })
+          .mockResolvedValue({ _sum: { amount: 120000 } }),
+        create: vi.fn().mockResolvedValue({
+          id: 'match-1',
+          bankTransactionId: 'bank-tx-1',
+          accountingJournalEntryId: 'withdrawal-bank-credit-1',
+          withdrawalRequestId: 'withdrawal-1',
+          amount: 120000,
+        }),
+      },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
+        withdrawalRequestId: 'withdrawal-1',
+        amount: 120000,
+        approvalAdminId: 'finance-admin-2',
+      }),
+    ).resolves.toMatchObject({
+      match: {
+        accountingJournalEntryId: 'withdrawal-bank-credit-1',
+        withdrawalRequestId: 'withdrawal-1',
+      },
+      bankTransaction: { status: BankReconciliationStatus.MATCHED },
+    });
+
+    expect(tx.accountingJournalEntry.findFirst).toHaveBeenCalledWith({
+      where: {
+        side: AccountingJournalEntrySide.CREDIT,
+        accountCode: 'company_bank_cash',
+        batch: {
+          sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL,
+          sourceId: 'withdrawal-1',
+        },
+      },
+      select: { id: true },
+    });
+    expect(tx.bankReconciliationMatch.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        accountingJournalEntryId: 'withdrawal-bank-credit-1',
+        withdrawalRequestId: 'withdrawal-1',
+        sourceKey: 'bank-reconciliation-match:bank-tx-1:withdrawal:withdrawal-1',
+        metadata: expect.objectContaining({
+          accountingJournalEntryId: 'withdrawal-bank-credit-1',
+          sourceType: 'withdrawal',
+          withdrawalRecommendationEvidence: expect.objectContaining({
+            amountDelta: 0,
+            bankTransferRef: 'VCB-OUT-120',
+            confidence: 'STRONG',
+            dateDeltaDays: 0,
+            exactAmount: true,
+            rankingVersion: 'withdrawal-candidate-v1',
+            source: 'SERVER_RECOMPUTED',
+            transferRefMatch: true,
+            withdrawalTransferRef: 'VCB-OUT-120',
+          }),
+        }),
+      }),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'bank_reconciliation.match.create',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          withdrawalRequestId: 'withdrawal-1',
+          withdrawalRecommendationEvidence: expect.objectContaining({
+            confidence: 'STRONG',
+            rankingVersion: 'withdrawal-candidate-v1',
+            source: 'SERVER_RECOMPUTED',
+          }),
+        }),
+      }),
+    });
+  });
+
+  it('rejects unpaid Provider withdrawals and bank inflows before reconciliation', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 120000,
+          currency: 'VND',
+          status: BankReconciliationStatus.UNMATCHED,
+          type: CompanyBankTransactionType.OUTFLOW,
+        }),
+      },
+      providerWalletWithdrawalRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'withdrawal-1',
+          amount: 120000,
+          currency: 'VND',
+          status: ProviderWalletWithdrawalRequestStatus.APPROVED,
+        }),
+      },
+      accountingJournalEntry: { findFirst: vi.fn() },
+      bankReconciliationMatch: { aggregate: vi.fn(), create: vi.fn() },
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      withdrawalRequestId: 'withdrawal-1',
+      amount: 120000,
+      approvalAdminId: 'finance-admin-2',
+    };
+
+    await expect(service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Only a paid Partner withdrawal can be reconciled',
+    );
+    expect(tx.accountingJournalEntry.findFirst).not.toHaveBeenCalled();
+
+    tx.providerWalletWithdrawalRequest.findUnique.mockResolvedValue({
+      id: 'withdrawal-1',
+      amount: 120000,
+      currency: 'VND',
+      status: ProviderWalletWithdrawalRequestStatus.PAID,
+    });
+    tx.accountingJournalEntry.findFirst.mockResolvedValue({ id: 'withdrawal-bank-credit-1' });
+    tx.companyBankTransaction.findUnique.mockResolvedValue({
+      id: 'bank-tx-1',
+      amount: 120000,
+      currency: 'VND',
+      status: BankReconciliationStatus.UNMATCHED,
+      type: CompanyBankTransactionType.INFLOW,
+    });
+
+    await expect(service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Partner withdrawals can only match bank outflows',
+    );
+    expect(tx.bankReconciliationMatch.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects direct withdrawal journal matches that bypass the bank outflow cash-credit boundary', async () => {
+    const accountingJournalEntry = {
+      findUnique: vi.fn().mockResolvedValue({
+        id: 'withdrawal-bank-credit-1',
+        amount: 120000,
+        currency: 'VND',
+        side: AccountingJournalEntrySide.CREDIT,
+        accountCode: 'company_bank_cash',
+        batch: { sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL },
+      }),
+    };
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 120000,
+          currency: 'VND',
+          status: BankReconciliationStatus.UNMATCHED,
+          type: CompanyBankTransactionType.INFLOW,
+        }),
+      },
+      accountingJournalEntry,
+      bankReconciliationMatch: { aggregate: vi.fn(), create: vi.fn() },
+    };
+    const prisma = {
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      accountingJournalEntryId: 'withdrawal-bank-credit-1',
+      amount: 120000,
+      approvalAdminId: 'finance-admin-2',
+    };
+
+    await expect(service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Partner withdrawal journals can only match bank outflows',
+    );
+
+    tx.companyBankTransaction.findUnique.mockResolvedValue({
+      id: 'bank-tx-1',
+      amount: 120000,
+      currency: 'VND',
+      status: BankReconciliationStatus.UNMATCHED,
+      type: CompanyBankTransactionType.OUTFLOW,
+    });
+    accountingJournalEntry.findUnique.mockResolvedValue({
+      id: 'withdrawal-payable-debit-1',
+      amount: 120000,
+      currency: 'VND',
+      side: AccountingJournalEntrySide.DEBIT,
+      accountCode: 'partner_withdrawal_payable',
+      batch: { sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL },
+    });
+
+    await expect(service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Partner withdrawals must match the company bank cash credit entry',
+    );
+    expect(tx.bankReconciliationMatch.create).not.toHaveBeenCalled();
+  });
+
   it('rejects manual bank reconciliation matches without separate finance approval before opening a transaction', async () => {
     const prisma = {
       user: {
@@ -9736,9 +14721,9 @@ describe('AdminService query orchestration', () => {
       notes: 'Matched to VCB transfer',
     };
 
-    await expect(
-      service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input),
-    ).rejects.toThrow('Bank reconciliation match requires approval from a different admin');
+    await expect(service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Bank reconciliation match requires approval from a different admin',
+    );
     await expect(
       service.createBankReconciliationMatch('admin-user-1', 'bank-tx-1', {
         ...input,
@@ -10003,6 +14988,147 @@ describe('AdminService query orchestration', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('ignores an unmatched bank transaction with separate approval, persistent evidence, and an audit log', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          amount: 500000,
+          currency: 'VND',
+          metadata: { importedManually: true },
+          status: BankReconciliationStatus.UNMATCHED,
+        }),
+        update: vi.fn().mockResolvedValue({
+          id: 'bank-tx-1',
+          status: BankReconciliationStatus.IGNORED,
+        }),
+      },
+      bankReconciliationMatch: {
+        count: vi.fn().mockResolvedValue(0),
+      },
+      adminAuditLog: {
+        create: vi.fn().mockResolvedValue({ id: 'audit-ignore-1' }),
+      },
+    };
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.ignoreCompanyBankTransaction('admin-user-1', 'bank-tx-1', {
+        approvalAdminId: 'finance-admin-2',
+        reason: 'Duplicate statement row imported during reconciliation review',
+      }),
+    ).resolves.toMatchObject({
+      auditLog: { id: 'audit-ignore-1' },
+      bankTransaction: { id: 'bank-tx-1', status: BankReconciliationStatus.IGNORED },
+    });
+
+    expect(tx.bankReconciliationMatch.count).toHaveBeenCalledWith({
+      where: {
+        bankTransactionId: 'bank-tx-1',
+        status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+      },
+    });
+    expect(tx.companyBankTransaction.update).toHaveBeenCalledWith({
+      where: { id: 'bank-tx-1' },
+      data: {
+        status: BankReconciliationStatus.IGNORED,
+        metadata: expect.objectContaining({
+          importedManually: true,
+          ignoredByAdminId: 'admin-user-1',
+          ignoreApprovedByAdminId: 'finance-admin-2',
+          ignoreReason: 'Duplicate statement row imported during reconciliation review',
+          ignoredAt: expect.any(String),
+        }),
+      },
+      select: expect.any(Object),
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-user-1',
+        action: 'bank_reconciliation.transaction.ignore',
+        target: 'bank_transaction:bank-tx-1',
+        metadata: expect.objectContaining({
+          approvalAdminId: 'finance-admin-2',
+          bankStatusBefore: BankReconciliationStatus.UNMATCHED,
+          bankStatusAfter: BankReconciliationStatus.IGNORED,
+          reason: 'Duplicate statement row imported during reconciliation review',
+        }),
+      }),
+    });
+  });
+
+  it('rejects ignore for reconciled bank rows or rows with active matches', async () => {
+    const tx = {
+      companyBankTransaction: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'bank-tx-1',
+            amount: 500000,
+            currency: 'VND',
+            metadata: null,
+            status: BankReconciliationStatus.MATCHED,
+          })
+          .mockResolvedValueOnce({
+            id: 'bank-tx-2',
+            amount: 500000,
+            currency: 'VND',
+            metadata: null,
+            status: BankReconciliationStatus.UNMATCHED,
+          }),
+        update: vi.fn(),
+      },
+      bankReconciliationMatch: {
+        count: vi.fn().mockResolvedValue(1),
+      },
+      adminAuditLog: {
+        create: vi.fn(),
+      },
+    };
+    const prisma = {
+      user: {
+        findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }),
+      },
+      $transaction: vi.fn(async (callback) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+    const input = {
+      approvalAdminId: 'finance-admin-2',
+      reason: 'Duplicate statement row imported during reconciliation review',
+    };
+
+    await expect(service.ignoreCompanyBankTransaction('admin-user-1', 'bank-tx-1', input)).rejects.toThrow(
+      'Only an unmatched bank transaction can be ignored',
+    );
+    await expect(service.ignoreCompanyBankTransaction('admin-user-1', 'bank-tx-2', input)).rejects.toThrow(
+      'Reverse active reconciliation matches before ignoring this bank transaction',
+    );
+    expect(tx.companyBankTransaction.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects bank transaction ignore without separate finance approval before opening a transaction', async () => {
+    const prisma = {
+      user: { findFirst: vi.fn() },
+      $transaction: vi.fn(),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.ignoreCompanyBankTransaction('admin-user-1', 'bank-tx-1', {
+        approvalAdminId: 'admin-user-1',
+        reason: 'Duplicate statement row imported during reconciliation review',
+      }),
+    ).rejects.toThrow('Bank transaction ignore requires approval from a different admin');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('rejects manual bank reconciliation matches with more than one source record', async () => {
     const prisma = {
       user: {
@@ -10252,7 +15378,12 @@ describe('AdminService query orchestration', () => {
     const prisma = {
       $queryRaw: vi
         .fn()
-        .mockResolvedValueOnce([{ partnerCountWithRevenue: 1n }])
+        .mockResolvedValueOnce([{
+          partnerCountWithRevenue: 1n,
+          partnerDepositReconciliationOpenAmount: 250_000n,
+          partnerDepositReconciliationOpenCount: 2n,
+          paymentFeeReviewFlagCount: 1n,
+        }])
         .mockResolvedValueOnce([
           {
             companyCouponExpense: 60_000n,
@@ -10330,6 +15461,9 @@ describe('AdminService query orchestration', () => {
       partnerFundedCouponAmountTotal: 0,
       platformFeeDiscountAmountTotal: 0,
       couponReviewFlagCount: 1,
+      paymentFeeReviewFlagCount: 1,
+      partnerDepositReconciliationOpenCount: 2,
+      partnerDepositReconciliationOpenAmount: 250000,
       cashDebtTotal: 170000,
       nonCashPartnerPayoutTotal: 430000,
       partnerCountWithRevenue: 1,
@@ -10569,6 +15703,75 @@ describe('AdminService query orchestration', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
+  it('blocks declaration while settlement payment fee policy evidence remains unresolved', async () => {
+    const prisma = {
+      $transaction: vi.fn(),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.REVIEWED,
+        }),
+      },
+      accountingJournalBatch: {
+        findFirst: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({
+      reconciliationDelta: 0,
+      paymentFeeReviewFlagCount: 2,
+    } as never);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.DECLARED,
+        notes: 'Attempt declaration before fee policy evidence review',
+      }),
+    ).rejects.toThrow(
+      'Monthly close has 2 settlement(s) without resolved payment fee policy evidence.',
+    );
+
+    expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('blocks declaration while executed Partner bank deposits remain unreconciled', async () => {
+    const prisma = {
+      $transaction: vi.fn(),
+      monthlyTaxClosing: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'closing-1',
+          period: '2026-06',
+          currency: 'VND',
+          status: MonthlyTaxClosingStatus.REVIEWED,
+        }),
+      },
+      accountingJournalBatch: {
+        findFirst: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+    vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({
+      reconciliationDelta: 0,
+      paymentFeeReviewFlagCount: 0,
+      partnerDepositReconciliationOpenCount: 2,
+    } as never);
+
+    await expect(
+      service.updateMonthlyTaxClosingStatus('admin-1', '2026-06', {
+        status: MonthlyTaxClosingStatus.DECLARED,
+        notes: 'Attempt declaration before bank evidence matching',
+      }),
+    ).rejects.toThrow(
+      'Monthly close has 2 executed Partner bank deposit(s) without complete bank reconciliation.',
+    );
+
+    expect(prisma.accountingJournalBatch.findFirst).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('blocks monthly tax closeout status changes while posted journal reconciliation deltas remain open', async () => {
     const prisma = {
       $queryRaw: vi.fn().mockResolvedValue([
@@ -10751,7 +15954,9 @@ describe('AdminService query orchestration', () => {
         remittanceTransferRef: 'VCB-TAX-202606',
         remittanceEvidenceUrl: 'https://evidence.example/remittance.pdf',
       } as never),
-    ).rejects.toThrow('Partner withholding remittance paid closeout requires approval from a finance approver');
+    ).rejects.toThrow(
+      'Partner withholding remittance paid closeout requires approval from a finance approver',
+    );
 
     expect(prisma.user.findFirst).toHaveBeenCalledWith({
       where: { id: 'support-user-2', roles: { has: Role.FINANCE_APPROVER } },
@@ -11082,6 +16287,28 @@ describe('AdminService query orchestration', () => {
 
   it('summarizes payment processing fees by method, payer, and treatment for a monthly period', async () => {
     const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          paymentMethod: PaymentMethod.CASH,
+          settlementCount: 1n,
+          evidenceReviewCount: 1n,
+          customerPaymentAmountTotal: 600000n,
+          evidenceCustomerPaymentAmountTotal: 600000n,
+          paymentProcessingFeeTotal: 0n,
+          evidenceRecordedFeeTotal: 0n,
+          remediationExpectedFeeTotal: 0n,
+        },
+        {
+          paymentMethod: PaymentMethod.MOMO,
+          settlementCount: 1n,
+          evidenceReviewCount: 1n,
+          customerPaymentAmountTotal: 600000n,
+          evidenceCustomerPaymentAmountTotal: 600000n,
+          paymentProcessingFeeTotal: 10000n,
+          evidenceRecordedFeeTotal: 10000n,
+          remediationExpectedFeeTotal: 12000n,
+        },
+      ]),
       bookingSettlementSnapshot: {
         aggregate: vi.fn().mockResolvedValue({
           _count: { _all: 2 },
@@ -11092,18 +16319,6 @@ describe('AdminService query orchestration', () => {
         }),
         groupBy: vi
           .fn()
-          .mockResolvedValueOnce([
-            {
-              paymentMethod: PaymentMethod.CASH,
-              _count: { _all: 1 },
-              _sum: { customerPaymentAmount: 600000, paymentProcessingFee: 0 },
-            },
-            {
-              paymentMethod: PaymentMethod.MOMO,
-              _count: { _all: 1 },
-              _sum: { customerPaymentAmount: 600000, paymentProcessingFee: 10000 },
-            },
-          ])
           .mockResolvedValueOnce([
             {
               paymentFeePayer: PaymentFeePayer.HANDS,
@@ -11119,6 +16334,35 @@ describe('AdminService query orchestration', () => {
             },
           ]),
       },
+      paymentFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'payment-fee-policy-2026',
+          name: 'HANDS payment fee policy',
+          status: 'ACTIVE',
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          effectiveTo: null,
+          rules: [
+            {
+              id: 'payment-fee-rule-cash',
+              method: PaymentMethod.CASH,
+              feeType: 'RATE',
+              rateBps: 0,
+              fixedAmount: 0,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+            {
+              id: 'payment-fee-rule-momo',
+              method: PaymentMethod.MOMO,
+              feeType: 'RATE',
+              rateBps: 200,
+              fixedAmount: 0,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+          ],
+        }),
+      },
     };
     const service = createAdminService(prisma);
 
@@ -11132,14 +16376,24 @@ describe('AdminService query orchestration', () => {
         {
           paymentMethod: PaymentMethod.CASH,
           settlementCount: 1,
+          evidenceReviewCount: 1,
           customerPaymentAmountTotal: 600000,
+          evidenceCustomerPaymentAmountTotal: 600000,
           paymentProcessingFeeTotal: 0,
+          evidenceRecordedFeeTotal: 0,
+          remediationExpectedFeeTotal: null,
+          remediationDelta: null,
         },
         {
           paymentMethod: PaymentMethod.MOMO,
           settlementCount: 1,
+          evidenceReviewCount: 1,
           customerPaymentAmountTotal: 600000,
+          evidenceCustomerPaymentAmountTotal: 600000,
           paymentProcessingFeeTotal: 10000,
+          evidenceRecordedFeeTotal: 10000,
+          remediationExpectedFeeTotal: null,
+          remediationDelta: null,
         },
       ],
       byPayer: [
@@ -11158,15 +16412,1006 @@ describe('AdminService query orchestration', () => {
           paymentProcessingFeeTotal: 10000,
         },
       ],
+      policyReadiness: {
+        activePolicy: {
+          id: 'payment-fee-policy-2026',
+          name: 'HANDS payment fee policy',
+          status: 'ACTIVE',
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          effectiveTo: null,
+          rules: [
+            {
+              id: 'payment-fee-rule-cash',
+              method: PaymentMethod.CASH,
+              feeType: 'RATE',
+              rateBps: 0,
+              fixedAmount: 0,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+            {
+              id: 'payment-fee-rule-momo',
+              method: PaymentMethod.MOMO,
+              feeType: 'RATE',
+              rateBps: 200,
+              fixedAmount: 0,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+          ],
+        },
+        configuredMethods: [PaymentMethod.CASH, PaymentMethod.MOMO],
+        missingMethods: [
+          PaymentMethod.VNPAY,
+          PaymentMethod.CARD,
+          PaymentMethod.BANK_TRANSFER,
+          PaymentMethod.CUSTOMER_WALLET,
+          PaymentMethod.MANUAL,
+        ],
+        status: 'MISSING_METHOD_RULES',
+      },
+      remediationPreview: {
+        status: 'BLOCKED',
+        policyVersionId: 'payment-fee-policy-2026',
+        blockers: [
+          { code: 'MISSING_METHOD_RULE', message: 'Historical preview requires exactly one active VNPAY rule.' },
+          { code: 'MISSING_METHOD_RULE', message: 'Historical preview requires exactly one active CARD rule.' },
+          { code: 'MISSING_METHOD_RULE', message: 'Historical preview requires exactly one active BANK_TRANSFER rule.' },
+          { code: 'MISSING_METHOD_RULE', message: 'Historical preview requires exactly one active CUSTOMER_WALLET rule.' },
+          { code: 'MISSING_METHOD_RULE', message: 'Historical preview requires exactly one active MANUAL rule.' },
+        ],
+        evidenceReviewCount: 2,
+        evidenceCustomerPaymentAmountTotal: 1200000,
+        recordedFeeTotal: 10000,
+        expectedFeeTotal: null,
+        delta: null,
+      },
     });
 
-    expect(prisma.bookingSettlementSnapshot.groupBy).toHaveBeenNthCalledWith(
-      1,
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.paymentFeePolicyVersion.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        by: ['paymentMethod'],
-        where: { monthlyPeriod: '2026-06' },
+        select: expect.objectContaining({ rules: expect.any(Object) }),
+        where: expect.objectContaining({ status: 'ACTIVE' }),
       }),
     );
+  });
+
+  it('reports an explicit readiness failure when no active payment fee policy exists', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 0 },
+          _sum: { customerPaymentAmount: null, paymentProcessingFee: null },
+        }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      paymentFeePolicyVersion: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.paymentFeeSummary({ period: '2026-07' })).resolves.toMatchObject({
+      policyReadiness: {
+        activePolicy: null,
+        configuredMethods: [],
+        missingMethods: [
+          PaymentMethod.MOMO,
+          PaymentMethod.VNPAY,
+          PaymentMethod.CASH,
+          PaymentMethod.CARD,
+          PaymentMethod.BANK_TRANSFER,
+          PaymentMethod.CUSTOMER_WALLET,
+          PaymentMethod.MANUAL,
+        ],
+        status: 'MISSING_ACTIVE_POLICY',
+      },
+    });
+    expect(prisma.bookingSettlementSnapshot.groupBy).toHaveBeenCalledTimes(2);
+  });
+
+  it('exposes historical payment fee differences only when policy coverage is complete', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      id: `rule-${method.toLowerCase()}`,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: method === PaymentMethod.CARD ? 150 : 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          paymentMethod: PaymentMethod.CARD,
+          settlementCount: 2n,
+          evidenceReviewCount: 2n,
+          customerPaymentAmountTotal: 2000000n,
+          evidenceCustomerPaymentAmountTotal: 2000000n,
+          paymentProcessingFeeTotal: 0n,
+          evidenceRecordedFeeTotal: 0n,
+          remediationExpectedFeeTotal: 30000n,
+        },
+      ]),
+      bookingSettlementSnapshot: {
+        aggregate: vi.fn().mockResolvedValue({
+          _count: { _all: 2 },
+          _sum: { customerPaymentAmount: 2000000, paymentProcessingFee: 0 },
+        }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      },
+      paymentFeePolicyVersion: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'policy-complete',
+          name: 'Approved gateway contract',
+          status: 'ACTIVE',
+          effectiveFrom: new Date('2026-05-31T17:00:00.000Z'),
+          effectiveTo: null,
+          rules,
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.paymentFeeSummary({ period: '2026-06' });
+
+    expect(result.remediationPreview).toEqual({
+      status: 'READY',
+      policyVersionId: 'policy-complete',
+      blockers: [],
+      evidenceReviewCount: 2,
+      evidenceCustomerPaymentAmountTotal: 2000000,
+      recordedFeeTotal: 0,
+      expectedFeeTotal: 30000,
+      delta: 30000,
+    });
+    expect(result.byPaymentMethod[0]).toMatchObject({
+      paymentMethod: PaymentMethod.CARD,
+      remediationExpectedFeeTotal: 30000,
+      remediationDelta: 30000,
+    });
+  });
+
+  it('keeps payment fee policy history bounded', async () => {
+    const prisma = {
+      paymentFeePolicyVersion: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listPaymentFeePolicies({ take: '500' });
+
+    expect(prisma.paymentFeePolicyVersion.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 20, select: expect.any(Object) }),
+    );
+  });
+
+  it('builds a bounded finance approval queue from persisted pending wallet requests', async () => {
+    const requestedAt = new Date('2026-07-13T08:00:00.000Z');
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValueOnce([
+        {
+          actorEmail: 'maker@example.test',
+          actorFullName: 'Policy Maker',
+          actorId: 'maker-admin',
+          effectiveFrom: new Date('2026-08-01T00:00:00.000Z'),
+          metadata: {
+            reason: 'Review the gateway contract',
+            requestedBy: {
+              id: 'maker-admin',
+              email: 'maker@example.test',
+              fullName: 'Policy Maker',
+            },
+          },
+          policyId: 'policy-draft',
+          policyName: 'August gateway fees',
+          policyUpdatedAt: new Date('2026-07-13T07:00:00.000Z'),
+          requestedAt,
+          requestId: 'approval-request-1',
+          totalCount: 2n,
+        },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'wallet-request-1',
+            ownerType: 'PARTNER',
+            ownerId: 'provider-1',
+            ownerName: 'Partner One',
+            direction: 'CREDIT',
+            adjustmentType: 'PARTNER_BONUS',
+            amount: 200000,
+            currency: 'VND',
+            reason: 'Recovery bonus',
+            monthlyPeriod: '2026-07',
+            attachmentUrl: null,
+            requestedBeforeBalance: 0,
+            requestedAfterBalance: 200000,
+            requiresAttachment: false,
+            requestedByAdminId: 'maker-admin',
+            requesterFullName: 'Wallet Maker',
+            requesterEmail: 'wallet-maker@example.test',
+            createdAt: requestedAt,
+            totalCount: 3n,
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'deposit-request-1',
+            providerProfileId: 'provider-1',
+            partnerName: 'Partner One',
+            amount: 1000000,
+            currency: 'VND',
+            bankTransactionId: 'BIDV-20260713-001',
+            depositDate: requestedAt,
+            bankAccount: 'BIDV settlement account',
+            attachmentFileId: 'evidence-1',
+            attachmentUrl: null,
+            notes: 'Bank evidence confirmed',
+            requestedBeforeBalance: -170000,
+            requestedAfterBalance: 830000,
+            requestedReceivableRecovery: 170000,
+            requestedWalletLiabilityIncrease: 830000,
+            requestedByAdminId: 'deposit-maker',
+            requesterFullName: 'Deposit Maker',
+            requesterEmail: 'deposit-maker@example.test',
+            createdAt: requestedAt,
+            totalCount: 1n,
+          },
+        ]),
+      providerWalletWithdrawalRequest: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'withdrawal-1',
+            providerProfileId: 'provider-1',
+            bankAccountId: null,
+            amount: 400000,
+            currency: 'VND',
+            status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+            createdAt: requestedAt,
+            updatedAt: requestedAt,
+            providerProfile: {
+              displayName: 'Partner One',
+              user: { fullName: 'Partner Legal Name' },
+            },
+          },
+        ]),
+        groupBy: vi.fn().mockResolvedValue([
+          {
+            status: ProviderWalletWithdrawalRequestStatus.REQUESTED,
+            _count: { _all: 3 },
+            _sum: { amount: 900000 },
+          },
+          {
+            status: ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+            _count: { _all: 1 },
+            _sum: { amount: 500000 },
+          },
+        ]),
+      },
+      customerWalletLedgerEntry: { count: vi.fn().mockResolvedValue(2) },
+      providerWalletLedgerEntry: { count: vi.fn().mockResolvedValue(4) },
+      partnerBankDepositRequest: { count: vi.fn().mockResolvedValue(2) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.financeApprovalQueue({ take: '500' })).resolves.toMatchObject({
+      limit: 25,
+      summary: {
+        paymentFeePolicyPendingCount: 2,
+        withdrawalOpenCount: 4,
+        withdrawalRequestedCount: 3,
+        withdrawalBankTransferPendingCount: 1,
+        withdrawalOpenAmount: 1400000,
+        walletAdjustmentLast7dCount: 6,
+        walletAdjustmentPendingCount: 3,
+        partnerBankDepositPendingCount: 1,
+        partnerBankDepositLast7dCount: 2,
+      },
+      paymentFeePolicyRequests: [
+        expect.objectContaining({
+          policyId: 'policy-draft',
+          reason: 'Review the gateway contract',
+          requestedBy: expect.objectContaining({ id: 'maker-admin' }),
+        }),
+      ],
+      withdrawalRequests: [
+        expect.objectContaining({
+          id: 'withdrawal-1',
+          partnerName: 'Partner One',
+          hasBankAccount: false,
+        }),
+      ],
+      walletAdjustmentEvidence: {
+        last7dCount: 6,
+        pendingQueueSupported: true,
+      },
+      walletAdjustmentRequests: [
+        expect.objectContaining({
+          id: 'wallet-request-1',
+          ownerName: 'Partner One',
+          requestedBy: expect.objectContaining({ id: 'maker-admin' }),
+        }),
+      ],
+      partnerBankDepositRequests: [
+        expect.objectContaining({
+          id: 'deposit-request-1',
+          requestedReceivableRecovery: 170000,
+          requestedWalletLiabilityIncrease: 830000,
+          requestedBy: expect.objectContaining({ id: 'deposit-maker' }),
+        }),
+      ],
+    });
+    expect(prisma.providerWalletWithdrawalRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 25 }),
+    );
+    expect(prisma.customerWalletLedgerEntry.count).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ createdAt: expect.any(Object) }) }),
+    );
+  });
+
+  it('preflights a complete payment fee draft with the production settlement rounding rule', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      id: `rule-${method}`,
+      active: true,
+      method,
+      feeType: method === PaymentMethod.CARD ? PaymentFeeRuleType.RATE_PLUS_FIXED : PaymentFeeRuleType.RATE,
+      rateBps: method === PaymentMethod.CARD ? 155 : 0,
+      fixedAmount: method === PaymentMethod.CARD ? 99 : 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    }));
+    const prisma = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'policy-ready',
+          status: 'DRAFT',
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          effectiveTo: null,
+          notes: 'Gateway contract GF-2026-01 and signed pricing schedule',
+          rules,
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.paymentFeePolicyPreflight('policy-ready', { sampleAmount: '100050' }),
+    ).resolves.toMatchObject({
+      policyId: 'policy-ready',
+      policyStatus: 'DRAFT',
+      sampleAmount: 100050,
+      currency: 'VND',
+      readyForActivation: true,
+      blockers: [],
+      coverage: {
+        requiredMethods: 7,
+        configuredMethods: 7,
+        missingMethods: [],
+        duplicateMethods: [],
+        invalidMethods: [],
+      },
+      rules: expect.arrayContaining([
+        expect.objectContaining({
+          method: PaymentMethod.CARD,
+          estimatedFeeAmount: 1650,
+          status: 'READY',
+        }),
+      ]),
+    });
+    expect(prisma.paymentFeePolicyVersion.findUnique).toHaveBeenCalledWith({
+      where: { id: 'policy-ready' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('reports activation blockers for incomplete, duplicate, and invalid payment fee rules', async () => {
+    const prisma = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'policy-blocked',
+          status: 'DRAFT',
+          effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+          effectiveTo: null,
+          rules: [
+            {
+              active: true,
+              method: PaymentMethod.MOMO,
+              feeType: PaymentFeeRuleType.RATE,
+              rateBps: 100,
+              fixedAmount: 0,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+            {
+              active: true,
+              method: PaymentMethod.MOMO,
+              feeType: PaymentFeeRuleType.FIXED,
+              rateBps: 0,
+              fixedAmount: 1000,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+            {
+              active: true,
+              method: PaymentMethod.CARD,
+              feeType: PaymentFeeRuleType.RATE,
+              rateBps: 100,
+              fixedAmount: 1000,
+              payer: PaymentFeePayer.HANDS,
+              treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+            },
+          ],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.paymentFeePolicyPreflight('policy-blocked')).resolves.toMatchObject({
+      sampleAmount: 100000,
+      readyForActivation: false,
+      coverage: {
+        configuredMethods: 0,
+        duplicateMethods: [PaymentMethod.MOMO],
+        invalidMethods: [PaymentMethod.CARD],
+        missingMethods: [
+          PaymentMethod.VNPAY,
+          PaymentMethod.CASH,
+          PaymentMethod.BANK_TRANSFER,
+          PaymentMethod.CUSTOMER_WALLET,
+          PaymentMethod.MANUAL,
+        ],
+      },
+      blockers: expect.arrayContaining([
+        expect.objectContaining({ code: 'DUPLICATE_METHOD_RULE', method: PaymentMethod.MOMO }),
+        expect.objectContaining({ code: 'INVALID_METHOD_RULE', method: PaymentMethod.CARD }),
+        expect.objectContaining({ code: 'MISSING_METHOD_RULE', method: PaymentMethod.CASH }),
+      ]),
+    });
+  });
+
+  it('creates payment fee policies as audited drafts regardless of client intent', async () => {
+    const created = {
+      id: 'payment-fee-policy-draft',
+      name: 'Vietnam gateway fees',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      rules: [],
+    };
+    const tx = {
+      paymentFeePolicyVersion: { create: vi.fn().mockResolvedValue(created) },
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-1' }) },
+    };
+    const prisma = { $transaction: vi.fn((callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.createPaymentFeePolicy('maker-admin', {
+        name: ' Vietnam gateway fees ',
+        effectiveFrom: '2026-01-01T00:00:00.000Z',
+      }),
+    ).resolves.toBe(created);
+    expect(tx.paymentFeePolicyVersion.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          createdById: 'maker-admin',
+          name: 'Vietnam gateway fees',
+          status: 'DRAFT',
+        }),
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: 'payment_fee_policy.create_draft' }),
+      }),
+    );
+  });
+
+  it('activates a complete payment fee policy with a different finance approver and audit evidence', async () => {
+    const rules = Object.values(PaymentMethod).map((method, index) => ({
+      id: `rule-${method}`,
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: index === 0 ? 150 : 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    }));
+    const draft = {
+      id: 'payment-fee-policy-draft',
+      name: 'Vietnam gateway fees',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Gateway contract GF-2026-01 reviewed against the signed pricing schedule.',
+      createdById: 'maker-admin',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      createdBy: null,
+      rules,
+    };
+    const active = { ...draft, status: 'ACTIVE' };
+    const maker = {
+      id: 'maker-admin',
+      email: 'maker@example.test',
+      fullName: 'Policy Maker',
+      roles: [Role.ADMIN],
+    };
+    const approver = {
+      id: 'approver-admin',
+      email: 'approver@example.test',
+      fullName: 'Finance Approver',
+      roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+    };
+    let approvalRequest: Record<string, unknown> | null = null;
+    const tx = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue(draft),
+        findUniqueOrThrow: vi.fn().mockResolvedValue(active),
+        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 }),
+      },
+      adminAuditLog: {
+        findFirst: vi.fn().mockResolvedValueOnce(null).mockImplementation(() => approvalRequest),
+        create: vi.fn().mockImplementation(({ data }) => {
+          if (data.action === 'payment_fee_policy.approval_requested') {
+            approvalRequest = {
+              id: 'approval-request-1',
+              action: data.action,
+              actorId: data.actorId,
+              actor: maker,
+              createdAt: new Date('2026-07-13T12:00:00.000Z'),
+              metadata: data.metadata,
+            };
+            return approvalRequest;
+          }
+          return { id: 'audit-2' };
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      user: {
+        findFirst: vi.fn()
+          .mockResolvedValueOnce(maker)
+          .mockResolvedValueOnce(approver)
+          .mockResolvedValueOnce(approver),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.requestPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Request independent contract review' },
+        maker.email,
+      ),
+    ).resolves.toMatchObject({ status: 'REQUESTED', requestedBy: expect.objectContaining({ id: maker.id }) });
+    await expect(
+      service.activatePaymentFeePolicy(
+        'admin-token-user',
+        draft.id,
+        {
+          approvalAdminId: approver.id,
+          reason: 'Approved against gateway contract',
+        },
+        approver.email,
+      ),
+    ).resolves.toBe(active);
+    expect(prisma.user.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'approver-admin', roles: { has: Role.FINANCE_APPROVER } } }),
+    );
+    expect(tx.paymentFeePolicyVersion.updateMany).toHaveBeenCalledWith({
+      where: { id: { not: draft.id }, status: 'ACTIVE' },
+      data: { status: 'INACTIVE' },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'payment_fee_policy.activate',
+          metadata: expect.objectContaining({ approvalAdminId: 'approver-admin', ruleCount: 7 }),
+        }),
+      }),
+    );
+  });
+
+  it('persists rejection evidence and allows the maker to request the same corrected review again', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: method === PaymentMethod.CARD ? 150 : 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const draft = {
+      id: 'payment-fee-policy-rejected',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Signed gateway pricing schedule',
+      rules,
+    };
+    const maker = {
+      id: 'maker-admin',
+      email: 'maker@example.test',
+      fullName: 'Policy Maker',
+      roles: [Role.ADMIN],
+    };
+    const approver = {
+      id: 'approver-admin',
+      email: 'approver@example.test',
+      fullName: 'Finance Approver',
+      roles: [Role.ADMIN, Role.FINANCE_APPROVER],
+    };
+    let latestEvent: Record<string, unknown> | null = null;
+    let eventSequence = 0;
+    const tx = {
+      paymentFeePolicyVersion: { findUnique: vi.fn().mockResolvedValue(draft) },
+      adminAuditLog: {
+        findFirst: vi.fn().mockImplementation(() => latestEvent),
+        create: vi.fn().mockImplementation(({ data }) => {
+          eventSequence += 1;
+          latestEvent = {
+            id: `approval-event-${eventSequence}`,
+            action: data.action,
+            actorId: data.actorId,
+            actor: data.actorId === maker.id ? maker : approver,
+            createdAt: new Date(`2026-07-13T12:0${eventSequence}:00.000Z`),
+            metadata: data.metadata,
+          };
+          return latestEvent;
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      user: {
+        findFirst: vi.fn()
+          .mockResolvedValueOnce(maker)
+          .mockResolvedValueOnce(approver)
+          .mockResolvedValueOnce(approver)
+          .mockResolvedValueOnce(maker),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.requestPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Review the signed fee schedule' },
+        maker.email,
+      ),
+    ).resolves.toMatchObject({ status: 'REQUESTED' });
+    await expect(
+      service.rejectPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'CARD fee differs from the signed schedule' },
+        approver.email,
+      ),
+    ).resolves.toMatchObject({
+      status: 'REJECTED',
+      requestedBy: expect.objectContaining({ id: maker.id }),
+      decidedBy: expect.objectContaining({ id: approver.id }),
+      reason: 'CARD fee differs from the signed schedule',
+    });
+    await expect(
+      service.requestPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Request review again after checking the schedule' },
+        maker.email,
+      ),
+    ).resolves.toMatchObject({ status: 'REQUESTED' });
+    expect(tx.adminAuditLog.create.mock.calls.map(([input]) => input.data.action)).toEqual([
+      'payment_fee_policy.approval_requested',
+      'payment_fee_policy.approval_rejected',
+      'payment_fee_policy.approval_requested',
+    ]);
+  });
+
+  it('allows only the requesting operator to cancel a pending payment fee policy review', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const draft = {
+      id: 'payment-fee-policy-cancelled',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Signed gateway pricing schedule',
+      rules,
+    };
+    const maker = {
+      id: 'maker-admin',
+      email: 'maker@example.test',
+      fullName: 'Policy Maker',
+      roles: [Role.ADMIN],
+    };
+    const otherOperator = {
+      id: 'other-admin',
+      email: 'other@example.test',
+      fullName: 'Other Operator',
+      roles: [Role.ADMIN],
+    };
+    let latestEvent: Record<string, unknown> | null = null;
+    let eventSequence = 0;
+    const tx = {
+      paymentFeePolicyVersion: { findUnique: vi.fn().mockResolvedValue(draft) },
+      adminAuditLog: {
+        findFirst: vi.fn().mockImplementation(() => latestEvent),
+        create: vi.fn().mockImplementation(({ data }) => {
+          eventSequence += 1;
+          latestEvent = {
+            id: `approval-cancel-event-${eventSequence}`,
+            action: data.action,
+            actorId: data.actorId,
+            actor: maker,
+            createdAt: new Date(`2026-07-13T12:0${eventSequence}:00.000Z`),
+            metadata: data.metadata,
+          };
+          return latestEvent;
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      user: {
+        findFirst: vi.fn()
+          .mockResolvedValueOnce(maker)
+          .mockResolvedValueOnce(otherOperator)
+          .mockResolvedValueOnce(maker),
+      },
+    };
+    const service = createAdminService(prisma);
+    await expect(
+      service.requestPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Review this policy revision' },
+        maker.email,
+      ),
+    ).resolves.toMatchObject({ status: 'REQUESTED' });
+
+    await expect(
+      service.cancelPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Attempt cancellation by another operator' },
+        otherOperator.email,
+      ),
+    ).rejects.toThrow('Only the requesting operator can cancel');
+    await expect(
+      service.cancelPaymentFeePolicyApproval(
+        'admin-token-user',
+        draft.id,
+        { reason: 'Withdraw until the contract reference is corrected' },
+        maker.email,
+      ),
+    ).resolves.toMatchObject({
+      status: 'CANCELLED',
+      requestedBy: expect.objectContaining({ id: maker.id }),
+      decidedBy: expect.objectContaining({ id: maker.id }),
+    });
+    expect(tx.adminAuditLog.create.mock.calls.map(([input]) => input.data.action)).toEqual([
+      'payment_fee_policy.approval_requested',
+      'payment_fee_policy.approval_cancelled',
+    ]);
+  });
+
+  it('rejects signer mismatch and incomplete payment fee policy activation', async () => {
+    const prisma = {
+      $transaction: vi.fn(),
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'finance-admin-2' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.activatePaymentFeePolicy('maker-admin', 'policy-1', {
+        approvalAdminId: 'maker-admin',
+        reason: 'Self approval',
+      }),
+    ).rejects.toThrow('must be completed by the signed-in approver');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+
+    const incompleteDraft = {
+      id: 'policy-1',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Gateway contract evidence',
+      rules: [],
+    };
+    const tx = {
+      paymentFeePolicyVersion: { findUnique: vi.fn().mockResolvedValue(incompleteDraft) },
+    };
+    prisma.$transaction.mockImplementation((callback) => callback(tx));
+
+    await expect(
+      service.activatePaymentFeePolicy('maker-admin', 'policy-1', {
+        approvalAdminId: 'finance-admin-2',
+        reason: 'Missing rules',
+      }),
+    ).rejects.toThrow('requires exactly one active MOMO rule');
+  });
+
+  it('rejects payment fee policy activation without a persisted approval request', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const draft = {
+      id: 'payment-fee-policy-no-request',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Gateway contract evidence',
+      rules,
+    };
+    const tx = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue(draft),
+        updateMany: vi.fn(),
+      },
+      adminAuditLog: { findFirst: vi.fn().mockResolvedValue(null) },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'approver-admin' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.activatePaymentFeePolicy(
+        'admin-token-user',
+        draft.id,
+        {
+          approvalAdminId: 'approver-admin',
+          reason: 'Approve without request',
+        },
+        'approver@example.test',
+      ),
+    ).rejects.toThrow('requires a pending approval request');
+    expect(tx.paymentFeePolicyVersion.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects payment fee policy activation after the requested draft revision changes', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: method === PaymentMethod.CARD ? 175 : 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const changedDraft = {
+      id: 'payment-fee-policy-stale-request',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: 'Gateway contract evidence revised after the request',
+      rules,
+    };
+    const tx = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue(changedDraft),
+        updateMany: vi.fn(),
+      },
+      adminAuditLog: {
+        findFirst: vi.fn().mockResolvedValue({
+          id: 'approval-request-stale',
+          action: 'payment_fee_policy.approval_requested',
+          actorId: 'maker-admin',
+          actor: { id: 'maker-admin', email: 'maker@example.test', fullName: 'Policy Maker' },
+          createdAt: new Date('2026-07-13T12:00:00.000Z'),
+          metadata: {
+            policyFingerprint: 'fingerprint-before-draft-change',
+            reason: 'Review the original policy revision',
+          },
+        }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'approver-admin' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.activatePaymentFeePolicy(
+        'admin-token-user',
+        changedDraft.id,
+        {
+          approvalAdminId: 'approver-admin',
+          reason: 'Approve the stale request',
+        },
+        'approver@example.test',
+      ),
+    ).rejects.toThrow('changed after approval was requested');
+    expect(tx.paymentFeePolicyVersion.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('blocks payment fee policy preflight and activation without contract evidence notes', async () => {
+    const rules = Object.values(PaymentMethod).map((method) => ({
+      active: true,
+      method,
+      feeType: PaymentFeeRuleType.RATE,
+      rateBps: 0,
+      fixedAmount: 0,
+      payer: PaymentFeePayer.HANDS,
+      treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+    }));
+    const draft = {
+      id: 'payment-fee-policy-without-evidence',
+      status: 'DRAFT',
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      effectiveTo: null,
+      notes: null,
+      rules,
+    };
+    const tx = {
+      paymentFeePolicyVersion: { findUnique: vi.fn().mockResolvedValue(draft) },
+    };
+    const prisma = {
+      $transaction: vi.fn((callback) => callback(tx)),
+      paymentFeePolicyVersion: { findUnique: vi.fn().mockResolvedValue(draft) },
+      user: { findFirst: vi.fn().mockResolvedValue({ id: 'approver-admin' }) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.paymentFeePolicyPreflight(draft.id)).resolves.toMatchObject({
+      readyForActivation: false,
+      blockers: expect.arrayContaining([
+        expect.objectContaining({ code: 'POLICY_EVIDENCE_REQUIRED' }),
+      ]),
+    });
+    await expect(
+      service.activatePaymentFeePolicy('maker-admin', draft.id, {
+        approvalAdminId: 'approver-admin',
+        reason: 'Approve complete rule coverage',
+      }),
+    ).rejects.toThrow('requires contract or pricing evidence notes');
+    expect(tx.paymentFeePolicyVersion.findUnique).toHaveBeenCalled();
+  });
+
+  it('prevents rule changes after a payment fee policy leaves DRAFT', async () => {
+    const tx = {
+      paymentFeePolicyVersion: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'policy-1', status: 'ACTIVE' }),
+      },
+    };
+    const prisma = { $transaction: vi.fn((callback) => callback(tx)) };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.upsertPaymentFeeRule('maker-admin', 'policy-1', {
+        method: PaymentMethod.CARD,
+        feeType: PaymentFeeRuleType.RATE,
+        rateBps: 150,
+        fixedAmount: 0,
+        payer: PaymentFeePayer.HANDS,
+        treatment: PaymentFeeTreatment.OPERATING_EXPENSE,
+      }),
+    ).rejects.toThrow('Only DRAFT payment fee policies can be changed');
   });
 
   it('delegates bounded cash settlement filters to the earnings service', async () => {
@@ -11215,25 +17460,107 @@ describe('AdminService query orchestration', () => {
   });
 
   it('delegates bounded payout batch filters to the earnings service', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
     const earnings = {
       listPayoutBatchesForAdmin: vi.fn().mockResolvedValue([{ id: 'payout-1' }]),
     };
-    const service = createAdminService({}, { earnings });
+    const service = createAdminService(prisma, { earnings });
 
-    await expect(
-      service.listPayoutBatches({
-        range: '30d',
-        review: 'needs-review',
-        skip: '150',
-        take: '75',
+    const result = await service.listPayoutBatches({
+      range: '30d',
+      review: 'needs-review',
+      skip: '150',
+      take: '75',
+    });
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        approvalAdminId: null,
+        createdByAdminId: null,
+        id: 'payout-1',
+        lastUpdatedByAdminId: null,
+        paidByAdminId: null,
       }),
-    ).resolves.toEqual([{ id: 'payout-1' }]);
+    ]);
 
     expect(earnings.listPayoutBatchesForAdmin).toHaveBeenCalledWith({
       range: '30d',
       review: 'needs-review',
       skip: '150',
       take: '75',
+    });
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        action: { in: ['payout_batch.create', 'payout_batch.update'] },
+        target: { in: ['payout_batch:payout-1'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { action: true, actorId: true, metadata: true, target: true },
+    });
+  });
+
+  it('hydrates payout batch maker, paid executor, and separate approver identities from audit logs', async () => {
+    const prisma = {
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            action: 'payout_batch.update',
+            actorId: 'finance-maker-1',
+            metadata: { approvalAdminId: 'finance-approver-2', status: PayoutBatchStatus.PAID },
+            target: 'payout_batch:payout-1',
+          },
+          {
+            action: 'payout_batch.create',
+            actorId: 'finance-creator-1',
+            metadata: {},
+            target: 'payout_batch:payout-1',
+          },
+        ]),
+      },
+      user: {
+        findMany: vi.fn().mockResolvedValue([
+          { email: 'creator@hands.vn', fullName: 'Finance Creator', id: 'finance-creator-1' },
+          { email: 'maker@hands.vn', fullName: 'Finance Maker', id: 'finance-maker-1' },
+          { email: 'approver@hands.vn', fullName: 'Finance Approver', id: 'finance-approver-2' },
+        ]),
+      },
+    };
+    const earnings = {
+      listPayoutBatchesForAdmin: vi.fn().mockResolvedValue([
+        { id: 'payout-1', status: PayoutBatchStatus.PAID },
+      ]),
+    };
+    const service = createAdminService(prisma, { earnings });
+
+    await expect(service.listPayoutBatches({ take: '20' })).resolves.toEqual([
+      expect.objectContaining({
+        approvalAdmin: expect.objectContaining({ fullName: 'Finance Approver' }),
+        approvalAdminId: 'finance-approver-2',
+        createdBy: expect.objectContaining({ fullName: 'Finance Creator' }),
+        createdByAdminId: 'finance-creator-1',
+        lastUpdatedBy: expect.objectContaining({ fullName: 'Finance Maker' }),
+        lastUpdatedByAdminId: 'finance-maker-1',
+        paidBy: expect.objectContaining({ fullName: 'Finance Maker' }),
+        paidByAdminId: 'finance-maker-1',
+      }),
+    ]);
+
+    expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        id: {
+          in: expect.arrayContaining([
+            'finance-approver-2',
+            'finance-creator-1',
+            'finance-maker-1',
+          ]),
+        },
+      },
+      select: { id: true, email: true, fullName: true },
     });
   });
 
@@ -11343,6 +17670,133 @@ describe('AdminService query orchestration', () => {
         },
       },
     });
+  });
+
+  it('marks an unlinked legacy system notification reviewed with atomic audit evidence', async () => {
+    const tx = {
+      adminAuditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-legacy-review' }) },
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          data: { destination: '/background-jobs', jobId: 'job-1', queueName: 'queue-1' },
+          id: 'notification-legacy',
+          type: 'admin.system.background_job.failed',
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            data: { destination: '/background-jobs', jobId: 'job-1', queueName: 'queue-1', recipient: 'admin-1' },
+            id: 'notification-legacy',
+            type: 'admin.system.background_job.failed',
+          },
+          {
+            data: { destination: '/background-jobs', jobId: 'job-1', queueName: 'queue-1', recipient: 'admin-2' },
+            id: 'notification-legacy-sibling',
+            type: 'admin.system.background_job.failed',
+          },
+        ]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.reviewLegacyNotification(
+        'admin-1',
+        'notification-legacy',
+        '  Reviewed   retained queue evidence and confirmed no linked incident.  ',
+      ),
+    ).resolves.toMatchObject({
+      incidentStatus: 'LEGACY_REVIEWED',
+      notificationId: 'notification-legacy',
+      ok: true,
+      reviewedNotificationCount: 2,
+      reviewedAt: expect.any(String),
+    });
+
+    expect(tx.notification.findMany).toHaveBeenCalledWith({
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { data: true, id: true, type: true },
+      where: {
+        AND: [
+          { type: 'admin.system.background_job.failed' },
+          { data: { equals: 'queue-1', path: ['queueName'] } },
+          { data: { equals: 'job-1', path: ['jobId'] } },
+          { data: { equals: Prisma.AnyNull, path: ['incidentId'] } },
+          { data: { equals: Prisma.AnyNull, path: ['incidentStatus'] } },
+        ],
+      },
+    });
+    expect(tx.notification.updateMany).toHaveBeenCalledTimes(2);
+    expect(tx.notification.updateMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: {
+          data: expect.objectContaining({
+            incidentStatus: 'LEGACY_REVIEWED',
+            legacyReviewReason: 'Reviewed retained queue evidence and confirmed no linked incident.',
+            legacyReviewedAt: expect.any(String),
+            legacyReviewedByAdminId: 'admin-1',
+            recipient: 'admin-1',
+          }),
+        },
+        where: {
+          data: { equals: Prisma.AnyNull, path: ['incidentStatus'] },
+          id: 'notification-legacy',
+          type: 'admin.system.background_job.failed',
+        },
+      }),
+    );
+    expect(tx.notification.updateMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: { data: expect.objectContaining({ recipient: 'admin-2' }) },
+        where: expect.objectContaining({ id: 'notification-legacy-sibling' }),
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'notification.legacy_reviewed',
+        actorId: 'admin-1',
+        metadata: expect.objectContaining({
+          incidentStatus: 'LEGACY_REVIEWED',
+          notificationId: 'notification-legacy',
+          reason: 'Reviewed retained queue evidence and confirmed no linked incident.',
+          reviewedNotificationCount: 2,
+          source: 'admin_notification_legacy_review',
+          sourceKey: 'job:queue-1:job-1',
+        }),
+        target: 'notification:notification-legacy',
+      },
+    });
+  });
+
+  it('rejects legacy review for linked incidents and inadequate evidence', async () => {
+    const linkedTx = {
+      adminAuditLog: { create: vi.fn() },
+      notification: {
+        findUnique: vi.fn().mockResolvedValue({
+          data: { incidentId: 'incident-1' },
+          id: 'notification-linked',
+          type: 'admin.system.background_job.failed',
+        }),
+        updateMany: vi.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn(async (callback: (client: typeof linkedTx) => Promise<unknown>) => callback(linkedTx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.reviewLegacyNotification('admin-1', 'notification-linked', 'Reviewed source evidence.'),
+    ).rejects.toThrow('Linked incidents must be resolved from Background Jobs');
+    await expect(
+      service.reviewLegacyNotification('admin-1', 'notification-linked', 'too short'),
+    ).rejects.toThrow('must be at least 12 characters');
+    expect(linkedTx.notification.updateMany).not.toHaveBeenCalled();
+    expect(linkedTx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('lists notification delivery evidence without exposing raw push tokens', async () => {
@@ -11489,6 +17943,282 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('filters Finance overdue notifications at the database boundary', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([{
+        id: 'notification-finance-open',
+        ownerAdminId: 'admin-owner-1',
+        ownerEmail: 'owner@hands.test',
+        ownerFullName: 'Finance Owner',
+        reviewAgeHours: 76,
+        reviewStartedAt: new Date('2026-07-10T00:00:00.000Z'),
+      }]),
+      notification: {
+        findMany: vi.fn().mockResolvedValue([{
+          data: { bankTransactionId: 'bank-1' },
+          id: 'notification-finance-open',
+          type: 'admin.finance.bank_transaction.review_escalated',
+        }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.listNotifications({
+      financeAge: '72-plus',
+      financeOwner: 'admin-owner-1',
+      review: 'finance-overdue',
+      take: '20',
+    });
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: string; values: unknown[] };
+    expect(pageQuery.sql).toContain('assignment."createdAt"');
+    expect(pageQuery.sql).toContain('batch_import."createdAt"');
+    expect(pageQuery.sql).toContain('finance_reviews."reviewStartedAt" ASC');
+    expect(pageQuery.sql).toContain('review_rows."reviewAgeHours" >= 72');
+    expect(pageQuery.sql).toContain('review_rows."ownerAdminId" =');
+    expect(pageQuery.sql).toContain('LIMIT');
+    expect(pageQuery.values).toContain(20);
+    expect(pageQuery.values).toContain(0);
+    expect(pageQuery.values).toContain('admin-owner-1');
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 20,
+        where: { id: { in: ['notification-finance-open'] } },
+      }),
+    );
+    expect(result[0]).toMatchObject({
+      data: {
+        bankTransactionId: 'bank-1',
+        financeReviewAgeHours: 76,
+        financeReviewOwner: {
+          email: 'owner@hands.test',
+          fullName: 'Finance Owner',
+          id: 'admin-owner-1',
+        },
+        financeReviewSlaBand: 'OVER_72H',
+        financeReviewStartedAt: '2026-07-10T00:00:00.000Z',
+      },
+    });
+  });
+
+  it('filters resolved Finance overdue notifications into retained history', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({ review: 'finance-overdue-history', take: '20' });
+
+    const pageQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: string };
+    expect(pageQuery.sql).toContain("financeReviewStatus' = 'RESOLVED'");
+    expect(pageQuery.sql).toContain('finance_reviews."resolvedAt" DESC NULLS LAST');
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: [] } },
+      }),
+    );
+  });
+
+  it('counts Finance overdue rows with the same SLA age and owner filters as the page query', async () => {
+    const prisma = {
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ count: 2 }])
+        .mockResolvedValueOnce([
+          { count: 3, ownerAdminId: null },
+          { count: 2, ownerAdminId: 'admin-owner-1' },
+        ]),
+      notification: { count: vi.fn().mockResolvedValue(0) },
+      notificationDelivery: { count: vi.fn().mockResolvedValue(0) },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.notificationSummary({
+      financeAge: '48-72',
+      financeOwner: 'unassigned',
+      review: 'finance-overdue',
+    });
+
+    expect(result.totalCount).toBe(2);
+    expect(result.financeReviewOwnerSummary).toEqual([
+      { count: 3, ownerAdminId: null },
+      { count: 2, ownerAdminId: 'admin-owner-1' },
+    ]);
+    const countQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql: string };
+    expect(countQuery.sql).toContain('review_rows."reviewAgeHours" >= 48');
+    expect(countQuery.sql).toContain('review_rows."reviewAgeHours" < 72');
+    expect(countQuery.sql).toContain('review_rows."ownerAdminId" IS NULL');
+    expect(countQuery.sql).toContain('COUNT(*)::integer AS count');
+    expect(countQuery.sql).toContain('current_assignment."metadata"->>\'assigneeAdminId\'');
+    expect(countQuery.sql).toContain('ORDER BY logs."createdAt" DESC, logs.id DESC');
+    expect(countQuery.values).toContain('company_bank_transaction.review_assignment');
+    const ownerSummaryQuery = prisma.$queryRaw.mock.calls[1]?.[0] as { sql: string };
+    expect(ownerSummaryQuery.sql).toContain('GROUP BY finance_reviews."ownerAdminId"');
+    expect(ownerSummaryQuery.sql).toContain('review_rows."reviewAgeHours" >= 48');
+    expect(ownerSummaryQuery.sql).toContain('review_rows."reviewAgeHours" < 72');
+    expect(ownerSummaryQuery.sql).not.toContain('review_rows."ownerAdminId" IS NULL');
+  });
+
+  it('rejects unsupported Finance overdue SLA filters before querying the database', async () => {
+    const prisma = {
+      $queryRaw: vi.fn(),
+      notification: { findMany: vi.fn() },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listNotifications({
+      financeAge: 'older-than-forever',
+      review: 'finance-overdue',
+    })).rejects.toThrow('Notification Finance age filter is invalid');
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.notification.findMany).not.toHaveBeenCalled();
+  });
+
+  it('paginates Admin system incidents by source at the database boundary', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      notification: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({ review: 'system-incidents' });
+
+    const sourceQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; values?: unknown[] };
+    expect(sourceQuery.sql).toContain('PARTITION BY filtered."sourceKey"');
+    expect(sourceQuery.sql).toContain('COUNT(DISTINCT filtered."userId")');
+    expect(sourceQuery.sql).toContain(`notification."type" LIKE 'admin.system.%'`);
+    expect(sourceQuery.sql).toContain(`'incident:' || (notification."data"->>'incidentId')`);
+    expect(sourceQuery.sql).toContain(`'job:' || (notification."data"->>'queueName')`);
+    expect(sourceQuery.sql).toContain('LIMIT');
+    expect(sourceQuery.values).toContain(20);
+    expect(sourceQuery.values).toContain(0);
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 20, where: { id: { in: [] } } }),
+    );
+  });
+
+  it.each([
+    ['open', 'OPEN'],
+    ['recovered', 'RECOVERED'],
+    ['reviewed', 'LEGACY_REVIEWED'],
+  ] as const)(
+    'filters %s incident sources with the resolved server-side state',
+    async (incidentState, persistedState) => {
+      const prisma = {
+        $queryRaw: vi.fn().mockResolvedValue([]),
+        notification: { findMany: vi.fn().mockResolvedValue([]) },
+      };
+      const service = createAdminService(prisma);
+
+      await service.listNotifications({ incidentState, review: 'system-incidents' });
+
+      const stateRank = persistedState === 'OPEN' ? 1 : persistedState === 'RECOVERED' ? 3 : 4;
+      const sourceQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; values?: unknown[] };
+      expect(sourceQuery.sql).toContain('grouped."resolvedStateRank"');
+      expect(sourceQuery.values).toContain(stateRank);
+    },
+  );
+
+  it('keeps legacy system alerts in an explicit server-side review queue', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      notification: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications({ incidentState: 'legacy', review: 'system-incidents' });
+
+    const sourceQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; values?: unknown[] };
+    expect(sourceQuery.sql).toContain('grouped."resolvedStateRank"');
+    expect(sourceQuery.values).toContain(2);
+  });
+
+  it('enriches bounded background-job notifications with open and recovered incident states', async () => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          id: 'notification-open',
+          notificationCount: 2,
+          recipientCount: 2,
+          sourceKey: 'incident:incident-open',
+        },
+        {
+          id: 'notification-recovered',
+          notificationCount: 1,
+          recipientCount: 1,
+          sourceKey: 'incident:incident-recovered',
+        },
+      ]),
+      adminAuditLog: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            createdAt: new Date('2026-07-14T05:05:00.000Z'),
+            metadata: {
+              openedAuditId: 'incident-recovered',
+              recoveredAt: '2026-07-14T05:04:00.000Z',
+            },
+          },
+        ]),
+      },
+      notification: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            data: { incidentId: 'incident-open', queueName: 'notification-retry' },
+            id: 'notification-open',
+            type: 'admin.system.background_job.failed',
+          },
+          {
+            data: { incidentId: 'incident-recovered', queueName: 'bank-statement-escalation' },
+            id: 'notification-recovered',
+            type: 'admin.system.background_job.failed',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listNotifications({ review: 'system-incidents' })).resolves.toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({
+          incidentId: 'incident-open',
+          incidentRecoveredAt: null,
+          incidentStatus: 'OPEN',
+          systemIncidentNotificationCount: 2,
+          systemIncidentRecipientCount: 2,
+          systemIncidentSourceKey: 'incident:incident-open',
+        }),
+      }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          incidentId: 'incident-recovered',
+          incidentRecoveredAt: '2026-07-14T05:04:00.000Z',
+          incidentStatus: 'RECOVERED',
+          systemIncidentNotificationCount: 1,
+          systemIncidentRecipientCount: 1,
+          systemIncidentSourceKey: 'incident:incident-recovered',
+        }),
+      }),
+    ]);
+    expect(prisma.adminAuditLog.findMany).toHaveBeenCalledWith({
+      where: {
+        action: 'admin.background_jobs.recurring_incident_recovered',
+        OR: [
+          { metadata: { path: ['openedAuditId'], equals: 'incident-open' } },
+          { metadata: { path: ['openedAuditId'], equals: 'incident-recovered' } },
+        ],
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
+      select: { createdAt: true, metadata: true },
+    });
+  });
+
   it('counts notification summary with the same filters without loading rows', async () => {
     const prisma = {
       notification: {
@@ -11505,7 +18235,8 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce(33),
       },
       notificationDelivery: {
-        count: vi.fn()
+        count: vi
+          .fn()
           .mockResolvedValueOnce(172)
           .mockResolvedValueOnce(64)
           .mockResolvedValueOnce(121)
@@ -11621,7 +18352,67 @@ describe('AdminService query orchestration', () => {
     expect(prisma.notificationDelivery.groupBy).not.toHaveBeenCalled();
   });
 
-  it('rejects invalid notification board date windows', () => {
+  it('counts system incident states independently from the selected incident queue', async () => {
+    const notificationCount = vi
+      .fn()
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(7);
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          legacy: 2,
+          notificationCount: 7,
+          open: 1,
+          recovered: 1,
+          reviewed: 0,
+          total: 4,
+        },
+      ]),
+      notification: {
+        count: notificationCount,
+      },
+      notificationDelivery: { count: vi.fn().mockResolvedValue(0) },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.notificationSummary({
+        from: '2026-06-27T00:00:00.000Z',
+        incidentState: 'open',
+        review: 'system-incidents',
+        to: '2026-06-28T00:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      legacySystemIncidentCount: 2,
+      openSystemIncidentCount: 1,
+      recoveredSystemIncidentCount: 1,
+      systemIncidentCount: 4,
+      systemIncidentNotificationCount: 7,
+      systemIncidentSourceSummaryComplete: true,
+      systemIncidentSourceTotalCount: 1,
+      totalCount: 1,
+    });
+
+    expect(notificationCount).toHaveBeenCalledTimes(9);
+    const summaryQuery = prisma.$queryRaw.mock.calls[0]?.[0] as { sql?: string; values?: unknown[] };
+    expect(summaryQuery.sql).toContain('GROUP BY filtered."sourceKey"');
+    expect(summaryQuery.sql).toContain('COUNT(*) FILTER');
+    expect(summaryQuery.sql).toContain(`notification."type" LIKE 'admin.system.%'`);
+    expect(summaryQuery.values).toEqual(expect.arrayContaining([
+      new Date('2026-06-27T00:00:00.000Z'),
+      new Date('2026-06-28T00:00:00.000Z'),
+    ]));
+  });
+
+  it('rejects invalid notification board date windows', async () => {
     const prisma = {
       notification: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -11629,12 +18420,12 @@ describe('AdminService query orchestration', () => {
     };
     const service = createAdminService(prisma);
 
-    expect(() =>
+    await expect(
       service.listNotifications({
         from: '2026-06-28T00:00:00.000Z',
         to: '2026-06-27T00:00:00.000Z',
       }),
-    ).toThrow('Notification date range is invalid');
+    ).rejects.toThrow('Notification date range is invalid');
     expect(prisma.notification.findMany).not.toHaveBeenCalled();
   });
 
@@ -12534,6 +19325,12 @@ describe('AdminService query orchestration', () => {
       payment: {
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 75000 } }),
       },
+      adminAuditLog: {
+        count: vi.fn().mockResolvedValue(5),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([
+        { openOverdueCount: 3n, openOver72Count: 1n },
+      ]),
     };
     const service = createAdminService(prisma);
     vi.spyOn(service, 'bookingSettlementSnapshotSummary').mockResolvedValue({
@@ -12550,11 +19347,38 @@ describe('AdminService query orchestration', () => {
       paidTaxCount: 1,
     });
     vi.spyOn(service, 'couponFinanceSummary').mockResolvedValue({ currency: 'VND' } as never);
-    vi.spyOn(service, 'partnerWithholdingTaxSummary').mockResolvedValue({ period: '2026-07', currency: 'VND' } as never);
-    vi.spyOn(service, 'providerWalletWithdrawalRequestSummary').mockResolvedValue({ currency: 'VND' } as never);
+    vi.spyOn(service, 'partnerWithholdingTaxSummary').mockResolvedValue({
+      period: '2026-07',
+      currency: 'VND',
+    } as never);
+    vi.spyOn(service, 'providerWalletWithdrawalRequestSummary').mockResolvedValue({
+      currency: 'VND',
+    } as never);
     vi.spyOn(service, 'bookingPaymentClearingSummary').mockResolvedValue({ currency: 'VND' } as never);
     vi.spyOn(service, 'bankReconciliationSummary').mockResolvedValue({ currency: 'VND' } as never);
-    vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({ period: '2026-07', currency: 'VND' } as never);
+    vi.spyOn(service, 'bankReconciliationWithdrawalCandidateSummary').mockResolvedValue({
+      assignedCount: 1,
+      assignments: [],
+      currency: 'VND',
+      eligibleCount: 3,
+      noneAmount: 100000,
+      noneCount: 1,
+      oldestReviewOccurredAt: '2026-07-14T03:00:00.000Z',
+      oldestStrongOccurredAt: '2026-07-13T03:00:00.000Z',
+      reviewAmount: 200000,
+      reviewCount: 1,
+      reviewOver24hCount: 1,
+      reviewOver48hCount: 0,
+      strongAmount: 300000,
+      strongCount: 1,
+      strongOver24hCount: 1,
+      strongOver48hCount: 1,
+      unassignedCount: 2,
+    });
+    vi.spyOn(service, 'monthlyTaxClosingSummary').mockResolvedValue({
+      period: '2026-07',
+      currency: 'VND',
+    } as never);
     vi.spyOn(service, 'earningsSummary').mockReturnValue({ currency: 'VND' } as never);
     vi.spyOn(service, 'paymentSummary').mockResolvedValue({ totalCount: 3 } as never);
     vi.spyOn(service, 'refundSummary').mockResolvedValue({ openCount: 1 } as never);
@@ -12569,7 +19393,14 @@ describe('AdminService query orchestration', () => {
             refundCompletedAmount: number;
             refundPendingAmount: number;
           };
+          financeReviewSlaSummary: {
+            open48To72Count: number;
+            openOverdueCount: number;
+            openOver72Count: number;
+            resolvedInRangeCount: number;
+          };
           settlementSummary: { platformFeeNetRevenue: number };
+          bankWithdrawalCandidateSummary: { strongCount: number };
           walletSummary: {
             customerWalletAccountCount: number;
             customerWalletLiabilityAmount: number;
@@ -12596,7 +19427,14 @@ describe('AdminService query orchestration', () => {
       refundCompletedAmount: 60000,
       refundPendingAmount: 40000,
     });
+    expect(result.financeReviewSlaSummary).toEqual({
+      open48To72Count: 2,
+      openOverdueCount: 3,
+      openOver72Count: 1,
+      resolvedInRangeCount: 5,
+    });
     expect(result.settlementSummary.platformFeeNetRevenue).toBe(220000);
+    expect(result.bankWithdrawalCandidateSummary.strongCount).toBe(1);
     expect(prisma.customerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
       by: ['customerProfileId', 'currency'],
       _sum: { amount: true },
@@ -12612,5 +19450,24 @@ describe('AdminService query orchestration', () => {
         where: expect.objectContaining({ status: PaymentStatus.FAILED }),
       }),
     );
+    const financeReviewQuery = prisma.$queryRaw.mock.calls[0]?.[0] as {
+      strings: readonly string[];
+      values: readonly unknown[];
+    };
+    const financeReviewQueryText = financeReviewQuery.strings.join('?');
+    expect(financeReviewQueryText).toContain('assignment."createdAt"');
+    expect(financeReviewQueryText).toContain('batch_import."createdAt"');
+    expect(financeReviewQueryText).toContain("notification.\"data\"->>'assignmentAuditLogId'");
+    expect(financeReviewQuery.values).toContain('company_bank_transaction.batch_import');
+    expect(financeReviewQuery.values.some((value) => value instanceof Date)).toBe(true);
+    expect(prisma.adminAuditLog.count).toHaveBeenCalledWith({
+      where: {
+        action: 'company_bank_transaction.review_escalation_resolved',
+        createdAt: {
+          gte: expect.any(Date),
+          lte: expect.any(Date),
+        },
+      },
+    });
   });
 });

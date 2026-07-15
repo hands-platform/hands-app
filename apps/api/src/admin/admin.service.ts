@@ -1,17 +1,27 @@
-import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import {
   AccountingJournalBatchStatus,
+  AccountingJournalEntrySide,
   AccountingJournalSourceType,
   AdminOperatorPermissionCategory,
   BankReconciliationStatus,
   BookingPaymentClearingStatus,
+  BookingPaymentClearingEntryType,
   BookingSettlementStatus,
   BookingSettlementTaxStatus,
   CompanyBankAccountStatus,
   CompanyBankTransactionType,
   BookingStatus,
+  CashFeeSettlementMethod,
   EarningStatus,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
@@ -20,9 +30,15 @@ import {
   FileUploadStatus,
   FileVisibility,
   MonthlyTaxClosingStatus,
+  ManualWalletAdjustmentRequestStatus,
+  PartnerBankDepositRequestStatus,
   PayoutBatchStatus,
   PaymentMethod,
+  PaymentFeePayer,
+  PaymentFeeRuleType,
+  PaymentFeeTreatment,
   PaymentStatus,
+  ParticipantStatus,
   Prisma,
   CustomerWalletLedgerType,
   ProviderBankAccountStatus,
@@ -38,14 +54,21 @@ import {
   ProviderSanctionType,
   ProviderStatus,
   ProviderTaxProfileStatus,
+  ProviderWalletWithdrawalRequestStatus,
   ProviderWalletLedgerType,
   ReviewStatus,
   ReferralAttributionStatus,
   Role,
+  TaxPolicyStatus,
   VerificationStatus,
 } from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
+import { hashAdminOperatorPassword, verifyAdminOperatorPassword } from '../auth/admin-operator-credential';
 import { EarningsService } from '../earnings/earnings.service';
+import {
+  allocatePartnerBankDeposit,
+  normalizePartnerBankDepositInput,
+} from '../earnings/earnings.policy';
 import {
   NO_SHOW_ADMIN_REVIEW_REQUIRED,
   NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW,
@@ -60,9 +83,18 @@ import {
 } from '../notifications/notification-template-catalog';
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  paymentCaptureSourceStatuses,
+  transitionPaymentStatus,
+} from '../payments/payment-status-transition';
 import { REQUIRED_KYC_DOCUMENT_TYPES } from '../provider-onboarding/provider-onboarding.policy';
 import { RedisStateService } from '../redis/redis-state.service';
 import { ReferralsService } from '../referrals/referrals.service';
+import {
+  settlementMonthlyPeriod,
+  VIETNAM_TIME_ZONE,
+} from '../settlements/settlements.service';
+import { bpsAmount } from '../settlements/settlement-calculator';
 import {
   buildManualWalletAdjustmentPreview,
   type ManualWalletAdjustmentDirection,
@@ -212,21 +244,192 @@ import {
 } from './admin-marketing-analytics';
 import type {
   AdminCalendarActorDto,
+  AssignCompanyBankTransactionImportBatchDto,
+  AssignCompanyBankTransactionReviewDto,
+  AllocatePartnerBankDepositCashDebtDto,
   AdminPushCampaignDto,
   CreateAdminCalendarEventDto,
   CreateAdminOperatorDto,
   CreateBankReconciliationMatchDto,
+  CreateCompanyBankAccountDto,
   CreateCompanyBankTransactionDto,
+  CompanyBankTransactionBatchRowDto,
   CreateManualWalletAdjustmentDto,
+  CreateManualWalletAdjustmentRequestDto,
+  CreatePartnerBankDepositRequestDto,
   DeleteAdminOperatorAccessDto,
+  IgnoreCompanyBankTransactionDto,
+  ImportCompanyBankTransactionBatchDto,
   PreviewManualWalletAdjustmentDto,
+  PreviewCompanyBankTransactionBatchDto,
   RecordPartnerBankDepositDto,
+  RepairBookingSettlementGapDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
+  UpdateCompanyBankAccountDto,
   UpdateFinanceApproverRoleDto,
   UpdateNotificationTemplateDto,
 } from './admin.dto';
+
+type AdminCompanyBankTransactionBatchClassification =
+  | 'NEW'
+  | 'POTENTIAL_DUPLICATE'
+  | 'EXACT_DUPLICATE'
+  | 'INVALID';
+
+type AdminCompanyBankTransactionBatchNormalizedRow = {
+  amount: number;
+  bankAccountId: string;
+  counterpartyName: string | null;
+  currency: string;
+  description: string | null;
+  occurredAt: string;
+  sourceKey: string;
+  transferRef: string | null;
+  type: CompanyBankTransactionType;
+  valueDate: string | null;
+};
+
+type AdminCompanyBankTransactionDuplicateCandidate = {
+  id: string;
+  amount: number;
+  counterpartyName: string | null;
+  occurredAt: Date;
+  status: BankReconciliationStatus;
+  transferRef: string | null;
+};
+
+type AdminCompanyBankTransactionBatchAccount = {
+  id: string;
+  currency: string;
+  status: CompanyBankAccountStatus;
+};
+
+type AdminCompanyBankTransactionBatchPreviewRow = {
+  batchCandidateRowNumbers: number[];
+  candidates: AdminCompanyBankTransactionDuplicateCandidate[];
+  classification: AdminCompanyBankTransactionBatchClassification;
+  errors: string[];
+  normalized: AdminCompanyBankTransactionBatchNormalizedRow | null;
+  raw: AdminCompanyBankTransactionBatchRawRow;
+  rowNumber: number;
+};
+
+type AdminCompanyBankTransactionBatchRawRow = {
+  amount: string;
+  counterpartyName: string;
+  occurredAt: string;
+  transferRef: string;
+  valueDate: string;
+};
+
+type AdminCompanyBankTransactionBatchContext = {
+  batchImportId: string;
+  csvRowNumber: number;
+  mappingPreset: ImportCompanyBankTransactionBatchDto['mappingPreset'];
+  sourceFileName: string;
+  sourceFileSha256: string;
+};
+
+type AdminCompanyBankTransactionImportBatchListOptions = {
+  q?: string | null;
+  range?: string | null;
+  review?: string | null;
+  skip?: number | string | null;
+  take?: number | string | null;
+};
+
+type AdminCompanyBankTransactionImportBatchReview =
+  | 'all'
+  | 'needs-reconciliation'
+  | 'stale'
+  | 'escalated'
+  | 'reconciled';
+
+type AdminCompanyBankTransactionImportBatchPageRow = {
+  id: string | null;
+  total: bigint | number;
+};
+
+type AdminCompanyBankTransactionImportBatchSummaryRow = {
+  batchCount: bigint | number;
+  escalatedNeedsReconciliationCount: bigint | number;
+  needsReconciliationCount: bigint | number;
+  noTransactionCount: bigint | number;
+  oldestOpenImportedAt: Date | null;
+  reconciledCount: bigint | number;
+  staleNeedsReconciliationCount: bigint | number;
+};
+
+type AdminCompanyBankTransactionImportBatchEscalationRow = {
+  assigneeAdminId: string | null;
+  batchImportId: string;
+  importedAt: Date;
+  importerAdminId: string;
+  openTransactionCount: bigint | number;
+};
+
+type AdminCompanyBankTransactionReviewEscalationRow = {
+  assigneeAdminId: string;
+  assignedAt: Date;
+  assignmentAuditLogId: string;
+  bankTransactionId: string;
+  bankTransactionStatus: BankReconciliationStatus;
+};
+
+type AdminPartnerBankDepositReconciliationEscalationRow = {
+  assigneeAdminId: string | null;
+  assignedAt: Date | null;
+  assignmentAuditLogId: string | null;
+  partnerBankDepositRequestId: string;
+  reviewStartedAt: Date;
+};
+
+type AdminFinanceReviewAssignmentAuditLog = {
+  id: string;
+  actorId: string;
+  createdAt: Date;
+  metadata: Prisma.JsonValue | null;
+  target?: string;
+  actor: {
+    id: string;
+    email: string | null;
+    fullName: string | null;
+  } | null;
+};
+
+type AdminFinanceReviewAssignmentAdmin = {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+};
+
+const COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION = 'company_bank_transaction.batch_import';
+const COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION = 'company_bank_transaction.batch_assignment';
+const COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION =
+  'company_bank_transaction.review_assignment';
+const PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION =
+  'partner_bank_deposit.reconciliation_assignment';
+const PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_ACTION =
+  'partner_bank_deposit.reconciliation_escalation';
+const PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_RESOLVED_ACTION =
+  'partner_bank_deposit.reconciliation_escalation_resolved';
+const COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_ACTION =
+  'company_bank_transaction.review_escalation';
+const COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_RESOLVED_ACTION =
+  'company_bank_transaction.review_escalation_resolved';
+const COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_ACTION = 'company_bank_transaction.batch_escalation';
+const COMPANY_BANK_TRANSACTION_BATCH_STALE_MS = 24 * 60 * 60_000;
+const COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_MS = 48 * 60 * 60_000;
+const COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_MS = 48 * 60 * 60_000;
+const COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_SWEEP_LIMIT = 50;
+const COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_SWEEP_LIMIT = 50;
+const COMPANY_BANK_TRANSACTION_REVIEW_RESOLUTION_SWEEP_LIMIT = 50;
+const PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_MS = 48 * 60 * 60_000;
+const PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_SWEEP_LIMIT = 50;
+const BANK_RECONCILIATION_WITHDRAWAL_CANDIDATE_WINDOW_MS = 30 * 24 * 60 * 60_000;
+const BANK_RECONCILIATION_WITHDRAWAL_CANDIDATE_LIMIT = 25;
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 50;
 const ADMIN_APP_SESSION_LIVE_WINDOW_MS = 5 * 60_000;
@@ -238,8 +441,6 @@ const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
 const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
-const ADMIN_OPERATOR_PASSWORD_HASH_BYTES = 64;
-const ADMIN_OPERATOR_PASSWORD_SALT_BYTES = 16;
 const ADMIN_OPERATOR_PASSWORD_MIN_LENGTH = 8;
 const ADMIN_OPERATOR_PERMISSION_CATEGORIES = [
   AdminOperatorPermissionCategory.BOOKINGS,
@@ -324,6 +525,11 @@ const ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES = [
   'provider.payout_setup_required',
   'provider.payout_batch.updated',
 ] as const;
+const ADMIN_NOTIFICATION_FINANCE_OVERDUE_TYPES = [
+  'admin.finance.bank_statement_batch.escalated',
+  'admin.finance.bank_transaction.review_escalated',
+  'admin.finance.partner_bank_deposit.reconciliation_escalated',
+] as const;
 const ADMIN_PARTNER_OVERVIEW_REQUEST_NOTIFICATION_TYPES = [
   'booking.requested',
   'booking.backup_available',
@@ -383,6 +589,14 @@ const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const ADMIN_AUDIT_LOG_LIST_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT = 100;
+const ADMIN_BOOKING_SETTLEMENT_GAP_DEFAULT_LIMIT = 20;
+const ADMIN_BOOKING_SETTLEMENT_GAP_MAX_LIMIT = 50;
+const ADMIN_BOOKING_SETTLEMENT_DRY_RUN_DEFAULT_LIMIT = 100;
+const ADMIN_BOOKING_SETTLEMENT_DRY_RUN_MAX_LIMIT = 100;
+const ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY = 5;
+const ADMIN_BOOKING_SETTLEMENT_REVIEW_BATCH_SIZE = 10;
+const ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS = 24 * 60 * 60 * 1000;
+const ADMIN_BOOKING_SETTLEMENT_GAP_VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
 const ADMIN_PAYMENT_CALLBACK_ATTEMPT_DEFAULT_LIMIT = 50;
 const ADMIN_PAYMENT_CALLBACK_ATTEMPT_MAX_LIMIT = 100;
 const ADMIN_REFUND_OPERATIONS_DEFAULT_LIMIT = 50;
@@ -394,6 +608,68 @@ const ADMIN_COUPON_LIST_MAX_LIMIT = 50;
 const ADMIN_COUPON_USAGE_LIST_LIMIT = 20;
 const ADMIN_MANUAL_WALLET_ADJUSTMENT_DEFAULT_LIMIT = 25;
 const ADMIN_MANUAL_WALLET_ADJUSTMENT_MAX_LIMIT = 100;
+const ADMIN_MANUAL_WALLET_ADJUSTMENT_REQUEST_DEFAULT_LIMIT = 25;
+const ADMIN_MANUAL_WALLET_ADJUSTMENT_REQUEST_MAX_LIMIT = 50;
+const ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_DEFAULT_LIMIT = 25;
+const ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_MAX_LIMIT = 50;
+const ADMIN_PAYMENT_FEE_POLICY_DEFAULT_LIMIT = 10;
+const ADMIN_PAYMENT_FEE_POLICY_MAX_LIMIT = 20;
+const ADMIN_FINANCE_APPROVAL_QUEUE_DEFAULT_LIMIT = 10;
+const ADMIN_FINANCE_APPROVAL_QUEUE_MAX_LIMIT = 25;
+const ADMIN_PAYMENT_FEE_POLICY_DEFAULT_SAMPLE_AMOUNT = 100_000;
+const ADMIN_PAYMENT_FEE_POLICY_MAX_SAMPLE_AMOUNT = 100_000_000;
+
+const adminPaymentFeePolicyVersionSelect = {
+  id: true,
+  name: true,
+  status: true,
+  effectiveFrom: true,
+  effectiveTo: true,
+  notes: true,
+  createdById: true,
+  createdAt: true,
+  updatedAt: true,
+  createdBy: { select: { id: true, fullName: true, email: true } },
+  rules: {
+    orderBy: [{ method: 'asc' as const }, { createdAt: 'desc' as const }],
+    select: {
+      id: true,
+      method: true,
+      feeType: true,
+      rateBps: true,
+      fixedAmount: true,
+      payer: true,
+      treatment: true,
+      active: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
+} satisfies Prisma.PaymentFeePolicyVersionSelect;
+
+const adminPaymentFeePolicyApprovalRequestSelect = {
+  id: true,
+  action: true,
+  actorId: true,
+  metadata: true,
+  createdAt: true,
+  actor: { select: { id: true, fullName: true, email: true } },
+} satisfies Prisma.AdminAuditLogSelect;
+
+const paymentFeePolicyApprovalActions = [
+  'payment_fee_policy.approval_requested',
+  'payment_fee_policy.approval_rejected',
+  'payment_fee_policy.approval_cancelled',
+] as const;
+
+const FINANCE_APPROVAL_QUEUE_WITHDRAWAL_STATUSES = [
+  ProviderWalletWithdrawalRequestStatus.REQUESTED,
+  ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+  ProviderWalletWithdrawalRequestStatus.NEEDS_BANK_CORRECTION,
+  ProviderWalletWithdrawalRequestStatus.APPROVED,
+  ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+  ProviderWalletWithdrawalRequestStatus.HOLD,
+] as const;
 
 type AdminBookingListQuery = {
   readonly dateFrom?: string;
@@ -438,19 +714,58 @@ type AdminBookingDetailPreviewQuery = {
   readonly take?: number | string | null;
 };
 type AdminPaymentOperationsQuery = {
+  readonly assigneeAdminId?: string | null;
+  readonly assignment?: string | null;
+  readonly candidate?: string | null;
+  readonly paymentMethod?: string | null;
+  readonly period?: string | null;
   readonly q?: string | null;
   readonly providerProfileId?: string | null;
   readonly queue?: string | null;
   readonly range?: string | null;
+  readonly reconciliation?: string | null;
   readonly review?: string | null;
   readonly skip?: number | string | null;
   readonly status?: string | null;
   readonly take?: number | string | null;
 };
+type AdminBankReconciliationWithdrawalCandidate = 'eligible' | 'none' | 'review' | 'strong';
+type AdminBookingSettlementGapQuery = {
+  readonly age?: string | null;
+  readonly paymentMethod?: string | null;
+  readonly period?: string | null;
+  readonly q?: string | null;
+  readonly skip?: number | string | null;
+  readonly take?: number | string | null;
+  readonly track?: string | null;
+};
+type AdminHistoricalSettlementDryRun = NonNullable<
+  Awaited<ReturnType<EarningsService['previewPaidBookingSettlementReconstruction']>>['settlementDryRun']
+>;
+type AdminBookingSettlementDryRunPreview = {
+  readonly blockers: Array<{ code: string; message: string }>;
+  readonly bookingId: string;
+  readonly canRepair: boolean;
+  readonly completedAt: string;
+  readonly historicalSettlementDryRun: AdminHistoricalSettlementDryRun | null;
+  readonly monthlyClosingStatus: MonthlyTaxClosingStatus | null;
+  readonly monthlyPeriod: string;
+  readonly payment: { method: PaymentMethod } | null;
+};
+type AdminBookingSettlementGapAge = 'all' | 'backlog' | 'recent' | '24-72h' | '3-7d' | '7d-plus';
+type AdminBookingSettlementGapTrack =
+  | 'all'
+  | 'canonical'
+  | 'historical-ready'
+  | 'evidence-blocked'
+  | 'manual-review';
 type AdminManualWalletAdjustmentQuery = {
   readonly ownerId?: string | null;
   readonly ownerType?: string | null;
   readonly skip?: number | string | null;
+  readonly take?: number | string | null;
+};
+type AdminFinanceApprovalQueueQuery = {
   readonly take?: number | string | null;
 };
 type AdminPartnerWithholdingTaxQuery = {
@@ -519,6 +834,8 @@ const adminBookingSettlementSnapshotListSelect = {
   platformFeeGross: true,
   platformFeeNetRevenue: true,
   companyOutputVat: true,
+  paymentFeePolicyVersionId: true,
+  paymentFeeRuleSnapshot: true,
   paymentProcessingFee: true,
   settlementStatus: true,
   taxStatus: true,
@@ -546,6 +863,107 @@ const adminBookingSettlementSnapshotListSelect = {
     },
   },
 } satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminBookingSettlementGapListSelect = {
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  closedAt: true,
+  customerProfile: {
+    select: {
+      id: true,
+      user: {
+        select: {
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  },
+  selectedProvider: {
+    select: {
+      id: true,
+      displayName: true,
+      user: {
+        select: {
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  },
+  payment: {
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      method: true,
+      status: true,
+    },
+  },
+  earning: {
+    select: {
+      id: true,
+      paidAt: true,
+      payoutBatchId: true,
+      status: true,
+    },
+  },
+  _count: {
+    select: {
+      platformFeeLogs: true,
+      services: true,
+      taxLogs: true,
+      walletLedgerEntries: true,
+    },
+  },
+} satisfies Prisma.BookingSelect;
+const adminBookingSettlementGapPreviewSelect = {
+  id: true,
+  customerProfileId: true,
+  selectedProviderId: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  closedAt: true,
+  customerProfile: {
+    select: {
+      id: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
+  selectedProvider: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { fullName: true, phone: true } },
+    },
+  },
+  payment: {
+    select: {
+      id: true,
+      amount: true,
+      currency: true,
+      method: true,
+      status: true,
+    },
+  },
+  earning: {
+    select: {
+      id: true,
+      status: true,
+      grossAmount: true,
+      platformFee: true,
+      withholdingAmount: true,
+      netAmount: true,
+      currency: true,
+      paidAt: true,
+      payoutBatchId: true,
+    },
+  },
+  settlementSnapshot: { select: { id: true } },
+  _count: { select: { services: true } },
+} satisfies Prisma.BookingSelect;
 const adminBookingSettlementSnapshotDetailSelect = {
   ...adminBookingSettlementSnapshotListSelect,
   metadata: true,
@@ -612,6 +1030,75 @@ const adminBookingSettlementSnapshotDetailSelect = {
           amount: true,
           currency: true,
           occurredAt: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.BookingSettlementSnapshotSelect;
+const adminBookingSettlementRepairCheckpointSelect = {
+  id: true,
+  sourceKey: true,
+  bookingId: true,
+  paymentId: true,
+  providerEarningId: true,
+  paymentMethod: true,
+  currency: true,
+  customerPaymentAmount: true,
+  partnerPayoutAmount: true,
+  partnerWithholdingTotal: true,
+  platformFeeGross: true,
+  providerTaxLogIds: true,
+  providerPlatformFeeLogId: true,
+  providerWalletLedgerEntryIds: true,
+  metadata: true,
+  accountingJournalBatches: {
+    orderBy: { postedAt: 'desc' },
+    select: {
+      id: true,
+      sourceKey: true,
+      sourceType: true,
+      sourceId: true,
+      settlementSnapshotId: true,
+      status: true,
+      totalDebit: true,
+      totalCredit: true,
+      metadata: true,
+      entries: {
+        select: {
+          side: true,
+          amount: true,
+        },
+      },
+    },
+  },
+  paymentClearingEntries: {
+    orderBy: { occurredAt: 'desc' },
+    select: {
+      id: true,
+      sourceKey: true,
+      type: true,
+      status: true,
+      paymentId: true,
+      settlementSnapshotId: true,
+      amount: true,
+      currency: true,
+    },
+  },
+  providerEarning: {
+    select: {
+      id: true,
+      status: true,
+      paidAt: true,
+      grossAmount: true,
+      netAmount: true,
+      currency: true,
+      platformFeeLogs: { select: { id: true } },
+      taxLogs: { select: { id: true } },
+      walletLedgerEntries: {
+        select: {
+          id: true,
+          type: true,
+          amount: true,
         },
       },
     },
@@ -1002,8 +1489,17 @@ const adminCompanyBankTransactionListSelect = {
     select: adminCompanyBankAccountSelect,
   },
 } satisfies Prisma.CompanyBankTransactionSelect;
+const adminCompanyBankTransactionDuplicateCandidateSelect = {
+  id: true,
+  amount: true,
+  counterpartyName: true,
+  occurredAt: true,
+  status: true,
+  transferRef: true,
+} satisfies Prisma.CompanyBankTransactionSelect;
 const adminCompanyBankTransactionDetailSelect = {
   ...adminCompanyBankTransactionListSelect,
+  metadata: true,
   reconciliationMatches: {
     orderBy: { matchedAt: 'desc' },
     select: {
@@ -1031,6 +1527,7 @@ const adminCompanyBankTransactionDetailSelect = {
           memo: true,
           sourceType: true,
           sourceId: true,
+          metadata: true,
         },
       },
       paymentClearingEntry: {
@@ -1293,6 +1790,68 @@ const adminPartnerReferralParentSelect = {
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
 type AdminOperatorAccessSummary = Prisma.UserGetPayload<{ select: typeof adminOperatorAccessSelect }>;
+const adminPartnerBankDepositHistoryInclude = {
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { id: true, fullName: true, email: true, phone: true } },
+    },
+  },
+  cashDebtAllocations: { select: { amount: true } },
+} satisfies Prisma.PartnerBankDepositRequestInclude;
+type AdminPartnerBankDepositHistoryRow = Prisma.PartnerBankDepositRequestGetPayload<{
+  include: typeof adminPartnerBankDepositHistoryInclude;
+}>;
+type AdminOperatorIdentityRecord = {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+};
+
+function recordFromUnknown(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function providerWalletWithdrawalPaidByAdminId(metadata: unknown) {
+  const bankPayout = recordFromUnknown(recordFromUnknown(metadata)?.bankPayout);
+  return typeof bankPayout?.completedByAdminId === 'string'
+    ? normalizeNullable(bankPayout.completedByAdminId)
+    : null;
+}
+
+function financeApprovalAdminIdFromMetadata(metadata: unknown) {
+  const record = recordFromUnknown(metadata);
+  return typeof record?.approvalAdminId === 'string'
+    ? normalizeNullable(record.approvalAdminId)
+    : null;
+}
+
+function payoutBatchAuditStatus(metadata: unknown) {
+  const record = recordFromUnknown(metadata);
+  return typeof record?.status === 'string' ? normalizeNullable(record.status) : null;
+}
+
+function partnerBankDepositRequestWithOperators<
+  T extends {
+    requestedByAdminId: string;
+    approvedByAdminId?: string | null;
+    rejectedByAdminId?: string | null;
+  },
+>(request: T, adminsById: ReadonlyMap<string, AdminOperatorIdentityRecord>) {
+  return {
+    ...request,
+    requestedBy: adminsById.get(request.requestedByAdminId) ?? null,
+    approvedBy: request.approvedByAdminId
+      ? (adminsById.get(request.approvedByAdminId) ?? null)
+      : null,
+    rejectedBy: request.rejectedByAdminId
+      ? (adminsById.get(request.rejectedByAdminId) ?? null)
+      : null,
+  };
+}
 const ADMIN_BOOKING_DETAIL_AUDIT_LOG_LIMIT = 40;
 const ADMIN_CUSTOMER_DETAIL_AUDIT_LOG_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT = 20;
@@ -1739,6 +2298,7 @@ type ManualWalletAdjustmentDb = Pick<
   | 'customerProfile'
   | 'customerWalletLedgerEntry'
   | 'monthlyTaxClosing'
+  | 'manualWalletAdjustmentRequest'
   | 'providerProfile'
   | 'providerWalletLedgerEntry'
   | 'user'
@@ -1821,20 +2381,19 @@ export class AdminService {
     return { ok: true, auditLog };
   }
 
-  async listAdminCalendarEvents(options: {
-    from?: string | null;
-    take?: number | string | null;
-    to?: string | null;
-  } = {}) {
+  async listAdminCalendarEvents(
+    options: {
+      from?: string | null;
+      take?: number | string | null;
+      to?: string | null;
+    } = {},
+  ) {
     const from = parseOptionalAdminCalendarDate(options.from, 'Calendar from date');
     const to = parseOptionalAdminCalendarDate(options.to, 'Calendar to date');
     const where: Prisma.AdminCalendarEventWhereInput = {};
 
     if (from || to) {
-      where.AND = [
-        ...(from ? [{ endAt: { gte: from } }] : []),
-        ...(to ? [{ startAt: { lte: to } }] : []),
-      ];
+      where.AND = [...(from ? [{ endAt: { gte: from } }] : []), ...(to ? [{ startAt: { lte: to } }] : [])];
     }
 
     const events = await this.prisma.adminCalendarEvent.findMany({
@@ -1938,12 +2497,14 @@ export class AdminService {
     identity?: string | null,
   ) {
     const normalizedIdentity = normalizeNullable(identity);
-    const lookup = normalizedIdentity ?? actorId;
 
     return db.user.findFirst({
       where: {
+        id: actorId,
         roles: { has: Role.ADMIN },
-        OR: [{ id: lookup }, { email: lookup }, { phone: lookup }],
+        ...(normalizedIdentity
+          ? { OR: [{ id: normalizedIdentity }, { email: normalizedIdentity }, { phone: normalizedIdentity }] }
+          : {}),
       },
       select: adminOperatorAccessSelect,
     });
@@ -2095,11 +2656,7 @@ export class AdminService {
     };
   }
 
-  async updateAdminOperatorAccess(
-    actorId: string,
-    userId: string,
-    input: UpdateAdminOperatorAccessDto,
-  ) {
+  async updateAdminOperatorAccess(actorId: string, userId: string, input: UpdateAdminOperatorAccessDto) {
     const targetUserId = normalizeNullable(userId);
     if (!targetUserId) {
       throw new BadRequestException('Admin user id is required');
@@ -2167,11 +2724,7 @@ export class AdminService {
     });
   }
 
-  async revokeAdminOperatorAccess(
-    actorId: string,
-    userId: string,
-    input: DeleteAdminOperatorAccessDto = {},
-  ) {
+  async revokeAdminOperatorAccess(actorId: string, userId: string, input: DeleteAdminOperatorAccessDto = {}) {
     const targetUserId = normalizeNullable(userId);
     if (!targetUserId) {
       throw new BadRequestException('Admin user id is required');
@@ -2244,11 +2797,7 @@ export class AdminService {
     throw new ForbiddenException('Master Admin role is required for operator access changes');
   }
 
-  async updateUserFinanceApproverRole(
-    actorId: string,
-    userId: string,
-    input: UpdateFinanceApproverRoleDto,
-  ) {
+  async updateUserFinanceApproverRole(actorId: string, userId: string, input: UpdateFinanceApproverRoleDto) {
     const targetUserId = userId.trim();
     if (!targetUserId) {
       throw new BadRequestException('Admin user id is required');
@@ -2300,9 +2849,7 @@ export class AdminService {
       const auditLog = await tx.adminAuditLog.create({
         data: {
           actorId,
-          action: enabled
-            ? 'admin_user.finance_approver.grant'
-            : 'admin_user.finance_approver.revoke',
+          action: enabled ? 'admin_user.finance_approver.grant' : 'admin_user.finance_approver.revoke',
           target: `user:${targetUserId}`,
           metadata: {
             enabled,
@@ -2445,10 +2992,7 @@ export class AdminService {
     };
   }
 
-  async getCustomerDetail(
-    customerProfileId: string,
-    options: { includeDiagnostics?: boolean } = {},
-  ) {
+  async getCustomerDetail(customerProfileId: string, options: { includeDiagnostics?: boolean } = {}) {
     const includeDiagnostics = options.includeDiagnostics !== false;
     const customer = await this.prisma.customerProfile.findUnique({
       where: { id: customerProfileId },
@@ -2575,7 +3119,7 @@ export class AdminService {
     };
   }
 
-  async dashboardSummary() {
+  async dashboardSummary(dateRange?: string) {
     const now = new Date();
     const liveBoundary = new Date(now.getTime() - ADMIN_APP_SESSION_LIVE_WINDOW_MS);
     const liveSessionWhere = adminAppSessionStateWhere('live') ?? {};
@@ -2583,6 +3127,7 @@ export class AdminService {
     const staleCustomerSessionWhere = adminAppSessionStateWhere('stale') ?? {};
     const activeStatuses = Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES);
     const locationStaleBoundary = new Date(now.getTime() - 30 * 60_000);
+    const settlementBacklogBoundary = new Date(now.getTime() - 24 * 60 * 60_000);
     const revenueStatuses = [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID];
 
     const [
@@ -2606,7 +3151,14 @@ export class AdminService {
       withdrawalProfileReadyPartners,
       level2ActivePartners,
       blockedPartners,
-      activeDemandBookings,
+      liveBookingStatusRows,
+      customerChoiceBookings,
+      expiredMatchingBookings,
+      matchingWithoutParticipants,
+      completedPaymentHolds,
+      recentCompletedWithoutSettlement,
+      backlogCompletedWithoutSettlement,
+      periodBookingStatusRows,
     ] = await Promise.all([
       this.prisma.customerProfile.count(),
       this.prisma.appSession.groupBy({
@@ -2721,8 +3273,62 @@ export class AdminService {
           ],
         },
       }),
-      this.prisma.booking.count({
+      this.prisma.booking.groupBy({
+        by: ['status'],
+        _count: { _all: true },
         where: { status: { in: activeStatuses } },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.OPEN_MATCHING,
+          selectedProviderId: null,
+          participants: {
+            some: { status: { in: [ParticipantStatus.ACCEPTED, ParticipantStatus.SELECTED] } },
+          },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.OPEN_MATCHING,
+          expiresAt: { lte: now },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.OPEN_MATCHING,
+          participants: { none: {} },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.COMPLETED,
+          payment: { is: { status: PaymentStatus.AUTHORIZED } },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.COMPLETED,
+          settlementSnapshot: { is: null },
+          OR: [
+            { closedAt: { gte: settlementBacklogBoundary } },
+            { closedAt: null, updatedAt: { gte: settlementBacklogBoundary } },
+          ],
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: BookingStatus.COMPLETED,
+          settlementSnapshot: { is: null },
+          OR: [
+            { closedAt: { lt: settlementBacklogBoundary } },
+            { closedAt: null, updatedAt: { lt: settlementBacklogBoundary } },
+          ],
+        },
+      }),
+      this.prisma.booking.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+        where: adminBookingListDateWhere({ dateRange }),
       }),
     ]);
     const bookingCustomerRow = bookingCustomerRows[0];
@@ -2732,6 +3338,20 @@ export class AdminService {
     const onlineAvailableSoon = partnerStatusCounts.get(ProviderStatus.ONLINE_AVAILABLE_SOON) ?? 0;
     const offline = partnerStatusCounts.get(ProviderStatus.OFFLINE) ?? 0;
     const online = onlineAvailable + onlineBusy + onlineAvailableSoon;
+    const liveBookingStatusCounts = new Map(
+      liveBookingStatusRows.map((row) => [row.status, row._count._all]),
+    );
+    const periodBookingStatusCounts = new Map(
+      periodBookingStatusRows.map((row) => [row.status, row._count._all]),
+    );
+    const activeDemandBookings = Array.from(liveBookingStatusCounts.values()).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    const periodBookingTotal = Array.from(periodBookingStatusCounts.values()).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
 
     return {
       generatedAt: now.toISOString(),
@@ -2746,6 +3366,34 @@ export class AdminService {
         recentCustomerSessions,
         staleCustomerSessions,
         totalCustomers,
+      },
+      bookingActivity: {
+        live: {
+          active: activeDemandBookings,
+          arrived: liveBookingStatusCounts.get(BookingStatus.ARRIVED) ?? 0,
+          customerChoice: customerChoiceBookings,
+          inService: liveBookingStatusCounts.get(BookingStatus.IN_SERVICE) ?? 0,
+          matched: liveBookingStatusCounts.get(BookingStatus.MATCHED) ?? 0,
+          onTheWay: liveBookingStatusCounts.get(BookingStatus.PROVIDER_ON_THE_WAY) ?? 0,
+          openMatching: liveBookingStatusCounts.get(BookingStatus.OPEN_MATCHING) ?? 0,
+        },
+        period: {
+          cancelled: periodBookingStatusCounts.get(BookingStatus.CANCELLED) ?? 0,
+          completed: periodBookingStatusCounts.get(BookingStatus.COMPLETED) ?? 0,
+          expired: periodBookingStatusCounts.get(BookingStatus.EXPIRED) ?? 0,
+          noShow: periodBookingStatusCounts.get(BookingStatus.NO_SHOW) ?? 0,
+          refunded: periodBookingStatusCounts.get(BookingStatus.REFUNDED) ?? 0,
+          total: periodBookingTotal,
+        },
+      },
+      actionQueue: {
+        completedPaymentHolds,
+        completedWithoutSettlement: recentCompletedWithoutSettlement + backlogCompletedWithoutSettlement,
+        completedWithoutSettlementBacklog: backlogCompletedWithoutSettlement,
+        completedWithoutSettlementRecent: recentCompletedWithoutSettlement,
+        customerChoice: customerChoiceBookings,
+        matchingExpired: expiredMatchingBookings,
+        matchingWithoutParticipants,
       },
       partnerSupply: {
         approvedVerification: approvedVerificationPartners,
@@ -3460,11 +4108,7 @@ export class AdminService {
       }
 
       const lastProviderSeenAt = provider.user.appSessions[0]?.lastSeenAt ?? null;
-      const partnerPointOccurredAt = latestDate(
-        lastProviderSeenAt,
-        provider.currentLocationUpdatedAt,
-        now,
-      );
+      const partnerPointOccurredAt = latestDate(lastProviderSeenAt, provider.currentLocationUpdatedAt, now);
       const isStalePartner = !lastProviderSeenAt || lastProviderSeenAt < stalePartnerSince;
       const isReadyPartner = provider.status === ProviderStatus.ONLINE_AVAILABLE && !isStalePartner;
       const partnerPointKind: AdminVietnamOverviewRealtimePointKind = isReadyPartner
@@ -3635,7 +4279,9 @@ export class AdminService {
       ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
     };
     const issueCustomerBookingWhere = {
-      status: { in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED, BookingStatus.REFUNDED] },
+      status: {
+        in: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED, BookingStatus.REFUNDED],
+      },
       ...(dateWhere ? { OR: [{ closedAt: dateWhere }, { updatedAt: dateWhere }] } : {}),
     };
     const lowReviewWhere = {
@@ -4131,11 +4777,12 @@ export class AdminService {
           completedCount,
           viewToRequestRate: percentageValue(requestCount, viewCount),
           requestToCompleteRate: percentageValue(completedCount, requestCount),
-          lastActivityAt: latestDate(
-            viewedPartnerMap.get(providerProfileId)?.lastActivityAt,
-            requestedPartnerMap.get(providerProfileId)?.lastActivityAt,
-            completedPartnerMap.get(providerProfileId)?.lastActivityAt,
-          )?.toISOString() ?? null,
+          lastActivityAt:
+            latestDate(
+              viewedPartnerMap.get(providerProfileId)?.lastActivityAt,
+              requestedPartnerMap.get(providerProfileId)?.lastActivityAt,
+              completedPartnerMap.get(providerProfileId)?.lastActivityAt,
+            )?.toISOString() ?? null,
         };
       })
       .filter((row) => row.viewCount > 0 || row.requestCount > 0 || row.completedCount > 0)
@@ -4212,9 +4859,7 @@ export class AdminService {
             rank: index + 1,
             id: row.serviceId,
             label: service?.name ?? 'Unknown service',
-            secondary: service
-              ? `${service.durationMin} min${service.active ? '' : ' · inactive'}`
-              : null,
+            secondary: service ? `${service.durationMin} min${service.active ? '' : ' · inactive'}` : null,
             bookingCount: row._count._all,
             quantity: row._sum.quantity ?? row._count._all,
             amount: row._sum.price ?? 0,
@@ -4274,10 +4919,10 @@ export class AdminService {
             rank: index + 1,
             id: row.customerProfileId,
             label: profile?.user.fullName ?? profile?.user.phone ?? 'Unknown customer',
-            secondary: [
-              lowestRating ? `Lowest ${lowestRating}/5` : null,
-              profile?.user.phone ?? null,
-            ].filter(Boolean).join(' · ') || null,
+            secondary:
+              [lowestRating ? `Lowest ${lowestRating}/5` : null, profile?.user.phone ?? null]
+                .filter(Boolean)
+                .join(' · ') || null,
             href: `/customers/${row.customerProfileId}`,
             value: row._count._all,
             valueLabel: 'low reviews',
@@ -4409,11 +5054,7 @@ export class AdminService {
       ProviderStatus.ONLINE_BUSY,
       ProviderStatus.ONLINE_AVAILABLE_SOON,
     ];
-    const cancellationStatuses = [
-      BookingStatus.CANCELLED,
-      BookingStatus.NO_SHOW,
-      BookingStatus.EXPIRED,
-    ];
+    const cancellationStatuses = [BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.EXPIRED];
     const completedBookingWhere = {
       status: BookingStatus.COMPLETED,
       ...(dateWhere ? { closedAt: dateWhere } : {}),
@@ -4911,7 +5552,11 @@ export class AdminService {
     const eligibleProviderIds = new Set(
       providerRows
         .filter((provider) =>
-          partnerOverviewProviderEligible(provider, walletBalanceByProvider.get(provider.id), locationFreshBoundary),
+          partnerOverviewProviderEligible(
+            provider,
+            walletBalanceByProvider.get(provider.id),
+            locationFreshBoundary,
+          ),
         )
         .map((provider) => provider.id),
     );
@@ -4935,7 +5580,8 @@ export class AdminService {
     const requestNotificationProviderCount = requestNotificationUserRows.length;
     const serviceStartedProviderCount = serviceStartedUserRows.length;
     const averageResponseSecondsByRegion = partnerOverviewAreaAverageResponseSeconds(areaResponseRows);
-    const averageResponseSecondsByProvider = partnerOverviewAverageResponseSecondsByProvider(areaResponseRows);
+    const averageResponseSecondsByProvider =
+      partnerOverviewAverageResponseSecondsByProvider(areaResponseRows);
     const profileViewMap = partnerOverviewProfileViewMap(profileViewRows);
     const favoriteMap = partnerOverviewFavoriteMap(favoriteProviderRows);
 
@@ -5000,7 +5646,10 @@ export class AdminService {
     });
     const grossBookingAmount = numberValue(grossEarnings._sum.grossAmount);
     const platformFee = numberValue(grossEarnings._sum.platformFee);
-    const walletBalanceTotal = Array.from(walletBalanceByProvider.values()).reduce((sum, amount) => sum + amount, 0);
+    const walletBalanceTotal = Array.from(walletBalanceByProvider.values()).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
     const negativeWalletTotal = Array.from(walletBalanceByProvider.values())
       .filter((amount) => amount < 0)
       .reduce((sum, amount) => sum + amount, 0);
@@ -5025,13 +5674,43 @@ export class AdminService {
       },
       summaryKpis: [
         partnerOverviewKpi('totalPartners', 'Total Partners', totalPartners, 'Registered Partner accounts'),
-        partnerOverviewKpi('approvedPartners', 'Approved Partners', approvedPartners, 'Admin-approved public supply'),
-        partnerOverviewKpi('pendingVerification', 'Pending Verification', pendingVerification, 'Needs approval work'),
+        partnerOverviewKpi(
+          'approvedPartners',
+          'Approved Partners',
+          approvedPartners,
+          'Admin-approved public supply',
+        ),
+        partnerOverviewKpi(
+          'pendingVerification',
+          'Pending Verification',
+          pendingVerification,
+          'Needs approval work',
+        ),
         partnerOverviewKpi('onlineNow', 'Online Now', onlineNow, 'Ready, busy, or soon-online Partners'),
-        partnerOverviewKpi('locationFreshPartners', 'Location Fresh Partners', locationFreshPartners, 'Updated in 30 min'),
-        partnerOverviewKpi('eligibleToAccept', 'Eligible To Accept', eligibleProviderIds.size, 'Can accept a booking now'),
-        partnerOverviewKpi('activePartners7D', 'Active Partners 7D', activePartners7d, 'Online or booking activity'),
-        partnerOverviewKpi('inactivePartners7D', 'Inactive Partners 7D', inactivePartners7d, 'Approved with no 7D signal'),
+        partnerOverviewKpi(
+          'locationFreshPartners',
+          'Location Fresh Partners',
+          locationFreshPartners,
+          'Updated in 30 min',
+        ),
+        partnerOverviewKpi(
+          'eligibleToAccept',
+          'Eligible To Accept',
+          eligibleProviderIds.size,
+          'Can accept a booking now',
+        ),
+        partnerOverviewKpi(
+          'activePartners7D',
+          'Active Partners 7D',
+          activePartners7d,
+          'Online or booking activity',
+        ),
+        partnerOverviewKpi(
+          'inactivePartners7D',
+          'Inactive Partners 7D',
+          inactivePartners7d,
+          'Approved with no 7D signal',
+        ),
         partnerOverviewKpi(
           'averageResponseTime',
           'Average Response Time',
@@ -5064,7 +5743,10 @@ export class AdminService {
       funnel: {
         steps: partnerOverviewFunnelSteps([
           ['Signed Up', totalPartners],
-          ['Profile Completed', providerRows.filter((provider) => Boolean(provider.displayName && provider.city)).length],
+          [
+            'Profile Completed',
+            providerRows.filter((provider) => Boolean(provider.displayName && provider.city)).length,
+          ],
           ['Documents Submitted', documentsSubmittedCount],
           ['Approved', approvedPartners],
           ['First Online', firstOnlineCount],
@@ -5110,7 +5792,9 @@ export class AdminService {
           partnerOverviewKpi(
             'highActivity',
             'High activity partners',
-            partnerFacts.filter((fact) => fact.completedBookings >= 3 || fact.status !== ProviderStatus.OFFLINE).length,
+            partnerFacts.filter(
+              (fact) => fact.completedBookings >= 3 || fact.status !== ProviderStatus.OFFLINE,
+            ).length,
             'Active supply anchors',
           ),
         ],
@@ -5158,8 +5842,20 @@ export class AdminService {
       },
       financeWalletRisk: {
         kpis: [
-          partnerOverviewKpi('grossBookingAmount', 'Partner Gross Booking Amount', grossBookingAmount, 'From earnings', 'money'),
-          partnerOverviewKpi('platformFee', 'Platform Fee', platformFee, 'Company revenue component', 'money'),
+          partnerOverviewKpi(
+            'grossBookingAmount',
+            'Partner Gross Booking Amount',
+            grossBookingAmount,
+            'From earnings',
+            'money',
+          ),
+          partnerOverviewKpi(
+            'platformFee',
+            'Platform Fee',
+            platformFee,
+            'Company revenue component',
+            'money',
+          ),
           partnerOverviewKpi(
             'partnerPayoutPending',
             'Partner Payout Pending',
@@ -5174,10 +5870,32 @@ export class AdminService {
             'Paid earning rows',
             'money',
           ),
-          partnerOverviewKpi('partnerWalletBalanceTotal', 'Partner Wallet Balance Total', walletBalanceTotal, 'Ledger sum', 'money'),
-          partnerOverviewKpi('negativeWalletTotal', 'Negative Wallet Total', negativeWalletTotal, 'Company receivable', 'money'),
-          partnerOverviewKpi('partnersWithNegativeWallet', 'Partners With Negative Wallet', negativeWalletFacts.length, 'Receivable partners'),
-          partnerOverviewKpi('payoutBlockedPartners', 'Payout Blocked Partners', negativeWalletFacts.length, 'Policy display only'),
+          partnerOverviewKpi(
+            'partnerWalletBalanceTotal',
+            'Partner Wallet Balance Total',
+            walletBalanceTotal,
+            'Ledger sum',
+            'money',
+          ),
+          partnerOverviewKpi(
+            'negativeWalletTotal',
+            'Negative Wallet Total',
+            negativeWalletTotal,
+            'Company receivable',
+            'money',
+          ),
+          partnerOverviewKpi(
+            'partnersWithNegativeWallet',
+            'Partners With Negative Wallet',
+            negativeWalletFacts.length,
+            'Receivable partners',
+          ),
+          partnerOverviewKpi(
+            'payoutBlockedPartners',
+            'Payout Blocked Partners',
+            negativeWalletFacts.length,
+            'Policy display only',
+          ),
           partnerOverviewKpi(
             'taxInfoMissingPartners',
             'Tax Info Missing Partners',
@@ -6516,10 +7234,7 @@ export class AdminService {
     });
   }
 
-  async getProviderDetail(
-    providerProfileId: string,
-    options: { includeDiagnostics?: boolean } = {},
-  ) {
+  async getProviderDetail(providerProfileId: string, options: { includeDiagnostics?: boolean } = {}) {
     const includeDiagnostics = options.includeDiagnostics !== false;
     const provider = await this.prisma.providerProfile.findUnique({
       where: { id: providerProfileId },
@@ -6539,31 +7254,32 @@ export class AdminService {
         ].filter((deviceId): deviceId is string => Boolean(deviceId)),
       ),
     );
-    const sharedDeviceMatchesPromise = includeDiagnostics && deviceIds.length
-      ? this.prisma.providerDevice.findMany({
-          where: {
-            deviceId: { in: deviceIds },
-            providerProfileId: { not: provider.id },
-          },
-          orderBy: { lastSeenAt: 'desc' },
-          take: ADMIN_PROVIDER_DETAIL_SHARED_DEVICE_LIMIT,
-          select: {
-            id: true,
-            deviceId: true,
-            platform: true,
-            enabled: true,
-            lastSeenAt: true,
-            blockedAt: true,
-            providerProfile: {
-              select: {
-                id: true,
-                displayName: true,
-                user: { select: { phone: true } },
+    const sharedDeviceMatchesPromise =
+      includeDiagnostics && deviceIds.length
+        ? this.prisma.providerDevice.findMany({
+            where: {
+              deviceId: { in: deviceIds },
+              providerProfileId: { not: provider.id },
+            },
+            orderBy: { lastSeenAt: 'desc' },
+            take: ADMIN_PROVIDER_DETAIL_SHARED_DEVICE_LIMIT,
+            select: {
+              id: true,
+              deviceId: true,
+              platform: true,
+              enabled: true,
+              lastSeenAt: true,
+              blockedAt: true,
+              providerProfile: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  user: { select: { phone: true } },
+                },
               },
             },
-          },
-        })
-      : Promise.resolve([]);
+          })
+        : Promise.resolve([]);
 
     const auditLogsPromise = this.prisma.adminAuditLog.findMany({
       where: providerAuditLogWhere(providerProfileId),
@@ -6571,13 +7287,17 @@ export class AdminService {
       take: ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
+    const payoutBatchesWithOperatorsPromise = this.withPayoutBatchOperators(
+      provider.payoutBatches ?? [],
+    );
 
-    const [sharedDeviceMatches, auditLogs] = await Promise.all([
+    const [sharedDeviceMatches, auditLogs, payoutBatches] = await Promise.all([
       sharedDeviceMatchesPromise,
       auditLogsPromise,
+      payoutBatchesWithOperatorsPromise,
     ]);
 
-    return { ...provider, sharedDeviceMatches, auditLogs };
+    return { ...provider, payoutBatches, sharedDeviceMatches, auditLogs };
   }
 
   async getProviderOverview(providerProfileId: string) {
@@ -7558,9 +8278,11 @@ export class AdminService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       if (booking.payment && !terminalPaymentStatuses.includes(booking.payment.status)) {
-        await tx.payment.update({
-          where: { id: booking.payment.id },
+        await transitionPaymentStatus(tx, {
           data: { status: PaymentStatus.RELEASED },
+          fromStatuses: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED],
+          paymentId: booking.payment.id,
+          targetStatus: PaymentStatus.RELEASED,
         });
       }
 
@@ -7616,7 +8338,7 @@ export class AdminService {
         status: true,
         notes: true,
         selectedProviderId: true,
-        payment: { select: { id: true, status: true } },
+        payment: { select: { id: true, method: true, status: true } },
       },
     });
 
@@ -7627,13 +8349,16 @@ export class AdminService {
       throw new BadRequestException('Completed booking requires a selected partner before closeout');
     }
 
-    const capturedPayment =
-      booking.payment && booking.payment.status !== PaymentStatus.CAPTURED
-        ? await this.prisma.payment.update({
-            where: { id: booking.payment.id },
+    const capturedPayment = booking.payment
+      ? (
+          await transitionPaymentStatus(this.prisma, {
             data: { status: PaymentStatus.CAPTURED },
+            fromStatuses: paymentCaptureSourceStatuses(booking.payment.method),
+            paymentId: booking.payment.id,
+            targetStatus: PaymentStatus.CAPTURED,
           })
-        : booking.payment;
+        ).payment
+      : null;
 
     const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId);
     const notes = appendDatedAdminNote(
@@ -7955,6 +8680,7 @@ export class AdminService {
       callbackVerified,
       captured,
       cashDebt,
+      generatedAt: new Date().toISOString(),
       linkedRefunds,
       needsAction,
       pendingCash,
@@ -8060,13 +8786,14 @@ export class AdminService {
     ]);
 
     return {
-      totalCount,
-      requestedCount,
-      refundedBookingCount,
-      needsUpdateCount,
       completedCount,
+      generatedAt: new Date().toISOString(),
+      needsUpdateCount,
       openCount,
       outcomeLinkedCount,
+      refundedBookingCount,
+      requestedCount,
+      totalCount,
     };
   }
 
@@ -8084,6 +8811,7 @@ export class AdminService {
       withdrawalSummary,
       clearingSummary,
       bankSummary,
+      bankWithdrawalCandidateSummary,
       monthlyClosingSummary,
       earningsSummary,
       paymentSummary,
@@ -8092,6 +8820,7 @@ export class AdminService {
       paymentFeeSummary,
       walletSummary,
       amountSummary,
+      financeReviewSlaSummary,
     ] = await Promise.all([
       this.bookingSettlementSnapshotSummary(rangeOptions),
       this.couponFinanceSummary(rangeOptions),
@@ -8099,6 +8828,7 @@ export class AdminService {
       this.providerWalletWithdrawalRequestSummary(rangeOptions),
       this.bookingPaymentClearingSummary(clearingOptions),
       this.bankReconciliationSummary(bankOptions),
+      this.bankReconciliationWithdrawalCandidateSummary(rangeOptions),
       this.monthlyTaxClosingSummary(periodOptions),
       this.earningsSummary(rangeOptions),
       this.paymentSummary(rangeOptions),
@@ -8107,6 +8837,7 @@ export class AdminService {
       this.paymentFeeSummary(periodOptions),
       this.financeOverviewWalletSummary(),
       this.financeOverviewAmountSummary(rangeOptions),
+      this.financeOverviewReviewSlaSummary(rangeOptions),
     ]);
 
     return {
@@ -8115,10 +8846,12 @@ export class AdminService {
       period,
       amountSummary,
       bankSummary,
+      bankWithdrawalCandidateSummary,
       cashSummary,
       clearingSummary,
       couponSummary,
       earningsSummary,
+      financeReviewSlaSummary,
       monthlyClosingSummary,
       partnerWithholdingSummary,
       paymentFeeSummary,
@@ -8128,6 +8861,67 @@ export class AdminService {
       settlementSummary,
       walletSummary,
       withdrawalSummary,
+    };
+  }
+
+  private async financeOverviewReviewSlaSummary(
+    options: Pick<AdminPaymentOperationsQuery, 'range'>,
+  ) {
+    const over72Before = new Date(Date.now() - 72 * 60 * 60_000);
+    const resolvedAt = adminPaymentDateRangeWhere(options.range);
+    const [openRows, resolvedInRangeCount] = await Promise.all([
+      this.prisma.$queryRaw<Array<{ openOverdueCount: bigint; openOver72Count: bigint }>>(
+        Prisma.sql`
+          SELECT
+            COUNT(*)::bigint AS "openOverdueCount",
+            COUNT(*) FILTER (
+              WHERE COALESCE(
+                assignment."createdAt",
+                batch_import."createdAt",
+                notification."createdAt"
+              ) <= ${over72Before}
+            )::bigint AS "openOver72Count"
+          FROM "Notification" notification
+          LEFT JOIN "AdminAuditLog" assignment
+            ON notification."type" = 'admin.finance.bank_transaction.review_escalated'
+            AND assignment."id" = notification."data"->>'assignmentAuditLogId'
+          LEFT JOIN LATERAL (
+            SELECT logs."createdAt"
+            FROM "AdminAuditLog" logs
+            WHERE notification."type" = 'admin.finance.bank_statement_batch.escalated'
+              AND logs."action" = ${COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION}
+              AND COALESCE(
+                logs."metadata"->>'batchImportId',
+                REPLACE(logs."target", 'company_bank_transaction_batch:', '')
+              ) = notification."data"->>'batchImportId'
+            ORDER BY logs."createdAt" ASC, logs."id" ASC
+            LIMIT 1
+          ) batch_import ON TRUE
+          WHERE notification."type" IN (
+            'admin.finance.bank_statement_batch.escalated',
+            'admin.finance.bank_transaction.review_escalated'
+          )
+            AND COALESCE(notification."data"->>'financeReviewStatus', 'OPEN') <> 'RESOLVED'
+        `,
+      ),
+      this.prisma.adminAuditLog.count({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_RESOLVED_ACTION,
+          ...(resolvedAt ? { createdAt: resolvedAt } : {}),
+        },
+      }),
+    ]);
+    const openOverdueCount = Number(openRows[0]?.openOverdueCount ?? 0);
+    const openOver72Count = Math.min(
+      openOverdueCount,
+      Number(openRows[0]?.openOver72Count ?? 0),
+    );
+
+    return {
+      open48To72Count: Math.max(0, openOverdueCount - openOver72Count),
+      openOverdueCount,
+      openOver72Count,
+      resolvedInRangeCount,
     };
   }
 
@@ -8168,7 +8962,9 @@ export class AdminService {
     const pendingRefundWhere = refundWhere
       ? { ...refundWhere, status: { not: 'COMPLETED' } }
       : { status: { not: 'COMPLETED' } };
-    const completedRefundWhere = refundWhere ? { ...refundWhere, status: 'COMPLETED' } : { status: 'COMPLETED' };
+    const completedRefundWhere = refundWhere
+      ? { ...refundWhere, status: 'COMPLETED' }
+      : { status: 'COMPLETED' };
     const paymentWhere = adminPaymentOperationsWhere(options);
     const failedPaymentWhere = paymentWhere
       ? { ...paymentWhere, status: PaymentStatus.FAILED }
@@ -8210,6 +9006,615 @@ export class AdminService {
 
   earningsSummary(options: AdminPaymentOperationsQuery = {}) {
     return this.earnings.adminSummary(options);
+  }
+
+  async listBookingSettlementGaps(options: AdminBookingSettlementGapQuery = {}) {
+    const generatedAt = new Date();
+    const where = adminBookingSettlementGapWhere(options, generatedAt);
+    const skip = boundedAdminListSkip(options.skip);
+    const take = adminBookingSettlementGapTake(options.take);
+    const [rows, total] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+        ...(skip > 0 ? { skip } : {}),
+        take,
+        select: adminBookingSettlementGapListSelect,
+      }),
+      this.prisma.booking.count({ where }),
+    ]);
+
+    return {
+      generatedAt: generatedAt.toISOString(),
+      hasNext: skip + rows.length < total,
+      items: rows.map((row) => {
+        const gapAt = row.closedAt ?? row.updatedAt;
+        return {
+          ageBucket: adminBookingSettlementGapAgeBucket(gapAt, generatedAt),
+          closedAt: row.closedAt,
+          createdAt: row.createdAt,
+          customerProfile: row.customerProfile,
+          earning: row.earning ? { id: row.earning.id, status: row.earning.status } : null,
+          gapAt: gapAt.toISOString(),
+          id: row.id,
+          payment: row.payment,
+          repairTrack: adminBookingSettlementGapRepairTrackFromRow(row),
+          selectedProvider: row.selectedProvider,
+          status: row.status,
+          updatedAt: row.updatedAt,
+        };
+      }),
+      skip,
+      take,
+      total,
+    };
+  }
+
+  async bookingSettlementGapSummary() {
+    const generatedAt = new Date();
+    const baseWhere = adminBookingSettlementGapWhere({ age: 'all' }, generatedAt);
+    const [
+      recent,
+      age24To72Hours,
+      age3To7Days,
+      age7DaysPlus,
+      canonical,
+      historicalReady,
+      evidenceBlocked,
+      manualReview,
+      oldestClosed,
+      oldestWithoutClose,
+    ] = await Promise.all([
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: 'recent' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: '24-72h' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: '3-7d' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: '7d-plus' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: 'all', track: 'canonical' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: 'all', track: 'historical-ready' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: 'all', track: 'evidence-blocked' }, generatedAt),
+      }),
+      this.prisma.booking.count({
+        where: adminBookingSettlementGapWhere({ age: 'all', track: 'manual-review' }, generatedAt),
+      }),
+      this.prisma.booking.findFirst({
+        where: { AND: [baseWhere, { closedAt: { not: null } }] },
+        orderBy: { closedAt: 'asc' },
+        select: { closedAt: true, updatedAt: true },
+      }),
+      this.prisma.booking.findFirst({
+        where: { AND: [baseWhere, { closedAt: null }] },
+        orderBy: { updatedAt: 'asc' },
+        select: { closedAt: true, updatedAt: true },
+      }),
+    ]);
+    const backlog = age24To72Hours + age3To7Days + age7DaysPlus;
+    const oldestCandidates = [oldestClosed?.closedAt ?? null, oldestWithoutClose?.updatedAt ?? null].filter(
+      (value): value is Date => value instanceof Date,
+    );
+    const oldestGapAt = oldestCandidates.length
+      ? new Date(Math.min(...oldestCandidates.map((value) => value.getTime()))).toISOString()
+      : null;
+
+    return {
+      age24To72Hours,
+      age3To7Days,
+      age7DaysPlus,
+      backlog,
+      canonical,
+      evidenceBlocked,
+      generatedAt: generatedAt.toISOString(),
+      historicalReady,
+      manualReview,
+      oldestGapAt,
+      recent,
+      total: recent + backlog,
+    };
+  }
+
+  async bookingSettlementGapDryRun(options: AdminBookingSettlementGapQuery = {}) {
+    const generatedAt = new Date();
+    const take = adminBoundedPositiveInteger(
+      options.take,
+      ADMIN_BOOKING_SETTLEMENT_DRY_RUN_DEFAULT_LIMIT,
+      ADMIN_BOOKING_SETTLEMENT_DRY_RUN_MAX_LIMIT,
+    );
+    const where = adminBookingSettlementGapWhere(
+      {
+        age: 'all',
+        paymentMethod: options.paymentMethod,
+        period: options.period,
+        track: 'historical-ready',
+      },
+      generatedAt,
+    );
+    const [rows, totalMatched] = await Promise.all([
+      this.prisma.booking.findMany({
+        where,
+        orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+        select: { id: true },
+        take,
+      }),
+      this.prisma.booking.count({ where }),
+    ]);
+    const previews: Awaited<ReturnType<AdminService['previewBookingSettlementGapRepair']>>[] = [];
+    for (let index = 0; index < rows.length; index += ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY) {
+      previews.push(
+        ...(await Promise.all(
+          rows
+            .slice(index, index + ADMIN_BOOKING_SETTLEMENT_DRY_RUN_CONCURRENCY)
+            .map((row) => this.previewBookingSettlementGapRepair(row.id)),
+        )),
+      );
+    }
+
+    const items = previews.map((preview) => adminBookingSettlementDryRunItem(preview));
+    const counts = adminBookingSettlementDryRunCounts(items);
+    return {
+      counts,
+      evaluated: items.length,
+      generatedAt: generatedAt.toISOString(),
+      items,
+      paymentMethods: adminCountBy(items, (item) => item.paymentMethod ?? 'UNKNOWN'),
+      policyGate: adminBookingSettlementDryRunPolicyGate(counts),
+      periodStatuses: adminCountBy(items, (item) => item.monthlyClosingStatus ?? 'OPEN_OR_UNLINKED'),
+      recoveryBatches: adminBookingSettlementDryRunBatches(items),
+      blockerCodes: adminCountBy(
+        items.flatMap((item) => item.blockers),
+        (blocker) => blocker.code,
+      ),
+      totalMatched,
+      totals: adminBookingSettlementDryRunTotals(items),
+      truncated: totalMatched > items.length,
+    };
+  }
+
+  async previewBookingSettlementGapRepair(bookingId: string) {
+    const normalizedBookingId = normalizeNullable(bookingId);
+    if (!normalizedBookingId) {
+      throw new BadRequestException('Booking id is required');
+    }
+
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: normalizedBookingId },
+      select: adminBookingSettlementGapPreviewSelect,
+    });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const occurredAt = booking.closedAt ?? booking.updatedAt;
+    const currency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
+    const monthlyPeriod = settlementMonthlyPeriod(occurredAt);
+    const monthlyClosing = await this.prisma.monthlyTaxClosing.findUnique({
+      where: { period_currency: { period: monthlyPeriod, currency } },
+      select: { status: true },
+    });
+    const blockers: Array<{ code: string; message: string }> = [];
+    let repairMode = 'CANONICAL_COMPLETION_SETTLEMENT';
+    let historicalEvidenceSummary: {
+      platformFeeLogCount: number;
+      taxLogCount: number;
+      walletLedgerEntryCount: number;
+    } | null = null;
+    let historicalSettlementDryRun: Awaited<
+      ReturnType<EarningsService['previewPaidBookingSettlementReconstruction']>
+    >['settlementDryRun'] = null;
+
+    if (booking.status !== BookingStatus.COMPLETED) {
+      blockers.push({ code: 'BOOKING_NOT_COMPLETED', message: 'Booking is not completed.' });
+    }
+    if (!booking.selectedProviderId || !booking.selectedProvider) {
+      blockers.push({ code: 'PARTNER_MISSING', message: 'Selected Partner evidence is missing.' });
+    }
+    if (booking._count.services === 0) {
+      blockers.push({ code: 'SERVICE_EVIDENCE_MISSING', message: 'Booking service evidence is missing.' });
+    }
+    if (!booking.payment) {
+      blockers.push({ code: 'PAYMENT_MISSING', message: 'Payment evidence is missing.' });
+    } else if (booking.payment.status !== PaymentStatus.CAPTURED) {
+      blockers.push({
+        code: 'PAYMENT_NOT_CAPTURED',
+        message: `Payment status ${booking.payment.status} is not eligible for settlement repair.`,
+      });
+    }
+    if (booking.settlementSnapshot) {
+      blockers.push({ code: 'SETTLEMENT_EXISTS', message: 'A settlement snapshot already exists.' });
+    }
+    if (booking.earning?.status === EarningStatus.PAID && booking.selectedProviderId) {
+      repairMode = 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION';
+      const historicalAnalysis = await this.earnings.previewPaidBookingSettlementReconstruction(
+        booking.id,
+        booking.selectedProviderId,
+      );
+      historicalEvidenceSummary = historicalAnalysis.evidenceSummary;
+      historicalSettlementDryRun = historicalAnalysis.settlementDryRun;
+      historicalAnalysis.blockers.forEach((blocker) => {
+        if (!blockers.some((existing) => existing.code === blocker.code)) {
+          blockers.push(blocker);
+        }
+      });
+    } else if (booking.earning?.status === EarningStatus.CANCELLED || booking.earning?.payoutBatchId) {
+      blockers.push({
+        code: 'EARNING_LOCKED',
+        message: 'Cancelled or payout-batched earnings require manual finance review.',
+      });
+    }
+    if (
+      monthlyClosing?.status === MonthlyTaxClosingStatus.DECLARED ||
+      monthlyClosing?.status === MonthlyTaxClosingStatus.PAID ||
+      monthlyClosing?.status === MonthlyTaxClosingStatus.CLOSED
+    ) {
+      blockers.push({
+        code: 'MONTHLY_PERIOD_FINALIZED',
+        message: `Monthly period ${monthlyPeriod} is ${monthlyClosing.status} and cannot be repaired directly.`,
+      });
+    }
+
+    return {
+      bookingId: booking.id,
+      canRepair: blockers.length === 0,
+      blockers,
+      bookingStatus: booking.status,
+      completedAt: occurredAt.toISOString(),
+      currency,
+      monthlyPeriod,
+      monthlyClosingStatus: monthlyClosing?.status ?? null,
+      customer: booking.customerProfile,
+      partner: booking.selectedProvider,
+      payment: booking.payment,
+      earning: booking.earning,
+      historicalEvidenceSummary,
+      historicalSettlementDryRun,
+      settlementSnapshotId: booking.settlementSnapshot?.id ?? null,
+      serviceCount: booking._count.services,
+      repairMode,
+      preservesExistingEarningLifecycle: true,
+    };
+  }
+
+  async repairBookingSettlementGap(actorId: string, bookingId: string, input: RepairBookingSettlementGapDto) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Booking settlement repair',
+    );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Booking settlement repair');
+
+    const preview = await this.previewBookingSettlementGapRepair(bookingId);
+    if (!preview.canRepair || !preview.partner?.id) {
+      const reason = preview.blockers.map((blocker) => blocker.message).join(' ');
+      throw new BadRequestException(reason || 'Booking settlement repair is not eligible.');
+    }
+
+    await this.writeAudit(
+      actorId,
+      'booking_settlement_gap.repair_requested',
+      `booking:${preview.bookingId}`,
+      {
+        approvalAdminId,
+        monthlyPeriod: preview.monthlyPeriod,
+        reason: input.reason,
+        repairMode: preview.repairMode,
+      },
+    );
+
+    const repairResult =
+      preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
+        ? await this.earnings.reconstructPaidBookingSettlement(preview.bookingId, preview.partner.id, {
+            actorId,
+            approvalAdminId,
+            reason: input.reason,
+          })
+        : {
+            earningId: (
+              await this.earnings.createForCompletedBooking(preview.bookingId, preview.partner.id, {
+                preserveExistingLifecycle: true,
+              })
+            ).id,
+          };
+    const settlementSnapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
+      where: { bookingId: preview.bookingId },
+      select: { id: true, sourceKey: true, monthlyPeriod: true },
+    });
+    if (!settlementSnapshot) {
+      throw new BadRequestException(
+        'Settlement repair completed without a settlement snapshot. Review API wiring.',
+      );
+    }
+
+    let checkpoint;
+    try {
+      checkpoint = await this.verifyBookingSettlementRepair(preview.bookingId);
+    } catch {
+      checkpoint = {
+        blockingFailures: ['CHECKPOINT_UNAVAILABLE'],
+        bookingId: preview.bookingId,
+        checkedAt: new Date(),
+        checks: [
+          {
+            code: 'CHECKPOINT_UNAVAILABLE',
+            message: 'The repair was recorded, but the post-repair accounting checkpoint could not be read.',
+            passed: false,
+          },
+        ],
+        passed: false,
+        repairMode: preview.repairMode,
+        snapshotId: settlementSnapshot.id,
+        status: 'FAILED' as const,
+      };
+    }
+
+    const auditLog = await this.writeAudit(
+      actorId,
+      preview.repairMode === 'HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION'
+        ? 'booking_settlement_gap.historical_reconstructed'
+        : 'booking_settlement_gap.repaired',
+      `booking:${preview.bookingId}`,
+      {
+        approvalAdminId,
+        checkpointBlockingFailures: checkpoint.blockingFailures,
+        checkpointStatus: checkpoint.status,
+        earningId: repairResult.earningId,
+        monthlyPeriod: settlementSnapshot.monthlyPeriod,
+        reason: input.reason,
+        repairMode: preview.repairMode,
+        settlementSnapshotId: settlementSnapshot.id,
+        settlementSourceKey: settlementSnapshot.sourceKey,
+      },
+    );
+
+    return {
+      approvalAdminId,
+      auditLogId: auditLog.id,
+      bookingId: preview.bookingId,
+      checkpoint,
+      earningId: repairResult.earningId,
+      repairMode: preview.repairMode,
+      repaired: true,
+      settlementSnapshotId: settlementSnapshot.id,
+    };
+  }
+
+  async verifyBookingSettlementRepair(bookingId: string) {
+    const checkedAt = new Date();
+    const snapshot = await this.prisma.bookingSettlementSnapshot.findUnique({
+      where: { bookingId },
+      select: adminBookingSettlementRepairCheckpointSelect,
+    });
+    if (!snapshot) {
+      const checks = [
+        {
+          code: 'SNAPSHOT_PRESENT',
+          message: 'No settlement snapshot exists for this booking.',
+          passed: false,
+        },
+      ];
+      return {
+        blockingFailures: checks.map((check) => check.code),
+        bookingId,
+        checkedAt,
+        checks,
+        passed: false,
+        repairMode: null,
+        snapshotId: null,
+        status: 'FAILED' as const,
+      };
+    }
+
+    const checks: Array<{
+      actual?: number | string | null;
+      code: string;
+      expected?: number | string | null;
+      message: string;
+      passed: boolean;
+    }> = [];
+    const addCheck = (
+      code: string,
+      passed: boolean,
+      message: string,
+      expected?: number | string | null,
+      actual?: number | string | null,
+    ) => checks.push({ code, passed, message, ...(expected !== undefined ? { expected } : {}), ...(actual !== undefined ? { actual } : {}) });
+    const metadata = adminJsonObject(snapshot.metadata);
+    const historicalReconstruction = metadata?.historicalReconstruction === true;
+    const journal = snapshot.accountingJournalBatches[0] ?? null;
+    const journalEntryDebit =
+      journal?.entries
+        .filter((entry) => entry.side === AccountingJournalEntrySide.DEBIT)
+        .reduce((sum, entry) => sum + entry.amount, 0) ?? 0;
+    const journalEntryCredit =
+      journal?.entries
+        .filter((entry) => entry.side === AccountingJournalEntrySide.CREDIT)
+        .reduce((sum, entry) => sum + entry.amount, 0) ?? 0;
+    const journalMetadata = adminJsonObject(journal?.metadata);
+    const reconciliationDelta =
+      typeof journalMetadata?.reconciliationDelta === 'number'
+        ? journalMetadata.reconciliationDelta
+        : null;
+
+    addCheck(
+      'SNAPSHOT_LINKED',
+      snapshot.sourceKey === `booking-settlement:${bookingId}`,
+      'Settlement snapshot is linked to the canonical booking source key.',
+      `booking-settlement:${bookingId}`,
+      snapshot.sourceKey,
+    );
+    addCheck(
+      'SINGLE_SETTLEMENT_JOURNAL',
+      snapshot.accountingJournalBatches.length === 1,
+      'Exactly one accounting journal batch is linked to the settlement snapshot.',
+      1,
+      snapshot.accountingJournalBatches.length,
+    );
+    addCheck(
+      'JOURNAL_POSTED',
+      Boolean(
+        journal &&
+          journal.status === AccountingJournalBatchStatus.POSTED &&
+          journal.sourceType === AccountingJournalSourceType.BOOKING_SETTLEMENT &&
+          journal.sourceId === snapshot.id &&
+          journal.settlementSnapshotId === snapshot.id &&
+          journal.sourceKey === `accounting-journal:booking-settlement:${bookingId}`,
+      ),
+      'The linked journal is a posted booking settlement journal.',
+    );
+    addCheck(
+      'JOURNAL_BALANCED',
+      Boolean(journal && journal.totalDebit === journal.totalCredit),
+      'Journal batch debit and credit totals are balanced.',
+      journal?.totalDebit ?? null,
+      journal?.totalCredit ?? null,
+    );
+    addCheck(
+      'JOURNAL_ENTRY_TOTALS_MATCH',
+      Boolean(
+        journal &&
+          journalEntryDebit === journal.totalDebit &&
+          journalEntryCredit === journal.totalCredit,
+      ),
+      'Journal entry sums match the persisted batch totals.',
+      journal ? `${journal.totalDebit}/${journal.totalCredit}` : null,
+      `${journalEntryDebit}/${journalEntryCredit}`,
+    );
+    addCheck(
+      'RECONCILIATION_DELTA_ZERO',
+      reconciliationDelta === 0,
+      'Journal reconciliation delta is explicitly zero.',
+      0,
+      reconciliationDelta,
+    );
+
+    const expectsClearing =
+      snapshot.paymentMethod !== PaymentMethod.CASH &&
+      snapshot.paymentMethod !== PaymentMethod.CUSTOMER_WALLET;
+    const clearing = snapshot.paymentClearingEntries[0] ?? null;
+    const validClearing = Boolean(
+      clearing &&
+        clearing.sourceKey === `booking-payment-clearing:${bookingId}:settlement` &&
+        clearing.type === BookingPaymentClearingEntryType.SETTLEMENT_POSTED &&
+        clearing.status !== BookingPaymentClearingStatus.REVERSED &&
+        clearing.paymentId === snapshot.paymentId &&
+        clearing.settlementSnapshotId === snapshot.id &&
+        clearing.amount === snapshot.customerPaymentAmount &&
+        clearing.currency === snapshot.currency,
+    );
+    addCheck(
+      'PAYMENT_CLEARING_EXPECTATION',
+      expectsClearing
+        ? snapshot.paymentClearingEntries.length === 1 && validClearing
+        : snapshot.paymentClearingEntries.length === 0,
+      expectsClearing
+        ? 'External payment settlement has one matching clearing entry.'
+        : 'Cash and customer-wallet settlements do not create an external clearing entry.',
+      expectsClearing ? 1 : 0,
+      snapshot.paymentClearingEntries.length,
+    );
+
+    const earning = snapshot.providerEarning;
+    addCheck(
+      'EARNING_LINKED',
+      Boolean(earning && snapshot.providerEarningId === earning.id),
+      'Settlement snapshot is linked to the booking earning.',
+      snapshot.providerEarningId,
+      earning?.id ?? null,
+    );
+
+    if (historicalReconstruction) {
+      const expectedGrossAmount =
+        snapshot.partnerPayoutAmount + snapshot.partnerWithholdingTotal + snapshot.platformFeeGross;
+      const platformFeeLogIds = new Set(earning?.platformFeeLogs.map((row) => row.id) ?? []);
+      const taxLogIds = new Set(earning?.taxLogs.map((row) => row.id) ?? []);
+      const walletEntries = earning?.walletLedgerEntries ?? [];
+      const walletEntryIds = new Set(walletEntries.map((row) => row.id));
+      const retainedTaxLogIds = adminJsonStringArray(snapshot.providerTaxLogIds);
+      const retainedWalletEntryIds = adminJsonStringArray(snapshot.providerWalletLedgerEntryIds);
+      const paidWalletLifecyclePresent = Boolean(
+        earning &&
+          (earning.netAmount === 0 ||
+            (walletEntries.some(
+              (entry) =>
+                entry.type === ProviderWalletLedgerType.BOOKING_EARNING &&
+                entry.amount === earning.netAmount,
+            ) &&
+              walletEntries.some(
+                (entry) =>
+                  (entry.type === ProviderWalletLedgerType.PAYOUT_PAID ||
+                    entry.type === ProviderWalletLedgerType.CASH_FEE_DEBT_SETTLED) &&
+                  entry.amount === -earning.netAmount,
+              ))),
+      );
+
+      addCheck(
+        'PAID_EARNING_PRESERVED',
+        Boolean(earning?.status === EarningStatus.PAID && earning.paidAt),
+        'Historical reconstruction preserves the paid earning lifecycle.',
+      );
+      addCheck(
+        'HISTORICAL_AMOUNTS_RECONCILE',
+        Boolean(
+          earning &&
+            earning.grossAmount === expectedGrossAmount &&
+            earning.currency === snapshot.currency,
+        ),
+        'Historical settlement amounts reconcile to the retained earning.',
+        `${expectedGrossAmount} ${snapshot.currency}`,
+        earning ? `${earning.grossAmount} ${earning.currency}` : null,
+      );
+      addCheck(
+        'PLATFORM_FEE_EVIDENCE_PRESERVED',
+        Boolean(
+          snapshot.providerPlatformFeeLogId &&
+            platformFeeLogIds.has(snapshot.providerPlatformFeeLogId),
+        ),
+        'The retained platform fee log is still linked to the earning.',
+      );
+      addCheck(
+        'TAX_EVIDENCE_PRESERVED',
+        retainedTaxLogIds.length > 0 && retainedTaxLogIds.every((id) => taxLogIds.has(id)),
+        'All retained Partner tax logs still exist on the earning.',
+        retainedTaxLogIds.length,
+        retainedTaxLogIds.filter((id) => taxLogIds.has(id)).length,
+      );
+      addCheck(
+        'WALLET_EVIDENCE_PRESERVED',
+        retainedWalletEntryIds.every((id) => walletEntryIds.has(id)),
+        'All retained Partner wallet ledger evidence still exists.',
+        retainedWalletEntryIds.length,
+        retainedWalletEntryIds.filter((id) => walletEntryIds.has(id)).length,
+      );
+      addCheck(
+        'PAID_WALLET_LIFECYCLE_RECONCILES',
+        paidWalletLifecyclePresent,
+        'Paid booking earning and payout/debt-settlement ledger entries offset the retained net amount.',
+      );
+    }
+
+    const blockingFailures = checks.filter((check) => !check.passed).map((check) => check.code);
+    return {
+      blockingFailures,
+      bookingId,
+      checkedAt,
+      checks,
+      passed: blockingFailures.length === 0,
+      repairMode: historicalReconstruction
+        ? ('HISTORICAL_PAID_EVIDENCE_RECONSTRUCTION' as const)
+        : ('CANONICAL_COMPLETION_SETTLEMENT' as const),
+      snapshotId: snapshot.id,
+      status: blockingFailures.length === 0 ? ('PASSED' as const) : ('FAILED' as const),
+    };
   }
 
   listBookingSettlementSnapshots(options: AdminPaymentOperationsQuery = {}) {
@@ -8473,20 +9878,456 @@ export class AdminService {
     });
   }
 
-  listBankReconciliationTransactions(options: AdminPaymentOperationsQuery = {}) {
+  async createCompanyBankAccount(actorId: string, input: CreateCompanyBankAccountDto) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Company bank account create',
+    );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Company bank account create');
+    const account = normalizeCompanyBankAccountIdentity(input);
+    const operatorReason = input.operatorReason.trim();
+    const duplicate = await this.prisma.companyBankAccount.findFirst({
+      where: {
+        accountNumberLast4: account.accountNumberLast4,
+        bankName: { equals: account.bankName, mode: 'insensitive' },
+        currency: account.currency,
+        status: { not: CompanyBankAccountStatus.DISABLED },
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
+      throw new ConflictException('A company bank account with the same bank, currency, and last four digits already exists');
+    }
+
+    const created = await this.prisma.companyBankAccount.create({
+      data: {
+        ...account,
+        metadata: toJson({
+          approvalAdminId,
+          createdByAdminId: actorId,
+          operatorReason,
+        }),
+        status: CompanyBankAccountStatus.ACTIVE,
+      },
+      select: adminCompanyBankAccountSelect,
+    });
+    await this.writeAudit(actorId, 'company_bank_account.create', `company_bank_account:${created.id}`, {
+      approvalAdminId,
+      bankName: account.bankName,
+      currency: account.currency,
+      operatorReason,
+      status: created.status,
+    });
+    return created;
+  }
+
+  async updateCompanyBankAccount(actorId: string, id: string, input: UpdateCompanyBankAccountDto) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Company bank account update',
+    );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Company bank account update');
+    const accountId = normalizeRequiredId(id, 'Company bank account id');
+    const existing = await this.prisma.companyBankAccount.findUnique({
+      where: { id: accountId },
+      select: {
+        ...adminCompanyBankAccountSelect,
+        metadata: true,
+        updatedAt: true,
+        _count: { select: { transactions: true } },
+      },
+    });
+    if (!existing) {
+      throw new NotFoundException('Company bank account not found');
+    }
+
+    const nextName = normalizeNullable(input.name ?? existing.name);
+    if (!nextName) {
+      throw new BadRequestException('Company bank account name is required');
+    }
+    const identityInputProvided =
+      input.accountNumberLast4 !== undefined ||
+      input.accountNumberMasked !== undefined ||
+      input.bankName !== undefined ||
+      input.currency !== undefined;
+    const nextIdentity = identityInputProvided
+      ? normalizeCompanyBankAccountIdentity({
+          accountNumberLast4: input.accountNumberLast4 ?? existing.accountNumberLast4 ?? '',
+          accountNumberMasked:
+            input.accountNumberMasked === undefined ? existing.accountNumberMasked : input.accountNumberMasked,
+          bankName: input.bankName ?? existing.bankName,
+          currency: input.currency ?? existing.currency,
+          name: nextName,
+        })
+      : {
+          accountNumberLast4: existing.accountNumberLast4,
+          accountNumberMasked: existing.accountNumberMasked,
+          bankName: existing.bankName,
+          currency: existing.currency,
+          name: nextName,
+        };
+    const nextStatus = input.status ?? existing.status;
+    const identityChanged =
+      nextIdentity.accountNumberLast4 !== existing.accountNumberLast4 ||
+      nextIdentity.accountNumberMasked !== existing.accountNumberMasked ||
+      nextIdentity.bankName !== existing.bankName ||
+      nextIdentity.currency !== existing.currency;
+    if (identityChanged && existing._count.transactions > 0) {
+      throw new BadRequestException(
+        'Bank identity and currency cannot be changed after transactions exist; create a replacement account instead',
+      );
+    }
+    const changed =
+      identityChanged ||
+      nextIdentity.name !== existing.name ||
+      nextStatus !== existing.status;
+    if (!changed) {
+      throw new BadRequestException('Company bank account update did not change any managed field');
+    }
+
+    const operatorReason = input.operatorReason.trim();
+    const updated = await this.prisma.companyBankAccount.updateMany({
+      where: { id: accountId, updatedAt: existing.updatedAt },
+      data: {
+        ...nextIdentity,
+        metadata: toJson({
+          ...(adminJsonObject(existing.metadata) ?? {}),
+          lastApprovalAdminId: approvalAdminId,
+          lastOperatorReason: operatorReason,
+          lastUpdatedByAdminId: actorId,
+        }),
+        status: nextStatus,
+      },
+    });
+    if (updated.count !== 1) {
+      throw new ConflictException('Company bank account changed during review; reload before retrying');
+    }
+    const account = await this.prisma.companyBankAccount.findUnique({
+      where: { id: accountId },
+      select: adminCompanyBankAccountSelect,
+    });
+    if (!account) {
+      throw new NotFoundException('Company bank account not found after update');
+    }
+    await this.writeAudit(actorId, 'company_bank_account.update', `company_bank_account:${accountId}`, {
+      after: {
+        accountNumberLast4: account.accountNumberLast4,
+        accountNumberMasked: account.accountNumberMasked,
+        bankName: account.bankName,
+        currency: account.currency,
+        name: account.name,
+        status: account.status,
+      },
+      approvalAdminId,
+      before: {
+        accountNumberLast4: existing.accountNumberLast4,
+        accountNumberMasked: existing.accountNumberMasked,
+        bankName: existing.bankName,
+        currency: existing.currency,
+        name: existing.name,
+        status: existing.status,
+      },
+      operatorReason,
+    });
+    return account;
+  }
+
+  async listBankReconciliationTransactions(options: AdminPaymentOperationsQuery = {}) {
     const where = adminBankReconciliationWhere(options);
     const skip = boundedAdminListSkip(options.skip);
+    const withdrawalCandidate = adminBankReconciliationWithdrawalCandidate(options.candidate);
 
-    return this.prisma.companyBankTransaction.findMany({
+    if (withdrawalCandidate) {
+      const candidateRows = await this.bankReconciliationWithdrawalCandidatePage({
+        candidate: withdrawalCandidate,
+        options,
+        skip,
+        take: adminPaymentOperationsTake(options.take),
+      });
+      if (candidateRows.length === 0) {
+        return [];
+      }
+      const reviewAssigneesById = await this.financeReviewAssignmentAdminsById(
+        candidateRows
+          .map((row) => normalizeNullable(row.reviewAssigneeAdminId))
+          .filter((adminId): adminId is string => Boolean(adminId)),
+      );
+      const candidateOrder = new Map(candidateRows.map((row, index) => [row.bankTransactionId, index]));
+      const candidateSummaries = new Map(
+        candidateRows.map((row) => {
+          const candidateCount = numberValue(row.candidateCount);
+          const strongCount = numberValue(row.strongCount);
+          const reviewAssignedAt = adminIsoDateTime(row.reviewAssignedAt);
+          const reviewAssigneeAdminId = normalizeNullable(row.reviewAssigneeAdminId);
+          return [
+            row.bankTransactionId,
+            {
+              candidateCount,
+              confidence: strongCount > 0 ? 'STRONG' : candidateCount > 0 ? 'REVIEW' : 'NONE',
+              reviewCount: Math.max(0, candidateCount - strongCount),
+              ...(reviewAssignedAt && reviewAssigneeAdminId
+                ? {
+                    reviewAssignment: {
+                      assignedAt: reviewAssignedAt,
+                      assignedByAdminId: normalizeNullable(row.reviewAssignedByAdminId),
+                      assignee: reviewAssigneesById.get(reviewAssigneeAdminId) ?? {
+                        id: reviewAssigneeAdminId,
+                        email: null,
+                        fullName: null,
+                      },
+                      assigneeAdminId: reviewAssigneeAdminId,
+                      reason: normalizeNullable(row.reviewAssignmentReason),
+                    },
+                  }
+                : {}),
+              strongCount,
+            },
+          ] as const;
+        }),
+      );
+      const transactions = await this.prisma.companyBankTransaction.findMany({
+        where: { id: { in: candidateRows.map((row) => row.bankTransactionId) } },
+        select: adminCompanyBankTransactionListSelect,
+      });
+
+      return transactions
+        .sort(
+          (left, right) =>
+            (candidateOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+            (candidateOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+        )
+        .map((transaction) => {
+          const summary = candidateSummaries.get(transaction.id);
+          return {
+            ...transaction,
+            ...(summary?.reviewAssignment
+              ? { reviewAssignment: summary.reviewAssignment }
+              : {}),
+            withdrawalCandidateSummary: summary
+              ? {
+                  ...summary,
+                  ...bankReconciliationWithdrawalCandidateWaitingMeta(transaction.occurredAt),
+                }
+              : undefined,
+          };
+        });
+    }
+
+    const transactions = await this.prisma.companyBankTransaction.findMany({
       ...(where ? { where } : {}),
       orderBy: { occurredAt: 'desc' },
       ...(skip > 0 ? { skip } : {}),
       take: adminPaymentOperationsTake(options.take),
       select: adminCompanyBankTransactionListSelect,
     });
+    const withdrawalCandidateSummaries =
+      await this.bankReconciliationWithdrawalCandidateSummaries(transactions);
+
+    const rows = transactions.map((transaction) => {
+      const withdrawalCandidateSummary = withdrawalCandidateSummaries.get(transaction.id);
+      return withdrawalCandidateSummary
+        ? { ...transaction, withdrawalCandidateSummary }
+        : transaction;
+    });
+    return this.withBankTransactionReviewAssignments(rows);
+  }
+
+  private bankReconciliationWithdrawalCandidatePage(input: {
+    candidate: AdminBankReconciliationWithdrawalCandidate;
+    options: AdminPaymentOperationsQuery;
+    skip: number;
+    take: number;
+  }) {
+    const candidateSet = adminBankReconciliationWithdrawalCandidateSet(input.options);
+    const candidateWhere = adminBankReconciliationWithdrawalCandidateResultWhere(input.candidate);
+    const assignmentWhere = adminBankReconciliationReviewAssignmentWhere(input.options);
+
+    return this.prisma.$queryRaw<
+      Array<{
+        bankTransactionId: string;
+        candidateCount: bigint | number;
+        reviewAssignedAt: Date | string | null;
+        reviewAssigneeAdminId: string | null;
+        reviewAssignedByAdminId: string | null;
+        reviewAssignmentReason: string | null;
+        strongCount: bigint | number;
+      }>
+    >(Prisma.sql`
+      WITH withdrawal_candidates AS (${candidateSet})
+      SELECT
+        candidates."bankTransactionId",
+        candidates."candidateCount",
+        candidates."strongCount",
+        assignment."metadata"->>'assigneeAdminId' AS "reviewAssigneeAdminId",
+        assignment."metadata"->>'assignedByAdminId' AS "reviewAssignedByAdminId",
+        assignment."metadata"->>'reason' AS "reviewAssignmentReason",
+        assignment."createdAt" AS "reviewAssignedAt"
+      FROM withdrawal_candidates candidates
+      ${adminBankReconciliationLatestReviewAssignmentJoinSql()}
+      WHERE ${candidateWhere} AND ${assignmentWhere}
+      ORDER BY candidates."occurredAt" ASC, candidates."bankTransactionId" ASC
+      OFFSET ${input.skip}
+      LIMIT ${input.take}
+    `);
+  }
+
+  private async bankReconciliationWithdrawalCandidateSummaries(
+    transactions: ReadonlyArray<{
+      id: string;
+      occurredAt: Date;
+      status: BankReconciliationStatus;
+      type: CompanyBankTransactionType;
+    }>,
+  ) {
+    const outflowIds = transactions
+      .filter(
+        (transaction) =>
+          transaction.type === CompanyBankTransactionType.OUTFLOW &&
+          (transaction.status === BankReconciliationStatus.UNMATCHED ||
+            transaction.status === BankReconciliationStatus.PARTIALLY_MATCHED),
+      )
+      .map((transaction) => transaction.id);
+    const summaries = new Map<
+      string,
+      {
+        candidateCount: number;
+        confidence: 'NONE' | 'REVIEW' | 'STRONG';
+        reviewCount: number;
+        slaStatus: 'CURRENT' | 'OVER_24H' | 'OVER_48H';
+        strongCount: number;
+        waitingHours: number;
+      }
+    >();
+
+    for (const transaction of transactions) {
+      if (!outflowIds.includes(transaction.id)) continue;
+      summaries.set(transaction.id, {
+        candidateCount: 0,
+        confidence: 'NONE',
+        reviewCount: 0,
+        strongCount: 0,
+        ...bankReconciliationWithdrawalCandidateWaitingMeta(transaction.occurredAt),
+      });
+    }
+    if (outflowIds.length === 0) {
+      return summaries;
+    }
+
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        bankTransactionId: string;
+        candidateCount: bigint | number;
+        strongCount: bigint | number;
+      }>
+    >(Prisma.sql`
+      SELECT
+        bank."id" AS "bankTransactionId",
+        COUNT(*)::bigint AS "candidateCount",
+        COUNT(*) FILTER (
+          WHERE (
+            bank."transferRef" IS NOT NULL
+            AND withdrawal."transferRef" IS NOT NULL
+            AND UPPER(TRIM(bank."transferRef")) = UPPER(TRIM(withdrawal."transferRef"))
+          ) OR (
+            withdrawal."amount" = bank."amount"
+            AND ABS(EXTRACT(EPOCH FROM (
+              COALESCE(withdrawal."paidAt", withdrawal."createdAt") - bank."occurredAt"
+            ))) <= ${3 * 24 * 60 * 60}
+          )
+        )::bigint AS "strongCount"
+      FROM "CompanyBankTransaction" bank
+      INNER JOIN "ProviderWalletWithdrawalRequest" withdrawal
+        ON withdrawal."status" = ${ProviderWalletWithdrawalRequestStatus.PAID}::"ProviderWalletWithdrawalRequestStatus"
+        AND withdrawal."currency" = bank."currency"
+        AND COALESCE(withdrawal."paidAt", withdrawal."createdAt") BETWEEN
+          bank."occurredAt" - INTERVAL '30 days'
+          AND bank."occurredAt" + INTERVAL '30 days'
+        AND (
+          ABS(withdrawal."amount" - bank."amount") <= GREATEST(
+            10000,
+            LEAST(100000, ROUND(bank."amount" * 0.1))
+          )
+          OR (
+            bank."transferRef" IS NOT NULL
+            AND withdrawal."transferRef" IS NOT NULL
+            AND UPPER(TRIM(bank."transferRef")) = UPPER(TRIM(withdrawal."transferRef"))
+          )
+        )
+      WHERE bank."id" IN (${Prisma.join(outflowIds)})
+        AND bank."type" = ${CompanyBankTransactionType.OUTFLOW}::"CompanyBankTransactionType"
+        AND bank."status" IN (
+          ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+          ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "BankReconciliationMatch" active_match
+          WHERE active_match."withdrawalRequestId" = withdrawal."id"
+            AND active_match."status" IN (
+              ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus",
+              ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+            )
+        )
+      GROUP BY bank."id"
+    `);
+
+    for (const row of rows) {
+      const candidateCount = numberValue(row.candidateCount);
+      const strongCount = numberValue(row.strongCount);
+      const existing = summaries.get(row.bankTransactionId);
+      if (!existing) continue;
+      summaries.set(row.bankTransactionId, {
+        ...existing,
+        candidateCount,
+        confidence: strongCount > 0 ? 'STRONG' : candidateCount > 0 ? 'REVIEW' : 'NONE',
+        reviewCount: Math.max(0, candidateCount - strongCount),
+        strongCount,
+      });
+    }
+
+    return summaries;
   }
 
   async bankReconciliationSummary(options: AdminPaymentOperationsQuery = {}) {
+    const withdrawalCandidate = adminBankReconciliationWithdrawalCandidate(options.candidate);
+    if (withdrawalCandidate) {
+      const candidateSet = adminBankReconciliationWithdrawalCandidateSet(options);
+      const candidateWhere = adminBankReconciliationWithdrawalCandidateResultWhere(withdrawalCandidate);
+      const assignmentWhere = adminBankReconciliationReviewAssignmentWhere(options);
+      const rows = await this.prisma.$queryRaw<
+        Array<{
+          amount: bigint | number | null;
+          count: bigint | number;
+          matchedCount: bigint | number;
+          unmatchedCount: bigint | number;
+        }>
+      >(Prisma.sql`
+        WITH withdrawal_candidates AS (${candidateSet})
+        SELECT
+          COUNT(*)::bigint AS "count",
+          COALESCE(SUM(candidates."amount"), 0)::bigint AS "amount",
+          COUNT(*) FILTER (
+            WHERE candidates."status" = ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus"
+          )::bigint AS "matchedCount",
+          COUNT(*) FILTER (
+            WHERE candidates."status" = ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus"
+          )::bigint AS "unmatchedCount"
+        FROM withdrawal_candidates candidates
+        ${adminBankReconciliationLatestReviewAssignmentJoinSql()}
+        WHERE ${candidateWhere} AND ${assignmentWhere}
+      `);
+      const row = rows[0];
+      return {
+        amount: numberValue(row?.amount),
+        count: numberValue(row?.count),
+        currency: 'VND',
+        matchedCount: numberValue(row?.matchedCount),
+        unmatchedCount: numberValue(row?.unmatchedCount),
+      };
+    }
+
     const where = adminBankReconciliationWhere(options);
     const unmatchedWhere = adminMergeBankReconciliationWhere(where, {
       status: BankReconciliationStatus.UNMATCHED,
@@ -8513,6 +10354,1482 @@ export class AdminService {
     };
   }
 
+  async bankReconciliationWithdrawalCandidateSummary(
+    options: Pick<AdminPaymentOperationsQuery, 'q' | 'range'> = {},
+  ) {
+    const candidateSet = adminBankReconciliationWithdrawalCandidateSet(options);
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        assignedCount: bigint | number;
+        assignments: Prisma.JsonValue | null;
+        eligibleCount: bigint | number;
+        noneAmount: bigint | number | null;
+        noneCount: bigint | number;
+        oldestReviewOccurredAt: Date | string | null;
+        oldestStrongOccurredAt: Date | string | null;
+        reviewAmount: bigint | number | null;
+        reviewCount: bigint | number;
+        reviewOver24hCount: bigint | number;
+        reviewOver48hCount: bigint | number;
+        strongAmount: bigint | number | null;
+        strongCount: bigint | number;
+        strongOver24hCount: bigint | number;
+        strongOver48hCount: bigint | number;
+        unassignedCount: bigint | number;
+      }>
+    >(Prisma.sql`
+      WITH withdrawal_candidates AS (${candidateSet}),
+      candidate_assignments AS (
+        SELECT
+          candidates.*,
+          assignment."metadata"->>'assigneeAdminId' AS "assigneeAdminId"
+        FROM withdrawal_candidates candidates
+        ${adminBankReconciliationLatestReviewAssignmentJoinSql()}
+      ),
+      assignment_groups AS (
+        SELECT
+          candidates."assigneeAdminId",
+          COUNT(*)::bigint AS "count",
+          COUNT(*) FILTER (
+            WHERE candidates."occurredAt" < NOW() - INTERVAL '24 hours'
+          )::bigint AS "over24hCount",
+          COUNT(*) FILTER (
+            WHERE candidates."occurredAt" < NOW() - INTERVAL '48 hours'
+          )::bigint AS "over48hCount"
+        FROM candidate_assignments candidates
+        WHERE candidates."assigneeAdminId" IS NOT NULL
+        GROUP BY candidates."assigneeAdminId"
+      )
+      SELECT
+        COUNT(*)::bigint AS "eligibleCount",
+        COUNT(*) FILTER (WHERE candidates."assigneeAdminId" IS NOT NULL)::bigint AS "assignedCount",
+        COUNT(*) FILTER (WHERE candidates."assigneeAdminId" IS NULL)::bigint AS "unassignedCount",
+        COALESCE((
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'assigneeAdminId', groups."assigneeAdminId",
+              'count', groups."count",
+              'over24hCount', groups."over24hCount",
+              'over48hCount', groups."over48hCount"
+            )
+            ORDER BY groups."count" DESC, groups."assigneeAdminId" ASC
+          )
+          FROM assignment_groups groups
+        ), '[]'::jsonb) AS "assignments",
+        COUNT(*) FILTER (WHERE candidates."strongCount" > 0)::bigint AS "strongCount",
+        COALESCE(SUM(candidates."amount") FILTER (WHERE candidates."strongCount" > 0), 0)::bigint
+          AS "strongAmount",
+        COUNT(*) FILTER (
+          WHERE candidates."candidateCount" > 0 AND candidates."strongCount" = 0
+        )::bigint AS "reviewCount",
+        COALESCE(SUM(candidates."amount") FILTER (
+          WHERE candidates."candidateCount" > 0 AND candidates."strongCount" = 0
+        ), 0)::bigint AS "reviewAmount",
+        MIN(candidates."occurredAt") FILTER (
+          WHERE candidates."candidateCount" > 0 AND candidates."strongCount" = 0
+        ) AS "oldestReviewOccurredAt",
+        COUNT(*) FILTER (
+          WHERE candidates."candidateCount" > 0
+            AND candidates."strongCount" = 0
+            AND candidates."occurredAt" < NOW() - INTERVAL '24 hours'
+        )::bigint AS "reviewOver24hCount",
+        COUNT(*) FILTER (
+          WHERE candidates."candidateCount" > 0
+            AND candidates."strongCount" = 0
+            AND candidates."occurredAt" < NOW() - INTERVAL '48 hours'
+        )::bigint AS "reviewOver48hCount",
+        MIN(candidates."occurredAt") FILTER (
+          WHERE candidates."strongCount" > 0
+        ) AS "oldestStrongOccurredAt",
+        COUNT(*) FILTER (
+          WHERE candidates."strongCount" > 0
+            AND candidates."occurredAt" < NOW() - INTERVAL '24 hours'
+        )::bigint AS "strongOver24hCount",
+        COUNT(*) FILTER (
+          WHERE candidates."strongCount" > 0
+            AND candidates."occurredAt" < NOW() - INTERVAL '48 hours'
+        )::bigint AS "strongOver48hCount",
+        COUNT(*) FILTER (WHERE candidates."candidateCount" = 0)::bigint AS "noneCount",
+        COALESCE(SUM(candidates."amount") FILTER (WHERE candidates."candidateCount" = 0), 0)::bigint
+          AS "noneAmount"
+      FROM candidate_assignments candidates
+    `);
+    const row = rows[0];
+    const assignments = adminBankReconciliationAssignmentSummaryRows(row?.assignments);
+    const reviewAssigneesById = await this.financeReviewAssignmentAdminsById(
+      assignments.map((assignment) => assignment.assigneeAdminId),
+    );
+    return {
+      assignedCount: numberValue(row?.assignedCount),
+      assignments: assignments.map((assignment) => ({
+        ...assignment,
+        assignee: reviewAssigneesById.get(assignment.assigneeAdminId) ?? {
+          id: assignment.assigneeAdminId,
+          email: null,
+          fullName: null,
+        },
+      })),
+      currency: 'VND',
+      eligibleCount: numberValue(row?.eligibleCount),
+      noneAmount: numberValue(row?.noneAmount),
+      noneCount: numberValue(row?.noneCount),
+      oldestReviewOccurredAt: adminIsoDateTime(row?.oldestReviewOccurredAt),
+      oldestStrongOccurredAt: adminIsoDateTime(row?.oldestStrongOccurredAt),
+      reviewAmount: numberValue(row?.reviewAmount),
+      reviewCount: numberValue(row?.reviewCount),
+      reviewOver24hCount: numberValue(row?.reviewOver24hCount),
+      reviewOver48hCount: numberValue(row?.reviewOver48hCount),
+      strongAmount: numberValue(row?.strongAmount),
+      strongCount: numberValue(row?.strongCount),
+      strongOver24hCount: numberValue(row?.strongOver24hCount),
+      strongOver48hCount: numberValue(row?.strongOver48hCount),
+      unassignedCount: numberValue(row?.unassignedCount),
+    };
+  }
+
+  private async financeReviewAssignmentAdminsById(adminIds: readonly string[]) {
+    const uniqueAdminIds = Array.from(new Set(adminIds));
+    if (uniqueAdminIds.length === 0) {
+      return new Map<string, AdminFinanceReviewAssignmentAdmin>();
+    }
+    const admins = await this.prisma.user.findMany({
+      where: { id: { in: uniqueAdminIds } },
+      select: { id: true, email: true, fullName: true },
+    });
+    return new Map(admins.map((admin) => [admin.id, admin]));
+  }
+
+  private async withBankTransactionReviewAssignments<T extends { id: string }>(
+    transactions: readonly T[],
+  ) {
+    if (transactions.length === 0) return [];
+
+    const targetPrefix = 'bank_transaction:';
+    const targets = transactions.map((transaction) => `${targetPrefix}${transaction.id}`);
+    const assignments = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION,
+        target: { in: targets },
+      },
+      distinct: ['target'],
+      orderBy: [{ target: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        actorId: true,
+        createdAt: true,
+        metadata: true,
+        target: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+      },
+    });
+    const adminsById = await this.financeReviewAssignmentAdminsById(
+      adminFinanceReviewAssignmentReferencedIds(assignments),
+    );
+    const assignmentByTransactionId = new Map(
+      assignments.flatMap((assignment) => {
+        const transactionId = assignment.target?.startsWith(targetPrefix)
+          ? assignment.target.slice(targetPrefix.length)
+          : null;
+        const history = adminFinanceReviewAssignmentHistory([assignment], adminsById)[0];
+        if (!transactionId || !history) return [];
+        return [[transactionId, {
+          assignedAt: history.assignedAt,
+          assignedByAdminId: history.assignedBy?.id ?? assignment.actorId,
+          assignee: history.assignee,
+          assigneeAdminId: history.assignee.id,
+          reason: history.reason,
+        }] as const];
+      }),
+    );
+
+    return transactions.map((transaction) => {
+      const reviewAssignment = assignmentByTransactionId.get(transaction.id);
+      return reviewAssignment ? { ...transaction, reviewAssignment } : transaction;
+    });
+  }
+
+  private async withPartnerBankDepositReconciliationAssignments<T extends { id: string }>(
+    requests: readonly T[],
+  ) {
+    if (requests.length === 0) return [];
+
+    const targetPrefix = 'partner_bank_deposit_request:';
+    const targets = requests.map((request) => `${targetPrefix}${request.id}`);
+    const assignments = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION,
+        target: { in: targets },
+      },
+      distinct: ['target'],
+      orderBy: [{ target: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        actorId: true,
+        createdAt: true,
+        metadata: true,
+        target: true,
+        actor: { select: { id: true, email: true, fullName: true } },
+      },
+    });
+    const adminsById = await this.financeReviewAssignmentAdminsById(
+      adminFinanceReviewAssignmentReferencedIds(assignments),
+    );
+    const assignmentByRequestId = new Map(
+      assignments.flatMap((assignment) => {
+        const requestId = assignment.target?.startsWith(targetPrefix)
+          ? assignment.target.slice(targetPrefix.length)
+          : null;
+        const history = adminFinanceReviewAssignmentHistory([assignment], adminsById)[0];
+        if (!requestId || !history) return [];
+        return [[requestId, {
+          assignedAt: history.assignedAt,
+          assignedByAdminId: history.assignedBy?.id ?? assignment.actorId,
+          assignee: history.assignee,
+          assigneeAdminId: history.assignee.id,
+          reason: history.reason,
+        }] as const];
+      }),
+    );
+
+    return requests.map((request) => {
+      const reconciliationReviewAssignment = assignmentByRequestId.get(request.id);
+      return reconciliationReviewAssignment
+        ? { ...request, reconciliationReviewAssignment }
+        : request;
+    });
+  }
+
+  async listCompanyBankTransactionImportBatches(
+    options: AdminCompanyBankTransactionImportBatchListOptions = {},
+  ) {
+    const skip = adminAuditLogListSkip(options.skip);
+    const take = adminBoundedPositiveInteger(options.take, 10, 20);
+    const where = adminCompanyBankTransactionImportBatchWhere(options);
+    const review = adminCompanyBankTransactionImportBatchReview(options.review);
+    let logs: Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>[];
+    let total: number;
+    if (review === 'all') {
+      [logs, total] = await Promise.all([
+        this.prisma.adminAuditLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          ...(skip > 0 ? { skip } : {}),
+          take,
+          select: adminAuditLogSelect,
+        }),
+        this.prisma.adminAuditLog.count({ where }),
+      ]);
+    } else {
+      const pageRows = await this.prisma.$queryRaw<AdminCompanyBankTransactionImportBatchPageRow[]>(
+        adminCompanyBankTransactionImportBatchFilteredPageSql(options, review, skip, take),
+      );
+      const ids = pageRows.map((row) => row.id).filter((id): id is string => Boolean(id));
+      total = Number(pageRows[0]?.total ?? 0);
+      const unorderedLogs = ids.length
+        ? await this.prisma.adminAuditLog.findMany({
+            where: { id: { in: ids } },
+            select: adminAuditLogSelect,
+          })
+        : [];
+      const orderById = new Map(ids.map((id, index) => [id, index]));
+      logs = unorderedLogs.sort(
+        (left, right) => (orderById.get(left.id) ?? 0) - (orderById.get(right.id) ?? 0),
+      );
+    }
+    const normalized = logs.map(adminCompanyBankTransactionImportBatchHistoryItem);
+    const transactionIdsByBatch = new Map(
+      normalized.map((item, index) => [
+        item.batchImportId,
+        adminCompanyBankTransactionImportBatchRowResults(logs[index]?.metadata ?? null)
+          .map((row) => row.transactionId)
+          .filter((id): id is string => Boolean(id)),
+      ]),
+    );
+    const transactionIds = Array.from(new Set(Array.from(transactionIdsByBatch.values()).flat()));
+    const approvalAdminIds = Array.from(
+      new Set(normalized.map((item) => item.approvalAdminId).filter((id): id is string => Boolean(id))),
+    );
+    const assigneeAdminIds = normalized
+      .map((item) => item.assigneeAdminId)
+      .filter((id): id is string => Boolean(id));
+    const identityAdminIds = Array.from(new Set([...approvalAdminIds, ...assigneeAdminIds]));
+    const [approvers, transactions] = await Promise.all([
+      identityAdminIds.length
+        ? this.prisma.user.findMany({
+            where: { id: { in: identityAdminIds } },
+            select: { id: true, email: true, fullName: true },
+          })
+        : [],
+      transactionIds.length
+        ? this.prisma.companyBankTransaction.findMany({
+            where: { id: { in: transactionIds } },
+            select: { id: true, status: true },
+          })
+        : [],
+    ]);
+    const approversById = new Map(approvers.map((approver) => [approver.id, approver]));
+    const transactionStatusById = new Map(
+      transactions.map((transaction) => [transaction.id, transaction.status]),
+    );
+
+    return {
+      items: normalized.map((item) => {
+        const reconciliation = companyBankTransactionImportBatchReconciliationSummary(
+          transactionIdsByBatch.get(item.batchImportId) ?? [],
+          transactionStatusById,
+          item.createdAt,
+        );
+        return {
+          ...item,
+          ...reconciliation,
+          assignee: item.assigneeAdminId ? (approversById.get(item.assigneeAdminId) ?? null) : null,
+          approver: item.approvalAdminId ? (approversById.get(item.approvalAdminId) ?? null) : null,
+        };
+      }),
+      pagination: { skip, take, total },
+    };
+  }
+
+  async companyBankTransactionImportBatchSummary() {
+    const staleBefore = new Date(Date.now() - COMPANY_BANK_TRANSACTION_BATCH_STALE_MS);
+    const escalatedBefore = new Date(Date.now() - COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_MS);
+    const [row] = await this.prisma.$queryRaw<AdminCompanyBankTransactionImportBatchSummaryRow[]>(Prisma.sql`
+      WITH reconciliation_batches AS (
+        SELECT
+          transactions."metadata"->>'batchImportId' AS "batchImportId",
+          COUNT(*)::int AS "transactionCount",
+          COUNT(*) FILTER (
+            WHERE transactions."status" IN (
+              ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+              ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+            )
+          )::int AS "openCount"
+        FROM "CompanyBankTransaction" transactions
+        WHERE transactions."metadata" ? 'batchImportId'
+        GROUP BY transactions."metadata"->>'batchImportId'
+      )
+      SELECT
+        COUNT(*)::bigint AS "batchCount",
+        COUNT(*) FILTER (WHERE reconciliation."openCount" > 0)::bigint AS "needsReconciliationCount",
+        COUNT(*) FILTER (
+          WHERE reconciliation."transactionCount" > 0 AND reconciliation."openCount" = 0
+        )::bigint AS "reconciledCount",
+        COUNT(*) FILTER (
+          WHERE reconciliation."openCount" > 0 AND logs."createdAt" <= ${staleBefore}
+        )::bigint AS "staleNeedsReconciliationCount",
+        COUNT(*) FILTER (
+          WHERE reconciliation."openCount" > 0 AND logs."createdAt" <= ${escalatedBefore}
+        )::bigint AS "escalatedNeedsReconciliationCount",
+        COUNT(*) FILTER (WHERE reconciliation."batchImportId" IS NULL)::bigint AS "noTransactionCount",
+        MIN(logs."createdAt") FILTER (WHERE reconciliation."openCount" > 0) AS "oldestOpenImportedAt"
+      FROM "AdminAuditLog" logs
+      LEFT JOIN reconciliation_batches reconciliation
+        ON reconciliation."batchImportId" = COALESCE(
+          logs."metadata"->>'batchImportId',
+          REPLACE(logs."target", 'company_bank_transaction_batch:', '')
+        )
+      WHERE logs."action" = ${COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION}
+    `);
+
+    return {
+      batchCount: Number(row?.batchCount ?? 0),
+      escalatedNeedsReconciliationCount: Number(row?.escalatedNeedsReconciliationCount ?? 0),
+      needsReconciliationCount: Number(row?.needsReconciliationCount ?? 0),
+      noTransactionCount: Number(row?.noTransactionCount ?? 0),
+      oldestOpenImportedAt: row?.oldestOpenImportedAt ?? null,
+      reconciledCount: Number(row?.reconciledCount ?? 0),
+      staleNeedsReconciliationCount: Number(row?.staleNeedsReconciliationCount ?? 0),
+    };
+  }
+
+  async syncCompanyBankTransactionImportBatchEscalations(now = new Date()) {
+    const escalatedBefore = new Date(
+      now.getTime() - COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_MS,
+    );
+    const candidates = await this.prisma.$queryRaw<
+      AdminCompanyBankTransactionImportBatchEscalationRow[]
+    >(Prisma.sql`
+      WITH reconciliation_batches AS (
+        SELECT
+          transactions."metadata"->>'batchImportId' AS "batchImportId",
+          COUNT(*) FILTER (
+            WHERE transactions."status" IN (
+              ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+              ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+            )
+          )::bigint AS "openTransactionCount"
+        FROM "CompanyBankTransaction" transactions
+        WHERE transactions."metadata" ? 'batchImportId'
+        GROUP BY transactions."metadata"->>'batchImportId'
+      )
+      SELECT
+        COALESCE(
+          logs."metadata"->>'batchImportId',
+          REPLACE(logs."target", 'company_bank_transaction_batch:', '')
+        ) AS "batchImportId",
+        logs."actorId" AS "importerAdminId",
+        logs."metadata"->>'assigneeAdminId' AS "assigneeAdminId",
+        logs."createdAt" AS "importedAt",
+        reconciliation."openTransactionCount"
+      FROM "AdminAuditLog" logs
+      INNER JOIN reconciliation_batches reconciliation
+        ON reconciliation."batchImportId" = COALESCE(
+          logs."metadata"->>'batchImportId',
+          REPLACE(logs."target", 'company_bank_transaction_batch:', '')
+        )
+      WHERE logs."action" = ${COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION}
+        AND logs."createdAt" <= ${escalatedBefore}
+        AND reconciliation."openTransactionCount" > 0
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "AdminAuditLog" escalation
+          WHERE escalation."action" = ${COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_ACTION}
+            AND escalation."target" = logs."target"
+        )
+      ORDER BY logs."createdAt" ASC, logs."id" ASC
+      LIMIT ${COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_SWEEP_LIMIT}
+    `);
+
+    const results: Array<'ESCALATED' | 'MISSING_RECIPIENT' | 'SKIPPED'> = [];
+    for (const candidate of candidates) {
+      results.push(await this.escalateCompanyBankTransactionImportBatch(candidate, now));
+    }
+
+    return {
+      escalatedCount: results.filter((result) => result === 'ESCALATED').length,
+      missingRecipientCount: results.filter((result) => result === 'MISSING_RECIPIENT').length,
+      scannedCount: candidates.length,
+      skippedCount: results.filter((result) => result === 'SKIPPED').length,
+    };
+  }
+
+  async syncCompanyBankTransactionReviewEscalations(now = new Date()) {
+    const escalatedBefore = new Date(
+      now.getTime() - COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_MS,
+    );
+    const candidates = await this.prisma.$queryRaw<
+      AdminCompanyBankTransactionReviewEscalationRow[]
+    >(Prisma.sql`
+      WITH latest_assignments AS (
+        SELECT DISTINCT ON (logs."target")
+          logs."id" AS "assignmentAuditLogId",
+          logs."target",
+          logs."metadata"->>'assigneeAdminId' AS "assigneeAdminId",
+          logs."createdAt" AS "assignedAt"
+        FROM "AdminAuditLog" logs
+        WHERE logs."action" = ${COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION}
+        ORDER BY logs."target", logs."createdAt" DESC, logs."id" DESC
+      )
+      SELECT
+        assignments."assignmentAuditLogId",
+        assignments."assigneeAdminId",
+        assignments."assignedAt",
+        transactions."id" AS "bankTransactionId",
+        transactions."status" AS "bankTransactionStatus"
+      FROM latest_assignments assignments
+      INNER JOIN "CompanyBankTransaction" transactions
+        ON assignments."target" = 'bank_transaction:' || transactions."id"
+      WHERE assignments."assigneeAdminId" IS NOT NULL
+        AND assignments."assignedAt" <= ${escalatedBefore}
+        AND transactions."status" IN (
+          ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+          ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "AdminAuditLog" escalation
+          WHERE escalation."action" = ${COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_ACTION}
+            AND escalation."target" = assignments."target"
+            AND escalation."metadata"->>'assignmentAuditLogId' = assignments."assignmentAuditLogId"
+        )
+      ORDER BY assignments."assignedAt" ASC, assignments."assignmentAuditLogId" ASC
+      LIMIT ${COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_SWEEP_LIMIT}
+    `);
+
+    const results: Array<'ESCALATED' | 'MISSING_RECIPIENT' | 'SKIPPED'> = [];
+    for (const candidate of candidates) {
+      results.push(await this.escalateCompanyBankTransactionReview(candidate, now));
+    }
+
+    return {
+      escalatedCount: results.filter((result) => result === 'ESCALATED').length,
+      missingRecipientCount: results.filter((result) => result === 'MISSING_RECIPIENT').length,
+      scannedCount: candidates.length,
+      skippedCount: results.filter((result) => result === 'SKIPPED').length,
+    };
+  }
+
+  private escalateCompanyBankTransactionReview(
+    candidate: AdminCompanyBankTransactionReviewEscalationRow,
+    triggeredAt: Date,
+  ) {
+    const target = `bank_transaction:${candidate.bankTransactionId}`;
+    const lockKey = `${target}:assignment:${candidate.assignmentAuditLogId}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+      const latestAssignment = await tx.adminAuditLog.findFirst({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION,
+          target,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, metadata: true },
+      });
+      if (
+        latestAssignment?.id !== candidate.assignmentAuditLogId ||
+        jsonString(jsonObject(latestAssignment.metadata).assigneeAdminId) !==
+          candidate.assigneeAdminId
+      ) {
+        return 'SKIPPED' as const;
+      }
+
+      const existing = await tx.adminAuditLog.findFirst({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_ACTION,
+          target,
+          metadata: {
+            path: ['assignmentAuditLogId'],
+            equals: candidate.assignmentAuditLogId,
+          },
+        },
+        select: { id: true },
+      });
+      if (existing) return 'SKIPPED' as const;
+
+      const openTransaction = await tx.companyBankTransaction.findFirst({
+        where: {
+          id: candidate.bankTransactionId,
+          status: {
+            in: [
+              BankReconciliationStatus.UNMATCHED,
+              BankReconciliationStatus.PARTIALLY_MATCHED,
+            ],
+          },
+        },
+        select: { id: true, status: true },
+      });
+      if (!openTransaction) return 'SKIPPED' as const;
+
+      const recipient =
+        (await tx.user.findFirst({
+          where: {
+            id: candidate.assigneeAdminId,
+            roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+          },
+          select: { id: true },
+        })) ??
+        (await tx.user.findFirst({
+          where: { roles: { has: Role.MASTER_ADMIN } },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        }));
+      if (!recipient) return 'MISSING_RECIPIENT' as const;
+
+      const notification = await tx.notification.create({
+        data: {
+          userId: recipient.id,
+          type: 'admin.finance.bank_transaction.review_escalated',
+          title: 'Bank transaction review is overdue',
+          body: `Bank transaction ${candidate.bankTransactionId} has remained assigned and unresolved for over 48 hours.`,
+          data: {
+            assignmentAuditLogId: candidate.assignmentAuditLogId,
+            bankTransactionId: candidate.bankTransactionId,
+            destination: `/finance-tax/bank-reconciliation/${encodeURIComponent(candidate.bankTransactionId)}`,
+            financeReviewStatus: 'OPEN',
+            source: 'bank_transaction_review_escalation_sweep',
+          },
+        },
+        select: { id: true },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: recipient.id,
+          action: COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_ACTION,
+          target,
+          metadata: {
+            assigneeAdminId: candidate.assigneeAdminId,
+            assignedAt: candidate.assignedAt.toISOString(),
+            assignmentAuditLogId: candidate.assignmentAuditLogId,
+            bankStatus: openTransaction.status,
+            bankTransactionId: candidate.bankTransactionId,
+            notificationId: notification.id,
+            recipientAdminId: recipient.id,
+            source: 'system_sweep',
+            triggeredAt: triggeredAt.toISOString(),
+          },
+        },
+      });
+
+      return 'ESCALATED' as const;
+    });
+  }
+
+  async syncPartnerBankDepositReconciliationEscalations(now = new Date()) {
+    const escalatedBefore = new Date(
+      now.getTime() - PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_MS,
+    );
+    const candidates = await this.prisma.$queryRaw<
+      AdminPartnerBankDepositReconciliationEscalationRow[]
+    >(Prisma.sql`
+      WITH ${adminPartnerBankDepositReconciliationCteSql({})}
+      SELECT
+        deposits."assigneeAdminId",
+        deposits."assignedAt",
+        deposits."assignmentAuditLogId",
+        deposits."id" AS "partnerBankDepositRequestId",
+        COALESCE(deposits."executedAt", deposits."createdAt") AS "reviewStartedAt"
+      FROM "openPartnerBankDeposits" deposits
+      WHERE COALESCE(deposits."executedAt", deposits."createdAt") <= ${escalatedBefore}
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "AdminAuditLog" escalation
+          INNER JOIN "Notification" notification
+            ON notification."id" = escalation."metadata"->>'notificationId'
+          WHERE escalation."action" = ${PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_ACTION}
+            AND escalation."target" = 'partner_bank_deposit_request:' || deposits."id"
+            AND COALESCE(notification."data"->>'financeReviewStatus', 'OPEN') <> 'RESOLVED'
+        )
+      ORDER BY COALESCE(deposits."executedAt", deposits."createdAt") ASC, deposits."id" ASC
+      LIMIT ${PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_SWEEP_LIMIT}
+    `);
+
+    const results: Array<'ESCALATED' | 'MISSING_RECIPIENT' | 'SKIPPED'> = [];
+    for (const candidate of candidates) {
+      results.push(await this.escalatePartnerBankDepositReconciliation(candidate, now));
+    }
+
+    return {
+      escalatedCount: results.filter((result) => result === 'ESCALATED').length,
+      missingRecipientCount: results.filter((result) => result === 'MISSING_RECIPIENT').length,
+      scannedCount: candidates.length,
+      skippedCount: results.filter((result) => result === 'SKIPPED').length,
+    };
+  }
+
+  private escalatePartnerBankDepositReconciliation(
+    candidate: AdminPartnerBankDepositReconciliationEscalationRow,
+    triggeredAt: Date,
+  ) {
+    const target = `partner_bank_deposit_request:${candidate.partnerBankDepositRequestId}`;
+    const lockKey = `${target}:reconciliation_escalation`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+      const latestAssignment = await tx.adminAuditLog.findFirst({
+        where: {
+          action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION,
+          target,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, metadata: true },
+      });
+      const latestAssigneeAdminId = jsonString(
+        jsonObject(latestAssignment?.metadata ?? null).assigneeAdminId,
+      );
+      if (
+        (latestAssignment?.id ?? null) !== candidate.assignmentAuditLogId ||
+        (latestAssigneeAdminId ?? null) !== candidate.assigneeAdminId
+      ) {
+        return 'SKIPPED' as const;
+      }
+
+      const activeEscalation = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT escalation."id"
+        FROM "AdminAuditLog" escalation
+        INNER JOIN "Notification" notification
+          ON notification."id" = escalation."metadata"->>'notificationId'
+        WHERE escalation."action" = ${PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_ACTION}
+          AND escalation."target" = ${target}
+          AND COALESCE(notification."data"->>'financeReviewStatus', 'OPEN') <> 'RESOLVED'
+        LIMIT 1
+      `);
+      if (activeEscalation.length > 0) return 'SKIPPED' as const;
+
+      const request = await tx.partnerBankDepositRequest.findFirst({
+        where: {
+          id: candidate.partnerBankDepositRequestId,
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+        },
+        select: { amount: true, bankTransactionId: true, id: true, journalBatchId: true },
+      });
+      if (!request) return 'SKIPPED' as const;
+      const bankCashEntry = request.journalBatchId
+        ? await tx.accountingJournalEntry.findFirst({
+            where: {
+              accountCode: 'company_bank_cash',
+              batchId: request.journalBatchId,
+              side: AccountingJournalEntrySide.DEBIT,
+            },
+            select: {
+              amount: true,
+              bankReconciliationMatches: {
+                where: {
+                  status: {
+                    in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+                  },
+                },
+                select: { amount: true },
+              },
+            },
+          })
+        : null;
+      const targetAmount = bankCashEntry?.amount ?? request.amount;
+      const matchedAmount = bankCashEntry?.bankReconciliationMatches.reduce(
+        (sum, match) => sum + Math.abs(match.amount),
+        0,
+      ) ?? 0;
+      if (matchedAmount >= targetAmount) return 'SKIPPED' as const;
+
+      const recipient = candidate.assigneeAdminId
+        ? await tx.user.findFirst({
+            where: {
+              id: candidate.assigneeAdminId,
+              roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+            },
+            select: { id: true },
+          })
+        : null;
+      const fallbackRecipient = recipient ?? await tx.user.findFirst({
+        where: { roles: { has: Role.MASTER_ADMIN } },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+      if (!fallbackRecipient) return 'MISSING_RECIPIENT' as const;
+
+      const notification = await tx.notification.create({
+        data: {
+          userId: fallbackRecipient.id,
+          type: 'admin.finance.partner_bank_deposit.reconciliation_escalated',
+          title: 'Partner deposit reconciliation is overdue',
+          body: `Partner bank deposit ${request.id} has remained unreconciled for over 48 hours.`,
+          data: {
+            assignmentAuditLogId: candidate.assignmentAuditLogId,
+            bankTransactionId: request.bankTransactionId,
+            destination: `/finance-tax/partner-bank-deposits/${encodeURIComponent(request.id)}`,
+            financeReviewStatus: 'OPEN',
+            partnerBankDepositRequestId: request.id,
+            source: 'partner_bank_deposit_reconciliation_escalation_sweep',
+          },
+        },
+        select: { id: true },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: fallbackRecipient.id,
+          action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_ACTION,
+          target,
+          metadata: {
+            assigneeAdminId: candidate.assigneeAdminId,
+            assignedAt: candidate.assignedAt?.toISOString() ?? null,
+            assignmentAuditLogId: candidate.assignmentAuditLogId,
+            notificationId: notification.id,
+            partnerBankDepositRequestId: request.id,
+            recipientAdminId: fallbackRecipient.id,
+            remainingAmount: Math.max(0, targetAmount - matchedAmount),
+            reviewStartedAt: candidate.reviewStartedAt.toISOString(),
+            source: 'system_sweep',
+            triggeredAt: triggeredAt.toISOString(),
+          },
+        },
+      });
+
+      return 'ESCALATED' as const;
+    });
+  }
+
+  async syncCompanyBankTransactionReviewEscalationResolutions(now = new Date()) {
+    const notifications = await this.prisma.notification.findMany({
+      where: notificationFinanceOverdueWhere('open'),
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: COMPANY_BANK_TRANSACTION_REVIEW_RESOLUTION_SWEEP_LIMIT,
+      select: { data: true, id: true, type: true, userId: true },
+    });
+    const results: Array<'RESOLVED' | 'OPEN' | 'SKIPPED'> = [];
+    for (const notification of notifications) {
+      results.push(await this.resolveCompanyBankTransactionReviewEscalation(notification, now));
+    }
+
+    return {
+      openCount: results.filter((result) => result === 'OPEN').length,
+      resolvedCount: results.filter((result) => result === 'RESOLVED').length,
+      scannedCount: notifications.length,
+      skippedCount: results.filter((result) => result === 'SKIPPED').length,
+    };
+  }
+
+  private resolveCompanyBankTransactionReviewEscalation(
+    notification: { data: Prisma.JsonValue | null; id: string; type: string; userId: string },
+    resolvedAt: Date,
+  ) {
+    const lockKey = `finance_review_escalation_resolution:${notification.id}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+
+      const current = await tx.notification.findUnique({
+        where: { id: notification.id },
+        select: { data: true, id: true, type: true, userId: true },
+      });
+      if (!current || !ADMIN_NOTIFICATION_FINANCE_OVERDUE_TYPES.includes(
+        current.type as (typeof ADMIN_NOTIFICATION_FINANCE_OVERDUE_TYPES)[number],
+      )) {
+        return 'SKIPPED' as const;
+      }
+      const data = jsonObject(current.data);
+      if (jsonString(data.financeReviewStatus) === 'RESOLVED') return 'SKIPPED' as const;
+
+      const bankTransactionId = jsonString(data.bankTransactionId);
+      const batchImportId = jsonString(data.batchImportId);
+      const partnerBankDepositRequestId = jsonString(data.partnerBankDepositRequestId);
+      let sourceResolved = false;
+      if (partnerBankDepositRequestId) {
+        const request = await tx.partnerBankDepositRequest.findUnique({
+          where: { id: partnerBankDepositRequestId },
+          select: { amount: true, journalBatchId: true, status: true },
+        });
+        if (!request || request.status !== PartnerBankDepositRequestStatus.EXECUTED) {
+          sourceResolved = true;
+        } else {
+          const bankCashEntry = request.journalBatchId
+            ? await tx.accountingJournalEntry.findFirst({
+                where: {
+                  accountCode: 'company_bank_cash',
+                  batchId: request.journalBatchId,
+                  side: AccountingJournalEntrySide.DEBIT,
+                },
+                select: {
+                  amount: true,
+                  bankReconciliationMatches: {
+                    where: {
+                      status: {
+                        in: [
+                          BankReconciliationStatus.MATCHED,
+                          BankReconciliationStatus.PARTIALLY_MATCHED,
+                        ],
+                      },
+                    },
+                    select: { amount: true },
+                  },
+                },
+              })
+            : null;
+          const targetAmount = bankCashEntry?.amount ?? request.amount;
+          const matchedAmount = bankCashEntry?.bankReconciliationMatches.reduce(
+            (sum, match) => sum + Math.abs(match.amount),
+            0,
+          ) ?? 0;
+          sourceResolved = matchedAmount >= targetAmount;
+        }
+      } else if (bankTransactionId) {
+        const bankTransaction = await tx.companyBankTransaction.findUnique({
+          where: { id: bankTransactionId },
+          select: { status: true },
+        });
+        sourceResolved = Boolean(
+          bankTransaction &&
+          bankTransaction.status !== BankReconciliationStatus.UNMATCHED &&
+          bankTransaction.status !== BankReconciliationStatus.PARTIALLY_MATCHED,
+        );
+      } else if (batchImportId) {
+        const openTransactionCount = await tx.companyBankTransaction.count({
+          where: {
+            metadata: { path: ['batchImportId'], equals: batchImportId },
+            status: {
+              in: [
+                BankReconciliationStatus.UNMATCHED,
+                BankReconciliationStatus.PARTIALLY_MATCHED,
+              ],
+            },
+          },
+        });
+        sourceResolved = openTransactionCount === 0;
+      } else {
+        return 'SKIPPED' as const;
+      }
+      if (!sourceResolved) return 'OPEN' as const;
+
+      const existingAudit = await tx.adminAuditLog.findFirst({
+        where: {
+          action: partnerBankDepositRequestId
+            ? PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_RESOLVED_ACTION
+            : COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_RESOLVED_ACTION,
+          target: `notification:${current.id}`,
+        },
+        select: { id: true },
+      });
+      if (existingAudit) return 'SKIPPED' as const;
+
+      await tx.notification.update({
+        where: { id: current.id },
+        data: {
+          data: {
+            ...data,
+            financeReviewResolvedAt: resolvedAt.toISOString(),
+            financeReviewStatus: 'RESOLVED',
+          },
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: current.userId,
+          action: partnerBankDepositRequestId
+            ? PARTNER_BANK_DEPOSIT_RECONCILIATION_ESCALATION_RESOLVED_ACTION
+            : COMPANY_BANK_TRANSACTION_REVIEW_ESCALATION_RESOLVED_ACTION,
+          target: `notification:${current.id}`,
+          metadata: {
+            bankTransactionId,
+            batchImportId,
+            partnerBankDepositRequestId,
+            notificationId: current.id,
+            notificationType: current.type,
+            resolvedAt: resolvedAt.toISOString(),
+            source: 'system_sweep',
+          },
+        },
+      });
+
+      return 'RESOLVED' as const;
+    });
+  }
+
+  private escalateCompanyBankTransactionImportBatch(
+    candidate: AdminCompanyBankTransactionImportBatchEscalationRow,
+    triggeredAt: Date,
+  ) {
+    const target = `company_bank_transaction_batch:${candidate.batchImportId}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${target}))`);
+
+      const existing = await tx.adminAuditLog.findFirst({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_ACTION,
+          target,
+        },
+        select: { id: true },
+      });
+      if (existing) return 'SKIPPED' as const;
+
+      const preferredRecipientIds = Array.from(
+        new Set(
+          [candidate.assigneeAdminId, candidate.importerAdminId].filter(
+            (id): id is string => Boolean(id),
+          ),
+        ),
+      );
+      const preferredRecipients = preferredRecipientIds.length
+        ? await tx.user.findMany({
+            where: {
+              id: { in: preferredRecipientIds },
+              roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+            },
+            select: { id: true },
+          })
+        : [];
+      const preferredRecipientById = new Map(
+        preferredRecipients.map((recipient) => [recipient.id, recipient]),
+      );
+      const recipient = preferredRecipientIds
+        .map((id) => preferredRecipientById.get(id))
+        .find((value) => Boolean(value)) ?? await tx.user.findFirst({
+          where: { roles: { has: Role.MASTER_ADMIN } },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
+      if (!recipient) return 'MISSING_RECIPIENT' as const;
+
+      const notification = await tx.notification.create({
+        data: {
+          userId: recipient.id,
+          type: 'admin.finance.bank_statement_batch.escalated',
+          title: 'Bank statement batch needs escalation',
+          body: `Bank statement batch ${candidate.batchImportId} has waited over 48 hours and needs reconciliation.`,
+          data: {
+            batchImportId: candidate.batchImportId,
+            destination: `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(candidate.batchImportId)}`,
+            financeReviewStatus: 'OPEN',
+            source: 'bank_statement_batch_escalation_sweep',
+          },
+        },
+        select: { id: true },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: recipient.id,
+          action: COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_ACTION,
+          target,
+          metadata: {
+            assigneeAdminId: candidate.assigneeAdminId,
+            batchImportId: candidate.batchImportId,
+            importedAt: candidate.importedAt.toISOString(),
+            importerAdminId: candidate.importerAdminId,
+            notificationId: notification.id,
+            openTransactionCount: Number(candidate.openTransactionCount),
+            recipientAdminId: recipient.id,
+            source: 'system_sweep',
+            triggeredAt: triggeredAt.toISOString(),
+          },
+        },
+      });
+
+      return 'ESCALATED' as const;
+    });
+  }
+
+  async companyBankTransactionImportBatchDetail(batchImportId: string) {
+    const normalizedBatchImportId = normalizeRequiredId(batchImportId, 'Bank statement import batch id');
+    const log = await this.prisma.adminAuditLog.findFirst({
+      where: {
+        action: COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION,
+        target: `company_bank_transaction_batch:${normalizedBatchImportId}`,
+      },
+      select: adminAuditLogSelect,
+    });
+    if (!log) {
+      throw new NotFoundException('Bank statement import batch not found');
+    }
+    const batch = adminCompanyBankTransactionImportBatchHistoryItem(log);
+    const rowResults = adminCompanyBankTransactionImportBatchRowResults(log.metadata);
+    const transactionIds = Array.from(
+      new Set(rowResults.map((row) => row.transactionId).filter((id): id is string => Boolean(id))),
+    );
+    const [approver, assignee, transactions, assignmentAuditLogs] = await Promise.all([
+      batch.approvalAdminId
+        ? this.prisma.user.findUnique({
+            where: { id: batch.approvalAdminId },
+            select: { id: true, email: true, fullName: true },
+          })
+        : null,
+      batch.assigneeAdminId
+        ? this.prisma.user.findUnique({
+            where: { id: batch.assigneeAdminId },
+            select: { id: true, email: true, fullName: true },
+          })
+        : null,
+      transactionIds.length
+        ? this.prisma.companyBankTransaction.findMany({
+            where: { id: { in: transactionIds } },
+            select: {
+              id: true,
+              amount: true,
+              currency: true,
+              occurredAt: true,
+              status: true,
+              transferRef: true,
+              type: true,
+            },
+          })
+        : [],
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION,
+          target: `company_bank_transaction_batch:${normalizedBatchImportId}`,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 50,
+        select: {
+          id: true,
+          actorId: true,
+          createdAt: true,
+          metadata: true,
+          actor: { select: { id: true, email: true, fullName: true } },
+        },
+      }),
+    ]);
+    const assignmentAdminIds = adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs);
+    const assignmentAdmins = assignmentAdminIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: assignmentAdminIds } },
+          select: { id: true, email: true, fullName: true },
+        })
+      : [];
+    const assignmentAdminsById = new Map(assignmentAdmins.map((admin) => [admin.id, admin]));
+    const transactionsById = new Map(transactions.map((transaction) => [transaction.id, transaction]));
+    const transactionStatusById = new Map(
+      transactions.map((transaction) => [transaction.id, transaction.status]),
+    );
+
+    return {
+      ...batch,
+      ...companyBankTransactionImportBatchReconciliationSummary(
+        transactionIds,
+        transactionStatusById,
+        batch.createdAt,
+      ),
+      assignee,
+      approver,
+      assignmentHistory: adminFinanceReviewAssignmentHistory(
+        assignmentAuditLogs,
+        assignmentAdminsById,
+      ),
+      rows: rowResults.map((row) => ({
+        ...row,
+        transaction: row.transactionId ? (transactionsById.get(row.transactionId) ?? null) : null,
+      })),
+    };
+  }
+
+  async assignCompanyBankTransactionImportBatch(
+    actorId: string,
+    batchImportId: string,
+    input: AssignCompanyBankTransactionImportBatchDto,
+  ) {
+    const normalizedBatchImportId = normalizeRequiredId(batchImportId, 'Bank statement import batch id');
+    const assigneeAdminId = normalizeRequiredId(input.assigneeAdminId, 'Assignee admin id');
+    const reason = normalizeAuditReason(input.reason);
+    const target = `company_bank_transaction_batch:${normalizedBatchImportId}`;
+    const [batchLog, assigneeRecord] = await Promise.all([
+      this.prisma.adminAuditLog.findFirst({
+        where: { action: COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION, target },
+        select: adminAuditLogSelect,
+      }),
+      this.prisma.user.findFirst({
+        where: {
+          id: assigneeAdminId,
+          roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          roles: true,
+          adminOperatorPermission: { select: { categories: true } },
+        },
+      }),
+    ]);
+    if (!batchLog) throw new NotFoundException('Bank statement import batch not found');
+    if (!assigneeRecord) {
+      throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
+    }
+    const assigneeCategories = assigneeRecord.adminOperatorPermission?.categories ??
+      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    if (
+      !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
+      !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
+    ) {
+      throw new BadRequestException('Selected operator does not have Bank Reconciliation access');
+    }
+    const assignee = {
+      id: assigneeRecord.id,
+      email: assigneeRecord.email,
+      fullName: assigneeRecord.fullName,
+    };
+
+    const previousMetadata = jsonObject(batchLog.metadata);
+    const previousAssigneeAdminId = jsonString(previousMetadata.assigneeAdminId);
+    if (previousAssigneeAdminId === assigneeAdminId) {
+      throw new ConflictException('Bank statement import batch is already assigned to this operator');
+    }
+    const assignedAt = new Date();
+    const metadata = {
+      ...previousMetadata,
+      assigneeAdminId,
+      assignedAt: assignedAt.toISOString(),
+      assignedByAdminId: actorId,
+    } satisfies Prisma.InputJsonObject;
+    const [, assignmentAuditLog] = await this.prisma.$transaction([
+      this.prisma.adminAuditLog.update({
+        where: { id: batchLog.id },
+        data: { metadata },
+      }),
+      this.prisma.adminAuditLog.create({
+        data: {
+          actorId,
+          action: COMPANY_BANK_TRANSACTION_BATCH_ASSIGNMENT_ACTION,
+          target,
+          metadata: {
+            assigneeAdminId,
+            assignedAt: assignedAt.toISOString(),
+            previousAssigneeAdminId,
+            reason,
+          },
+        },
+      }),
+    ]);
+    const batch = await this.companyBankTransactionImportBatchDetail(normalizedBatchImportId);
+    const escalated = batch.reconciliationSlaStatus === 'ESCALATE';
+    const notification = await this.notifications.createInApp({
+      userId: assigneeAdminId,
+      type: escalated
+        ? 'admin.finance.bank_statement_batch.escalated'
+        : 'admin.finance.bank_statement_batch.assigned',
+      resolveTemplate: false,
+      title: escalated ? 'Escalated bank statement batch assigned' : 'Bank statement batch assigned',
+      body: escalated
+        ? `Bank statement batch ${normalizedBatchImportId} has waited over 48 hours and needs reconciliation.`
+        : `Bank statement batch ${normalizedBatchImportId} needs reconciliation.`,
+      data: {
+        batchImportId: normalizedBatchImportId,
+        destination: `/finance-tax/bank-reconciliation/import-batches/${encodeURIComponent(normalizedBatchImportId)}`,
+        reason,
+        source: 'bank_statement_batch_assignment',
+      },
+    });
+
+    return {
+      assignee,
+      assignedAt,
+      assignedByAdminId: actorId,
+      assignmentAuditLogId: assignmentAuditLog.id,
+      batchImportId: normalizedBatchImportId,
+      notification: { id: notification.id, inAppOnly: true },
+      previousAssigneeAdminId,
+      reason,
+    };
+  }
+
+  async assignCompanyBankTransactionReview(
+    actorId: string,
+    bankTransactionId: string,
+    input: AssignCompanyBankTransactionReviewDto,
+  ) {
+    const normalizedTransactionId = normalizeRequiredId(
+      bankTransactionId,
+      'Bank transaction id',
+    );
+    const assigneeAdminId = normalizeRequiredId(input.assigneeAdminId, 'Assignee admin id');
+    const reason = normalizeAuditReason(input.reason);
+    const target = `bank_transaction:${normalizedTransactionId}`;
+    const [transaction, assigneeRecord, previousAssignment] = await Promise.all([
+      this.prisma.companyBankTransaction.findUnique({
+        where: { id: normalizedTransactionId },
+        select: { id: true, status: true },
+      }),
+      this.prisma.user.findFirst({
+        where: {
+          id: assigneeAdminId,
+          roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          roles: true,
+          adminOperatorPermission: { select: { categories: true } },
+        },
+      }),
+      this.prisma.adminAuditLog.findFirst({
+        where: { action: COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION, target },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { metadata: true },
+      }),
+    ]);
+    if (!transaction) throw new NotFoundException('Bank transaction not found');
+    if (
+      transaction.status !== BankReconciliationStatus.UNMATCHED &&
+      transaction.status !== BankReconciliationStatus.PARTIALLY_MATCHED
+    ) {
+      throw new BadRequestException('Only an open bank transaction can be assigned for review');
+    }
+    if (!assigneeRecord) {
+      throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
+    }
+    const assigneeCategories =
+      assigneeRecord.adminOperatorPermission?.categories ??
+      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    if (
+      !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
+      !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
+    ) {
+      throw new BadRequestException('Selected operator does not have Bank Reconciliation access');
+    }
+    const previousAssigneeAdminId = jsonString(
+      jsonObject(previousAssignment?.metadata ?? null).assigneeAdminId,
+    );
+    if (previousAssigneeAdminId === assigneeAdminId) {
+      throw new ConflictException('Bank transaction is already assigned to this operator');
+    }
+
+    const assignedAt = new Date();
+    const assignmentAuditLog = await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        action: COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION,
+        target,
+        metadata: {
+          assigneeAdminId,
+          assignedAt: assignedAt.toISOString(),
+          assignedByAdminId: actorId,
+          bankStatus: transaction.status,
+          bankTransactionId: normalizedTransactionId,
+          previousAssigneeAdminId,
+          reason,
+        },
+      },
+    });
+    const notification = await this.notifications.createInApp({
+      userId: assigneeAdminId,
+      type: 'admin.finance.bank_transaction.review_assigned',
+      resolveTemplate: false,
+      title: 'Bank transaction review assigned',
+      body: `Bank transaction ${normalizedTransactionId} needs reconciliation evidence review.`,
+      data: {
+        bankTransactionId: normalizedTransactionId,
+        destination: `/finance-tax/bank-reconciliation/${encodeURIComponent(normalizedTransactionId)}`,
+        reason,
+        source: 'bank_transaction_review_assignment',
+      },
+    });
+
+    return {
+      assignee: {
+        id: assigneeRecord.id,
+        email: assigneeRecord.email,
+        fullName: assigneeRecord.fullName,
+      },
+      assignedAt,
+      assignedByAdminId: actorId,
+      assignmentAuditLogId: assignmentAuditLog.id,
+      bankTransactionId: normalizedTransactionId,
+      notification: { id: notification.id, inAppOnly: true },
+      previousAssigneeAdminId,
+      reason,
+    };
+  }
+
+  async assignPartnerBankDepositReconciliationReview(
+    actorId: string,
+    requestId: string,
+    input: AssignCompanyBankTransactionReviewDto,
+  ) {
+    const normalizedRequestId = normalizeRequiredId(requestId, 'Partner bank deposit request id');
+    const assigneeAdminId = normalizeRequiredId(input.assigneeAdminId, 'Assignee admin id');
+    const reason = normalizeAuditReason(input.reason);
+    const target = `partner_bank_deposit_request:${normalizedRequestId}`;
+    const [request, assigneeRecord, previousAssignment] = await Promise.all([
+      this.prisma.partnerBankDepositRequest.findUnique({
+        where: { id: normalizedRequestId },
+        select: {
+          amount: true,
+          bankTransactionId: true,
+          id: true,
+          journalBatchId: true,
+          status: true,
+        },
+      }),
+      this.prisma.user.findFirst({
+        where: {
+          id: assigneeAdminId,
+          roles: { hasSome: [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] },
+        },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          roles: true,
+          adminOperatorPermission: { select: { categories: true } },
+        },
+      }),
+      this.prisma.adminAuditLog.findFirst({
+        where: { action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION, target },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { metadata: true },
+      }),
+    ]);
+    if (!request) throw new NotFoundException('Partner bank deposit request not found');
+    if (request.status !== PartnerBankDepositRequestStatus.EXECUTED) {
+      throw new BadRequestException('Only an executed Partner bank deposit can be assigned for reconciliation');
+    }
+    if (!assigneeRecord) {
+      throw new BadRequestException('Finance reconciliation assignee is not an active Admin operator');
+    }
+    const assigneeCategories =
+      assigneeRecord.adminOperatorPermission?.categories ??
+      defaultAdminOperatorPermissionCategories(assigneeRecord.roles);
+    if (
+      !assigneeRecord.roles.includes(Role.MASTER_ADMIN) &&
+      !assigneeCategories.includes(AdminOperatorPermissionCategory.FINANCE_BANK_RECONCILIATION)
+    ) {
+      throw new BadRequestException('Selected operator does not have Bank Reconciliation access');
+    }
+
+    const bankCashEntry = request.journalBatchId
+      ? await this.prisma.accountingJournalEntry.findFirst({
+          where: {
+            accountCode: 'company_bank_cash',
+            batchId: request.journalBatchId,
+            side: AccountingJournalEntrySide.DEBIT,
+          },
+          select: {
+            amount: true,
+            bankReconciliationMatches: {
+              where: {
+                status: {
+                  in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+                },
+              },
+              select: { amount: true },
+            },
+          },
+        })
+      : null;
+    const targetAmount = bankCashEntry?.amount ?? request.amount;
+    const matchedAmount = bankCashEntry?.bankReconciliationMatches.reduce(
+      (sum, match) => sum + Math.abs(match.amount),
+      0,
+    ) ?? 0;
+    if (matchedAmount >= targetAmount) {
+      throw new ConflictException('Partner bank deposit is already fully reconciled');
+    }
+
+    const previousAssigneeAdminId = jsonString(
+      jsonObject(previousAssignment?.metadata ?? null).assigneeAdminId,
+    );
+    if (previousAssigneeAdminId === assigneeAdminId) {
+      throw new ConflictException('Partner bank deposit reconciliation is already assigned to this operator');
+    }
+
+    const assignedAt = new Date();
+    const assignmentAuditLog = await this.prisma.adminAuditLog.create({
+      data: {
+        actorId,
+        action: PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION,
+        target,
+        metadata: {
+          assigneeAdminId,
+          assignedAt: assignedAt.toISOString(),
+          assignedByAdminId: actorId,
+          bankTransactionId: request.bankTransactionId,
+          partnerBankDepositRequestId: normalizedRequestId,
+          previousAssigneeAdminId,
+          reason,
+          remainingAmount: Math.max(0, targetAmount - matchedAmount),
+        },
+      },
+    });
+    const notification = await this.notifications.createInApp({
+      userId: assigneeAdminId,
+      type: 'admin.finance.partner_bank_deposit.reconciliation_assigned',
+      resolveTemplate: false,
+      title: 'Partner deposit reconciliation assigned',
+      body: `Partner bank deposit ${normalizedRequestId} needs bank evidence reconciliation.`,
+      data: {
+        partnerBankDepositRequestId: normalizedRequestId,
+        destination: `/finance-tax/partner-bank-deposits/${encodeURIComponent(normalizedRequestId)}`,
+        reason,
+        source: 'partner_bank_deposit_reconciliation_assignment',
+      },
+    });
+
+    return {
+      assignee: {
+        id: assigneeRecord.id,
+        email: assigneeRecord.email,
+        fullName: assigneeRecord.fullName,
+      },
+      assignedAt,
+      assignedByAdminId: actorId,
+      assignmentAuditLogId: assignmentAuditLog.id,
+      notification: { id: notification.id, inAppOnly: true },
+      partnerBankDepositRequestId: normalizedRequestId,
+      previousAssigneeAdminId,
+      reason,
+    };
+  }
+
   async bankReconciliationTransactionDetail(id: string) {
     const transaction = await this.prisma.companyBankTransaction.findUnique({
       where: { id },
@@ -8521,10 +11838,251 @@ export class AdminService {
     if (!transaction) {
       throw new NotFoundException('Bank reconciliation transaction not found');
     }
-    return transaction;
+    const matchIds = new Set(transaction.reconciliationMatches.map((match) => match.id));
+    const matchTargets = [...matchIds].map((matchId) => `bank_reconciliation_match:${matchId}`);
+    const [auditLogs, assignmentAuditLogs] = await Promise.all([
+      matchIds.size
+        ? this.prisma.adminAuditLog.findMany({
+          where: {
+            OR: [
+              {
+                action: 'bank_reconciliation.match.create',
+                target: `bank_transaction:${id}`,
+              },
+              {
+                action: 'bank_reconciliation.match.reverse',
+                target: { in: matchTargets },
+              },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+          take: Math.min(Math.max(matchIds.size * 4, 20), 200),
+          select: {
+            action: true,
+            actorId: true,
+            createdAt: true,
+            metadata: true,
+            actor: { select: { id: true, email: true, fullName: true } },
+          },
+        })
+        : Promise.resolve([]),
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          action: COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION,
+          target: `bank_transaction:${id}`,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 50,
+        select: {
+          id: true,
+          actorId: true,
+          createdAt: true,
+          metadata: true,
+          actor: { select: { id: true, email: true, fullName: true } },
+        },
+      }),
+    ]);
+    const transactionMetadata = jsonObject(transaction.metadata);
+    const referencedAdminIds = Array.from(
+      new Set(
+        [
+          ...auditLogs.map((auditLog) => jsonString(jsonObject(auditLog.metadata).approvalAdminId)),
+          ...adminFinanceReviewAssignmentReferencedIds(assignmentAuditLogs),
+          jsonString(transactionMetadata.approvalAdminId),
+          jsonString(transactionMetadata.importedByAdminId),
+          jsonString(transactionMetadata.ignoreApprovedByAdminId),
+          jsonString(transactionMetadata.ignoredByAdminId),
+        ].filter((adminId): adminId is string => Boolean(adminId)),
+      ),
+    );
+    const referencedAdmins = referencedAdminIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: referencedAdminIds } },
+          select: { id: true, email: true, fullName: true },
+        })
+      : [];
+    const referencedAdminsById = new Map(referencedAdmins.map((admin) => [admin.id, admin]));
+    const createAuditByMatchId = new Map<string, (typeof auditLogs)[number]>();
+    const reverseAuditByMatchId = new Map<string, (typeof auditLogs)[number]>();
+    for (const auditLog of auditLogs) {
+      const matchId = jsonString(jsonObject(auditLog.metadata).matchId);
+      if (!matchId || !matchIds.has(matchId)) continue;
+      if (
+        auditLog.action === 'bank_reconciliation.match.create' &&
+        !createAuditByMatchId.has(matchId)
+      ) {
+        createAuditByMatchId.set(matchId, auditLog);
+      }
+      if (
+        auditLog.action === 'bank_reconciliation.match.reverse' &&
+        !reverseAuditByMatchId.has(matchId)
+      ) {
+        reverseAuditByMatchId.set(matchId, auditLog);
+      }
+    }
+    const withdrawalCandidates = await this.bankReconciliationWithdrawalCandidates(transaction);
+    const { metadata, reconciliationMatches, ...publicTransaction } = transaction;
+    return {
+      ...publicTransaction,
+      creationEvidence: adminBankTransactionCreationEvidence(metadata, referencedAdminsById),
+      ignoreEvidence: adminBankTransactionIgnoreEvidence(metadata, referencedAdminsById),
+      reconciliationMatches: reconciliationMatches.map((match) => ({
+        ...match,
+        metadata: {
+          ...jsonObject(match.metadata),
+          ...adminBankReconciliationMatchAuditMetadata(
+            createAuditByMatchId.get(match.id),
+            referencedAdminsById,
+          ),
+          ...adminBankReconciliationMatchReversalAuditMetadata(
+            reverseAuditByMatchId.get(match.id),
+            referencedAdminsById,
+          ),
+        },
+      })),
+      assignmentHistory: adminFinanceReviewAssignmentHistory(
+        assignmentAuditLogs,
+        referencedAdminsById,
+      ),
+      withdrawalCandidates,
+    };
   }
 
-  async createCompanyBankTransaction(actorId: string, input: CreateCompanyBankTransactionDto) {
+  private async bankReconciliationWithdrawalCandidates(transaction: {
+    amount: number;
+    currency: string;
+    occurredAt: Date;
+    status: BankReconciliationStatus;
+    transferRef: string | null;
+    type: CompanyBankTransactionType;
+  }) {
+    if (
+      transaction.type !== CompanyBankTransactionType.OUTFLOW ||
+      (transaction.status !== BankReconciliationStatus.UNMATCHED &&
+        transaction.status !== BankReconciliationStatus.PARTIALLY_MATCHED)
+    ) {
+      return [];
+    }
+
+    const targetAmount = Math.abs(transaction.amount);
+    const amountTolerance = Math.max(10_000, Math.min(100_000, Math.round(targetAmount * 0.1)));
+    const transferRef = normalizeNullable(transaction.transferRef);
+    const occurredAt = new Date(transaction.occurredAt);
+    const createdAtWindow = {
+      gte: new Date(occurredAt.getTime() - BANK_RECONCILIATION_WITHDRAWAL_CANDIDATE_WINDOW_MS),
+      lte: new Date(occurredAt.getTime() + BANK_RECONCILIATION_WITHDRAWAL_CANDIDATE_WINDOW_MS),
+    };
+    const candidates = await this.prisma.providerWalletWithdrawalRequest.findMany({
+      where: {
+        status: ProviderWalletWithdrawalRequestStatus.PAID,
+        currency: transaction.currency,
+        createdAt: createdAtWindow,
+        bankReconciliationMatches: {
+          none: {
+            status: {
+              in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+            },
+          },
+        },
+        OR: [
+          {
+            amount: {
+              gte: Math.max(1, targetAmount - amountTolerance),
+              lte: targetAmount + amountTolerance,
+            },
+          },
+          ...(transferRef
+            ? [
+                {
+                  transferRef: {
+                    equals: transferRef,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                } satisfies Prisma.ProviderWalletWithdrawalRequestWhereInput,
+              ]
+            : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: BANK_RECONCILIATION_WITHDRAWAL_CANDIDATE_LIMIT,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        createdAt: true,
+        paidAt: true,
+        providerProfileId: true,
+        transferRef: true,
+        providerProfile: {
+          select: {
+            displayName: true,
+            user: { select: { fullName: true } },
+          },
+        },
+      },
+    });
+
+    return candidates
+      .map((candidate) => {
+        const evidenceAt = candidate.paidAt ?? candidate.createdAt;
+        const dateDeltaDays = Math.round(
+          (Math.abs(evidenceAt.getTime() - occurredAt.getTime()) / (24 * 60 * 60_000)) * 10,
+        ) / 10;
+        const amountDelta = Math.abs(candidate.amount - targetAmount);
+        const transferRefMatch = Boolean(
+          transferRef && candidate.transferRef?.trim().toUpperCase() === transferRef.toUpperCase(),
+        );
+        const exactAmount = amountDelta === 0;
+        const confidence =
+          transferRefMatch || (exactAmount && dateDeltaDays <= 3) ? 'STRONG' : 'REVIEW';
+        const score =
+          (transferRefMatch ? 1_000_000 : 0) +
+          (exactAmount ? 100_000 : Math.max(0, amountTolerance - amountDelta)) +
+          Math.max(0, 10_000 - Math.round(dateDeltaDays * 100));
+
+        return {
+          amount: candidate.amount,
+          amountDelta,
+          confidence,
+          createdAt: candidate.createdAt,
+          currency: candidate.currency,
+          dateDeltaDays,
+          exactAmount,
+          id: candidate.id,
+          paidAt: candidate.paidAt,
+          providerLabel:
+            candidate.providerProfile.displayName ??
+            candidate.providerProfile.user.fullName ??
+            candidate.providerProfileId,
+          providerProfileId: candidate.providerProfileId,
+          score,
+          transferRef: candidate.transferRef,
+          transferRefMatch,
+        };
+      })
+      .sort((left, right) => right.score - left.score)
+      .map((candidate) => ({
+        amount: candidate.amount,
+        amountDelta: candidate.amountDelta,
+        confidence: candidate.confidence,
+        createdAt: candidate.createdAt,
+        currency: candidate.currency,
+        dateDeltaDays: candidate.dateDeltaDays,
+        exactAmount: candidate.exactAmount,
+        id: candidate.id,
+        paidAt: candidate.paidAt,
+        providerLabel: candidate.providerLabel,
+        providerProfileId: candidate.providerProfileId,
+        transferRef: candidate.transferRef,
+        transferRefMatch: candidate.transferRefMatch,
+      }));
+  }
+
+  async createCompanyBankTransaction(
+    actorId: string,
+    input: CreateCompanyBankTransactionDto,
+    batchContext?: AdminCompanyBankTransactionBatchContext,
+  ) {
     const approvalAdminId = normalizeFinanceActionApprovalAdminId(
       input.approvalAdminId,
       actorId,
@@ -8566,6 +12124,36 @@ export class AdminService {
     const transferRef = normalizeNullable(input.transferRef);
     const counterpartyName = normalizeNullable(input.counterpartyName);
     const description = normalizeNullable(input.description);
+    const operatorReason = normalizeNullable(input.operatorReason);
+    const duplicateCandidates = await this.prisma.companyBankTransaction.findMany({
+      where: companyBankTransactionDuplicateCandidateWhere({
+        amount,
+        bankAccountId,
+        counterpartyName,
+        currency,
+        occurredAt,
+        transferRef,
+        type,
+      }),
+      orderBy: { occurredAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        amount: true,
+        counterpartyName: true,
+        occurredAt: true,
+        status: true,
+        transferRef: true,
+      },
+    });
+    if (duplicateCandidates.length > 0 && input.confirmPotentialDuplicate !== true) {
+      throw new ConflictException({
+        code: 'BANK_TRANSACTION_POTENTIAL_DUPLICATE',
+        message: 'Potential duplicate bank transaction requires explicit operator review',
+        candidates: duplicateCandidates,
+      });
+    }
+    const duplicateCandidateIds = duplicateCandidates.map((candidate) => candidate.id);
     const transaction = await this.prisma.companyBankTransaction.create({
       data: {
         amount,
@@ -8575,8 +12163,20 @@ export class AdminService {
         description,
         metadata: toJson({
           approvalAdminId,
+          ...(batchContext
+            ? {
+                batchImportId: batchContext.batchImportId,
+                csvRowNumber: batchContext.csvRowNumber,
+                mappingPreset: batchContext.mappingPreset,
+                sourceFileName: batchContext.sourceFileName,
+                sourceFileSha256: batchContext.sourceFileSha256,
+              }
+            : {}),
+          duplicateCandidateIds,
+          duplicateReviewConfirmed: duplicateCandidates.length > 0 && input.confirmPotentialDuplicate === true,
           manualImport: true,
           importedByAdminId: actorId,
+          ...(operatorReason ? { operatorReason } : {}),
         }),
         occurredAt,
         sourceKey,
@@ -8595,8 +12195,20 @@ export class AdminService {
         amount,
         approvalAdminId,
         bankAccountId,
+        ...(batchContext
+          ? {
+              batchImportId: batchContext.batchImportId,
+              csvRowNumber: batchContext.csvRowNumber,
+              mappingPreset: batchContext.mappingPreset,
+              sourceFileName: batchContext.sourceFileName,
+              sourceFileSha256: batchContext.sourceFileSha256,
+            }
+          : {}),
         currency,
+        duplicateCandidateIds,
+        duplicateReviewConfirmed: duplicateCandidates.length > 0 && input.confirmPotentialDuplicate === true,
         occurredAt: occurredAt.toISOString(),
+        ...(operatorReason ? { operatorReason } : {}),
         sourceKey,
         transferRef,
         type,
@@ -8604,6 +12216,263 @@ export class AdminService {
     );
 
     return transaction;
+  }
+
+  async previewCompanyBankTransactionBatch(input: PreviewCompanyBankTransactionBatchDto) {
+    const rows: AdminCompanyBankTransactionBatchPreviewRow[] = [];
+    const bankAccountCache = new Map<string, AdminCompanyBankTransactionBatchAccount | null>();
+
+    for (const inputRow of input.rows) {
+      const row = await this.previewCompanyBankTransactionRow(inputRow, bankAccountCache);
+      if (row.normalized && row.classification !== 'INVALID') {
+        const priorRows = rows.filter(
+          (candidate): candidate is AdminCompanyBankTransactionBatchPreviewRow & {
+            normalized: AdminCompanyBankTransactionBatchNormalizedRow;
+          } => Boolean(candidate.normalized) && candidate.classification !== 'INVALID',
+        );
+        const exactBatchDuplicate = priorRows.find(
+          (candidate) => candidate.normalized.sourceKey === row.normalized?.sourceKey,
+        );
+        if (exactBatchDuplicate) {
+          row.classification = 'EXACT_DUPLICATE';
+          row.batchCandidateRowNumbers = [exactBatchDuplicate.rowNumber];
+        } else {
+          const potentialBatchDuplicates = priorRows
+            .filter((candidate) =>
+              companyBankTransactionRowsPotentialDuplicate(candidate.normalized, row.normalized!),
+            )
+            .map((candidate) => candidate.rowNumber)
+            .slice(0, 5);
+          if (potentialBatchDuplicates.length > 0 && row.classification === 'NEW') {
+            row.classification = 'POTENTIAL_DUPLICATE';
+            row.batchCandidateRowNumbers = potentialBatchDuplicates;
+          }
+        }
+      }
+      rows.push(row);
+    }
+
+    return {
+      rows,
+      summary: companyBankTransactionBatchSummary(rows),
+    };
+  }
+
+  async importCompanyBankTransactionBatch(actorId: string, input: ImportCompanyBankTransactionBatchDto) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Company bank transaction batch import',
+    );
+    await assertFinanceActionApprovalAdmin(
+      this.prisma,
+      approvalAdminId,
+      'Company bank transaction batch import',
+    );
+    const batchImportId = randomUUID();
+    const sourceFileName = input.sourceFileName.replace(/^.*[\\/]/u, '');
+    const sourceFileSha256 = input.sourceFileSha256.toLowerCase();
+    const preview = await this.previewCompanyBankTransactionBatch({ rows: input.rows });
+    const inputRows = new Map(input.rows.map((row) => [row.rowNumber, row]));
+    const results: Array<{
+      rowNumber: number;
+      status: 'IMPORTED' | 'SKIPPED';
+      classification: AdminCompanyBankTransactionBatchClassification;
+      transactionId?: string;
+      message?: string;
+    }> = [];
+
+    for (const row of preview.rows) {
+      const requestedRow = inputRows.get(row.rowNumber);
+      if (!requestedRow || !row.normalized || row.classification === 'INVALID') {
+        results.push({
+          rowNumber: row.rowNumber,
+          status: 'SKIPPED',
+          classification: row.classification,
+          message: row.errors[0] ?? 'Invalid row',
+        });
+        continue;
+      }
+      if (row.classification === 'EXACT_DUPLICATE') {
+        results.push({
+          rowNumber: row.rowNumber,
+          status: 'SKIPPED',
+          classification: row.classification,
+          message: 'Exact duplicate rows cannot be imported',
+        });
+        continue;
+      }
+      if (row.classification === 'POTENTIAL_DUPLICATE' && requestedRow.confirmPotentialDuplicate !== true) {
+        results.push({
+          rowNumber: row.rowNumber,
+          status: 'SKIPPED',
+          classification: row.classification,
+          message: 'Potential duplicate review is required',
+        });
+        continue;
+      }
+
+      try {
+        const transaction = await this.createCompanyBankTransaction(
+          actorId,
+          {
+            ...row.normalized,
+            approvalAdminId,
+            confirmPotentialDuplicate: row.classification === 'POTENTIAL_DUPLICATE',
+            operatorReason: input.operatorReason,
+          },
+          {
+            batchImportId,
+            csvRowNumber: row.rowNumber,
+            mappingPreset: input.mappingPreset,
+            sourceFileName,
+            sourceFileSha256,
+          },
+        );
+        results.push({
+          rowNumber: row.rowNumber,
+          status: 'IMPORTED',
+          classification: row.classification,
+          transactionId: transaction.id,
+        });
+      } catch {
+        results.push({
+          rowNumber: row.rowNumber,
+          status: 'SKIPPED',
+          classification: row.classification,
+          message: 'Row changed during review or could not be imported',
+        });
+      }
+    }
+
+    const importedCount = results.filter((row) => row.status === 'IMPORTED').length;
+    await this.writeAudit(
+      actorId,
+      COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION,
+      `company_bank_transaction_batch:${batchImportId}`,
+      {
+        approvalAdminId,
+        batchImportId,
+        importedCount,
+        mappingPreset: input.mappingPreset,
+        ...(input.operatorReason ? { operatorReason: input.operatorReason } : {}),
+        requestedCount: input.rows.length,
+        rowResults: results.map((row) => ({
+          classification: row.classification,
+          rowNumber: row.rowNumber,
+          status: row.status,
+          ...(row.transactionId ? { transactionId: row.transactionId } : {}),
+        })),
+        skippedCount: results.length - importedCount,
+        sourceFileName,
+        sourceFileSha256,
+      },
+    );
+
+    return {
+      batchImportId,
+      importedCount,
+      skippedCount: results.length - importedCount,
+      results,
+    };
+  }
+
+  private async previewCompanyBankTransactionRow(
+    input: CompanyBankTransactionBatchRowDto,
+    bankAccountCache: Map<string, AdminCompanyBankTransactionBatchAccount | null>,
+  ): Promise<AdminCompanyBankTransactionBatchPreviewRow> {
+    const errors: string[] = [];
+    const bankAccountId = normalizeNullable(input.bankAccountId);
+    const type = batchCompanyBankTransactionType(input.type);
+    const amount = parseCompanyBankTransactionBatchAmount(input.amount);
+    const occurredAt = parseCompanyBankTransactionBatchDate(input.occurredAt);
+    const valueDate = input.valueDate ? parseCompanyBankTransactionBatchDate(input.valueDate) : null;
+    if (!bankAccountId) errors.push('Bank account is required');
+    if (!type) errors.push('Type must be INFLOW or OUTFLOW');
+    if (!amount) errors.push('Amount must be a positive whole number');
+    if (!occurredAt) errors.push('Occurred at must be a valid date and time');
+    if (input.valueDate && !valueDate) errors.push('Value date must be a valid date');
+
+    if (errors.length > 0 || !bankAccountId || !type || !amount || !occurredAt) {
+      return companyBankTransactionInvalidBatchRow(input, errors);
+    }
+
+    let bankAccount = bankAccountCache.get(bankAccountId);
+    if (!bankAccountCache.has(bankAccountId)) {
+      bankAccount = await this.prisma.companyBankAccount.findUnique({
+        where: { id: bankAccountId },
+        select: { id: true, currency: true, status: true },
+      });
+      bankAccountCache.set(bankAccountId, bankAccount);
+    }
+    if (!bankAccount) {
+      return companyBankTransactionInvalidBatchRow(input, ['Company bank account was not found']);
+    }
+    if (bankAccount.status !== CompanyBankAccountStatus.ACTIVE) {
+      return companyBankTransactionInvalidBatchRow(input, ['Company bank account is not active']);
+    }
+
+    const currency = normalizeCompanyBankTransactionCurrency(input.currency, bankAccount.currency);
+    const transferRef = normalizeNullable(input.transferRef);
+    const counterpartyName = normalizeNullable(input.counterpartyName);
+    const normalized: AdminCompanyBankTransactionBatchNormalizedRow = {
+      amount,
+      bankAccountId,
+      counterpartyName,
+      currency,
+      description: normalizeNullable(input.description),
+      occurredAt: occurredAt.toISOString(),
+      sourceKey: companyBankTransactionSourceKey({
+        amount,
+        bankAccountId,
+        occurredAt,
+        sourceKey: input.sourceKey,
+        transferRef,
+        type,
+      }),
+      transferRef,
+      type,
+      valueDate: valueDate?.toISOString() ?? null,
+    };
+    const exactDuplicate = await this.prisma.companyBankTransaction.findUnique({
+      where: { sourceKey: normalized.sourceKey },
+      select: adminCompanyBankTransactionDuplicateCandidateSelect,
+    });
+    if (exactDuplicate) {
+      return {
+        batchCandidateRowNumbers: [],
+        candidates: [exactDuplicate],
+        classification: 'EXACT_DUPLICATE',
+        errors: [],
+        normalized,
+        raw: companyBankTransactionBatchRawRow(input),
+        rowNumber: input.rowNumber,
+      };
+    }
+
+    const candidates = await this.prisma.companyBankTransaction.findMany({
+      where: companyBankTransactionDuplicateCandidateWhere({
+        amount,
+        bankAccountId,
+        counterpartyName,
+        currency,
+        occurredAt,
+        transferRef,
+        type,
+      }),
+      orderBy: { occurredAt: 'desc' },
+      take: 5,
+      select: adminCompanyBankTransactionDuplicateCandidateSelect,
+    });
+    return {
+      batchCandidateRowNumbers: [],
+      candidates,
+      classification: candidates.length > 0 ? 'POTENTIAL_DUPLICATE' : 'NEW',
+      errors: [],
+      normalized,
+      raw: companyBankTransactionBatchRawRow(input),
+      rowNumber: input.rowNumber,
+    };
   }
 
   async createBankReconciliationMatch(
@@ -8616,16 +12485,20 @@ export class AdminService {
       actorId,
       'Bank reconciliation match',
     );
-    await assertFinanceActionApprovalAdmin(
-      this.prisma,
-      approvalAdminId,
-      'Bank reconciliation match',
-    );
-    const source = adminBankReconciliationMatchSource(input);
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Bank reconciliation match');
+    const requestedSource = adminBankReconciliationMatchSource(input);
     return this.prisma.$transaction(async (tx) => {
       const bankTransaction = await tx.companyBankTransaction.findUnique({
         where: { id: bankTransactionId },
-        select: { id: true, amount: true, currency: true, status: true },
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          occurredAt: true,
+          status: true,
+          transferRef: true,
+          type: true,
+        },
       });
       if (!bankTransaction) {
         throw new NotFoundException('Bank transaction not found');
@@ -8642,7 +12515,19 @@ export class AdminService {
         throw new BadRequestException('Match currency must equal bank transaction currency');
       }
 
-      const sourceSnapshot = await this.validateBankReconciliationSource(tx, source, currency);
+      const source = await this.resolveBankReconciliationSource(tx, requestedSource);
+      const sourceSnapshot = await this.validateBankReconciliationSource(
+        tx,
+        source,
+        currency,
+        bankTransaction.type,
+      );
+      const withdrawalEvidence =
+        'withdrawalEvidence' in sourceSnapshot ? sourceSnapshot.withdrawalEvidence : null;
+      const withdrawalRecommendationEvidence =
+        source.type === 'withdrawal' && withdrawalEvidence
+          ? bankReconciliationWithdrawalRecommendationEvidence(bankTransaction, withdrawalEvidence)
+          : null;
       const sourceAmount = sourceSnapshot.amount;
       if (Math.abs(input.amount) > Math.abs(sourceAmount)) {
         throw new BadRequestException('Match amount exceeds source amount');
@@ -8675,6 +12560,9 @@ export class AdminService {
         data: {
           bankTransactionId,
           [source.field]: source.id,
+          ...(source.accountingJournalEntryId
+            ? { accountingJournalEntryId: source.accountingJournalEntryId }
+            : {}),
           amount: input.amount,
           currency,
           status: BankReconciliationStatus.MATCHED,
@@ -8684,6 +12572,15 @@ export class AdminService {
           metadata: {
             manual: true,
             sourceType: source.type,
+            ...(source.accountingJournalEntryId
+              ? { accountingJournalEntryId: source.accountingJournalEntryId }
+              : {}),
+            ...(source.partnerBankDepositRequestId
+              ? { partnerBankDepositRequestId: source.partnerBankDepositRequestId }
+              : {}),
+            ...(withdrawalRecommendationEvidence
+              ? { withdrawalRecommendationEvidence }
+              : {}),
           },
         } as Prisma.BankReconciliationMatchUncheckedCreateInput,
       });
@@ -8726,6 +12623,15 @@ export class AdminService {
             notes: normalizeNullable(input.notes),
             [source.field]: source.id,
             sourceType: source.type,
+            ...(source.accountingJournalEntryId
+              ? { accountingJournalEntryId: source.accountingJournalEntryId }
+              : {}),
+            ...(source.partnerBankDepositRequestId
+              ? { partnerBankDepositRequestId: source.partnerBankDepositRequestId }
+              : {}),
+            ...(withdrawalRecommendationEvidence
+              ? { withdrawalRecommendationEvidence }
+              : {}),
             ...(source.type === 'payment-clearing'
               ? {
                   paymentClearingStatusBefore: sourceSnapshot.status,
@@ -8849,21 +12755,195 @@ export class AdminService {
     });
   }
 
+  async ignoreCompanyBankTransaction(
+    actorId: string,
+    bankTransactionId: string,
+    input: IgnoreCompanyBankTransactionDto,
+  ) {
+    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
+      input.approvalAdminId,
+      actorId,
+      'Bank transaction ignore',
+    );
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Bank transaction ignore');
+
+    return this.prisma.$transaction(async (tx) => {
+      const bankTransaction = await tx.companyBankTransaction.findUnique({
+        where: { id: bankTransactionId },
+        select: {
+          id: true,
+          amount: true,
+          currency: true,
+          metadata: true,
+          status: true,
+        },
+      });
+      if (!bankTransaction) {
+        throw new NotFoundException('Bank transaction not found');
+      }
+      if (bankTransaction.status !== BankReconciliationStatus.UNMATCHED) {
+        throw new BadRequestException('Only an unmatched bank transaction can be ignored');
+      }
+
+      const activeMatchCount = await tx.bankReconciliationMatch.count({
+        where: {
+          bankTransactionId,
+          status: { in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED] },
+        },
+      });
+      if (activeMatchCount > 0) {
+        throw new BadRequestException('Reverse active reconciliation matches before ignoring this bank transaction');
+      }
+
+      const reason = input.reason.trim();
+      const ignoredAt = new Date();
+      const updatedBankTransaction = await tx.companyBankTransaction.update({
+        where: { id: bankTransactionId },
+        data: {
+          status: BankReconciliationStatus.IGNORED,
+          metadata: toJson({
+            ...(adminJsonObject(bankTransaction.metadata) ?? {}),
+            ignoredAt: ignoredAt.toISOString(),
+            ignoredByAdminId: actorId,
+            ignoreApprovedByAdminId: approvalAdminId,
+            ignoreReason: reason,
+          }),
+        },
+        select: adminCompanyBankTransactionListSelect,
+      });
+      const auditLog = await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'bank_reconciliation.transaction.ignore',
+          target: `bank_transaction:${bankTransactionId}`,
+          metadata: {
+            amount: bankTransaction.amount,
+            approvalAdminId,
+            bankStatusBefore: bankTransaction.status,
+            bankStatusAfter: updatedBankTransaction.status,
+            bankTransactionId,
+            currency: bankTransaction.currency,
+            ignoredAt: ignoredAt.toISOString(),
+            reason,
+          },
+        },
+      });
+
+      return { auditLog, bankTransaction: updatedBankTransaction };
+    });
+  }
+
+  private async resolveBankReconciliationSource(
+    tx: Prisma.TransactionClient,
+    source: AdminBankReconciliationMatchSource,
+  ): Promise<AdminBankReconciliationMatchSource> {
+    if (source.type === 'withdrawal') {
+      const request = await tx.providerWalletWithdrawalRequest.findUnique({
+        where: { id: source.id },
+        select: { id: true, status: true },
+      });
+      if (!request) {
+        throw new NotFoundException('Provider withdrawal request not found');
+      }
+      if (request.status !== ProviderWalletWithdrawalRequestStatus.PAID) {
+        throw new BadRequestException('Only a paid Partner withdrawal can be reconciled');
+      }
+
+      const bankCashEntry = await tx.accountingJournalEntry.findFirst({
+        where: {
+          side: AccountingJournalEntrySide.CREDIT,
+          accountCode: 'company_bank_cash',
+          batch: {
+            sourceType: AccountingJournalSourceType.PROVIDER_WITHDRAWAL,
+            sourceId: request.id,
+          },
+        },
+        select: { id: true },
+      });
+      if (!bankCashEntry) {
+        throw new ConflictException('Provider withdrawal paid bank cash journal entry is missing');
+      }
+
+      return { ...source, accountingJournalEntryId: bankCashEntry.id };
+    }
+
+    if (source.type !== 'partner-bank-deposit') {
+      return source;
+    }
+
+    const request = await tx.partnerBankDepositRequest.findUnique({
+      where: { id: source.id },
+      select: { id: true, status: true, journalBatchId: true },
+    });
+    if (!request) {
+      throw new NotFoundException('Partner bank deposit request not found');
+    }
+    if (request.status !== PartnerBankDepositRequestStatus.EXECUTED) {
+      throw new BadRequestException('Only an executed Partner bank deposit can be reconciled');
+    }
+    if (!request.journalBatchId) {
+      throw new ConflictException('Partner bank deposit journal evidence is incomplete');
+    }
+
+    const bankCashEntry = await tx.accountingJournalEntry.findFirst({
+      where: {
+        batchId: request.journalBatchId,
+        side: AccountingJournalEntrySide.DEBIT,
+        accountCode: 'company_bank_cash',
+      },
+      select: { id: true },
+    });
+    if (!bankCashEntry) {
+      throw new ConflictException('Partner bank deposit bank cash journal entry is missing');
+    }
+
+    return {
+      field: 'accountingJournalEntryId',
+      id: bankCashEntry.id,
+      key: 'partner-bank-deposit',
+      type: 'partner-bank-deposit',
+      partnerBankDepositRequestId: request.id,
+    };
+  }
+
   private async validateBankReconciliationSource(
     tx: Prisma.TransactionClient,
     source: AdminBankReconciliationMatchSource,
     currency: string,
+    bankTransactionType: CompanyBankTransactionType,
   ) {
-    if (source.type === 'accounting-journal') {
+    if (source.type === 'accounting-journal' || source.type === 'partner-bank-deposit') {
       const row = await tx.accountingJournalEntry.findUnique({
         where: { id: source.id },
-        select: { amount: true, currency: true },
+        select: {
+          amount: true,
+          currency: true,
+          side: true,
+          accountCode: true,
+          batch: { select: { sourceType: true } },
+        },
       });
       if (!row) {
         throw new NotFoundException('Accounting journal entry not found');
       }
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal accounting journal entry currency');
+      }
+      if (row.batch.sourceType === AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT) {
+        if (bankTransactionType !== CompanyBankTransactionType.INFLOW) {
+          throw new BadRequestException('Partner bank deposit journals can only match bank inflows');
+        }
+        if (row.side !== AccountingJournalEntrySide.DEBIT || row.accountCode !== 'company_bank_cash') {
+          throw new BadRequestException('Partner bank deposits must match the company bank cash debit entry');
+        }
+      }
+      if (row.batch.sourceType === AccountingJournalSourceType.PROVIDER_WITHDRAWAL) {
+        if (bankTransactionType !== CompanyBankTransactionType.OUTFLOW) {
+          throw new BadRequestException('Partner withdrawal journals can only match bank outflows');
+        }
+        if (row.side !== AccountingJournalEntrySide.CREDIT || row.accountCode !== 'company_bank_cash') {
+          throw new BadRequestException('Partner withdrawals must match the company bank cash credit entry');
+        }
       }
       return { amount: row.amount };
     }
@@ -8884,17 +12964,38 @@ export class AdminService {
       return { amount: row.amount, status: row.status };
     }
     if (source.type === 'withdrawal') {
+      if (bankTransactionType !== CompanyBankTransactionType.OUTFLOW) {
+        throw new BadRequestException('Partner withdrawals can only match bank outflows');
+      }
       const row = await tx.providerWalletWithdrawalRequest.findUnique({
         where: { id: source.id },
-        select: { amount: true, currency: true },
+        select: {
+          amount: true,
+          createdAt: true,
+          currency: true,
+          paidAt: true,
+          status: true,
+          transferRef: true,
+        },
       });
       if (!row) {
         throw new NotFoundException('Provider withdrawal request not found');
       }
+      if (row.status !== ProviderWalletWithdrawalRequestStatus.PAID) {
+        throw new BadRequestException('Only a paid Partner withdrawal can be reconciled');
+      }
       if (row.currency !== currency) {
         throw new BadRequestException('Match currency must equal withdrawal currency');
       }
-      return { amount: row.amount };
+      return {
+        amount: row.amount,
+        withdrawalEvidence: {
+          amount: row.amount,
+          createdAt: row.createdAt,
+          paidAt: row.paidAt,
+          transferRef: row.transferRef,
+        },
+      };
     }
 
     const row = await tx.providerPayoutBatch.findUnique({
@@ -9136,8 +13237,23 @@ export class AdminService {
           partnerPayoutAmount: true,
         },
       }),
-      this.prisma.$queryRaw<Array<{ partnerCountWithRevenue: bigint | number | null }>>(Prisma.sql`
-          SELECT COUNT(DISTINCT "providerProfileId")::bigint AS "partnerCountWithRevenue"
+      this.prisma.$queryRaw<
+        Array<{
+          partnerCountWithRevenue: bigint | number | null;
+          partnerDepositReconciliationOpenAmount: bigint | number | null;
+          partnerDepositReconciliationOpenCount: bigint | number | null;
+          paymentFeeReviewFlagCount: bigint | number | null;
+        }>
+      >(Prisma.sql`
+          WITH ${adminPartnerBankDepositReconciliationCteSql({ period })}
+          SELECT
+            COUNT(DISTINCT "providerProfileId")::bigint AS "partnerCountWithRevenue",
+            COUNT(*) FILTER (
+              WHERE "paymentFeePolicyVersionId" IS NULL
+                OR COALESCE("paymentFeeRuleSnapshot" ? 'reason', false)
+            )::bigint AS "paymentFeeReviewFlagCount",
+            (SELECT COUNT(*)::bigint FROM "openPartnerBankDeposits") AS "partnerDepositReconciliationOpenCount",
+            (SELECT COALESCE(SUM("remainingAmount"), 0)::bigint FROM "openPartnerBankDeposits") AS "partnerDepositReconciliationOpenAmount"
           FROM "BookingSettlementSnapshot"
           ${adminPartnerWithholdingTaxSqlWhere(period)}
         `),
@@ -9201,16 +13317,20 @@ export class AdminService {
       partnerFundedCouponAmountTotal: numberValue(couponSummary?.partnerFundedCouponAmount),
       platformFeeDiscountAmountTotal: numberValue(couponSummary?.platformFeeDiscountAmount),
       couponReviewFlagCount: numberValue(couponSummary?.couponReviewFlagCount),
+      paymentFeeReviewFlagCount: numberValue(providerCount?.paymentFeeReviewFlagCount),
+      partnerDepositReconciliationOpenCount: numberValue(
+        providerCount?.partnerDepositReconciliationOpenCount,
+      ),
+      partnerDepositReconciliationOpenAmount: numberValue(
+        providerCount?.partnerDepositReconciliationOpenAmount,
+      ),
       cashDebtTotal: (cashTotals._sum.platformFeeGross ?? 0) + (cashTotals._sum.partnerWithholdingTotal ?? 0),
       nonCashPartnerPayoutTotal: nonCashTotals._sum.partnerPayoutAmount ?? 0,
       partnerCountWithRevenue: numberValue(providerCount?.partnerCountWithRevenue),
       openTaxCount,
       paidTaxCount,
       reconciliationDelta:
-        customerPaymentAmountTotal -
-        partnerPayoutTotal -
-        partnerWithholdingTotal -
-        platformFeeGrossTotal,
+        customerPaymentAmountTotal - partnerPayoutTotal - partnerWithholdingTotal - platformFeeGrossTotal,
       netRevenueDelta: platformFeeGrossTotal - companyOutputVatTotal - platformFeeNetRevenueTotal,
       declaredAt: closing?.declaredAt ?? null,
       paidAt: closing?.paidAt ?? null,
@@ -9247,6 +13367,8 @@ export class AdminService {
 
     const summary = await this.monthlyTaxClosingSummary({ period });
     assertMonthlyTaxClosingReconciliationIsBalanced(summary, status);
+    assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(summary, status);
+    assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(summary, status);
     await assertMonthlyTaxClosingPostedJournalsAreBalanced(this.prisma, period, status);
     const now = new Date();
     const statusData = monthlyTaxClosingStatusMutationData(status, actorId, remittance?.paidAtDate ?? now);
@@ -9408,17 +13530,9 @@ export class AdminService {
   async paymentFeeSummary(options: AdminMonthlyTaxClosingQuery = {}) {
     const period = adminPartnerWithholdingTaxPeriod(options.period);
     const where = { monthlyPeriod: period };
-    const [totals, methodGroups, payerGroups, treatmentGroups] = await Promise.all([
+    const generatedAt = new Date();
+    const [totals, payerGroups, treatmentGroups, activePolicy] = await Promise.all([
       this.prisma.bookingSettlementSnapshot.aggregate({
-        where,
-        _count: { _all: true },
-        _sum: {
-          customerPaymentAmount: true,
-          paymentProcessingFee: true,
-        },
-      }),
-      this.prisma.bookingSettlementSnapshot.groupBy({
-        by: ['paymentMethod'],
         where,
         _count: { _all: true },
         _sum: {
@@ -9444,7 +13558,113 @@ export class AdminService {
           paymentProcessingFee: true,
         },
       }),
+      this.prisma.paymentFeePolicyVersion.findFirst({
+        where: {
+          status: TaxPolicyStatus.ACTIVE,
+          effectiveFrom: { lte: generatedAt },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: generatedAt } }],
+        },
+        orderBy: { effectiveFrom: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          effectiveFrom: true,
+          effectiveTo: true,
+          rules: {
+            where: { active: true },
+            orderBy: [{ method: 'asc' }, { createdAt: 'desc' }],
+            select: {
+              id: true,
+              method: true,
+              feeType: true,
+              rateBps: true,
+              fixedAmount: true,
+              payer: true,
+              treatment: true,
+            },
+          },
+        },
+      }),
     ]);
+    const configuredMethods = Array.from(new Set(activePolicy?.rules.map((rule) => rule.method) ?? []));
+    const missingMethods = Object.values(PaymentMethod).filter(
+      (method) => !configuredMethods.includes(method),
+    );
+    const remediationReadiness = adminPaymentFeeRemediationReadiness(activePolicy, period);
+    const evidenceCondition = adminPaymentFeeEvidenceSqlCondition();
+    const expectedFeeExpression = adminPaymentFeeExpectedAmountSql(activePolicy?.rules ?? []);
+    const methodGroups = await this.prisma.$queryRaw<AdminPaymentFeeMethodEvidenceGroupRow[]>(Prisma.sql`
+      SELECT
+        "paymentMethod"::text AS "paymentMethod",
+        COUNT(*)::bigint AS "settlementCount",
+        COUNT(*) FILTER (WHERE ${evidenceCondition})::bigint AS "evidenceReviewCount",
+        COALESCE(SUM("customerPaymentAmount"), 0)::bigint AS "customerPaymentAmountTotal",
+        COALESCE(
+          SUM(CASE WHEN ${evidenceCondition} THEN "customerPaymentAmount" ELSE 0 END),
+          0
+        )::bigint AS "evidenceCustomerPaymentAmountTotal",
+        COALESCE(SUM("paymentProcessingFee"), 0)::bigint AS "paymentProcessingFeeTotal",
+        COALESCE(
+          SUM(CASE WHEN ${evidenceCondition} THEN "paymentProcessingFee" ELSE 0 END),
+          0
+        )::bigint AS "evidenceRecordedFeeTotal",
+        COALESCE(
+          SUM(CASE WHEN ${evidenceCondition} THEN ${expectedFeeExpression} ELSE 0 END),
+          0
+        )::bigint AS "remediationExpectedFeeTotal"
+      FROM "BookingSettlementSnapshot"
+      WHERE "monthlyPeriod" = ${period}
+      GROUP BY "paymentMethod"
+      ORDER BY "paymentMethod" ASC
+    `);
+    const byPaymentMethod = methodGroups.map((group) => {
+      const evidenceRecordedFeeTotal = Number(group.evidenceRecordedFeeTotal ?? 0);
+      const remediationExpectedFeeTotal = remediationReadiness.ready
+        ? Number(group.remediationExpectedFeeTotal ?? 0)
+        : null;
+      return {
+        paymentMethod: group.paymentMethod as PaymentMethod,
+        settlementCount: Number(group.settlementCount ?? 0),
+        evidenceReviewCount: Number(group.evidenceReviewCount ?? 0),
+        customerPaymentAmountTotal: Number(group.customerPaymentAmountTotal ?? 0),
+        evidenceCustomerPaymentAmountTotal: Number(group.evidenceCustomerPaymentAmountTotal ?? 0),
+        paymentProcessingFeeTotal: Number(group.paymentProcessingFeeTotal ?? 0),
+        evidenceRecordedFeeTotal,
+        remediationExpectedFeeTotal,
+        remediationDelta:
+          remediationExpectedFeeTotal === null
+            ? null
+            : remediationExpectedFeeTotal - evidenceRecordedFeeTotal,
+      };
+    });
+    const remediationPreview = byPaymentMethod.reduce(
+      (preview, group) => ({
+        ...preview,
+        evidenceReviewCount: preview.evidenceReviewCount + group.evidenceReviewCount,
+        evidenceCustomerPaymentAmountTotal:
+          preview.evidenceCustomerPaymentAmountTotal + group.evidenceCustomerPaymentAmountTotal,
+        recordedFeeTotal: preview.recordedFeeTotal + group.evidenceRecordedFeeTotal,
+        expectedFeeTotal:
+          preview.expectedFeeTotal === null || group.remediationExpectedFeeTotal === null
+            ? null
+            : preview.expectedFeeTotal + group.remediationExpectedFeeTotal,
+        delta:
+          preview.delta === null || group.remediationDelta === null
+            ? null
+            : preview.delta + group.remediationDelta,
+      }),
+      {
+        status: remediationReadiness.ready ? ('READY' as const) : ('BLOCKED' as const),
+        policyVersionId: activePolicy?.id ?? null,
+        blockers: remediationReadiness.blockers,
+        evidenceReviewCount: 0,
+        evidenceCustomerPaymentAmountTotal: 0,
+        recordedFeeTotal: 0,
+        expectedFeeTotal: remediationReadiness.ready ? 0 : null,
+        delta: remediationReadiness.ready ? 0 : null,
+      },
+    );
 
     return {
       period,
@@ -9452,12 +13672,7 @@ export class AdminService {
       settlementCount: totals._count._all,
       customerPaymentAmountTotal: totals._sum.customerPaymentAmount ?? 0,
       paymentProcessingFeeTotal: totals._sum.paymentProcessingFee ?? 0,
-      byPaymentMethod: methodGroups.map((group) => ({
-        paymentMethod: group.paymentMethod,
-        settlementCount: group._count._all,
-        customerPaymentAmountTotal: group._sum.customerPaymentAmount ?? 0,
-        paymentProcessingFeeTotal: group._sum.paymentProcessingFee ?? 0,
-      })),
+      byPaymentMethod,
       byPayer: payerGroups.map((group) => ({
         paymentFeePayer: group.paymentFeePayer,
         settlementCount: group._count._all,
@@ -9470,7 +13685,716 @@ export class AdminService {
         customerPaymentAmountTotal: group._sum.customerPaymentAmount ?? 0,
         paymentProcessingFeeTotal: group._sum.paymentProcessingFee ?? 0,
       })),
+      policyReadiness: {
+        activePolicy,
+        configuredMethods,
+        missingMethods,
+        status: !activePolicy
+          ? ('MISSING_ACTIVE_POLICY' as const)
+          : missingMethods.length
+            ? ('MISSING_METHOD_RULES' as const)
+            : ('READY' as const),
+      },
+      remediationPreview,
     };
+  }
+
+  listPaymentFeePolicies(options: { take?: number | string | null } = {}) {
+    return this.prisma.paymentFeePolicyVersion.findMany({
+      take: adminPaymentFeePolicyListTake(options.take),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: adminPaymentFeePolicyVersionSelect,
+    });
+  }
+
+  async financeApprovalQueue(options: AdminFinanceApprovalQueueQuery = {}) {
+    const take = adminBoundedPositiveInteger(
+      options.take,
+      ADMIN_FINANCE_APPROVAL_QUEUE_DEFAULT_LIMIT,
+      ADMIN_FINANCE_APPROVAL_QUEUE_MAX_LIMIT,
+    );
+    const walletEvidenceFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const withdrawalStatuses = [...FINANCE_APPROVAL_QUEUE_WITHDRAWAL_STATUSES];
+    const [
+      policyRequests,
+      withdrawalRequests,
+      withdrawalGroups,
+      customerWalletCount,
+      partnerWalletCount,
+      walletAdjustmentRequests,
+      partnerBankDepositRequests,
+      partnerBankDepositCompletedLast7dCount,
+    ] =
+      await Promise.all([
+        this.prisma.$queryRaw<AdminFinanceApprovalPolicyRequestRow[]>(Prisma.sql`
+          WITH latest_payment_fee_approval AS (
+            SELECT DISTINCT ON ("target")
+              "id",
+              "action",
+              "target",
+              "metadata",
+              "createdAt",
+              "actorId"
+            FROM "AdminAuditLog"
+            WHERE "action" IN (${Prisma.join(paymentFeePolicyApprovalActions)})
+              AND "target" LIKE 'payment_fee_policy:%'
+            ORDER BY "target", "createdAt" DESC, "id" DESC
+          )
+          SELECT
+            latest."id" AS "requestId",
+            latest."metadata",
+            latest."createdAt" AS "requestedAt",
+            latest."actorId",
+            actor."email" AS "actorEmail",
+            actor."fullName" AS "actorFullName",
+            policy."id" AS "policyId",
+            policy."name" AS "policyName",
+            policy."effectiveFrom",
+            policy."updatedAt" AS "policyUpdatedAt",
+            COUNT(*) OVER ()::bigint AS "totalCount"
+          FROM latest_payment_fee_approval latest
+          JOIN "PaymentFeePolicyVersion" policy
+            ON policy."id" = split_part(latest."target", ':', 2)
+           AND policy."status" = ${TaxPolicyStatus.DRAFT}::"TaxPolicyStatus"
+          JOIN "User" actor ON actor."id" = latest."actorId"
+          WHERE latest."action" = 'payment_fee_policy.approval_requested'
+          ORDER BY latest."createdAt" DESC, latest."id" DESC
+          LIMIT ${take}
+        `),
+        this.prisma.providerWalletWithdrawalRequest.findMany({
+          where: { status: { in: withdrawalStatuses } },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take,
+          select: {
+            id: true,
+            providerProfileId: true,
+            bankAccountId: true,
+            amount: true,
+            currency: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            providerProfile: {
+              select: {
+                displayName: true,
+                user: { select: { fullName: true } },
+              },
+            },
+          },
+        }),
+        this.prisma.providerWalletWithdrawalRequest.groupBy({
+          by: ['status'],
+          where: { status: { in: withdrawalStatuses } },
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+        this.prisma.customerWalletLedgerEntry.count({
+          where: {
+            ...manualWalletAdjustmentCustomerWhere(null),
+            createdAt: { gte: walletEvidenceFrom },
+          },
+        }),
+        this.prisma.providerWalletLedgerEntry.count({
+          where: {
+            ...manualWalletAdjustmentProviderWhere(null),
+            createdAt: { gte: walletEvidenceFrom },
+          },
+        }),
+        this.prisma.$queryRaw<AdminFinanceApprovalWalletAdjustmentRequestRow[]>(Prisma.sql`
+          SELECT
+            request."id",
+            request."ownerType",
+            request."ownerId",
+            request."direction",
+            request."adjustmentType",
+            request."amount",
+            request."currency",
+            request."reason",
+            request."monthlyPeriod",
+            request."attachmentUrl",
+            request."requestedBeforeBalance",
+            request."requestedAfterBalance",
+            request."requiresAttachment",
+            request."requestedByAdminId",
+            request."createdAt",
+            requester."fullName" AS "requesterFullName",
+            requester."email" AS "requesterEmail",
+            COALESCE(customer_user."fullName", provider_profile."displayName", provider_user."fullName", request."ownerId")
+              AS "ownerName",
+            COUNT(*) OVER ()::bigint AS "totalCount"
+          FROM "ManualWalletAdjustmentRequest" request
+          JOIN "User" requester ON requester."id" = request."requestedByAdminId"
+          LEFT JOIN "CustomerProfile" customer_profile
+            ON request."ownerType" = 'CUSTOMER' AND customer_profile."id" = request."ownerId"
+          LEFT JOIN "User" customer_user ON customer_user."id" = customer_profile."userId"
+          LEFT JOIN "ProviderProfile" provider_profile
+            ON request."ownerType" = 'PARTNER' AND provider_profile."id" = request."ownerId"
+          LEFT JOIN "User" provider_user ON provider_user."id" = provider_profile."userId"
+          WHERE request."status" = ${ManualWalletAdjustmentRequestStatus.REQUESTED}::"ManualWalletAdjustmentRequestStatus"
+          ORDER BY request."createdAt" DESC, request."id" DESC
+          LIMIT ${take}
+        `),
+        this.prisma.$queryRaw<AdminFinanceApprovalPartnerBankDepositRequestRow[]>(Prisma.sql`
+          SELECT
+            request."id",
+            request."providerProfileId",
+            request."amount",
+            request."currency",
+            request."bankTransactionId",
+            request."depositDate",
+            request."bankAccount",
+            request."attachmentFileId",
+            request."attachmentUrl",
+            request."notes",
+            request."requestedBeforeBalance",
+            request."requestedAfterBalance",
+            request."requestedReceivableRecovery",
+            request."requestedWalletLiabilityIncrease",
+            request."requestedByAdminId",
+            request."createdAt",
+            requester."fullName" AS "requesterFullName",
+            requester."email" AS "requesterEmail",
+            COALESCE(provider."displayName", provider_user."fullName", request."providerProfileId")
+              AS "partnerName",
+            COUNT(*) OVER ()::bigint AS "totalCount"
+          FROM "PartnerBankDepositRequest" request
+          JOIN "User" requester ON requester."id" = request."requestedByAdminId"
+          LEFT JOIN "ProviderProfile" provider ON provider."id" = request."providerProfileId"
+          LEFT JOIN "User" provider_user ON provider_user."id" = provider."userId"
+          WHERE request."status" = ${PartnerBankDepositRequestStatus.REQUESTED}::"PartnerBankDepositRequestStatus"
+          ORDER BY request."createdAt" DESC, request."id" DESC
+          LIMIT ${take}
+        `),
+        this.prisma.partnerBankDepositRequest.count({
+          where: {
+            status: PartnerBankDepositRequestStatus.EXECUTED,
+            executedAt: { gte: walletEvidenceFrom },
+          },
+        }),
+      ]);
+
+    const withdrawalStats = new Map(
+      withdrawalGroups.map((group) => [
+        group.status,
+        { amount: group._sum.amount ?? 0, count: group._count._all },
+      ]),
+    );
+    const withdrawalCount = (status: ProviderWalletWithdrawalRequestStatus) =>
+      withdrawalStats.get(status)?.count ?? 0;
+    const withdrawalOpenCount = withdrawalGroups.reduce((total, group) => total + group._count._all, 0);
+    const withdrawalOpenAmount = withdrawalGroups.reduce(
+      (total, group) => total + (group._sum.amount ?? 0),
+      0,
+    );
+
+    return {
+      generatedAt: new Date().toISOString(),
+      limit: take,
+      summary: {
+        paymentFeePolicyPendingCount: numberValue(policyRequests[0]?.totalCount),
+        withdrawalOpenCount,
+        withdrawalRequestedCount: withdrawalCount(ProviderWalletWithdrawalRequestStatus.REQUESTED),
+        withdrawalReviewRequiredCount: withdrawalCount(
+          ProviderWalletWithdrawalRequestStatus.REVIEW_REQUIRED,
+        ),
+        withdrawalBankTransferPendingCount: withdrawalCount(
+          ProviderWalletWithdrawalRequestStatus.BANK_TRANSFER_PENDING,
+        ),
+        withdrawalOpenAmount,
+        withdrawalCurrency: 'VND',
+        walletAdjustmentLast7dCount: customerWalletCount + partnerWalletCount,
+        walletAdjustmentPendingCount: numberValue(walletAdjustmentRequests[0]?.totalCount),
+        partnerBankDepositPendingCount: numberValue(partnerBankDepositRequests[0]?.totalCount),
+        partnerBankDepositLast7dCount: partnerBankDepositCompletedLast7dCount,
+      },
+      paymentFeePolicyRequests: policyRequests.map((row) => {
+        const metadata = paymentFeePolicyApprovalMetadata(row.metadata);
+        return {
+          requestId: row.requestId,
+          policyId: row.policyId,
+          policyName: row.policyName,
+          effectiveFrom: row.effectiveFrom,
+          policyUpdatedAt: row.policyUpdatedAt,
+          reason: metadata.reason ?? null,
+          requestedAt: row.requestedAt,
+          requestedBy: metadata.requestedBy ?? {
+            id: row.actorId,
+            email: row.actorEmail,
+            fullName: row.actorFullName,
+          },
+        };
+      }),
+      withdrawalRequests: withdrawalRequests.map((request) => ({
+        id: request.id,
+        providerProfileId: request.providerProfileId,
+        partnerName:
+          request.providerProfile.displayName ?? request.providerProfile.user.fullName ?? request.providerProfileId,
+        amount: request.amount,
+        currency: request.currency,
+        status: request.status,
+        hasBankAccount: Boolean(request.bankAccountId),
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+      })),
+      walletAdjustmentRequests: walletAdjustmentRequests.map((request) => ({
+        id: request.id,
+        ownerType: request.ownerType,
+        ownerId: request.ownerId,
+        ownerName: request.ownerName,
+        direction: request.direction,
+        adjustmentType: request.adjustmentType,
+        amount: request.amount,
+        currency: request.currency,
+        reason: request.reason,
+        monthlyPeriod: request.monthlyPeriod,
+        attachmentUrl: request.attachmentUrl,
+        requestedBeforeBalance: request.requestedBeforeBalance,
+        requestedAfterBalance: request.requestedAfterBalance,
+        requiresAttachment: request.requiresAttachment,
+        createdAt: request.createdAt,
+        requestedBy: {
+          id: request.requestedByAdminId,
+          fullName: request.requesterFullName,
+          email: request.requesterEmail,
+        },
+      })),
+      walletAdjustmentEvidence: {
+        last7dCount: customerWalletCount + partnerWalletCount,
+        pendingQueueSupported: true,
+      },
+      partnerBankDepositRequests: partnerBankDepositRequests.map((request) => ({
+        id: request.id,
+        providerProfileId: request.providerProfileId,
+        partnerName: request.partnerName,
+        amount: request.amount,
+        currency: request.currency,
+        bankTransactionId: request.bankTransactionId,
+        depositDate: request.depositDate,
+        bankAccount: request.bankAccount,
+        attachmentFileId: request.attachmentFileId,
+        attachmentUrl: request.attachmentUrl,
+        notes: request.notes,
+        requestedBeforeBalance: request.requestedBeforeBalance,
+        requestedAfterBalance: request.requestedAfterBalance,
+        requestedReceivableRecovery: request.requestedReceivableRecovery,
+        requestedWalletLiabilityIncrease: request.requestedWalletLiabilityIncrease,
+        createdAt: request.createdAt,
+        requestedBy: {
+          id: request.requestedByAdminId,
+          fullName: request.requesterFullName,
+          email: request.requesterEmail,
+        },
+      })),
+    };
+  }
+
+  async paymentFeePolicyPreflight(
+    policyId: string,
+    options: { sampleAmount?: number | string | null } = {},
+  ) {
+    const policy = await this.prisma.paymentFeePolicyVersion.findUnique({
+      where: { id: policyId },
+      select: adminPaymentFeePolicyVersionSelect,
+    });
+    if (!policy) {
+      throw new NotFoundException(`Payment fee policy ${policyId} was not found`);
+    }
+
+    return paymentFeePolicyPreflightResult(policy, adminPaymentFeePolicySampleAmount(options.sampleAmount));
+  }
+
+  async paymentFeePolicyApproval(policyId: string) {
+    const policy = await this.prisma.paymentFeePolicyVersion.findUnique({
+      where: { id: policyId },
+      select: adminPaymentFeePolicyVersionSelect,
+    });
+    if (!policy) {
+      throw new NotFoundException(`Payment fee policy ${policyId} was not found`);
+    }
+    const event = await this.prisma.adminAuditLog.findFirst({
+      where: {
+        action: { in: [...paymentFeePolicyApprovalActions] },
+        target: `payment_fee_policy:${policyId}`,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: adminPaymentFeePolicyApprovalRequestSelect,
+    });
+
+    return paymentFeePolicyApprovalView(policy, event);
+  }
+
+  async createPaymentFeePolicy(
+    actorId: string,
+    input: {
+      name: string;
+      effectiveFrom: string;
+      effectiveTo?: string | null;
+      notes?: string | null;
+    },
+  ) {
+    const data = normalizePaymentFeePolicyInput(input);
+
+    return this.prisma.$transaction(async (tx) => {
+      const policy = await tx.paymentFeePolicyVersion.create({
+        data: {
+          ...data,
+          status: TaxPolicyStatus.DRAFT,
+          createdById: actorId,
+        },
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'payment_fee_policy.create_draft',
+          target: `payment_fee_policy:${policy.id}`,
+          metadata: {
+            effectiveFrom: policy.effectiveFrom.toISOString(),
+            effectiveTo: policy.effectiveTo?.toISOString() ?? null,
+            name: policy.name,
+            status: policy.status,
+          },
+        },
+      });
+      return policy;
+    });
+  }
+
+  async updatePaymentFeePolicy(
+    actorId: string,
+    policyId: string,
+    input: {
+      name?: string;
+      effectiveFrom?: string;
+      effectiveTo?: string | null;
+      notes?: string | null;
+    },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.paymentFeePolicyVersion.findUnique({
+        where: { id: policyId },
+        select: {
+          id: true,
+          status: true,
+          name: true,
+          effectiveFrom: true,
+          effectiveTo: true,
+          notes: true,
+        },
+      });
+      assertPaymentFeeDraft(existing, policyId);
+      const data = normalizePaymentFeePolicyInput({
+        name: input.name ?? existing.name,
+        effectiveFrom: input.effectiveFrom ?? existing.effectiveFrom.toISOString(),
+        effectiveTo: Object.prototype.hasOwnProperty.call(input, 'effectiveTo')
+          ? input.effectiveTo
+          : existing.effectiveTo?.toISOString() ?? null,
+        notes: Object.prototype.hasOwnProperty.call(input, 'notes') ? input.notes : existing.notes,
+      });
+      const policy = await tx.paymentFeePolicyVersion.update({
+        where: { id: policyId },
+        data,
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'payment_fee_policy.update_draft',
+          target: `payment_fee_policy:${policy.id}`,
+          metadata: {
+            effectiveFrom: policy.effectiveFrom.toISOString(),
+            effectiveTo: policy.effectiveTo?.toISOString() ?? null,
+            name: policy.name,
+          },
+        },
+      });
+      return policy;
+    });
+  }
+
+  async upsertPaymentFeeRule(
+    actorId: string,
+    policyId: string,
+    input: {
+      method: PaymentMethod;
+      feeType: PaymentFeeRuleType;
+      rateBps: number;
+      fixedAmount: number;
+      payer: PaymentFeePayer;
+      treatment: PaymentFeeTreatment;
+    },
+  ) {
+    assertPaymentFeeRuleValues(input);
+
+    return this.prisma.$transaction(async (tx) => {
+      const policy = await tx.paymentFeePolicyVersion.findUnique({
+        where: { id: policyId },
+        select: { id: true, status: true },
+      });
+      assertPaymentFeeDraft(policy, policyId);
+      const existingRule = await tx.paymentFeeRule.findFirst({
+        where: { policyVersionId: policyId, method: input.method, active: true },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      });
+      const rule = existingRule
+        ? await tx.paymentFeeRule.update({
+            where: { id: existingRule.id },
+            data: input,
+          })
+        : await tx.paymentFeeRule.create({
+            data: { ...input, policyVersionId: policyId, active: true },
+          });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'payment_fee_policy.rule_upsert',
+          target: `payment_fee_policy:${policyId}`,
+          metadata: {
+            feeType: rule.feeType,
+            fixedAmount: rule.fixedAmount,
+            method: rule.method,
+            payer: rule.payer,
+            rateBps: rule.rateBps,
+            ruleId: rule.id,
+            treatment: rule.treatment,
+          },
+        },
+      });
+      return rule;
+    });
+  }
+
+  async requestPaymentFeePolicyApproval(
+    actorId: string,
+    policyId: string,
+    input: { reason: string },
+    operatorIdentity?: string,
+  ) {
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, operatorIdentity);
+    if (!operator) {
+      throw new ForbiddenException('Payment fee policy approval requests require a signed-in admin operator');
+    }
+    const reason = normalizeAuditReason(input.reason);
+
+    return this.prisma.$transaction(async (tx) => {
+      const policy = await tx.paymentFeePolicyVersion.findUnique({
+        where: { id: policyId },
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      assertPaymentFeeDraft(policy, policyId);
+      assertPaymentFeePolicyReadyForActivation(policy);
+      const policyFingerprint = paymentFeePolicyFingerprint(policy);
+      const latestEvent = await tx.adminAuditLog.findFirst({
+        where: {
+          action: { in: [...paymentFeePolicyApprovalActions] },
+          target: `payment_fee_policy:${policyId}`,
+        },
+        orderBy: { createdAt: 'desc' },
+        select: adminPaymentFeePolicyApprovalRequestSelect,
+      });
+      if (
+        latestEvent?.action === 'payment_fee_policy.approval_requested' &&
+        paymentFeePolicyApprovalMetadata(latestEvent.metadata).policyFingerprint === policyFingerprint
+      ) {
+        throw new BadRequestException('Payment fee policy approval is already requested for this draft revision');
+      }
+      const request = await tx.adminAuditLog.create({
+        data: {
+          actorId: operator.id,
+          action: 'payment_fee_policy.approval_requested',
+          target: `payment_fee_policy:${policyId}`,
+          metadata: {
+            operatorIdentity: operatorIdentity ?? operator.email ?? operator.id,
+            policyFingerprint,
+            reason,
+            requestedByAdminId: actorId,
+          },
+        },
+        select: adminPaymentFeePolicyApprovalRequestSelect,
+      });
+
+      return paymentFeePolicyApprovalView(policy, request);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async rejectPaymentFeePolicyApproval(
+    actorId: string,
+    policyId: string,
+    input: { reason: string },
+    operatorIdentity?: string,
+  ) {
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, operatorIdentity);
+    if (!operator) {
+      throw new ForbiddenException('Payment fee policy rejection requires a signed-in admin operator');
+    }
+    await assertFinanceActionApprovalAdmin(this.prisma, operator.id, 'Payment fee policy rejection');
+
+    return this.closePaymentFeePolicyApproval(
+      policyId,
+      input.reason,
+      operator,
+      operatorIdentity,
+      'payment_fee_policy.approval_rejected',
+    );
+  }
+
+  async cancelPaymentFeePolicyApproval(
+    actorId: string,
+    policyId: string,
+    input: { reason: string },
+    operatorIdentity?: string,
+  ) {
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, operatorIdentity);
+    if (!operator) {
+      throw new ForbiddenException('Payment fee policy approval cancellation requires a signed-in admin operator');
+    }
+
+    return this.closePaymentFeePolicyApproval(
+      policyId,
+      input.reason,
+      operator,
+      operatorIdentity,
+      'payment_fee_policy.approval_cancelled',
+    );
+  }
+
+  private closePaymentFeePolicyApproval(
+    policyId: string,
+    rawReason: string,
+    operator: AdminOperatorAccessSummary,
+    operatorIdentity: string | undefined,
+    action:
+      | 'payment_fee_policy.approval_rejected'
+      | 'payment_fee_policy.approval_cancelled',
+  ) {
+    const reason = normalizeAuditReason(rawReason);
+
+    return this.prisma.$transaction(async (tx) => {
+      const policy = await tx.paymentFeePolicyVersion.findUnique({
+        where: { id: policyId },
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      assertPaymentFeeDraft(policy, policyId);
+      const request = await tx.adminAuditLog.findFirst({
+        where: {
+          action: { in: [...paymentFeePolicyApprovalActions] },
+          target: `payment_fee_policy:${policyId}`,
+        },
+        orderBy: { createdAt: 'desc' },
+        select: adminPaymentFeePolicyApprovalRequestSelect,
+      });
+      if (!request || request.action !== 'payment_fee_policy.approval_requested') {
+        throw new BadRequestException('Payment fee policy does not have a pending approval request');
+      }
+      const requestMetadata = paymentFeePolicyApprovalMetadata(request.metadata);
+      if (requestMetadata.policyFingerprint !== paymentFeePolicyFingerprint(policy)) {
+        throw new BadRequestException('Payment fee policy changed after approval was requested; request approval again');
+      }
+      if (action === 'payment_fee_policy.approval_rejected' && request.actorId === operator.id) {
+        throw new BadRequestException('Payment fee policy rejection requires a different operator from the requester');
+      }
+      if (action === 'payment_fee_policy.approval_cancelled' && request.actorId !== operator.id) {
+        throw new ForbiddenException('Only the requesting operator can cancel this approval request');
+      }
+      const event = await tx.adminAuditLog.create({
+        data: {
+          actorId: operator.id,
+          action,
+          target: `payment_fee_policy:${policyId}`,
+          metadata: {
+            operatorIdentity: operatorIdentity ?? operator.email ?? operator.id,
+            policyFingerprint: requestMetadata.policyFingerprint,
+            reason,
+            requestId: request.id,
+            requestedAt: request.createdAt.toISOString(),
+            requestedBy: request.actor,
+          },
+        },
+        select: adminPaymentFeePolicyApprovalRequestSelect,
+      });
+
+      return paymentFeePolicyApprovalView(policy, event);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  }
+
+  async activatePaymentFeePolicy(
+    actorId: string,
+    policyId: string,
+    input: { approvalAdminId: string; reason: string },
+    operatorIdentity?: string,
+  ) {
+    const operator = await this.findAdminOperatorForIdentity(this.prisma, actorId, operatorIdentity);
+    if (!operator) {
+      throw new ForbiddenException('Payment fee policy activation requires a signed-in admin operator');
+    }
+    const approvalAdminId = normalizeNullable(input.approvalAdminId);
+    if (!approvalAdminId || approvalAdminId !== operator.id) {
+      throw new BadRequestException('Payment fee policy approval must be completed by the signed-in approver');
+    }
+    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Payment fee policy activation');
+    const reason = normalizeAuditReason(input.reason);
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.paymentFeePolicyVersion.findUnique({
+        where: { id: policyId },
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      assertPaymentFeeDraft(existing, policyId);
+      assertPaymentFeePolicyReadyForActivation(existing);
+      const request = await tx.adminAuditLog.findFirst({
+        where: {
+          action: { in: [...paymentFeePolicyApprovalActions] },
+          target: `payment_fee_policy:${policyId}`,
+        },
+        orderBy: { createdAt: 'desc' },
+        select: adminPaymentFeePolicyApprovalRequestSelect,
+      });
+      if (!request || request.action !== 'payment_fee_policy.approval_requested') {
+        throw new BadRequestException('Payment fee policy activation requires a pending approval request');
+      }
+      if (request.actorId === approvalAdminId) {
+        throw new BadRequestException('Payment fee policy approval requires a different operator from the requester');
+      }
+      const requestMetadata = paymentFeePolicyApprovalMetadata(request.metadata);
+      if (requestMetadata.policyFingerprint !== paymentFeePolicyFingerprint(existing)) {
+        throw new BadRequestException('Payment fee policy changed after approval was requested; request approval again');
+      }
+      await tx.paymentFeePolicyVersion.updateMany({
+        where: { id: { not: policyId }, status: TaxPolicyStatus.ACTIVE },
+        data: { status: TaxPolicyStatus.INACTIVE },
+      });
+      const activated = await tx.paymentFeePolicyVersion.updateMany({
+        where: { id: policyId, status: TaxPolicyStatus.DRAFT },
+        data: { status: TaxPolicyStatus.ACTIVE },
+      });
+      if (activated.count !== 1) {
+        throw new BadRequestException('Payment fee policy is no longer available for activation');
+      }
+      const policy = await tx.paymentFeePolicyVersion.findUniqueOrThrow({
+        where: { id: policyId },
+        select: adminPaymentFeePolicyVersionSelect,
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: approvalAdminId,
+          action: 'payment_fee_policy.activate',
+          target: `payment_fee_policy:${policy.id}`,
+          metadata: {
+            approvalAdminId,
+            effectiveFrom: policy.effectiveFrom.toISOString(),
+            effectiveTo: policy.effectiveTo?.toISOString() ?? null,
+            operatorIdentity: operatorIdentity ?? operator.email ?? operator.id,
+            reason,
+            requestId: request.id,
+            requestedById: request.actorId,
+            requestedByAdminId: actorId,
+            ruleCount: policy.rules.filter((rule) => rule.active).length,
+          },
+        },
+      });
+      return policy;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   listServices() {
@@ -9831,6 +14755,11 @@ export class AdminService {
       settlementMethod?: string | null;
     } = {},
   ) {
+    if (normalizeNullable(input.settlementMethod)?.toUpperCase() === CashFeeSettlementMethod.PARTNER_DEPOSIT) {
+      throw new BadRequestException(
+        'Approved Partner deposits must be allocated from the deposit request detail instead of direct mark-paid',
+      );
+    }
     const earning = await this.earnings.markPaid(earningId, input);
     await this.writeAudit(
       actorId,
@@ -9847,92 +14776,1013 @@ export class AdminService {
     return earning;
   }
 
-  async recordPartnerBankDeposit(actorId: string, input: RecordPartnerBankDepositDto) {
-    const { approvalAdminId: rawApprovalAdminId, ...depositInput } = input;
-    const approvalAdminId = normalizeFinanceActionApprovalAdminId(
-      rawApprovalAdminId,
-      actorId,
-      'Partner bank deposit',
-    );
-    await assertFinanceActionApprovalAdmin(this.prisma, approvalAdminId, 'Partner bank deposit');
-
-    const ledger = await this.earnings.recordPartnerBankDeposit({
-      ...depositInput,
-      adminId: actorId,
-    });
-    await this.writeAudit(
-      actorId,
-      'provider_wallet.bank_deposit_received',
-      `provider_wallet_ledger:${ledger.id}`,
-      {
-        providerProfileId: ledger.providerProfileId,
-        amount: ledger.amount,
-        currency: ledger.currency,
-        reference: ledger.reference,
-        sourceKey: ledger.sourceKey,
-        approvalAdminId,
+  async approvePartnerBankDepositFromLegacyRoute(
+    actorId: string,
+    input: RecordPartnerBankDepositDto,
+  ) {
+    if (normalizeNullable(input.approvalAdminId) !== actorId) {
+      throw new BadRequestException(
+        'Legacy partner bank deposit execution requires the signed-in finance approver',
+      );
+    }
+    const request = await this.prisma.partnerBankDepositRequest.findFirst({
+      where: {
+        providerProfileId: input.providerProfileId,
+        bankTransactionId: input.bankTransactionId,
+        status: PartnerBankDepositRequestStatus.REQUESTED,
       },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: { id: true },
+    });
+    if (!request) {
+      throw new NotFoundException('A pending partner bank deposit request was not found');
+    }
+    const result = await this.approvePartnerBankDepositRequest(actorId, request.id, input);
+    return result.ledger;
+  }
+
+  async createPartnerBankDepositRequest(actorId: string, input: CreatePartnerBankDepositRequestDto) {
+    const deposit = normalizePartnerBankDepositInput({ ...input, adminId: actorId });
+    const sourceKey = partnerBankDepositLedgerSourceKey(
+      deposit.providerProfileId,
+      deposit.bankTransactionId,
     );
-    return ledger;
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const provider = await tx.providerProfile.findUnique({
+          where: { id: deposit.providerProfileId },
+          select: { id: true },
+        });
+        if (!provider) {
+          throw new NotFoundException('Partner profile not found');
+        }
+        const [existingLedger, pendingRequest, balance] = await Promise.all([
+          tx.providerWalletLedgerEntry.findUnique({ where: { sourceKey }, select: { id: true } }),
+          tx.partnerBankDepositRequest.findFirst({
+            where: {
+              providerProfileId: deposit.providerProfileId,
+              bankTransactionId: deposit.bankTransactionId,
+              status: PartnerBankDepositRequestStatus.REQUESTED,
+            },
+            select: { id: true },
+          }),
+          tx.providerWalletLedgerEntry.aggregate({
+            where: { providerProfileId: deposit.providerProfileId },
+            _sum: { amount: true },
+          }),
+        ]);
+        if (existingLedger) {
+          throw new ConflictException('Partner bank deposit was already recorded');
+        }
+        if (pendingRequest) {
+          throw new ConflictException('A partner bank deposit request is already pending for this reference');
+        }
+
+        const allocation = allocatePartnerBankDeposit(balance._sum.amount ?? 0, deposit.amount);
+        const accountingPreview = partnerBankDepositAccountingPreview(allocation);
+        const request = await tx.partnerBankDepositRequest.create({
+          data: {
+            providerProfileId: deposit.providerProfileId,
+            amount: deposit.amount,
+            currency: 'VND',
+            bankTransactionId: deposit.bankTransactionId,
+            depositDate: deposit.depositDate,
+            bankAccount: deposit.bankAccount,
+            attachmentFileId: deposit.attachmentFileId,
+            attachmentUrl: deposit.attachmentUrl,
+            notes: deposit.notes,
+            requestedBeforeBalance: allocation.currentWalletBalance,
+            requestedAfterBalance: allocation.resultingWalletBalance,
+            requestedReceivableRecovery: allocation.amountAppliedToNegativeWallet,
+            requestedWalletLiabilityIncrease: allocation.amountCreditedToWalletLiability,
+            accountingPreview: toJson(accountingPreview),
+            requestedByAdminId: actorId,
+          },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId,
+            action: 'partner_bank_deposit_request.create',
+            target: `partner_bank_deposit_request:${request.id}`,
+            metadata: toJson({
+              providerProfileId: request.providerProfileId,
+              amount: request.amount,
+              currency: request.currency,
+              bankTransactionId: request.bankTransactionId,
+              depositDate: request.depositDate,
+              requestedBeforeBalance: request.requestedBeforeBalance,
+              requestedAfterBalance: request.requestedAfterBalance,
+              requestedReceivableRecovery: request.requestedReceivableRecovery,
+              requestedWalletLiabilityIncrease: request.requestedWalletLiabilityIncrease,
+            }),
+          },
+        });
+        return request;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(
+          'A partner bank deposit request already exists for this Partner and bank reference',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async listPartnerBankDepositRequests(
+    options: { status?: string | null; take?: number | string | null; skip?: number | string | null } = {},
+  ) {
+    const status = normalizePartnerBankDepositRequestStatus(options.status);
+    const requests = await this.prisma.partnerBankDepositRequest.findMany({
+      ...(status ? { where: { status } } : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: boundedAdminListSkip(options.skip),
+      take: boundedAdminListLimit(
+        options.take ?? ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_DEFAULT_LIMIT,
+        ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_MAX_LIMIT,
+      ),
+    });
+    const adminsById = await this.adminOperatorIdentitiesById(
+      requests.flatMap((request) => [
+        request.requestedByAdminId,
+        request.approvedByAdminId,
+        request.rejectedByAdminId,
+      ]),
+    );
+
+    return requests.map((request) => partnerBankDepositRequestWithOperators(request, adminsById));
+  }
+
+  async listPartnerBankDepositRequestHistory(
+    options: {
+      assigneeAdminId?: string | null;
+      owner?: string | null;
+      status?: string | null;
+      review?: string | null;
+      sla?: string | null;
+      period?: string | null;
+      q?: string | null;
+      take?: number | string | null;
+      skip?: number | string | null;
+    } = {},
+  ) {
+    const status = normalizePartnerBankDepositRequestStatus(options.status);
+    const review = normalizePartnerBankDepositReview(options.review);
+    const owner = normalizePartnerBankDepositReconciliationOwner(options.owner);
+    const assigneeAdminId = normalizeNullable(options.assigneeAdminId);
+    const sla = normalizePartnerBankDepositReconciliationSla(options.sla);
+    const period = normalizePartnerBankDepositReconciliationPeriod(options.period);
+    const query = normalizeNullable(options.q);
+    const searchWhere: Prisma.PartnerBankDepositRequestWhereInput = query
+      ? {
+          OR: [
+            { id: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { bankTransactionId: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { providerProfileId: { contains: query, mode: Prisma.QueryMode.insensitive } },
+            { providerProfile: { is: { displayName: { contains: query, mode: Prisma.QueryMode.insensitive } } } },
+            {
+              providerProfile: {
+                is: { user: { is: { fullName: { contains: query, mode: Prisma.QueryMode.insensitive } } } },
+              },
+            },
+          ],
+        }
+      : {};
+    const where: Prisma.PartnerBankDepositRequestWhereInput = {
+      ...searchWhere,
+      ...(status ? { status } : {}),
+    };
+    const take = boundedAdminListLimit(
+      options.take ?? ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_DEFAULT_LIMIT,
+      ADMIN_PARTNER_BANK_DEPOSIT_REQUEST_MAX_LIMIT,
+    );
+    const skip = boundedAdminListSkip(options.skip);
+    if (
+      review !== 'needs-reconciliation' &&
+      (owner !== 'all' || assigneeAdminId || sla !== 'all')
+    ) {
+      throw new BadRequestException(
+        'Partner bank deposit owner and SLA filters require needs-reconciliation review',
+      );
+    }
+    const reconciliationFilters = { assigneeAdminId, owner, period, query, sla, status };
+    const reconciliationSummaryPromise = this.prisma.$queryRaw<
+      Array<{ openAmount: bigint | number | null; openCount: bigint | number | null }>
+    >(Prisma.sql`
+      WITH ${adminPartnerBankDepositReconciliationCteSql(reconciliationFilters)}
+      SELECT
+        COUNT(*)::bigint AS "openCount",
+        COALESCE(SUM("remainingAmount"), 0)::bigint AS "openAmount"
+      FROM "openPartnerBankDeposits"
+    `);
+    const statusGroupsPromise = this.prisma.partnerBankDepositRequest.groupBy({
+      by: ['status'],
+      where: searchWhere,
+      _count: { _all: true },
+    });
+    let items: AdminPartnerBankDepositHistoryRow[];
+    let total: number;
+    let reconciliationSummaryRows: Array<{
+      openAmount: bigint | number | null;
+      openCount: bigint | number | null;
+    }>;
+    let statusGroups: Array<{
+      status: PartnerBankDepositRequestStatus;
+      _count: { _all: number };
+    }>;
+
+    if (review === 'needs-reconciliation') {
+      const [queueRows, summaryRows, groups] = await Promise.all([
+        this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+          WITH ${adminPartnerBankDepositReconciliationCteSql(reconciliationFilters)}
+          SELECT "id"
+          FROM "openPartnerBankDeposits"
+          ORDER BY "depositDate" DESC, "createdAt" DESC, "id" DESC
+          LIMIT ${take}
+          OFFSET ${skip}
+        `),
+        reconciliationSummaryPromise,
+        statusGroupsPromise,
+      ]);
+      const queueIds = queueRows.map((row) => row.id);
+      const queueItems = queueIds.length
+        ? await this.prisma.partnerBankDepositRequest.findMany({
+            where: { id: { in: queueIds } },
+            include: adminPartnerBankDepositHistoryInclude,
+          })
+        : [];
+      const itemById = new Map(queueItems.map((item) => [item.id, item]));
+      items = queueIds.flatMap((id) => {
+        const item = itemById.get(id);
+        return item ? [item] : [];
+      });
+      reconciliationSummaryRows = summaryRows;
+      statusGroups = groups;
+      total = numberValue(summaryRows[0]?.openCount);
+    } else {
+      const [historyItems, historyTotal, summaryRows, groups] = await Promise.all([
+        this.prisma.partnerBankDepositRequest.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          skip,
+          take,
+          include: adminPartnerBankDepositHistoryInclude,
+        }),
+        this.prisma.partnerBankDepositRequest.count({ where }),
+        reconciliationSummaryPromise,
+        statusGroupsPromise,
+      ]);
+      items = historyItems;
+      total = historyTotal;
+      reconciliationSummaryRows = summaryRows;
+      statusGroups = groups;
+    }
+
+    const journalBatchIds = items.flatMap((item) => (item.journalBatchId ? [item.journalBatchId] : []));
+    const [bankCashEntries, adminsById] = await Promise.all([
+      journalBatchIds.length
+        ? this.prisma.accountingJournalEntry.findMany({
+          where: {
+            batchId: { in: journalBatchIds },
+            side: AccountingJournalEntrySide.DEBIT,
+            accountCode: 'company_bank_cash',
+          },
+          select: {
+            batchId: true,
+            amount: true,
+            bankReconciliationMatches: {
+              where: {
+                status: {
+                  in: [BankReconciliationStatus.MATCHED, BankReconciliationStatus.PARTIALLY_MATCHED],
+                },
+              },
+              select: { amount: true },
+            },
+          },
+        })
+        : Promise.resolve([]),
+      this.adminOperatorIdentitiesById(
+        items.flatMap((request) => [
+          request.requestedByAdminId,
+          request.approvedByAdminId,
+          request.rejectedByAdminId,
+        ]),
+      ),
+    ]);
+    const reconciliationByBatchId = new Map(
+      bankCashEntries.map((entry) => {
+        const matchedAmount = Math.min(
+          entry.amount,
+          entry.bankReconciliationMatches.reduce((sum, match) => sum + Math.abs(match.amount), 0),
+        );
+        const remainingAmount = Math.max(0, entry.amount - matchedAmount);
+        return [entry.batchId, { matchedAmount, remainingAmount }] as const;
+      }),
+    );
+    const reconciliationSummary = reconciliationSummaryRows[0];
+
+    const responseItems = items.map(({ cashDebtAllocations, ...request }) => ({
+        ...partnerBankDepositRequestWithOperators(request, adminsById),
+        allocatedCashDebtAmount: cashDebtAllocations.reduce((sum, allocation) => sum + allocation.amount, 0),
+        ...partnerBankDepositReconciliationState(request, reconciliationByBatchId),
+      }));
+    const itemsWithAssignments = review === 'needs-reconciliation'
+      ? await this.withPartnerBankDepositReconciliationAssignments(responseItems)
+      : responseItems;
+
+    return {
+      items: itemsWithAssignments,
+      pagination: { skip, take, total },
+      statusCounts: Object.fromEntries(statusGroups.map((group) => [group.status, group._count._all])),
+      reconciliationSummary: {
+        openAmount: numberValue(reconciliationSummary?.openAmount),
+        openCount: numberValue(reconciliationSummary?.openCount),
+        period,
+      },
+    };
+  }
+
+  async getPartnerBankDepositRequestDetail(requestId: string) {
+    const request = await this.prisma.partnerBankDepositRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        providerProfile: {
+          select: {
+            id: true,
+            displayName: true,
+            user: { select: { id: true, fullName: true, email: true, phone: true } },
+          },
+        },
+        cashDebtAllocations: {
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          include: {
+            providerEarning: {
+              include: {
+                booking: {
+                  select: {
+                    id: true,
+                    status: true,
+                    createdAt: true,
+                    payment: { select: { id: true, amount: true, method: true, status: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!request) {
+      throw new NotFoundException(`Partner bank deposit request ${requestId} was not found`);
+    }
+
+    const [ledger, journal, openDebts, auditLogs, adminsById] = await Promise.all([
+      request.ledgerEntryId
+        ? this.prisma.providerWalletLedgerEntry.findUnique({ where: { id: request.ledgerEntryId } })
+        : null,
+      request.journalBatchId
+        ? this.prisma.accountingJournalBatch.findUnique({
+            where: { id: request.journalBatchId },
+            include: {
+              entries: {
+                orderBy: [{ side: 'asc' }, { accountCode: 'asc' }],
+                include: {
+                  bankReconciliationMatches: {
+                    orderBy: { matchedAt: 'desc' },
+                    include: {
+                      bankTransaction: {
+                        select: {
+                          id: true,
+                          sourceKey: true,
+                          type: true,
+                          amount: true,
+                          currency: true,
+                          occurredAt: true,
+                          transferRef: true,
+                          status: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : null,
+      this.prisma.providerEarning.findMany({
+        where: {
+          providerProfileId: request.providerProfileId,
+          netAmount: { lt: 0 },
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: 50,
+        include: {
+          booking: {
+            select: {
+              id: true,
+              status: true,
+              createdAt: true,
+              payment: { select: { id: true, amount: true, method: true, status: true } },
+            },
+          },
+          bankDepositCashDebtAllocations: { select: { amount: true } },
+        },
+      }),
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          OR: [
+            { target: `partner_bank_deposit_request:${request.id}` },
+            ...(request.ledgerEntryId ? [{ target: `provider_wallet_ledger:${request.ledgerEntryId}` }] : []),
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { actor: { select: { id: true, fullName: true, email: true } } },
+      }),
+      this.adminOperatorIdentitiesById([
+        request.requestedByAdminId,
+        request.approvedByAdminId,
+        request.rejectedByAdminId,
+        ...request.cashDebtAllocations.map((allocation) => allocation.allocatedByAdminId),
+      ]),
+    ]);
+    const allocatedCashDebtAmount = request.cashDebtAllocations.reduce(
+      (sum, allocation) => sum + allocation.amount,
+      0,
+    );
+
+    return {
+      request: {
+        ...partnerBankDepositRequestWithOperators(request, adminsById),
+        cashDebtAllocations: request.cashDebtAllocations.map((allocation) => ({
+          ...allocation,
+          allocatedBy: adminsById.get(allocation.allocatedByAdminId) ?? null,
+        })),
+      },
+      ledger,
+      journal,
+      auditLogs,
+      allocatedCashDebtAmount,
+      remainingReceivableRecovery: Math.max(0, request.requestedReceivableRecovery - allocatedCashDebtAmount),
+      availableCashDebts: openDebts
+        .map(({ bankDepositCashDebtAllocations, ...earning }) => ({
+          ...earning,
+          allocatedAmount: bankDepositCashDebtAllocations.reduce((sum, allocation) => sum + allocation.amount, 0),
+          remainingDebtAmount: Math.max(
+            0,
+            Math.abs(earning.netAmount) -
+              bankDepositCashDebtAllocations.reduce((sum, allocation) => sum + allocation.amount, 0),
+          ),
+        }))
+        .filter((earning) => earning.remainingDebtAmount > 0),
+    };
+  }
+
+  async allocatePartnerBankDepositCashDebt(
+    actorId: string,
+    requestId: string,
+    input: AllocatePartnerBankDepositCashDebtDto,
+  ) {
+    const allocationNotes = normalizeNullable(input.notes);
+    if (!allocationNotes || allocationNotes.length < 12) {
+      throw new BadRequestException('Cash debt allocation requires an audit reason of at least 12 characters');
+    }
+
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const request = await tx.partnerBankDepositRequest.findUnique({ where: { id: requestId } });
+          if (!request) {
+            throw new NotFoundException(`Partner bank deposit request ${requestId} was not found`);
+          }
+          if (request.status !== PartnerBankDepositRequestStatus.EXECUTED) {
+            throw new BadRequestException('Only an executed Partner bank deposit can be allocated to cash debt');
+          }
+          if (!request.ledgerEntryId || !request.journalBatchId) {
+            throw new ConflictException('Approved deposit accounting evidence is incomplete');
+          }
+
+          const earning = await tx.providerEarning.findUnique({ where: { id: input.earningId } });
+          if (!earning) {
+            throw new NotFoundException(`Cash debt earning ${input.earningId} was not found`);
+          }
+          if (earning.providerProfileId !== request.providerProfileId) {
+            throw new BadRequestException('Cash debt belongs to a different Partner');
+          }
+          if (earning.netAmount >= 0) {
+            throw new BadRequestException('Only negative cash debt earnings can receive a deposit allocation');
+          }
+          if (earning.status !== EarningStatus.PENDING && earning.status !== EarningStatus.AVAILABLE) {
+            throw new ConflictException('Cash debt is no longer open for deposit allocation');
+          }
+          if (earning.currency !== request.currency) {
+            throw new BadRequestException('Deposit and cash debt currencies must match');
+          }
+
+          const [requestAllocation, earningAllocation] = await Promise.all([
+            tx.partnerBankDepositCashDebtAllocation.aggregate({
+              where: { partnerBankDepositRequestId: request.id },
+              _sum: { amount: true },
+            }),
+            tx.partnerBankDepositCashDebtAllocation.aggregate({
+              where: { providerEarningId: earning.id },
+              _sum: { amount: true },
+            }),
+          ]);
+          const requestAllocatedAmount = requestAllocation._sum.amount ?? 0;
+          const earningAllocatedAmount = earningAllocation._sum.amount ?? 0;
+          const remainingReceivableRecovery = request.requestedReceivableRecovery - requestAllocatedAmount;
+          const remainingDebtAmount = Math.abs(earning.netAmount) - earningAllocatedAmount;
+
+          if (remainingReceivableRecovery <= 0) {
+            throw new BadRequestException('This deposit has no unallocated receivable recovery remaining');
+          }
+          if (remainingDebtAmount <= 0) {
+            throw new ConflictException('Cash debt is already fully allocated');
+          }
+          if (input.amount > remainingReceivableRecovery) {
+            throw new BadRequestException('Allocation exceeds the deposit receivable recovery remaining');
+          }
+          if (input.amount > remainingDebtAmount) {
+            throw new BadRequestException('Allocation exceeds the cash debt remaining');
+          }
+
+          const allocation = await tx.partnerBankDepositCashDebtAllocation.create({
+            data: {
+              partnerBankDepositRequestId: request.id,
+              providerEarningId: earning.id,
+              amount: input.amount,
+              currency: request.currency,
+              allocatedByAdminId: actorId,
+              notes: allocationNotes,
+            },
+          });
+          const cashDebtFullyAllocated = input.amount === remainingDebtAmount;
+          const updatedEarning = cashDebtFullyAllocated
+            ? await tx.providerEarning.update({
+                where: { id: earning.id },
+                data: {
+                  status: EarningStatus.PAID,
+                  paidAt: new Date(),
+                  settlementMethod: CashFeeSettlementMethod.PARTNER_DEPOSIT,
+                  settlementRef: request.bankTransactionId,
+                  settlementNotes: 'Settled by approved Partner bank deposit evidence allocation',
+                },
+              })
+            : earning;
+
+          await tx.adminAuditLog.create({
+            data: {
+              actorId,
+              action: 'partner_bank_deposit.cash_debt_allocate',
+              target: `partner_bank_deposit_request:${request.id}`,
+              metadata: toJson({
+                allocationId: allocation.id,
+                providerProfileId: request.providerProfileId,
+                providerEarningId: earning.id,
+                bookingId: earning.bookingId,
+                amount: allocation.amount,
+                currency: allocation.currency,
+                notes: allocationNotes,
+                cashDebtFullyAllocated,
+                ledgerEntryId: request.ledgerEntryId,
+                journalBatchId: request.journalBatchId,
+                createsWalletLedgerEntry: false,
+                createsAccountingJournalEntry: false,
+              }),
+            },
+          });
+
+          return {
+            allocation,
+            earning: updatedEarning,
+            cashDebtFullyAllocated,
+            remainingReceivableRecovery: remainingReceivableRecovery - input.amount,
+            remainingDebtAmount: remainingDebtAmount - input.amount,
+          };
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('This deposit is already linked to the selected cash debt');
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('Cash debt allocation changed concurrently; reload and try again');
+      }
+      throw error;
+    }
+  }
+
+  approvePartnerBankDepositRequest(
+    actorId: string,
+    requestId: string,
+    expectedLegacyInput?: RecordPartnerBankDepositDto,
+  ) {
+    const approvalChannel = expectedLegacyInput ? 'LEGACY_COMPAT' : 'REQUEST_APPROVAL';
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.partnerBankDepositRequest.findUnique({ where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException(`Partner bank deposit request ${requestId} was not found`);
+      }
+      assertPartnerBankDepositRequestPending(request.status);
+      if (request.requestedByAdminId === actorId) {
+        throw new BadRequestException('Partner bank deposit requires approval from a different admin');
+      }
+      await assertFinanceActionApprovalAdmin(tx, actorId, 'Partner bank deposit');
+      if (expectedLegacyInput) {
+        assertLegacyPartnerBankDepositRequestMatches(request, expectedLegacyInput, actorId);
+      }
+
+      const claimed = await tx.partnerBankDepositRequest.updateMany({
+        where: { id: request.id, status: PartnerBankDepositRequestStatus.REQUESTED },
+        data: {
+          status: PartnerBankDepositRequestStatus.EXECUTED,
+          approvedByAdminId: actorId,
+          executedAt: new Date(),
+        },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException('Partner bank deposit request is no longer pending');
+      }
+
+      const ledger = await this.earnings.recordPartnerBankDeposit(
+        {
+          providerProfileId: request.providerProfileId,
+          amount: request.amount,
+          bankTransactionId: request.bankTransactionId,
+          depositDate: request.depositDate,
+          bankAccount: request.bankAccount,
+          attachmentFileId: request.attachmentFileId,
+          attachmentUrl: request.attachmentUrl,
+          notes: request.notes,
+          adminId: actorId,
+        },
+        tx,
+      );
+      const allocation = partnerBankDepositAllocationFromLedger(ledger.metadata, ledger.amount);
+      const journal = await upsertPartnerBankDepositJournal(tx, {
+        actorId,
+        allocation,
+        approvalChannel,
+        bankTransactionId: request.bankTransactionId,
+        currency: ledger.currency,
+        depositDate: request.depositDate,
+        ledgerId: ledger.id,
+        providerProfileId: request.providerProfileId,
+        requestId: request.id,
+        requestedByAdminId: request.requestedByAdminId,
+      });
+      const executedRequest = await tx.partnerBankDepositRequest.update({
+        where: { id: request.id },
+        data: {
+          ledgerEntryId: ledger.id,
+          journalBatchId: journal.id,
+          executedAllocation: toJson(allocation),
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'provider_wallet.bank_deposit_received',
+          target: `provider_wallet_ledger:${ledger.id}`,
+          metadata: toJson({
+            partnerBankDepositRequestId: request.id,
+            providerProfileId: ledger.providerProfileId,
+            amount: ledger.amount,
+            currency: ledger.currency,
+            reference: ledger.reference,
+            sourceKey: ledger.sourceKey,
+            requestedByAdminId: request.requestedByAdminId,
+            approvalAdminId: actorId,
+            approvalChannel,
+            journalBatchId: journal.id,
+            allocation,
+          }),
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'partner_bank_deposit_request.execute',
+          target: `partner_bank_deposit_request:${request.id}`,
+          metadata: toJson({
+            requestedByAdminId: request.requestedByAdminId,
+            approvedByAdminId: actorId,
+            approvalChannel,
+            ledgerEntryId: ledger.id,
+            journalBatchId: journal.id,
+            allocation,
+          }),
+        },
+      });
+      return { request: executedRequest, ledger, journal, allocation };
+    });
+  }
+
+  rejectPartnerBankDepositRequest(actorId: string, requestId: string, reason: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.partnerBankDepositRequest.findUnique({ where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException(`Partner bank deposit request ${requestId} was not found`);
+      }
+      assertPartnerBankDepositRequestPending(request.status);
+      if (request.requestedByAdminId === actorId) {
+        throw new BadRequestException('Partner bank deposit requires a decision from a different admin');
+      }
+      await assertFinanceActionApprovalAdmin(tx, actorId, 'Partner bank deposit rejection');
+      const decisionReason = normalizeAuditReason(reason);
+      const updated = await tx.partnerBankDepositRequest.updateMany({
+        where: { id: request.id, status: PartnerBankDepositRequestStatus.REQUESTED },
+        data: {
+          status: PartnerBankDepositRequestStatus.REJECTED,
+          rejectedByAdminId: actorId,
+          decisionReason,
+          rejectedAt: new Date(),
+        },
+      });
+      if (updated.count !== 1) {
+        throw new ConflictException('Partner bank deposit request is no longer pending');
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'partner_bank_deposit_request.reject',
+          target: `partner_bank_deposit_request:${request.id}`,
+          metadata: toJson({ requestedByAdminId: request.requestedByAdminId, decisionReason }),
+        },
+      });
+      return tx.partnerBankDepositRequest.findUniqueOrThrow({ where: { id: request.id } });
+    });
   }
 
   previewManualWalletAdjustment(actorId: string, input: PreviewManualWalletAdjustmentDto) {
     return this.buildManualWalletAdjustmentPreviewForAdmin(this.prisma, actorId, input, false);
   }
 
-  createManualWalletAdjustment(actorId: string, input: CreateManualWalletAdjustmentDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const preview = await this.buildManualWalletAdjustmentPreviewForAdmin(tx, actorId, input, true);
+  async approveManualWalletAdjustmentFromLegacyRoute(
+    actorId: string,
+    input: CreateManualWalletAdjustmentDto,
+  ) {
+    if (normalizeNullable(input.approvalAdminId) !== actorId) {
+      throw new BadRequestException(
+        'Legacy manual wallet adjustment execution requires the signed-in finance approver',
+      );
+    }
+    return this.approveManualWalletAdjustmentRequest(actorId, input.approvalId, input);
+  }
 
-      if (preview.requiresAttachment && !normalizeNullable(input.attachmentUrl)) {
+  createManualWalletAdjustmentRequest(actorId: string, input: CreateManualWalletAdjustmentRequestDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const preview = await this.buildManualWalletAdjustmentPreviewForAdmin(tx, actorId, input, false);
+      if (preview.requiresAttachment && !preview.attachmentUrl) {
         throw new BadRequestException('Attachment is required for this manual wallet adjustment');
       }
 
-      const metadata = manualWalletAdjustmentMetadata(preview, preview.attachmentUrl);
-      const ledger =
-        preview.ownerType === 'CUSTOMER'
-          ? await tx.customerWalletLedgerEntry.create({
-              data: {
-                customerProfileId: preview.ownerId,
-                type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
-                sourceKey: manualWalletAdjustmentSourceKey(preview),
-                amount: preview.walletDelta,
-                currency: preview.currency,
-                reference: preview.approvalId,
-                notes: preview.reason,
-                metadata,
-              },
-            })
-          : await tx.providerWalletLedgerEntry.create({
-              data: {
-                providerProfileId: preview.ownerId,
-                type: providerManualWalletAdjustmentLedgerType(preview),
-                sourceKey: manualWalletAdjustmentSourceKey(preview),
-                amount: preview.walletDelta,
-                currency: preview.currency,
-                reference: preview.approvalId,
-                notes: preview.reason,
-                metadata,
-              },
-            });
-
-      await upsertManualWalletAdjustmentJournal(tx, preview, ledger.id, actorId);
-
-      const target =
-        preview.ownerType === 'CUSTOMER'
-          ? `customer_wallet_ledger:${ledger.id}`
-          : `provider_wallet_ledger:${ledger.id}`;
-      const auditLog = await tx.adminAuditLog.create({
+      const request = await tx.manualWalletAdjustmentRequest.create({
         data: {
-          actorId,
-          action: 'wallet_ledger.manual_adjustment.create',
-          target,
-          metadata,
+          ownerType: preview.ownerType,
+          ownerId: preview.ownerId,
+          direction: preview.direction,
+          adjustmentType: preview.adjustmentType,
+          amount: preview.amount,
+          currency: preview.currency,
+          reason: preview.reason,
+          monthlyPeriod: preview.monthlyPeriod,
+          attachmentUrl: preview.attachmentUrl,
+          requestedBeforeBalance: preview.beforeBalance,
+          requestedAfterBalance: preview.afterBalance,
+          requestedWalletDelta: preview.walletDelta,
+          accountingPreview: toJson(preview.accountingEntries),
+          affects: toJson(preview.affects),
+          requiresAttachment: preview.requiresAttachment,
+          requestedByAdminId: actorId,
         },
       });
-
-      return { preview, ledger, auditLog };
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'wallet_adjustment_request.create',
+          target: `manual_wallet_adjustment_request:${request.id}`,
+          metadata: toJson({
+            ownerType: request.ownerType,
+            ownerId: request.ownerId,
+            direction: request.direction,
+            adjustmentType: request.adjustmentType,
+            amount: request.amount,
+            currency: request.currency,
+            requestedBeforeBalance: request.requestedBeforeBalance,
+            requestedAfterBalance: request.requestedAfterBalance,
+            requiresAttachment: request.requiresAttachment,
+          }),
+        },
+      });
+      return request;
     });
+  }
+
+  async listManualWalletAdjustmentRequests(
+    options: { status?: string | null; take?: number | string | null; skip?: number | string | null } = {},
+  ) {
+    const status = normalizeManualWalletAdjustmentRequestStatus(options.status);
+    const requests = await this.prisma.manualWalletAdjustmentRequest.findMany({
+      ...(status ? { where: { status } } : {}),
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: boundedAdminListSkip(options.skip),
+      take: boundedAdminListLimit(
+        options.take ?? ADMIN_MANUAL_WALLET_ADJUSTMENT_REQUEST_DEFAULT_LIMIT,
+        ADMIN_MANUAL_WALLET_ADJUSTMENT_REQUEST_MAX_LIMIT,
+      ),
+    });
+    const adminsById = await this.adminOperatorIdentitiesById(
+      requests.flatMap((request) => [
+        request.requestedByAdminId,
+        request.approvedByAdminId,
+        request.rejectedByAdminId,
+      ]),
+    );
+
+    return requests.map((request) => ({
+      ...request,
+      requestedBy: adminsById.get(request.requestedByAdminId) ?? null,
+      approvedBy: request.approvedByAdminId
+        ? (adminsById.get(request.approvedByAdminId) ?? null)
+        : null,
+      rejectedBy: request.rejectedByAdminId
+        ? (adminsById.get(request.rejectedByAdminId) ?? null)
+        : null,
+    }));
+  }
+
+  approveManualWalletAdjustmentRequest(
+    actorId: string,
+    requestId: string,
+    expectedLegacyInput?: CreateManualWalletAdjustmentDto,
+  ) {
+    const approvalChannel = expectedLegacyInput ? 'LEGACY_COMPAT' : 'REQUEST_APPROVAL';
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.manualWalletAdjustmentRequest.findUnique({ where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException(`Manual wallet adjustment request ${requestId} was not found`);
+      }
+      assertManualWalletAdjustmentRequestPending(request.status);
+      if (request.requestedByAdminId === actorId) {
+        throw new BadRequestException('Manual wallet adjustment requires approval from a different admin');
+      }
+      await assertFinanceActionApprovalAdmin(tx, actorId, 'Manual wallet adjustment');
+      if (expectedLegacyInput) {
+        assertLegacyManualWalletAdjustmentRequestMatches(request, expectedLegacyInput);
+      }
+
+      const input: CreateManualWalletAdjustmentDto = {
+        ownerType: manualWalletAdjustmentOwnerType(request.ownerType),
+        ownerId: request.ownerId,
+        direction: manualWalletAdjustmentDirection(request.direction),
+        adjustmentType: manualWalletAdjustmentType(request.adjustmentType),
+        amount: request.amount,
+        reason: request.reason,
+        currency: request.currency,
+        ...(request.monthlyPeriod ? { monthlyPeriod: request.monthlyPeriod } : {}),
+        ...(request.attachmentUrl ? { attachmentUrl: request.attachmentUrl } : {}),
+        approvalId: request.id,
+        approvalAdminId: actorId,
+      };
+      const preview = await this.buildManualWalletAdjustmentPreviewForAdmin(
+        tx,
+        request.requestedByAdminId,
+        input,
+        true,
+      );
+      if (preview.beforeBalance !== request.requestedBeforeBalance) {
+        throw new ConflictException('Wallet balance changed after this request. Create a new adjustment request.');
+      }
+
+      const claimed = await tx.manualWalletAdjustmentRequest.updateMany({
+        where: { id: request.id, status: ManualWalletAdjustmentRequestStatus.REQUESTED },
+        data: {
+          status: ManualWalletAdjustmentRequestStatus.EXECUTED,
+          approvedByAdminId: actorId,
+          executedAt: new Date(),
+        },
+      });
+      if (claimed.count !== 1) {
+        throw new ConflictException('Manual wallet adjustment request is no longer pending');
+      }
+
+      const result = await this.persistManualWalletAdjustment(tx, actorId, preview);
+      const executedRequest = await tx.manualWalletAdjustmentRequest.update({
+        where: { id: request.id },
+        data: { ledgerEntryId: result.ledger.id },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'wallet_adjustment_request.execute',
+          target: `manual_wallet_adjustment_request:${request.id}`,
+          metadata: toJson({
+            requestedByAdminId: request.requestedByAdminId,
+            approvedByAdminId: actorId,
+            ledgerEntryId: result.ledger.id,
+            beforeBalance: preview.beforeBalance,
+            afterBalance: preview.afterBalance,
+            approvalChannel,
+          }),
+        },
+      });
+      return { request: executedRequest, ...result };
+    });
+  }
+
+  rejectManualWalletAdjustmentRequest(actorId: string, requestId: string, reason: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.manualWalletAdjustmentRequest.findUnique({ where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException(`Manual wallet adjustment request ${requestId} was not found`);
+      }
+      assertManualWalletAdjustmentRequestPending(request.status);
+      if (request.requestedByAdminId === actorId) {
+        throw new BadRequestException('Manual wallet adjustment requires a decision from a different admin');
+      }
+      await assertFinanceActionApprovalAdmin(tx, actorId, 'Manual wallet adjustment rejection');
+      const decisionReason = normalizeAuditReason(reason);
+      const rejectedAt = new Date();
+      const updated = await tx.manualWalletAdjustmentRequest.updateMany({
+        where: { id: request.id, status: ManualWalletAdjustmentRequestStatus.REQUESTED },
+        data: {
+          status: ManualWalletAdjustmentRequestStatus.REJECTED,
+          rejectedByAdminId: actorId,
+          decisionReason,
+          rejectedAt,
+        },
+      });
+      if (updated.count !== 1) {
+        throw new ConflictException('Manual wallet adjustment request is no longer pending');
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'wallet_adjustment_request.reject',
+          target: `manual_wallet_adjustment_request:${request.id}`,
+          metadata: toJson({ requestedByAdminId: request.requestedByAdminId, decisionReason }),
+        },
+      });
+      return tx.manualWalletAdjustmentRequest.findUniqueOrThrow({ where: { id: request.id } });
+    });
+  }
+
+  private async persistManualWalletAdjustment(
+    tx: Prisma.TransactionClient,
+    actorId: string,
+    preview: AdminManualWalletAdjustmentPreview,
+  ) {
+    if (preview.requiresAttachment && !preview.attachmentUrl) {
+      throw new BadRequestException('Attachment is required for this manual wallet adjustment');
+    }
+
+    const metadata = manualWalletAdjustmentMetadata(preview, preview.attachmentUrl);
+    const ledger =
+      preview.ownerType === 'CUSTOMER'
+        ? await tx.customerWalletLedgerEntry.create({
+            data: {
+              customerProfileId: preview.ownerId,
+              type: CustomerWalletLedgerType.ADMIN_ADJUSTMENT,
+              sourceKey: manualWalletAdjustmentSourceKey(preview),
+              amount: preview.walletDelta,
+              currency: preview.currency,
+              reference: preview.approvalId,
+              notes: preview.reason,
+              metadata,
+            },
+          })
+        : await tx.providerWalletLedgerEntry.create({
+            data: {
+              providerProfileId: preview.ownerId,
+              type: providerManualWalletAdjustmentLedgerType(preview),
+              sourceKey: manualWalletAdjustmentSourceKey(preview),
+              amount: preview.walletDelta,
+              currency: preview.currency,
+              reference: preview.approvalId,
+              notes: preview.reason,
+              metadata,
+            },
+          });
+
+    await upsertManualWalletAdjustmentJournal(tx, preview, ledger.id, actorId);
+    const target =
+      preview.ownerType === 'CUSTOMER'
+        ? `customer_wallet_ledger:${ledger.id}`
+        : `provider_wallet_ledger:${ledger.id}`;
+    const auditLog = await tx.adminAuditLog.create({
+      data: {
+        actorId,
+        action: 'wallet_ledger.manual_adjustment.create',
+        target,
+        metadata,
+      },
+    });
+    return { preview, ledger, auditLog };
   }
 
   async listManualWalletAdjustments(options: AdminManualWalletAdjustmentQuery = {}) {
@@ -9961,12 +15811,8 @@ export class AdminService {
         LIMIT ${take}
         OFFSET ${skip}
       `);
-      const customerIds = orderedRows
-        .filter((row) => row.ownerType === 'CUSTOMER')
-        .map((row) => row.id);
-      const providerIds = orderedRows
-        .filter((row) => row.ownerType === 'PARTNER')
-        .map((row) => row.id);
+      const customerIds = orderedRows.filter((row) => row.ownerType === 'CUSTOMER').map((row) => row.id);
+      const providerIds = orderedRows.filter((row) => row.ownerType === 'PARTNER').map((row) => row.id);
       const [customerRows, providerRows] = await Promise.all([
         customerIds.length
           ? this.prisma.customerWalletLedgerEntry.findMany({
@@ -9992,9 +15838,11 @@ export class AdminService {
         ...providerRows.map((row) => [`PARTNER:${row.id}`, manualWalletAdjustmentProviderRow(row)] as const),
       ]);
 
-      return orderedRows
+      const rows = orderedRows
         .map((row) => rowsByKey.get(`${row.ownerType}:${row.id}`))
         .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+      return this.withManualWalletAdjustmentApprovers(rows);
     }
 
     const [customerRows, providerRows] = await Promise.all([
@@ -10018,12 +15866,136 @@ export class AdminService {
           }),
     ]);
 
-    return [
+    const rows = [
       ...customerRows.map((row) => manualWalletAdjustmentCustomerRow(row)),
       ...providerRows.map((row) => manualWalletAdjustmentProviderRow(row)),
     ]
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
       .slice(0, take);
+
+    return this.withManualWalletAdjustmentApprovers(rows);
+  }
+
+  private async withManualWalletAdjustmentApprovers(rows: ManualWalletAdjustmentLedgerRow[]) {
+    const requestIds = uniqueStrings(rows.map((row) => row.approvalId));
+    const requests = requestIds.length
+      ? await this.prisma.manualWalletAdjustmentRequest.findMany({
+          where: { id: { in: requestIds } },
+          select: {
+            id: true,
+            approvedByAdminId: true,
+            requestedByAdminId: true,
+          },
+        })
+      : [];
+    const requestById = new Map(requests.map((request) => [request.id, request]));
+    const adminsById = await this.adminOperatorIdentitiesById(
+      rows.flatMap((row) => {
+        const request = row.approvalId ? requestById.get(row.approvalId) : null;
+        return [
+          row.approvalAdminId ?? request?.approvedByAdminId,
+          request?.requestedByAdminId,
+        ];
+      }),
+    );
+
+    return rows.map((row) => {
+      const request = row.approvalId ? requestById.get(row.approvalId) : null;
+      const approvalAdminId = row.approvalAdminId ?? request?.approvedByAdminId ?? null;
+      const requestedByAdminId = request?.requestedByAdminId ?? null;
+      return {
+        ...row,
+        approvalAdminId,
+        approvalAdmin: approvalAdminId ? (adminsById.get(approvalAdminId) ?? null) : null,
+        requestedByAdminId,
+        requestedBy: requestedByAdminId ? (adminsById.get(requestedByAdminId) ?? null) : null,
+      };
+    });
+  }
+
+  private async adminOperatorIdentitiesById(adminIds: readonly (string | null | undefined)[]) {
+    const uniqueAdminIds = uniqueStrings([...adminIds]);
+    if (uniqueAdminIds.length === 0) {
+      return new Map<string, { id: string; email: string | null; fullName: string | null }>();
+    }
+
+    const admins = await this.prisma.user.findMany({
+      where: { id: { in: uniqueAdminIds } },
+      select: { id: true, email: true, fullName: true },
+    });
+    return new Map(admins.map((admin) => [admin.id, admin]));
+  }
+
+  private async withPayoutBatchOperators<T extends { id: string }>(batches: readonly T[]) {
+    const targets = batches.map((batch) => `payout_batch:${batch.id}`);
+    const auditLogs = targets.length
+      ? await this.prisma.adminAuditLog.findMany({
+          where: {
+            action: { in: ['payout_batch.create', 'payout_batch.update'] },
+            target: { in: targets },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { action: true, actorId: true, metadata: true, target: true },
+        })
+      : [];
+    const evidenceByTarget = new Map<
+      string,
+      {
+        approvalAdminId?: string;
+        createdByAdminId?: string;
+        lastUpdatedByAdminId?: string;
+        paidByAdminId?: string;
+      }
+    >();
+
+    for (const log of auditLogs) {
+      const evidence = evidenceByTarget.get(log.target) ?? {};
+      if (log.action === 'payout_batch.create' && !evidence.createdByAdminId) {
+        evidence.createdByAdminId = log.actorId;
+      }
+      if (log.action === 'payout_batch.update' && !evidence.lastUpdatedByAdminId) {
+        evidence.lastUpdatedByAdminId = log.actorId;
+      }
+      if (
+        log.action === 'payout_batch.update' &&
+        payoutBatchAuditStatus(log.metadata) === PayoutBatchStatus.PAID &&
+        !evidence.paidByAdminId
+      ) {
+        evidence.paidByAdminId = log.actorId;
+        evidence.approvalAdminId = financeApprovalAdminIdFromMetadata(log.metadata) ?? undefined;
+      }
+      evidenceByTarget.set(log.target, evidence);
+    }
+
+    const adminsById = await this.adminOperatorIdentitiesById(
+      [...evidenceByTarget.values()].flatMap((evidence) => [
+        evidence.approvalAdminId,
+        evidence.createdByAdminId,
+        evidence.lastUpdatedByAdminId,
+        evidence.paidByAdminId,
+      ]),
+    );
+
+    return batches.map((batch) => {
+      const evidence = evidenceByTarget.get(`payout_batch:${batch.id}`);
+      const createdByAdminId = evidence?.createdByAdminId ?? null;
+      const lastUpdatedByAdminId = evidence?.lastUpdatedByAdminId ?? null;
+      const paidByAdminId = evidence?.paidByAdminId ?? null;
+      const approvalAdminId = evidence?.approvalAdminId ?? null;
+      return {
+        ...batch,
+        createdByAdminId,
+        createdBy: createdByAdminId ? (adminsById.get(createdByAdminId) ?? null) : null,
+        lastUpdatedByAdminId,
+        lastUpdatedBy: lastUpdatedByAdminId
+          ? (adminsById.get(lastUpdatedByAdminId) ?? null)
+          : null,
+        paidByAdminId,
+        paidBy: paidByAdminId ? (adminsById.get(paidByAdminId) ?? null) : null,
+        approvalAdminId,
+        approvalAdmin: approvalAdminId ? (adminsById.get(approvalAdminId) ?? null) : null,
+      };
+    });
   }
 
   async manualWalletAdjustmentSummary(options: AdminManualWalletAdjustmentQuery = {}) {
@@ -10144,8 +16116,53 @@ export class AdminService {
     return closing?.status as ManualWalletAdjustmentInput['monthlyPeriodStatus'];
   }
 
-  listProviderWalletWithdrawalRequests(options: AdminPaymentOperationsQuery = {}) {
-    return this.earnings.listProviderWalletWithdrawalRequestsForAdmin(options);
+  async listProviderWalletWithdrawalRequests(options: AdminPaymentOperationsQuery = {}) {
+    const requests = await this.earnings.listProviderWalletWithdrawalRequestsForAdmin(options);
+    const paidTargets = requests
+      .filter((request) => request.status === ProviderWalletWithdrawalRequestStatus.PAID)
+      .map((request) => `provider_wallet_withdrawal_request:${request.id}`);
+    const approvalLogs = paidTargets.length
+      ? await this.prisma.adminAuditLog.findMany({
+          where: {
+            action: 'provider_wallet.withdrawal_request.update',
+            target: { in: paidTargets },
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { metadata: true, target: true },
+        })
+      : [];
+    const approvalAdminIdByTarget = new Map<string, string>();
+    for (const log of approvalLogs) {
+      const approvalAdminId = financeApprovalAdminIdFromMetadata(log.metadata);
+      if (approvalAdminId && !approvalAdminIdByTarget.has(log.target)) {
+        approvalAdminIdByTarget.set(log.target, approvalAdminId);
+      }
+    }
+    const adminsById = await this.adminOperatorIdentitiesById(
+      requests.flatMap((request) => {
+        const target = `provider_wallet_withdrawal_request:${request.id}`;
+        return [
+          request.reviewedByAdminId,
+          providerWalletWithdrawalPaidByAdminId(request.metadata),
+          approvalAdminIdByTarget.get(target),
+        ];
+      }),
+    );
+
+    return requests.map((request) => {
+      const target = `provider_wallet_withdrawal_request:${request.id}`;
+      const paidByAdminId = providerWalletWithdrawalPaidByAdminId(request.metadata);
+      const approvalAdminId = approvalAdminIdByTarget.get(target) ?? null;
+      return {
+        ...request,
+        reviewedBy: request.reviewedByAdminId
+          ? (adminsById.get(request.reviewedByAdminId) ?? null)
+          : null,
+        paidBy: paidByAdminId ? (adminsById.get(paidByAdminId) ?? null) : null,
+        approvalAdminId,
+        approvalAdmin: approvalAdminId ? (adminsById.get(approvalAdminId) ?? null) : null,
+      };
+    });
   }
 
   providerWalletWithdrawalRequestSummary(
@@ -10215,8 +16232,9 @@ export class AdminService {
     return request;
   }
 
-  listPayoutBatches(options: AdminPaymentOperationsQuery = {}) {
-    return this.earnings.listPayoutBatchesForAdmin(options);
+  async listPayoutBatches(options: AdminPaymentOperationsQuery = {}) {
+    const batches = await this.earnings.listPayoutBatchesForAdmin(options);
+    return this.withPayoutBatchOperators(batches);
   }
 
   payoutBatchSummary(options: AdminPaymentOperationsQuery = {}) {
@@ -10831,27 +16849,108 @@ export class AdminService {
     return typeof value === 'string';
   }
 
-  listNotifications(options: NotificationBoardQueryOptions = {}) {
+  async listNotifications(options: NotificationBoardQueryOptions = {}) {
     const where = notificationBoardWhere(options);
     const skip = normalizeNotificationBoardSkip(options.skip);
+    const take = normalizeNotificationBoardTake(options.take);
+    const systemIncidentReview = normalizeNullable(options.review) === 'system-incidents';
+    const financeReviewState = notificationFinanceReviewState(options.review);
+    const systemIncidentSources = systemIncidentReview
+      ? await this.prisma.$queryRaw<NotificationSystemIncidentSourcePageRow[]>(
+          notificationSystemIncidentSourcePageQuery(
+            options,
+            take,
+            skip,
+          ),
+        )
+      : [];
+    const financeReviewRows = financeReviewState
+      ? await this.prisma.$queryRaw<NotificationFinanceReviewPageRow[]>(
+          notificationFinanceReviewPageQuery(options, financeReviewState, take, skip),
+        )
+      : [];
     const args: Prisma.NotificationFindManyArgs = {
       orderBy: { createdAt: 'desc' },
-      take: normalizeNotificationBoardTake(options.take),
+      take,
       select: adminNotificationBoardListSelect,
     };
-    if (skip > 0) {
+    if (systemIncidentReview) {
+      args.where = { id: { in: systemIncidentSources.map((source) => source.id) } };
+    } else if (financeReviewState) {
+      args.where = { id: { in: financeReviewRows.map((row) => row.id) } };
+    } else if (skip > 0) {
       args.skip = skip;
     }
-    if (where) {
+    if (!systemIncidentReview && !financeReviewState && where) {
       args.where = where;
     }
-    return this.prisma.notification.findMany(args);
+    const loadedNotifications = await this.prisma.notification.findMany(args);
+    const notifications = systemIncidentReview
+      ? notificationSystemIncidentSourcePageNotifications(loadedNotifications, systemIncidentSources)
+      : financeReviewState
+        ? notificationFinanceReviewPageNotifications(loadedNotifications, financeReviewRows)
+        : loadedNotifications;
+    const incidentIds = [...new Set(notifications.flatMap((notification) => {
+      const incidentId = notificationBackgroundJobIncidentId(notification);
+      return incidentId ? [incidentId] : [];
+    }))];
+    if (incidentIds.length === 0) {
+      return notifications;
+    }
+
+    const recoveries = await this.prisma.adminAuditLog.findMany({
+      where: {
+        action: 'admin.background_jobs.recurring_incident_recovered',
+        OR: incidentIds.map((incidentId) => ({
+          metadata: { path: ['openedAuditId'], equals: incidentId },
+        })),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: incidentIds.length,
+      select: { createdAt: true, metadata: true },
+    });
+    const recoveryByIncidentId = new Map<string, string>();
+    for (const recovery of recoveries) {
+      const metadata = jsonObject(recovery.metadata);
+      const incidentId = jsonString(metadata.openedAuditId);
+      if (!incidentId || recoveryByIncidentId.has(incidentId)) continue;
+      recoveryByIncidentId.set(
+        incidentId,
+        jsonString(metadata.recoveredAt) ?? recovery.createdAt.toISOString(),
+      );
+    }
+
+    return notifications.map((notification) => {
+      const incidentId = notificationBackgroundJobIncidentId(notification);
+      if (!incidentId) return notification;
+      const recoveredAt = recoveryByIncidentId.get(incidentId) ?? null;
+      return {
+        ...notification,
+        data: {
+          ...jsonObject(notification.data),
+          incidentRecoveredAt: recoveredAt,
+          incidentStatus: recoveredAt ? 'RECOVERED' : 'OPEN',
+        },
+      };
+    });
   }
 
   async notificationSummary(options: NotificationBoardSummaryOptions = {}) {
     const baseWhere = notificationBoardWhere(options);
+    const financeReviewState = notificationFinanceReviewState(options.review);
     const countNotifications = (where?: Prisma.NotificationWhereInput) =>
       this.prisma.notification.count(notificationCountArgs(notificationBoardAndWhere(baseWhere, where)));
+    const countSelectedNotifications = financeReviewState
+      ? this.prisma.$queryRaw<NotificationFinanceReviewCountRow[]>(
+          notificationFinanceReviewCountQuery(options, financeReviewState),
+        ).then((rows) => rows[0]?.count ?? 0)
+      : countNotifications();
+    const financeReviewOwnerSummary = financeReviewState
+      ? this.prisma.$queryRaw<NotificationFinanceReviewOwnerCountRow[]>(
+          notificationFinanceReviewOwnerSummaryQuery(options, financeReviewState),
+        )
+      : Promise.resolve([]);
+    const includesSystemIncidentSummary = normalizeNullable(options.review) === 'system-incidents';
     const notificationDeliveryCountWhere = (
       where?: Prisma.NotificationDeliveryWhereInput,
     ): Prisma.NotificationDeliveryWhereInput | undefined => {
@@ -10874,7 +16973,7 @@ export class AdminService {
       this.prisma.notificationDelivery.count({ where: notificationDeliveryCountWhere(where) });
 
     const [
-      totalCount,
+      rawTotalCount,
       failed,
       fcmDeliveries,
       inAppDeliveries,
@@ -10887,8 +16986,10 @@ export class AdminService {
       noShow,
       payoutSetup,
       partnerAlertCount,
+      systemIncidentSourceRows,
+      financeReviewOwnerSummaryRows,
     ] = await Promise.all([
-      countNotifications(),
+      countSelectedNotifications,
       countNotifications(notificationDeliveryStatusWhere('FAILED')),
       countNotificationDeliveries({ provider: 'FCM' }),
       countNotificationDeliveries({ provider: 'IN_APP_ONLY' }),
@@ -10901,23 +17002,45 @@ export class AdminService {
       countNotifications({ type: 'booking.no_show' }),
       countNotifications({ type: 'provider.payout_setup_required' }),
       countNotifications({ type: { in: [...ADMIN_NOTIFICATION_PARTNER_ALERT_TYPES] } }),
+      includesSystemIncidentSummary
+        ? this.prisma.$queryRaw<NotificationSystemIncidentSourceSummarySqlRow[]>(
+            notificationSystemIncidentSourceSummaryQuery(options),
+          )
+        : Promise.resolve([]),
+      financeReviewOwnerSummary,
     ]);
+    const systemIncidentSummary = notificationSystemIncidentSourceSummaryFromSql(
+      systemIncidentSourceRows[0],
+      options.incidentState,
+    );
 
     return {
       generatedAt: new Date().toISOString(),
       disabledDevices,
       failed,
       fcmDeliveries,
+      financeReviewOwnerSummary: financeReviewOwnerSummaryRows.map((row) => ({
+        count: row.count,
+        ownerAdminId: row.ownerAdminId,
+      })),
       inAppDeliveries,
+      legacySystemIncidentCount: systemIncidentSummary.legacy,
       needsRetry,
       noShow,
+      openSystemIncidentCount: systemIncidentSummary.open,
       partnerAlertCount,
       payoutSetup,
       pending,
+      recoveredSystemIncidentCount: systemIncidentSummary.recovered,
+      reviewedSystemIncidentCount: systemIncidentSummary.reviewed,
       sent,
       skipped,
       staleDevices,
-      totalCount,
+      systemIncidentCount: systemIncidentSummary.total,
+      systemIncidentNotificationCount: systemIncidentSummary.notificationCount,
+      systemIncidentSourceSummaryComplete: true,
+      systemIncidentSourceTotalCount: systemIncidentSummary.selected,
+      totalCount: includesSystemIncidentSummary ? systemIncidentSummary.selected : rawTotalCount,
     };
   }
 
@@ -11150,6 +17273,107 @@ export class AdminService {
       notificationRetryAuditMetadata(notificationId, result),
     );
     return result;
+  }
+
+  async reviewLegacyNotification(actorId: string, notificationId: string, rawReason?: string) {
+    const reason = rawReason?.replace(/\s+/g, ' ').trim() ?? '';
+    if (reason.length < 12) {
+      throw new BadRequestException('Legacy notification review reason must be at least 12 characters');
+    }
+    if (reason.length > 500) {
+      throw new BadRequestException('Legacy notification review reason must be 500 characters or fewer');
+    }
+    const reviewedAt = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const notification = await tx.notification.findUnique({
+        where: { id: notificationId },
+        select: { data: true, id: true, type: true },
+      });
+      if (!notification) {
+        throw new NotFoundException('Notification was not found');
+      }
+      if (!notification.type.startsWith('admin.system.')) {
+        throw new BadRequestException('Only Admin system notifications can use legacy review');
+      }
+
+      const existingData = jsonObject(notification.data);
+      if (jsonString(existingData.incidentId)) {
+        throw new BadRequestException('Linked incidents must be resolved from Background Jobs');
+      }
+      if (jsonString(existingData.incidentStatus)) {
+        throw new ConflictException('Notification incident state is already recorded');
+      }
+
+      const source = legacyNotificationReviewSource(notification);
+      const sourceNotifications = source
+        ? await tx.notification.findMany({
+            where: {
+              AND: [
+                { type: notification.type },
+                { data: { path: ['queueName'], equals: source.queueName } },
+                { data: { path: ['jobId'], equals: source.jobId } },
+                { data: { path: ['incidentId'], equals: Prisma.AnyNull } },
+                { data: { path: ['incidentStatus'], equals: Prisma.AnyNull } },
+              ],
+            },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+            select: { data: true, id: true, type: true },
+          })
+        : [notification];
+      if (!sourceNotifications.some((row) => row.id === notification.id)) {
+        throw new ConflictException('Notification incident state changed before this review completed');
+      }
+
+      for (const sourceNotification of sourceNotifications) {
+        const sourceData = jsonObject(sourceNotification.data);
+        const update = await tx.notification.updateMany({
+          where: {
+            data: { path: ['incidentStatus'], equals: Prisma.AnyNull },
+            id: sourceNotification.id,
+            type: sourceNotification.type,
+          },
+          data: {
+            data: toJson({
+              ...sourceData,
+              incidentStatus: 'LEGACY_REVIEWED',
+              legacyReviewReason: reason,
+              legacyReviewedAt: reviewedAt.toISOString(),
+              legacyReviewedByAdminId: actorId,
+            }),
+          },
+        });
+        if (update.count !== 1) {
+          throw new ConflictException('Notification incident state changed before this review completed');
+        }
+      }
+
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'notification.legacy_reviewed',
+          target: `notification:${notification.id}`,
+          metadata: {
+            incidentStatus: 'LEGACY_REVIEWED',
+            notificationId: notification.id,
+            notificationType: notification.type,
+            reason,
+            reviewedNotificationCount: sourceNotifications.length,
+            reviewedAt: reviewedAt.toISOString(),
+            source: 'admin_notification_legacy_review',
+            sourceKey: source?.sourceKey ?? `notification:${notification.id}`,
+          },
+        },
+      });
+
+      return {
+        incidentStatus: 'LEGACY_REVIEWED' as const,
+        notificationId: notification.id,
+        ok: true,
+        reviewedNotificationCount: sourceNotifications.length,
+        reviewedAt: reviewedAt.toISOString(),
+      };
+    });
   }
 
   private async ensureDefaultNotificationTemplates() {
@@ -11629,6 +17853,25 @@ function numberValue(value: unknown) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function adminIsoDateTime(value: Date | string | null | undefined) {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function bankReconciliationWithdrawalCandidateWaitingMeta(occurredAt: Date, now = new Date()) {
+  const waitingHours = Math.max(
+    0,
+    Math.floor((now.getTime() - occurredAt.getTime()) / (60 * 60 * 1000)),
+  );
+  return {
+    slaStatus:
+      waitingHours >= 48 ? ('OVER_48H' as const) : waitingHours >= 24 ? ('OVER_24H' as const) : ('CURRENT' as const),
+    waitingHours,
+  };
 }
 
 function sumNumbers(values: readonly number[]) {
@@ -12695,8 +18938,12 @@ function adminCalendarUpdateData(
   const data: Prisma.AdminCalendarEventUpdateInput = {
     updatedById: actor.id,
   };
-  const startAt = input.start === undefined ? existing.startAt : parseRequiredAdminCalendarDate(input.start, 'Calendar start date');
-  const endAt = input.end === undefined ? existing.endAt : parseRequiredAdminCalendarDate(input.end, 'Calendar end date');
+  const startAt =
+    input.start === undefined
+      ? existing.startAt
+      : parseRequiredAdminCalendarDate(input.start, 'Calendar start date');
+  const endAt =
+    input.end === undefined ? existing.endAt : parseRequiredAdminCalendarDate(input.end, 'Calendar end date');
   assertAdminCalendarDateRange(startAt, endAt);
 
   if (input.title !== undefined) {
@@ -13092,6 +19339,317 @@ function normalizeManualWalletApprovalAdminId(
   return normalized;
 }
 
+function assertLegacyManualWalletAdjustmentRequestMatches(
+  request: {
+    ownerType: string;
+    ownerId: string;
+    direction: string;
+    adjustmentType: string;
+    amount: number;
+    currency: string;
+    reason: string;
+    monthlyPeriod: string | null;
+    attachmentUrl: string | null;
+  },
+  input: CreateManualWalletAdjustmentDto,
+) {
+  const matches =
+    request.ownerType === manualWalletAdjustmentOwnerType(input.ownerType) &&
+    request.ownerId === normalizeManualWalletOwnerId(input.ownerId) &&
+    request.direction === manualWalletAdjustmentDirection(input.direction) &&
+    request.adjustmentType === manualWalletAdjustmentType(input.adjustmentType) &&
+    request.amount === integerValue(input.amount) &&
+    request.currency === normalizeManualWalletCurrency(input.currency) &&
+    request.reason === normalizeAuditReason(input.reason) &&
+    request.monthlyPeriod === normalizeManualWalletMonthlyPeriod(input.monthlyPeriod) &&
+    request.attachmentUrl === normalizeManualWalletAttachmentUrl(input.attachmentUrl);
+
+  if (!matches) {
+    throw new ConflictException(
+      'Legacy manual wallet adjustment payload does not match the persisted approval request',
+    );
+  }
+}
+
+function partnerBankDepositLedgerSourceKey(providerProfileId: string, bankTransactionId: string) {
+  return `partner-bank-deposit:${providerProfileId}:${bankTransactionId}`;
+}
+
+function partnerBankDepositAccountingPreview(
+  allocation: ReturnType<typeof allocatePartnerBankDeposit>,
+) {
+  return [
+    {
+      side: AccountingJournalEntrySide.DEBIT,
+      accountCode: 'company_bank_cash',
+      accountName: 'Company bank cash',
+      amount: allocation.depositAmount,
+    },
+    ...(allocation.amountAppliedToNegativeWallet > 0
+      ? [
+          {
+            side: AccountingJournalEntrySide.CREDIT,
+            accountCode: 'partner_receivable',
+            accountName: 'Partner receivable',
+            amount: allocation.amountAppliedToNegativeWallet,
+          },
+        ]
+      : []),
+    ...(allocation.amountCreditedToWalletLiability > 0
+      ? [
+          {
+            side: AccountingJournalEntrySide.CREDIT,
+            accountCode: 'partner_wallet_liability',
+            accountName: 'Partner wallet liability',
+            amount: allocation.amountCreditedToWalletLiability,
+          },
+        ]
+      : []),
+  ];
+}
+
+function assertLegacyPartnerBankDepositRequestMatches(
+  request: {
+    providerProfileId: string;
+    amount: number;
+    bankTransactionId: string;
+    depositDate: Date;
+    bankAccount: string | null;
+    attachmentFileId: string | null;
+    attachmentUrl: string | null;
+    notes: string | null;
+  },
+  input: RecordPartnerBankDepositDto,
+  actorId: string,
+) {
+  const deposit = normalizePartnerBankDepositInput({ ...input, adminId: actorId });
+  const matches =
+    request.providerProfileId === deposit.providerProfileId &&
+    request.amount === deposit.amount &&
+    request.bankTransactionId === deposit.bankTransactionId &&
+    request.depositDate.getTime() === deposit.depositDate.getTime() &&
+    request.bankAccount === (deposit.bankAccount ?? null) &&
+    request.attachmentFileId === (deposit.attachmentFileId ?? null) &&
+    request.attachmentUrl === (deposit.attachmentUrl ?? null) &&
+    request.notes === (deposit.notes ?? null);
+
+  if (!matches) {
+    throw new ConflictException(
+      'Legacy partner bank deposit payload does not match the persisted approval request',
+    );
+  }
+}
+
+function normalizePartnerBankDepositRequestStatus(value?: string | null) {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+  if (
+    Object.values(PartnerBankDepositRequestStatus).includes(
+      normalized as PartnerBankDepositRequestStatus,
+    )
+  ) {
+    return normalized as PartnerBankDepositRequestStatus;
+  }
+  throw new BadRequestException('Partner bank deposit request status is invalid');
+}
+
+function normalizePartnerBankDepositReview(value?: string | null) {
+  const normalized = normalizeNullable(value)?.toLowerCase();
+  if (!normalized || normalized === 'all') {
+    return 'all' as const;
+  }
+  if (normalized === 'needs-reconciliation') {
+    return normalized;
+  }
+  throw new BadRequestException('Partner bank deposit review filter is invalid');
+}
+
+function normalizePartnerBankDepositReconciliationOwner(
+  value?: string | null,
+): 'all' | 'unassigned' {
+  const normalized = normalizeNullable(value)?.toLowerCase();
+  if (!normalized || normalized === 'all') return 'all' as const;
+  if (normalized === 'unassigned') return normalized;
+  throw new BadRequestException('Partner bank deposit reconciliation owner filter is invalid');
+}
+
+function normalizePartnerBankDepositReconciliationSla(
+  value?: string | null,
+): 'all' | 'within-24h' | 'over-24h' | 'escalate' {
+  const normalized = normalizeNullable(value)?.toLowerCase();
+  if (!normalized || normalized === 'all') return 'all' as const;
+  if (normalized === 'within-24h' || normalized === 'over-24h' || normalized === 'escalate') {
+    return normalized;
+  }
+  throw new BadRequestException('Partner bank deposit reconciliation SLA filter is invalid');
+}
+
+function normalizePartnerBankDepositReconciliationPeriod(value?: string | null) {
+  const normalized = normalizeNullable(value);
+  if (!normalized) {
+    return null;
+  }
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) {
+    return normalized;
+  }
+  throw new BadRequestException('Partner bank deposit reconciliation period must use YYYY-MM');
+}
+
+function partnerBankDepositReconciliationState(
+  request: Pick<
+    AdminPartnerBankDepositHistoryRow,
+    'amount' | 'createdAt' | 'executedAt' | 'journalBatchId' | 'status'
+  >,
+  reconciliationByBatchId: ReadonlyMap<
+    string,
+    { matchedAmount: number; remainingAmount: number }
+  >,
+) {
+  if (request.status !== PartnerBankDepositRequestStatus.EXECUTED) {
+    return {
+      reconciliationMatchedAmount: 0,
+      reconciliationRemainingAmount: 0,
+      reconciliationSlaStatus: 'NOT_APPLICABLE' as const,
+      reconciliationStatus: 'NOT_APPLICABLE' as const,
+      reconciliationWaitingHours: null,
+    };
+  }
+
+  const evidence = request.journalBatchId
+    ? reconciliationByBatchId.get(request.journalBatchId)
+    : null;
+  const matchedAmount = evidence?.matchedAmount ?? 0;
+  const remainingAmount = evidence?.remainingAmount ?? request.amount;
+  const waitingSince = request.executedAt ?? request.createdAt;
+  const reconciliationWaitingHours = remainingAmount > 0
+    ? Math.max(0, Math.floor((Date.now() - waitingSince.getTime()) / 3_600_000))
+    : null;
+  return {
+    reconciliationMatchedAmount: matchedAmount,
+    reconciliationRemainingAmount: remainingAmount,
+    reconciliationSlaStatus: remainingAmount === 0
+      ? ('RECONCILED' as const)
+      : (reconciliationWaitingHours ?? 0) >= 48
+        ? ('ESCALATE' as const)
+        : (reconciliationWaitingHours ?? 0) >= 24
+          ? ('OVER_24H' as const)
+          : ('WITHIN_24H' as const),
+    reconciliationStatus: remainingAmount === 0
+      ? ('MATCHED' as const)
+      : matchedAmount > 0
+        ? ('PARTIALLY_MATCHED' as const)
+        : ('UNMATCHED' as const),
+    reconciliationWaitingHours,
+  };
+}
+
+function assertPartnerBankDepositRequestPending(status: PartnerBankDepositRequestStatus) {
+  if (status !== PartnerBankDepositRequestStatus.REQUESTED) {
+    throw new ConflictException('Partner bank deposit request is no longer pending');
+  }
+}
+
+function partnerBankDepositAllocationFromLedger(
+  metadata: Prisma.JsonValue | null,
+  depositAmount: number,
+): ReturnType<typeof allocatePartnerBankDeposit> {
+  const allocation = adminJsonObject(adminJsonObject(metadata)?.allocation);
+  const currentWalletBalance = integerJsonValue(allocation?.currentWalletBalance);
+  const currentNegativeWalletAmount = integerJsonValue(allocation?.currentNegativeWalletAmount);
+  const amountAppliedToNegativeWallet = integerJsonValue(allocation?.amountAppliedToNegativeWallet);
+  const amountCreditedToWalletLiability = integerJsonValue(allocation?.amountCreditedToWalletLiability);
+  const resultingWalletBalance = integerJsonValue(allocation?.resultingWalletBalance);
+  const recordedDepositAmount = integerJsonValue(allocation?.depositAmount);
+
+  if (
+    recordedDepositAmount !== depositAmount ||
+    currentWalletBalance === null ||
+    currentNegativeWalletAmount === null ||
+    amountAppliedToNegativeWallet === null ||
+    amountCreditedToWalletLiability === null ||
+    resultingWalletBalance === null ||
+    amountAppliedToNegativeWallet + amountCreditedToWalletLiability !== depositAmount ||
+    currentWalletBalance + depositAmount !== resultingWalletBalance
+  ) {
+    throw new ConflictException('Partner bank deposit allocation evidence is incomplete');
+  }
+
+  return {
+    depositAmount: recordedDepositAmount,
+    currentWalletBalance,
+    currentNegativeWalletAmount,
+    amountAppliedToNegativeWallet,
+    amountCreditedToWalletLiability,
+    resultingWalletBalance,
+  };
+}
+
+function integerJsonValue(value: unknown) {
+  return typeof value === 'number' && Number.isInteger(value) ? value : null;
+}
+
+async function upsertPartnerBankDepositJournal(
+  tx: Pick<Prisma.TransactionClient, 'accountingJournalBatch'>,
+  input: {
+    actorId: string;
+    allocation: ReturnType<typeof allocatePartnerBankDeposit>;
+    approvalChannel: 'LEGACY_COMPAT' | 'REQUEST_APPROVAL';
+    bankTransactionId: string;
+    currency: string;
+    depositDate: Date;
+    ledgerId: string;
+    providerProfileId: string;
+    requestId: string;
+    requestedByAdminId: string;
+  },
+) {
+  const sourceKey = `accounting-journal:provider-bank-deposit:${input.providerProfileId}:${input.bankTransactionId}`;
+  const sourceType = AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT;
+  const metadata = toJson({
+    partnerBankDeposit: true,
+    partnerBankDepositRequestId: input.requestId,
+    providerProfileId: input.providerProfileId,
+    bankTransactionId: input.bankTransactionId,
+    requestedByAdminId: input.requestedByAdminId,
+    approvedByAdminId: input.actorId,
+    approvalChannel: input.approvalChannel,
+    ledgerId: input.ledgerId,
+    allocation: input.allocation,
+  });
+  const entries = partnerBankDepositAccountingPreview(input.allocation).map((entry) => ({
+    ...entry,
+    currency: input.currency,
+    memo: `Partner bank deposit ${input.bankTransactionId}`,
+    metadata,
+    sourceId: input.ledgerId,
+    sourceType,
+  }));
+  const batchData = {
+    createdById: input.actorId,
+    currency: input.currency,
+    entries: { create: entries },
+    metadata,
+    monthlyPeriod: settlementMonthlyPeriod(input.depositDate),
+    providerProfileId: input.providerProfileId,
+    sourceId: input.ledgerId,
+    sourceType,
+    status: AccountingJournalBatchStatus.POSTED,
+    totalCredit: input.allocation.depositAmount,
+    totalDebit: input.allocation.depositAmount,
+  };
+
+  return tx.accountingJournalBatch.upsert({
+    where: { sourceKey },
+    update: {
+      ...batchData,
+      entries: { deleteMany: {}, create: entries },
+    },
+    create: { ...batchData, sourceKey },
+  });
+}
+
 function normalizeFinanceActionApprovalAdminId(
   value: string | null | undefined,
   actorId: string,
@@ -13102,6 +19660,472 @@ function normalizeFinanceActionApprovalAdminId(
     throw new BadRequestException(`${actionLabel} requires approval from a different admin`);
   }
   return normalized;
+}
+
+function adminPaymentFeePolicyListTake(value: number | string | null | undefined) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return ADMIN_PAYMENT_FEE_POLICY_DEFAULT_LIMIT;
+  }
+  return Math.min(Math.trunc(parsed), ADMIN_PAYMENT_FEE_POLICY_MAX_LIMIT);
+}
+
+function adminPaymentFeePolicySampleAmount(value: number | string | null | undefined) {
+  if (value === undefined || value === null || value === '') {
+    return ADMIN_PAYMENT_FEE_POLICY_DEFAULT_SAMPLE_AMOUNT;
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0 || parsed > ADMIN_PAYMENT_FEE_POLICY_MAX_SAMPLE_AMOUNT) {
+    throw new BadRequestException(
+      `Payment fee sample amount must be an integer between 1 and ${ADMIN_PAYMENT_FEE_POLICY_MAX_SAMPLE_AMOUNT}`,
+    );
+  }
+  return parsed;
+}
+
+function normalizePaymentFeePolicyInput(input: {
+  name: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  notes?: string | null;
+}) {
+  const name = input.name.trim();
+  if (!name) {
+    throw new BadRequestException('Payment fee policy name is required');
+  }
+  const effectiveFrom = new Date(input.effectiveFrom);
+  const effectiveTo = input.effectiveTo ? new Date(input.effectiveTo) : null;
+  if (Number.isNaN(effectiveFrom.getTime())) {
+    throw new BadRequestException('Payment fee policy effective from is invalid');
+  }
+  if (effectiveTo && Number.isNaN(effectiveTo.getTime())) {
+    throw new BadRequestException('Payment fee policy effective to is invalid');
+  }
+  if (effectiveTo && effectiveTo <= effectiveFrom) {
+    throw new BadRequestException('Payment fee policy effective to must be after effective from');
+  }
+  return {
+    name,
+    effectiveFrom,
+    effectiveTo,
+    notes: normalizeNullable(input.notes),
+  };
+}
+
+function assertPaymentFeeDraft(
+  policy: { id: string; status: TaxPolicyStatus } | null,
+  policyId: string,
+): asserts policy is { id: string; status: 'DRAFT' } {
+  if (!policy) {
+    throw new NotFoundException(`Payment fee policy ${policyId} was not found`);
+  }
+  if (policy.status !== TaxPolicyStatus.DRAFT) {
+    throw new BadRequestException('Only DRAFT payment fee policies can be changed');
+  }
+}
+
+type PaymentFeeRuleValidationInput = {
+  feeType: PaymentFeeRuleType;
+  rateBps: number;
+  fixedAmount: number;
+};
+
+type PaymentFeePolicyActivationInput = {
+  effectiveFrom: Date;
+  effectiveTo: Date | null;
+  notes: string | null;
+  rules: Array<
+    PaymentFeeRuleValidationInput & {
+      active: boolean;
+      method: PaymentMethod;
+    }
+  >;
+};
+
+type PaymentFeePolicyPreflightBlocker = {
+  code: string;
+  message: string;
+  method?: PaymentMethod;
+};
+
+type AdminPaymentFeeMethodEvidenceGroupRow = {
+  paymentMethod: string;
+  settlementCount: bigint | number | null;
+  evidenceReviewCount: bigint | number | null;
+  customerPaymentAmountTotal: bigint | number | null;
+  evidenceCustomerPaymentAmountTotal: bigint | number | null;
+  paymentProcessingFeeTotal: bigint | number | null;
+  evidenceRecordedFeeTotal: bigint | number | null;
+  remediationExpectedFeeTotal: bigint | number | null;
+};
+
+type AdminPaymentFeeRemediationPolicy = {
+  id: string;
+  effectiveFrom: Date;
+  effectiveTo: Date | null;
+  rules: Array<{
+    method: PaymentMethod;
+    feeType: PaymentFeeRuleType;
+    rateBps: number;
+    fixedAmount: number;
+  }>;
+};
+
+type PaymentFeePolicyPreflightInput = Omit<PaymentFeePolicyActivationInput, 'rules'> & {
+  id: string;
+  status: TaxPolicyStatus;
+  rules: Array<
+    PaymentFeePolicyActivationInput['rules'][number] & {
+      payer: PaymentFeePayer;
+      treatment: PaymentFeeTreatment;
+    }
+  >;
+};
+
+type PaymentFeePolicyApprovalRequest = Prisma.AdminAuditLogGetPayload<{
+  select: typeof adminPaymentFeePolicyApprovalRequestSelect;
+}>;
+
+type AdminFinanceApprovalPolicyRequestRow = {
+  actorEmail: string | null;
+  actorFullName: string | null;
+  actorId: string;
+  effectiveFrom: Date;
+  metadata: Prisma.JsonValue | null;
+  policyId: string;
+  policyName: string;
+  policyUpdatedAt: Date;
+  requestedAt: Date;
+  requestId: string;
+  totalCount: bigint | number;
+};
+
+type AdminFinanceApprovalWalletAdjustmentRequestRow = {
+  adjustmentType: string;
+  amount: number;
+  attachmentUrl: string | null;
+  createdAt: Date;
+  currency: string;
+  direction: string;
+  id: string;
+  monthlyPeriod: string | null;
+  ownerId: string;
+  ownerName: string;
+  ownerType: string;
+  reason: string;
+  requestedAfterBalance: number;
+  requestedBeforeBalance: number;
+  requestedByAdminId: string;
+  requesterEmail: string | null;
+  requesterFullName: string | null;
+  requiresAttachment: boolean;
+  totalCount: bigint | number;
+};
+
+type AdminFinanceApprovalPartnerBankDepositRequestRow = {
+  amount: number;
+  attachmentFileId: string | null;
+  attachmentUrl: string | null;
+  bankAccount: string | null;
+  bankTransactionId: string;
+  createdAt: Date;
+  currency: string;
+  depositDate: Date;
+  id: string;
+  notes: string | null;
+  partnerName: string;
+  providerProfileId: string;
+  requestedAfterBalance: number;
+  requestedBeforeBalance: number;
+  requestedByAdminId: string;
+  requestedReceivableRecovery: number;
+  requestedWalletLiabilityIncrease: number;
+  requesterEmail: string | null;
+  requesterFullName: string | null;
+  totalCount: bigint | number;
+};
+
+function paymentFeeRuleValidationMessage(input: PaymentFeeRuleValidationInput) {
+  if (!Number.isInteger(input.rateBps) || input.rateBps < 0 || input.rateBps > 10000) {
+    return 'Payment fee rate must be between 0 and 10000 basis points';
+  }
+  if (!Number.isInteger(input.fixedAmount) || input.fixedAmount < 0) {
+    return 'Payment fee fixed amount must be a non-negative integer';
+  }
+  if (input.feeType === PaymentFeeRuleType.RATE && input.fixedAmount !== 0) {
+    return 'RATE payment fee rules cannot include a fixed amount';
+  }
+  if (input.feeType === PaymentFeeRuleType.FIXED && input.rateBps !== 0) {
+    return 'FIXED payment fee rules cannot include a rate';
+  }
+  return null;
+}
+
+function assertPaymentFeeRuleValues(input: PaymentFeeRuleValidationInput) {
+  const message = paymentFeeRuleValidationMessage(input);
+  if (message) {
+    throw new BadRequestException(message);
+  }
+}
+
+function paymentFeePolicyActivationBlockers(
+  policy: PaymentFeePolicyActivationInput,
+  now = new Date(),
+): PaymentFeePolicyPreflightBlocker[] {
+  const blockers: PaymentFeePolicyPreflightBlocker[] = [];
+  if (!normalizeNullable(policy.notes)) {
+    blockers.push({
+      code: 'POLICY_EVIDENCE_REQUIRED',
+      message: 'Payment fee policy activation requires contract or pricing evidence notes',
+    });
+  }
+  if (policy.effectiveFrom > now) {
+    blockers.push({
+      code: 'FUTURE_EFFECTIVE_FROM',
+      message: 'Future payment fee policies cannot be activated by this immediate activation flow',
+    });
+  }
+  if (policy.effectiveTo && policy.effectiveTo <= now) {
+    blockers.push({ code: 'POLICY_EXPIRED', message: 'Expired payment fee policies cannot be activated' });
+  }
+  if (policy.effectiveTo && policy.effectiveTo <= policy.effectiveFrom) {
+    blockers.push({
+      code: 'INVALID_EFFECTIVE_WINDOW',
+      message: 'Payment fee policy effective window is invalid',
+    });
+  }
+  const activeRules = policy.rules.filter((rule) => rule.active);
+  for (const method of Object.values(PaymentMethod)) {
+    const methodRules = activeRules.filter((rule) => rule.method === method);
+    if (methodRules.length !== 1) {
+      blockers.push({
+        code: methodRules.length ? 'DUPLICATE_METHOD_RULE' : 'MISSING_METHOD_RULE',
+        message: `Payment fee policy requires exactly one active ${method} rule`,
+        method,
+      });
+      continue;
+    }
+    const validationMessage = paymentFeeRuleValidationMessage(methodRules[0]);
+    if (validationMessage) {
+      blockers.push({ code: 'INVALID_METHOD_RULE', message: validationMessage, method });
+    }
+  }
+  return blockers;
+}
+
+function assertPaymentFeePolicyReadyForActivation(policy: PaymentFeePolicyActivationInput) {
+  const blocker = paymentFeePolicyActivationBlockers(policy)[0];
+  if (blocker) {
+    throw new BadRequestException(blocker.message);
+  }
+}
+
+function paymentFeePolicyPreflightResult(
+  policy: PaymentFeePolicyPreflightInput,
+  sampleAmount: number,
+) {
+  const activeRules = policy.rules.filter((rule) => rule.active);
+  const activationBlockers = paymentFeePolicyActivationBlockers(policy);
+  const blockers: PaymentFeePolicyPreflightBlocker[] = [
+    ...(policy.status === TaxPolicyStatus.DRAFT
+      ? []
+      : [
+          {
+            code: 'POLICY_NOT_DRAFT',
+            message: 'Only DRAFT payment fee policies can be activated',
+          },
+        ]),
+    ...activationBlockers,
+  ];
+  const rules = Object.values(PaymentMethod).map((method) => {
+    const methodRules = activeRules.filter((rule) => rule.method === method);
+    const rule = methodRules.length === 1 ? methodRules[0] : null;
+    const validationMessage = rule ? paymentFeeRuleValidationMessage(rule) : null;
+    const status = methodRules.length === 0
+      ? ('MISSING' as const)
+      : methodRules.length > 1
+        ? ('DUPLICATE' as const)
+        : validationMessage
+          ? ('INVALID' as const)
+          : ('READY' as const);
+    return {
+      method,
+      ruleCount: methodRules.length,
+      feeType: rule?.feeType ?? null,
+      rateBps: rule?.rateBps ?? null,
+      fixedAmount: rule?.fixedAmount ?? null,
+      payer: rule?.payer ?? null,
+      treatment: rule?.treatment ?? null,
+      estimatedFeeAmount:
+        rule && !validationMessage ? bpsAmount(sampleAmount, rule.rateBps) + rule.fixedAmount : null,
+      status,
+    };
+  });
+
+  return {
+    policyId: policy.id,
+    policyStatus: policy.status,
+    sampleAmount,
+    currency: 'VND' as const,
+    readyForActivation: blockers.length === 0,
+    blockers,
+    coverage: {
+      requiredMethods: Object.values(PaymentMethod).length,
+      configuredMethods: rules.filter((rule) => rule.status === 'READY').length,
+      missingMethods: rules.filter((rule) => rule.status === 'MISSING').map((rule) => rule.method),
+      duplicateMethods: rules.filter((rule) => rule.status === 'DUPLICATE').map((rule) => rule.method),
+      invalidMethods: rules.filter((rule) => rule.status === 'INVALID').map((rule) => rule.method),
+    },
+    rules,
+  };
+}
+
+function paymentFeePolicyFingerprint(policy: PaymentFeePolicyPreflightInput) {
+  const rules = policy.rules
+    .map((rule) => ({
+      active: rule.active,
+      feeType: rule.feeType,
+      fixedAmount: rule.fixedAmount,
+      method: rule.method,
+      payer: rule.payer,
+      rateBps: rule.rateBps,
+      treatment: rule.treatment,
+    }))
+    .sort((left, right) => left.method.localeCompare(right.method));
+  return createHash('sha256')
+    .update(JSON.stringify({
+      effectiveFrom: policy.effectiveFrom.toISOString(),
+      effectiveTo: policy.effectiveTo?.toISOString() ?? null,
+      notes: normalizeNullable(policy.notes),
+      rules,
+    }))
+    .digest('hex');
+}
+
+function paymentFeePolicyApprovalMetadata(value: Prisma.JsonValue | null) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {} as {
+      policyFingerprint?: string;
+      reason?: string;
+      requestId?: string;
+      requestedAt?: string;
+      requestedBy?: { id: string; email: string | null; fullName: string | null };
+    };
+  }
+  const policyFingerprint = typeof value.policyFingerprint === 'string' ? value.policyFingerprint : undefined;
+  const reason = typeof value.reason === 'string' ? value.reason : undefined;
+  const requestId = typeof value.requestId === 'string' ? value.requestId : undefined;
+  const requestedAt = typeof value.requestedAt === 'string' ? value.requestedAt : undefined;
+  const requestedByValue = value.requestedBy;
+  const requestedBy = requestedByValue && typeof requestedByValue === 'object' && !Array.isArray(requestedByValue)
+    && typeof requestedByValue.id === 'string'
+    ? {
+        id: requestedByValue.id,
+        email: typeof requestedByValue.email === 'string' ? requestedByValue.email : null,
+        fullName: typeof requestedByValue.fullName === 'string' ? requestedByValue.fullName : null,
+      }
+    : undefined;
+  return { policyFingerprint, reason, requestId, requestedAt, requestedBy };
+}
+
+function paymentFeePolicyApprovalView(
+  policy: PaymentFeePolicyPreflightInput,
+  event: PaymentFeePolicyApprovalRequest | null,
+) {
+  const metadata = paymentFeePolicyApprovalMetadata(event?.metadata ?? null);
+  const status = policy.status === TaxPolicyStatus.ACTIVE
+    ? ('ACTIVE' as const)
+    : !event
+      ? ('NOT_REQUESTED' as const)
+      : event.action === 'payment_fee_policy.approval_rejected'
+        ? ('REJECTED' as const)
+        : event.action === 'payment_fee_policy.approval_cancelled'
+          ? ('CANCELLED' as const)
+          : metadata.policyFingerprint === paymentFeePolicyFingerprint(policy)
+            ? ('REQUESTED' as const)
+            : ('STALE' as const);
+  const requestEvent = event?.action === 'payment_fee_policy.approval_requested';
+  return {
+    policyId: policy.id,
+    status,
+    requestId: requestEvent ? event.id : metadata.requestId ?? null,
+    requestedAt: requestEvent ? event.createdAt.toISOString() : metadata.requestedAt ?? null,
+    requestedBy: requestEvent ? event.actor : metadata.requestedBy ?? null,
+    decisionAt: event && !requestEvent ? event.createdAt.toISOString() : null,
+    decidedBy: event && !requestEvent ? event.actor : null,
+    reason: metadata.reason ?? null,
+  };
+}
+
+function adminPaymentFeeRemediationReadiness(
+  policy: AdminPaymentFeeRemediationPolicy | null,
+  period: string,
+) {
+  const blockers: Array<{ code: string; message: string }> = [];
+  if (!policy) {
+    blockers.push({
+      code: 'ACTIVE_POLICY_REQUIRED',
+      message: 'An active payment fee policy is required before historical fee differences can be previewed.',
+    });
+    return { blockers, ready: false };
+  }
+
+  for (const method of Object.values(PaymentMethod)) {
+    const rules = policy.rules.filter((rule) => rule.method === method);
+    if (rules.length !== 1) {
+      blockers.push({
+        code: rules.length ? 'DUPLICATE_METHOD_RULE' : 'MISSING_METHOD_RULE',
+        message: `Historical preview requires exactly one active ${method} rule.`,
+      });
+      continue;
+    }
+    const validationMessage = paymentFeeRuleValidationMessage(rules[0]);
+    if (validationMessage) {
+      blockers.push({ code: 'INVALID_METHOD_RULE', message: `${method}: ${validationMessage}` });
+    }
+  }
+
+  const bounds = adminPaymentFeeRemediationPeriodBounds(period);
+  if (policy.effectiveFrom > bounds.start || (policy.effectiveTo && policy.effectiveTo < bounds.end)) {
+    blockers.push({
+      code: 'POLICY_PERIOD_NOT_COVERED',
+      message: `Active policy ${policy.id} does not cover the full ${period} settlement period.`,
+    });
+  }
+
+  return { blockers, ready: blockers.length === 0 };
+}
+
+function adminPaymentFeeRemediationPeriodBounds(period: string) {
+  const [year, month] = period.split('-').map(Number);
+  const offsetMs = 7 * 60 * 60 * 1000;
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1) - offsetMs),
+    end: new Date(Date.UTC(year, month, 1) - offsetMs),
+  };
+}
+
+function adminPaymentFeeEvidenceSqlCondition() {
+  return Prisma.sql`
+    (
+      "paymentFeePolicyVersionId" IS NULL
+      OR COALESCE("paymentFeeRuleSnapshot" ? 'reason', false)
+    )
+  `;
+}
+
+function adminPaymentFeeExpectedAmountSql(rules: AdminPaymentFeeRemediationPolicy['rules']) {
+  if (!rules.length) {
+    return Prisma.sql`0::bigint`;
+  }
+  const branches = rules.map(
+    (rule) => Prisma.sql`
+      WHEN "paymentMethod" = ${rule.method}::"PaymentMethod"
+      THEN ROUND(("customerPaymentAmount"::numeric * ${rule.rateBps}) / 10000)::bigint
+        + ${rule.fixedAmount}
+    `,
+  );
+  return Prisma.sql`CASE ${Prisma.join(branches, ' ')} ELSE 0 END`;
 }
 
 async function assertFinanceActionApprovalAdmin(
@@ -13296,16 +20320,17 @@ type ManualWalletAdjustmentLedgerIdRow = {
   ownerType: ManualWalletAdjustmentOwnerType;
 };
 
+type ManualWalletAdjustmentLedgerRow = ReturnType<typeof manualWalletAdjustmentLedgerRow>;
+
 const MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES: ProviderWalletLedgerType[] = [
   ProviderWalletLedgerType.MANUAL_ADJUSTMENT_CREDIT,
   ProviderWalletLedgerType.MANUAL_ADJUSTMENT_DEBIT,
   ProviderWalletLedgerType.MANUAL_ADJUSTMENT_REVERSAL,
 ];
 
-const MANUAL_WALLET_ADJUSTMENT_PROVIDER_SQL_TYPES =
-  MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES.map(
-    (type) => Prisma.sql`${type}::"ProviderWalletLedgerType"`,
-  );
+const MANUAL_WALLET_ADJUSTMENT_PROVIDER_SQL_TYPES = MANUAL_WALLET_ADJUSTMENT_PROVIDER_LEDGER_TYPES.map(
+  (type) => Prisma.sql`${type}::"ProviderWalletLedgerType"`,
+);
 
 const manualWalletAdjustmentCustomerListSelect = {
   id: true,
@@ -13362,6 +20387,23 @@ function normalizeManualWalletAdjustmentOwnerTypeFilter(value?: string | null) {
     return null;
   }
   return manualWalletAdjustmentOwnerType(normalized);
+}
+
+function normalizeManualWalletAdjustmentRequestStatus(value?: string | null) {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+  if (Object.values(ManualWalletAdjustmentRequestStatus).includes(normalized as ManualWalletAdjustmentRequestStatus)) {
+    return normalized as ManualWalletAdjustmentRequestStatus;
+  }
+  throw new BadRequestException('Manual wallet adjustment request status is invalid');
+}
+
+function assertManualWalletAdjustmentRequestPending(status: ManualWalletAdjustmentRequestStatus) {
+  if (status !== ManualWalletAdjustmentRequestStatus.REQUESTED) {
+    throw new ConflictException('Manual wallet adjustment request is no longer pending');
+  }
 }
 
 function manualWalletAdjustmentCustomerWhere(
@@ -13822,7 +20864,11 @@ function normalizePartnerOnlineStatusFilter(value: unknown): ProviderStatus[] | 
   if (!normalized) return null;
 
   if (normalized === 'online') {
-    return [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_BUSY, ProviderStatus.ONLINE_AVAILABLE_SOON];
+    return [
+      ProviderStatus.ONLINE_AVAILABLE,
+      ProviderStatus.ONLINE_BUSY,
+      ProviderStatus.ONLINE_AVAILABLE_SOON,
+    ];
   }
   if (normalized === 'available') return [ProviderStatus.ONLINE_AVAILABLE];
   if (normalized === 'busy') return [ProviderStatus.ONLINE_BUSY];
@@ -13830,7 +20876,9 @@ function normalizePartnerOnlineStatusFilter(value: unknown): ProviderStatus[] | 
   if (normalized === 'offline') return [ProviderStatus.OFFLINE];
 
   const enumValue = normalized.toUpperCase();
-  return Object.values(ProviderStatus).includes(enumValue as ProviderStatus) ? [enumValue as ProviderStatus] : null;
+  return Object.values(ProviderStatus).includes(enumValue as ProviderStatus)
+    ? [enumValue as ProviderStatus]
+    : null;
 }
 
 function normalizePartnerWalletStatusFilter(value: unknown) {
@@ -13898,13 +20946,19 @@ function partnerOverviewProviderWhere(options: {
     filters.push({ status: { in: [...options.onlineStatuses] } });
   }
   if (options.walletStatus === 'negative') {
-    filters.push({ id: options.negativeWalletIds.length ? { in: [...options.negativeWalletIds] } : '__none__' });
+    filters.push({
+      id: options.negativeWalletIds.length ? { in: [...options.negativeWalletIds] } : '__none__',
+    });
   }
   if (options.walletStatus === 'positive') {
-    filters.push({ id: options.positiveWalletIds.length ? { in: [...options.positiveWalletIds] } : '__none__' });
+    filters.push({
+      id: options.positiveWalletIds.length ? { in: [...options.positiveWalletIds] } : '__none__',
+    });
   }
   if (options.walletStatus === 'zero') {
-    filters.push({ id: { notIn: [...new Set([...options.negativeWalletIds, ...options.positiveWalletIds])] } });
+    filters.push({
+      id: { notIn: [...new Set([...options.negativeWalletIds, ...options.positiveWalletIds])] },
+    });
   }
 
   return filters.length === 1 ? filters[0] : { AND: filters };
@@ -13950,7 +21004,7 @@ function partnerOverviewProviderEligible(
     walletBalance >= 0 &&
     Boolean(
       provider.currentLocationUpdatedAt &&
-        provider.currentLocationUpdatedAt.getTime() >= locationFreshBoundary.getTime(),
+      provider.currentLocationUpdatedAt.getTime() >= locationFreshBoundary.getTime(),
     )
   );
 }
@@ -14033,7 +21087,9 @@ function partnerOverviewAreaAverageResponseSeconds(rows: readonly PartnerOvervie
   );
 }
 
-function partnerOverviewAverageResponseSecondsByProvider(rows: readonly PartnerOverviewResponseParticipantRow[]) {
+function partnerOverviewAverageResponseSecondsByProvider(
+  rows: readonly PartnerOverviewResponseParticipantRow[],
+) {
   const totals = new Map<string, { count: number; totalSeconds: number }>();
 
   for (const row of rows) {
@@ -14176,7 +21232,9 @@ function partnerOverviewServiceRows(options: {
       provider.services.some((providerService) => providerService.serviceId === service.id),
     );
     const onlinePartners = providers.filter((provider) => provider.status !== ProviderStatus.OFFLINE).length;
-    const eligiblePartners = providers.filter((provider) => options.eligibleProviderIds.has(provider.id)).length;
+    const eligiblePartners = providers.filter((provider) =>
+      options.eligibleProviderIds.has(provider.id),
+    ).length;
     const openRequests = openMap.get(service.id) ?? 0;
     const completedBookings = completedMap.get(service.id) ?? 0;
     const completionRate = percentageValue(completedBookings, openRequests + completedBookings);
@@ -14236,9 +21294,20 @@ function partnerOverviewProviderFact(options: {
   const lowReview = options.lowReviewMap.get(provider.id);
   const noShow = options.noShowReportMap.get(provider.id);
   const lastOnlineAt = provider.sessions[0]?.lastSeenAt ?? null;
-  const lastBookingAt = latestDate(provider.selectedBookings[0]?.closedAt, provider.selectedBookings[0]?.updatedAt);
-  const lastActivityAt = latestDate(lastOnlineAt, lastBookingAt, completed?.lastActivityAt, cancelled?.lastActivityAt, provider.updatedAt);
-  const approved = provider.verification?.status === VerificationStatus.APPROVED && provider.kyc?.status === ProviderKycStatus.APPROVED;
+  const lastBookingAt = latestDate(
+    provider.selectedBookings[0]?.closedAt,
+    provider.selectedBookings[0]?.updatedAt,
+  );
+  const lastActivityAt = latestDate(
+    lastOnlineAt,
+    lastBookingAt,
+    completed?.lastActivityAt,
+    cancelled?.lastActivityAt,
+    provider.updatedAt,
+  );
+  const approved =
+    provider.verification?.status === VerificationStatus.APPROVED &&
+    provider.kyc?.status === ProviderKycStatus.APPROVED;
   const completedBookings = completed?.count ?? 0;
   const cancelledBookings = cancelled?.count ?? 0;
   const cancellationRate = percentageValue(cancelledBookings, completedBookings + cancelledBookings);
@@ -14246,7 +21315,11 @@ function partnerOverviewProviderFact(options: {
   const priceStats = partnerOverviewProviderPriceStats(provider);
   const inactive7d = !lastActivityAt || lastActivityAt.getTime() < options.active7dStart.getTime();
   const inactive30d = !lastActivityAt || lastActivityAt.getTime() < options.active30dStart.getTime();
-  const eligibleToAccept = partnerOverviewProviderEligible(provider, options.walletBalance, options.locationFreshBoundary);
+  const eligibleToAccept = partnerOverviewProviderEligible(
+    provider,
+    options.walletBalance,
+    options.locationFreshBoundary,
+  );
   const blocked = Boolean(provider.blockedAt);
   const riskLevel =
     blocked || options.walletBalance < 0 || (noShow?.count ?? 0) >= 2
@@ -14272,10 +21345,10 @@ function partnerOverviewProviderFact(options: {
     partnerName: provider.displayName || provider.user.fullName || 'Unknown Partner',
     phone: provider.user.phone || null,
     area: vietnamRegionLabel(
-      vietnamRegionCodeFromValues(
-        [provider.city, provider.residentialAddress, provider.serviceArea],
-        { latitude: provider.currentLat, longitude: provider.currentLng },
-      ),
+      vietnamRegionCodeFromValues([provider.city, provider.residentialAddress, provider.serviceArea], {
+        latitude: provider.currentLat,
+        longitude: provider.currentLng,
+      }),
     ),
     status: provider.status,
     verificationStatus: provider.verification?.status ?? null,
@@ -14378,7 +21451,9 @@ function partnerOverviewOperatingStatusCards(
     {
       key: 'ready-now',
       label: 'Ready now',
-      count: approvedFacts.filter((fact) => fact.status === ProviderStatus.ONLINE_AVAILABLE && fact.eligibleToAccept).length,
+      count: approvedFacts.filter(
+        (fact) => fact.status === ProviderStatus.ONLINE_AVAILABLE && fact.eligibleToAccept,
+      ).length,
       detail: 'Approved, online, fresh location, active services, and wallet eligible',
       href: '/partners?review=marketplace-ready&onlineStatus=available',
       tone: 'success',
@@ -14424,12 +21499,7 @@ function partnerOverviewActionLists(facts: readonly PartnerOverviewProviderFact[
       partnerOverviewRiskWeight(right.riskLevel) - partnerOverviewRiskWeight(left.riskLevel) ||
       (right.lastActivityAt ?? '').localeCompare(left.lastActivityAt ?? ''),
   );
-  const list = (
-    key: string,
-    title: string,
-    rows: PartnerOverviewProviderFact[],
-    viewAllHref: string,
-  ) => ({
+  const list = (key: string, title: string, rows: PartnerOverviewProviderFact[], viewAllHref: string) => ({
     key,
     title,
     totalCount: rows.length,
@@ -14592,7 +21662,8 @@ function partnerOverviewSelectionIssueCounts(rows: readonly PartnerOverviewSelec
   return PARTNER_OVERVIEW_SELECTION_ISSUE_OPTIONS.map((option) => ({
     key: option.key,
     label: option.label,
-    count: rows.filter((row) => partnerOverviewSelectionIssueMatches(row.readinessFlags, option.issue)).length,
+    count: rows.filter((row) => partnerOverviewSelectionIssueMatches(row.readinessFlags, option.issue))
+      .length,
   }));
 }
 
@@ -14604,9 +21675,7 @@ function partnerOverviewSelectionIssueMatches(
 
   switch (issue) {
     case 'availability':
-      return flags.some((flag) =>
-        ['Available soon', 'Busy now', 'Offline now'].includes(flag),
-      );
+      return flags.some((flag) => ['Available soon', 'Busy now', 'Offline now'].includes(flag));
     case 'price':
       return flags.includes('High partner price');
     case 'profile':
@@ -14631,9 +21700,10 @@ function partnerOverviewSelectionSortRows(
 
   switch (sort) {
     case 'availability':
-      return partnerOverviewAvailabilityWeight(right.readinessFlags) -
-        partnerOverviewAvailabilityWeight(left.readinessFlags) ||
-        defaultSort;
+      return (
+        partnerOverviewAvailabilityWeight(right.readinessFlags) -
+          partnerOverviewAvailabilityWeight(left.readinessFlags) || defaultSort
+      );
     case 'favorites':
       return right.favoriteCount - left.favoriteCount || defaultSort;
     case 'price':
@@ -14725,11 +21795,23 @@ function partnerOverviewSegments(facts: readonly PartnerOverviewProviderFact[]) 
   });
 
   return [
-    segment('pending', 'New Pending', facts.filter((fact) => !fact.approved), 'Needs admin review before marketplace exposure.', 'Review KYC and profile documents.', '/partners?review=unapproved', 'warning'),
+    segment(
+      'pending',
+      'New Pending',
+      facts.filter((fact) => !fact.approved),
+      'Needs admin review before marketplace exposure.',
+      'Review KYC and profile documents.',
+      '/partners?review=unapproved',
+      'warning',
+    ),
     segment(
       'documents-missing',
       'Documents Missing',
-      facts.filter((fact) => fact.verificationStatus !== VerificationStatus.APPROVED || fact.kycStatus !== ProviderKycStatus.APPROVED),
+      facts.filter(
+        (fact) =>
+          fact.verificationStatus !== VerificationStatus.APPROVED ||
+          fact.kycStatus !== ProviderKycStatus.APPROVED,
+      ),
       'Partners that still need approval-ready KYC or profile evidence.',
       'Request missing documents or review submitted files.',
       '/partners?review=unapproved&documentStatus=missing',
@@ -14744,9 +21826,33 @@ function partnerOverviewSegments(facts: readonly PartnerOverviewProviderFact[]) 
       '/partners?review=marketplace-ready&activity=inactive-7d',
       'warning',
     ),
-    segment('first-job', 'First Job Pending', facts.filter((fact) => fact.approved && fact.completedBookings === 0), 'Approved supply without a completed booking.', 'Check pricing, service coverage, and activation.', '/partners?review=marketplace-ready&bookingFlow=first-job-pending', 'info'),
-    segment('high-activity', 'High Activity', facts.filter((fact) => fact.completedBookings >= 3), 'Reliable supply anchors in the selected range.', 'Keep available and monitor payout readiness.', '/partners?sort=completed-work', 'success'),
-    segment('high-rating', 'High Rating', facts.filter((fact) => fact.rating >= 4.5 && fact.reviewCount >= 3), 'Partners with strong customer feedback.', 'Feature in marketplace and retention campaigns.', '/partners?sort=rating', 'success'),
+    segment(
+      'first-job',
+      'First Job Pending',
+      facts.filter((fact) => fact.approved && fact.completedBookings === 0),
+      'Approved supply without a completed booking.',
+      'Check pricing, service coverage, and activation.',
+      '/partners?review=marketplace-ready&bookingFlow=first-job-pending',
+      'info',
+    ),
+    segment(
+      'high-activity',
+      'High Activity',
+      facts.filter((fact) => fact.completedBookings >= 3),
+      'Reliable supply anchors in the selected range.',
+      'Keep available and monitor payout readiness.',
+      '/partners?sort=completed-work',
+      'success',
+    ),
+    segment(
+      'high-rating',
+      'High Rating',
+      facts.filter((fact) => fact.rating >= 4.5 && fact.reviewCount >= 3),
+      'Partners with strong customer feedback.',
+      'Feature in marketplace and retention campaigns.',
+      '/partners?sort=rating',
+      'success',
+    ),
     segment(
       'low-rating',
       'Low Rating',
@@ -14756,9 +21862,33 @@ function partnerOverviewSegments(facts: readonly PartnerOverviewProviderFact[]) 
       '/partners?review=quality-risk',
       'danger',
     ),
-    segment('high-cancellation', 'High Cancellation', facts.filter((fact) => fact.cancellationRate >= 20), 'Cancellation risk that can hurt matching.', 'Audit work schedule and cancellation reasons.', '/partners?review=high-cancellation', 'warning'),
-    segment('no-show', 'No-show Risk', facts.filter((fact) => fact.noShowReports > 0), 'Open no-show evidence needs operator attention.', 'Review no-show reports and possible sanctions.', '/partners?review=no-show-risk', 'danger'),
-    segment('negative-wallet', 'Negative Wallet', facts.filter((fact) => fact.walletBalance < 0), 'Company receivable exposure from partner wallet.', 'Resolve deposit or receivable workflow.', '/partners?review=unsettled', 'danger'),
+    segment(
+      'high-cancellation',
+      'High Cancellation',
+      facts.filter((fact) => fact.cancellationRate >= 20),
+      'Cancellation risk that can hurt matching.',
+      'Audit work schedule and cancellation reasons.',
+      '/partners?review=high-cancellation',
+      'warning',
+    ),
+    segment(
+      'no-show',
+      'No-show Risk',
+      facts.filter((fact) => fact.noShowReports > 0),
+      'Open no-show evidence needs operator attention.',
+      'Review no-show reports and possible sanctions.',
+      '/partners?review=no-show-risk',
+      'danger',
+    ),
+    segment(
+      'negative-wallet',
+      'Negative Wallet',
+      facts.filter((fact) => fact.walletBalance < 0),
+      'Company receivable exposure from partner wallet.',
+      'Resolve deposit or receivable workflow.',
+      '/partners?review=unsettled',
+      'danger',
+    ),
     segment(
       'payout-blocked',
       'Payout Blocked',
@@ -14768,7 +21898,15 @@ function partnerOverviewSegments(facts: readonly PartnerOverviewProviderFact[]) 
       '/partners?review=payout-blocked',
       'danger',
     ),
-    segment('churn-risk', 'Churn Risk', facts.filter((fact) => fact.approved && fact.inactive30d), 'Approved supply without recent activity.', 'Send reactivation push or call.', '/partners?review=marketplace-ready&activity=inactive-30d', 'warning'),
+    segment(
+      'churn-risk',
+      'Churn Risk',
+      facts.filter((fact) => fact.approved && fact.inactive30d),
+      'Approved supply without recent activity.',
+      'Send reactivation push or call.',
+      '/partners?review=marketplace-ready&activity=inactive-30d',
+      'warning',
+    ),
     segment(
       'overpriced',
       'Overpriced',
@@ -14798,9 +21936,7 @@ function partnerOverviewKpi(
   };
 }
 
-function partnerOverviewAverageDetailDurationSeconds(
-  rows: Array<{ metadata: Prisma.JsonValue | null }>,
-) {
+function partnerOverviewAverageDetailDurationSeconds(rows: Array<{ metadata: Prisma.JsonValue | null }>) {
   const values = rows
     .map((row) => partnerOverviewDetailDurationSeconds(row.metadata))
     .filter((value): value is number => typeof value === 'number');
@@ -14833,12 +21969,18 @@ function partnerOverviewFunnelSteps(steps: Array<[string, number | null]>) {
     const dropoffBase = typeof previousKnown === 'number' && previousKnown > 0 ? previousKnown : null;
 
     return {
-      key: label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      key: label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, ''),
       label,
       count,
-      conversionRate: typeof count === 'number' && conversionBase ? percentageValue(count, conversionBase) : null,
+      conversionRate:
+        typeof count === 'number' && conversionBase ? percentageValue(count, conversionBase) : null,
       dropoffRate:
-        typeof count === 'number' && dropoffBase ? Math.max(0, 100 - percentageValue(count, dropoffBase)) : null,
+        typeof count === 'number' && dropoffBase
+          ? Math.max(0, 100 - percentageValue(count, dropoffBase))
+          : null,
       dataStatus: typeof count === 'number' ? 'available' : 'not_enough_data',
     };
   });
@@ -14854,10 +21996,7 @@ function usageOverviewAddUtcDays(value: Date, days: number) {
   return next;
 }
 
-function usageOverviewClosedAtSql(
-  dateWhere: ReturnType<typeof adminUsageDateWhere>,
-  tableAlias?: string,
-) {
+function usageOverviewClosedAtSql(dateWhere: ReturnType<typeof adminUsageDateWhere>, tableAlias?: string) {
   if (!dateWhere) return Prisma.empty;
 
   if (tableAlias === 'booking') {
@@ -15603,7 +22742,9 @@ function adminOperatorAccessView(operator: AdminOperatorAccessSummary) {
     phone: operator.phone,
     fullName: operator.fullName,
     roles: operator.roles,
-    categories: operator.adminOperatorPermission?.categories ?? defaultAdminOperatorPermissionCategories(operator.roles),
+    categories:
+      operator.adminOperatorPermission?.categories ??
+      defaultAdminOperatorPermissionCategories(operator.roles),
     updatedAt: operator.adminOperatorPermission?.updatedAt.toISOString() ?? null,
   };
 }
@@ -15666,28 +22807,6 @@ function normalizeAdminOperatorEmail(value: string | null | undefined) {
 
 function generatedAdminOperatorPhone(email: string) {
   return `admin:${createHash('sha256').update(email).digest('hex').slice(0, 24)}`;
-}
-
-function hashAdminOperatorPassword(password: string) {
-  const passwordSalt = randomBytes(ADMIN_OPERATOR_PASSWORD_SALT_BYTES).toString('base64url');
-  const passwordHash = scryptSync(password, passwordSalt, ADMIN_OPERATOR_PASSWORD_HASH_BYTES).toString('base64url');
-
-  return { passwordHash, passwordSalt };
-}
-
-function verifyAdminOperatorPassword(
-  password: string,
-  credential: { readonly passwordHash: string; readonly passwordSalt: string },
-) {
-  const candidateHash = scryptSync(
-    password,
-    credential.passwordSalt,
-    ADMIN_OPERATOR_PASSWORD_HASH_BYTES,
-  ).toString('base64url');
-  const candidate = Buffer.from(candidateHash);
-  const expected = Buffer.from(credential.passwordHash);
-
-  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
 }
 
 async function assertAdminOperatorProtectedRoleRemoval(
@@ -16588,12 +23707,560 @@ function adminReviewStatusCounts(
   );
 }
 
+function adminBookingSettlementDryRunItem(preview: AdminBookingSettlementDryRunPreview) {
+  const dryRun = preview.historicalSettlementDryRun;
+  const paymentFeeRule = adminJsonObject(dryRun?.paymentFeeRuleSnapshot);
+  const paymentFeeRuleStatus = !dryRun
+    ? 'UNAVAILABLE'
+    : typeof paymentFeeRule?.ruleId === 'string'
+      ? 'MATCHED_POLICY_RULE'
+      : 'DEFAULTED';
+
+  return {
+    blockers: preview.blockers,
+    bookingId: preview.bookingId,
+    canRepair: preview.canRepair,
+    completedAt: preview.completedAt,
+    expected: dryRun
+      ? {
+          companyOutputVat: dryRun.amounts.companyOutputVat,
+          customerPaymentAmount: dryRun.customerPaymentAmount,
+          journalBalanced: dryRun.journal.totalDebit === dryRun.journal.totalCredit,
+          journalReconciliationDelta: dryRun.journal.reconciliationDelta,
+          journalTotalCredit: dryRun.journal.totalCredit,
+          journalTotalDebit: dryRun.journal.totalDebit,
+          partnerPayoutAmount: dryRun.partnerPayoutAmount,
+          partnerWithholdingTotal: dryRun.amounts.partnerWithholdingTotal,
+          paymentProcessingFee: dryRun.amounts.paymentProcessingFee,
+          platformFeeGross: dryRun.platformFeeGross,
+          platformFeeNetRevenue: dryRun.amounts.platformFeeNetRevenue,
+        }
+      : null,
+    monthlyClosingStatus: preview.monthlyClosingStatus,
+    monthlyPeriod: preview.monthlyPeriod,
+    paymentFeeDefaultReason:
+      typeof paymentFeeRule?.reason === 'string' ? paymentFeeRule.reason : null,
+    paymentFeePolicyVersionId: dryRun?.paymentFeePolicyVersionId ?? null,
+    paymentFeeRuleStatus,
+    paymentMethod: preview.payment?.method ?? null,
+    platformFeePolicyVersionId: dryRun?.platformFeePolicyVersionId ?? null,
+    platformVatEvidenceStatus: adminPlatformVatEvidenceStatus(dryRun),
+    platformVatRateBps: dryRun?.platformVatRateBps ?? null,
+  };
+}
+
+type AdminBookingSettlementDryRunItem = ReturnType<typeof adminBookingSettlementDryRunItem>;
+
+function adminBookingSettlementDryRunCounts(items: AdminBookingSettlementDryRunItem[]) {
+  return items.reduce(
+    (counts, item) => {
+      counts.eligible += item.canRepair ? 1 : 0;
+      counts.blocked += item.canRepair ? 0 : 1;
+      counts.journalBalanced += item.expected?.journalBalanced ? 1 : 0;
+      counts.reconciliationReview += item.expected?.journalReconciliationDelta ? 1 : 0;
+      counts.paymentFeePolicyMatched += item.paymentFeeRuleStatus === 'MATCHED_POLICY_RULE' ? 1 : 0;
+      counts.paymentFeeDefaulted += item.paymentFeeRuleStatus === 'DEFAULTED' ? 1 : 0;
+      counts.companyOutputVatPositive += (item.expected?.companyOutputVat ?? 0) > 0 ? 1 : 0;
+      counts.companyOutputVatZero += item.expected?.companyOutputVat === 0 ? 1 : 0;
+      counts.platformVatEvidenceReady += isAdminPlatformVatEvidenceReady(item.platformVatEvidenceStatus) ? 1 : 0;
+      counts.platformVatExplicitZeroServiceRule +=
+        item.platformVatEvidenceStatus === 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE' ? 1 : 0;
+      counts.platformVatUnexplainedZero += item.platformVatEvidenceStatus === 'ZERO_UNEXPLAINED' ? 1 : 0;
+      counts.platformVatZeroFromPolicy += item.platformVatEvidenceStatus === 'ZERO_FROM_POLICY' ? 1 : 0;
+      return counts;
+    },
+    {
+      blocked: 0,
+      companyOutputVatPositive: 0,
+      companyOutputVatZero: 0,
+      eligible: 0,
+      journalBalanced: 0,
+      paymentFeeDefaulted: 0,
+      paymentFeePolicyMatched: 0,
+      platformVatEvidenceReady: 0,
+      platformVatExplicitZeroServiceRule: 0,
+      platformVatUnexplainedZero: 0,
+      platformVatZeroFromPolicy: 0,
+      reconciliationReview: 0,
+    },
+  );
+}
+
+function adminBookingSettlementDryRunPolicyGate(
+  counts: ReturnType<typeof adminBookingSettlementDryRunCounts>,
+) {
+  const issues = [
+    ...(counts.blocked
+      ? [
+          {
+            code: 'PREVIEW_BLOCKED',
+            count: counts.blocked,
+            message: 'Blocked previews must be resolved before any repair approval.',
+          },
+        ]
+      : []),
+    ...(counts.reconciliationReview
+      ? [
+          {
+            code: 'JOURNAL_RECONCILIATION_REVIEW',
+            count: counts.reconciliationReview,
+            message: 'A non-zero journal reconstruction delta requires Finance review.',
+          },
+        ]
+      : []),
+    ...(counts.paymentFeeDefaulted
+      ? [
+          {
+            code: 'PAYMENT_FEE_POLICY_DEFAULTED',
+            count: counts.paymentFeeDefaulted,
+            message: 'Historical payment fee evidence defaulted to zero without a matched policy rule.',
+          },
+        ]
+      : []),
+    ...(counts.platformVatUnexplainedZero
+      ? [
+          {
+            code: 'PLATFORM_VAT_EVIDENCE_UNEXPLAINED',
+            count: counts.platformVatUnexplainedZero,
+            message: 'Zero company output VAT has no retained service rule or platform policy evidence.',
+          },
+        ]
+      : []),
+  ];
+
+  return {
+    issues,
+    status: issues.length ? ('REVIEW_REQUIRED' as const) : ('READY_FOR_INDIVIDUAL_APPROVAL' as const),
+  };
+}
+
+function adminBookingSettlementDryRunBatches(items: AdminBookingSettlementDryRunItem[]) {
+  const grouped = new Map<string, AdminBookingSettlementDryRunItem[]>();
+  items.forEach((item) => {
+    const paymentMethod = item.paymentMethod ?? 'UNKNOWN';
+    const current = grouped.get(paymentMethod) ?? [];
+    current.push(item);
+    grouped.set(paymentMethod, current);
+  });
+
+  return Array.from(grouped.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .flatMap(([paymentMethod, methodItems]) =>
+      Array.from(
+        { length: Math.ceil(methodItems.length / ADMIN_BOOKING_SETTLEMENT_REVIEW_BATCH_SIZE) },
+        (_, batchIndex) => {
+          const batchItems = methodItems.slice(
+            batchIndex * ADMIN_BOOKING_SETTLEMENT_REVIEW_BATCH_SIZE,
+            (batchIndex + 1) * ADMIN_BOOKING_SETTLEMENT_REVIEW_BATCH_SIZE,
+          );
+          const counts = adminBookingSettlementDryRunCounts(batchItems);
+          const requiresPolicyReview =
+            counts.blocked > 0 ||
+            counts.reconciliationReview > 0 ||
+            counts.paymentFeeDefaulted > 0 ||
+            counts.platformVatUnexplainedZero > 0;
+          return {
+            batchKey: `${paymentMethod.toLowerCase()}-${batchIndex + 1}`,
+            bookingIds: batchItems.map((item) => item.bookingId),
+            counts,
+            executionStatus: requiresPolicyReview
+              ? ('REVIEW_REQUIRED' as const)
+              : ('READY_FOR_INDIVIDUAL_APPROVAL' as const),
+            paymentMethod,
+            recordCount: batchItems.length,
+            totals: adminBookingSettlementDryRunTotals(batchItems),
+          };
+        },
+      ),
+    );
+}
+
+type AdminPlatformVatEvidenceStatus =
+  | 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE'
+  | 'POSITIVE'
+  | 'UNAVAILABLE'
+  | 'ZERO_FROM_POLICY'
+  | 'ZERO_UNEXPLAINED';
+
+function adminPlatformVatEvidenceStatus(
+  dryRun: AdminHistoricalSettlementDryRun | null,
+): AdminPlatformVatEvidenceStatus {
+  if (!dryRun) return 'UNAVAILABLE';
+  if (dryRun.amounts.companyOutputVat > 0 || dryRun.platformVatRateBps > 0) return 'POSITIVE';
+
+  const ruleSnapshot = adminJsonObject(dryRun.platformFeeRuleSnapshot);
+  const lines = Array.isArray(ruleSnapshot?.lines) ? ruleSnapshot.lines : [];
+  const hasExplicitZeroServiceRules =
+    ruleSnapshot?.source === 'SERVICE_PAYOUT_RULE' &&
+    lines.length > 0 &&
+    lines.every((line) => adminJsonObject(line)?.vatBps === 0);
+  if (hasExplicitZeroServiceRules) return 'EXPLICIT_ZERO_SERVICE_PAYOUT_RULE';
+  if (dryRun.platformFeePolicyVersionId) return 'ZERO_FROM_POLICY';
+  return 'ZERO_UNEXPLAINED';
+}
+
+function isAdminPlatformVatEvidenceReady(status: AdminPlatformVatEvidenceStatus) {
+  return status !== 'UNAVAILABLE' && status !== 'ZERO_UNEXPLAINED';
+}
+
+function adminBookingSettlementDryRunTotals(items: AdminBookingSettlementDryRunItem[]) {
+  return items.reduce(
+    (totals, item) => {
+      const expected = item.expected;
+      if (!expected) return totals;
+      totals.companyOutputVat += expected.companyOutputVat;
+      totals.customerPaymentAmount += expected.customerPaymentAmount;
+      totals.journalReconciliationDelta += expected.journalReconciliationDelta;
+      totals.journalTotalCredit += expected.journalTotalCredit;
+      totals.journalTotalDebit += expected.journalTotalDebit;
+      totals.partnerPayoutAmount += expected.partnerPayoutAmount;
+      totals.partnerWithholdingTotal += expected.partnerWithholdingTotal;
+      totals.paymentProcessingFee += expected.paymentProcessingFee;
+      totals.platformFeeGross += expected.platformFeeGross;
+      totals.platformFeeNetRevenue += expected.platformFeeNetRevenue;
+      return totals;
+    },
+    {
+      companyOutputVat: 0,
+      customerPaymentAmount: 0,
+      journalReconciliationDelta: 0,
+      journalTotalCredit: 0,
+      journalTotalDebit: 0,
+      partnerPayoutAmount: 0,
+      partnerWithholdingTotal: 0,
+      paymentProcessingFee: 0,
+      platformFeeGross: 0,
+      platformFeeNetRevenue: 0,
+    },
+  );
+}
+
+function adminCountBy<T>(items: T[], keyForItem: (item: T) => string) {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    const key = keyForItem(item);
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function adminJsonObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function adminBankTransactionCreationEvidence(
+  value: unknown,
+  adminsById: ReadonlyMap<string, AdminOperatorIdentityRecord>,
+) {
+  const metadata = adminJsonObject(value);
+  const importedByAdminId = adminJsonString(metadata?.importedByAdminId);
+  if (!importedByAdminId) {
+    return null;
+  }
+  const approvalAdminId = adminJsonString(metadata?.approvalAdminId);
+  return {
+    approvalAdminId,
+    approvalAdmin: approvalAdminId ? (adminsById.get(approvalAdminId) ?? null) : null,
+    batchImportId: adminJsonString(metadata?.batchImportId),
+    csvRowNumber:
+      typeof metadata?.csvRowNumber === 'number' && Number.isSafeInteger(metadata.csvRowNumber)
+        ? metadata.csvRowNumber
+        : null,
+    importedByAdminId,
+    importedBy: adminsById.get(importedByAdminId) ?? null,
+    operatorReason: adminJsonString(metadata?.operatorReason),
+    sourceFileName: adminJsonString(metadata?.sourceFileName),
+  };
+}
+
+function adminBankTransactionIgnoreEvidence(
+  value: unknown,
+  adminsById: ReadonlyMap<string, AdminOperatorIdentityRecord>,
+) {
+  const metadata = adminJsonObject(value);
+  const reason = adminJsonString(metadata?.ignoreReason);
+  if (!reason) {
+    return null;
+  }
+
+  const approvalAdminId = adminJsonString(metadata?.ignoreApprovedByAdminId);
+  const ignoredByAdminId = adminJsonString(metadata?.ignoredByAdminId);
+  return {
+    approvalAdminId,
+    approvalAdmin: approvalAdminId ? (adminsById.get(approvalAdminId) ?? null) : null,
+    ignoredAt: adminJsonString(metadata?.ignoredAt),
+    ignoredByAdminId,
+    ignoredBy: ignoredByAdminId ? (adminsById.get(ignoredByAdminId) ?? null) : null,
+    reason,
+  };
+}
+
+function adminJsonString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function adminJsonStringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
 function adminPaymentOperationsTake(value: number | string | null | undefined) {
   return adminBoundedPositiveInteger(
     value,
     ADMIN_PAYMENT_OPERATIONS_DEFAULT_LIMIT,
     ADMIN_PAYMENT_OPERATIONS_MAX_LIMIT,
   );
+}
+
+function adminBookingSettlementGapTake(value: number | string | null | undefined) {
+  return adminBoundedPositiveInteger(
+    value,
+    ADMIN_BOOKING_SETTLEMENT_GAP_DEFAULT_LIMIT,
+    ADMIN_BOOKING_SETTLEMENT_GAP_MAX_LIMIT,
+  );
+}
+
+function adminBookingSettlementGapWhere(
+  options: AdminBookingSettlementGapQuery,
+  now: Date,
+): Prisma.BookingWhereInput {
+  const filters: Prisma.BookingWhereInput[] = [
+    { status: BookingStatus.COMPLETED },
+    { settlementSnapshot: { is: null } },
+  ];
+  const ageWhere = adminBookingSettlementGapAgeWhere(normalizeAdminBookingSettlementGapAge(options.age), now);
+  if (ageWhere) {
+    filters.push(ageWhere);
+  }
+  const trackWhere = adminBookingSettlementGapRepairTrackWhere(
+    normalizeAdminBookingSettlementGapTrack(options.track),
+  );
+  if (trackWhere) {
+    filters.push(trackWhere);
+  }
+  const periodWhere = adminBookingSettlementGapPeriodWhere(options.period);
+  if (periodWhere) {
+    filters.push(periodWhere);
+  }
+  const paymentMethod = normalizeAdminBookingSettlementGapPaymentMethod(options.paymentMethod);
+  if (paymentMethod) {
+    filters.push({ payment: { is: { method: paymentMethod } } });
+  }
+
+  const query = normalizeNullable(options.q)?.slice(0, 80);
+  if (query) {
+    const textFilter = { contains: query, mode: Prisma.QueryMode.insensitive };
+    const userSearch = {
+      OR: [{ fullName: textFilter }, { phone: textFilter }],
+    };
+    filters.push({
+      OR: [
+        { id: textFilter },
+        { customerProfile: { is: { user: { is: userSearch } } } },
+        { selectedProvider: { is: { displayName: textFilter } } },
+        { selectedProvider: { is: { user: { is: userSearch } } } },
+      ],
+    });
+  }
+
+  return { AND: filters };
+}
+
+function normalizeAdminBookingSettlementGapTrack(
+  value: string | null | undefined,
+): AdminBookingSettlementGapTrack {
+  switch (normalizeNullable(value)?.toLowerCase()) {
+    case 'canonical':
+      return 'canonical';
+    case 'historical-ready':
+      return 'historical-ready';
+    case 'evidence-blocked':
+      return 'evidence-blocked';
+    case 'manual-review':
+      return 'manual-review';
+    case 'all':
+    default:
+      return 'all';
+  }
+}
+
+function adminBookingSettlementGapRepairTrackWhere(
+  track: AdminBookingSettlementGapTrack,
+): Prisma.BookingWhereInput | undefined {
+  if (track === 'all') {
+    return undefined;
+  }
+
+  const canonical: Prisma.BookingWhereInput = {
+    OR: [
+      { earning: { is: null } },
+      {
+        earning: {
+          is: {
+            payoutBatchId: null,
+            status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+          },
+        },
+      },
+    ],
+  };
+  const historicalReady: Prisma.BookingWhereInput = {
+    earning: { is: { paidAt: { not: null }, status: EarningStatus.PAID } },
+    payment: { is: { status: PaymentStatus.CAPTURED } },
+    platformFeeLogs: { some: {} },
+    selectedProviderId: { not: null },
+    services: { some: {} },
+    taxLogs: { some: {} },
+    walletLedgerEntries: { some: {} },
+  };
+  const evidenceBlocked: Prisma.BookingWhereInput = {
+    AND: [
+      { earning: { is: { status: EarningStatus.PAID } } },
+      {
+        OR: [
+          { earning: { is: { paidAt: null } } },
+          { payment: { is: null } },
+          { payment: { is: { status: { not: PaymentStatus.CAPTURED } } } },
+          { platformFeeLogs: { none: {} } },
+          { selectedProviderId: null },
+          { services: { none: {} } },
+          { taxLogs: { none: {} } },
+          { walletLedgerEntries: { none: {} } },
+        ],
+      },
+    ],
+  };
+
+  switch (track) {
+    case 'canonical':
+      return canonical;
+    case 'historical-ready':
+      return historicalReady;
+    case 'evidence-blocked':
+      return evidenceBlocked;
+    case 'manual-review':
+      return { NOT: { OR: [canonical, historicalReady, evidenceBlocked] } };
+    default:
+      return undefined;
+  }
+}
+
+function normalizeAdminBookingSettlementGapPaymentMethod(
+  value: string | null | undefined,
+): PaymentMethod | null {
+  const normalized = normalizeNullable(value)?.toUpperCase();
+  return normalized && Object.values(PaymentMethod).includes(normalized as PaymentMethod)
+    ? (normalized as PaymentMethod)
+    : null;
+}
+
+function adminBookingSettlementGapPeriodWhere(
+  value: string | null | undefined,
+): Prisma.BookingWhereInput | undefined {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(normalizeNullable(value) ?? '');
+  if (!match) {
+    return undefined;
+  }
+  const year = Number.parseInt(match[1], 10);
+  const monthIndex = Number.parseInt(match[2], 10) - 1;
+  const start = new Date(Date.UTC(year, monthIndex, 1) - ADMIN_BOOKING_SETTLEMENT_GAP_VIETNAM_OFFSET_MS);
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1) - ADMIN_BOOKING_SETTLEMENT_GAP_VIETNAM_OFFSET_MS);
+  return adminBookingSettlementGapTimeWhere({ gte: start, lt: end });
+}
+
+type AdminBookingSettlementGapListRow = Prisma.BookingGetPayload<{
+  select: typeof adminBookingSettlementGapListSelect;
+}>;
+
+function adminBookingSettlementGapRepairTrackFromRow(
+  row: AdminBookingSettlementGapListRow,
+): Exclude<AdminBookingSettlementGapTrack, 'all'> {
+  if (
+    !row.earning ||
+    ((row.earning.status === EarningStatus.PENDING || row.earning.status === EarningStatus.AVAILABLE) &&
+      !row.earning.payoutBatchId)
+  ) {
+    return 'canonical';
+  }
+  if (row.earning.status !== EarningStatus.PAID) {
+    return 'manual-review';
+  }
+  if (
+    row.earning.paidAt &&
+    row.selectedProvider &&
+    row.payment?.status === PaymentStatus.CAPTURED &&
+    row._count.platformFeeLogs > 0 &&
+    row._count.services > 0 &&
+    row._count.taxLogs > 0 &&
+    row._count.walletLedgerEntries > 0
+  ) {
+    return 'historical-ready';
+  }
+  return 'evidence-blocked';
+}
+
+function normalizeAdminBookingSettlementGapAge(
+  value: string | null | undefined,
+): AdminBookingSettlementGapAge {
+  switch (normalizeNullable(value)?.toLowerCase()) {
+    case 'all':
+      return 'all';
+    case 'recent':
+      return 'recent';
+    case '24-72h':
+      return '24-72h';
+    case '3-7d':
+      return '3-7d';
+    case '7d-plus':
+      return '7d-plus';
+    case 'backlog':
+    default:
+      return 'backlog';
+  }
+}
+
+function adminBookingSettlementGapAgeWhere(
+  age: AdminBookingSettlementGapAge,
+  now: Date,
+): Prisma.BookingWhereInput | undefined {
+  if (age === 'all') {
+    return undefined;
+  }
+
+  const boundary24Hours = new Date(now.getTime() - ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS);
+  const boundary72Hours = new Date(now.getTime() - 3 * ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS);
+  const boundary7Days = new Date(now.getTime() - 7 * ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS);
+
+  switch (age) {
+    case 'recent':
+      return adminBookingSettlementGapTimeWhere({ gte: boundary24Hours });
+    case '24-72h':
+      return adminBookingSettlementGapTimeWhere({ gte: boundary72Hours, lt: boundary24Hours });
+    case '3-7d':
+      return adminBookingSettlementGapTimeWhere({ gte: boundary7Days, lt: boundary72Hours });
+    case '7d-plus':
+      return adminBookingSettlementGapTimeWhere({ lt: boundary7Days });
+    case 'backlog':
+      return adminBookingSettlementGapTimeWhere({ lt: boundary24Hours });
+    default:
+      return undefined;
+  }
+}
+
+function adminBookingSettlementGapTimeWhere(dateFilter: Prisma.DateTimeFilter): Prisma.BookingWhereInput {
+  return {
+    OR: [{ closedAt: dateFilter }, { closedAt: null, updatedAt: dateFilter }],
+  };
+}
+
+function adminBookingSettlementGapAgeBucket(gapAt: Date, now: Date) {
+  const ageMs = Math.max(0, now.getTime() - gapAt.getTime());
+  if (ageMs < ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS) return 'RECENT';
+  if (ageMs < 3 * ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS) return '24_TO_72_HOURS';
+  if (ageMs < 7 * ADMIN_BOOKING_SETTLEMENT_GAP_DAY_MS) return '3_TO_7_DAYS';
+  return '7_DAYS_PLUS';
 }
 
 function adminPaymentCallbackAttemptTake(value: number | string | null | undefined) {
@@ -16621,6 +24288,13 @@ function adminBookingSettlementSnapshotWhere(
 
   if (dateRange) {
     filters.push({ postedAt: dateRange });
+  }
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(normalizeNullable(options.period) ?? '')) {
+    filters.push({ monthlyPeriod: normalizeNullable(options.period) as string });
+  }
+  const paymentMethod = normalizeNullable(options.paymentMethod)?.toUpperCase();
+  if (paymentMethod && Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
+    filters.push({ paymentMethod: paymentMethod as PaymentMethod });
   }
   if (reviewWhere) {
     filters.push(reviewWhere);
@@ -16671,6 +24345,13 @@ function adminBookingSettlementSnapshotReviewWhere(
       return { paymentMethod: PaymentMethod.CASH };
     case 'non-cash':
       return { paymentMethod: { not: PaymentMethod.CASH } };
+    case 'payment-fee-evidence':
+      return {
+        OR: [
+          { paymentFeePolicyVersionId: null },
+          { paymentFeeRuleSnapshot: { path: ['reason'], not: Prisma.JsonNull } },
+        ],
+      };
     default:
       return undefined;
   }
@@ -16838,6 +24519,7 @@ function adminBankReconciliationWhere(
   const filters: Prisma.CompanyBankTransactionWhereInput[] = [];
   const dateRange = adminPaymentDateRangeWhere(options.range);
   const reviewWhere = adminBankReconciliationReviewWhere(options.review ?? options.status);
+  const query = normalizeNullable(options.q);
 
   if (dateRange) {
     filters.push({ occurredAt: dateRange });
@@ -16845,11 +24527,238 @@ function adminBankReconciliationWhere(
   if (reviewWhere) {
     filters.push(reviewWhere);
   }
+  if (query) {
+    filters.push({
+      OR: [
+        { transferRef: { contains: query, mode: 'insensitive' } },
+        { counterpartyName: { contains: query, mode: 'insensitive' } },
+        { description: { contains: query, mode: 'insensitive' } },
+        { sourceKey: { contains: query, mode: 'insensitive' } },
+      ],
+    });
+  }
 
   if (filters.length === 0) {
     return undefined;
   }
   return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminBankReconciliationWithdrawalCandidate(
+  value: string | null | undefined,
+): AdminBankReconciliationWithdrawalCandidate | undefined {
+  switch (normalizeNullable(value)?.toLowerCase()) {
+    case 'eligible':
+      return 'eligible';
+    case 'none':
+      return 'none';
+    case 'review':
+      return 'review';
+    case 'strong':
+      return 'strong';
+    default:
+      return undefined;
+  }
+}
+
+function adminBankReconciliationWithdrawalCandidateSet(options: AdminPaymentOperationsQuery) {
+  const filters: Prisma.Sql[] = [
+    Prisma.sql`bank."type" = ${CompanyBankTransactionType.OUTFLOW}::"CompanyBankTransactionType"`,
+    Prisma.sql`bank."status" IN (
+      ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+      ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+    )`,
+  ];
+  const bounds = adminPaymentDateRangeBounds(options.range);
+  if (bounds) {
+    filters.push(
+      Prisma.sql`bank."occurredAt" BETWEEN ${new Date(bounds.startMs)} AND ${new Date(bounds.endMs)}`,
+    );
+  }
+  const review = normalizeNullable(options.review ?? options.status)?.toLowerCase();
+  switch (review) {
+    case 'needs-action':
+    case 'unmatched':
+      filters.push(
+        Prisma.sql`bank."status" = ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus"`,
+      );
+      break;
+    case 'partial':
+    case 'partially-matched':
+      filters.push(
+        Prisma.sql`bank."status" = ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"`,
+      );
+      break;
+    case 'matched':
+    case 'ignored':
+    case 'reversed':
+    case 'inflow':
+      filters.push(Prisma.sql`FALSE`);
+      break;
+    default:
+      break;
+  }
+  const query = normalizeNullable(options.q);
+  if (query) {
+    const queryPattern = `%${query.replace(/[!%_]/g, '!$&')}%`;
+    filters.push(Prisma.sql`(
+      bank."transferRef" ILIKE ${queryPattern} ESCAPE '!'
+      OR bank."counterpartyName" ILIKE ${queryPattern} ESCAPE '!'
+      OR bank."description" ILIKE ${queryPattern} ESCAPE '!'
+      OR bank."sourceKey" ILIKE ${queryPattern} ESCAPE '!'
+    )`);
+  }
+
+  return Prisma.sql`
+    SELECT
+      bank."id" AS "bankTransactionId",
+      bank."amount",
+      bank."occurredAt",
+      bank."status",
+      COUNT(withdrawal."id")::bigint AS "candidateCount",
+      COUNT(withdrawal."id") FILTER (
+        WHERE (
+          bank."transferRef" IS NOT NULL
+          AND withdrawal."transferRef" IS NOT NULL
+          AND UPPER(TRIM(bank."transferRef")) = UPPER(TRIM(withdrawal."transferRef"))
+        ) OR (
+          withdrawal."amount" = bank."amount"
+          AND ABS(EXTRACT(EPOCH FROM (
+            COALESCE(withdrawal."paidAt", withdrawal."createdAt") - bank."occurredAt"
+          ))) <= ${3 * 24 * 60 * 60}
+        )
+      )::bigint AS "strongCount"
+    FROM "CompanyBankTransaction" bank
+    LEFT JOIN "ProviderWalletWithdrawalRequest" withdrawal
+      ON withdrawal."status" = ${ProviderWalletWithdrawalRequestStatus.PAID}::"ProviderWalletWithdrawalRequestStatus"
+      AND withdrawal."currency" = bank."currency"
+      AND COALESCE(withdrawal."paidAt", withdrawal."createdAt") BETWEEN
+        bank."occurredAt" - INTERVAL '30 days'
+        AND bank."occurredAt" + INTERVAL '30 days'
+      AND (
+        ABS(withdrawal."amount" - bank."amount") <= GREATEST(
+          10000,
+          LEAST(100000, ROUND(bank."amount" * 0.1))
+        )
+        OR (
+          bank."transferRef" IS NOT NULL
+          AND withdrawal."transferRef" IS NOT NULL
+          AND UPPER(TRIM(bank."transferRef")) = UPPER(TRIM(withdrawal."transferRef"))
+        )
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "BankReconciliationMatch" active_match
+        WHERE active_match."withdrawalRequestId" = withdrawal."id"
+          AND active_match."status" IN (
+            ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus",
+            ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+          )
+      )
+    WHERE ${Prisma.join(filters, ' AND ')}
+    GROUP BY bank."id"
+  `;
+}
+
+function adminBankReconciliationWithdrawalCandidateResultWhere(
+  candidate: AdminBankReconciliationWithdrawalCandidate,
+) {
+  switch (candidate) {
+    case 'eligible':
+      return Prisma.sql`TRUE`;
+    case 'strong':
+      return Prisma.sql`candidates."strongCount" > 0`;
+    case 'review':
+      return Prisma.sql`candidates."candidateCount" > 0 AND candidates."strongCount" = 0`;
+    case 'none':
+      return Prisma.sql`candidates."candidateCount" = 0`;
+  }
+}
+
+function adminBankReconciliationLatestReviewAssignmentJoinSql() {
+  return Prisma.sql`
+    LEFT JOIN LATERAL (
+      SELECT assignment_log."metadata", assignment_log."createdAt"
+      FROM "AdminAuditLog" assignment_log
+      WHERE assignment_log."action" = ${COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION}
+        AND assignment_log."target" = 'bank_transaction:' || candidates."bankTransactionId"
+      ORDER BY assignment_log."createdAt" DESC, assignment_log."id" DESC
+      LIMIT 1
+    ) assignment ON TRUE
+  `;
+}
+
+function adminBankReconciliationReviewAssignmentWhere(options: AdminPaymentOperationsQuery) {
+  const assigneeAdminId = normalizeNullable(options.assigneeAdminId);
+  if (assigneeAdminId) {
+    return Prisma.sql`assignment."metadata"->>'assigneeAdminId' = ${assigneeAdminId}`;
+  }
+  switch (normalizeNullable(options.assignment)?.toLowerCase()) {
+    case 'assigned':
+      return Prisma.sql`assignment."metadata"->>'assigneeAdminId' IS NOT NULL`;
+    case 'unassigned':
+      return Prisma.sql`assignment."metadata"->>'assigneeAdminId' IS NULL`;
+    default:
+      return Prisma.sql`TRUE`;
+  }
+}
+
+function adminBankReconciliationAssignmentSummaryRows(value: Prisma.JsonValue | null | undefined) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const record = jsonObject(item);
+    const assigneeAdminId = jsonString(record.assigneeAdminId);
+    if (!assigneeAdminId) return [];
+    return [{
+      assigneeAdminId,
+      count: jsonNonNegativeInteger(record.count),
+      over24hCount: jsonNonNegativeInteger(record.over24hCount),
+      over48hCount: jsonNonNegativeInteger(record.over48hCount),
+    }];
+  });
+}
+
+function bankReconciliationWithdrawalRecommendationEvidence(
+  bankTransaction: {
+    readonly amount: number;
+    readonly occurredAt: Date;
+    readonly transferRef: string | null;
+  },
+  withdrawal: {
+    readonly amount: number;
+    readonly createdAt: Date;
+    readonly paidAt: Date | null;
+    readonly transferRef: string | null;
+  },
+) {
+  const withdrawalEvidenceAt = withdrawal.paidAt ?? withdrawal.createdAt;
+  const amountDelta = Math.abs(withdrawal.amount - bankTransaction.amount);
+  const dateDeltaDays =
+    Math.round(
+      (Math.abs(withdrawalEvidenceAt.getTime() - bankTransaction.occurredAt.getTime()) /
+        (24 * 60 * 60_000)) *
+        10,
+    ) / 10;
+  const bankTransferRef = normalizeNullable(bankTransaction.transferRef)?.toUpperCase() ?? null;
+  const withdrawalTransferRef = normalizeNullable(withdrawal.transferRef)?.toUpperCase() ?? null;
+  const transferRefMatch = Boolean(
+    bankTransferRef && withdrawalTransferRef && bankTransferRef === withdrawalTransferRef,
+  );
+  const exactAmount = amountDelta === 0;
+
+  return {
+    amountDelta,
+    bankOccurredAt: bankTransaction.occurredAt.toISOString(),
+    bankTransferRef,
+    confidence: transferRefMatch || (exactAmount && dateDeltaDays <= 3) ? 'STRONG' : 'REVIEW',
+    dateDeltaDays,
+    exactAmount,
+    rankingVersion: 'withdrawal-candidate-v1',
+    source: 'SERVER_RECOMPUTED',
+    transferRefMatch,
+    withdrawalEvidenceAt: withdrawalEvidenceAt.toISOString(),
+    withdrawalTransferRef,
+  };
 }
 
 function adminBankReconciliationReviewWhere(
@@ -16897,6 +24806,44 @@ function companyBankTransactionType(value: string | CompanyBankTransactionType) 
   throw new BadRequestException('Valid bank transaction type is required');
 }
 
+function normalizeCompanyBankAccountIdentity(input: {
+  accountNumberLast4: string;
+  accountNumberMasked?: string | null;
+  bankName: string;
+  currency: string;
+  name: string;
+}) {
+  const name = normalizeNullable(input.name);
+  const bankName = normalizeNullable(input.bankName);
+  const accountNumberLast4 = normalizeNullable(input.accountNumberLast4);
+  const currency = normalizeNullable(input.currency)?.toUpperCase();
+  if (!name || !bankName) {
+    throw new BadRequestException('Company bank account name and bank name are required');
+  }
+  if (!accountNumberLast4 || !/^\d{4}$/u.test(accountNumberLast4)) {
+    throw new BadRequestException('Company bank account last four digits must contain exactly four digits');
+  }
+  if (!currency || !/^[A-Z]{3}$/u.test(currency)) {
+    throw new BadRequestException('Company bank account currency must be a three-letter code');
+  }
+  const providedMasked = normalizeNullable(input.accountNumberMasked);
+  const compactMasked = providedMasked?.replace(/[\s-]/gu, '') ?? '';
+  if (/^\d{5,}$/u.test(compactMasked)) {
+    throw new BadRequestException('Full bank account numbers must not be stored; provide a masked value only');
+  }
+  const maskedDigits = providedMasked?.replace(/\D/gu, '') ?? '';
+  if (maskedDigits.length >= 4 && maskedDigits.slice(-4) !== accountNumberLast4) {
+    throw new BadRequestException('Masked bank account number must end with accountNumberLast4');
+  }
+  return {
+    accountNumberLast4,
+    accountNumberMasked: providedMasked ?? `****${accountNumberLast4}`,
+    bankName,
+    currency,
+    name,
+  };
+}
+
 function normalizeCompanyBankTransactionCurrency(
   value: string | null | undefined,
   fallback: string | null | undefined,
@@ -16919,6 +24866,582 @@ function companyBankTransactionSourceKey(input: {
   const transferRef = normalizeNullable(input.transferRef);
   const uniquePart = transferRef ?? `${input.occurredAt.toISOString()}:${input.amount}`;
   return `manual-bank-transaction:${input.bankAccountId}:${input.type}:${uniquePart}`;
+}
+
+function companyBankTransactionDuplicateCandidateWhere(input: {
+  amount: number;
+  bankAccountId: string;
+  counterpartyName: string | null;
+  currency: string;
+  occurredAt: Date;
+  transferRef: string | null;
+  type: CompanyBankTransactionType;
+}): Prisma.CompanyBankTransactionWhereInput {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const sameEconomicEvent: Prisma.CompanyBankTransactionWhereInput = {
+    amount: input.amount,
+    occurredAt: {
+      gte: new Date(input.occurredAt.getTime() - oneDayMs),
+      lte: new Date(input.occurredAt.getTime() + oneDayMs),
+    },
+    ...(input.counterpartyName
+      ? { counterpartyName: { equals: input.counterpartyName, mode: Prisma.QueryMode.insensitive } }
+      : {}),
+  };
+  const candidateSignals: Prisma.CompanyBankTransactionWhereInput[] = [sameEconomicEvent];
+  if (input.transferRef) {
+    candidateSignals.unshift({
+      transferRef: { equals: input.transferRef, mode: Prisma.QueryMode.insensitive },
+    });
+  }
+
+  return {
+    bankAccountId: input.bankAccountId,
+    currency: input.currency,
+    type: input.type,
+    OR: candidateSignals,
+  };
+}
+
+function batchCompanyBankTransactionType(value: string) {
+  const normalized = value.trim().toUpperCase();
+  return Object.values(CompanyBankTransactionType).includes(normalized as CompanyBankTransactionType)
+    ? (normalized as CompanyBankTransactionType)
+    : null;
+}
+
+function parseCompanyBankTransactionBatchAmount(value: string) {
+  const unsigned = value
+    .trim()
+    .replace(/VND/giu, '')
+    .replace(/[₫\s]/gu, '')
+    .replace(/^\+/u, '');
+  let normalized = unsigned;
+  if (/^\d{1,3}(?:[.,]\d{3})+$/u.test(unsigned)) {
+    normalized = unsigned.replace(/[.,]/gu, '');
+  } else if (/^\d+[.,]00$/u.test(unsigned)) {
+    normalized = unsigned.slice(0, -3);
+  }
+  if (!/^\d+$/u.test(normalized)) {
+    return null;
+  }
+  const amount = Number(normalized);
+  return Number.isSafeInteger(amount) && amount > 0 && amount <= 10_000_000_000 ? amount : null;
+}
+
+function parseCompanyBankTransactionBatchDate(value: string) {
+  const normalized = value.trim();
+  if (!normalized) {
+    return null;
+  }
+  if (/T.*(?:Z|[+-]\d{2}:?\d{2})$/u.test(normalized)) {
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const dayFirst = normalized.match(
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/u,
+  );
+  if (dayFirst) {
+    return vietnamLocalDate({
+      day: Number(dayFirst[1]),
+      hour: Number(dayFirst[4] ?? 0),
+      minute: Number(dayFirst[5] ?? 0),
+      month: Number(dayFirst[2]),
+      second: Number(dayFirst[6] ?? 0),
+      year: Number(dayFirst[3]),
+    });
+  }
+  const yearFirst = normalized.match(
+    /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?)?$/u,
+  );
+  if (!yearFirst) {
+    return null;
+  }
+  return vietnamLocalDate({
+    day: Number(yearFirst[3]),
+    hour: Number(yearFirst[4] ?? 0),
+    minute: Number(yearFirst[5] ?? 0),
+    month: Number(yearFirst[2]),
+    second: Number(yearFirst[6] ?? 0),
+    year: Number(yearFirst[1]),
+  });
+}
+
+function companyBankTransactionInvalidBatchRow(
+  input: CompanyBankTransactionBatchRowDto,
+  errors: string[],
+): AdminCompanyBankTransactionBatchPreviewRow {
+  return {
+    batchCandidateRowNumbers: [],
+    candidates: [],
+    classification: 'INVALID',
+    errors: errors.length > 0 ? errors : ['Invalid bank statement row'],
+    normalized: null,
+    raw: companyBankTransactionBatchRawRow(input),
+    rowNumber: input.rowNumber,
+  };
+}
+
+function companyBankTransactionBatchRawRow(
+  input: CompanyBankTransactionBatchRowDto,
+): AdminCompanyBankTransactionBatchRawRow {
+  return {
+    amount: input.amount,
+    counterpartyName: input.counterpartyName ?? '',
+    occurredAt: input.occurredAt,
+    transferRef: input.transferRef ?? '',
+    valueDate: input.valueDate ?? '',
+  };
+}
+
+function vietnamLocalDate(input: {
+  day: number;
+  hour: number;
+  minute: number;
+  month: number;
+  second: number;
+  year: number;
+}) {
+  if (
+    input.year < 2000 ||
+    input.year > 2100 ||
+    input.month < 1 ||
+    input.month > 12 ||
+    input.day < 1 ||
+    input.day > new Date(Date.UTC(input.year, input.month, 0)).getUTCDate() ||
+    input.hour < 0 ||
+    input.hour > 23 ||
+    input.minute < 0 ||
+    input.minute > 59 ||
+    input.second < 0 ||
+    input.second > 59
+  ) {
+    return null;
+  }
+  return new Date(
+    Date.UTC(input.year, input.month - 1, input.day, input.hour - 7, input.minute, input.second),
+  );
+}
+
+function companyBankTransactionRowsPotentialDuplicate(
+  candidate: AdminCompanyBankTransactionBatchNormalizedRow,
+  row: AdminCompanyBankTransactionBatchNormalizedRow,
+) {
+  if (
+    candidate.bankAccountId !== row.bankAccountId ||
+    candidate.currency !== row.currency ||
+    candidate.type !== row.type
+  ) {
+    return false;
+  }
+  if (
+    row.transferRef &&
+    candidate.transferRef &&
+    row.transferRef.toLocaleLowerCase() === candidate.transferRef.toLocaleLowerCase()
+  ) {
+    return true;
+  }
+  if (candidate.amount !== row.amount) {
+    return false;
+  }
+  const withinOneDay = Math.abs(new Date(candidate.occurredAt).getTime() - new Date(row.occurredAt).getTime()) <= 86_400_000;
+  if (!withinOneDay) {
+    return false;
+  }
+  return row.counterpartyName
+    ? candidate.counterpartyName?.toLocaleLowerCase() === row.counterpartyName.toLocaleLowerCase()
+    : true;
+}
+
+function companyBankTransactionBatchSummary(rows: AdminCompanyBankTransactionBatchPreviewRow[]) {
+  return rows.reduce(
+    (summary, row) => {
+      summary.total += 1;
+      if (row.classification === 'NEW') summary.new += 1;
+      if (row.classification === 'POTENTIAL_DUPLICATE') summary.potentialDuplicate += 1;
+      if (row.classification === 'EXACT_DUPLICATE') summary.exactDuplicate += 1;
+      if (row.classification === 'INVALID') summary.invalid += 1;
+      return summary;
+    },
+    { exactDuplicate: 0, invalid: 0, new: 0, potentialDuplicate: 0, total: 0 },
+  );
+}
+
+function adminCompanyBankTransactionImportBatchHistoryItem(
+  log: Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>,
+) {
+  const metadata = jsonObject(log.metadata);
+  const targetBatchId = log.target.startsWith('company_bank_transaction_batch:')
+    ? log.target.slice('company_bank_transaction_batch:'.length)
+    : log.id;
+  return {
+    approvalAdminId: jsonString(metadata.approvalAdminId),
+    assigneeAdminId: jsonString(metadata.assigneeAdminId),
+    assignedAt: jsonString(metadata.assignedAt),
+    assignedByAdminId: jsonString(metadata.assignedByAdminId),
+    batchImportId: jsonString(metadata.batchImportId) ?? targetBatchId,
+    createdAt: log.createdAt,
+    importedCount: jsonNonNegativeInteger(metadata.importedCount),
+    mappingPreset: jsonString(metadata.mappingPreset),
+    operator: log.actor,
+    requestedCount: jsonNonNegativeInteger(metadata.requestedCount),
+    skippedCount: jsonNonNegativeInteger(metadata.skippedCount),
+    sourceFileName: jsonString(metadata.sourceFileName),
+    sourceFileSha256: jsonSha256(metadata.sourceFileSha256),
+  };
+}
+
+function adminCompanyBankTransactionImportBatchWhere(
+  options: AdminCompanyBankTransactionImportBatchListOptions,
+): Prisma.AdminAuditLogWhereInput {
+  const filters: Prisma.AdminAuditLogWhereInput[] = [
+    { action: COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION },
+  ];
+  const createdAt = adminPaymentDateRangeWhere(options.range);
+  const query = normalizeNullable(options.q);
+  if (createdAt) filters.push({ createdAt });
+  if (query) {
+    filters.push({
+      OR: [
+        { target: { contains: query, mode: Prisma.QueryMode.insensitive } },
+        { actor: { id: { contains: query, mode: Prisma.QueryMode.insensitive } } },
+        { actor: { email: { contains: query, mode: Prisma.QueryMode.insensitive } } },
+        { actor: { fullName: { contains: query, mode: Prisma.QueryMode.insensitive } } },
+        {
+          metadata: {
+            path: ['batchImportId'],
+            mode: Prisma.QueryMode.insensitive,
+            string_contains: query,
+          },
+        },
+        {
+          metadata: {
+            path: ['sourceFileName'],
+            mode: Prisma.QueryMode.insensitive,
+            string_contains: query,
+          },
+        },
+      ],
+    });
+  }
+  return filters.length === 1 ? filters[0] : { AND: filters };
+}
+
+function adminCompanyBankTransactionImportBatchReview(
+  value: string | null | undefined,
+): AdminCompanyBankTransactionImportBatchReview {
+  if (
+    value === 'needs-reconciliation' ||
+    value === 'stale' ||
+    value === 'escalated' ||
+    value === 'reconciled'
+  ) return value;
+  return 'all';
+}
+
+function adminCompanyBankTransactionImportBatchFilteredPageSql(
+  options: AdminCompanyBankTransactionImportBatchListOptions,
+  review: Exclude<AdminCompanyBankTransactionImportBatchReview, 'all'>,
+  skip: number,
+  take: number,
+) {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`logs."action" = ${COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION}`,
+  ];
+  const createdAt = adminPaymentDateRangeWhere(options.range);
+  const query = normalizeNullable(options.q);
+  if (createdAt?.gte instanceof Date) conditions.push(Prisma.sql`logs."createdAt" >= ${createdAt.gte}`);
+  if (createdAt?.lte instanceof Date) conditions.push(Prisma.sql`logs."createdAt" <= ${createdAt.lte}`);
+  if (query) {
+    const pattern = `%${query}%`;
+    conditions.push(Prisma.sql`(
+      logs."target" ILIKE ${pattern}
+      OR actor."id" ILIKE ${pattern}
+      OR actor."email" ILIKE ${pattern}
+      OR actor."fullName" ILIKE ${pattern}
+      OR logs."metadata"->>'batchImportId' ILIKE ${pattern}
+      OR logs."metadata"->>'sourceFileName' ILIKE ${pattern}
+    )`);
+  }
+  const staleBefore = new Date(Date.now() - COMPANY_BANK_TRANSACTION_BATCH_STALE_MS);
+  const escalatedBefore = new Date(Date.now() - COMPANY_BANK_TRANSACTION_BATCH_ESCALATION_MS);
+  conditions.push(
+    review === 'needs-reconciliation'
+      ? Prisma.sql`reconciliation."openCount" > 0`
+      : review === 'stale'
+        ? Prisma.sql`reconciliation."openCount" > 0 AND logs."createdAt" <= ${staleBefore}`
+        : review === 'escalated'
+          ? Prisma.sql`reconciliation."openCount" > 0 AND logs."createdAt" <= ${escalatedBefore}`
+        : Prisma.sql`reconciliation."transactionCount" > 0 AND reconciliation."openCount" = 0`,
+  );
+
+  return Prisma.sql`
+    WITH reconciliation_batches AS (
+      SELECT
+        transactions."metadata"->>'batchImportId' AS "batchImportId",
+        COUNT(*)::int AS "transactionCount",
+        COUNT(*) FILTER (
+          WHERE transactions."status" IN (
+            ${BankReconciliationStatus.UNMATCHED}::"BankReconciliationStatus",
+            ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+          )
+        )::int AS "openCount"
+      FROM "CompanyBankTransaction" transactions
+      WHERE transactions."metadata" ? 'batchImportId'
+      GROUP BY transactions."metadata"->>'batchImportId'
+    ),
+    filtered_logs AS (
+      SELECT logs."id", logs."createdAt"
+      FROM "AdminAuditLog" logs
+      INNER JOIN "User" actor ON actor."id" = logs."actorId"
+      INNER JOIN reconciliation_batches reconciliation
+        ON reconciliation."batchImportId" = COALESCE(
+          logs."metadata"->>'batchImportId',
+          REPLACE(logs."target", 'company_bank_transaction_batch:', '')
+        )
+      WHERE ${Prisma.join(conditions, ' AND ')}
+    ),
+    totals AS (
+      SELECT COUNT(*)::bigint AS "total"
+      FROM filtered_logs
+    )
+    SELECT page."id", totals."total"
+    FROM totals
+    LEFT JOIN LATERAL (
+      SELECT filtered_logs."id"
+      FROM filtered_logs
+      ORDER BY filtered_logs."createdAt" ${review === 'stale' || review === 'escalated' ? Prisma.sql`ASC` : Prisma.sql`DESC`}, filtered_logs."id" DESC
+      LIMIT ${take}
+      OFFSET ${skip}
+    ) page ON TRUE
+  `;
+}
+
+function adminCompanyBankTransactionImportBatchRowResults(metadataValue: Prisma.JsonValue | null) {
+  const rowResults = jsonObject(metadataValue).rowResults;
+  if (!Array.isArray(rowResults)) return [];
+  return rowResults.flatMap((value) => {
+    const row = jsonObject(value);
+    const rowNumber = jsonPositiveInteger(row.rowNumber);
+    const classification = jsonString(row.classification);
+    const status = jsonString(row.status);
+    if (
+      !rowNumber ||
+      !classification ||
+      !['NEW', 'POTENTIAL_DUPLICATE', 'EXACT_DUPLICATE', 'INVALID'].includes(classification) ||
+      !status ||
+      !['IMPORTED', 'SKIPPED'].includes(status)
+    ) {
+      return [];
+    }
+    return [{
+      classification,
+      rowNumber,
+      status,
+      transactionId: jsonString(row.transactionId),
+    }];
+  });
+}
+
+function companyBankTransactionImportBatchReconciliationSummary(
+  transactionIds: string[],
+  transactionStatusById: ReadonlyMap<string, BankReconciliationStatus>,
+  importedAt: Date,
+  now = new Date(),
+) {
+  const reconciledTransactionCount = transactionIds.filter((transactionId) => {
+    const status = transactionStatusById.get(transactionId);
+    return status === BankReconciliationStatus.MATCHED ||
+      status === BankReconciliationStatus.IGNORED ||
+      status === BankReconciliationStatus.REVERSED;
+  }).length;
+  const reconciliationTransactionCount = transactionIds.length;
+  const reconciliationNeedsActionCount = reconciliationTransactionCount - reconciledTransactionCount;
+  const reconciliationWaitingHours = reconciliationNeedsActionCount > 0
+    ? Math.max(0, Math.floor((now.getTime() - importedAt.getTime()) / 3_600_000))
+    : null;
+  const reconciliationSlaStatus = reconciliationTransactionCount === 0
+    ? 'NO_TRANSACTIONS'
+    : reconciliationNeedsActionCount === 0
+      ? 'RECONCILED'
+      : (reconciliationWaitingHours ?? 0) >= 48
+        ? 'ESCALATE'
+        : (reconciliationWaitingHours ?? 0) >= 24
+          ? 'OVER_24H'
+          : 'WITHIN_24H';
+
+  return {
+    reconciliationNeedsActionCount,
+    reconciliationProgressPercent: reconciliationTransactionCount > 0
+      ? Math.round((reconciledTransactionCount / reconciliationTransactionCount) * 100)
+      : null,
+    reconciliationTransactionCount,
+    reconciliationSlaStatus,
+    reconciliationWaitingHours,
+    reconciledTransactionCount,
+  };
+}
+
+function adminFinanceReviewAssignmentReferencedIds(
+  auditLogs: readonly AdminFinanceReviewAssignmentAuditLog[],
+) {
+  return Array.from(new Set(auditLogs.flatMap((auditLog) => {
+    const metadata = jsonObject(auditLog.metadata);
+    return [
+      jsonString(metadata.assigneeAdminId),
+      jsonString(metadata.assignedByAdminId) ?? auditLog.actorId,
+      jsonString(metadata.previousAssigneeAdminId),
+    ].filter((adminId): adminId is string => Boolean(adminId));
+  })));
+}
+
+function adminFinanceReviewAssignmentHistory(
+  auditLogs: readonly AdminFinanceReviewAssignmentAuditLog[],
+  adminsById: ReadonlyMap<string, AdminFinanceReviewAssignmentAdmin>,
+) {
+  return auditLogs.flatMap((auditLog) => {
+    const metadata = jsonObject(auditLog.metadata);
+    const assigneeAdminId = jsonString(metadata.assigneeAdminId);
+    if (!assigneeAdminId) return [];
+
+    const assignedByAdminId = jsonString(metadata.assignedByAdminId) ?? auditLog.actorId;
+    const previousAssigneeAdminId = jsonString(metadata.previousAssigneeAdminId);
+    return [{
+      id: auditLog.id,
+      assignedAt: jsonString(metadata.assignedAt) ?? auditLog.createdAt.toISOString(),
+      assignee: adminsById.get(assigneeAdminId) ?? {
+        id: assigneeAdminId,
+        email: null,
+        fullName: null,
+      },
+      assignedBy: adminsById.get(assignedByAdminId) ?? auditLog.actor,
+      previousAssignee: previousAssigneeAdminId
+        ? adminsById.get(previousAssigneeAdminId) ?? {
+            id: previousAssigneeAdminId,
+            email: null,
+            fullName: null,
+          }
+        : null,
+      reason: jsonString(metadata.reason),
+    }];
+  });
+}
+
+function jsonObject(value: Prisma.JsonValue | null): Record<string, Prisma.JsonValue> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, Prisma.JsonValue>)
+    : {};
+}
+
+function adminBankReconciliationMatchAuditMetadata(
+  auditLog:
+    | {
+        action: string;
+        actor: { id: string; email: string | null; fullName: string | null };
+        actorId: string;
+        createdAt: Date;
+        metadata: Prisma.JsonValue | null;
+      }
+    | undefined,
+  approvalAdminsById: ReadonlyMap<
+    string,
+    { id: string; email: string | null; fullName: string | null }
+  >,
+): Prisma.InputJsonObject {
+  if (!auditLog) return {};
+  const metadata = jsonObject(auditLog.metadata);
+  const approvalAdminId = jsonString(metadata.approvalAdminId);
+  const approvalAdmin = approvalAdminId ? approvalAdminsById.get(approvalAdminId) : null;
+  const optionalFields = [
+    'bankStatusBefore',
+    'bankStatusAfter',
+    'paymentClearingStatusBefore',
+    'paymentClearingStatusAfter',
+  ] as const;
+  return {
+    auditAction: auditLog.action,
+    auditActorId: auditLog.actorId,
+    ...(auditLog.actor.email ? { auditActorEmail: auditLog.actor.email } : {}),
+    ...(auditLog.actor.fullName ? { auditActorName: auditLog.actor.fullName } : {}),
+    auditAt: auditLog.createdAt.toISOString(),
+    ...(approvalAdminId ? { approvalAdminId } : {}),
+    ...(approvalAdmin?.email ? { approvalAdminEmail: approvalAdmin.email } : {}),
+    ...(approvalAdmin?.fullName ? { approvalAdminName: approvalAdmin.fullName } : {}),
+    matchActorId: auditLog.actorId,
+    ...(auditLog.actor.email ? { matchActorEmail: auditLog.actor.email } : {}),
+    ...(auditLog.actor.fullName ? { matchActorName: auditLog.actor.fullName } : {}),
+    matchAuditAt: auditLog.createdAt.toISOString(),
+    ...(approvalAdminId ? { matchApprovalAdminId: approvalAdminId } : {}),
+    ...(approvalAdmin?.email ? { matchApprovalAdminEmail: approvalAdmin.email } : {}),
+    ...(approvalAdmin?.fullName ? { matchApprovalAdminName: approvalAdmin.fullName } : {}),
+    ...Object.fromEntries(
+      optionalFields.flatMap((key) => {
+        const value = jsonString(metadata[key]);
+        return value ? [[key, value]] : [];
+      }),
+    ),
+  };
+}
+
+function adminBankReconciliationMatchReversalAuditMetadata(
+  auditLog:
+    | {
+        action: string;
+        actor: { id: string; email: string | null; fullName: string | null };
+        actorId: string;
+        createdAt: Date;
+        metadata: Prisma.JsonValue | null;
+      }
+    | undefined,
+  approvalAdminsById: ReadonlyMap<string, AdminOperatorIdentityRecord>,
+): Prisma.InputJsonObject {
+  if (!auditLog) return {};
+  const metadata = jsonObject(auditLog.metadata);
+  const approvalAdminId = jsonString(metadata.approvalAdminId);
+  const approvalAdmin = approvalAdminId ? approvalAdminsById.get(approvalAdminId) : null;
+  const reason = jsonString(metadata.reason);
+  const optionalFields = ['bankStatusBefore', 'bankStatusAfter'] as const;
+  return {
+    auditAction: auditLog.action,
+    auditActorId: auditLog.actorId,
+    ...(auditLog.actor.email ? { auditActorEmail: auditLog.actor.email } : {}),
+    ...(auditLog.actor.fullName ? { auditActorName: auditLog.actor.fullName } : {}),
+    auditAt: auditLog.createdAt.toISOString(),
+    ...(approvalAdminId ? { approvalAdminId } : {}),
+    ...(approvalAdmin?.email ? { approvalAdminEmail: approvalAdmin.email } : {}),
+    ...(approvalAdmin?.fullName ? { approvalAdminName: approvalAdmin.fullName } : {}),
+    reversedByAdminId: auditLog.actorId,
+    ...(auditLog.actor.email ? { reversedByAdminEmail: auditLog.actor.email } : {}),
+    ...(auditLog.actor.fullName ? { reversedByAdminName: auditLog.actor.fullName } : {}),
+    reversedAuditAt: auditLog.createdAt.toISOString(),
+    ...(approvalAdminId ? { reversalApprovalAdminId: approvalAdminId } : {}),
+    ...(approvalAdmin?.email ? { reversalApprovalAdminEmail: approvalAdmin.email } : {}),
+    ...(approvalAdmin?.fullName ? { reversalApprovalAdminName: approvalAdmin.fullName } : {}),
+    ...(reason ? { reversalReason: reason } : {}),
+    ...Object.fromEntries(
+      optionalFields.flatMap((key) => {
+        const value = jsonString(metadata[key]);
+        return value ? [[key, value]] : [];
+      }),
+    ),
+  };
+}
+
+function jsonString(value: Prisma.JsonValue | undefined) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function jsonNonNegativeInteger(value: Prisma.JsonValue | undefined) {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+function jsonPositiveInteger(value: Prisma.JsonValue | undefined) {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+function jsonSha256(value: Prisma.JsonValue | undefined) {
+  const normalized = jsonString(value)?.toLowerCase() ?? null;
+  return normalized && /^[a-f0-9]{64}$/u.test(normalized) ? normalized : null;
 }
 
 function normalizeRequiredId(value: string | null | undefined, label: string) {
@@ -16956,7 +25479,14 @@ type AdminBankReconciliationMatchSource = {
     | 'payoutBatchId';
   readonly id: string;
   readonly key: string;
-  readonly type: 'accounting-journal' | 'payment-clearing' | 'withdrawal' | 'payout-batch';
+  readonly type:
+    | 'accounting-journal'
+    | 'partner-bank-deposit'
+    | 'payment-clearing'
+    | 'withdrawal'
+    | 'payout-batch';
+  readonly accountingJournalEntryId?: string;
+  readonly partnerBankDepositRequestId?: string;
 };
 
 function adminBankReconciliationMatchSource(
@@ -16968,6 +25498,12 @@ function adminBankReconciliationMatchSource(
       id: normalizeNullable(input.accountingJournalEntryId) ?? '',
       key: 'accounting-journal',
       type: 'accounting-journal',
+    },
+    {
+      field: 'accountingJournalEntryId',
+      id: normalizeNullable(input.partnerBankDepositRequestId) ?? '',
+      key: 'partner-bank-deposit',
+      type: 'partner-bank-deposit',
     },
     {
       field: 'paymentClearingEntryId',
@@ -17092,6 +25628,119 @@ function adminPartnerWithholdingTaxSqlWhere(period: string): Prisma.Sql {
   `;
 }
 
+function adminPartnerBankDepositReconciliationCteSql(options: {
+  assigneeAdminId?: string | null;
+  owner?: 'all' | 'unassigned';
+  period?: string | null;
+  query?: string | null;
+  sla?: 'all' | 'within-24h' | 'over-24h' | 'escalate';
+  status?: PartnerBankDepositRequestStatus | null;
+}): Prisma.Sql {
+  const assigneeAdminId = options.assigneeAdminId ?? '';
+  const owner = options.owner ?? 'all';
+  const period = options.period ?? '';
+  const query = options.query ?? '';
+  const queryPattern = `%${query}%`;
+  const sla = options.sla ?? 'all';
+  const status = options.status ?? '';
+
+  return Prisma.sql`
+    "latestPartnerBankDepositAssignments" AS (
+      SELECT DISTINCT ON (logs."target")
+        logs."id" AS "assignmentAuditLogId",
+        logs."target",
+        logs."metadata"->>'assigneeAdminId' AS "assigneeAdminId",
+        logs."createdAt" AS "assignedAt"
+      FROM "AdminAuditLog" logs
+      WHERE logs."action" = ${PARTNER_BANK_DEPOSIT_RECONCILIATION_ASSIGNMENT_ACTION}
+      ORDER BY logs."target", logs."createdAt" DESC, logs."id" DESC
+    ),
+    "partnerBankDepositEvidence" AS (
+      SELECT
+        request."id",
+        request."depositDate",
+        request."createdAt",
+        request."executedAt",
+        COALESCE(MAX(entry."amount"), request."amount")::bigint AS "targetAmount",
+        COALESCE(
+          SUM(
+            CASE
+              WHEN match."status" IN (
+                ${BankReconciliationStatus.MATCHED}::"BankReconciliationStatus",
+                ${BankReconciliationStatus.PARTIALLY_MATCHED}::"BankReconciliationStatus"
+              ) THEN ABS(match."amount")
+              ELSE 0
+            END
+          ),
+          0
+        )::bigint AS "matchedAmount"
+      FROM "PartnerBankDepositRequest" request
+      LEFT JOIN "ProviderProfile" provider ON provider."id" = request."providerProfileId"
+      LEFT JOIN "User" partnerUser ON partnerUser."id" = provider."userId"
+      LEFT JOIN "AccountingJournalBatch" batch ON batch."id" = request."journalBatchId"
+      LEFT JOIN "AccountingJournalEntry" entry
+        ON entry."batchId" = batch."id"
+        AND batch."sourceType" = ${AccountingJournalSourceType.PROVIDER_BANK_DEPOSIT}::"AccountingJournalSourceType"
+        AND batch."status" = ${AccountingJournalBatchStatus.POSTED}::"AccountingJournalBatchStatus"
+        AND entry."side" = ${AccountingJournalEntrySide.DEBIT}::"AccountingJournalEntrySide"
+        AND entry."accountCode" = 'company_bank_cash'
+      LEFT JOIN "BankReconciliationMatch" match
+        ON match."accountingJournalEntryId" = entry."id"
+      WHERE request."status" = ${PartnerBankDepositRequestStatus.EXECUTED}::"PartnerBankDepositRequestStatus"
+        AND (${status} = '' OR ${status} = ${PartnerBankDepositRequestStatus.EXECUTED})
+        AND (
+          ${period} = ''
+          OR COALESCE(
+            batch."monthlyPeriod",
+            TO_CHAR(request."depositDate" AT TIME ZONE ${VIETNAM_TIME_ZONE}, 'YYYY-MM')
+          ) = ${period}
+        )
+        AND (
+          ${query} = ''
+          OR request."id" ILIKE ${queryPattern}
+          OR request."bankTransactionId" ILIKE ${queryPattern}
+          OR request."providerProfileId" ILIKE ${queryPattern}
+          OR provider."displayName" ILIKE ${queryPattern}
+          OR partnerUser."fullName" ILIKE ${queryPattern}
+        )
+      GROUP BY request."id", request."amount", request."depositDate", request."createdAt", request."executedAt"
+    ),
+    "openPartnerBankDeposits" AS (
+      SELECT
+        evidence."id",
+        evidence."depositDate",
+        evidence."createdAt",
+        evidence."executedAt",
+        assignments."assignmentAuditLogId",
+        assignments."assigneeAdminId",
+        assignments."assignedAt",
+        GREATEST(evidence."targetAmount" - LEAST(evidence."targetAmount", evidence."matchedAmount"), 0)::bigint AS "remainingAmount"
+      FROM "partnerBankDepositEvidence" evidence
+      LEFT JOIN "latestPartnerBankDepositAssignments" assignments
+        ON assignments."target" = 'partner_bank_deposit_request:' || evidence."id"
+      WHERE evidence."matchedAmount" < evidence."targetAmount"
+        AND (${owner} <> 'unassigned' OR assignments."assigneeAdminId" IS NULL)
+        AND (${assigneeAdminId} = '' OR assignments."assigneeAdminId" = ${assigneeAdminId})
+        AND (
+          ${sla} = 'all'
+          OR (
+            ${sla} = 'within-24h'
+            AND COALESCE(evidence."executedAt", evidence."createdAt") > NOW() - INTERVAL '24 hours'
+          )
+          OR (
+            ${sla} = 'over-24h'
+            AND COALESCE(evidence."executedAt", evidence."createdAt") <= NOW() - INTERVAL '24 hours'
+            AND COALESCE(evidence."executedAt", evidence."createdAt") > NOW() - INTERVAL '48 hours'
+          )
+          OR (
+            ${sla} = 'escalate'
+            AND COALESCE(evidence."executedAt", evidence."createdAt") <= NOW() - INTERVAL '48 hours'
+          )
+        )
+    )
+  `;
+}
+
 function adminPartnerWithholdingTaxPeriod(value: string | null | undefined) {
   const normalized = normalizeNullable(value);
   if (normalized && /^\d{4}-(0[1-9]|1[0-2])$/.test(normalized)) {
@@ -17099,7 +25748,7 @@ function adminPartnerWithholdingTaxPeriod(value: string | null | undefined) {
   }
 
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Bangkok',
+    timeZone: VIETNAM_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
   }).formatToParts(new Date());
@@ -17130,8 +25779,38 @@ function assertMonthlyTaxClosingReconciliationIsBalanced(
   }
 }
 
+function assertMonthlyTaxClosingPaymentFeeEvidenceIsReady(
+  summary: { paymentFeeReviewFlagCount: number },
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (nextStatus === MonthlyTaxClosingStatus.DRAFT || nextStatus === MonthlyTaxClosingStatus.REVIEWED) {
+    return;
+  }
+  if (summary.paymentFeeReviewFlagCount > 0) {
+    throw new BadRequestException(
+      `Monthly close has ${summary.paymentFeeReviewFlagCount} settlement(s) without resolved payment fee policy evidence. Review and activate the applicable payment fee policy before declaration.`,
+    );
+  }
+}
+
+function assertMonthlyTaxClosingPartnerDepositReconciliationIsReady(
+  summary: { partnerDepositReconciliationOpenCount: number },
+  nextStatus: MonthlyTaxClosingStatus,
+) {
+  if (nextStatus === MonthlyTaxClosingStatus.DRAFT || nextStatus === MonthlyTaxClosingStatus.REVIEWED) {
+    return;
+  }
+  if (summary.partnerDepositReconciliationOpenCount > 0) {
+    throw new BadRequestException(
+      `Monthly close has ${summary.partnerDepositReconciliationOpenCount} executed Partner bank deposit(s) without complete bank reconciliation. Match the retained bank evidence before declaration.`,
+    );
+  }
+}
+
 async function assertMonthlyTaxClosingPostedJournalsAreBalanced(
-  prisma: Pick<PrismaService, 'accountingJournalBatch'> | Pick<Prisma.TransactionClient, 'accountingJournalBatch'>,
+  prisma:
+    | Pick<PrismaService, 'accountingJournalBatch'>
+    | Pick<Prisma.TransactionClient, 'accountingJournalBatch'>,
   period: string,
   nextStatus: MonthlyTaxClosingStatus,
 ) {
@@ -17512,6 +26191,8 @@ function adminPaymentDateRangeBounds(range: string | null | undefined) {
       return { startMs: addLocalDays(todayStartMs, -6), endMs: todayEndMs };
     case '30d':
       return { startMs: addLocalDays(todayStartMs, -29), endMs: todayEndMs };
+    case '90d':
+      return { startMs: addLocalDays(todayStartMs, -89), endMs: todayEndMs };
     case 'all':
       return undefined;
     case 'today':
@@ -17621,7 +26302,10 @@ function notificationBoardAndWhere(
 
 type NotificationBoardSummaryOptions = {
   readonly booking?: string;
+  readonly financeAge?: string;
+  readonly financeOwner?: string;
   readonly from?: string;
+  readonly incidentState?: string;
   readonly review?: string;
   readonly to?: string;
   readonly user?: string;
@@ -17646,6 +26330,7 @@ function notificationBoardWhere(
   const booking = normalizeNullable(options.booking);
   const user = normalizeNullable(options.user);
   const reviewWhere = notificationBoardReviewWhere(options.review);
+  const incidentStateWhere = notificationBoardIncidentStateWhere(options.incidentState);
 
   if (dateWhere) {
     Object.assign(where, dateWhere);
@@ -17658,6 +26343,9 @@ function notificationBoardWhere(
   }
   if (reviewWhere) {
     filters.push(reviewWhere);
+  }
+  if (incidentStateWhere) {
+    filters.push(incidentStateWhere);
   }
   if (filters.length > 0) {
     where.AND = filters;
@@ -17675,6 +26363,10 @@ function notificationBoardReviewWhere(value: string | undefined): Prisma.Notific
       return notificationDeliveryStatusWhere('FAILED');
     case 'fcm':
       return notificationDeliveryProviderWhere('FCM');
+    case 'finance-overdue':
+      return notificationFinanceOverdueWhere('open');
+    case 'finance-overdue-history':
+      return notificationFinanceOverdueWhere('resolved');
     case 'in-app-route':
       return notificationDeliveryProviderWhere('IN_APP_ONLY');
     case 'needs-retry':
@@ -17699,9 +26391,491 @@ function notificationBoardReviewWhere(value: string | undefined): Prisma.Notific
       return notificationDeliveryStatusWhere('SKIPPED');
     case 'stale-device':
       return notificationStaleDeliveryCandidateWhere();
+    case 'system-incidents':
+      return { type: { startsWith: 'admin.system.' } };
     default:
       return undefined;
   }
+}
+
+function notificationFinanceOverdueWhere(
+  state: 'open' | 'resolved',
+): Prisma.NotificationWhereInput {
+  const typeWhere: Prisma.NotificationWhereInput = {
+    type: { in: [...ADMIN_NOTIFICATION_FINANCE_OVERDUE_TYPES] },
+  };
+  if (state === 'resolved') {
+    return {
+      AND: [
+        typeWhere,
+        { data: { path: ['financeReviewStatus'], equals: 'RESOLVED' } },
+      ],
+    };
+  }
+  return {
+    AND: [
+      typeWhere,
+      {
+        OR: [
+          { data: { path: ['financeReviewStatus'], equals: Prisma.AnyNull } },
+          { data: { path: ['financeReviewStatus'], not: 'RESOLVED' } },
+        ],
+      },
+    ],
+  };
+}
+
+function notificationBackgroundJobIncidentId(notification: {
+  readonly data: Prisma.JsonValue | null;
+  readonly type: string;
+}) {
+  if (!notification.type.startsWith('admin.system.background_job')) return null;
+  return jsonString(jsonObject(notification.data).incidentId);
+}
+
+function legacyNotificationReviewSource(notification: {
+  readonly data: Prisma.JsonValue | null;
+  readonly id: string;
+  readonly type: string;
+}) {
+  if (!notification.type.startsWith('admin.system.background_job')) return null;
+  const data = jsonObject(notification.data);
+  const queueName = jsonString(data.queueName);
+  const jobId = jsonString(data.jobId);
+  if (!queueName || !jobId) return null;
+  return { jobId, queueName, sourceKey: `job:${queueName}:${jobId}` };
+}
+
+type NotificationSystemIncidentSourcePageRow = {
+  readonly id: string;
+  readonly notificationCount: number;
+  readonly recipientCount: number;
+  readonly sourceKey: string;
+};
+
+type NotificationFinanceReviewPageRow = {
+  readonly id: string;
+  readonly ownerAdminId: string | null;
+  readonly ownerEmail: string | null;
+  readonly ownerFullName: string | null;
+  readonly reviewAgeHours: number;
+  readonly reviewStartedAt: Date;
+};
+
+type NotificationFinanceReviewCountRow = {
+  readonly count: number;
+};
+
+type NotificationFinanceReviewOwnerCountRow = {
+  readonly count: number;
+  readonly ownerAdminId: string | null;
+};
+
+type NotificationSystemIncidentSourceSummarySqlRow = {
+  readonly legacy: number;
+  readonly notificationCount: number;
+  readonly open: number;
+  readonly recovered: number;
+  readonly reviewed: number;
+  readonly total: number;
+};
+
+function notificationFinanceReviewState(value: string | undefined) {
+  const review = normalizeNullable(value);
+  if (review === 'finance-overdue') return 'open' as const;
+  if (review === 'finance-overdue-history') return 'resolved' as const;
+  return null;
+}
+
+function notificationFinanceReviewPageQuery(
+  options: NotificationBoardSummaryOptions,
+  state: 'open' | 'resolved',
+  take: number,
+  skip: number,
+) {
+  const order = state === 'open'
+    ? Prisma.sql`finance_reviews."reviewStartedAt" ASC, finance_reviews.id ASC`
+    : Prisma.sql`finance_reviews."resolvedAt" DESC NULLS LAST, finance_reviews.id DESC`;
+
+  return Prisma.sql`
+    WITH finance_reviews AS (
+      ${notificationFinanceReviewFilteredSql(options, state)}
+    )
+    SELECT
+      finance_reviews.id,
+      finance_reviews."reviewStartedAt",
+      finance_reviews."ownerAdminId",
+      owner.email AS "ownerEmail",
+      owner."fullName" AS "ownerFullName",
+      finance_reviews."reviewAgeHours"
+    FROM finance_reviews
+    LEFT JOIN "User" owner ON owner.id = finance_reviews."ownerAdminId"
+    ORDER BY ${order}
+    LIMIT ${take}
+    OFFSET ${skip}
+  `;
+}
+
+function notificationFinanceReviewCountQuery(
+  options: NotificationBoardSummaryOptions,
+  state: 'open' | 'resolved',
+) {
+  return Prisma.sql`
+    WITH finance_reviews AS (
+      ${notificationFinanceReviewFilteredSql(options, state)}
+    )
+    SELECT COUNT(*)::integer AS count
+    FROM finance_reviews
+  `;
+}
+
+function notificationFinanceReviewOwnerSummaryQuery(
+  options: NotificationBoardSummaryOptions,
+  state: 'open' | 'resolved',
+) {
+  return Prisma.sql`
+    WITH finance_reviews AS (
+      ${notificationFinanceReviewFilteredSql({ ...options, financeOwner: undefined }, state)}
+    )
+    SELECT
+      finance_reviews."ownerAdminId",
+      COUNT(*)::integer AS count
+    FROM finance_reviews
+    GROUP BY finance_reviews."ownerAdminId"
+    ORDER BY count DESC, finance_reviews."ownerAdminId" ASC NULLS FIRST
+  `;
+}
+
+function notificationFinanceReviewFilteredSql(
+  options: NotificationBoardSummaryOptions,
+  state: 'open' | 'resolved',
+) {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`notification."type" IN (
+      'admin.finance.bank_statement_batch.escalated',
+      'admin.finance.bank_transaction.review_escalated'
+    )`,
+  ];
+  conditions.push(state === 'resolved'
+    ? Prisma.sql`notification."data"->>'financeReviewStatus' = 'RESOLVED'`
+    : Prisma.sql`COALESCE(notification."data"->>'financeReviewStatus', 'OPEN') <> 'RESOLVED'`);
+
+  const from = normalizeNotificationDateBoundary(options.from, 'from');
+  const to = normalizeNotificationDateBoundary(options.to, 'to');
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Notification date range is invalid');
+  }
+  if (from) conditions.push(Prisma.sql`notification."createdAt" >= ${from}`);
+  if (to) conditions.push(Prisma.sql`notification."createdAt" < ${to}`);
+  const booking = normalizeNullable(options.booking);
+  if (booking) conditions.push(Prisma.sql`notification."data"->>'bookingId' = ${booking}`);
+  const user = normalizeNullable(options.user);
+  if (user) conditions.push(Prisma.sql`notification."userId" = ${user}`);
+  const age = normalizeNotificationFinanceAge(options.financeAge);
+  const owner = normalizeNotificationFinanceOwner(options.financeOwner);
+  const reviewFilters: Prisma.Sql[] = [];
+  if (age === '48-72') {
+    reviewFilters.push(Prisma.sql`review_rows."reviewAgeHours" >= 48`);
+    reviewFilters.push(Prisma.sql`review_rows."reviewAgeHours" < 72`);
+  } else if (age === '72-plus') {
+    reviewFilters.push(Prisma.sql`review_rows."reviewAgeHours" >= 72`);
+  }
+  if (owner === 'unassigned') {
+    reviewFilters.push(Prisma.sql`review_rows."ownerAdminId" IS NULL`);
+  } else if (owner) {
+    reviewFilters.push(Prisma.sql`review_rows."ownerAdminId" = ${owner}`);
+  }
+  const reviewWhere = reviewFilters.length > 0
+    ? Prisma.sql`WHERE ${Prisma.join(reviewFilters, ' AND ')}`
+    : Prisma.empty;
+
+  return Prisma.sql`
+    SELECT review_rows.*
+    FROM (
+      SELECT
+        notification.id,
+        COALESCE(
+          assignment."createdAt",
+          batch_import."createdAt",
+          notification."createdAt"
+        ) AS "reviewStartedAt",
+        NULLIF(notification."data"->>'financeReviewResolvedAt', '')::timestamptz AS "resolvedAt",
+        COALESCE(
+          current_assignment."metadata"->>'assigneeAdminId',
+          assignment."metadata"->>'assigneeAdminId',
+          batch_import."metadata"->>'assigneeAdminId'
+        ) AS "ownerAdminId",
+        GREATEST(
+          0,
+          FLOOR(EXTRACT(EPOCH FROM (
+            COALESCE(
+              NULLIF(notification."data"->>'financeReviewResolvedAt', '')::timestamptz,
+              NOW()
+            ) - COALESCE(
+              assignment."createdAt",
+              batch_import."createdAt",
+              notification."createdAt"
+            )
+          )) / 3600)
+        )::integer AS "reviewAgeHours"
+      FROM "Notification" notification
+      LEFT JOIN "AdminAuditLog" assignment
+        ON assignment.id = notification."data"->>'assignmentAuditLogId'
+      LEFT JOIN LATERAL (
+        SELECT logs."metadata"
+        FROM "AdminAuditLog" logs
+        WHERE logs."action" = ${COMPANY_BANK_TRANSACTION_REVIEW_ASSIGNMENT_ACTION}
+          AND logs."target" = 'bank_transaction:' || (notification."data"->>'bankTransactionId')
+        ORDER BY logs."createdAt" DESC, logs.id DESC
+        LIMIT 1
+      ) current_assignment ON notification."data"->>'bankTransactionId' IS NOT NULL
+      LEFT JOIN LATERAL (
+        SELECT logs."createdAt", logs."metadata"
+        FROM "AdminAuditLog" logs
+        WHERE logs."action" = ${COMPANY_BANK_TRANSACTION_BATCH_IMPORT_ACTION}
+          AND COALESCE(
+            logs."metadata"->>'batchImportId',
+            regexp_replace(logs."target", '^company_bank_transaction_batch:', '')
+          ) = notification."data"->>'batchImportId'
+        ORDER BY logs."createdAt" ASC, logs.id ASC
+        LIMIT 1
+      ) batch_import ON TRUE
+      WHERE ${Prisma.join(conditions, ' AND ')}
+    ) review_rows
+    ${reviewWhere}
+  `;
+}
+
+function normalizeNotificationFinanceAge(value: string | undefined) {
+  const age = normalizeNullable(value)?.toLowerCase();
+  if (!age || age === 'all') return 'all' as const;
+  if (age === '48-72' || age === '72-plus') return age;
+  throw new BadRequestException('Notification Finance age filter is invalid');
+}
+
+function normalizeNotificationFinanceOwner(value: string | undefined) {
+  const owner = normalizeNullable(value);
+  if (!owner || owner === 'all') return null;
+  if (owner === 'unassigned') return owner;
+  if (
+    owner.length > 128 ||
+    Array.from(owner).some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    })
+  ) {
+    throw new BadRequestException('Notification Finance owner filter is invalid');
+  }
+  return owner;
+}
+
+function notificationFinanceReviewPageNotifications<
+  T extends { readonly data: Prisma.JsonValue | null; readonly id: string },
+>(notifications: readonly T[], rows: readonly NotificationFinanceReviewPageRow[]): T[] {
+  const notificationById = new Map(notifications.map((notification) => [notification.id, notification]));
+  return rows.flatMap((row) => {
+    const notification = notificationById.get(row.id);
+    if (!notification) return [];
+    return [{
+      ...notification,
+      data: toJson({
+        ...jsonObject(notification.data),
+        financeReviewAgeHours: row.reviewAgeHours,
+        financeReviewOwner: {
+          email: row.ownerEmail,
+          fullName: row.ownerFullName,
+          id: row.ownerAdminId,
+        },
+        financeReviewSlaBand: row.reviewAgeHours >= 72 ? 'OVER_72H' : 'OVER_48H',
+        financeReviewStartedAt: row.reviewStartedAt.toISOString(),
+      }),
+    } as T];
+  });
+}
+
+function notificationSystemIncidentSourcePageQuery(
+  options: NotificationBoardSummaryOptions,
+  take: number,
+  skip: number,
+) {
+  const stateRank = notificationSystemIncidentSelectedStateRank(options.incidentState);
+  const stateFilter = stateRank === null
+    ? Prisma.empty
+    : Prisma.sql`AND grouped."resolvedStateRank" = ${stateRank}`;
+
+  return Prisma.sql`
+    WITH filtered AS (
+      ${notificationSystemIncidentFilteredSourceSql(options)}
+    ), ranked AS (
+      SELECT
+        filtered.*,
+        ROW_NUMBER() OVER (
+          PARTITION BY filtered."sourceKey"
+          ORDER BY filtered."stateRank" ASC, filtered."createdAt" DESC, filtered.id DESC
+        ) AS "representativeRank"
+      FROM filtered
+    ), grouped AS (
+      SELECT
+        filtered."sourceKey",
+        MIN(filtered."stateRank")::integer AS "resolvedStateRank",
+        COUNT(*)::integer AS "notificationCount",
+        COUNT(DISTINCT filtered."userId")::integer AS "recipientCount"
+      FROM filtered
+      GROUP BY filtered."sourceKey"
+    )
+    SELECT
+      ranked.id,
+      grouped."sourceKey",
+      grouped."notificationCount",
+      grouped."recipientCount"
+    FROM ranked
+    INNER JOIN grouped ON grouped."sourceKey" = ranked."sourceKey"
+    WHERE ranked."representativeRank" = 1
+      ${stateFilter}
+    ORDER BY ranked."createdAt" DESC, ranked.id DESC
+    LIMIT ${take}
+    OFFSET ${skip}
+  `;
+}
+
+function notificationSystemIncidentSourceSummaryQuery(options: NotificationBoardSummaryOptions) {
+  return Prisma.sql`
+    WITH filtered AS (
+      ${notificationSystemIncidentFilteredSourceSql(options)}
+    ), grouped AS (
+      SELECT
+        filtered."sourceKey",
+        MIN(filtered."stateRank")::integer AS "resolvedStateRank",
+        COUNT(*)::integer AS "notificationCount"
+      FROM filtered
+      GROUP BY filtered."sourceKey"
+    )
+    SELECT
+      COUNT(*)::integer AS total,
+      COUNT(*) FILTER (WHERE grouped."resolvedStateRank" = 1)::integer AS open,
+      COUNT(*) FILTER (WHERE grouped."resolvedStateRank" = 2)::integer AS legacy,
+      COUNT(*) FILTER (WHERE grouped."resolvedStateRank" = 3)::integer AS recovered,
+      COUNT(*) FILTER (WHERE grouped."resolvedStateRank" = 4)::integer AS reviewed,
+      COALESCE(SUM(grouped."notificationCount"), 0)::integer AS "notificationCount"
+    FROM grouped
+  `;
+}
+
+function notificationSystemIncidentFilteredSourceSql(options: NotificationBoardSummaryOptions) {
+  const conditions: Prisma.Sql[] = [Prisma.sql`notification."type" LIKE 'admin.system.%'`];
+  const from = normalizeNotificationDateBoundary(options.from, 'from');
+  const to = normalizeNotificationDateBoundary(options.to, 'to');
+  if (from && to && from.getTime() >= to.getTime()) {
+    throw new BadRequestException('Notification date range is invalid');
+  }
+  if (from) conditions.push(Prisma.sql`notification."createdAt" >= ${from}`);
+  if (to) conditions.push(Prisma.sql`notification."createdAt" < ${to}`);
+  const booking = normalizeNullable(options.booking);
+  if (booking) conditions.push(Prisma.sql`notification."data"->>'bookingId' = ${booking}`);
+  const user = normalizeNullable(options.user);
+  if (user) conditions.push(Prisma.sql`notification."userId" = ${user}`);
+
+  return Prisma.sql`
+    SELECT
+      notification.id,
+      notification."userId",
+      notification."createdAt",
+      CASE
+        WHEN COALESCE(notification."data"->>'incidentId', '') <> ''
+          THEN 'incident:' || (notification."data"->>'incidentId')
+        WHEN notification."type" LIKE 'admin.system.background_job%'
+          AND COALESCE(notification."data"->>'queueName', '') <> ''
+          AND COALESCE(notification."data"->>'jobId', '') <> ''
+          THEN 'job:' || (notification."data"->>'queueName') || ':' || (notification."data"->>'jobId')
+        ELSE 'notification:' || notification.id
+      END AS "sourceKey",
+      CASE
+        WHEN notification."data"->>'incidentStatus' = 'OPEN' THEN 1
+        WHEN notification."data"->>'incidentStatus' = 'RECOVERED' THEN 3
+        WHEN notification."data"->>'incidentStatus' = 'LEGACY_REVIEWED' THEN 4
+        WHEN COALESCE(notification."data"->>'incidentId', '') <> '' THEN 1
+        ELSE 2
+      END AS "stateRank"
+    FROM "Notification" notification
+    WHERE ${Prisma.join(conditions, ' AND ')}
+  `;
+}
+
+function notificationSystemIncidentSelectedStateRank(value: string | undefined) {
+  const state = normalizeNullable(value)?.toLowerCase();
+  if (state === 'open') return 1;
+  if (state === 'legacy') return 2;
+  if (state === 'recovered') return 3;
+  if (state === 'reviewed') return 4;
+  return null;
+}
+
+function notificationSystemIncidentSourceSummaryFromSql(
+  row: NotificationSystemIncidentSourceSummarySqlRow | undefined,
+  selectedStateValue: string | undefined,
+) {
+  const counts = row ?? { legacy: 0, notificationCount: 0, open: 0, recovered: 0, reviewed: 0, total: 0 };
+  const selectedState = normalizeNullable(selectedStateValue)?.toLowerCase();
+  const selected = selectedState === 'open'
+    ? counts.open
+    : selectedState === 'recovered'
+      ? counts.recovered
+      : selectedState === 'legacy'
+        ? counts.legacy
+        : selectedState === 'reviewed'
+          ? counts.reviewed
+          : counts.total;
+  return { ...counts, selected };
+}
+
+function notificationSystemIncidentSourcePageNotifications<
+  T extends { readonly data: Prisma.JsonValue | null; readonly id: string },
+>(notifications: readonly T[], sources: readonly NotificationSystemIncidentSourcePageRow[]): T[] {
+  const notificationById = new Map(notifications.map((notification) => [notification.id, notification]));
+  return sources.flatMap((source) => {
+    const notification = notificationById.get(source.id);
+    if (!notification) return [];
+    return [{
+      ...notification,
+      data: toJson({
+        ...jsonObject(notification.data),
+        systemIncidentNotificationCount: source.notificationCount,
+        systemIncidentRecipientCount: source.recipientCount,
+        systemIncidentSourceKey: source.sourceKey,
+      }),
+    } as T];
+  });
+}
+
+function notificationBoardIncidentStateWhere(
+  value: string | undefined,
+): Prisma.NotificationWhereInput | undefined {
+  const incidentState = normalizeNullable(value)?.toLowerCase();
+  if (!incidentState || incidentState === 'all') return undefined;
+  const systemIncidentWhere: Prisma.NotificationWhereInput = {
+    type: { startsWith: 'admin.system.' },
+  };
+  if (incidentState === 'open') {
+    return {
+      AND: [systemIncidentWhere, { data: { path: ['incidentStatus'], equals: 'OPEN' } }],
+    };
+  }
+  if (incidentState === 'recovered') {
+    return {
+      AND: [systemIncidentWhere, { data: { path: ['incidentStatus'], equals: 'RECOVERED' } }],
+    };
+  }
+  if (incidentState === 'reviewed') {
+    return {
+      AND: [systemIncidentWhere, { data: { path: ['incidentStatus'], equals: 'LEGACY_REVIEWED' } }],
+    };
+  }
+  if (incidentState === 'legacy') {
+    return {
+      AND: [systemIncidentWhere, { data: { path: ['incidentStatus'], equals: Prisma.AnyNull } }],
+    };
+  }
+  return undefined;
 }
 
 function notificationDeliveryStatusWhere(status: string): Prisma.NotificationWhereInput {

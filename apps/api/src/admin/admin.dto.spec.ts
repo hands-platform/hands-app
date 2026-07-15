@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  CompanyBankAccountStatus,
   CompanyBankTransactionType,
   MonthlyTaxClosingStatus,
   PayoutBatchStatus,
@@ -52,6 +53,32 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('markReferralRewardCashoutPaid', 2) as { name?: string })?.name).toBe(
       'ReferralRewardCashoutPaidDto',
     );
+  });
+
+  it('uses a validated DTO for booking settlement repairs', async () => {
+    const metatype = bodyMetatype('repairBookingSettlementGap', 2) as never;
+    expect((metatype as { name?: string })?.name).toBe('RepairBookingSettlementGapDto');
+
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const transformed = await pipe.transform(
+      {
+        approvalAdminId: ' finance-admin-2 ',
+        reason: ' restore missing completion settlement ',
+        bypassMonthlyClose: true,
+      },
+      { type: 'body', metatype, data: '' },
+    );
+
+    expect(transformed).toEqual({
+      approvalAdminId: 'finance-admin-2',
+      reason: 'restore missing completion settlement',
+    });
+    await expect(
+      pipe.transform(
+        { approvalAdminId: 'finance-admin-2', reason: '   ' },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('strips unsupported operational policy fields while preserving value', async () => {
@@ -159,6 +186,15 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('recordPartnerBankDeposit', 1) as { name?: string })?.name).toBe(
       'RecordPartnerBankDepositDto',
     );
+    expect((bodyMetatype('createPartnerBankDepositRequest', 1) as { name?: string })?.name).toBe(
+      'CreatePartnerBankDepositRequestDto',
+    );
+    expect((bodyMetatype('rejectPartnerBankDepositRequest', 2) as { name?: string })?.name).toBe(
+      'RejectPartnerBankDepositRequestDto',
+    );
+    expect((bodyMetatype('allocatePartnerBankDepositCashDebt', 2) as { name?: string })?.name).toBe(
+      'AllocatePartnerBankDepositCashDebtDto',
+    );
     expect((bodyMetatype('updateMonthlyTaxClosingStatus', 2) as { name?: string })?.name).toBe(
       'UpdateMonthlyTaxClosingStatusDto',
     );
@@ -171,8 +207,118 @@ describe('admin request DTO validation', () => {
       (bodyMetatype('reverseBankReconciliationMatch' as keyof AdminController, 3) as { name?: string })?.name,
     ).toBe('ReverseBankReconciliationMatchDto');
     expect(
+      (bodyMetatype('ignoreCompanyBankTransaction' as keyof AdminController, 2) as { name?: string })?.name,
+    ).toBe('IgnoreCompanyBankTransactionDto');
+    expect(
+      (bodyMetatype('createCompanyBankAccount' as keyof AdminController, 1) as { name?: string })?.name,
+    ).toBe('CreateCompanyBankAccountDto');
+    expect(
+      (bodyMetatype('updateCompanyBankAccount' as keyof AdminController, 2) as { name?: string })?.name,
+    ).toBe('UpdateCompanyBankAccountDto');
+    expect(
       (bodyMetatype('createCompanyBankTransaction' as keyof AdminController, 1) as { name?: string })?.name,
     ).toBe('CreateCompanyBankTransactionDto');
+    expect(
+      (bodyMetatype('previewCompanyBankTransactionBatch' as keyof AdminController, 0) as { name?: string })?.name,
+    ).toBe('PreviewCompanyBankTransactionBatchDto');
+    expect(
+      (bodyMetatype('importCompanyBankTransactionBatch' as keyof AdminController, 1) as { name?: string })?.name,
+    ).toBe('ImportCompanyBankTransactionBatchDto');
+    expect(
+      (bodyMetatype('assignBankReconciliationImportBatch' as keyof AdminController, 2) as { name?: string })?.name,
+    ).toBe('AssignCompanyBankTransactionImportBatchDto');
+  });
+
+  it('validates masked company bank account writes and finance evidence', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const createMetatype = bodyMetatype('createCompanyBankAccount', 1) as never;
+    const transformed = await pipe.transform(
+      {
+        approvalAdminId: ' finance-admin-2 ',
+        operatorReason: ' Reviewed treasury account evidence ',
+        name: ' Operations VND ',
+        bankName: ' VCB ',
+        accountNumberMasked: ' ****1234 ',
+        accountNumberLast4: '1234',
+        currency: ' vnd ',
+        rawAccountNumber: 'do-not-accept',
+      },
+      { type: 'body', metatype: createMetatype, data: '' },
+    );
+
+    expect(transformed).toMatchObject({
+      approvalAdminId: 'finance-admin-2',
+      operatorReason: 'Reviewed treasury account evidence',
+      name: 'Operations VND',
+      bankName: 'VCB',
+      accountNumberMasked: '****1234',
+      accountNumberLast4: '1234',
+      currency: 'vnd',
+    });
+    expect(transformed).not.toHaveProperty('rawAccountNumber');
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: 'finance-admin-2',
+          operatorReason: 'short',
+          name: 'Operations VND',
+          bankName: 'VCB',
+          accountNumberLast4: '12',
+          currency: 'VND',
+        },
+        { type: 'body', metatype: createMetatype, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    const updateMetatype = bodyMetatype('updateCompanyBankAccount', 2) as never;
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: 'finance-admin-2',
+          operatorReason: 'Archive after treasury review',
+          status: CompanyBankAccountStatus.INACTIVE,
+        },
+        { type: 'body', metatype: updateMetatype, data: '' },
+      ),
+    ).resolves.toMatchObject({ status: CompanyBankAccountStatus.INACTIVE });
+  });
+
+  it('validates and trims bank statement batch assignment evidence', async () => {
+    const metatype = bodyMetatype('assignBankReconciliationImportBatch', 2) as never;
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(pipe.transform(
+      { assigneeAdminId: ' finance-operator-1 ', reason: ' Own overdue reconciliation ' },
+      { type: 'body', metatype, data: '' },
+    )).resolves.toEqual({
+      assigneeAdminId: 'finance-operator-1',
+      reason: 'Own overdue reconciliation',
+    });
+    await expect(pipe.transform(
+      { assigneeAdminId: '', reason: '' },
+      { type: 'body', metatype, data: '' },
+    )).rejects.toThrow();
+  });
+
+  it('uses validated DTOs for persistent manual wallet adjustment decisions', async () => {
+    const createMetatype = bodyMetatype('createManualWalletAdjustmentRequest', 1) as never;
+    const rejectMetatype = bodyMetatype('rejectManualWalletAdjustmentRequest', 2) as never;
+    expect((createMetatype as { name?: string })?.name).toBe('CreateManualWalletAdjustmentRequestDto');
+    expect((rejectMetatype as { name?: string })?.name).toBe('RejectManualWalletAdjustmentRequestDto');
+
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const transformed = await pipe.transform(
+      { reason: '  Evidence does not support this adjustment  ', ignored: 'strip-me' },
+      { type: 'body', metatype: rejectMetatype, data: '' },
+    );
+    expect(transformed).toEqual({ reason: 'Evidence does not support this adjustment' });
+
+    await expect(
+      pipe.transform(
+        { reason: '   ' },
+        { type: 'body', metatype: rejectMetatype, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('normalizes monthly tax closing remittance approval payloads', async () => {
@@ -241,6 +387,8 @@ describe('admin request DTO validation', () => {
         transferRef: ' VCB-900 ',
         counterpartyName: ' Demo Customer ',
         description: ' Manual import from bank statement ',
+        operatorReason: ' Reviewed against VCB evidence ',
+        confirmPotentialDuplicate: true,
         importedByAdminId: 'do-not-accept',
       },
       {
@@ -256,7 +404,125 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('currency', 'VND');
     expect(transformed).toHaveProperty('sourceKey', 'manual-import-1');
     expect(transformed).toHaveProperty('transferRef', 'VCB-900');
+    expect(transformed).toHaveProperty('operatorReason', 'Reviewed against VCB evidence');
+    expect(transformed).toHaveProperty('confirmPotentialDuplicate', true);
     expect(transformed).not.toHaveProperty('importedByAdminId');
+
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: 'finance-admin-2',
+          bankAccountId: 'bank-account-1',
+          type: CompanyBankTransactionType.INFLOW,
+          amount: 900000,
+          occurredAt: '2026-06-30T05:00:00.000Z',
+          operatorReason: 'too short',
+        },
+        {
+          type: 'body',
+          metatype: bodyMetatype('createCompanyBankTransaction' as keyof AdminController, 1) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('bounds bank statement batch rows and preserves invalid row values for preview classification', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('previewCompanyBankTransactionBatch' as keyof AdminController, 0) as never;
+    const transformed = await pipe.transform(
+      {
+        rows: [
+          {
+            rowNumber: '1',
+            bankAccountId: ' bank-account-1 ',
+            type: 'bad-type',
+            amount: 'not-an-amount',
+            occurredAt: 'not-a-date',
+            transferRef: ' VCB-CSV-1 ',
+            ignored: 'strip-me',
+          },
+        ],
+      },
+      { type: 'body', metatype, data: '' },
+    );
+
+    expect(transformed).toEqual({
+      rows: [
+        {
+          rowNumber: 1,
+          bankAccountId: 'bank-account-1',
+          type: 'bad-type',
+          amount: 'not-an-amount',
+          occurredAt: 'not-a-date',
+          transferRef: 'VCB-CSV-1',
+        },
+      ],
+    });
+    await expect(
+      pipe.transform(
+        { rows: Array.from({ length: 51 }, (_, index) => ({ rowNumber: index + 1 })) },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('validates and normalizes bank statement batch import provenance', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('importCompanyBankTransactionBatch' as keyof AdminController, 1) as never;
+    const sourceFileSha256 = 'A'.repeat(64);
+    const transformed = await pipe.transform(
+      {
+        approvalAdminId: ' finance-admin-2 ',
+        mappingPreset: 'VCB',
+        operatorReason: ' Reviewed VCB statement rows ',
+        rows: [
+          {
+            amount: '900000',
+            bankAccountId: ' bank-account-1 ',
+            occurredAt: '2026-07-14T01:30:15.000Z',
+            rowNumber: '2',
+            type: 'INFLOW',
+          },
+        ],
+        sourceFileName: ' VCB July.csv ',
+        sourceFileSha256,
+      },
+      { type: 'body', metatype, data: '' },
+    );
+
+    expect(transformed).toMatchObject({
+      approvalAdminId: 'finance-admin-2',
+      mappingPreset: 'VCB',
+      operatorReason: 'Reviewed VCB statement rows',
+      sourceFileName: 'VCB July.csv',
+      sourceFileSha256: sourceFileSha256.toLowerCase(),
+    });
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: 'finance-admin-2',
+          mappingPreset: 'UNKNOWN',
+          rows: [{ amount: '1', bankAccountId: 'bank-1', occurredAt: '2026-07-14', rowNumber: 2, type: 'INFLOW' }],
+          sourceFileName: 'statement.csv',
+          sourceFileSha256: 'not-a-sha256',
+        },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: 'finance-admin-2',
+          mappingPreset: 'VCB',
+          operatorReason: 'short',
+          rows: [{ amount: '1', bankAccountId: 'bank-1', occurredAt: '2026-07-14', rowNumber: 2, type: 'INFLOW' }],
+          sourceFileName: 'statement.csv',
+          sourceFileSha256: 'a'.repeat(64),
+        },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('normalizes bank reconciliation match reversal reasons and strips settlement fields', async () => {
@@ -276,6 +542,31 @@ describe('admin request DTO validation', () => {
 
     expect(transformed).toHaveProperty('reason', 'wrong clearing entry');
     expect(transformed).not.toHaveProperty('settlementSnapshotId');
+  });
+
+  it('requires approved bank transaction ignore reasons and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const metatype = bodyMetatype('ignoreCompanyBankTransaction' as keyof AdminController, 2) as never;
+
+    await expect(
+      pipe.transform(
+        {
+          approvalAdminId: ' finance-admin-2 ',
+          reason: ' Duplicate imported statement row ',
+          bankBalance: 123,
+        },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).resolves.toEqual({
+      approvalAdminId: 'finance-admin-2',
+      reason: 'Duplicate imported statement row',
+    });
+    await expect(
+      pipe.transform(
+        { approvalAdminId: 'finance-admin-2', reason: '   ' },
+        { type: 'body', metatype, data: '' },
+      ),
+    ).rejects.toThrow();
   });
 
   it('normalizes partner bank deposit approval payloads and strips unsupported fields', async () => {
@@ -303,6 +594,72 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('depositDate', '2026-06-29T09:30:00.000Z');
     expect(transformed).toHaveProperty('attachmentFileId', 'file-deposit-proof-1');
     expect(transformed).not.toHaveProperty('walletBalance');
+  });
+
+  it('validates partner bank deposit requests without accepting an approver id', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const transformed = await pipe.transform(
+      {
+        providerProfileId: ' provider-1 ',
+        amount: '1000000',
+        bankTransactionId: ' BIDV-20260629-001 ',
+        depositDate: ' 2026-06-29T09:30:00.000Z ',
+        attachmentFileId: ' file-deposit-proof-1 ',
+        approvalAdminId: 'must-be-stripped',
+      },
+      {
+        type: 'body',
+        metatype: bodyMetatype('createPartnerBankDepositRequest', 1) as never,
+        data: '',
+      },
+    );
+
+    expect(transformed).toMatchObject({
+      providerProfileId: 'provider-1',
+      amount: 1000000,
+      bankTransactionId: 'BIDV-20260629-001',
+      attachmentFileId: 'file-deposit-proof-1',
+    });
+    expect(transformed).not.toHaveProperty('approvalAdminId');
+  });
+
+  it('validates explicit Partner deposit cash-debt allocations', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+    const transformed = await pipe.transform(
+      { earningId: ' earning-1 ', amount: '170000', notes: ' bank evidence allocated ', ledgerId: 'strip-me' },
+      {
+        type: 'body',
+        metatype: bodyMetatype('allocatePartnerBankDepositCashDebt', 2) as never,
+        data: '',
+      },
+    );
+
+    expect(transformed).toEqual({
+      earningId: 'earning-1',
+      amount: 170000,
+      notes: 'bank evidence allocated',
+    });
+
+    await expect(
+      pipe.transform(
+        { earningId: 'earning-1', amount: '170000', notes: 'too short' },
+        {
+          type: 'body',
+          metatype: bodyMetatype('allocatePartnerBankDepositCashDebt', 2) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+    await expect(
+      pipe.transform(
+        { earningId: 'earning-1', amount: '170000' },
+        {
+          type: 'body',
+          metatype: bodyMetatype('allocatePartnerBankDepositCashDebt', 2) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
   });
 
   it('rejects blank payout batch partner ids before settlement logic runs', async () => {

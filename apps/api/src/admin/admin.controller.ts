@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { FileReviewStatus, Role, VerificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -7,9 +7,13 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
   AdminReasonDto,
+  AssignCompanyBankTransactionImportBatchDto,
+  AssignCompanyBankTransactionReviewDto,
+  AllocatePartnerBankDepositCashDebtDto,
   AdminCalendarActorDto,
   AdminOperatorActivityDto,
   AdminPushCampaignDto,
+  ActivatePaymentFeePolicyVersionDto,
   BookingCloseoutDto,
   BookingOpsNoteDto,
   BookingOpsReasonDto,
@@ -20,38 +24,53 @@ import {
   CreateAdminCalendarEventDto,
   CreateAdminServiceDto,
   CreateBankReconciliationMatchDto,
+  CreateCompanyBankAccountDto,
   CreateCompanyBankTransactionDto,
   CreateCouponDto,
   CreateManualWalletAdjustmentDto,
+  CreateManualWalletAdjustmentRequestDto,
+  CreatePartnerBankDepositRequestDto,
   CreatePartnerReportDto,
   CreatePartnerSanctionDto,
+  CreatePaymentFeePolicyVersionDto,
+  ClosePaymentFeePolicyApprovalDto,
   CreatePayoutBatchDto,
   CreateServiceDurationSetDto,
   CustomerOpsNoteDto,
   DeleteAdminOperatorAccessDto,
+  IgnoreCompanyBankTransactionDto,
+  ImportCompanyBankTransactionBatchDto,
   MarkEarningPaidDto,
   ModerateReviewDto,
   OperationsHandoffNoteDto,
   PartnerOpsNoteDto,
   PreviewManualWalletAdjustmentDto,
+  PreviewCompanyBankTransactionBatchDto,
   ReferralRewardCashoutPaidDto,
   ReferralRewardDecisionDto,
   RecordPartnerBankDepositDto,
+  RejectManualWalletAdjustmentRequestDto,
+  RejectPartnerBankDepositRequestDto,
+  RepairBookingSettlementGapDto,
+  RequestPaymentFeePolicyApprovalDto,
   ReverseBankReconciliationMatchDto,
   UpdateAdminServiceDto,
   UpdateAdminCalendarEventDto,
   UpdateAdminOperatorAccessDto,
+  UpdateCompanyBankAccountDto,
   UpdateCouponDto,
   UpdateFinanceApproverRoleDto,
   UpdateMonthlyTaxClosingStatusDto,
   UpdateNotificationTemplateDto,
   UpdateOperationalPolicyDto,
+  UpdatePaymentFeePolicyVersionDto,
   UpdateProviderWalletWithdrawalRequestDto,
   UpdateReferralPolicyDto,
   UpdatePartnerReportDto,
   UpdatePayoutBatchDto,
   UpdateServicePayoutRuleDto,
   UpsertMarketingSpendDailyDto,
+  UpsertPaymentFeeRuleDto,
   UpsertServicePayoutRuleDto,
   VerifyAdminOperatorLoginDto,
 } from './admin.dto';
@@ -79,10 +98,7 @@ export class AdminController {
   }
 
   @Post('users/admin-operators')
-  createAdminOperator(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreateAdminOperatorDto,
-  ) {
+  createAdminOperator(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateAdminOperatorDto) {
     return this.admin.createAdminOperator(user.id, body);
   }
 
@@ -110,24 +126,20 @@ export class AdminController {
   }
 
   @Post('operator-activity')
-  recordAdminOperatorActivity(@CurrentUser() user: AuthenticatedUser, @Body() body: AdminOperatorActivityDto) {
+  recordAdminOperatorActivity(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: AdminOperatorActivityDto,
+  ) {
     return this.admin.recordAdminOperatorActivity(user.id, body);
   }
 
   @Get('calendar-events')
-  calendarEvents(
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('take') take?: string,
-  ) {
+  calendarEvents(@Query('from') from?: string, @Query('to') to?: string, @Query('take') take?: string) {
     return this.admin.listAdminCalendarEvents({ from, take, to });
   }
 
   @Post('calendar-events')
-  createCalendarEvent(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreateAdminCalendarEventDto,
-  ) {
+  createCalendarEvent(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateAdminCalendarEventDto) {
     return this.admin.createAdminCalendarEvent(user.id, body);
   }
 
@@ -256,8 +268,8 @@ export class AdminController {
   }
 
   @Get('dashboard/summary')
-  dashboardSummary() {
-    return this.admin.dashboardSummary();
+  dashboardSummary(@Query('dateRange') dateRange?: string) {
+    return this.admin.dashboardSummary(dateRange);
   }
 
   @Get(['vietnam-overview', 'maps/vietnam-overview'])
@@ -851,10 +863,7 @@ export class AdminController {
   }
 
   @Get('payments/summary')
-  paymentSummary(
-    @Query('range') range?: string,
-    @Query('review') review?: string,
-  ) {
+  paymentSummary(@Query('range') range?: string, @Query('review') review?: string) {
     return this.admin.paymentSummary({ range, review });
   }
 
@@ -883,10 +892,7 @@ export class AdminController {
   }
 
   @Get('refunds/summary')
-  refundSummary(
-    @Query('range') range?: string,
-    @Query('review') review?: string,
-  ) {
+  refundSummary(@Query('range') range?: string, @Query('review') review?: string) {
     return this.admin.refundSummary({ range, review });
   }
 
@@ -930,19 +936,72 @@ export class AdminController {
     return this.admin.earningsSummary({ range });
   }
 
+  @Get('booking-settlement-gaps')
+  bookingSettlementGaps(
+    @Query('age') age?: string,
+    @Query('track') track?: string,
+    @Query('period') period?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+    @Query('q') q?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.admin.listBookingSettlementGaps({ age, paymentMethod, period, q, skip, take, track });
+  }
+
+  @Get('booking-settlement-gaps/summary')
+  bookingSettlementGapSummary() {
+    return this.admin.bookingSettlementGapSummary();
+  }
+
+  @Get('booking-settlement-gaps/dry-run')
+  bookingSettlementGapDryRun(
+    @Query('period') period?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+    @Query('take') take?: string,
+  ) {
+    return this.admin.bookingSettlementGapDryRun({ paymentMethod, period, take });
+  }
+
+  @Get('booking-settlement-gaps/:id/preview')
+  previewBookingSettlementGapRepair(@Param('id') id: string) {
+    return this.admin.previewBookingSettlementGapRepair(id);
+  }
+
+  @Get('booking-settlement-gaps/:id/checkpoint')
+  verifyBookingSettlementRepair(@Param('id') id: string) {
+    return this.admin.verifyBookingSettlementRepair(id);
+  }
+
+  @Post('booking-settlement-gaps/:id/repair')
+  repairBookingSettlementGap(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RepairBookingSettlementGapDto,
+  ) {
+    return this.admin.repairBookingSettlementGap(user.id, id, body);
+  }
+
   @Get('booking-settlement-snapshots')
   bookingSettlementSnapshots(
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
+    @Query('period') period?: string,
+    @Query('paymentMethod') paymentMethod?: string,
     @Query('skip') skip?: string,
   ) {
-    return this.admin.listBookingSettlementSnapshots({ range, review, skip, take });
+    return this.admin.listBookingSettlementSnapshots({ paymentMethod, period, range, review, skip, take });
   }
 
   @Get('booking-settlement-snapshots/summary')
-  bookingSettlementSnapshotSummary(@Query('range') range?: string, @Query('review') review?: string) {
-    return this.admin.bookingSettlementSnapshotSummary({ range, review });
+  bookingSettlementSnapshotSummary(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('period') period?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+  ) {
+    return this.admin.bookingSettlementSnapshotSummary({ paymentMethod, period, range, review });
   }
 
   @Get('booking-settlement-reversals')
@@ -1032,6 +1091,87 @@ export class AdminController {
     return this.admin.paymentFeeSummary({ period });
   }
 
+  @Get('payment-fee-policies')
+  paymentFeePolicies(@Query('take') take?: string) {
+    return this.admin.listPaymentFeePolicies({ take });
+  }
+
+  @Get('payment-fee-policies/:id/preflight')
+  paymentFeePolicyPreflight(@Param('id') id: string, @Query('sampleAmount') sampleAmount?: string) {
+    return this.admin.paymentFeePolicyPreflight(id, { sampleAmount });
+  }
+
+  @Get('payment-fee-policies/:id/approval')
+  paymentFeePolicyApproval(@Param('id') id: string) {
+    return this.admin.paymentFeePolicyApproval(id);
+  }
+
+  @Post('payment-fee-policies')
+  createPaymentFeePolicy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreatePaymentFeePolicyVersionDto,
+  ) {
+    return this.admin.createPaymentFeePolicy(user.id, body);
+  }
+
+  @Patch('payment-fee-policies/:id')
+  updatePaymentFeePolicy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: UpdatePaymentFeePolicyVersionDto,
+  ) {
+    return this.admin.updatePaymentFeePolicy(user.id, id, body);
+  }
+
+  @Post('payment-fee-policies/:id/rules')
+  upsertPaymentFeeRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: UpsertPaymentFeeRuleDto,
+  ) {
+    return this.admin.upsertPaymentFeeRule(user.id, id, body);
+  }
+
+  @Post('payment-fee-policies/:id/approval-request')
+  requestPaymentFeePolicyApproval(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RequestPaymentFeePolicyApprovalDto,
+    @Headers('x-hands-admin-operator-identity') operatorIdentity?: string,
+  ) {
+    return this.admin.requestPaymentFeePolicyApproval(user.id, id, body, operatorIdentity);
+  }
+
+  @Post('payment-fee-policies/:id/approval-reject')
+  rejectPaymentFeePolicyApproval(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ClosePaymentFeePolicyApprovalDto,
+    @Headers('x-hands-admin-operator-identity') operatorIdentity?: string,
+  ) {
+    return this.admin.rejectPaymentFeePolicyApproval(user.id, id, body, operatorIdentity);
+  }
+
+  @Post('payment-fee-policies/:id/approval-cancel')
+  cancelPaymentFeePolicyApproval(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ClosePaymentFeePolicyApprovalDto,
+    @Headers('x-hands-admin-operator-identity') operatorIdentity?: string,
+  ) {
+    return this.admin.cancelPaymentFeePolicyApproval(user.id, id, body, operatorIdentity);
+  }
+
+  @Post('payment-fee-policies/:id/activate')
+  activatePaymentFeePolicy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: ActivatePaymentFeePolicyVersionDto,
+    @Headers('x-hands-admin-operator-identity') operatorIdentity?: string,
+  ) {
+    return this.admin.activatePaymentFeePolicy(user.id, id, body, operatorIdentity);
+  }
+
   @Get('accounting-journal-batches')
   accountingJournalBatches(
     @Query('take') take?: string,
@@ -1077,24 +1217,115 @@ export class AdminController {
     return this.admin.listCompanyBankAccounts({ status });
   }
 
+  @Post('company-bank-accounts')
+  createCompanyBankAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() input: CreateCompanyBankAccountDto,
+  ) {
+    return this.admin.createCompanyBankAccount(user.id, input);
+  }
+
+  @Patch('company-bank-accounts/:id')
+  updateCompanyBankAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() input: UpdateCompanyBankAccountDto,
+  ) {
+    return this.admin.updateCompanyBankAccount(user.id, id, input);
+  }
+
   @Get('bank-reconciliation')
   bankReconciliationTransactions(
     @Query('take') take?: string,
     @Query('range') range?: string,
     @Query('review') review?: string,
     @Query('skip') skip?: string,
+    @Query('q') q?: string,
+    @Query('candidate') candidate?: string,
+    @Query('assignment') assignment?: string,
+    @Query('assigneeAdminId') assigneeAdminId?: string,
   ) {
-    return this.admin.listBankReconciliationTransactions({ range, review, skip, take });
+    return this.admin.listBankReconciliationTransactions({
+      assigneeAdminId,
+      assignment,
+      candidate,
+      q,
+      range,
+      review,
+      skip,
+      take,
+    });
   }
 
   @Get('bank-reconciliation/summary')
-  bankReconciliationSummary(@Query('range') range?: string, @Query('review') review?: string) {
-    return this.admin.bankReconciliationSummary({ range, review });
+  bankReconciliationSummary(
+    @Query('range') range?: string,
+    @Query('review') review?: string,
+    @Query('q') q?: string,
+    @Query('candidate') candidate?: string,
+    @Query('assignment') assignment?: string,
+    @Query('assigneeAdminId') assigneeAdminId?: string,
+  ) {
+    return this.admin.bankReconciliationSummary({
+      assigneeAdminId,
+      assignment,
+      candidate,
+      q,
+      range,
+      review,
+    });
+  }
+
+  @Get('bank-reconciliation/withdrawal-candidate-summary')
+  bankReconciliationWithdrawalCandidateSummary(
+    @Query('range') range?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.admin.bankReconciliationWithdrawalCandidateSummary({ q, range });
+  }
+
+  @Get('bank-reconciliation/import-batches')
+  bankReconciliationImportBatches(
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+    @Query('range') range?: string,
+    @Query('q') q?: string,
+    @Query('review') review?: string,
+  ) {
+    return this.admin.listCompanyBankTransactionImportBatches({ q, range, review, skip, take });
+  }
+
+  @Get('bank-reconciliation/import-batches/summary')
+  bankReconciliationImportBatchSummary() {
+    return this.admin.companyBankTransactionImportBatchSummary();
+  }
+
+  @Get('bank-reconciliation/import-batches/:batchImportId')
+  bankReconciliationImportBatchDetail(@Param('batchImportId') batchImportId: string) {
+    return this.admin.companyBankTransactionImportBatchDetail(batchImportId);
+  }
+
+  @Post('bank-reconciliation/import-batches/:batchImportId/assignment')
+  assignBankReconciliationImportBatch(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('batchImportId') batchImportId: string,
+    @Body() body: AssignCompanyBankTransactionImportBatchDto,
+  ) {
+    return this.admin.assignCompanyBankTransactionImportBatch(user.id, batchImportId, body);
   }
 
   @Get('bank-reconciliation/:id')
   bankReconciliationTransactionDetail(@Param('id') id: string) {
     return this.admin.bankReconciliationTransactionDetail(id);
+  }
+
+  @Post('bank-reconciliation/:id/review-assignment')
+  assignBankReconciliationTransactionReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: AssignCompanyBankTransactionReviewDto,
+  ) {
+    return this.admin.assignCompanyBankTransactionReview(user.id, id, body);
   }
 
   @Post('bank-reconciliation/transactions')
@@ -1103,6 +1334,19 @@ export class AdminController {
     @Body() body: CreateCompanyBankTransactionDto,
   ) {
     return this.admin.createCompanyBankTransaction(user.id, body);
+  }
+
+  @Post('bank-reconciliation/transactions/batch-preview')
+  previewCompanyBankTransactionBatch(@Body() body: PreviewCompanyBankTransactionBatchDto) {
+    return this.admin.previewCompanyBankTransactionBatch(body);
+  }
+
+  @Post('bank-reconciliation/transactions/batch-import')
+  importCompanyBankTransactionBatch(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: ImportCompanyBankTransactionBatchDto,
+  ) {
+    return this.admin.importCompanyBankTransactionBatch(user.id, body);
   }
 
   @Post('bank-reconciliation/:id/matches')
@@ -1122,6 +1366,15 @@ export class AdminController {
     @Body() body: ReverseBankReconciliationMatchDto,
   ) {
     return this.admin.reverseBankReconciliationMatch(user.id, id, matchId, body);
+  }
+
+  @Post('bank-reconciliation/:id/ignore')
+  ignoreCompanyBankTransaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: IgnoreCompanyBankTransactionDto,
+  ) {
+    return this.admin.ignoreCompanyBankTransaction(user.id, id, body);
   }
 
   @Get('services')
@@ -1193,11 +1446,101 @@ export class AdminController {
   }
 
   @Post('provider-wallet/deposits')
+  @Header('X-HANDS-Deprecated', 'true')
+  @Header('X-HANDS-Successor-Path', '/api/admin/provider-wallet/deposit-requests')
+  /** @deprecated Use the persistent deposit request route followed by a separate approver decision. */
   recordPartnerBankDeposit(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: RecordPartnerBankDepositDto,
   ) {
-    return this.admin.recordPartnerBankDeposit(user.id, body);
+    return this.admin.approvePartnerBankDepositFromLegacyRoute(user.id, body);
+  }
+
+  @Get('provider-wallet/deposit-requests')
+  partnerBankDepositRequests(
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listPartnerBankDepositRequests({ skip, status, take });
+  }
+
+  @Get('provider-wallet/deposit-requests/history')
+  partnerBankDepositRequestHistory(
+    @Query('status') status?: string,
+    @Query('review') review?: string,
+    @Query('owner') owner?: string,
+    @Query('assigneeAdminId') assigneeAdminId?: string,
+    @Query('sla') sla?: string,
+    @Query('period') period?: string,
+    @Query('q') q?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listPartnerBankDepositRequestHistory({
+      assigneeAdminId,
+      owner,
+      period,
+      q,
+      review,
+      skip,
+      sla,
+      status,
+      take,
+    });
+  }
+
+  @Get('provider-wallet/deposit-requests/:id')
+  partnerBankDepositRequestDetail(@Param('id') id: string) {
+    return this.admin.getPartnerBankDepositRequestDetail(id);
+  }
+
+  @Post('provider-wallet/deposit-requests')
+  createPartnerBankDepositRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreatePartnerBankDepositRequestDto,
+  ) {
+    return this.admin.createPartnerBankDepositRequest(user.id, body);
+  }
+
+  @Post('provider-wallet/deposit-requests/:id/approve')
+  approvePartnerBankDepositRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.admin.approvePartnerBankDepositRequest(user.id, id);
+  }
+
+  @Post('provider-wallet/deposit-requests/:id/reject')
+  rejectPartnerBankDepositRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RejectPartnerBankDepositRequestDto,
+  ) {
+    return this.admin.rejectPartnerBankDepositRequest(user.id, id, body.reason);
+  }
+
+  @Post('provider-wallet/deposit-requests/:id/reconciliation-assignment')
+  assignPartnerBankDepositReconciliationReview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: AssignCompanyBankTransactionReviewDto,
+  ) {
+    return this.admin.assignPartnerBankDepositReconciliationReview(user.id, id, body);
+  }
+
+  @Post('provider-wallet/deposit-requests/:id/cash-debt-allocations')
+  allocatePartnerBankDepositCashDebt(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: AllocatePartnerBankDepositCashDebtDto,
+  ) {
+    return this.admin.allocatePartnerBankDepositCashDebt(user.id, id, body);
+  }
+
+  @Get('finance-approval-queue')
+  financeApprovalQueue(@Query('take') take?: string) {
+    return this.admin.financeApprovalQueue({ take });
   }
 
   @Get('wallet-adjustments')
@@ -1211,10 +1554,7 @@ export class AdminController {
   }
 
   @Get('wallet-adjustments/summary')
-  manualWalletAdjustmentSummary(
-    @Query('ownerType') ownerType?: string,
-    @Query('ownerId') ownerId?: string,
-  ) {
+  manualWalletAdjustmentSummary(@Query('ownerType') ownerType?: string, @Query('ownerId') ownerId?: string) {
     return this.admin.manualWalletAdjustmentSummary({ ownerId, ownerType });
   }
 
@@ -1227,11 +1567,48 @@ export class AdminController {
   }
 
   @Post('wallet-adjustments')
+  @Header('X-HANDS-Deprecated', 'true')
+  @Header('X-HANDS-Successor-Path', '/api/admin/wallet-adjustment-requests')
+  /** @deprecated Use POST /api/admin/wallet-adjustment-requests followed by a separate approver decision. */
   createManualWalletAdjustment(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreateManualWalletAdjustmentDto,
   ) {
-    return this.admin.createManualWalletAdjustment(user.id, body);
+    return this.admin.approveManualWalletAdjustmentFromLegacyRoute(user.id, body);
+  }
+
+  @Get('wallet-adjustment-requests')
+  manualWalletAdjustmentRequests(
+    @Query('status') status?: string,
+    @Query('take') take?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.admin.listManualWalletAdjustmentRequests({ skip, status, take });
+  }
+
+  @Post('wallet-adjustment-requests')
+  createManualWalletAdjustmentRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: CreateManualWalletAdjustmentRequestDto,
+  ) {
+    return this.admin.createManualWalletAdjustmentRequest(user.id, body);
+  }
+
+  @Post('wallet-adjustment-requests/:id/approve')
+  approveManualWalletAdjustmentRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.admin.approveManualWalletAdjustmentRequest(user.id, id);
+  }
+
+  @Post('wallet-adjustment-requests/:id/reject')
+  rejectManualWalletAdjustmentRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RejectManualWalletAdjustmentRequestDto,
+  ) {
+    return this.admin.rejectManualWalletAdjustmentRequest(user.id, id, body.reason);
   }
 
   @Get('provider-wallet/withdrawal-requests')
@@ -1240,9 +1617,17 @@ export class AdminController {
     @Query('range') range?: string,
     @Query('status') status?: string,
     @Query('providerProfileId') providerProfileId?: string,
+    @Query('reconciliation') reconciliation?: string,
     @Query('skip') skip?: string,
   ) {
-    return this.admin.listProviderWalletWithdrawalRequests({ providerProfileId, range, skip, status, take });
+    return this.admin.listProviderWalletWithdrawalRequests({
+      providerProfileId,
+      range,
+      reconciliation,
+      skip,
+      status,
+      take,
+    });
   }
 
   @Get('provider-wallet/withdrawal-requests/summary')
@@ -1365,7 +1750,14 @@ export class AdminController {
     @Query('customerProfileId') customerProfileId?: string,
     @Query('bookingId') bookingId?: string,
   ) {
-    return this.admin.partnerCustomerReviewSummary({ bookingId, customerProfileId, from, providerProfileId, q, to });
+    return this.admin.partnerCustomerReviewSummary({
+      bookingId,
+      customerProfileId,
+      from,
+      providerProfileId,
+      q,
+      to,
+    });
   }
 
   @Patch('reviews/:id/moderate')
@@ -1464,8 +1856,22 @@ export class AdminController {
     @Query('review') review?: string,
     @Query('booking') booking?: string,
     @Query('user') user?: string,
+    @Query('incidentState') incidentState?: string,
+    @Query('financeAge') financeAge?: string,
+    @Query('financeOwner') financeOwner?: string,
   ) {
-    return this.admin.listNotifications({ booking, from, review, skip, take, to, user });
+    return this.admin.listNotifications({
+      booking,
+      financeAge,
+      financeOwner,
+      from,
+      incidentState,
+      review,
+      skip,
+      take,
+      to,
+      user,
+    });
   }
 
   @Get('notifications/summary')
@@ -1475,8 +1881,20 @@ export class AdminController {
     @Query('review') review?: string,
     @Query('booking') booking?: string,
     @Query('user') user?: string,
+    @Query('incidentState') incidentState?: string,
+    @Query('financeAge') financeAge?: string,
+    @Query('financeOwner') financeOwner?: string,
   ) {
-    return this.admin.notificationSummary({ booking, from, review, to, user });
+    return this.admin.notificationSummary({
+      booking,
+      financeAge,
+      financeOwner,
+      from,
+      incidentState,
+      review,
+      to,
+      user,
+    });
   }
 
   @Get('notifications/templates')
@@ -1521,5 +1939,14 @@ export class AdminController {
   @Post('notifications/:id/retry')
   retryNotification(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.admin.retryNotification(user.id, id);
+  }
+
+  @Post('notifications/:id/review-legacy')
+  reviewLegacyNotification(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: AdminReasonDto,
+  ) {
+    return this.admin.reviewLegacyNotification(user.id, id, body.reason);
   }
 }
