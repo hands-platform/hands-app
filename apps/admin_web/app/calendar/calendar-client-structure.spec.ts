@@ -51,7 +51,12 @@ describe('calendar client structure', () => {
     const pageSource = readFileSync(join(process.cwd(), 'app/calendar/page.tsx'), 'utf8');
     const clientSource = readFileSync(join(process.cwd(), 'app/calendar/calendar-client.tsx'), 'utf8');
 
-    expect(pageSource).toContain("adminGet<AdminCalendarEvent[]>('/admin/calendar-events?take=200', [])");
+    expect(pageSource).toContain('calendarMonthGridRange(new Date())');
+    expect(pageSource).toContain('`/admin/calendar-events?${initialQuery.toString()}`');
+    expect(clientSource).toContain('listCalendarEvents(range)');
+    expect(clientSource).toContain("fetch(`/api/admin/calendar-events?${query.toString()}`");
+    expect(clientSource).toContain('from: info.start.toISOString()');
+    expect(clientSource).toContain('to: info.end.toISOString()');
     expect(clientSource).toContain("calendarEventRequest('/api/admin/calendar-events'");
     expect(clientSource).toContain("calendarEventRequest(`/api/admin/calendar-events/${encodeURIComponent(id)}`");
     expect(clientSource).not.toMatch(/\b(?:localStorage|sessionStorage)\b/);

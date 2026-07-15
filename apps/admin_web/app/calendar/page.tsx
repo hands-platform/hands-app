@@ -5,17 +5,28 @@ import { adminGet, type AdminCalendarEvent } from '../../lib/admin-api';
 import { getAdminWebSession } from '../../lib/admin-session';
 
 import { CalendarClient } from './calendar-client';
+import { calendarMonthGridRange } from './calendar-model';
 
 export default async function CalendarPage() {
   const headerList = await headers();
   const session = getAdminWebSession({ headers: headerList });
   const operatorId = session?.sub ?? 'admin-web';
   const operatorName = displayOperatorName(operatorId);
-  const initialEvents = await adminGet<AdminCalendarEvent[]>('/admin/calendar-events?take=200', []);
+  const initialRange = calendarMonthGridRange(new Date());
+  const initialQuery = new URLSearchParams({
+    from: initialRange.from,
+    take: '200',
+    to: initialRange.to,
+  });
+  const initialEvents = await adminGet<AdminCalendarEvent[]>(`/admin/calendar-events?${initialQuery.toString()}`, []);
 
   return (
     <AdminPageTemplate title="Calendar">
-      <CalendarClient currentOperator={{ id: operatorId, name: operatorName }} initialEvents={initialEvents} />
+      <CalendarClient
+        currentOperator={{ id: operatorId, name: operatorName }}
+        initialEvents={initialEvents}
+        initialRange={initialRange}
+      />
     </AdminPageTemplate>
   );
 }

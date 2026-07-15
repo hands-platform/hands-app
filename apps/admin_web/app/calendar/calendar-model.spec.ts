@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   buildCalendarTagFilters,
   buildCalendarMetrics,
+  calendarMonthGridRange,
   normalizeStoredCalendarEvent,
   createSeedEvents,
   filterCalendarEvents,
@@ -11,6 +12,17 @@ import {
 } from './calendar-model';
 
 describe('calendar-model', () => {
+  it('bounds the initial month query to the six-week calendar grid', () => {
+    const range = calendarMonthGridRange(new Date(2026, 6, 16));
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+
+    expect(from.getDay()).toBe(0);
+    expect(to.getTime() - from.getTime()).toBe(42 * 24 * 60 * 60 * 1_000);
+    expect(from <= new Date(2026, 6, 1)).toBe(true);
+    expect(to > new Date(2026, 7, 1)).toBe(true);
+  });
+
   it('uses the shared admin date-time formatter for summary labels', () => {
     const source = readFileSync('app/calendar/calendar-model.ts', 'utf8');
 

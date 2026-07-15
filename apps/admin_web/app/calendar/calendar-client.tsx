@@ -29,6 +29,7 @@ import {
   normalizeCalendarDraft,
   toCalendarEventInput,
   type CalendarEventDraft,
+  type CalendarEventRange,
   type CalendarEventRecord,
   type CalendarOperator,
   type CalendarTagTone,
@@ -63,6 +64,7 @@ const CalendarMiniDatePicker = dynamic<CalendarMiniDatePickerProps>(
 type CalendarClientProps = {
   readonly currentOperator: CalendarOperator;
   readonly initialEvents: readonly CalendarEventRecord[];
+  readonly initialRange: CalendarEventRange;
 };
 
 const calendarViewOptions: ReadonlyArray<{
@@ -75,9 +77,12 @@ const calendarViewOptions: ReadonlyArray<{
   { label: 'List', value: 'listMonth' },
 ];
 
-export function CalendarClient({ currentOperator, initialEvents }: CalendarClientProps) {
+export function CalendarClient({ currentOperator, initialEvents, initialRange }: CalendarClientProps) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const loadedLazyPluginNamesRef = useRef<Set<LazyCalendarPluginName>>(new Set());
+  const loadedRangeKeyRef = useRef(calendarRangeKey(initialRange));
+  const requestedRangeKeyRef = useRef(calendarRangeKey(initialRange));
+  const rangeRequestIdRef = useRef(0);
   const [events, setEvents] = useState<CalendarEventRecord[]>(() =>
     initialEvents
       .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
@@ -90,6 +95,7 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CalendarEventDraft>(createBlankDraft(new Date()));
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [rangeError, setRangeError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [lazyCalendarPlugins, setLazyCalendarPlugins] = useState<PluginDef[]>([]);
 
@@ -106,6 +112,44 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
   );
   const editingEvent = editingEventId ? (events.find((event) => event.id === editingEventId) ?? null) : null;
   const canEditSelectedEvent = editingEventId ? canEditCalendarEvent(editingEvent, currentOperator) : true;
+
+  const loadVisibleRange = async (range: CalendarEventRange) => {
+    const rangeKey = calendarRangeKey(range);
+    if (loadedRangeKeyRef.current === rangeKey) {
+      requestedRangeKeyRef.current = rangeKey;
+      setRangeError(null);
+      return;
+    }
+    if (requestedRangeKeyRef.current === rangeKey) {
+      return;
+    }
+
+    const requestId = rangeRequestIdRef.current + 1;
+    rangeRequestIdRef.current = requestId;
+    requestedRangeKeyRef.current = rangeKey;
+    setRangeError(null);
+
+    try {
+      const nextEvents = await listCalendarEvents(range);
+      if (rangeRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setEvents(
+        nextEvents
+          .map((event) => normalizeStoredCalendarEvent(event, currentOperator))
+          .filter((event): event is CalendarEventRecord => Boolean(event)),
+      );
+      loadedRangeKeyRef.current = rangeKey;
+    } catch {
+      if (rangeRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      requestedRangeKeyRef.current = loadedRangeKeyRef.current;
+      setRangeError('Calendar events could not be loaded for this date range. Navigate again to retry.');
+    }
+  };
 
   const openCreateDrawer = (date: Date) => {
     setEditingEventId(null);
@@ -318,6 +362,12 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
         </AdminInlineNotice>
       ) : null}
 
+      {rangeError ? (
+        <AdminInlineNotice className="calendar-error-banner" role="alert" tone="danger">
+          {rangeError}
+        </AdminInlineNotice>
+      ) : null}
+
       <div className="calendar-shell">
         <AdminAsideCard className="calendar-sidebar">
           <div className="calendar-sidebar-section">
@@ -465,6 +515,10 @@ export function CalendarClient({ currentOperator, initialEvents }: CalendarClien
               datesSet={(info) => {
                 setCurrentDate(info.view.currentStart);
                 setCurrentView(info.view.type as CalendarViewName);
+                void loadVisibleRange({
+                  from: info.start.toISOString(),
+                  to: info.end.toISOString(),
+                });
               }}
               eventClassNames={(info) => {
                 const tags = info.event.extendedProps.tags as readonly string[] | undefined;
@@ -611,6 +665,27 @@ async function deleteCalendarEvent(id: string) {
   await calendarEventRequest(`/api/admin/calendar-events/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
+}
+
+async function listCalendarEvents(range: CalendarEventRange) {
+  const query = new URLSearchParams({
+    from: range.from,
+    take: '200',
+    to: range.to,
+  });
+  const response = await fetch(`/api/admin/calendar-events?${query.toString()}`, {
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('Calendar events request failed');
+  }
+
+  return (await response.json()) as CalendarEventRecord[];
+}
+
+function calendarRangeKey(range: CalendarEventRange) {
+  return `${range.from}:${range.to}`;
 }
 
 async function calendarEventRequest(path: string, init: RequestInit) {

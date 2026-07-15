@@ -11,6 +11,11 @@ export type CalendarOperator = {
   readonly name: string;
 };
 
+export type CalendarEventRange = {
+  readonly from: string;
+  readonly to: string;
+};
+
 export type CalendarEventRecord = {
   readonly allDay: boolean;
   readonly authorId: string;
@@ -26,6 +31,20 @@ export type CalendarEventRecord = {
 };
 
 export type CalendarEventDraft = Omit<CalendarEventRecord, 'id'>;
+
+export function calendarMonthGridRange(date: Date): CalendarEventRange {
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - monthStart.getDay());
+
+  const gridEnd = new Date(gridStart);
+  gridEnd.setDate(gridStart.getDate() + 42);
+
+  return {
+    from: gridStart.toISOString(),
+    to: gridEnd.toISOString(),
+  };
+}
 
 export function toCalendarEventInput(event: CalendarEventRecord): EventInput {
   return {
