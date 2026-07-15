@@ -4,12 +4,14 @@ import { AdminAuditLog, AdminEarning, AdminTaxPolicyVersion, AdminTaxRule, admin
 import {
   AdminFormCheckbox,
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormDateTime,
   AdminFormGrid,
   AdminFormInput,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
@@ -22,15 +24,12 @@ import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTa
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
 import { taxPolicyNotice } from './tax-policy-notice';
+import { buildTaxPolicyDetailsHref, buildTaxPolicyLoadPlan } from './tax-policy-page-model';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
 const statusSelectOptions = statusOptions.map((status) => ({ label: status, value: status }));
 const scopeSelectOptions = scopeOptions.map((scope) => ({ label: scope, value: scope }));
-const TAX_POLICY_VERSION_PAGE_SIZE = 20;
-const TAX_POLICY_AUDIT_LOG_PAGE_SIZE = 8;
-const TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE = 8;
-
 type TaxPolicyPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type TaxPolicyHealthItem = {
   readonly label: string;
@@ -46,13 +45,13 @@ type TaxPolicyAmountBandOverlap = {
 
 export default async function TaxPolicyPage({ searchParams }: { searchParams?: TaxPolicyPageSearchParams }) {
   const params = (await searchParams) ?? {};
+  const loadPlan = buildTaxPolicyLoadPlan(params);
   const [policies, auditLogs, recentEarnings] = await Promise.all([
-    adminGet<AdminTaxPolicyVersion[]>(`/admin/tax-policy-versions?take=${TAX_POLICY_VERSION_PAGE_SIZE}`, []),
-    adminGet<AdminAuditLog[]>(`/admin/audit-logs?q=tax_&take=${TAX_POLICY_AUDIT_LOG_PAGE_SIZE}`, []),
-    adminGet<AdminEarning[]>(
-      `/admin/earnings?range=30d&take=${TAX_POLICY_EARNING_SAMPLE_PAGE_SIZE}`,
-      [],
-    ),
+    adminGet<AdminTaxPolicyVersion[]>(loadPlan.taxPolicyVersionsHref, []),
+    loadPlan.auditLogsHref ? adminGet<AdminAuditLog[]>(loadPlan.auditLogsHref, []) : Promise.resolve([]),
+    loadPlan.recentEarningsHref
+      ? adminGet<AdminEarning[]>(loadPlan.recentEarningsHref, [])
+      : Promise.resolve([]),
   ]);
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
   const ruleCount = policies.reduce((sum, policy) => sum + (policy.rules?.length ?? 0), 0);
@@ -64,6 +63,17 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
 
   return (
     <AdminPageTemplate
+      actions={
+        loadPlan.detailsMode === 'summary' ? (
+          <AdminFormControlLink className="button-secondary" href={buildTaxPolicyDetailsHref('all')}>
+            Open workspaces
+          </AdminFormControlLink>
+        ) : (
+          <AdminFormControlLink className="button-secondary" href={buildTaxPolicyDetailsHref('summary')}>
+            Back to summary
+          </AdminFormControlLink>
+        )
+      }
       contentClassName="tax-policy-page"
       description="Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in application code."
       title="Tax policy"
@@ -87,7 +97,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </AdminNoticeCard>
       ) : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderSummary ? <AdminSection
         actions={
           <>
             <AdminSignal tone={activePolicies.length === 1 ? 'ok' : 'warn'}>{activePolicies.length} active</AdminSignal>
@@ -113,9 +123,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ))}
         </AdminStageList>
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderSummary ? <AdminSection
         actions={
           <StatusBadgeFromPillClass pillClass={preview.policy ? 'pill-success' : 'pill-warn'}>
             {preview.policy ? preview.policy.name : 'No effective active policy'}
@@ -196,9 +206,25 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
           </AdminStageItem>
         </AdminStageList>
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderWorkspaceIndex ? (
+        <AdminSection
+          className="admin-mb-16 tax-policy-workspace-index-card"
+          description="Open one bounded workspace at a time. Policy editor contains write controls, audit history shows retained operator changes, and settlement records checks recent immutable earning snapshots."
+          statusLabel="Choose workspace"
+          statusTone="info"
+          title="Tax policy workspaces"
+        >
+          <AdminFilterChipGroup ariaLabel="Tax policy workspaces">
+            <AdminFormControlLink href={buildTaxPolicyDetailsHref('editor')}>Policy editor</AdminFormControlLink>
+            <AdminFormControlLink href={buildTaxPolicyDetailsHref('audit')}>Audit history</AdminFormControlLink>
+            <AdminFormControlLink href={buildTaxPolicyDetailsHref('records')}>Settlement records</AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
+
+      {loadPlan.shouldRenderEditor ? <><AdminSection
         className="admin-mb-16 tax-policy-create-policy-card"
         description="Use basis points for percentage rates. Example: 500 bps = 5%."
         title="Create policy version"
@@ -471,9 +497,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminFormGrid>
           </AdminCard>
         ))}
-      </AdminDetailGrid>
+      </AdminDetailGrid></> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderAudit ? <AdminSection
         actions={
           <>
             <StatusBadge tone="info">{auditSummary.totalChangeCount} recent</StatusBadge>
@@ -514,9 +540,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ) : null}
         </AdminStageList>
-      </AdminSection>
+      </AdminSection> : null}
 
-      <AdminSection
+      {loadPlan.shouldRenderRecords ? <AdminSection
         actions={
           <>
             <StatusBadge tone="info">{snapshotConsistency.sampleCount} sampled</StatusBadge>
@@ -570,7 +596,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </AdminStageItem>
           ) : null}
         </AdminStageList>
-      </AdminSection>
+      </AdminSection> : null}
     </AdminPageTemplate>
   );
 }

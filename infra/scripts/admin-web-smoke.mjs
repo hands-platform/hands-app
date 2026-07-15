@@ -1099,6 +1099,10 @@ const pages = [
     ],
   },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
+  { path: '/tax-policy?details=all', markers: ['Tax Policy', 'Tax policy workspaces'] },
+  { path: '/tax-policy?details=editor', markers: ['Tax Policy', 'Create policy version'] },
+  { path: '/tax-policy?details=audit', markers: ['Tax Policy', 'Tax policy audit summary'] },
+  { path: '/tax-policy?details=records', markers: ['Tax Policy', 'Settlement record consistency'] },
 ];
 
 const directSmokePages = parseDirectSmokePages(env.ADMIN_WEB_SMOKE_DIRECT_PAGES);
