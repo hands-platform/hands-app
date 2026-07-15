@@ -272,6 +272,11 @@ export class AdminController {
     return this.admin.dashboardSummary(dateRange);
   }
 
+  @Get('dashboard/start-shift-summary')
+  startShiftSummary(@Query('dateRange') dateRange?: string) {
+    return this.admin.startShiftSummary(dateRange);
+  }
+
   @Get(['vietnam-overview', 'maps/vietnam-overview'])
   vietnamOverview(@Query('range') range?: string) {
     return this.admin.getVietnamOverview(range);

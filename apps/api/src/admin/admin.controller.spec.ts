@@ -163,6 +163,7 @@ describe('AdminController notification and push actions', () => {
     upsertMarketingSpendDaily: vi.fn(),
     listAppSessions: vi.fn(),
     appSessionSummary: vi.fn(),
+    startShiftSummary: vi.fn(),
     listChatArchive: vi.fn(),
     chatArchiveSummary: vi.fn(),
     listBookingNotifications: vi.fn(),
@@ -2015,6 +2016,26 @@ describe('AdminController notification and push actions', () => {
       role: 'customer',
       state: 'live',
     });
+  });
+
+  it('exposes the bounded Start Shift aggregate as a separate read endpoint', async () => {
+    admin.startShiftSummary.mockResolvedValue({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      range: '7d',
+      unavailableSources: [],
+    });
+
+    await expect(controller.startShiftSummary('7d')).resolves.toEqual({
+      generatedAt: '2026-06-27T00:00:00.000Z',
+      range: '7d',
+      unavailableSources: [],
+    });
+
+    expect(routeMetadata('startShiftSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'dashboard/start-shift-summary',
+    });
+    expect(admin.startShiftSummary).toHaveBeenCalledWith('7d');
   });
 
   it('exposes chat archive as a paged filtered audit list with a separate summary', async () => {

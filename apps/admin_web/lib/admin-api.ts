@@ -431,6 +431,19 @@ export type AdminDashboardSummary = {
   };
 };
 
+export type AdminStartShiftSummary = {
+  cashSettlements: AdminCashSettlementSummary | null;
+  earnings: AdminEarningSummary | null;
+  generatedAt: string;
+  notifications: AdminNotificationBoardSummary | null;
+  operations: AdminDashboardSummary | null;
+  payments: AdminPaymentSummary | null;
+  payoutBatches: AdminPayoutBatchSummary | null;
+  range: string;
+  refunds: AdminRefundSummary | null;
+  unavailableSources: string[];
+};
+
 export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';
 
 export type AdminUsageOverviewRankRow = {

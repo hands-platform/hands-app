@@ -12,6 +12,7 @@ import type {
   AdminPaymentSummary,
   AdminPayoutBatchSummary,
   AdminRefundSummary,
+  AdminStartShiftSummary,
 } from '../lib/admin-api';
 import { adminGet, apiGet } from '../lib/admin-api';
 import DashboardPage from './page';
@@ -31,6 +32,117 @@ const mockedApiGet = vi.mocked(apiGet);
 const dashboardSource = readFileSync('app/page.tsx', 'utf8');
 const dashboardTraceSummarySource = readFileSync('app/dashboard-trace-summary.tsx', 'utf8');
 const globalCss = readFileSync('app/globals.css', 'utf8');
+
+function startShiftSummaryFixture(): AdminStartShiftSummary {
+  const generatedAt = new Date().toISOString();
+  return {
+    cashSettlements: {
+      cashPaymentRowCount: 0,
+      currency: 'VND',
+      generatedAt,
+      highDebtProviderCount: 0,
+      missingPaymentEvidenceCount: 0,
+      oldestOpenAgeMinutes: 0,
+      oldestOpenAt: null,
+      providerCount: 0,
+      rowCount: 0,
+      staleDebtRowCount: 0,
+      topProviderGroups: [],
+      totalCompanyCouponOffset: 0,
+      totalDebtAmount: 0,
+      totalPlatformFee: 0,
+      totalTaxAmount: 0,
+    },
+    earnings: {
+      availableNetAmount: 0,
+      count: 0,
+      currency: 'VND',
+      generatedAt,
+      grossAmount: 0,
+      netAmount: 0,
+      paidNetAmount: 0,
+      pendingNetAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+    },
+    generatedAt,
+    notifications: { generatedAt, totalCount: 0 },
+    operations: {
+      appPresence: {
+        activeBookingCustomers: 0,
+        disabledPushCustomers: 0,
+        liveActiveBookingCustomers: 0,
+        liveAppCustomers: 0,
+        liveAppPartners: 0,
+        liveOpenMatchingCustomers: 0,
+        reachableCustomers: 0,
+        recentCustomerSessions: 0,
+        staleCustomerSessions: 0,
+        totalCustomers: 0,
+      },
+      generatedAt,
+      partnerSupply: {
+        approvedVerification: 0,
+        bankApproved: 0,
+        blocked: 0,
+        cashDebtPartners: 0,
+        firstRevenue: 0,
+        kycApproved: 0,
+        level2Active: 0,
+        liveSessions: 0,
+        noLocation: 0,
+        offline: 0,
+        online: 0,
+        onlineAvailable: 0,
+        onlineAvailableSoon: 0,
+        onlineBusy: 0,
+        pendingVerification: 0,
+        staleLocation: 0,
+        supplyPressureLabel: 'No supply',
+        total: 0,
+        withdrawalProfileReady: 0,
+      },
+    },
+    payments: {
+      authorized: 0,
+      callbackReview: 0,
+      callbackVerified: 0,
+      captured: 0,
+      cashDebt: 0,
+      generatedAt,
+      linkedRefunds: 0,
+      needsAction: 0,
+      pendingCash: 0,
+      refunded: 0,
+      totalCount: 0,
+    },
+    payoutBatches: {
+      currency: 'VND',
+      generatedAt,
+      inProgress: 0,
+      missingTransferRefs: 0,
+      needsReview: 0,
+      open: 0,
+      payoutHolds: 0,
+      settled: 0,
+      total: 0,
+      totalNetAmount: 0,
+      withholdingAmount: 0,
+    },
+    range: 'today',
+    refunds: {
+      completedCount: 0,
+      generatedAt,
+      needsUpdateCount: 0,
+      openCount: 0,
+      outcomeLinkedCount: 0,
+      refundedBookingCount: 0,
+      requestedCount: 0,
+      totalCount: 0,
+    },
+    unavailableSources: [],
+  };
+}
 
 describe('DashboardPage', () => {
   beforeEach(() => {
@@ -195,6 +307,25 @@ describe('DashboardPage', () => {
     expect(hrefs).not.toContain('/admin/app-sessions?role=PROVIDER&take=5');
     expect(hrefs.some((href) => String(href).startsWith('/admin/bookings?'))).toBe(false);
     expect(hrefs.some((href) => String(href).startsWith('/admin/notifications?'))).toBe(false);
+  });
+
+  it('uses one Start Shift aggregate request when every summary source is available', async () => {
+    const aggregate = startShiftSummaryFixture();
+    mockedApiGet.mockResolvedValue({
+      checks: [],
+      ok: true,
+      timestamp: aggregate.generatedAt,
+    } as AdminExternalReadiness);
+    mockedAdminGet.mockImplementation(async (href, fallback) =>
+      href === '/admin/dashboard/start-shift-summary?dateRange=today' ? aggregate : fallback,
+    );
+
+    const page = await DashboardPage({ searchParams: Promise.resolve({}) });
+    const markup = renderToStaticMarkup(page);
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(markup).toContain('<h2 id="dashboard-live-now-title">Live now</h2>');
+    expect(hrefs).toEqual(['/admin/dashboard/start-shift-summary?dateRange=today']);
   });
 
   it('uses payout batch summary for default dashboard payout counters', async () => {

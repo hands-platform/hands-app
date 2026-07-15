@@ -3298,6 +3298,44 @@ export class AdminService {
     };
   }
 
+  async startShiftSummary(dateRange?: string) {
+    const range = adminStartShiftRange(dateRange);
+    const notificationRange = adminStartShiftNotificationRange(range);
+    const sourceNames = [
+      'operations',
+      'payments',
+      'earnings',
+      'refunds',
+      'notifications',
+      'payoutBatches',
+      'cashSettlements',
+    ] as const;
+    const results = await Promise.allSettled([
+      this.dashboardSummary(range),
+      this.paymentSummary({ range }),
+      this.earningsSummary({ range }),
+      this.refundSummary({ range }),
+      this.notificationSummary(notificationRange),
+      this.payoutBatchSummary({ range }),
+      this.cashSettlementSummary({ range }),
+    ] as const);
+
+    return {
+      cashSettlements: adminSettledValue(results[6]),
+      earnings: adminSettledValue(results[2]),
+      generatedAt: new Date().toISOString(),
+      notifications: adminSettledValue(results[4]),
+      operations: adminSettledValue(results[0]),
+      payments: adminSettledValue(results[1]),
+      payoutBatches: adminSettledValue(results[5]),
+      range,
+      refunds: adminSettledValue(results[3]),
+      unavailableSources: results.flatMap((result, index) =>
+        result.status === 'rejected' ? [sourceNames[index]] : [],
+      ),
+    };
+  }
+
   async listReferralPolicies() {
     const policies = await this.prisma.referralPolicy.findMany({
       orderBy: { audience: 'asc' },
@@ -26391,6 +26429,35 @@ function adminPaymentDateRangeBounds(range: string | null | undefined) {
     default:
       return { startMs: todayStartMs, endMs: todayEndMs };
   }
+}
+
+function adminStartShiftRange(range: string | null | undefined) {
+  const normalized = normalizeNullable(range);
+  switch (normalized) {
+    case '7d':
+    case '30d':
+    case '90d':
+    case 'all':
+      return normalized;
+    case 'today':
+    default:
+      return 'today' as const;
+  }
+}
+
+function adminStartShiftNotificationRange(range: string) {
+  const bounds = adminPaymentDateRangeBounds(range);
+  if (!bounds) {
+    return {};
+  }
+  return {
+    from: new Date(bounds.startMs).toISOString(),
+    to: new Date(bounds.endMs + 1).toISOString(),
+  };
+}
+
+function adminSettledValue<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === 'fulfilled' ? result.value : null;
 }
 
 function adminMergePaymentBookingWhere(

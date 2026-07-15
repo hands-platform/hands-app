@@ -52,6 +52,7 @@ import {
   AdminProvider,
   AdminRefund,
   AdminRefundSummary,
+  AdminStartShiftSummary,
   adminGet,
 } from '../lib/admin-api';
 import {
@@ -478,6 +479,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const shouldRenderPartnerReadiness = dashboardViewMode.operationsMode === 'partner';
   const shouldRenderCloseoutQueues = dashboardViewMode.operationsMode === 'closeout';
   const selectedRangeLabel = dateRangeLabel(filters.range);
+  const startShiftSummaryResponse = shouldRenderFullDashboard
+    ? null
+    : await adminGet<AdminStartShiftSummary | null>(dashboardDataHrefs.startShiftSummaryHref, null);
   const [
     dashboardSummaryResponse,
     providers,
@@ -497,7 +501,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     cashSettlementSummaryResponse,
     operationalPolicies,
   ] = await Promise.all([
-    adminGet<AdminDashboardSummary | null>(dashboardDataHrefs.dashboardSummaryHref, null),
+    startShiftSummaryResponse?.operations
+      ? Promise.resolve(startShiftSummaryResponse.operations)
+      : adminGet<AdminDashboardSummary | null>(dashboardDataHrefs.dashboardSummaryHref, null),
     dashboardDataHrefs.partnersHref
       ? adminGet<AdminProvider[]>(dashboardDataHrefs.partnersHref, [])
       : Promise.resolve([]),
@@ -507,30 +513,42 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     dashboardDataHrefs.paymentsHref
       ? adminGet<AdminPayment[]>(dashboardDataHrefs.paymentsHref, [])
       : Promise.resolve([]),
-    adminGet<AdminPaymentSummary | null>(dashboardDataHrefs.paymentSummaryHref, null),
-    adminGet<AdminEarningSummary | null>(dashboardDataHrefs.earningsSummaryHref, null),
+    startShiftSummaryResponse?.payments
+      ? Promise.resolve(startShiftSummaryResponse.payments)
+      : adminGet<AdminPaymentSummary | null>(dashboardDataHrefs.paymentSummaryHref, null),
+    startShiftSummaryResponse?.earnings
+      ? Promise.resolve(startShiftSummaryResponse.earnings)
+      : adminGet<AdminEarningSummary | null>(dashboardDataHrefs.earningsSummaryHref, null),
     dashboardDataHrefs.earningsHref
       ? adminGet<AdminEarning[]>(dashboardDataHrefs.earningsHref, [])
       : Promise.resolve([]),
     dashboardDataHrefs.refundsHref
       ? adminGet<AdminRefund[]>(dashboardDataHrefs.refundsHref, [])
       : Promise.resolve([]),
-    adminGet<AdminRefundSummary | null>(dashboardDataHrefs.refundsSummaryHref, null),
+    startShiftSummaryResponse?.refunds
+      ? Promise.resolve(startShiftSummaryResponse.refunds)
+      : adminGet<AdminRefundSummary | null>(dashboardDataHrefs.refundsSummaryHref, null),
     dashboardDataHrefs.notificationsHref
       ? adminGet<AdminNotification[]>(dashboardDataHrefs.notificationsHref, [])
       : Promise.resolve([]),
-    adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
+    startShiftSummaryResponse?.notifications
+      ? Promise.resolve(startShiftSummaryResponse.notifications)
+      : adminGet<AdminNotificationBoardSummary | null>(dashboardDataHrefs.notificationSummaryHref, null),
     dashboardDataHrefs.payoutBatchesHref
       ? adminGet<AdminPayoutBatch[]>(dashboardDataHrefs.payoutBatchesHref, [])
       : Promise.resolve([]),
-    adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
+    startShiftSummaryResponse?.payoutBatches
+      ? Promise.resolve(startShiftSummaryResponse.payoutBatches)
+      : adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
     dashboardDataHrefs.appSessionsHref
       ? adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, [])
       : Promise.resolve([]),
     dashboardDataHrefs.bookingGateAuditHref
       ? adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, [])
       : Promise.resolve([]),
-    adminGet<AdminCashSettlementSummary | null>(dashboardDataHrefs.cashSettlementSummaryHref, null),
+    startShiftSummaryResponse?.cashSettlements
+      ? Promise.resolve(startShiftSummaryResponse.cashSettlements)
+      : adminGet<AdminCashSettlementSummary | null>(dashboardDataHrefs.cashSettlementSummaryHref, null),
     dashboardDataHrefs.operationalPolicyHref
       ? adminGet<AdminOperationalPolicySetting[]>(dashboardDataHrefs.operationalPolicyHref, [])
       : Promise.resolve([]),

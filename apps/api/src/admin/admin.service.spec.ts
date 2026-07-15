@@ -2012,6 +2012,56 @@ describe('AdminService query orchestration', () => {
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
+  it('aggregates Start Shift summaries while isolating a failed source', async () => {
+    const service = createAdminService({});
+    const dashboardSummary = vi
+      .spyOn(service, 'dashboardSummary')
+      .mockResolvedValue({ source: 'operations' } as never);
+    const paymentSummary = vi
+      .spyOn(service, 'paymentSummary')
+      .mockResolvedValue({ source: 'payments' } as never);
+    const earningsSummary = vi
+      .spyOn(service, 'earningsSummary')
+      .mockResolvedValue({ source: 'earnings' } as never);
+    vi.spyOn(service, 'refundSummary').mockRejectedValue(new Error('refund summary unavailable'));
+    const notificationSummary = vi
+      .spyOn(service, 'notificationSummary')
+      .mockResolvedValue({ source: 'notifications' } as never);
+    const payoutBatchSummary = vi
+      .spyOn(service, 'payoutBatchSummary')
+      .mockResolvedValue({ source: 'payouts' } as never);
+    const cashSettlementSummary = vi
+      .spyOn(service, 'cashSettlementSummary')
+      .mockResolvedValue({ source: 'cash' } as never);
+
+    const result = await service.startShiftSummary('7d');
+
+    expect(result).toMatchObject({
+      cashSettlements: { source: 'cash' },
+      earnings: { source: 'earnings' },
+      notifications: { source: 'notifications' },
+      operations: { source: 'operations' },
+      payments: { source: 'payments' },
+      payoutBatches: { source: 'payouts' },
+      range: '7d',
+      refunds: null,
+      unavailableSources: ['refunds'],
+    });
+    expect(dashboardSummary).toHaveBeenCalledWith('7d');
+    expect(paymentSummary).toHaveBeenCalledWith({ range: '7d' });
+    expect(earningsSummary).toHaveBeenCalledWith({ range: '7d' });
+    expect(payoutBatchSummary).toHaveBeenCalledWith({ range: '7d' });
+    expect(cashSettlementSummary).toHaveBeenCalledWith({ range: '7d' });
+    expect(notificationSummary).toHaveBeenCalledWith({
+      from: expect.any(String),
+      to: expect.any(String),
+    });
+    const notificationRange = notificationSummary.mock.calls[0]?.[0];
+    expect(
+      Date.parse(notificationRange?.to ?? '') - Date.parse(notificationRange?.from ?? ''),
+    ).toBe(7 * 24 * 60 * 60 * 1000);
+  });
+
   it('keeps usage overview regional source rows bounded', async () => {
     const prisma = {
       appSession: {

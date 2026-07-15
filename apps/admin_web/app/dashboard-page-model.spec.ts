@@ -78,6 +78,9 @@ describe('dashboard page model', () => {
     const hrefs = buildDashboardDataHrefs({});
 
     expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary?dateRange=today');
+    expect(hrefs.startShiftSummaryHref).toBe(
+      '/admin/dashboard/start-shift-summary?dateRange=today',
+    );
     expect(hrefs.bookingsHref).toBeNull();
     expect(hrefs.partnersHref).toBeNull();
     expect(hrefs.appSessionsHref).toBeNull();
@@ -190,6 +193,9 @@ describe('dashboard page model', () => {
     const hrefs = buildDashboardDataHrefs({ range: '7d' });
 
     expect(hrefs.bookingsHref).toBeNull();
+    expect(hrefs.startShiftSummaryHref).toBe(
+      '/admin/dashboard/start-shift-summary?dateRange=7d',
+    );
     expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.paymentsHref).toBeNull();
     expect(hrefs.earningsHref).toBeNull();

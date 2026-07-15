@@ -30,6 +30,7 @@ export type DashboardDataHrefs = {
   readonly payoutBatchesHref: string | null;
   readonly refundsHref: string | null;
   readonly refundsSummaryHref: string;
+  readonly startShiftSummaryHref: string;
 };
 
 type DashboardListDataRequirements = {
@@ -87,6 +88,9 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
   const limits = dashboardDataLimits(viewMode);
   const requirements = dashboardListDataRequirements(viewMode);
   return {
+    startShiftSummaryHref: `/admin/dashboard/start-shift-summary?${new URLSearchParams({
+      dateRange: range,
+    }).toString()}`,
     dashboardSummaryHref: `/admin/dashboard/summary?${new URLSearchParams({ dateRange: range }).toString()}`,
     cashSettlementSummaryHref: buildDashboardRangeScopedHref(
       '/admin/cash-settlement-summary',
