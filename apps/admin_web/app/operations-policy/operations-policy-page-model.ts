@@ -12,7 +12,6 @@ const MATCHING_BOOKING_SAMPLE_TAKE = 20;
 const MATCHING_PROVIDER_SAMPLE_TAKE = 30;
 const DECISION_BOOKING_SAMPLE_TAKE = 15;
 const DECISION_PROVIDER_SAMPLE_TAKE = 20;
-const AUDIT_BOOKING_SAMPLE_TAKE = 10;
 const AUDIT_POLICY_TAKE = 20;
 const AUDIT_BOOKING_GATE_TAKE = 20;
 
@@ -22,12 +21,12 @@ type OperationsPolicyLoadPlanOptions = {
 };
 
 export type OperationsPolicyLoadPlan = {
-  readonly bookingGateAuditHref: string;
-  readonly bookingsHref: string;
+  readonly bookingGateAuditHref: string | null;
+  readonly bookingsHref: string | null;
   readonly detailsMode: OperationsPolicyDetailsMode;
   readonly decisionMode: OperationsPolicyDecisionMode;
   readonly matchingMode: OperationsPolicyMatchingMode;
-  readonly policyAuditHref: string;
+  readonly policyAuditHref: string | null;
   readonly providersHref: string | null;
   readonly settingsHref: string;
   readonly shouldRenderAdvancedIndex: boolean;
@@ -38,6 +37,9 @@ export type OperationsPolicyLoadPlan = {
   readonly shouldRenderMatchingReview: boolean;
   readonly shouldRenderMatchingSimulation: boolean;
   readonly shouldRenderMatchingSupply: boolean;
+  readonly shouldRenderMatchingPolicy: boolean;
+  readonly shouldRenderPolicyOverview: boolean;
+  readonly shouldRenderDecisionSummary: boolean;
 };
 
 export function buildOperationsPolicyLoadPlan(
@@ -58,13 +60,17 @@ export function buildOperationsPolicyLoadPlan(
   const decisionMode = normalizeOperationsPolicyDecisionMode(readSearchParam(params.decision));
   const decisionEvidence = decisionReview && decisionMode === 'evidence';
   const auditReview = detailsMode === 'audit';
+  const policyOverview = detailsMode === 'summary';
+  const matchingPolicy = policyOverview || matchingReview;
+  const decisionSummary = policyOverview || decisionReview;
+  const needsBookings = policyOverview || matchingReview || decisionReview;
+  const needsPolicyAudit = policyOverview || auditReview;
+  const needsBookingGateAudit = policyOverview || auditReview;
   const bookingsTake = matchingEvidence
     ? MATCHING_BOOKING_SAMPLE_TAKE
     : decisionEvidence
       ? DECISION_BOOKING_SAMPLE_TAKE
-      : auditReview
-        ? AUDIT_BOOKING_SAMPLE_TAKE
-        : SUMMARY_BOOKING_SAMPLE_TAKE;
+      : SUMMARY_BOOKING_SAMPLE_TAKE;
   const policyAuditTake = auditReview ? AUDIT_POLICY_TAKE : SUMMARY_POLICY_AUDIT_TAKE;
   const bookingGateAuditTake = auditReview
     ? AUDIT_BOOKING_GATE_TAKE
@@ -76,12 +82,16 @@ export function buildOperationsPolicyLoadPlan(
       : null;
 
   return {
-    bookingGateAuditHref: `/admin/audit-logs?action=booking.create.rejected&take=${bookingGateAuditTake}`,
-    bookingsHref: `/admin/bookings?take=${bookingsTake}`,
+    bookingGateAuditHref: needsBookingGateAudit
+      ? `/admin/audit-logs?action=booking.create.rejected&take=${bookingGateAuditTake}`
+      : null,
+    bookingsHref: needsBookings ? `/admin/bookings?take=${bookingsTake}` : null,
     decisionMode,
     detailsMode,
     matchingMode,
-    policyAuditHref: `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`,
+    policyAuditHref: needsPolicyAudit
+      ? `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`
+      : null,
     providersHref: providerTake
       ? `/admin/operations-policy/providers?take=${providerTake}`
       : null,
@@ -94,6 +104,9 @@ export function buildOperationsPolicyLoadPlan(
     shouldRenderMatchingReview: matchingReview,
     shouldRenderMatchingSimulation: matchingSimulation,
     shouldRenderMatchingSupply: matchingSupply,
+    shouldRenderMatchingPolicy: matchingPolicy,
+    shouldRenderPolicyOverview: policyOverview,
+    shouldRenderDecisionSummary: decisionSummary,
   };
 }
 

@@ -87,12 +87,18 @@ export default async function OperationsPolicyPage({
   const loadPlan = buildOperationsPolicyLoadPlan(params, { allowFullDiagnostics: canLoadFullDiagnostics });
   const [settings, bookings, providers, policyAuditLogs, bookingGateAuditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>(loadPlan.settingsHref, []),
-    adminGet<AdminBooking[]>(loadPlan.bookingsHref, []),
+    loadPlan.bookingsHref
+      ? adminGet<AdminBooking[]>(loadPlan.bookingsHref, [])
+      : Promise.resolve<AdminBooking[]>([]),
     loadPlan.providersHref
       ? adminGet<AdminProvider[]>(loadPlan.providersHref, [])
       : Promise.resolve<AdminProvider[]>([]),
-    adminGet<AdminAuditLog[]>(loadPlan.policyAuditHref, []),
-    adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, []),
+    loadPlan.policyAuditHref
+      ? adminGet<AdminAuditLog[]>(loadPlan.policyAuditHref, [])
+      : Promise.resolve<AdminAuditLog[]>([]),
+    loadPlan.bookingGateAuditHref
+      ? adminGet<AdminAuditLog[]>(loadPlan.bookingGateAuditHref, [])
+      : Promise.resolve<AdminAuditLog[]>([]),
   ]);
   const auditLogs = [...policyAuditLogs, ...bookingGateAuditLogs];
   const shouldRenderAdvancedIndex = loadPlan.shouldRenderAdvancedIndex;
@@ -102,8 +108,11 @@ export default async function OperationsPolicyPage({
   const shouldRenderDecisionReview = loadPlan.shouldRenderDecisionReview;
   const shouldRenderDecisionEvidence = loadPlan.shouldRenderDecisionEvidence;
   const shouldRenderAuditReview = loadPlan.shouldRenderAuditReview;
+  const shouldRenderPolicyOverview = loadPlan.shouldRenderPolicyOverview;
+  const shouldRenderMatchingPolicy = loadPlan.shouldRenderMatchingPolicy;
+  const shouldRenderDecisionSummary = loadPlan.shouldRenderDecisionSummary;
   const shouldRenderMatchingEditor =
-    !shouldRenderMatchingReview || loadPlan.matchingMode === 'policy';
+    shouldRenderMatchingPolicy && (!shouldRenderMatchingReview || loadPlan.matchingMode === 'policy');
   const needsAcceptanceReview = shouldRenderMatchingSupply || shouldRenderDecisionEvidence;
   const needsSupplyReview = shouldRenderMatchingSupply || shouldRenderDecisionEvidence;
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
@@ -113,12 +122,18 @@ export default async function OperationsPolicyPage({
   const matchingPlaybook = shouldRenderMatchingReview && loadPlan.matchingMode === 'policy'
     ? buildMatchingPlaybook((key) => policyDisplayByKey(settings, key))
     : null;
-  const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
+  const recommendationReview = shouldRenderPolicyOverview
+    ? buildPolicyRecommendationReview(settings, bookings)
+    : null;
   const acceptanceMatrix = needsAcceptanceReview
     ? buildBookingAcceptanceMatrix(settings, providers)
     : null;
-  const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
-  const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
+  const bookingCreateGateReview = shouldRenderPolicyOverview
+    ? buildBookingCreateGateReview(settings, auditLogs)
+    : null;
+  const actionGatePolicyChecklist = shouldRenderPolicyOverview
+    ? buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue)
+    : null;
   const policySimulation = shouldRenderMatchingSimulation
     ? buildPolicySimulation(settings, bookings, providers)
     : null;
@@ -170,13 +185,17 @@ export default async function OperationsPolicyPage({
         </AdminNoticeCard>
       ) : null}
 
-      <OperationsPolicyAuthorityBaselineSection />
+      {shouldRenderPolicyOverview ? (
+        <>
+          <OperationsPolicyAuthorityBaselineSection />
 
-      <OperationsPolicyActionGateChecklistSection checklist={actionGatePolicyChecklist} />
+          <OperationsPolicyActionGateChecklistSection checklist={actionGatePolicyChecklist!} />
 
-      <OperationsPolicyBookingCreateGateSection review={bookingCreateGateReview} />
+          <OperationsPolicyBookingCreateGateSection review={bookingCreateGateReview!} />
 
-      <OperationsPolicyRecommendedValueReviewSection review={recommendationReview} />
+          <OperationsPolicyRecommendedValueReviewSection review={recommendationReview!} />
+        </>
+      ) : null}
 
       {shouldRenderMatchingReview ? (
         <AdminSection
@@ -225,6 +244,7 @@ export default async function OperationsPolicyPage({
         </>
       ) : null}
 
+      {shouldRenderMatchingPolicy ? (
       <AdminSection
         actions={
           <>
@@ -279,6 +299,7 @@ export default async function OperationsPolicyPage({
           </AdminNotePanel>
         )}
       </AdminSection>
+      ) : null}
 
       {shouldRenderMatchingSimulation ? (
         <>
@@ -295,7 +316,7 @@ export default async function OperationsPolicyPage({
         </>
       ) : shouldRenderMatchingReview && matchingPlaybook ? (
         <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
-      ) : canLoadFullDiagnostics && !shouldRenderAdvancedIndex ? (
+      ) : shouldRenderPolicyOverview && canLoadFullDiagnostics ? (
         <AdminSection
           actions={
             <AdminFormControlLink className="button-secondary" href={buildOperationsPolicyDetailsHref('all')}>
@@ -362,6 +383,7 @@ export default async function OperationsPolicyPage({
         </AdminSection>
       ) : null}
 
+      {shouldRenderDecisionSummary ? (
       <AdminSection
         className="admin-mb-16"
         description={
@@ -424,6 +446,7 @@ export default async function OperationsPolicyPage({
           </AdminNotePanel>
         )}
       </AdminSection>
+      ) : null}
 
       {shouldRenderDecisionEditor ? <OperationsPolicyNextChoicesSection /> : null}
 

@@ -161,7 +161,7 @@ describe('OperationsPolicyPage', () => {
     const page = await OperationsPolicyPage({ searchParams: Promise.resolve({ details: 'decisions' }) });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('First-pick Partner response window');
+    expect(markup).not.toContain('First-pick Partner response window');
     expect(markup).toContain('First-pick acceptance contract');
     expect(markup).toContain('Decision editor');
     expect(markup).not.toContain('Owner decision backlog');
@@ -169,7 +169,13 @@ describe('OperationsPolicyPage', () => {
     expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
       '/admin/operations-policy/providers?take=20',
     );
-    expect((markup.match(/<form/g) ?? []).length).toBe(2);
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
+      '/admin/audit-logs?action=operational_policy.update&take=3',
+    );
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
+      '/admin/audit-logs?action=booking.create.rejected&take=3',
+    );
+    expect((markup.match(/<form/g) ?? []).length).toBe(1);
   });
 
   it('loads the bounded Partner sample only in the decision evidence workspace', async () => {
@@ -272,8 +278,14 @@ describe('OperationsPolicyPage', () => {
     expect(markup).toContain('/operations-policy?details=matching');
     expect(markup).toContain('/operations-policy?details=decisions');
     expect(markup).toContain('/operations-policy?details=audit');
+    expect(markup).not.toContain('MVP authority baseline');
+    expect(markup).not.toContain('Live matching policy');
+    expect(markup).not.toContain('Operator decisions');
     expect(markup).not.toContain('Policy sensitivity preview');
     expect(markup).not.toContain('Policy audit trail');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toEqual([
+      '/admin/operational-policy',
+    ]);
   });
 
   it('uses shared Vuexy badge atoms for page header counters', () => {

@@ -531,16 +531,11 @@ const pages = [
     path: '/operations-policy?details=all',
     markers: [
       'Operations Policy',
-      'MVP authority baseline',
-      'Confirmed service address required',
-      'No auto assignment',
       'Advanced policy review',
       'Choose workspace',
       'Matching review',
       'Decision review',
       'Audit review',
-      'Live matching policy',
-      'Operator decisions',
     ],
   },
   {
@@ -607,7 +602,6 @@ const pages = [
       'API touchpoint: POST /customer/bookings',
       'Server owner: BookingsService.createBooking',
       'Recent policy audit trail',
-      'id="action-gate-policy-checklist"',
     ],
   },
   {
