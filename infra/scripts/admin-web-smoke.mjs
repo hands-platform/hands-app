@@ -1589,7 +1589,12 @@ if (providerLinkMatch) {
         {
           query: 'section=control',
           markers: ['Partner control workspace', 'Control workspace view', 'Partner operator command queue'],
-          excludedMarkers: ['Partner operations digest'],
+          excludedMarkers: ['Partner control records', 'Partner review records', 'Partner operations digest'],
+        },
+        {
+          query: 'section=control&control=records',
+          markers: ['Partner control records', 'Control records', 'Partner review records'],
+          excludedMarkers: ['Partner operator command queue', 'Partner operations digest'],
         },
         {
           query: 'section=control&control=reference',

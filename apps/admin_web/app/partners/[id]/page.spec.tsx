@@ -155,7 +155,7 @@ describe('ProviderDetailPage data loading', () => {
     );
   });
 
-  it('loads Developer control references only when the reference workspace is selected', async () => {
+  it('loads retained control records and Developer references only in their selected workspaces', async () => {
     mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
       categories: [],
       email: 'master@example.com',
@@ -181,6 +181,19 @@ describe('ProviderDetailPage data loading', () => {
     });
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
+    ).toBe(false);
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
+    ).toBe(false);
+
+    mockedAdminGet.mockClear();
+
+    const recordsPage = await ProviderDetailPage({
+      params: Promise.resolve({ id: 'partner-control' }),
+      searchParams: Promise.resolve({ control: 'records', section: 'control' }),
+    });
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/reviews?')),
     ).toBe(true);
     expect(
       mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/partner-customer-reviews?')),
@@ -193,11 +206,17 @@ describe('ProviderDetailPage data loading', () => {
       searchParams: Promise.resolve({ control: 'reference', section: 'control' }),
     });
     const controlMarkup = renderToStaticMarkup(controlPage);
+    const recordsMarkup = renderToStaticMarkup(recordsPage);
     const referenceMarkup = renderToStaticMarkup(referencePage);
 
     expect(controlMarkup).toContain('Control workspace view');
     expect(controlMarkup).toContain('Partner operator command queue');
+    expect(controlMarkup).not.toContain('Partner review records');
     expect(controlMarkup).not.toContain('Partner operations digest');
+    expect(recordsMarkup).toContain('Partner control records');
+    expect(recordsMarkup).toContain('Partner review records');
+    expect(recordsMarkup).not.toContain('Partner operator command queue');
+    expect(recordsMarkup).not.toContain('Partner operations digest');
     expect(referenceMarkup).toContain('Partner operations digest');
     expect(referenceMarkup).toContain('Partner operating ledger');
     expect(referenceMarkup).not.toContain('Partner operator command queue');

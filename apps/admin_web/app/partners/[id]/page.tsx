@@ -354,7 +354,7 @@ type PartnerDispatchPolicy = {
   locationFreshnessMinutes: number;
 };
 type PartnerDetailSection = 'overview' | 'full' | 'control' | 'bookings' | 'access' | 'dossier';
-type PartnerControlView = 'work' | 'reference';
+type PartnerControlView = 'work' | 'records' | 'reference';
 type PartnerAccessView = 'readiness' | 'diagnostics';
 type PartnerDossierView = 'approval' | 'evidence' | 'finance';
 type PartnerKycEvidence = PartnerKycDecisionEvidence & {
@@ -400,7 +400,8 @@ function readPartnerDetailSection(
 function readPartnerControlView(
   params: Record<string, string | string[] | undefined>,
 ): PartnerControlView {
-  return readSearchParam(params.control) === 'reference' ? 'reference' : 'work';
+  const controlView = readSearchParam(params.control);
+  return controlView === 'records' || controlView === 'reference' ? controlView : 'work';
 }
 
 function readPartnerAccessView(
@@ -424,8 +425,8 @@ function buildPartnerDetailWorkspaceHref(
   view?: PartnerControlView | PartnerAccessView | PartnerDossierView,
 ) {
   const query = new URLSearchParams({ section });
-  if (section === 'control' && view === 'reference') {
-    query.set('control', 'reference');
+  if (section === 'control' && (view === 'records' || view === 'reference')) {
+    query.set('control', view);
   }
   if (section === 'dossier' && (view === 'evidence' || view === 'finance')) {
     query.set('dossier', view);
@@ -567,7 +568,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     take: '10',
   }).toString();
   const partnerManualAdjustmentHref = `/wallet-adjustments?ownerType=PARTNER&ownerId=${encodeURIComponent(provider.id)}`;
-  const shouldLoadControlRecords = detailSection === 'control' && controlView === 'work';
+  const shouldLoadControlRecords = detailSection === 'control' && controlView === 'records';
   const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
   const [customerReviews, partnerEvaluations, walletWithdrawalRequests, partnerManualAdjustmentRows] =
     await Promise.all([
@@ -1074,34 +1075,52 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       {detailSection === 'control' ? (
       <PartnerDetailSectionGroup
-        description="Approval, hold, review records, and staff follow-up come first. Developer reference summaries load only when selected."
+        description={
+          controlView === 'records'
+            ? 'Retained reviews, operator notes, and recent activity for follow-up and audit.'
+            : controlView === 'reference'
+              ? 'Developer-only digest, indexes, and operating ledger for deeper diagnostics.'
+              : 'Current approval, hold, and follow-up commands that need an operator decision.'
+        }
         eyebrow="Control"
         id="partner-control-section"
-        status={`${partnerOperatorCommandQueue.commands.length} command(s)`}
-        title="Partner control workspace"
+        status={
+          controlView === 'records'
+            ? `${partnerReviewRecords.customerReviews.length + partnerReviewRecords.partnerEvaluations.length + partnerOperatorNoteRows.length + partnerRecentTimelineRecords.length} record(s)`
+            : controlView === 'reference'
+              ? 'Developer reference'
+              : `${partnerOperatorCommandQueue.commands.length} command(s)`
+        }
+        title={controlView === 'records' ? 'Partner control records' : 'Partner control workspace'}
       >
-        {canLoadPartnerDiagnostics ? (
-          <AdminSection
-            description="Keep the daily control queue separate from deeper diagnostic summaries."
-            id="partner-control-workspace-selector"
-            title="Control workspace view"
-          >
-            <AdminFilterChipGroup ariaLabel="Partner control workspaces">
-              <AdminFormControlLink
-                aria-current={controlView === 'work' ? 'page' : undefined}
-                href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'work')}
-              >
-                Control work
-              </AdminFormControlLink>
+        <AdminSection
+          description="Keep current decisions, retained records, and Developer diagnostics in separate workspaces."
+          id="partner-control-workspace-selector"
+          title="Control workspace view"
+        >
+          <AdminFilterChipGroup ariaLabel="Partner control workspaces">
+            <AdminFormControlLink
+              aria-current={controlView === 'work' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'work')}
+            >
+              Control work
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={controlView === 'records' ? 'page' : undefined}
+              href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'records')}
+            >
+              Control records
+            </AdminFormControlLink>
+            {canLoadPartnerDiagnostics ? (
               <AdminFormControlLink
                 aria-current={controlView === 'reference' ? 'page' : undefined}
                 href={buildPartnerDetailWorkspaceHref(provider.id, 'control', 'reference')}
               >
                 Developer reference
               </AdminFormControlLink>
-            </AdminFilterChipGroup>
-          </AdminSection>
-        ) : null}
+            ) : null}
+          </AdminFilterChipGroup>
+        </AdminSection>
         {controlView === 'work' ? (
           <>
             <PartnerDetailOperatorCommandQueueSection
@@ -1110,6 +1129,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               queue={partnerOperatorCommandQueue}
             />
             <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
+            <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
+            <PartnerDetailConnectedRecordsSection
+              description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
+              id="partner-connected-operations-records"
+              links={connectedPartnerRecordLinks}
+              title="Partner connected operations records"
+            />
+          </>
+        ) : controlView === 'records' ? (
+          <>
             <AdminReviewRecordsSection
               basePath={`/partners/${id}`}
               customerReviews={partnerReviewRecords.customerReviews}
@@ -1119,19 +1148,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               searchParams={detailSearchParams}
               title="Partner review records"
             />
-            <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
             <PartnerDetailOperatorNotesSection
               notes={partnerOperatorNoteRows}
               providerId={provider.id}
               totalCount={partnerOpsNotes.length}
             />
             <PartnerDetailRecentTimelineSection records={partnerRecentTimelineRecords} />
-            <PartnerDetailConnectedRecordsSection
-              description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
-              id="partner-connected-operations-records"
-              links={connectedPartnerRecordLinks}
-              title="Partner connected operations records"
-            />
           </>
         ) : (
           partnerReferenceDiagnosticSection
