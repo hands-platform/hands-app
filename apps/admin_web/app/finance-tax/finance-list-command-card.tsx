@@ -30,6 +30,7 @@ export function FinanceListCommandCard({
   href,
   icon: Icon,
   label,
+  scope,
   tone,
   value,
 }: {
@@ -37,6 +38,7 @@ export function FinanceListCommandCard({
   readonly href: string;
   readonly icon: LucideIcon;
   readonly label: string;
+  readonly scope?: ReactNode;
   readonly tone: FinanceListCommandTone;
   readonly value: ReactNode;
 }) {
@@ -47,10 +49,27 @@ export function FinanceListCommandCard({
       href={href}
       icon={Icon}
       iconSize={18}
+      kind={financeListCommandKind(tone)}
       label={label}
+      scope={scope ?? financeListCommandScope(tone)}
       value={value}
     />
   );
+}
+
+function financeListCommandKind(tone: FinanceListCommandTone) {
+  if (tone === 'danger') return 'risk' as const;
+  if (tone === 'warning') return 'action' as const;
+  if (tone === 'neutral') return 'record' as const;
+
+  return 'period' as const;
+}
+
+function financeListCommandScope(tone: FinanceListCommandTone) {
+  if (tone === 'danger' || tone === 'warning') return 'Needs action';
+  if (tone === 'neutral') return 'Records';
+
+  return 'Selected range';
 }
 
 export function formatFinancePercent(value: number, total: number) {

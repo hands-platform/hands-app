@@ -50,11 +50,11 @@ export function buildCashSettlementConfirmation(
     return null;
   }
 
-  const settlementMethod = input.settlementMethod || row.earning.settlementMethod || 'PARTNER_DEPOSIT';
+  const settlementMethod = 'ADMIN_OFFSET';
   const settlementRef = input.settlementRef || row.settlementReference;
   const settlementNotes =
     input.settlementNotes ||
-    `Partner deposit or approved offset for ${formatMoney(row.debtAmount, row.earning.currency)} using ${settlementRef}`;
+    `Approved admin offset for ${formatMoney(row.debtAmount, row.earning.currency)} using ${settlementRef}`;
 
   return {
     cancelHref: '/cash-settlements',
@@ -62,19 +62,12 @@ export function buildCashSettlementConfirmation(
     description: `${row.providerName} will settle ${formatMoney(
       row.debtAmount,
       row.earning.currency,
-    )} by ${settlementMethodLabel(settlementMethod)}. Payment method: ${row.paymentMethod}. Reference: ${settlementRef}.`,
+    )} by admin offset. Payment method: ${row.paymentMethod}. Reference: ${settlementRef}.`,
     earningId: row.earning.id,
     settlementMethod,
     settlementNotes,
     settlementRef,
     title: `Confirm cash settlement ${shortId(row.earning.id)}?`,
-    tone: settlementMethod === 'ADMIN_OFFSET' ? 'warning' : 'danger',
+    tone: 'warning',
   };
-}
-
-function settlementMethodLabel(value: string) {
-  if (value === 'ADMIN_OFFSET') {
-    return 'admin offset';
-  }
-  return 'Partner deposit';
 }

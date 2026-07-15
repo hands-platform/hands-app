@@ -63,8 +63,9 @@ describe('CouponsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Create coupons');
-    expect(markup).toContain('card admin-filter-panel coupons-create-panel');
-    expect(markup).toContain('admin-filter-panel-body');
+    expect(markup).toContain('card admin-section coupons-create-panel');
+    expect(markup).toContain('admin-section-body');
+    expect(markup).not.toContain('card admin-filter-panel coupons-create-panel');
     expect(markup).toContain('admin-form-textarea');
     expect(markup).toContain('admin-form-input');
     expect(markup).toContain('form-grid coupon-create-form');
@@ -72,6 +73,34 @@ describe('CouponsPage', () => {
     expect(markup).not.toContain('coupon-create-form-field');
     expect(markup).not.toContain('calendar-field');
     expect(markup).toContain('class="admin-form-control-button button button-primary" type="submit">Create coupons');
+  });
+
+  it('labels coupon summary metrics by live, pending, and record scope', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/coupons/summary') {
+        return {
+          expiredCount: 3,
+          liveCount: 2,
+          pausedCount: 4,
+          scheduledCount: 1,
+          totalCount: 10,
+        };
+      }
+
+      return fallback;
+    });
+
+    const page = await CouponsPage({
+      searchParams: Promise.resolve({}),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Live checkout codes');
+    expect(markup).toContain('<span class="metric-card-scope is-live">Live</span>');
+    expect(markup).toContain('Pending launch');
+    expect(markup).toContain('<span class="metric-card-scope is-action">Pending</span>');
+    expect(markup).toContain('Coupon records');
+    expect(markup).toContain('<span class="metric-card-scope is-record">All records</span>');
   });
 
   it('renders coupon save feedback through the shared Vuexy inline notice atom', async () => {

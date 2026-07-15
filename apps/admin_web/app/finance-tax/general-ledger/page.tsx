@@ -57,6 +57,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
   const pagination = buildTaxSettlementServerPagination(batches, filters, summary.count);
   const debitCreditDelta = summary.totalDebit - summary.totalCredit;
   const isBalanced = debitCreditDelta === 0;
+  const rangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
@@ -85,6 +86,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           href={generalLedgerHref({ ...filters, page: 1 })}
           icon={Scale}
           label="Debit/Credit delta"
+          scope={isBalanced ? rangeScope : 'Needs action'}
           tone={isBalanced ? 'success' : 'danger'}
           value={
             isBalanced ? (
@@ -99,6 +101,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           href={generalLedgerHref({ ...filters, page: 1, review: 'posted' })}
           icon={CheckCircle2}
           label="Posted ratio"
+          scope={rangeScope}
           tone={summary.postedCount > 0 ? 'success' : 'neutral'}
           value={formatFinancePercent(summary.postedCount, summary.count)}
         />
@@ -107,6 +110,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           href={generalLedgerHref({ ...filters, page: 1, review: 'reversed' })}
           icon={AlertTriangle}
           label="Reversal queue"
+          scope={summary.reversedCount > 0 ? 'Needs action' : rangeScope}
           tone={summary.reversedCount > 0 ? 'warning' : 'success'}
           value={String(summary.reversedCount)}
         />
@@ -115,6 +119,7 @@ export default async function GeneralLedgerPage({ searchParams }: GeneralLedgerP
           href={generalLedgerHref({ ...filters, page: 1 })}
           icon={ReceiptText}
           label="Journal evidence"
+          scope={rangeScope}
           tone={summary.count > 0 ? 'info' : 'neutral'}
           value={`${summary.count} batch(es)`}
         />

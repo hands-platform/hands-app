@@ -1,7 +1,9 @@
 import {
   AlertTriangle,
   Banknote,
+  CircleCheckBig,
   CircleDollarSign,
+  Clock3,
   CreditCard,
   FileWarning,
   Landmark,
@@ -14,6 +16,8 @@ import type {
   AdminFinanceOverviewSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminOverviewCommandCard, AdminOverviewCommandGrid } from '../../components/admin-overview-card';
 import { MoneyText } from '../../components/money-text';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -29,6 +33,7 @@ import {
   buildFinanceOverviewPageSections,
   buildFinanceOverviewPrimaryKpis,
   buildFinanceOverviewRangeLabel,
+  buildFinanceOverviewReviewSlaMetrics,
   buildFinanceOverviewVisibleActionItems,
   emptyFinanceOverviewSummaries,
   financeOverviewSummaryInput,
@@ -66,13 +71,15 @@ export default async function FinanceOverviewPage({
   });
   const overviewInput = financeOverviewSummaryInput(overviewSummary);
   const { couponSummary, settlementSummary } = overviewInput;
-  const controlMetrics = buildFinanceOverviewControlMetrics(overviewInput);
+  const controlMetrics = buildFinanceOverviewControlMetrics(overviewInput, filters.range);
   const primaryKpis = buildFinanceOverviewPrimaryKpis(overviewInput);
+  const reviewSlaMetrics = buildFinanceOverviewReviewSlaMetrics(overviewInput, filters.range);
   const sections = buildFinanceOverviewPageSections(overviewInput);
   const actionItems = buildFinanceOverviewActionItems(overviewInput, filters.range);
   const visibleActionItems = buildFinanceOverviewVisibleActionItems(actionItems);
   const priorityItems = actionItems.filter((item) => item.tone === 'danger' || item.tone === 'warning');
   const priorityDeskItems = priorityItems.length > 0 ? priorityItems.slice(0, 4) : actionItems.slice(0, 4);
+  const rangeLabel = buildFinanceOverviewRangeLabel(filters.range);
   const netRevenueEstimate =
     settlementSummary.platformFeeNetRevenue -
     couponSummary.companyCouponExpense -
@@ -130,16 +137,16 @@ export default async function FinanceOverviewPage({
       title="Finance Overview"
     >
 
-      <AdminSection
+      <AdminFilterPanel
         actions={
           <>
             <StatusBadge tone="success">Read-only</StatusBadge>
-            <StatusBadge tone="info">{buildFinanceOverviewRangeLabel(filters.range)}</StatusBadge>
+            <StatusBadge tone="info">{rangeLabel}</StatusBadge>
           </>
         }
         className="finance-overview-filter-panel"
         description="This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists."
-        statusLabel={`Period ${filters.period}`}
+        resultLabel={`Period ${filters.period}`}
         title="Finance range"
       >
         <AdminSegmentedControl
@@ -159,6 +166,36 @@ export default async function FinanceOverviewPage({
           period={filters.period}
           periodLabel="Monthly tax period"
         />
+        <AdminFilterSummary
+          ariaLabel="Active finance overview filters"
+          labels={[`Range: ${rangeLabel}`, `Period: ${filters.period}`]}
+          tone="info"
+        />
+      </AdminFilterPanel>
+
+      <AdminSection
+        bodyClassName="finance-overview-sla-grid"
+        className="finance-overview-sla-section"
+        description="Current 48-hour review backlog and resolved audit evidence stay separate."
+        statusLabel={
+          overviewInput.financeReviewSlaSummary.openOver72Count > 0
+            ? `${overviewInput.financeReviewSlaSummary.openOver72Count} critical`
+            : overviewInput.financeReviewSlaSummary.open48To72Count > 0
+              ? `${overviewInput.financeReviewSlaSummary.open48To72Count} approaching 72h`
+            : 'SLA clear'
+        }
+        statusTone={
+          overviewInput.financeReviewSlaSummary.openOver72Count > 0
+            ? 'danger'
+            : overviewInput.financeReviewSlaSummary.open48To72Count > 0
+              ? 'warning'
+              : 'success'
+        }
+        title="Finance Review SLA"
+      >
+        {reviewSlaMetrics.map((metric) => (
+          <FinanceReviewSlaCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
+        ))}
       </AdminSection>
 
       <AdminSection
@@ -180,7 +217,7 @@ export default async function FinanceOverviewPage({
         className="finance-overview-control-board"
       >
         {controlMetrics.map((metric) => (
-          <FinanceControlMetricCard key={metric.label} metric={metric} />
+          <FinanceControlMetricCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
         ))}
       </AdminOverviewCommandGrid>
 
@@ -211,7 +248,7 @@ export default async function FinanceOverviewPage({
         title="Core Finance KPI"
       >
         {primaryKpis.map((kpi) => (
-          <FinanceKpiCard key={kpi.label} kpi={kpi} />
+          <FinanceKpiCard key={kpi.label} kpi={kpi} rangeLabel={rangeLabel} />
         ))}
       </AdminSection>
 
@@ -241,8 +278,15 @@ export default async function FinanceOverviewPage({
   );
 }
 
-function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverviewControlMetric }) {
+function FinanceControlMetricCard({
+  metric,
+  rangeLabel,
+}: {
+  readonly metric: FinanceOverviewControlMetric;
+  readonly rangeLabel: string;
+}) {
   const Icon = financeControlMetricIcons[metric.label] ?? ShieldCheck;
+  const meta = financeOverviewControlMetricMeta(metric, rangeLabel);
 
   return (
     <AdminOverviewCommandCard
@@ -252,7 +296,9 @@ function FinanceControlMetricCard({ metric }: { readonly metric: FinanceOverview
       href={metric.href}
       icon={<Icon size={18} aria-hidden="true" />}
       iconClassName={financeOverviewCommandIconClassName}
+      kind={meta.kind}
       label={metric.label}
+      scope={meta.scope}
       value={<FinanceControlMetricValue metric={metric} />}
     />
   );
@@ -266,8 +312,9 @@ function FinanceControlMetricValue({ metric }: { readonly metric: FinanceOvervie
   );
 }
 
-function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
+function FinanceKpiCard({ kpi, rangeLabel }: { readonly kpi: FinanceOverviewKpi; readonly rangeLabel: string }) {
   const Icon = financeKpiIcons[kpi.label] ?? CircleDollarSign;
+  const meta = financeOverviewKpiMeta(kpi.label, rangeLabel);
 
   return (
     <AdminKpiCard
@@ -276,10 +323,71 @@ function FinanceKpiCard({ kpi }: { readonly kpi: FinanceOverviewKpi }) {
       helper={kpi.detail}
       icon={Icon}
       iconSize={18}
+      kind={meta.kind}
       label={kpi.label}
+      scope={meta.scope}
       value={<FinanceOverviewMetricValue metric={kpi} />}
     />
   );
+}
+
+function FinanceReviewSlaCard({
+  metric,
+  rangeLabel,
+}: {
+  readonly metric: FinanceOverviewKpi;
+  readonly rangeLabel: string;
+}) {
+  const isOpen = metric.label.startsWith('Open ');
+  const hasOpenOverdue = isOpen && (metric.tone === 'danger' || metric.tone === 'warning');
+
+  return (
+    <AdminKpiCard
+      className={`finance-overview-kpi-card finance-overview-sla-card is-${metric.tone}`}
+      href={metric.href}
+      helper={metric.detail}
+      icon={isOpen ? Clock3 : CircleCheckBig}
+      iconSize={18}
+      kind={metric.tone === 'danger' ? 'risk' : hasOpenOverdue ? 'action' : isOpen ? 'live' : 'record'}
+      label={metric.label}
+      scope={hasOpenOverdue ? 'Needs action' : isOpen ? 'Current queue' : rangeLabel}
+      value={metric.value ?? '0'}
+    />
+  );
+}
+
+function financeOverviewKpiMeta(label: string, rangeLabel: string) {
+  if (label === 'Partner Payout Pending') {
+    return { kind: 'action', scope: 'Pending' } as const;
+  }
+
+  if (label === 'Payment Failed Amount' || label === 'Reconciliation Issues') {
+    return { kind: 'risk', scope: 'Needs action' } as const;
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
+}
+
+function financeOverviewControlMetricMeta(metric: FinanceOverviewControlMetric, rangeLabel: string) {
+  if (metric.label === 'Withdrawal matching') {
+    if (metric.tone === 'danger') return { kind: 'risk', scope: 'Needs action' } as const;
+    if (metric.tone === 'warning') return { kind: 'action', scope: 'Pending' } as const;
+    return { kind: 'live', scope: 'Current queue' } as const;
+  }
+
+  if (metric.label === 'Open finance risks' || metric.label === 'Wallet exposure') {
+    return metric.tone === 'success'
+      ? ({ kind: 'live', scope: 'Current queue' } as const)
+      : ({ kind: 'risk', scope: 'Needs action' } as const);
+  }
+
+  if (metric.label === 'Monthly close status') {
+    return metric.value === 'CLOSED'
+      ? ({ kind: 'record', scope: 'This month' } as const)
+      : ({ kind: 'action', scope: 'Pending' } as const);
+  }
+
+  return { kind: 'period', scope: rangeLabel } as const;
 }
 
 function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOverviewSection }) {
@@ -320,6 +428,7 @@ function FinanceOverviewSectionCard({ section }: { readonly section: FinanceOver
 
 function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem }) {
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
+  const meta = financeOverviewActionItemMeta(item);
 
   return (
     <AdminOverviewCommandCard
@@ -329,7 +438,9 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
       href={item.href}
       icon={<Icon size={17} aria-hidden="true" />}
       iconClassName="finance-overview-action-icon"
+      kind={meta.kind}
       label={item.label}
+      scope={meta.scope}
       trailing={<FinanceActionAmount item={item} />}
       value={item.countLabel}
     />
@@ -338,6 +449,7 @@ function FinanceActionItem({ item }: { readonly item: FinanceOverviewActionItem 
 
 function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionItem }) {
   const Icon = item.tone === 'danger' ? AlertTriangle : item.tone === 'warning' ? FileWarning : ShieldCheck;
+  const meta = financeOverviewActionItemMeta(item);
 
   return (
     <AdminOverviewCommandCard
@@ -347,11 +459,35 @@ function FinancePriorityItem({ item }: { readonly item: FinanceOverviewActionIte
       href={item.href}
       icon={<Icon size={18} aria-hidden="true" />}
       iconClassName={financeOverviewCommandIconClassName}
+      kind={meta.kind}
       label={item.label}
+      scope={meta.scope}
       trailing={<FinanceActionAmount item={item} />}
       value={item.countLabel}
     />
   );
+}
+
+function financeOverviewActionItemMeta(item: FinanceOverviewActionItem) {
+  if (
+    item.label === 'Finance reviews over 72h' ||
+    item.label === 'Payment clearing open' ||
+    item.label === 'Bank reconciliation unmatched' ||
+    item.label === 'Cash debt recovery' ||
+    item.label === 'Tax and closeout review'
+  ) {
+    return item.tone === 'success'
+      ? ({ kind: 'live', scope: 'Current queue' } as const)
+      : ({ kind: 'risk', scope: 'Needs action' } as const);
+  }
+
+  if (item.label === 'General ledger audit') {
+    return { kind: 'record', scope: 'All records' } as const;
+  }
+
+  return item.tone === 'success'
+    ? ({ kind: 'live', scope: 'Current queue' } as const)
+    : ({ kind: 'action', scope: 'Pending' } as const);
 }
 
 function FinanceActionAmount({ item }: { readonly item: FinanceOverviewActionItem }) {
@@ -406,6 +542,7 @@ const financeControlMetricIcons: Record<string, typeof CircleDollarSign> = {
   'Open finance risks': AlertTriangle,
   'Revenue separation': ReceiptText,
   'Wallet exposure': WalletCards,
+  'Withdrawal matching': Landmark,
 };
 
 const financeSectionIcons: Record<string, typeof CircleDollarSign> = {

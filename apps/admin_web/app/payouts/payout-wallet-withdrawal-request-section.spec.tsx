@@ -5,6 +5,13 @@ import { readFileSync } from 'node:fs';
 const sectionSource = readFileSync(new URL('./payout-wallet-withdrawal-request-section.tsx', import.meta.url), 'utf8');
 
 describe('PayoutWalletWithdrawalRequestSection', () => {
+  it('uses an eligible Finance approver select for paid withdrawal closeout', () => {
+    expect(sectionSource).toContain('label={`Separate Finance approver for ${partnerLabel(request)}`}');
+    expect(sectionSource).toContain("options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}");
+    expect(sectionSource).toContain('disabled={financeApproverOptions.length === 0}');
+    expect(sectionSource).not.toContain('placeholder="Approving admin id"');
+  });
+
   it('renders withdrawal requests with partner, bank, status, and finance actions', () => {
     const section = PayoutWalletWithdrawalRequestSection({
       requests: [
@@ -257,6 +264,81 @@ describe('PayoutWalletWithdrawalRequestSection', () => {
     expect(sectionSource).not.toContain('<div className="card admin-card payout-wallet-withdrawal-summary-card is-audit">');
     expect(sectionSource).not.toContain('<AdminCard className="payout-wallet-withdrawal-summary-card is-audit">');
     expect(sectionSource).not.toContain("'card admin-card payout-wallet-withdrawal-summary-card'");
+  });
+
+  it('shows paid withdrawals as a separately paginated bank reconciliation action queue', () => {
+    const request = {
+      amount: 500000,
+      bankAccount: null,
+      bankAccountId: null,
+      createdAt: '2026-07-15T09:00:00.000Z',
+      currency: 'VND',
+      id: 'withdrawal-paid-unmatched',
+      paidAt: '2026-07-15T10:00:00.000Z',
+      reviewedByAdminId: 'finance-maker-1',
+      paidBy: { id: 'finance-maker-1', fullName: 'Finance Maker' },
+      approvalAdminId: 'finance-approver-2',
+      approvalAdmin: { id: 'finance-approver-2', fullName: 'Finance Approver' },
+      providerProfileId: 'provider-paid',
+      reconciliationState: 'UNMATCHED',
+      status: 'PAID',
+      transferRef: 'VCB-PAID-500',
+    } satisfies AdminProviderWalletWithdrawalRequest;
+    const section = PayoutWalletWithdrawalRequestSection({
+      activeReconciliation: 'unmatched',
+      activeStatus: 'PAID',
+      pagination: {
+        from: 1,
+        page: 1,
+        pageSize: 10,
+        rows: [request],
+        to: 1,
+        totalPages: 2,
+        totalRows: 11,
+      },
+      paginationHrefForPage: (page) => `/payouts?withdrawalPage=${page}`,
+      range: '30d',
+      requests: [request],
+      summary: {
+        bankTransferPending: 0,
+        bankTransferPendingAmount: 0,
+        currency: 'VND',
+        lockReleased: 0,
+        paidAmount: 1_500_000,
+        paidReconciled: 2,
+        paidReconciledAmount: 1_000_000,
+        paidUnreconciled: 11,
+        paidUnreconciledAmount: 5_500_000,
+        pendingWithdrawalPayableAmount: 0,
+        requested: 0,
+        requestedAmount: 0,
+        returnedAmount: 0,
+        reviewRequired: 0,
+        total: 13,
+        totalAmount: 6_500_000,
+      },
+      updateWithdrawalRequestAction: async () => undefined,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const hrefs = hrefsIn(section);
+
+    expect(rendered).toContain('Paid / bank match pending 11');
+    expect(rendered).toContain('1 bank match pending');
+    expect(rendered).toContain('Bank match pending');
+    expect(rendered).toContain('Paid by Finance Maker');
+    expect(rendered).toContain('Approved by Finance Approver');
+    expect(rendered).toContain('Showing 1 to 1 of 11 withdrawals');
+    expect(hrefs).toContain(
+      '/payouts?range=30d&withdrawalReconciliation=unmatched&withdrawalStatus=PAID',
+    );
+    expect(hrefs).toContain(
+      '/finance-tax/bank-reconciliation?range=30d&review=unmatched&q=VCB-PAID-500',
+    );
+    expect(hrefs).toContain(
+      '/finance-tax/general-ledger?q=withdrawal-paid-unmatched',
+    );
+    expect(hrefs).toContain('/payouts?withdrawalPage=2');
   });
 
   it('scopes withdrawal summary typography to direct summary-card children', () => {

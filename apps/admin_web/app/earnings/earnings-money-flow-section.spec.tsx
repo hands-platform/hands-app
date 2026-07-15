@@ -24,11 +24,13 @@ describe('EarningsMoneyFlowSection', () => {
         },
       ],
       currency: 'VND',
+      rangeLabel: 'Last 7 days',
     });
 
     const rendered = textContent(section);
 
     expect(rendered).toContain('Money flow command center');
+    expect(rendered).toContain('Last 7 days');
     expect(rendered).toContain('1.500.000 VND');
     expect(rendered).toContain('Cash debt');
     expect(rendered).toContain('Review cash fee settlement before payout.');
@@ -42,12 +44,20 @@ describe('EarningsMoneyFlowSection', () => {
 
   it('renders without checks when no finance checks are provided', () => {
     const section = EarningsMoneyFlowSection({
-      cards: [],
+      cards: [
+        {
+          amount: 120000,
+          detail: 'Customer charge represented by earning rows.',
+          label: 'Gross',
+        },
+      ],
       checks: [],
       currency: 'VND',
     });
 
     expect(textContent(section)).toContain('Money flow command center');
+    expect(textContent(section)).toContain('Selected range');
+    expect(textContent(section)).not.toContain('Current view');
   });
 
   it('does not duplicate the base pill class for finance check badges', () => {

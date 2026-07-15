@@ -26,6 +26,8 @@ describe('PaymentFilterBoardSection', () => {
     expect(rendered).toContain('Payment operation filters');
     expect(rendered).toContain('Payment date range: Last 7 days');
     expect(rendered).toContain('Active queue: Capture review - authorized payments tied to completed services.');
+    expect(rendered).toContain('Range: Last 7 days');
+    expect(rendered).toContain('Queue: Capture review');
     expect(rendered).toContain('Showing 4 of 12');
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('Last 7 days');
@@ -34,8 +36,11 @@ describe('PaymentFilterBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
+        'booking-date-filter-bar payment-filter-group admin-mb-12',
+        'payment-filter-group-label',
+        'booking-date-filter-buttons payment-filter-buttons',
+        'booking-date-filter-button is-active',
         'pill pill-warn',
-        'pill pill-info',
       ]),
     );
   });
@@ -63,9 +68,11 @@ describe('PaymentFilterBoardSection', () => {
   it('uses shared badge link atoms for payment filter shortcuts', () => {
     const source = readFileSync(join(process.cwd(), 'app/payments/payment-filter-board-section.tsx'), 'utf8');
 
-    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).toContain('AdminSegmentedControl');
+    expect(source).toContain('AdminFilterSummary');
     expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('<div className="participant-list">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');

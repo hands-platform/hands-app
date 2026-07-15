@@ -3,6 +3,7 @@ import { AlertTriangle, CircleDollarSign, ReceiptText, ShieldCheck } from 'lucid
 import type { AdminPlatformVatSummary } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { MoneyText } from '../../../components/money-text';
 import { StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
@@ -35,6 +36,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
     emptyPlatformVatSummary(filters.period),
   );
   const csvHref = buildPlatformVatExportHref(filters);
+  const periodScope = `Period ${filters.period}`;
 
   return (
     <AdminPageTemplate
@@ -65,6 +67,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
           icon={ReceiptText}
           label="Output VAT"
+          scope={periodScope}
           tone={summary.companyOutputVatTotal > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={summary.companyOutputVatTotal} currency={summary.currency} />}
         />
@@ -73,6 +76,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           href="/finance-tax/booking-settlement-audit"
           icon={CircleDollarSign}
           label="Net revenue"
+          scope={periodScope}
           tone={summary.platformFeeNetRevenueTotal > 0 ? 'success' : 'neutral'}
           value={<MoneyText amount={summary.platformFeeNetRevenueTotal} currency={summary.currency} />}
         />
@@ -81,6 +85,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
           icon={AlertTriangle}
           label="Formula delta"
+          scope={summary.netRevenueDelta === 0 ? periodScope : 'Needs action'}
           tone={summary.netRevenueDelta === 0 ? 'success' : 'danger'}
           value={<MoneyText amount={summary.netRevenueDelta} currency={summary.currency} />}
         />
@@ -89,6 +94,7 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
           href={`/finance-tax/platform-vat?period=${encodeURIComponent(filters.period)}`}
           icon={ShieldCheck}
           label="VAT buckets"
+          scope={periodScope}
           tone={summary.rateBreakdown.length > 0 ? 'info' : 'neutral'}
           value={`${summary.rateBreakdown.length} bucket(s)`}
         />
@@ -102,6 +108,11 @@ export default async function PlatformVatPage({ searchParams }: PlatformVatPageP
         title="Platform VAT period"
       >
         <FinancePeriodFilterForm period={filters.period} />
+        <AdminFilterSummary
+          ariaLabel="Active platform VAT filters"
+          labels={[`Period: ${filters.period}`, `Currency: ${summary.currency}`]}
+          tone="info"
+        />
       </AdminFilterPanel>
 
       <FinanceTablePanel

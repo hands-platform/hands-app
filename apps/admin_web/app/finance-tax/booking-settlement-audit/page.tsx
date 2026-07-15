@@ -12,7 +12,7 @@ import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
 import { MoneyText } from '../../../components/money-text';
-import { StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../../components/status-badge';
 import { dateRangeLabel } from '../../../lib/date-range';
 import { shortId } from '../../../lib/admin-format';
 import { FinanceDataTable } from '../finance-data-table';
@@ -23,6 +23,7 @@ import { FinanceListCommandBoard, FinanceListCommandCard, formatFinancePercent }
 import { financeTaxCloseoutStatusPill } from '../finance-status-badge-model';
 import { FinanceTablePaginationFooter } from '../finance-table-pagination-footer';
 import { FinanceTablePanel } from '../finance-table-panel';
+import { paymentFeeEvidenceState } from '../payment-fee-evidence-model';
 import {
   BOOKING_SETTLEMENT_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
@@ -61,6 +62,8 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
   const csvHref = buildBookingSettlementAuditExportHref(filters);
   const openTaxRatio = formatFinancePercent(summary.openTaxCount, summary.count);
   const paidTaxRatio = formatFinancePercent(summary.paidTaxCount, summary.count);
+  const rangeScope = dateRangeLabel(filters.range);
+  const periodScope = filters.period ? ` Monthly period: ${filters.period}.` : '';
 
   return (
     <AdminPageTemplate
@@ -91,6 +94,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' })}
           icon={AlertTriangle}
           label="Open tax ratio"
+          scope={rangeScope}
           tone={summary.openTaxCount > 0 ? 'warning' : 'success'}
           value={openTaxRatio}
         />
@@ -99,6 +103,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'paid' })}
           icon={CheckCircle2}
           label="Paid tax ratio"
+          scope={rangeScope}
           tone={summary.paidTaxCount > 0 ? 'success' : 'neutral'}
           value={paidTaxRatio}
         />
@@ -107,6 +112,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           href={bookingSettlementAuditHref({ ...filters, page: 1, review: 'posted' })}
           icon={ShieldCheck}
           label="Withholding evidence"
+          scope={rangeScope}
           tone={summary.partnerWithholdingTotal > 0 ? 'primary' : 'neutral'}
           value={<MoneyText amount={summary.partnerWithholdingTotal} currency={summary.currency} />}
         />
@@ -115,6 +121,7 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
           href={summary.openTaxCount > 0 ? bookingSettlementAuditHref({ ...filters, page: 1, review: 'open' }) : '/finance-overview'}
           icon={ReceiptText}
           label="Audit queue"
+          scope={summary.openTaxCount > 0 ? 'Needs action' : rangeScope}
           tone={summary.openTaxCount > 0 ? 'danger' : 'success'}
           value={summary.openTaxCount > 0 ? 'Needs review' : 'Clear'}
         />
@@ -122,13 +129,63 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.`}
+        description={`Showing page ${pagination.page} of ${pagination.totalPages}. Range: ${dateRangeLabel(filters.range)}. Queue: ${reviewLabel(filters.review)}.${periodScope}`}
         resultLabel={`${pagination.pageSize} per page`}
         resultTone="success"
         title="Settlement audit filters"
       >
         <FinanceListFilterLinks
           groups={[
+            ...(filters.period
+              ? [
+                  {
+                    id: 'period',
+                    links: [
+                      {
+                        active: true,
+                        activePillClassName: 'pill-info' as const,
+                        href: bookingSettlementAuditHref({ ...filters, page: 1 }),
+                        id: filters.period,
+                        label: `Period ${filters.period}`,
+                      },
+                      {
+                        active: false,
+                        activePillClassName: 'pill-info' as const,
+                        href: bookingSettlementAuditHref({ ...filters, page: 1, period: undefined }),
+                        id: 'all-periods',
+                        label: 'All periods',
+                      },
+                    ],
+                  },
+                ]
+              : []),
+            ...(filters.paymentMethod
+              ? [
+                  {
+                    id: 'payment-method',
+                    links: [
+                      {
+                        active: true,
+                        activePillClassName: 'pill-info' as const,
+                        href: bookingSettlementAuditHref({ ...filters, page: 1 }),
+                        id: filters.paymentMethod,
+                        label: filters.paymentMethod,
+                      },
+                      {
+                        active: false,
+                        activePillClassName: 'pill-info' as const,
+                        href: bookingSettlementAuditHref({
+                          ...filters,
+                          page: 1,
+                          paymentMethod: undefined,
+                        }),
+                        id: 'all-methods',
+                        label: 'All methods',
+                      },
+                    ],
+                  },
+                ]
+              : []),
             {
               className: 'admin-mt-12',
               id: 'range',
@@ -176,8 +233,10 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
             headers={['Booking', 'Customer', 'Partner', 'Payment', 'Coupon evidence', 'Partner tax', 'HANDS fee', 'Status', 'Evidence']}
             rowCount={tableRows.length}
           >
-            {tableRows.map((snapshot) => (
-              <tr key={snapshot.id}>
+            {tableRows.map((snapshot) => {
+              const paymentFeeEvidence = paymentFeeEvidenceState(snapshot);
+              return (
+                <tr key={snapshot.id}>
                   <td>
                     <AdminTextLink href={`/bookings/${snapshot.bookingId}`}>
                       {shortId(snapshot.bookingId)}
@@ -220,6 +279,10 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                       Processing{' '}
                       <MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />
                     </div>
+                    <div className="admin-mt-8">
+                      <StatusBadge tone={paymentFeeEvidence.tone}>{paymentFeeEvidence.label}</StatusBadge>
+                    </div>
+                    <div className="muted admin-mt-6">{paymentFeeEvidence.detail}</div>
                   </td>
                   <td>
                     <AdminTextLink href={bookingSettlementAuditDetailHref(snapshot.id)}>
@@ -274,7 +337,8 @@ export default async function BookingSettlementAuditPage({ searchParams }: Booki
                     </div>
                   </td>
                 </tr>
-            ))}
+              );
+            })}
           </FinanceDataTable>
         <FinanceTablePaginationFooter
           ariaLabel="Booking settlement audit pages"

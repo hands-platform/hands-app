@@ -56,6 +56,26 @@ describe('PayoutBatchTable', () => {
           earningsHint: '2/2 linked to this batch',
           id: 'batch-123456',
           notes: 'Manual transfer',
+          operatorEvidence: [
+            {
+              fallbackId: 'creator-1',
+              key: 'created-by',
+              label: 'Created by',
+              operator: { fullName: 'Finance Creator', id: 'creator-1' },
+            },
+            {
+              fallbackId: 'maker-1',
+              key: 'paid-by',
+              label: 'Paid by',
+              operator: { fullName: 'Finance Maker', id: 'maker-1' },
+            },
+            {
+              fallbackId: 'approver-2',
+              key: 'approved-by',
+              label: 'Approved by',
+              operator: { fullName: 'Finance Approver', id: 'approver-2' },
+            },
+          ],
           paidAt: null,
           paidAtRelativeLabel: 'Awaiting settlement',
           partnerChecksHref: '/partners/partner-1',
@@ -90,9 +110,13 @@ describe('PayoutBatchTable', () => {
 
     const resolvedTable = resolveElement(table);
     const rendered = textContent(resolvedTable);
+    const normalizedRendered = rendered.replace(/\s+/g, ' ').trim();
 
     expect(readRecord(resolvedTable)?.type).toBe('table');
     expect(rendered).toContain('Partner One');
+    expect(normalizedRendered).toContain('Created by Finance Creator');
+    expect(normalizedRendered).toContain('Paid by Finance Maker');
+    expect(normalizedRendered).toContain('Approved by Finance Approver');
     expect(rendered).toContain('Payout action execution map');
     expect(rendered).toContain('Resolve blockers before paid');
     expect(rendered).toContain('Foot Massage');

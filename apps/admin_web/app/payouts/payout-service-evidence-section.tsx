@@ -44,6 +44,8 @@ export function PayoutServiceEvidenceSection({
         </AdminTextLink>
       </AdminFilterChipGroup>
       <AdminTraceSummary
+        defaultKind="record"
+        defaultScope="Payout records"
         metrics={[
           { label: 'Service options', value: items.length },
           { label: 'Batches', value: batchCount },

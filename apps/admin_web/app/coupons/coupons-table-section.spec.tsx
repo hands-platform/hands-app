@@ -16,7 +16,12 @@ describe('CouponsTableSection', () => {
 
     const rendered = textContent(section);
 
-    expect(rendered).toContain('Running Coupons');
+    expect(rendered).toContain('Live checkout coupons');
+    expect(rendered).toContain('Live now: 1 coupon(s)');
+    expect(rendered).toContain('Upcoming coupon launches');
+    expect(rendered).toContain('Pending launch: 0 coupon(s)');
+    expect(rendered).toContain('Coupon records');
+    expect(rendered).toContain('Records: 0 coupon(s)');
     expect(rendered).toContain('WELCOME10');
     expect(rendered).toContain('10% off');
     expect(rendered).toContain('Used 1 booking(s)');
@@ -33,8 +38,9 @@ describe('CouponsTableSection', () => {
     expect(hrefsIn(section)).toContain('/coupons?confirm=delete&couponId=coupon-1');
     expect(elementTypesIn(section)).not.toContain('article');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['card', 'admin-filter-panel', 'admin-filter-panel-body']),
+      expect.arrayContaining(['card', 'admin-section', 'admin-section-body']),
     );
+    expect(classNamesIn(section)).not.toContain('admin-filter-panel');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['card', 'admin-card', 'coupon-management-section']),
     );

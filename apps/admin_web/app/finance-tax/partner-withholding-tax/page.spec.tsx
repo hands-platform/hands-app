@@ -30,6 +30,9 @@ describe('PartnerWithholdingTaxPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Withholding tax period');
+    expect(markup).toContain('Active withholding tax filters');
+    expect(markup).toContain('Period: 2026-06');
+    expect(markup).toContain('Rows: 25');
     expect(markup).toContain('Withholding command board');
     expect(markup).toContain('Partner tax payable');
     expect(markup).toContain('Taxable partners');

@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 
 import type { AdminPaymentDetail } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import PaymentDetailPage from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
@@ -16,11 +17,18 @@ vi.mock('../../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('PaymentDetailPage', () => {
   beforeEach(() => {
     mockedAdminGet.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockReset();
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({ id: 'operator-current', roles: ['ADMIN'] } as never);
   });
 
   it('renders payment evidence sections with Vuexy operation panels', async () => {
@@ -151,6 +159,46 @@ describe('PaymentDetailPage', () => {
 
     expect(source).toContain('AdminInlineFallback');
     expect(source).not.toContain('<span className="muted">No payload saved.</span>');
+  });
+
+  it('offers only a separate Finance approver for refund execution', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/payments/payment-1') return paymentDetail();
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') {
+        return [
+          {
+            email: 'current@example.com',
+            fullName: 'Current Operator',
+            id: 'operator-current',
+            phone: '',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+          {
+            email: 'approver@example.com',
+            fullName: 'Refund Approver',
+            id: 'approver-2',
+            phone: '',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+        ] as never;
+      }
+      return fallback;
+    });
+
+    const page = await PaymentDetailPage({
+      params: Promise.resolve({ id: 'payment-1' }),
+      searchParams: Promise.resolve({ confirm: 'refund' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Separate Finance approver');
+    expect(markup).toContain('Refund Approver · approver@example.com');
+    expect(markup).not.toContain('Current Operator · current@example.com');
+    expect(markup).not.toContain('Different admin user id');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
+      [],
+    );
   });
 });
 

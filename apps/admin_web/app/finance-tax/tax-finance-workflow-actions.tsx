@@ -25,7 +25,7 @@ export function TaxFinanceWorkflowActions({
           <details className="tax-finance-workflow-dropdown tax-finance-workflow-export-dropdown">
             <summary
               aria-label="Finance export actions"
-              className="admin-form-control-button button button-secondary tax-finance-workflow-dropdown-trigger"
+              className="admin-form-control-summary button-secondary tax-finance-workflow-dropdown-trigger"
             >
               <span>Export CSV</span>
               <ChevronDown aria-hidden="true" size={16} />
@@ -43,7 +43,7 @@ export function TaxFinanceWorkflowActions({
         <details className="tax-finance-workflow-dropdown">
           <summary
             aria-label="More finance workflow actions"
-            className="admin-form-control-button button button-secondary tax-finance-workflow-dropdown-trigger"
+            className="admin-form-control-summary button-secondary tax-finance-workflow-dropdown-trigger"
           >
             <span>More finance pages</span>
             <ChevronDown aria-hidden="true" size={16} />

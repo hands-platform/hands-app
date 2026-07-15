@@ -3,6 +3,10 @@ import type { ReactNode } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import {
+  AdminFinanceOperatorEvidence,
+  type AdminFinanceOperatorEvidenceLine,
+} from '../../components/admin-finance-operator-evidence';
 import { AdminFormControlButton, AdminFormInput } from '../../components/admin-form-controls';
 import { AdminActionsForm } from '../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
@@ -58,6 +62,7 @@ export type PayoutBatchTableRow = {
   readonly earningsHint: string;
   readonly id: string;
   readonly notes: string;
+  readonly operatorEvidence?: readonly AdminFinanceOperatorEvidenceLine[];
   readonly opsHint: string;
   readonly opsSignal: string;
   readonly opsSignalClassName: string;
@@ -126,6 +131,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
           <td>
             <div>{row.statusLabel}</div>
             <div className="muted">{row.phase}</div>
+            <AdminFinanceOperatorEvidence lines={row.operatorEvidence ?? []} />
           </td>
           <td>
             <AdminSignal

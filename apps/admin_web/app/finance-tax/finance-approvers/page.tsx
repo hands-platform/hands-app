@@ -5,9 +5,9 @@ import { adminGet } from '../../../lib/admin-api';
 import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineActionForm } from '../../../components/admin-inline-action-form';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
-import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
 import { DateTimeText } from '../../../components/date-time-text';
 import { StatusBadge } from '../../../components/status-badge';
 import { ADMIN_OPERATOR_BASE_ROLE, FINANCE_APPROVER_ROLE } from '../../../lib/admin-operator-permissions';
@@ -63,6 +63,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
           href="/finance-tax/finance-approvers"
           icon={UserCheck}
           label="Approver coverage"
+          scope="Current policy"
           tone={approverCount > 0 ? 'success' : 'danger'}
           value={formatFinancePercent(approverCount, adminUsers.length)}
         />
@@ -71,6 +72,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
           href="/admin-operators"
           icon={UsersRound}
           label="Admin operators"
+          scope="Current policy"
           tone={adminUsers.length > 0 ? 'info' : 'warning'}
           value={String(adminUsers.length)}
         />
@@ -79,6 +81,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
           href="/finance-tax/finance-approvers"
           icon={UserCog}
           label="Non-approver admins"
+          scope={nonApproverCount > 0 ? 'Pending' : 'Current policy'}
           tone={nonApproverCount > 0 ? 'warning' : 'success'}
           value={String(nonApproverCount)}
         />
@@ -87,26 +90,28 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
           href="/finance-tax/finance-approvers"
           icon={ShieldCheck}
           label="Dual-control guard"
+          scope="Current policy"
           tone="success"
           value="Protected"
         />
       </FinanceListCommandBoard>
 
       {roleNotice ? (
-        <AdminFilterPanel
+        <AdminNoticeCard
           className={`admin-mb-16 ${roleNotice === 'updated' ? 'surface-success' : 'surface-danger'}`}
-          description={roleNoticeMessage(roleNotice)}
-          resultLabel={roleNotice}
-          resultTone={roleNotice === 'updated' ? 'success' : 'danger'}
-          title="Role update notice"
-        />
+          tone={roleNotice === 'updated' ? 'success' : 'danger'}
+        >
+          <strong>Role update notice</strong>
+          <p className="muted">{roleNoticeMessage(roleNotice)}</p>
+          <StatusBadge tone={roleNotice === 'updated' ? 'success' : 'danger'}>{roleNotice}</StatusBadge>
+        </AdminNoticeCard>
       ) : null}
 
-      <AdminFilterPanel
+      <AdminSection
         className="admin-mb-16"
         description="Finance approver is not a generic menu count. It is a second-control role for actions that move money, recognize tax, or close finance evidence."
-        resultLabel="Dual control"
-        resultTone="warning"
+        statusLabel="Dual control"
+        statusTone="warning"
         title="Finance approver operating rule"
       >
         <FinanceStageList
@@ -137,7 +142,7 @@ export default async function FinanceApproversPage({ searchParams }: FinanceAppr
             },
           ]}
         />
-      </AdminFilterPanel>
+      </AdminSection>
 
       <FinanceTablePanel
         grouped

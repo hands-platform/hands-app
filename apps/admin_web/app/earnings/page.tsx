@@ -1,11 +1,11 @@
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 import {
@@ -49,6 +49,7 @@ type EarningsPageProps = {
 export default async function EarningsPage({ searchParams }: EarningsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildEarningFilters(params);
+  const earningsRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildEarningOperationsApiHrefs(filters);
   const [apiSummary, earnings, payoutBatches] = await Promise.all([
     adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, emptySummary),
@@ -112,37 +113,51 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       description="Partner earning ledger for service revenue, HANDS fee, tax withholding, cash debt, and payout batching."
       metrics={[
         {
+          kind: 'period',
           label: 'Gross',
+          scope: earningsRangeScope,
           value: <MoneyText amount={summary.grossAmount} currency={summary.currency} />,
           helper: 'Customer charge represented by earning rows.',
         },
         {
+          kind: 'period',
           label: 'Platform fee',
+          scope: earningsRangeScope,
           value: <MoneyText amount={summary.platformFee} currency={summary.currency} />,
           helper: 'HANDS fee before tax and closeout review.',
         },
         {
+          kind: 'period',
           label: 'Tax withheld',
+          scope: earningsRangeScope,
           value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
           helper: 'Tax amount captured from policy snapshots.',
         },
         {
+          kind: 'period',
           label: 'Partner net',
+          scope: earningsRangeScope,
           value: <MoneyText amount={summary.netAmount} currency={summary.currency} />,
           helper: 'Net Partner earning after fees and tax.',
         },
         {
+          kind: 'action',
           label: 'Pending net',
+          scope: 'Pending',
           value: <MoneyText amount={summary.pendingNetAmount} currency={summary.currency} />,
           helper: 'Pending positive payout or cash debt.',
         },
         {
+          kind: 'action',
           label: 'Available net',
+          scope: 'Pending',
           value: <MoneyText amount={summary.availableNetAmount} currency={summary.currency} />,
           helper: 'Eligible for payout batching.',
         },
         {
+          kind: 'record',
           label: 'Paid net',
+          scope: 'Payout records',
           value: <MoneyText amount={summary.paidNetAmount} currency={summary.currency} />,
           helper: 'Already settled earning total.',
         },
@@ -165,35 +180,42 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       <AdminFilterPanel
         className="admin-mb-16"
         description={`Range: ${dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches on this page use record dates.`}
+        footer={
+          <AdminTextLink href="/finance-closeout">
+            Open finance closeout
+          </AdminTextLink>
+        }
         resultLabel={`${summary.count} row(s)`}
         resultTone={summary.count > 0 ? 'info' : 'warning'}
         title="Earnings date range"
       >
-        <AdminFilterChipGroup ariaLabel="Earnings related navigation" className="admin-mb-12">
-          <AdminTextLink href="/finance-closeout">
-            Open finance closeout
-          </AdminTextLink>
-        </AdminFilterChipGroup>
-        <AdminFilterChipGroup ariaLabel="Earnings date range" className="admin-mt-12">
-          {[
-            { href: '/earnings?range=all', label: 'All dates', range: 'all' },
-            { href: '/earnings?range=today', label: 'Today', range: 'today' },
-            { href: '/earnings?range=7d', label: 'Last 7 days', range: '7d' },
-            { href: '/earnings?range=30d', label: 'Last 30 days', range: '30d' },
-          ].map((option) => (
-            <StatusBadgeLink
-              ariaCurrent={option.range === filters.range ? 'page' : undefined}
-              href={option.href}
-              key={option.range}
-              tone={option.range === filters.range ? 'info' : 'neutral'}
-            >
-              {option.label}
-            </StatusBadgeLink>
-          ))}
-        </AdminFilterChipGroup>
+        <div className="booking-date-filter-bar earnings-range-filter-group admin-mt-12">
+          <span className="earnings-range-filter-group-label">Range</span>
+          <AdminSegmentedControl
+            activeValue={filters.range}
+            ariaLabel="Earnings date range"
+            className="earnings-range-filter-buttons"
+            options={[
+              { href: '/earnings?range=all', label: 'All dates', value: 'all' },
+              { href: '/earnings?range=today', label: 'Today', value: 'today' },
+              { href: '/earnings?range=7d', label: 'Last 7 days', value: '7d' },
+              { href: '/earnings?range=30d', label: 'Last 30 days', value: '30d' },
+            ]}
+          />
+        </div>
+        <AdminFilterSummary
+          ariaLabel="Active earnings filters"
+          labels={[`Range: ${dateRangeLabel(filters.range)}`]}
+          tone="info"
+        />
       </AdminFilterPanel>
 
-      <EarningsMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
+      <EarningsMoneyFlowSection
+        cards={moneyFlowCards}
+        checks={moneyFlowChecks}
+        currency={summary.currency}
+        rangeLabel={dateRangeLabel(filters.range)}
+      />
       <EarningsFinanceQueueSection signals={financeSignals} />
       <EarningsServiceBridgeSection currency={summary.currency} items={serviceBridge} />
       <EarningsPartnerPayoutQueueSection groups={partnerPayoutQueueGroups} />

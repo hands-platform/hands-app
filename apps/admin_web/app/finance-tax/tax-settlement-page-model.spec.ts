@@ -122,6 +122,34 @@ describe('tax settlement page model', () => {
     });
   });
 
+  it('builds a monthly payment fee evidence queue without loading all settlement rows', () => {
+    const filters = readBookingSettlementFilters({
+      period: '2026-07',
+      paymentMethod: 'momo',
+      range: 'all',
+      review: 'payment-fee-evidence',
+      take: '25',
+    });
+
+    expect(filters).toEqual({
+      page: 1,
+      paymentMethod: 'MOMO',
+      period: '2026-07',
+      range: 'all',
+      review: 'payment-fee-evidence',
+      take: 25,
+    });
+    expect(buildBookingSettlementSnapshotApiHref(filters)).toBe(
+      '/admin/booking-settlement-snapshots?range=all&review=payment-fee-evidence&period=2026-07&paymentMethod=MOMO&take=25',
+    );
+    expect(buildBookingSettlementSnapshotSummaryApiHref(filters)).toBe(
+      '/admin/booking-settlement-snapshots/summary?range=all&review=payment-fee-evidence&period=2026-07&paymentMethod=MOMO',
+    );
+    expect(bookingSettlementAuditHref(filters)).toBe(
+      '/finance-tax/booking-settlement-audit?range=all&review=payment-fee-evidence&period=2026-07&paymentMethod=MOMO&take=25',
+    );
+  });
+
   it('keeps partner withholding tax grouped by explicit monthly period', () => {
     const filters = readPartnerWithholdingTaxFilters({ period: '2026-06', take: '75' });
 
@@ -220,6 +248,7 @@ describe('tax settlement page model', () => {
 
     expect(links.map((link) => [link.label, link.href])).toEqual([
       ['Tax overview', '/finance-tax'],
+      ['Finance approval queue', '/finance-tax/approval-queue'],
       ['Booking settlement audit', '/finance-tax/booking-settlement-audit?range=7d&review=paid&take=50'],
       ['Settlement reversals', '/finance-tax/settlement-reversals?range=7d&take=50'],
       ['General ledger', '/finance-tax/general-ledger?range=7d&take=50'],
@@ -383,7 +412,7 @@ describe('tax settlement page model', () => {
     });
   });
 
-  it('builds finance detail trace links back to settlement and reversal queues', () => {
+  it('builds finance detail trace links to the exact settlement and reversal records', () => {
     const links = buildFinanceSettlementTraceLinks({
       settlementSnapshotId: 'settlement-1',
       settlementReversalEntryId: 'reversal-1',
@@ -396,7 +425,7 @@ describe('tax settlement page model', () => {
         value: 'settleme',
       },
       {
-        href: '/finance-tax/settlement-reversals?range=all&review=reversed',
+        href: '/finance-tax/settlement-reversals/reversal-1',
         label: 'Settlement reversal',
         value: 'reversal',
       },
@@ -559,6 +588,9 @@ describe('tax settlement page model', () => {
       partnerPitWithheldTotal: 24_000,
       partnerWithholdingTotal: 84_000,
       paymentProcessingFeeTotal: 0,
+      paymentFeeReviewFlagCount: 0,
+      partnerDepositReconciliationOpenCount: 0,
+      partnerDepositReconciliationOpenAmount: 0,
       couponSettlementCount: 1,
       couponDiscountAmountTotal: 60_000,
       companyCouponExpenseTotal: 60_000,
@@ -644,6 +676,9 @@ describe('tax settlement page model', () => {
       ...emptyMonthlyTaxClosingSummary('2026-06'),
       cashDebtTotal: 170_000,
       couponReviewFlagCount: 2,
+      paymentFeeReviewFlagCount: 4,
+      partnerDepositReconciliationOpenCount: 2,
+      partnerDepositReconciliationOpenAmount: 250_000,
       openTaxCount: 3,
       reconciliationDelta: 50_000,
       netRevenueDelta: 10_000,
@@ -654,6 +689,8 @@ describe('tax settlement page model', () => {
     expect(links.map((link) => [link.label, link.href, link.count, link.amount, link.currency, link.amountSuffix, link.signal])).toEqual([
       ['Open tax rows', '/finance-tax/booking-settlement-audit?range=30d&review=open', 3, null, null, null, 'Tax review'],
       ['Coupon review flags', '/finance-tax/coupon-finance?range=30d&review=open', 2, null, null, null, 'Coupon review'],
+      ['Payment fee evidence', '/finance-tax/booking-settlement-audit?range=all&review=payment-fee-evidence&period=2026-06', 4, null, null, null, 'Fee policy review'],
+      ['Partner deposit reconciliation', '/finance-tax/partner-bank-deposits?period=2026-06&review=needs-reconciliation', 2, 250_000, 'VND', null, 'Bank evidence'],
       ['Cash debt gate', '/cash-settlements?range=30d', null, 170_000, 'VND', null, 'Cash debt'],
       ['Reconciliation deltas', '/finance-tax/monthly-tax-closing?period=2026-06', 2, 60_000, 'VND', null, 'Formula check'],
     ]);
@@ -687,6 +724,9 @@ describe('tax settlement page model', () => {
         partnerPitWithheldTotal: 24000,
         partnerWithholdingTotal: 84000,
         paymentProcessingFeeTotal: 0,
+        paymentFeeReviewFlagCount: 1,
+        partnerDepositReconciliationOpenCount: 0,
+        partnerDepositReconciliationOpenAmount: 0,
         couponSettlementCount: 1,
         couponDiscountAmountTotal: 60000,
         companyCouponExpenseTotal: 60000,
@@ -729,6 +769,8 @@ describe('tax settlement page model', () => {
     expect(summaryCsv).toContain('"1200000"');
     expect(summaryCsv).toContain('"partner_withholding_total"');
     expect(summaryCsv).toContain('"84000"');
+    expect(summaryCsv).toContain('"partner_deposit_reconciliation_open_count"');
+    expect(summaryCsv).toContain('"partner_deposit_reconciliation_open_amount"');
     expect(rowsCsv).toContain('"closing-1"');
     expect(rowsCsv).toContain('"company_output_vat_total"');
     expect(rowsCsv).toContain('"18962"');
@@ -782,6 +824,8 @@ describe('tax settlement page model', () => {
           platformFeeNetRevenue: 118_519,
           companyOutputVat: 9_481,
           paymentProcessingFee: 0,
+          paymentFeePolicyVersionId: null,
+          paymentFeeRuleSnapshot: { reason: 'No active payment fee policy matched MOMO.' },
           settlementStatus: 'POSTED',
           taxStatus: 'OPEN',
           monthlyPeriod: '2026-06',
@@ -816,6 +860,8 @@ describe('tax settlement page model', () => {
     expect(rowsCsv).toContain('"128000"');
     expect(rowsCsv).toContain('"118519"');
     expect(rowsCsv).toContain('"9481"');
+    expect(rowsCsv).toContain('"payment_fee_policy_version_id","payment_fee_evidence_state","payment_fee_evidence_reason"');
+    expect(rowsCsv).toContain('"Policy missing","No active payment fee policy matched MOMO."');
   });
 
   it('exports a monthly accounting journal CSV from visible closing totals', () => {
@@ -835,6 +881,9 @@ describe('tax settlement page model', () => {
         partnerPitWithheldTotal: 24_000,
         partnerWithholdingTotal: 84_000,
         paymentProcessingFeeTotal: 10_000,
+        paymentFeeReviewFlagCount: 1,
+        partnerDepositReconciliationOpenCount: 0,
+        partnerDepositReconciliationOpenAmount: 0,
         couponSettlementCount: 1,
         couponDiscountAmountTotal: 60_000,
         companyCouponExpenseTotal: 60_000,
@@ -894,6 +943,22 @@ describe('tax settlement page model', () => {
         byPaymentMethod: [],
         byPayer: [],
         byTreatment: [],
+        policyReadiness: {
+          activePolicy: null,
+          configuredMethods: [],
+          missingMethods: ['MOMO', 'VNPAY', 'CASH', 'CARD', 'BANK_TRANSFER', 'CUSTOMER_WALLET', 'MANUAL'],
+          status: 'MISSING_ACTIVE_POLICY',
+        },
+        remediationPreview: {
+          status: 'BLOCKED',
+          policyVersionId: null,
+          blockers: [],
+          evidenceReviewCount: 0,
+          evidenceCustomerPaymentAmountTotal: 0,
+          recordedFeeTotal: 0,
+          expectedFeeTotal: null,
+          delta: null,
+        },
       }).map((metric) => [metric.label, metric.value]),
     ).toEqual([
       ['Settlements', 2],
@@ -935,8 +1000,13 @@ describe('tax settlement page model', () => {
           {
             paymentMethod: 'MOMO',
             settlementCount: 1,
+            evidenceReviewCount: 1,
             customerPaymentAmountTotal: 600000,
+            evidenceCustomerPaymentAmountTotal: 600000,
             paymentProcessingFeeTotal: 10000,
+            evidenceRecordedFeeTotal: 10000,
+            remediationExpectedFeeTotal: null,
+            remediationDelta: null,
           },
         ],
         byPayer: [
@@ -955,6 +1025,22 @@ describe('tax settlement page model', () => {
             paymentProcessingFeeTotal: 10000,
           },
         ],
+        policyReadiness: {
+          activePolicy: null,
+          configuredMethods: [],
+          missingMethods: ['MOMO', 'VNPAY', 'CASH', 'CARD', 'BANK_TRANSFER', 'CUSTOMER_WALLET', 'MANUAL'],
+          status: 'MISSING_ACTIVE_POLICY',
+        },
+        remediationPreview: {
+          status: 'BLOCKED',
+          policyVersionId: null,
+          blockers: [],
+          evidenceReviewCount: 1,
+          evidenceCustomerPaymentAmountTotal: 600000,
+          recordedFeeTotal: 10000,
+          expectedFeeTotal: null,
+          delta: null,
+        },
       }),
     );
 

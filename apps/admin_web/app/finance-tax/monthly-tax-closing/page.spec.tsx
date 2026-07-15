@@ -5,6 +5,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
 import { adminGet } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { emptyMonthlyTaxClosingSummary } from '../tax-settlement-page-model';
 import MonthlyTaxClosingPage from './page';
 
 vi.mock('../../../lib/admin-api', async () => {
@@ -16,10 +18,16 @@ vi.mock('../../../lib/admin-api', async () => {
   };
 });
 
+vi.mock('../../../lib/admin-operator-access', () => ({
+  getCurrentAdminOperatorAccess: vi.fn(),
+}));
+
 const mockedAdminGet = vi.mocked(adminGet);
+const mockedGetCurrentAdminOperatorAccess = vi.mocked(getCurrentAdminOperatorAccess);
 
 describe('MonthlyTaxClosingPage', () => {
   beforeEach(() => {
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({ id: 'operator-current', roles: ['ADMIN'] } as never);
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
   });
 
@@ -43,7 +51,7 @@ describe('MonthlyTaxClosingPage', () => {
     expect(source).not.toContain('buildMonthlyTaxClosingRowsCsvHref');
     expect(source).not.toContain('buildMonthlyTaxClosingAccountingJournalCsvHref');
     expect(source).not.toContain('PillClassBadgeLink');
-    expect(source).not.toContain('<AdminFormControlLink');
+    expect(source).toContain('<AdminFormControlLink className="button-primary" href={statusConfirmationHref}>');
     expect(source).not.toContain('className="pill pill-info"');
     expect(source).not.toContain('className="pill pill-success"');
   });
@@ -65,28 +73,144 @@ describe('MonthlyTaxClosingPage', () => {
     expect(source).not.toContain('Closed {formatDateTime(closing.closedAt)}');
   });
 
-  it('keeps period and remittance forms on shared AdminForm atoms', async () => {
+  it('keeps period controls on shared AdminForm atoms and requires review before status submission', async () => {
     const page = await MonthlyTaxClosingPage({
       searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
     });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Monthly closing period');
+    expect(markup).toContain('Active monthly closing filters');
+    expect(markup).toContain('Period: 2026-06');
+    expect(markup).toContain('Rows: 25');
+    expect(markup).toContain('Status: DRAFT');
     expect(markup).toContain('Closeout command board');
     expect(markup).toContain('Formula delta');
     expect(markup).toContain('Closeout status');
     expect(markup).toContain('Monthly closing action');
     expect(markup).toContain('Closeout risk queue');
     expect(markup).toContain('Monthly reconciliation');
-    expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(4);
+    expect(markup.match(/card admin-filter-panel admin-mb-16/g)?.length).toBe(1);
+    expect(markup.match(/card admin-section admin-mb-16/g)?.length).toBeGreaterThanOrEqual(3);
     expect(markup).toContain('vuexy-booking-table-card');
     expect(markup).toContain('vuexy-booking-table');
-    expect(markup).toContain('admin-form-input admin-form-control-labeled');
     expect(markup).toContain('admin-form-select admin-form-control-labeled');
     expect(markup).toContain('admin-form-label');
     expect(markup).toContain('admin-form-control-button');
+    expect(markup).toContain('Review Reviewed');
+    expect(markup).toContain('confirm=status&amp;targetStatus=REVIEWED');
+    expect(markup).not.toContain('name="confirmationStatus"');
     expect(markup).not.toContain('card admin-card-scroll');
     expect(markup).not.toContain('class="form-input"');
+  });
+
+  it('renders a scoped transition form only after the operator opens the matching review', async () => {
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({
+        confirm: 'status',
+        period: '2026-06',
+        take: '25',
+        targetStatus: 'REVIEWED',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('DRAFT → REVIEWED');
+    expect(markup).toContain('Snapshot 0 settlement record(s)');
+    expect(markup).toContain('type="hidden" name="confirmationPeriod" value="2026-06"');
+    expect(markup).toContain('type="hidden" name="confirmationStatus" value="REVIEWED"');
+    expect(markup).toContain('Confirm Reviewed');
+    expect(markup).toContain('href="/finance-tax/monthly-tax-closing?period=2026-06&amp;take=25"');
+    expect(markup).not.toContain('Remittance ref');
+    expect(markup).not.toContain('Approving admin ID');
+  });
+
+  it('shows required remittance evidence fields only for the paid transition', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          companyOutputVatTotal: 10000,
+          partnerWithholdingTotal: 80000,
+          status: 'DECLARED',
+        };
+      }
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') {
+        return [
+          {
+            email: 'current@example.com',
+            fullName: 'Current Operator',
+            id: 'operator-current',
+            phone: '',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+          {
+            email: 'approver@example.com',
+            fullName: 'Finance Approver',
+            id: 'approver-2',
+            phone: '',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+        ] as never;
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({
+        confirm: 'status',
+        period: '2026-06',
+        targetStatus: 'PAID',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('DECLARED → PAID');
+    expect(markup).toContain('90.000 VND');
+    expect(markup).toContain('Remittance ref');
+    expect(markup).toContain('Separate Finance approver');
+    expect(markup).toContain('Finance Approver · approver@example.com');
+    expect(markup).not.toContain('Current Operator · current@example.com');
+    expect(markup).not.toContain('placeholder="Separate Finance approver ID"');
+    expect(markup).toContain('Paid at');
+    expect(markup).toContain('Evidence URL');
+    expect(markup.match(/required=""/g)?.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('keeps paid remittance closeout disabled when no separate Finance approver is available', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          status: 'DECLARED',
+        };
+      }
+      if (href === '/admin/users?take=50&role=ADMIN&view=finance-approver-directory') {
+        return [
+          {
+            email: 'current@example.com',
+            fullName: 'Current Operator',
+            id: 'operator-current',
+            phone: '',
+            roles: ['ADMIN', 'FINANCE_APPROVER'],
+          },
+        ] as never;
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({
+        confirm: 'status',
+        period: '2026-06',
+        targetStatus: 'PAID',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('No other Finance approver is available');
+    expect(markup).toContain('<select disabled="" name="approvalAdminId" required="">');
+    expect(markup).toContain('class="admin-form-control-button button button-primary" disabled="" type="submit"');
   });
 
   it('keeps the top monthly closing KPI wall focused on four Vuexy cards', async () => {
@@ -105,6 +229,56 @@ describe('MonthlyTaxClosingPage', () => {
     expect(metricGridMarkup).toContain('Partner withholding');
     expect(metricGridMarkup).not.toContain('Coupon expense');
     expect(metricGridMarkup).not.toContain('Net revenue delta');
+  });
+
+  it('disables closeout advancement while formula or payment fee evidence gates remain open', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          status: 'REVIEWED',
+          paymentFeeReviewFlagCount: 2,
+        };
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Resolve 2 payment fee evidence row(s) before declaration.');
+    expect(markup).toContain('button-primary" disabled=""');
+    expect(markup).toContain('Payment fee evidence');
+    expect(markup).toContain('/finance-tax/payment-fees?period=2026-06');
+  });
+
+  it('blocks declaration and links the Partner deposit reconciliation queue when bank evidence is open', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/monthly-tax-closings/summary?period=2026-06') {
+        return {
+          ...emptyMonthlyTaxClosingSummary('2026-06'),
+          status: 'REVIEWED',
+          partnerDepositReconciliationOpenAmount: 250000,
+          partnerDepositReconciliationOpenCount: 2,
+        };
+      }
+      return fallback;
+    });
+
+    const page = await MonthlyTaxClosingPage({
+      searchParams: Promise.resolve({ period: '2026-06', take: '25' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Reconcile 2 executed Partner bank deposit(s) before declaration.');
+    expect(markup).toContain('button-primary" disabled=""');
+    expect(markup).toContain('Partner deposit reconciliation');
+    expect(markup).toContain(
+      '/finance-tax/partner-bank-deposits?period=2026-06&amp;review=needs-reconciliation',
+    );
+    expect(markup).toContain('250.000 VND');
   });
 
   it('shows retained remittance evidence on the command board and stored closing row', async () => {
@@ -135,6 +309,7 @@ describe('MonthlyTaxClosingPage', () => {
           partnerVatWithheldTotal: 50000,
           partnerWithholdingTotal: 80000,
           paymentProcessingFeeTotal: 12000,
+          paymentFeeReviewFlagCount: 0,
           period: '2026-06',
           platformFeeDiscountAmountTotal: 0,
           platformFeeGrossTotal: 100000,

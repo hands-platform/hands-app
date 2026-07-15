@@ -145,13 +145,14 @@ describe('PayoutsPage', () => {
     expect(source).toContain('AdminActionCard');
     expect(source).toContain('AdminFilterChipGroup');
     expect(source).toContain('AdminSectionHeader');
+    expect(source).toContain('AdminSegmentedControl');
     expect(source).toContain('AdminTablePanel');
     expect(source).toContain('AdminTaskCard');
     expect(source).toContain('AdminTaskGrid');
     expect(source).toContain('AdminTextLink');
     expect(source).toContain('StatusBadge');
     expect(source).toContain('StatusBadgeFromPillClass');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('<div className="ops-task-grid"');
     expect(source).not.toContain('<div className="ops-task-grid admin-mt-12">');
@@ -169,10 +170,22 @@ describe('PayoutsPage', () => {
     expect(source).not.toContain('<span className={`pill ${item.pillClass}`}>{item.status}</span>');
   });
 
+  it('uses the bounded Finance approver directory instead of free-text ids for paid closeout', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain("'/admin/users?take=50&role=ADMIN&view=finance-approver-directory'");
+    expect(source).toContain('buildFinanceApproverOptions');
+    expect(source).toContain("label: 'Separate Finance approver'");
+    expect(source).toContain("options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]");
+    expect(source).not.toContain("label: 'Approving admin id'");
+  });
+
   it('uses the shared Vuexy trace summary atom for applied payout policy cards', () => {
     const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('defaultKind="live"');
+    expect(source).toContain('defaultScope="Live policy"');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 
@@ -226,5 +239,19 @@ describe('PayoutsPage', () => {
     expect(source).toContain('<MoneyText amount={batchWithholdingAmount(batch)} currency={batch.currency} />');
     expect(source).not.toContain('${formatMoney(withholdingAmount, batch.currency)} withholding exists');
     expect(source).not.toContain('detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`');
+  });
+
+  it('scopes top-level payout KPI cards by selected range and release action state', () => {
+    const source = readFileSync(join(process.cwd(), 'app/payouts/page.tsx'), 'utf8');
+
+    expect(source).toContain('const payoutRangeScope = dateRangeLabel(filters.range);');
+    expect(source).toContain('scope: payoutRangeScope');
+    expect(source).toContain("scope: 'Needs action'");
+    expect(source).toContain("scope: 'Pending'");
+    expect(source).toContain("scope: 'Transfer records'");
+    expect(source).toContain("kind: 'period'");
+    expect(source).toContain("kind: 'action'");
+    expect(source).toContain("kind: 'risk'");
+    expect(source).toContain("kind: 'record'");
   });
 });

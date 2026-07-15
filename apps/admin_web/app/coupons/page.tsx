@@ -7,11 +7,11 @@ import {
   AdminFormInput,
   AdminFormTextarea,
 } from '../../components/admin-form-controls';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
+import { AdminSection } from '../../components/admin-surface';
 import {
   buildCouponDeleteConfirmation,
   buildCouponToggleConfirmation,
@@ -93,6 +93,29 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
     <AdminPageTemplate
       contentClassName="coupons-page"
       description="Coupon registration, active windows, discount control, and booking usage review."
+      metrics={[
+        {
+          helper: 'Coupons customers can use during booking checkout now.',
+          kind: 'live',
+          label: 'Live checkout codes',
+          scope: 'Live',
+          value: couponSummary.liveCount,
+        },
+        {
+          helper: 'Active coupon windows waiting for their start time.',
+          kind: 'action',
+          label: 'Pending launch',
+          scope: 'Pending',
+          value: couponSummary.scheduledCount,
+        },
+        {
+          helper: 'Expired or paused coupons kept out of checkout.',
+          kind: 'record',
+          label: 'Coupon records',
+          scope: 'All records',
+          value: couponSummary.expiredCount + couponSummary.pausedCount,
+        },
+      ]}
       title="Coupons"
     >
       {confirmation ? (
@@ -108,12 +131,12 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         />
       ) : null}
 
-      <AdminFilterPanel
+      <AdminSection
         className="coupons-create-panel"
-        resultLabel={`${couponSummary.liveCount} running / ${couponSummary.scheduledCount} upcoming / ${
+        statusLabel={`${couponSummary.liveCount} running / ${couponSummary.scheduledCount} upcoming / ${
           couponSummary.expiredCount + couponSummary.pausedCount
         } expired`}
-        resultTone="info"
+        statusTone="info"
         title="Create coupons"
       >
         {createNotice ? (
@@ -156,7 +179,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
             Create coupons
           </AdminFormControlButton>
         </AdminFormGrid>
-      </AdminFilterPanel>
+      </AdminSection>
       <CouponsTableSection
         rows={couponModel.couponRows}
         updateAction={updateCoupon}

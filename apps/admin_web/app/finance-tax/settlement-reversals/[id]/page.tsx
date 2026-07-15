@@ -78,16 +78,20 @@ export default async function SettlementReversalDetailPage({ params }: Settlemen
       }
       description="Single closed-period settlement reversal record with refund, journal, clearing, and original settlement evidence."
       metrics={[
-        { helper: 'Reversal settlement state.', label: 'Settlement', value: reversal.settlementStatus },
-        { helper: 'Tax reversal state.', label: 'Tax status', value: reversal.taxStatus },
+        { helper: 'Reversal settlement state.', kind: 'record', label: 'Settlement', scope: 'Reversal record', value: reversal.settlementStatus },
+        { helper: 'Tax reversal state.', kind: 'record', label: 'Tax status', scope: 'Reversal record', value: reversal.taxStatus },
         {
           helper: 'Customer payment amount reversed by this record.',
+          kind: 'record',
           label: 'Customer reversal',
+          scope: 'Reversal record',
           value: <MoneyText amount={reversal.customerPaymentAmount} currency={reversal.currency} />,
         },
         {
           helper: 'Partner payout amount reversed by this record.',
+          kind: 'record',
           label: 'Partner reversal',
+          scope: 'Reversal record',
           value: <MoneyText amount={reversal.partnerPayoutAmount} currency={reversal.currency} />,
         },
       ]}

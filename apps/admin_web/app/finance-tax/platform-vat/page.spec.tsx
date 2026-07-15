@@ -30,6 +30,9 @@ describe('PlatformVatPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Platform VAT period');
+    expect(markup).toContain('Active platform VAT filters');
+    expect(markup).toContain('Period: 2026-06');
+    expect(markup).toContain('Currency: VND');
     expect(markup).toContain('VAT command board');
     expect(markup).toContain('Output VAT');
     expect(markup).toContain('Net revenue');

@@ -1,6 +1,6 @@
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminTablePanel } from '../../components/admin-table-panel';
-import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 
 export type RefundFilterLink = {
@@ -52,35 +52,43 @@ export function RefundFilterBoardSection({
           Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
         </p>
       ) : null}
-      <AdminFilterChipGroup ariaLabel="Refund date range filters" className="admin-mb-12">
-        {rangeLinks.map((item) => (
-          <StatusBadgeLink
-            ariaCurrent={activeRange === item.range ? 'page' : undefined}
-            href={item.href}
-            key={item.label}
-            tone={activeRange === item.range ? 'info' : 'neutral'}
-          >
-            {item.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
-      <AdminFilterChipGroup ariaLabel="Refund review filters">
-        {isFiltered ? (
-          <StatusBadgeLink href="/refunds?range=all&review=all" tone="success">
-            Clear filters
-          </StatusBadgeLink>
-        ) : null}
-        {reviewLinks.map((item) => (
-          <StatusBadgeLink
-            ariaCurrent={review === item.review ? 'page' : undefined}
-            href={item.href}
-            key={item.label}
-            tone={review === item.review ? 'warning' : 'neutral'}
-          >
-            {item.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
+      <AdminFilterSummary
+        ariaLabel="Active refund filters"
+        className="admin-mb-12"
+        labels={[`Range: ${rangeLabel}`, `Queue: ${activeFilterLabel ?? 'All refunds'}`]}
+        tone={review ? 'warning' : 'info'}
+      />
+      <div className="booking-date-filter-bar refund-filter-group admin-mb-12">
+        <span className="refund-filter-group-label">Range</span>
+        <AdminSegmentedControl
+          activeValue={activeRange}
+          ariaLabel="Refund date range filters"
+          className="refund-filter-buttons"
+          options={rangeLinks.map((item) => ({
+            href: item.href,
+            label: item.label,
+            value: item.range,
+          }))}
+        />
+      </div>
+      <div className="booking-date-filter-bar refund-filter-group">
+        <span className="refund-filter-group-label">Queue</span>
+        <AdminSegmentedControl
+          activeValue={review || 'all'}
+          ariaLabel="Refund review filters"
+          className="refund-filter-buttons"
+          options={[
+            ...(isFiltered
+              ? [{ href: '/refunds?range=all&review=all', label: 'Clear filters', value: 'clear' }]
+              : []),
+            ...reviewLinks.map((item) => ({
+              href: item.href,
+              label: item.label,
+              value: item.review,
+            })),
+          ]}
+        />
+      </div>
     </AdminTablePanel>
   );
 }

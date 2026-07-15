@@ -61,6 +61,19 @@ describe('RefundsPage', () => {
     expect(source).not.toContain('<span className="signal signal-info">Review refund</span>');
   });
 
+  it('scopes refund KPI cards by selected range and action state', () => {
+    const source = readFileSync('app/refunds/page.tsx', 'utf8');
+
+    expect(source).toContain('const refundRangeScope = dateRangeLabel(filters.range);');
+    expect(source).toContain('scope: refundRangeScope');
+    expect(source).toContain("scope: 'Pending'");
+    expect(source).toContain("scope: 'Needs action'");
+    expect(source).toContain("kind: 'record'");
+    expect(source).toContain("kind: 'action'");
+    expect(source).toContain("kind: 'period'");
+    expect(source).toContain("kind: 'risk'");
+  });
+
   it('renders bounded server refund rows without applying a second local filter', async () => {
     const summary: AdminRefundSummary = {
       totalCount: 42,

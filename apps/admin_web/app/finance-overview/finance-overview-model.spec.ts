@@ -4,6 +4,7 @@ import {
   buildFinanceOverviewControlMetrics,
   buildFinanceOverviewKpis,
   buildFinanceOverviewPrimaryKpis,
+  buildFinanceOverviewReviewSlaMetrics,
   buildFinanceOverviewVisibleActionItems,
   buildFinanceOverviewVisibleSections,
   buildFinanceOverviewSections,
@@ -41,6 +42,41 @@ describe('finance-overview-model', () => {
     expect(hrefs.cashSettlementSummaryHref).toBe('/admin/cash-settlement-summary?range=7d');
     expect(hrefs.withdrawalSummaryHref).toBe('/admin/provider-wallet/withdrawal-requests/summary?range=7d');
     expect(hrefs.paymentFeeSummaryHref).toBe('/admin/payment-fees/summary?period=2026-07');
+  });
+
+  it('separates current overdue Finance reviews from resolved period history', () => {
+    const metrics = buildFinanceOverviewReviewSlaMetrics(
+      {
+        financeReviewSlaSummary: {
+          open48To72Count: 1,
+          openOverdueCount: 3,
+          openOver72Count: 2,
+          resolvedInRangeCount: 8,
+        },
+      },
+      '7d',
+    );
+
+    expect(metrics).toEqual([
+      expect.objectContaining({
+        href: '/notifications?range=all&review=finance-overdue',
+        label: 'Open 48–72h',
+        tone: 'warning',
+        value: '1',
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=all&review=finance-overdue',
+        label: 'Open 72h+',
+        tone: 'danger',
+        value: '2',
+      }),
+      expect.objectContaining({
+        href: '/notifications?range=7d&review=finance-overdue-history',
+        label: 'Resolved reviews',
+        tone: 'info',
+        value: '8',
+      }),
+    ]);
   });
 
   it('keeps gross customer payment separate from company revenue', () => {
@@ -230,6 +266,25 @@ describe('finance-overview-model', () => {
         refundPendingAmount: 40_000,
       },
       bankSummary: { ...emptyBankReconciliationSummary(), unmatchedCount: 2, amount: 500_000 },
+      bankWithdrawalCandidateSummary: {
+        assignedCount: 1,
+        assignments: [],
+        currency: 'VND',
+        eligibleCount: 4,
+        noneAmount: 100_000,
+        noneCount: 1,
+        oldestReviewOccurredAt: '2026-07-14T02:00:00.000Z',
+        oldestStrongOccurredAt: '2026-07-12T02:00:00.000Z',
+        reviewAmount: 300_000,
+        reviewCount: 1,
+        reviewOver24hCount: 1,
+        reviewOver48hCount: 0,
+        strongAmount: 800_000,
+        strongCount: 2,
+        strongOver24hCount: 2,
+        strongOver48hCount: 1,
+        unassignedCount: 3,
+      },
       clearingSummary: { ...emptyBookingPaymentClearingSummary(), openCount: 3, amount: 900_000 },
       couponSummary: { ...emptyCouponFinanceSummary(), couponReviewFlagCount: 1 },
       monthlyClosingSummary: {
@@ -262,12 +317,13 @@ describe('finance-overview-model', () => {
         partnerPositiveWalletAccountCount: 1,
         partnerWalletLiabilityAmount: 200_000,
       },
-    });
+    }, '7d');
 
     expect(metrics.map((metric) => metric.label)).toEqual([
       'Revenue separation',
       'Wallet exposure',
       'Open finance risks',
+      'Withdrawal matching',
       'Monthly close status',
     ]);
     expect(metrics.find((metric) => metric.label === 'Revenue separation')?.value).toBe('22%');
@@ -278,6 +334,11 @@ describe('finance-overview-model', () => {
     expect(metrics.find((metric) => metric.label === 'Wallet exposure')?.value).toBeUndefined();
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.value).toBe('10');
     expect(metrics.find((metric) => metric.label === 'Open finance risks')?.detail).toContain('coupon');
+    expect(metrics.find((metric) => metric.label === 'Withdrawal matching')).toMatchObject({
+      href: '/finance-tax/bank-reconciliation?range=7d&review=outflow&candidate=strong',
+      tone: 'danger',
+      value: '3',
+    });
     expect(metrics.find((metric) => metric.label === 'Monthly close status')?.value).toBe('DRAFT');
   });
 
@@ -304,6 +365,25 @@ describe('finance-overview-model', () => {
   it('prioritizes finance action queues from summary counts', () => {
     const actions = buildFinanceOverviewActionItems({
       bankSummary: { ...emptyBankReconciliationSummary(), unmatchedCount: 3, amount: 700_000 },
+      bankWithdrawalCandidateSummary: {
+        assignedCount: 1,
+        assignments: [],
+        currency: 'VND',
+        eligibleCount: 4,
+        noneAmount: 100_000,
+        noneCount: 1,
+        oldestReviewOccurredAt: '2026-07-14T02:00:00.000Z',
+        oldestStrongOccurredAt: '2026-07-12T02:00:00.000Z',
+        reviewAmount: 300_000,
+        reviewCount: 1,
+        reviewOver24hCount: 1,
+        reviewOver48hCount: 0,
+        strongAmount: 800_000,
+        strongCount: 2,
+        strongOver24hCount: 2,
+        strongOver48hCount: 1,
+        unassignedCount: 3,
+      },
       cashSummary: {
         generatedAt: '',
         currency: 'VND',
@@ -322,7 +402,18 @@ describe('finance-overview-model', () => {
         topProviderGroups: [],
       },
       clearingSummary: { ...emptyBookingPaymentClearingSummary(), openCount: 4, amount: 900_000 },
-      monthlyClosingSummary: { ...emptyMonthlyTaxClosingSummary('2026-07'), reconciliationDelta: 1 },
+      financeReviewSlaSummary: {
+        open48To72Count: 1,
+        openOverdueCount: 3,
+        openOver72Count: 2,
+        resolvedInRangeCount: 8,
+      },
+      monthlyClosingSummary: {
+        ...emptyMonthlyTaxClosingSummary('2026-07'),
+        partnerDepositReconciliationOpenAmount: 160_000,
+        partnerDepositReconciliationOpenCount: 2,
+        reconciliationDelta: 1,
+      },
       refundSummary: { totalCount: 4, requestedCount: 2, refundedBookingCount: 0, needsUpdateCount: 1, completedCount: 1, openCount: 3, outcomeLinkedCount: 1 },
       settlementSummary: { ...emptyBookingSettlementSummary(), openTaxCount: 2 },
       withdrawalSummary: { ...emptyProviderWalletWithdrawalRequestSummary(), requested: 2 },
@@ -332,6 +423,8 @@ describe('finance-overview-model', () => {
       expect.arrayContaining([
         '/finance-tax/payment-clearing?range=today&review=open',
         '/finance-tax/bank-reconciliation?range=today&review=unmatched',
+        '/finance-tax/bank-reconciliation?range=today&review=outflow&candidate=eligible&owner=unassigned',
+        '/finance-tax/partner-bank-deposits?status=EXECUTED&review=needs-reconciliation&period=2026-07',
         '/cash-settlements?queue=high-debt',
         '/refunds?review=open',
       ]),
@@ -339,6 +432,36 @@ describe('finance-overview-model', () => {
     expect(actions.find((action) => action.label === 'Payment clearing open')).toMatchObject({
       amount: 900_000,
       currency: 'VND',
+    });
+    expect(actions[0]).toMatchObject({
+      countLabel: '2 over 72h',
+      href: '/notifications?range=all&review=finance-overdue',
+      label: 'Finance reviews over 72h',
+      tone: 'danger',
+    });
+    expect(actions.find((action) => action.label === 'Unassigned withdrawal reviews')).toMatchObject({
+      countLabel: '3 unassigned',
+      href: '/finance-tax/bank-reconciliation?range=today&review=outflow&candidate=eligible&owner=unassigned',
+      tone: 'danger',
+    });
+    expect(actions.find((action) => action.label === 'Strong withdrawal candidates')).toMatchObject({
+      amount: 800_000,
+      countLabel: '2 strong',
+      href: '/finance-tax/bank-reconciliation?range=today&review=outflow&candidate=strong',
+      tone: 'danger',
+    });
+    expect(actions.find((action) => action.label === 'Partner deposit reconciliation')).toMatchObject({
+      amount: 160_000,
+      countLabel: '2 open',
+      currency: 'VND',
+      href: '/finance-tax/partner-bank-deposits?status=EXECUTED&review=needs-reconciliation&period=2026-07',
+      tone: 'danger',
+    });
+    expect(actions.find((action) => action.label === 'Withdrawal candidates to review')).toMatchObject({
+      amount: 300_000,
+      countLabel: '1 review',
+      href: '/finance-tax/bank-reconciliation?range=today&review=outflow&candidate=review',
+      tone: 'warning',
     });
     expect(actions.find((action) => action.label === 'General ledger audit')?.amount).toBeUndefined();
   });

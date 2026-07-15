@@ -58,6 +58,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
   ]);
   const pagination = buildTaxSettlementServerPagination(reversals, filters, summary.count);
   const taxReversalImpact = summary.partnerWithholdingTotal + summary.companyOutputVat;
+  const rangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
@@ -80,6 +81,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           href={bookingSettlementReversalHref({ ...filters, page: 1 })}
           icon={RotateCcw}
           label="Reversal amount"
+          scope={rangeScope}
           tone={summary.count > 0 ? 'warning' : 'success'}
           value={<MoneyText amount={summary.customerPaymentAmount} currency={summary.currency} />}
         />
@@ -88,6 +90,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           href={bookingSettlementReversalHref({ ...filters, page: 1, review: 'cash' })}
           icon={Banknote}
           label="Cash share"
+          scope={rangeScope}
           tone={summary.cashCount > 0 ? 'warning' : 'neutral'}
           value={formatFinancePercent(summary.cashCount, summary.count)}
         />
@@ -96,6 +99,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           href={bookingSettlementReversalHref({ ...filters, page: 1, review: 'non-cash' })}
           icon={CreditCard}
           label="Non-cash share"
+          scope={rangeScope}
           tone={summary.nonCashCount > 0 ? 'info' : 'neutral'}
           value={formatFinancePercent(summary.nonCashCount, summary.count)}
         />
@@ -104,6 +108,7 @@ export default async function SettlementReversalsPage({ searchParams }: Settleme
           href="/finance-tax/platform-vat"
           icon={BadgePercent}
           label="Tax reversal impact"
+          scope={taxReversalImpact > 0 ? 'Needs action' : rangeScope}
           tone={taxReversalImpact > 0 ? 'danger' : 'success'}
           value={<MoneyText amount={taxReversalImpact} currency={summary.currency} />}
         />

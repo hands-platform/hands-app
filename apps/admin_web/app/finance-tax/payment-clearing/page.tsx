@@ -56,6 +56,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
   const pagination = buildTaxSettlementServerPagination(entries, filters, summary.count);
   const openRatio = formatFinancePercent(summary.openCount, summary.count);
   const clearedRatio = formatFinancePercent(summary.clearedCount, summary.count);
+  const rangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
@@ -79,6 +80,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           href={paymentClearingHref({ ...filters, page: 1, review: 'open' })}
           icon={Clock3}
           label="Open ratio"
+          scope={rangeScope}
           tone={summary.openCount > 0 ? 'warning' : 'success'}
           value={openRatio}
         />
@@ -87,6 +89,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           href={paymentClearingHref({ ...filters, page: 1, review: 'cleared' })}
           icon={CheckCircle2}
           label="Cleared ratio"
+          scope={rangeScope}
           tone={summary.clearedCount === summary.count && summary.count > 0 ? 'success' : 'info'}
           value={clearedRatio}
         />
@@ -95,6 +98,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           href={paymentClearingHref({ ...filters, page: 1 })}
           icon={CircleDollarSign}
           label="Evidence amount"
+          scope={rangeScope}
           tone={summary.amount > 0 ? 'primary' : 'neutral'}
           value={<MoneyText amount={summary.amount} currency={summary.currency} />}
         />
@@ -103,6 +107,7 @@ export default async function PaymentClearingPage({ searchParams }: PaymentClear
           href={summary.openCount > 0 ? paymentClearingHref({ ...filters, page: 1, review: 'open' }) : '/finance-overview'}
           icon={AlertTriangle}
           label="Review queue"
+          scope={summary.openCount > 0 ? 'Needs action' : rangeScope}
           tone={summary.openCount > 0 ? 'danger' : 'success'}
           value={summary.openCount > 0 ? 'Needs evidence' : 'Clear'}
         />

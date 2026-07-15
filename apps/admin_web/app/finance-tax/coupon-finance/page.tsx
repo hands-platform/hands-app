@@ -52,6 +52,7 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
   const pagination = buildTaxSettlementServerPagination(snapshots, filters, summary.couponSettlementCount);
   const tableRows = pagination.rows;
   const csvHref = buildCouponFinanceExportHref(filters);
+  const couponRangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
@@ -76,48 +77,66 @@ export default async function CouponFinancePage({ searchParams }: CouponFinanceP
       description="Company-funded coupon expense and coupon settlement policy records from posted booking settlements."
       metrics={[
         {
-          helper: 'Coupon discount amount applied to customer payment in the current bounded queue.',
+          helper: 'Period coupon discount applied to customer payment.',
+          kind: 'period',
           label: 'Coupon gross discount',
+          scope: couponRangeScope,
           value: <MoneyText amount={summary.couponDiscountAmount} currency={summary.currency} />,
         },
         {
           helper: 'Customer-paid amount after coupon discount. This is clearing, not company revenue.',
+          kind: 'period',
           label: 'Customer paid',
+          scope: couponRangeScope,
           value: <MoneyText amount={summary.customerPaidAmount} currency={summary.currency} />,
         },
         {
           helper: 'Pre-coupon service base used for Partner tax, payout, and platform fee unless policy says otherwise.',
+          kind: 'period',
           label: 'Settlement base',
+          scope: couponRangeScope,
           value: <MoneyText amount={summary.settlementBaseAmount || summary.bookingServiceAmount} currency={summary.currency} />,
         },
         {
           helper: 'Company-funded coupon amount. This is marketing expense, not reduced platform revenue.',
+          kind: 'period',
           label: 'Company coupon expense',
+          scope: couponRangeScope,
           value: <MoneyText amount={summary.companyCouponExpense} currency={summary.currency} />,
         },
         {
           helper: 'Partner-funded coupon amount from settlement metadata.',
+          kind: 'period',
           label: 'Partner-funded coupon',
+          scope: couponRangeScope,
           value: <MoneyText amount={summary.partnerFundedCouponAmount} currency={summary.currency} />,
         },
         {
           helper: 'Coupons explicitly treated as platform-fee discount.',
+          kind: 'risk',
           label: 'Platform fee discount',
+          scope: 'Needs action',
           value: <MoneyText amount={summary.platformFeeDiscountAmount} currency={summary.currency} />,
         },
         {
           helper: 'Completed settlement rows with coupon metadata.',
+          kind: 'record',
           label: 'Coupon used bookings',
+          scope: couponRangeScope,
           value: summary.couponSettlementCount,
         },
         {
           helper: 'Coupon rows that require finance review before closing.',
+          kind: 'risk',
           label: 'Pending review',
+          scope: 'Needs action',
           value: summary.couponReviewFlagCount,
         },
         {
           helper: 'Coupon discount already reversed through refund or settlement reversal metadata.',
+          kind: 'record',
           label: 'Reversed coupon',
+          scope: 'Reversal records',
           value: <MoneyText amount={summary.reversedCouponDiscountAmount} currency={summary.currency} />,
         },
       ]}

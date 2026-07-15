@@ -6,7 +6,6 @@ import {
   AdminTableScroll,
 } from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminMiniMetricStrip } from '../../components/admin-overview-card';
 import {
   AdminFormCheckbox,
@@ -15,7 +14,7 @@ import {
   AdminFormShell,
   AdminFormInput,
 } from '../../components/admin-form-controls';
-import { AdminCard, AdminCardHeader, AdminDisclosure } from '../../components/admin-surface';
+import { AdminCard, AdminCardHeader, AdminDisclosure, AdminSection } from '../../components/admin-surface';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { MoneyText } from '../../components/money-text';
 import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
@@ -69,6 +68,7 @@ type CouponSection = {
   readonly className: string;
   readonly description: string;
   readonly rows: readonly CouponTableRow[];
+  readonly scopeLabel: string;
   readonly title: string;
 };
 
@@ -87,11 +87,11 @@ export function CouponsTableSection({
   return (
     <div className="coupons-management-stack">
       {sections.map((section) => (
-        <AdminFilterPanel
+        <AdminSection
           className={`coupons-status-section ${section.className}`}
           description={section.description}
           key={section.title}
-          resultLabel={`${section.rows.length} coupon(s)`}
+          statusLabel={`${section.scopeLabel}: ${section.rows.length} coupon(s)`}
           title={section.title}
         >
           <div className="coupons-status-section-body">
@@ -110,7 +110,7 @@ export function CouponsTableSection({
               <AdminEmptyState framed message="No coupons in this state." />
             )}
           </div>
-        </AdminFilterPanel>
+        </AdminSection>
       ))}
     </div>
   );
@@ -287,21 +287,24 @@ function couponSections(rows: readonly CouponTableRow[]): CouponSection[] {
   return [
     {
       className: 'coupons-status-section-running',
-      description: 'Coupons customers can use now during booking checkout.',
+      description: 'Live now: coupons customers can use during booking checkout.',
       rows: rows.filter((row) => row.active && row.windowState === 'live'),
-      title: 'Running Coupons',
+      scopeLabel: 'Live now',
+      title: 'Live checkout coupons',
     },
     {
       className: 'coupons-status-section-upcoming',
-      description: 'Coupons that are active but waiting for their start date.',
+      description: 'Pending launch: active coupons waiting for their start date.',
       rows: rows.filter((row) => row.active && row.windowState === 'scheduled'),
-      title: 'Upcoming Coupons',
+      scopeLabel: 'Pending launch',
+      title: 'Upcoming coupon launches',
     },
     {
       className: 'coupons-status-section-expired',
-      description: 'Expired or paused coupons that should stay out of customer checkout.',
+      description: 'Records: expired, paused, or draft coupons kept out of customer checkout.',
       rows: rows.filter((row) => !row.active || row.windowState === 'expired' || row.windowState === 'draft'),
-      title: 'Expired Coupons',
+      scopeLabel: 'Records',
+      title: 'Coupon records',
     },
   ];
 }

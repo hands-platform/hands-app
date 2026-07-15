@@ -24,11 +24,13 @@ describe('PayoutMoneyFlowSection', () => {
         },
       ],
       currency: 'VND',
+      rangeLabel: 'Last 30 days',
     });
 
     const rendered = textContent(section);
 
     expect(rendered).toContain('Payout money flow');
+    expect(rendered).toContain('Last 30 days');
     expect(rendered).toContain('1.200.000 VND');
     expect(rendered).toContain('Transfer reference');
     expect(rendered).toContain('Attach transfer reference before marking paid.');
@@ -42,12 +44,20 @@ describe('PayoutMoneyFlowSection', () => {
 
   it('renders an empty state when there are no money flow checks', () => {
     const section = PayoutMoneyFlowSection({
-      cards: [],
+      cards: [
+        {
+          amount: 120000,
+          detail: 'Gross represented in visible payout batches.',
+          label: 'Gross represented',
+        },
+      ],
       checks: [],
       currency: 'VND',
     });
 
     expect(textContent(section)).toContain('No payout money flow check is visible for this range.');
+    expect(textContent(section)).toContain('Selected range');
+    expect(textContent(section)).not.toContain('Current view');
     expect(classNamesIn(section)).toContain('empty-state');
   });
 

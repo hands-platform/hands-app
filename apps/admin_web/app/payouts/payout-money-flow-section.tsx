@@ -28,9 +28,10 @@ type PayoutMoneyFlowSectionProps = {
   readonly cards: readonly PayoutMoneyFlowCard[];
   readonly checks: readonly PayoutMoneyFlowCheck[];
   readonly currency: string;
+  readonly rangeLabel?: string;
 };
 
-export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyFlowSectionProps) {
+export function PayoutMoneyFlowSection({ cards, checks, currency, rangeLabel = 'Selected range' }: PayoutMoneyFlowSectionProps) {
   return (
     <AdminTablePanel
       description="Reconciles payout batches against service pricing evidence before transfer: gross represented, partner payout, HANDS fee, withholding, and cash debt."
@@ -45,6 +46,8 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
         </AdminTextLink>
       </AdminFilterChipGroup>
       <AdminTraceSummary
+        defaultKind="period"
+        defaultScope={rangeLabel}
         metrics={cards.map((card) => ({
           detail: card.detail,
           key: card.label,

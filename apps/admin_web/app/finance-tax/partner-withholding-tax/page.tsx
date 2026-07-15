@@ -7,6 +7,7 @@ import type {
 } from '../../../lib/admin-api';
 import { adminGet } from '../../../lib/admin-api';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../../components/admin-filter-summary';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { MoneyText } from '../../../components/money-text';
@@ -55,6 +56,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
   const pagination = buildTaxSettlementServerPagination(rows, filters, summary.partnerCountWithRevenue);
   const tableRows = pagination.rows;
   const csvHref = buildPartnerWithholdingTaxExportHref(filters);
+  const periodScope = `Period ${filters.period}`;
 
   return (
     <AdminPageTemplate
@@ -85,6 +87,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           href={`/finance-tax/partner-withholding-tax?period=${encodeURIComponent(filters.period)}`}
           icon={ReceiptText}
           label="Partner tax payable"
+          scope={periodScope}
           tone={summary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={summary.totalPartnerTaxWithheld} currency={summary.currency} />}
         />
@@ -93,6 +96,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           href={partnerWithholdingTaxHref({ ...filters, page: 1 })}
           icon={UsersRound}
           label="Taxable partners"
+          scope={periodScope}
           tone={summary.partnerCountWithRevenue > 0 ? 'info' : 'neutral'}
           value={String(summary.partnerCountWithRevenue)}
         />
@@ -101,6 +105,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           href="/finance-tax/booking-settlement-audit"
           icon={Landmark}
           label="Taxable bookings"
+          scope={periodScope}
           tone={summary.taxableBookingCount > 0 ? 'primary' : 'neutral'}
           value={String(summary.taxableBookingCount)}
         />
@@ -109,6 +114,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           href="/earnings"
           icon={WalletCards}
           label="Partner payout base"
+          scope={periodScope}
           tone={summary.partnerPayoutTotal > 0 ? 'success' : 'neutral'}
           value={<MoneyText amount={summary.partnerPayoutTotal} currency={summary.currency} />}
         />
@@ -117,6 +123,7 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
           href={`/finance-tax/monthly-tax-closing?period=${encodeURIComponent(filters.period)}`}
           icon={ShieldCheck}
           label="Remittance status"
+          scope={periodScope}
           tone={withholdingRemittanceTone(monthlyClosingSummary.status)}
           value={monthlyClosingSummary.status}
         />
@@ -130,6 +137,11 @@ export default async function PartnerWithholdingTaxPage({ searchParams }: Partne
         title="Withholding tax period"
       >
         <FinancePeriodFilterForm period={filters.period} rows={{ value: filters.take }} />
+        <AdminFilterSummary
+          ariaLabel="Active withholding tax filters"
+          labels={[`Period: ${filters.period}`, `Rows: ${filters.take}`]}
+          tone="info"
+        />
       </AdminFilterPanel>
 
       <FinanceTablePanel

@@ -26,14 +26,59 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminPost.mockReset();
   });
 
+  it('scopes wallet adjustment guardrail KPI cards to the current request context', () => {
+    expect(pageSource).toContain("scope: 'Current request'");
+    expect(pageSource).toContain("scope: 'Policy guard'");
+    expect(pageSource).toContain("scope: 'Approval evidence'");
+    expect(pageSource).toContain("kind: 'action'");
+    expect(pageSource).toContain("kind: preview?.affects.revenue ? 'risk' : 'record'");
+    expect(pageSource).toContain("kind: preview?.requiresAttachment ? 'risk' : 'action'");
+  });
+
   it('explains approval and attachment gates before operators create an adjustment', async () => {
     const page = await WalletAdjustmentsPage({});
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('Approval id and a different approving admin id are required for every creation');
-    expect(markup).toContain('Approving admin id');
+    expect(markup).toContain('Active wallet adjustment request filters');
+    expect(markup).toContain('Owner: Partner wallet');
+    expect(markup).toContain('Direction: Credit wallet');
+    expect(markup).toContain('Type: Partner bonus');
+    expect(markup).toContain('History rows: 10');
+    expect(markup).toContain(
+      'A different finance approver must review the saved request before any wallet or ledger write',
+    );
+    expect(markup).toContain('Separate approver');
+    expect(markup).not.toContain('name="approvalAdminId"');
     expect(markup).toContain('Evidence is required from 10.000.000 VND or more');
     expect(markup).toContain('Receivable write-off always needs evidence');
+  });
+
+  it('keeps wallet adjustment history filters visible and bounded', async () => {
+    const page = await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({
+        adjustmentType: 'PENALTY',
+        amount: '100000',
+        direction: 'DEBIT',
+        monthlyPeriod: '2026-06',
+        ownerId: 'provider-1',
+        ownerType: 'PARTNER',
+        pageSize: '25',
+      }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('History rows');
+    expect(markup).toContain('Active wallet adjustment request filters');
+    expect(markup).toContain('Owner id: provider-1');
+    expect(markup).toContain('Direction: Debit wallet');
+    expect(markup).toContain('Type: Penalty');
+    expect(markup).toContain('History rows: 25');
+    expect(markup).toContain('Amount: 100000 VND');
+    expect(markup).toContain('Period: 2026-06');
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
+      [],
+    );
   });
 
   it('renders wallet adjustment action notices from query params', async () => {
@@ -196,7 +241,7 @@ describe('WalletAdjustmentsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Attachment required');
-    expect(markup).toContain('disabled="" type="submit">Create manual adjustment');
+    expect(markup).toContain('disabled="" type="submit">Submit for approval');
   });
 
   it('keeps create disabled when preview shows booking settlement accounting impact', async () => {
@@ -255,7 +300,7 @@ describe('WalletAdjustmentsPage', () => {
 
     expect(markup).toContain('Use booking settlement');
     expect(markup).toContain('Blocked accounting impact');
-    expect(markup).toContain('disabled="" type="submit">Create manual adjustment');
+    expect(markup).toContain('disabled="" type="submit">Submit for approval');
   });
 
   it('renders recent manual wallet adjustment history from the Admin API', async () => {
@@ -265,6 +310,12 @@ describe('WalletAdjustmentsPage', () => {
         adjustmentType: 'PARTNER_BONUS',
         afterBalance: 200000,
         amount: 200000,
+        approvalAdmin: {
+          email: 'approver@example.com',
+          fullName: 'Finance Approver',
+          id: 'finance-admin-2',
+        },
+        approvalAdminId: 'finance-admin-2',
         approvalId: 'approval-partner-1',
         beforeBalance: 0,
         createdAt: '2026-06-29T09:00:00.000Z',
@@ -276,6 +327,12 @@ describe('WalletAdjustmentsPage', () => {
         ownerPhone: '+84222222222',
         ownerType: 'PARTNER',
         reason: 'Launch bonus',
+        requestedBy: {
+          email: 'maker@example.com',
+          fullName: 'Wallet Maker',
+          id: 'wallet-maker-1',
+        },
+        requestedByAdminId: 'wallet-maker-1',
         sourceKey: 'manual-wallet-adjustment:PARTNER:provider-1:approval-partner-1',
         walletDelta: 200000,
       },
@@ -304,6 +361,9 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('date-time-text');
     expect(markup).toContain('PARTNER_BONUS');
     expect(markup).toContain('approval-partner-1');
+    expect(markup).toContain('Requested by Wallet Maker');
+    expect(markup).toContain('Approved by Finance Approver');
+    expect(markup).not.toContain('Approved by finance-admin-2');
     expect(markup).toContain('Launch bonus');
   });
 

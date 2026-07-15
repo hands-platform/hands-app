@@ -1,24 +1,30 @@
 import type { ReactNode } from 'react';
 
 import {
+  type AdminUser,
   AdminEarning,
   AdminOperationalPolicySetting,
   AdminPayoutBatch,
   AdminPayoutBatchSummary,
   AdminProviderWalletWithdrawalRequest,
+  AdminProviderWalletWithdrawalRequestSummary,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { adminPayoutBatchOperatorEvidenceLines } from '../../components/admin-finance-operator-evidence';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminActionCard, AdminTaskCard, AdminTaskGrid } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { AdminTextLink } from '../../components/admin-text-link';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadge, StatusBadgeFromPillClass, StatusBadgeLink } from '../../components/status-badge';
+import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
 import { formatRelativeTime, shortRecordId } from '../../lib/admin-format';
+import { getCurrentAdminOperatorAccess } from '../../lib/admin-operator-access';
 import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -62,6 +68,7 @@ import {
   type PayoutServiceEvidenceItem,
 } from './payout-service-evidence-section';
 import { PayoutStatusLanesSection, type PayoutStatusLane } from './payout-status-lanes-section';
+import { buildFinanceApproverOptions } from '../finance-tax/finance-approver-options';
 import {
   buildPayoutFilters,
   buildPayoutOperationsApiHrefs,
@@ -76,19 +83,45 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
+  const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
+  const payoutRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
-  const [allBatches, payoutSummary, allEarnings, policySettings, walletWithdrawalRequests] = await Promise.all([
+  const [
+    allBatches,
+    payoutSummary,
+    allEarnings,
+    policySettings,
+    walletWithdrawalRequests,
+    walletWithdrawalSummary,
+  ] = await Promise.all([
     adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
     adminGet<AdminPayoutBatchSummary | null>(apiHrefs.payoutBatchSummaryHref, null),
     adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
     adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, []),
     adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, []),
+    adminGet<AdminProviderWalletWithdrawalRequestSummary | null>(
+      apiHrefs.providerWalletWithdrawalRequestSummaryHref,
+      null,
+    ),
   ]);
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
   const summary = buildSummary(batches, payoutSummary);
   const payoutBatchRows = buildPayoutBatchTableRows(batches);
   const payoutBatchPagination = buildPayoutServerPagination(payoutBatchRows, filters, summary.total);
+  const withdrawalTotal =
+    filters.withdrawalReconciliation === 'unmatched'
+      ? (walletWithdrawalSummary?.paidUnreconciled ?? 0)
+      : filters.withdrawalReconciliation === 'matched'
+        ? (walletWithdrawalSummary?.paidReconciled ?? 0)
+        : walletWithdrawalRequests.length;
+  const withdrawalPagination = filters.withdrawalReconciliation
+    ? buildPayoutServerPagination(
+        walletWithdrawalRequests,
+        { ...filters, page: filters.withdrawalPage },
+        withdrawalTotal,
+      )
+    : null;
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
   const payoutStatusLanes = buildPayoutStatusLanes(payoutLanes);
@@ -104,7 +137,6 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const releaseBlockerRows = buildPayoutReleaseBlockerRows(releaseQueue);
   const partnerFinanceQueueRows = buildPayoutPartnerFinanceQueueRows(batches);
   const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
-  const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
   const confirmationBatchId = readSearchParam(params.payoutBatchId);
   const confirmationBatch = allBatches.find((batch) => batch.id === confirmationBatchId);
   const confirmation = buildPayoutActionConfirmation(
@@ -113,32 +145,79 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     confirmationBatchId,
     confirmationBatch ? payoutActionAvailability(confirmationBatch, confirmationAction) : {},
   );
+  const needsFinanceApproverDirectory =
+    confirmationAction === 'paid' ||
+    walletWithdrawalRequests.some(
+      (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
+    );
+  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
+    ? await Promise.all([
+        getCurrentAdminOperatorAccess(),
+        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
+      ])
+    : [null, []];
+  const financeApproverOptions = buildFinanceApproverOptions(
+    financeApproverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
 
   return (
     <AdminPageTemplate
       description="Partner payout batches for transfer readiness, tax evidence, cash-fee debt holds, and finance release checks."
       metrics={[
-        { label: 'Total batches', value: summary.total, helper: 'Payout batches in the selected range.' },
-        { label: 'Needs review', value: summary.needsReview, helper: 'Draft or failed payout batches.' },
-        { label: 'In progress', value: summary.inProgress, helper: 'Processing transfer batches.' },
         {
+          helper: 'Payout batches in the selected range.',
+          kind: 'period',
+          label: 'Total batches',
+          scope: payoutRangeScope,
+          value: summary.total,
+        },
+        {
+          helper: 'Draft or failed payout batches.',
+          kind: 'risk',
+          label: 'Needs review',
+          scope: 'Needs action',
+          value: summary.needsReview,
+        },
+        {
+          helper: 'Processing transfer batches.',
+          kind: 'live',
+          label: 'In progress',
+          scope: 'Live',
+          value: summary.inProgress,
+        },
+        {
+          kind: 'risk',
           label: 'Payout holds',
+          scope: 'Needs action',
           value: summary.payoutHolds,
           helper: 'Batches blocked by Partner account checks.',
         },
         {
+          kind: 'action',
           label: 'Missing refs',
+          scope: 'Pending',
           value: summary.missingTransferRefs,
           helper: 'Transfer references required before paid.',
         },
-        { label: 'Settled', value: summary.settled, helper: 'Paid payout batches.' },
         {
+          helper: 'Paid payout batches.',
+          kind: 'record',
+          label: 'Settled',
+          scope: 'Transfer records',
+          value: summary.settled,
+        },
+        {
+          kind: 'period',
           label: 'Total net',
+          scope: payoutRangeScope,
           value: <MoneyText amount={summary.totalNetAmount} currency={summary.currency} />,
           helper: 'Partner net in visible batches.',
         },
         {
+          kind: 'period',
           label: 'Withheld tax',
+          scope: payoutRangeScope,
           value: <MoneyText amount={summary.withholdingAmount} currency={summary.currency} />,
           helper: 'Tax logs attached to payout batches.',
         },
@@ -146,63 +225,67 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       title="Partner Payouts"
     >
       {confirmation ? (
-        <ConfirmDialog
-          action={payoutConfirmationAction(confirmation.action)}
-          cancelHref={confirmation.cancelHref}
-          confirmLabel={confirmation.confirmLabel}
-          description={confirmation.description}
-          disabled={confirmation.disabled}
-          hiddenInputs={[
-            { name: 'payoutBatchId', value: confirmation.payoutBatchId },
-            { name: 'transferRef', value: confirmation.transferRef },
-          ]}
-          id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
-          textInputs={
-            confirmation.action === 'paid'
-              ? [
-                  {
-                    label: 'Approving admin id',
-                    name: 'approvalAdminId',
-                    placeholder: 'Different admin user id',
-                    required: true,
-                  },
-                ]
-              : []
-          }
-          title={confirmation.title}
-          tone={confirmation.tone}
-        />
+        <>
+          {confirmation.action === 'paid' && financeApproverOptions.length === 0 ? (
+            <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+              No other Finance approver is available. Assign the FINANCE_APPROVER role before closing this payout as paid.
+            </AdminInlineNotice>
+          ) : null}
+          <ConfirmDialog
+            action={payoutConfirmationAction(confirmation.action)}
+            cancelHref={confirmation.cancelHref}
+            confirmLabel={confirmation.confirmLabel}
+            description={confirmation.description}
+            disabled={confirmation.disabled || (confirmation.action === 'paid' && financeApproverOptions.length === 0)}
+            hiddenInputs={[
+              { name: 'payoutBatchId', value: confirmation.payoutBatchId },
+              { name: 'transferRef', value: confirmation.transferRef },
+            ]}
+            id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
+            selectInputs={
+              confirmation.action === 'paid'
+                ? [
+                    {
+                      label: 'Separate Finance approver',
+                      name: 'approvalAdminId',
+                      options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
+                      required: true,
+                    },
+                  ]
+                : []
+            }
+            title={confirmation.title}
+            tone={confirmation.tone}
+          />
+        </>
       ) : null}
 
       <AdminTablePanel
         className="payout-date-range-card"
         description={`Range: ${dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service evidence use payout batch record dates.`}
+        footer={
+          <AdminTextLink href="/finance-closeout">
+            Open finance closeout
+          </AdminTextLink>
+        }
         resultLabel={`${summary.total} batch(es)`}
         resultTone={summary.total > 0 ? 'info' : 'warning'}
         title="Payout date range"
       >
-        <AdminFilterChipGroup ariaLabel="Payout closeout links" className="admin-mb-12">
-          <AdminTextLink href="/finance-closeout">
-            Open finance closeout
-          </AdminTextLink>
-        </AdminFilterChipGroup>
-        <AdminFilterChipGroup ariaLabel="Payout date range" className="admin-mt-12">
-          {[
-            { href: '/payouts?range=all', label: 'All dates', range: 'all' },
-            { href: '/payouts?range=today', label: 'Today', range: 'today' },
-            { href: '/payouts?range=7d', label: 'Last 7 days', range: '7d' },
-            { href: '/payouts?range=30d', label: 'Last 30 days', range: '30d' },
-          ].map((option) => (
-            <StatusBadgeLink
-              ariaCurrent={option.range === filters.range ? 'page' : undefined}
-              href={option.href}
-              key={option.range}
-              tone={option.range === filters.range ? 'info' : 'neutral'}
-            >
-              {option.label}
-            </StatusBadgeLink>
-          ))}
-        </AdminFilterChipGroup>
+        <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
+          <span className="payout-range-filter-group-label">Range</span>
+          <AdminSegmentedControl
+            activeValue={filters.range}
+            ariaLabel="Payout date range"
+            className="payout-range-filter-buttons"
+            options={[
+              { href: '/payouts?range=all', label: 'All dates', value: 'all' },
+              { href: '/payouts?range=today', label: 'Today', value: 'today' },
+              { href: '/payouts?range=7d', label: 'Last 7 days', value: '7d' },
+              { href: '/payouts?range=30d', label: 'Last 30 days', value: '30d' },
+            ]}
+          />
+        </div>
       </AdminTablePanel>
       <AdminTablePanel
         className="payout-release-policy-card"
@@ -224,6 +307,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
         <AdminTraceSummary
           className="admin-mt-12"
+          defaultKind="live"
+          defaultScope="Live policy"
           metrics={appliedPayoutPolicyCards.map((card) => ({
             detail: card.helper,
             label: card.label,
@@ -301,7 +386,12 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </AdminTaskGrid>
       </AdminTablePanel>
 
-      <PayoutMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
+      <PayoutMoneyFlowSection
+        cards={moneyFlowCards}
+        checks={moneyFlowChecks}
+        currency={summary.currency}
+        rangeLabel={dateRangeLabel(filters.range)}
+      />
 
       <PayoutCommandQueueSection signals={commandSignals} />
 
@@ -312,9 +402,23 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
 
       <PayoutWalletWithdrawalRequestSection
+        activeReconciliation={filters.withdrawalReconciliation}
         activeStatus={filters.withdrawalStatus}
+        pagination={withdrawalPagination}
+        paginationHrefForPage={(withdrawalPage) =>
+          payoutHref({
+            page: filters.page,
+            pageSize: filters.pageSize,
+            range: filters.range,
+            withdrawalPage,
+            withdrawalReconciliation: filters.withdrawalReconciliation,
+            withdrawalStatus: filters.withdrawalStatus,
+          })
+        }
         range={filters.range}
         requests={walletWithdrawalRequests}
+        financeApproverOptions={financeApproverOptions}
+        summary={walletWithdrawalSummary}
         updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
       />
 
@@ -333,6 +437,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             page,
             pageSize: filters.pageSize,
             range: filters.range,
+            withdrawalPage: filters.withdrawalPage,
+            withdrawalReconciliation: filters.withdrawalReconciliation,
             withdrawalStatus: filters.withdrawalStatus,
           })
         }
@@ -367,6 +473,7 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
       partnerChecksHref: `/partners/${batch.providerProfileId}`,
       statusLabel: humanizeStatus(batch.status),
       phase: payoutPhase(batch.status),
+      operatorEvidence: adminPayoutBatchOperatorEvidenceLines(batch),
       opsSignalClassName: payoutHold ? 'signal signal-warn' : signalClass(batch.status),
       opsSignal: opsSignal(batch),
       opsHint: opsHint(batch),

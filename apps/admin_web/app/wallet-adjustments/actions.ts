@@ -35,7 +35,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
   let payload: ReturnType<typeof readManualWalletAdjustmentPayload>;
 
   try {
-    payload = readManualWalletAdjustmentPayload(formData, true);
+    payload = readManualWalletAdjustmentPayload(formData);
   } catch (error) {
     const notice =
       error instanceof WalletAdjustmentValidationError ? error.notice : 'failed';
@@ -45,7 +45,7 @@ export async function createManualWalletAdjustment(formData: FormData) {
   }
 
   try {
-    await adminPostOrThrow('/admin/wallet-adjustments', payload);
+    await adminPostOrThrow('/admin/wallet-adjustment-requests', payload);
   } catch (error) {
     if (isAdminApiAuthError(error)) {
       return redirect(walletAdjustmentNoticeRedirect('admin-auth', payload));
@@ -54,22 +54,22 @@ export async function createManualWalletAdjustment(formData: FormData) {
   }
 
   revalidatePath('/wallet-adjustments');
+  revalidatePath('/finance-tax/approval-queue');
   revalidatePath('/cash-settlements');
   revalidatePath('/earnings');
   revalidatePath('/payouts');
   revalidatePath('/partners');
   revalidatePath('/customers');
   revalidatePath('/audit-log');
-  redirect(walletAdjustmentNoticeRedirect('created', payload));
+  redirect(walletAdjustmentNoticeRedirect('requested', payload));
 }
 
 type WalletAdjustmentNotice =
   | 'admin-auth'
-  | 'approval-admin-required'
-  | 'approval-required'
   | 'attachment-invalid'
   | 'attachment-required'
   | 'created'
+  | 'requested'
   | 'failed'
   | 'monthly-period-invalid'
   | 'settlement-required';
@@ -77,8 +77,6 @@ type WalletAdjustmentNotice =
 type WalletAdjustmentRedirectContext = {
   readonly adjustmentType?: AdminManualWalletAdjustmentType;
   readonly amount?: number | string;
-  readonly approvalAdminId?: string;
-  readonly approvalId?: string;
   readonly attachmentUrl?: string;
   readonly direction?: AdminManualWalletAdjustmentDirection;
   readonly monthlyPeriod?: string;
@@ -110,14 +108,6 @@ function walletAdjustmentNoticeRedirect(notice: WalletAdjustmentNotice, context:
     params.set('amount', String(context.amount));
   }
 
-  if (context.approvalId) {
-    params.set('approvalId', context.approvalId);
-  }
-
-  if (context.approvalAdminId) {
-    params.set('approvalAdminId', context.approvalAdminId);
-  }
-
   if (context.reason) {
     params.set('reason', context.reason);
   }
@@ -139,8 +129,6 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
   const direction = readOptionalString(formData, 'direction');
   const adjustmentType = readOptionalString(formData, 'adjustmentType');
   const amount = readOptionalString(formData, 'amount');
-  const approvalId = readOptionalString(formData, 'approvalId');
-  const approvalAdminId = readOptionalString(formData, 'approvalAdminId');
   const attachmentUrl = readSafeAttachmentUrlForRedirect(formData);
   const monthlyPeriod = readSafeMonthlyPeriodForRedirect(formData);
   const reason = readOptionalString(formData, 'reason');
@@ -150,8 +138,6 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
       ? { adjustmentType: adjustmentType as AdminManualWalletAdjustmentType }
       : {}),
     ...(amount ? { amount } : {}),
-    ...(approvalAdminId ? { approvalAdminId } : {}),
-    ...(approvalId ? { approvalId } : {}),
     ...(attachmentUrl ? { attachmentUrl } : {}),
     ...(directions.has(direction as AdminManualWalletAdjustmentDirection)
       ? { direction: direction as AdminManualWalletAdjustmentDirection }
@@ -165,28 +151,18 @@ function readManualWalletAdjustmentRedirectContext(formData: FormData): WalletAd
   };
 }
 
-function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: boolean) {
+function readManualWalletAdjustmentPayload(formData: FormData) {
   const ownerType = readEnum(formData, 'ownerType', ownerTypes, 'Owner type');
   const ownerId = readRequiredString(formData, 'ownerId', 'Owner profile id');
   const direction = readEnum(formData, 'direction', directions, 'Direction');
   const adjustmentType = readEnum(formData, 'adjustmentType', adjustmentTypes, 'Adjustment type');
   const amount = readPositiveAmount(formData);
   const reason = readRequiredString(formData, 'reason', 'Reason');
-  const approvalId = readOptionalString(formData, 'approvalId');
-  const approvalAdminId = readOptionalString(formData, 'approvalAdminId');
   const monthlyPeriod = readMonthlyPeriod(formData);
   const attachmentUrl = readAttachmentUrl(formData);
 
   if (SETTLEMENT_ONLY_ADJUSTMENT_TYPES.has(adjustmentType)) {
     throw new WalletAdjustmentValidationError('settlement-required');
-  }
-
-  if (requireApproval && !approvalId) {
-    throw new WalletAdjustmentValidationError('approval-required');
-  }
-
-  if (requireApproval && !approvalAdminId) {
-    throw new WalletAdjustmentValidationError('approval-admin-required');
   }
 
   if (requiresAttachmentEvidence(adjustmentType, amount) && !attachmentUrl) {
@@ -196,8 +172,6 @@ function readManualWalletAdjustmentPayload(formData: FormData, requireApproval: 
   return {
     adjustmentType,
     amount,
-    ...(approvalAdminId ? { approvalAdminId } : {}),
-    ...(approvalId ? { approvalId } : {}),
     ...(attachmentUrl ? { attachmentUrl } : {}),
     direction,
     ...(monthlyPeriod ? { monthlyPeriod } : {}),

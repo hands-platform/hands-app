@@ -5,6 +5,7 @@ import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 import { ActionMenu } from '../../components/action-menu';
 import {
   AdminFormControlButton,
+  AdminFormControlLink,
   AdminFormDateTime,
   AdminFormInput,
   AdminFormSelect,
@@ -76,7 +77,7 @@ export function CashSettlementOpenDebtTableSection({
 
   return (
     <AdminTablePanel
-      description="Settle only after confirming a Partner deposit or a documented admin offset. The backend rejects missing references."
+      description="Approved Partner deposits are allocated from their immutable deposit detail. Direct settlement here is reserved for documented admin offsets."
       resultLabel={`${pagination.totalRows} row(s)`}
       resultTone={pagination.totalRows > 0 ? 'warning' : 'success'}
       title="Open cash fee debt rows"
@@ -84,6 +85,9 @@ export function CashSettlementOpenDebtTableSection({
       <AdminFilterChipGroup ariaLabel="Open cash debt links" className="admin-mb-12">
         <AdminTextLink href="/payments?review=cash-debt">
           Payment debt view
+        </AdminTextLink>
+        <AdminTextLink href="/finance-tax/partner-bank-deposits">
+          Partner deposit history
         </AdminTextLink>
       </AdminFilterChipGroup>
       <FinanceDataTable
@@ -213,19 +217,13 @@ export function CashSettlementOpenDebtTableSection({
                       name="notes"
                       placeholder="Deposit notes"
                     />
-                    <AdminFormInput
-                      label="Finance approver id"
-                      name="approvalAdminId"
-                      placeholder="Finance approver admin id"
-                      required
-                    />
                     <AdminFormControlButton className="button-primary" type="submit">
-                      Record bank deposit
+                      Request bank deposit approval
                     </AdminFormControlButton>
                   </AdminInlineForm>
                   <p className="muted admin-mt-8">
-                    Partner deposit is not platform revenue. It first settles negative wallet receivable,
-                    then becomes partner wallet liability.
+                    This creates an immutable request. A different finance approver must execute it before
+                    the wallet, GL, or audit settlement evidence changes.
                   </p>
                 </>
               ) : null}
@@ -233,22 +231,19 @@ export function CashSettlementOpenDebtTableSection({
                 <input type="hidden" name="confirm" value="settle" />
                 <input type="hidden" name="earningId" value={row.earningId} />
                 <AdminFormSelect
-                  defaultValue={row.settlementMethodDefault}
+                  defaultValue="ADMIN_OFFSET"
                   label="Settlement method"
                   name="settlementMethod"
-                  options={[
-                    { label: 'Partner deposit', value: 'PARTNER_DEPOSIT' },
-                    { label: 'Admin offset', value: 'ADMIN_OFFSET' },
-                  ]}
+                  options={[{ label: 'Admin offset', value: 'ADMIN_OFFSET' }]}
                 />
                 <AdminFormInput
                   defaultValue={row.settlementReference}
                   label="Settlement reference"
                   name="settlementRef"
-                  placeholder="Bank deposit ref or admin offset"
+                  placeholder="Approved admin offset reference"
                 />
                 <AdminFormInput
-                  defaultValue={row.settlementNotesDefault}
+                  defaultValue={`Admin offset review for cash debt ${row.earningId}`}
                   label="Settlement notes"
                   name="settlementNotes"
                   placeholder="Evidence note"
@@ -257,6 +252,12 @@ export function CashSettlementOpenDebtTableSection({
                   Review settlement
                 </AdminFormControlButton>
               </AdminInlineForm>
+              <AdminFormControlLink
+                className="button-secondary admin-mt-8"
+                href={`/finance-tax/partner-bank-deposits?${new URLSearchParams({ q: row.providerProfileId }).toString()}`}
+              >
+                Allocate approved deposit
+              </AdminFormControlLink>
             </td>
           </tr>
         ))}

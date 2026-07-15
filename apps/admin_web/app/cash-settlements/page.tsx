@@ -9,7 +9,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { MoneyText } from '../../components/money-text';
-import { readSearchParam } from '../../lib/date-range';
+import { dateRangeLabel, readSearchParam } from '../../lib/date-range';
 import {
   buildAdminLiveOperationsPolicy,
   LEGACY_OPERATIONAL_POLICY_KEYS,
@@ -87,6 +87,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const openDebtRows = buildCashSettlementOpenDebtTableRows(rows);
   const openDebtPagination = buildCashSettlementServerPagination(openDebtRows, filters, summary.rowCount);
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
+  const cashSettlementRangeScope = dateRangeLabel(filters.range);
   const priorityBoard = buildCashSettlementPriorityBoard(rows);
   const confirmation =
     readSearchParam(params.confirm) === 'settle'
@@ -103,40 +104,66 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       description="Finance queue for cash bookings where the Partner collected customer cash and still owes HANDS platform fee or withholding."
       metrics={[
         {
-          helper: 'Partners with open cash-fee debt rows.',
+          helper: 'Partner-held cash debt needing follow-up.',
+          kind: 'risk',
           label: 'Partners with cash debt',
+          scope: 'Needs action',
           value: summary.providerCount,
         },
         {
-          helper: 'Visible settlement rows after filters.',
+          helper: 'Open cash-fee rows in the current queue.',
+          kind: 'action',
           label: 'Open debt rows',
+          scope: 'Pending',
           value: summary.rowCount,
         },
         {
-          helper: 'Company fee or tax still owed to HANDS.',
+          helper: 'Company receivable risk from Partner-held cash.',
+          kind: 'risk',
           label: 'Total wallet debt',
+          scope: 'Risk',
           value: <MoneyText amount={summary.debtAmount} currency={summary.currency} />,
         },
         {
-          helper: 'Company-funded coupon amount already offset from Partner cash settlement.',
+          helper: 'Period coupon offsets already applied to cash settlements.',
+          kind: 'period',
           label: 'Company coupon offset',
+          scope: cashSettlementRangeScope,
           value: <MoneyText amount={summary.companyCouponOffset} currency={summary.currency} />,
         },
         {
-          helper: 'Platform fee portion of cash debt.',
+          helper: 'Period platform fee still owed from cash bookings.',
+          kind: 'period',
           label: 'HANDS fee',
+          scope: cashSettlementRangeScope,
           value: <MoneyText amount={summary.platformFee} currency={summary.currency} />,
         },
         {
-          helper: 'Tax portion of cash debt.',
+          helper: 'Period withholding still waiting for recovery.',
+          kind: 'period',
           label: 'Tax withholding',
+          scope: cashSettlementRangeScope,
           value: <MoneyText amount={summary.taxAmount} currency={summary.currency} />,
         },
-        { helper: 'Oldest visible settlement row.', label: 'Oldest open', value: summary.oldestOpenLabel },
-        { helper: 'Rows older than 24 hours.', label: 'Over 24h', value: summary.staleDebtRowCount },
         {
-          helper: 'Rows needing payment evidence review.',
+          helper: 'Oldest pending cash settlement in the queue.',
+          kind: 'action',
+          label: 'Oldest open',
+          scope: 'Pending',
+          value: summary.oldestOpenLabel,
+        },
+        {
+          helper: 'Aged cash debt needing same-day follow-up.',
+          kind: 'risk',
+          label: 'Over 24h',
+          scope: 'Needs action',
+          value: summary.staleDebtRowCount,
+        },
+        {
+          helper: 'Open rows missing payment evidence.',
+          kind: 'risk',
           label: 'Payment evidence',
+          scope: 'Needs action',
           value: summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK',
         },
       ]}

@@ -687,7 +687,7 @@ describe('finance detail pages', () => {
   });
 
   it('renders bank reconciliation detail and locks manual match controls for fully matched rows', async () => {
-    mockedAdminGet.mockResolvedValue({
+    const transaction = {
       amount: 650000,
       bankAccount: {
         accountNumberMasked: '****1234',
@@ -741,6 +741,9 @@ describe('finance detail pages', () => {
       type: 'INFLOW',
       updatedAt: '2026-06-20T10:05:00.000Z',
       valueDate: '2026-06-20T00:00:00.000Z',
+    };
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      return String(href).includes('/admin/users') ? fallback : transaction;
     });
 
     const page = await BankReconciliationDetailPage({
@@ -774,7 +777,9 @@ describe('finance detail pages', () => {
     expect(markup).toContain('/finance-tax/payment-clearing/clearing-1');
     expect(markup).toContain('finance-reconciliation-source-cell');
     expect(markup).toContain('finance-reconciliation-reverse-form');
-    expect(markup).toContain('Requires approver ID before reversal.');
+    expect(markup).toContain('Review match reversal');
+    expect(markup).toContain('Confirm reversal');
+    expect(markup).toContain('Reversal reason');
     expect(markup).toContain('Manual reconciliation match');
     expect(markup).toContain('This bank transaction is already fully reconciled.');
     expect(markup).not.toContain('Create match');
@@ -876,10 +881,12 @@ describe('finance detail pages', () => {
     );
     expect(markup).toContain('type="hidden" name="sourceType" value="payment-clearing"');
     expect(markup).toContain('name="sourceId"');
-    expect(markup).toContain('Create match');
+    expect(markup).toContain('Review payment clearing match');
+    expect(markup).toContain('Confirm clearing match');
     expect(markup).toContain('Suggested amount:');
     expect(markup).toContain('650.000 VND');
-    expect(markup).toContain('Requires explicit source id and approver evidence.');
+    expect(markup).toContain('Review advanced source match');
+    expect(markup).toContain('Confirm advanced match');
     expect(markup).not.toContain('This bank transaction is already fully reconciled.');
   });
 
@@ -963,7 +970,7 @@ describe('finance detail pages', () => {
     expect(markup).toContain('Review reversed evidence');
     expect(markup).toContain('Reversal reason');
     expect(markup).toContain('Incorrect bank evidence selected.');
-    expect(markup).toContain('Create match');
+    expect(markup).toContain('Confirm clearing match');
   });
 
   it('uses shared badge atoms for finance detail status pills', () => {

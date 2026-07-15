@@ -28,7 +28,7 @@ describe('FinanceTaxPage', () => {
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('card admin-section admin-mb-16');
     expect(markup).toContain('card admin-filter-panel booking-monitor-filter-panel admin-mt-16');
     expect(markup).toContain('Tax command board');
     expect(markup).toContain('Open finance risk');
@@ -41,7 +41,7 @@ describe('FinanceTaxPage', () => {
     expect(markup).not.toContain('Coupon finance summary');
     expect(markup).not.toContain('Payout and wallet priority desk');
     expect(markup).toContain('Finance tax workspaces');
-    expect(markup).toContain('admin-filter-panel-body');
+    expect(markup).toContain('admin-section-body');
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
       expect.stringContaining('/admin/booking-settlement-snapshots/coupon-finance-summary'),
       expect.anything(),
@@ -140,6 +140,21 @@ describe('FinanceTaxPage', () => {
       expect.stringContaining('/admin/provider-wallet/withdrawal-requests/summary'),
       expect.anything(),
     );
+  });
+
+  it('scopes finance overview KPI cards by active queue, needs action, and monthly tax period', () => {
+    const source = readFileSync(join(process.cwd(), 'app/finance-tax/page.tsx'), 'utf8');
+
+    expect(source).toContain("const settlementScope = 'Active queue';");
+    expect(source).toContain('scope: settlementScope');
+    expect(source).toContain("scope: 'Needs action'");
+    expect(source).toContain('scope: monthlyScope');
+    expect(source).toContain("kind: 'record'");
+    expect(source).toContain("kind: 'action'");
+    expect(source).toContain("kind: 'period'");
+    expect(source).toContain("kind: 'risk'");
+    expect(source).toContain('Bookings with coupon metadata in the selected finance range and active queue.');
+    expect(source).not.toContain('current finance range');
   });
 });
 

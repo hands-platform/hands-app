@@ -25,9 +25,10 @@ type EarningsMoneyFlowSectionProps = {
   readonly cards: readonly EarningsMoneyFlowCard[];
   readonly checks: readonly EarningsMoneyFlowCheck[];
   readonly currency: string;
+  readonly rangeLabel?: string;
 };
 
-export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMoneyFlowSectionProps) {
+export function EarningsMoneyFlowSection({ cards, checks, currency, rangeLabel = 'Selected range' }: EarningsMoneyFlowSectionProps) {
   return (
     <AdminTablePanel
       description="Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax, company net, and cash debt before payout."
@@ -41,6 +42,8 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
         </AdminTextLink>
       </AdminFilterChipGroup>
       <AdminTraceSummary
+        defaultKind="period"
+        defaultScope={rangeLabel}
         metrics={cards.map((card) => ({
           detail: card.detail,
           key: card.label,

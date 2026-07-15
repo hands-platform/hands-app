@@ -110,7 +110,7 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).not.toContain('Cash settlement action execution map');
     expect(rendered).not.toContain('Accounting preview');
     expect(rendered).not.toContain('Platform net wallet deduction 58.519 VND');
-    expect(rendered).not.toContain('Record bank deposit');
+    expect(rendered).not.toContain('Request bank deposit approval');
     expect(rendered).not.toContain('Finance approver id');
   });
 
@@ -135,8 +135,8 @@ describe('CashSettlementOpenDebtTableSection', () => {
     expect(rendered).toContain('Cr Company output VAT payable 9.481 VND');
     expect(rendered).toContain('Cr Partner withholding tax payable 42.000 VND');
     expect(rendered).toContain('Coupon offset already applied 60.000 VND');
-    expect(rendered).toContain('Record bank deposit');
-    expect(rendered).toContain('Finance approver id');
+    expect(rendered).toContain('Request bank deposit approval');
+    expect(rendered).not.toContain('Finance approver id');
     expect(rendered).toContain('Review settlement');
     expect(rendered.replace(/\s+/g, ' ')).toContain('Showing 1 to 1 of 12 entries');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1', '/bookings/booking-1']));

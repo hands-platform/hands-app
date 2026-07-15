@@ -13,12 +13,16 @@ export async function settleCashFeeDebt(formData: FormData) {
   const settlementNotes = String(formData.get('settlementNotes') ?? '').trim();
   const settlementMethod = String(formData.get('settlementMethod') ?? '').trim();
 
+  if (settlementMethod && settlementMethod !== 'ADMIN_OFFSET') {
+    throw new Error('Approved Partner deposits must be allocated from the deposit detail');
+  }
+
   await adminPost(
     `/admin/earnings/${earningId}/mark-paid`,
     {
       settlementRef: settlementRef || undefined,
       settlementNotes: settlementNotes || undefined,
-      settlementMethod: settlementMethod || 'PARTNER_DEPOSIT',
+      settlementMethod: 'ADMIN_OFFSET',
     },
     null,
   );
@@ -42,19 +46,15 @@ export async function recordPartnerBankDeposit(formData: FormData) {
   const attachmentFileId = String(formData.get('attachmentFileId') ?? '').trim();
   const attachmentUrl = String(formData.get('attachmentUrl') ?? '').trim();
   const notes = String(formData.get('notes') ?? '').trim();
-  const approvalAdminId = String(formData.get('approvalAdminId') ?? '').trim();
 
   if (!providerProfileId || !Number.isFinite(amount) || amount <= 0 || !bankTransactionId || !depositDate) {
     throw new Error('Partner bank deposit requires partner, amount, transaction id, and deposit date');
-  }
-  if (!approvalAdminId) {
-    throw new Error('Partner bank deposit requires approval from a finance approver');
   }
   if (!attachmentFileId && !attachmentUrl) {
     throw new Error('Partner bank deposit requires attachment evidence');
   }
 
-  await adminPostOrThrow('/admin/provider-wallet/deposits', {
+  await adminPostOrThrow('/admin/provider-wallet/deposit-requests', {
     providerProfileId,
     amount,
     bankTransactionId,
@@ -63,7 +63,6 @@ export async function recordPartnerBankDeposit(formData: FormData) {
     attachmentFileId: attachmentFileId || undefined,
     attachmentUrl: attachmentUrl || undefined,
     notes: notes || undefined,
-    approvalAdminId,
   });
 
   revalidatePath('/cash-settlements');
@@ -74,4 +73,5 @@ export async function recordPartnerBankDeposit(formData: FormData) {
   revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
+  revalidatePath('/finance-tax/approval-queue');
 }

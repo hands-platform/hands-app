@@ -84,6 +84,8 @@ describe('EarningsPage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('card admin-filter-panel admin-mb-16');
+    expect(markup).toContain('Active earnings filters');
+    expect(markup).toContain('Range: Today');
     expect(markup).toContain('vuexy-booking-table-card vuexy-booking-table-group');
     expect(markup).toContain('Server Trusted Earning');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/earnings/summary?range=today', expect.any(Object));
@@ -175,9 +177,11 @@ describe('EarningsPage', () => {
     );
   });
 
-  it('uses shared status links for earnings range filters', () => {
-    expect(pageSource).toContain('AdminFilterChipGroup');
-    expect(pageSource).toContain('StatusBadgeLink');
+  it('uses shared segmented controls for earnings range filters', () => {
+    expect(pageSource).toContain('AdminFilterSummary');
+    expect(pageSource).not.toContain('AdminFilterChipGroup');
+    expect(pageSource).toContain('AdminSegmentedControl');
+    expect(pageSource).not.toContain('StatusBadgeLink');
     expect(pageSource).not.toContain('<div className="participant-list');
     expect(pageSource).not.toContain('PillClassBadgeLink');
   });
@@ -197,5 +201,15 @@ describe('EarningsPage', () => {
     expect(pageSource).not.toContain('value: formatMoney(summary.pendingNetAmount, summary.currency)');
     expect(pageSource).not.toContain('value: formatMoney(summary.availableNetAmount, summary.currency)');
     expect(pageSource).not.toContain('value: formatMoney(summary.paidNetAmount, summary.currency)');
+  });
+
+  it('scopes top-level earnings KPI cards by selected range and payout action state', () => {
+    expect(pageSource).toContain('const earningsRangeScope = dateRangeLabel(filters.range);');
+    expect(pageSource).toContain('scope: earningsRangeScope');
+    expect(pageSource).toContain("scope: 'Pending'");
+    expect(pageSource).toContain("scope: 'Payout records'");
+    expect(pageSource).toContain("kind: 'period'");
+    expect(pageSource).toContain("kind: 'action'");
+    expect(pageSource).toContain("kind: 'record'");
   });
 });

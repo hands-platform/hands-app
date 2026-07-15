@@ -1,11 +1,21 @@
-import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminDataTable,
+  AdminTablePaginationFooter,
+  AdminTableScroll,
+} from '../../components/admin-data-table';
 import { AdminEmptyState } from '../../components/admin-empty-state';
+import {
+  AdminFinanceOperatorEvidence,
+  adminWithdrawalOperatorEvidenceLines,
+} from '../../components/admin-finance-operator-evidence';
 import { AdminInlineActionForm } from '../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
+import { AdminInlineNotice } from '../../components/admin-inline-notice';
 import {
   AdminFormControlButton,
   AdminFormDateTime,
   AdminFormInput,
+  AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminSummaryCardGrid } from '../../components/admin-overview-card';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -17,51 +27,99 @@ import { StatusBadge, type StatusBadgeTone } from '../../components/status-badge
 import { shortRecordId } from '../../lib/admin-format';
 import type {
   AdminProviderWalletWithdrawalRequest,
+  AdminProviderWalletWithdrawalRequestSummary,
   AdminProviderWalletWithdrawalRequestStatus,
 } from '../../lib/admin-api';
 import { providerWalletWithdrawalStatusChangeView } from '../../lib/provider-wallet-withdrawal-status-change';
+import type { PayoutServerPagination } from './payouts-page-model';
+import type { FinanceApproverOption } from '../finance-tax/finance-approver-options';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
 type PayoutWalletWithdrawalRequestSectionProps = {
+  readonly activeReconciliation?: 'unmatched' | 'matched' | null;
   readonly activeStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
+  readonly financeApproverOptions?: readonly FinanceApproverOption[];
+  readonly pagination?: PayoutServerPagination<AdminProviderWalletWithdrawalRequest> | null;
+  readonly paginationHrefForPage?: (page: number) => string;
   readonly range?: string;
   readonly requests: readonly AdminProviderWalletWithdrawalRequest[];
+  readonly summary?: AdminProviderWalletWithdrawalRequestSummary | null;
   readonly updateWithdrawalRequestAction: FormAction;
 };
 
 const headers = ['Partner', 'Amount', 'Bank account', 'Status', 'Requested', 'Action'] as const;
 
 export function PayoutWalletWithdrawalRequestSection({
+  activeReconciliation = null,
   activeStatus = null,
+  financeApproverOptions = [],
+  pagination = null,
+  paginationHrefForPage,
   range = 'today',
   requests,
+  summary: serverSummary = null,
   updateWithdrawalRequestAction,
 }: PayoutWalletWithdrawalRequestSectionProps) {
+  const reconciliationNeedsActionCount = requests.filter(
+    (request) => request.status === 'PAID' && request.reconciliationState === 'UNMATCHED',
+  ).length;
   const needsActionCount = requests.filter((request) => !isTerminalStatus(request.status)).length;
-  const summary = buildWithdrawalRequestSummary(requests);
+  const hasPaidCloseoutAction = requests.some(
+    (request) => request.status === 'APPROVED' || request.status === 'BANK_TRANSFER_PENDING',
+  );
+  const visibleSummary = buildWithdrawalRequestSummary(requests);
+  const paidUnreconciled = serverSummary?.paidUnreconciled ?? 0;
+  const paidReconciled = serverSummary?.paidReconciled ?? 0;
 
   return (
     <AdminTablePanel
       className="payout-wallet-withdrawal-request-section admin-mb-16"
       description="Partner wallet withdrawal requests from the partner app. Finance can request bank correction, approve, reject, or mark paid after manual bank transfer."
       id="partner-wallet-withdrawal-requests"
-      resultLabel={needsActionCount ? `${needsActionCount} needs action` : 'Clear'}
-      resultTone={needsActionCount ? 'warning' : 'success'}
+      resultLabel={
+        reconciliationNeedsActionCount
+          ? `${reconciliationNeedsActionCount} bank match pending`
+          : needsActionCount
+            ? `${needsActionCount} needs action`
+            : 'Clear'
+      }
+      resultTone={reconciliationNeedsActionCount || needsActionCount ? 'warning' : 'success'}
       title="Partner wallet withdrawal requests"
     >
+      {hasPaidCloseoutAction && financeApproverOptions.length === 0 ? (
+        <AdminInlineNotice className="admin-mb-12" role="alert" tone="warning">
+          No other Finance approver is available. Paid closeout remains disabled until another operator has the FINANCE_APPROVER role.
+        </AdminInlineNotice>
+      ) : null}
       <AdminSummaryCardGrid
         ariaLabel="Withdrawal request status summary"
         className="payout-wallet-withdrawal-summary-grid"
         itemClassName="payout-wallet-withdrawal-summary-card"
         items={[
           {
+            className: activeReconciliation === 'unmatched' ? 'is-active' : undefined,
+            detail: activeReconciliation === 'unmatched' ? 'Selected' : 'Open action queue',
+            href: withdrawalReconciliationHref(range, 'unmatched'),
+            label: 'Paid / bank match pending',
+            tone: paidUnreconciled > 0 ? 'warning' : 'success',
+            value: paidUnreconciled,
+          },
+          {
+            className: activeReconciliation === 'matched' ? 'is-active' : undefined,
+            detail: activeReconciliation === 'matched' ? 'Selected' : 'Open records',
+            href: withdrawalReconciliationHref(range, 'matched'),
+            label: 'Paid / reconciled',
+            tone: 'success',
+            value: paidReconciled,
+          },
+          {
             className: activeStatus === 'REQUESTED' ? 'is-active' : undefined,
             detail: activeStatus === 'REQUESTED' ? 'Selected' : 'Open filter',
             href: withdrawalStatusHref(range, 'REQUESTED'),
             label: 'Requested',
             tone: 'neutral',
-            value: summary.requested,
+            value: visibleSummary.requested,
           },
           {
             className: activeStatus === 'REVIEW_REQUIRED' ? 'is-active' : undefined,
@@ -69,7 +127,7 @@ export function PayoutWalletWithdrawalRequestSection({
             href: withdrawalStatusHref(range, 'REVIEW_REQUIRED'),
             label: 'Review required',
             tone: 'warning',
-            value: summary.reviewRequired,
+            value: visibleSummary.reviewRequired,
           },
           {
             className: activeStatus === 'BANK_TRANSFER_PENDING' ? 'is-active' : undefined,
@@ -77,13 +135,13 @@ export function PayoutWalletWithdrawalRequestSection({
             href: withdrawalStatusHref(range, 'BANK_TRANSFER_PENDING'),
             label: 'Bank transfer pending',
             tone: 'info',
-            value: summary.bankTransferPending,
+            value: visibleSummary.bankTransferPending,
           },
           {
             detail: 'Audit evidence',
             label: 'Lock released',
             tone: 'audit',
-            value: summary.lockReleased,
+            value: visibleSummary.lockReleased,
           },
         ]}
       >
@@ -121,6 +179,8 @@ export function PayoutWalletWithdrawalRequestSection({
               </td>
               <td>
                 <StatusBadge tone={statusBadgeTone(request.status)}>{statusLabel(request.status)}</StatusBadge>
+                {request.status === 'PAID' ? <WithdrawalReconciliationEvidence request={request} /> : null}
+                <AdminFinanceOperatorEvidence lines={adminWithdrawalOperatorEvidenceLines(request)} />
                 <WithdrawalStatusChangeEvidence request={request} />
                 {request.correctionReason ? <p className="muted">{request.correctionReason}</p> : null}
                 {request.transferRef ? <p className="muted">Ref {request.transferRef}</p> : null}
@@ -137,6 +197,7 @@ export function PayoutWalletWithdrawalRequestSection({
               </td>
               <td>
                 <WithdrawalRequestActions
+                  financeApproverOptions={financeApproverOptions}
                   request={request}
                   updateWithdrawalRequestAction={updateWithdrawalRequestAction}
                 />
@@ -145,6 +206,18 @@ export function PayoutWalletWithdrawalRequestSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      {pagination && paginationHrefForPage ? (
+        <AdminTablePaginationFooter
+          activePage={pagination.page}
+          ariaLabel="Partner wallet withdrawal reconciliation pages"
+          from={pagination.from}
+          hrefForPage={paginationHrefForPage}
+          itemLabel="withdrawals"
+          to={pagination.to}
+          totalPages={pagination.totalPages}
+          totalRows={pagination.totalRows}
+        />
+      ) : null}
     </AdminTablePanel>
   );
 }
@@ -180,18 +253,48 @@ function withdrawalStatusHref(range: string, status: AdminProviderWalletWithdraw
   return `/payouts?${new URLSearchParams({ range, withdrawalStatus: status }).toString()}`;
 }
 
+function withdrawalReconciliationHref(range: string, reconciliation: 'unmatched' | 'matched') {
+  return `/payouts?${new URLSearchParams({
+    range,
+    withdrawalReconciliation: reconciliation,
+    withdrawalStatus: 'PAID',
+  }).toString()}`;
+}
+
 function WithdrawalRequestActions({
+  financeApproverOptions,
   request,
   updateWithdrawalRequestAction,
 }: {
+  readonly financeApproverOptions: readonly FinanceApproverOption[];
   readonly request: AdminProviderWalletWithdrawalRequest;
   readonly updateWithdrawalRequestAction: FormAction;
 }) {
   if (request.status === 'PAID') {
     return (
-      <span className="muted">
-        Paid <DateTimeText fallback="No paid date" value={request.paidAt} />
-      </span>
+      <div className="admin-inline-action-stack">
+        <span className="muted">
+          Paid <DateTimeText fallback="No paid date" value={request.paidAt} />
+        </span>
+        {request.reconciliationState === 'MATCHED' && request.bankReconciliationMatch ? (
+          <AdminTextLink
+            href={`/finance-tax/bank-reconciliation/${encodeURIComponent(
+              request.bankReconciliationMatch.bankTransactionId,
+            )}`}
+          >
+            Open bank match
+          </AdminTextLink>
+        ) : (
+          <AdminTextLink href={withdrawalBankReconciliationHref(request)}>
+            Match bank evidence
+          </AdminTextLink>
+        )}
+        <AdminTextLink
+          href={`/finance-tax/general-ledger?${new URLSearchParams({ q: request.id }).toString()}`}
+        >
+          Open withdrawal journal
+        </AdminTextLink>
+      </div>
     );
   }
   if (
@@ -280,14 +383,18 @@ function WithdrawalRequestActions({
             required
             type="url"
           />
-          <AdminFormInput
-            label={`Approving admin id for ${partnerLabel(request)}`}
+          <AdminFormSelect
+            disabled={financeApproverOptions.length === 0}
+            label={`Separate Finance approver for ${partnerLabel(request)}`}
             name="approvalAdminId"
-            placeholder="Approving admin id"
+            options={[{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions]}
             required
-            type="text"
           />
-          <AdminFormControlButton className="button-sm button-success" type="submit">
+          <AdminFormControlButton
+            className="button-sm button-success"
+            disabled={financeApproverOptions.length === 0}
+            type="submit"
+          >
             Mark paid
           </AdminFormControlButton>
         </AdminInlineActionForm>
@@ -330,6 +437,35 @@ function WithdrawalRequestActions({
         </AdminInlineActionForm>
       ) : null}
     </div>
+  );
+}
+
+function withdrawalBankReconciliationHref(request: AdminProviderWalletWithdrawalRequest) {
+  const params = new URLSearchParams({ range: '30d', review: 'unmatched' });
+  const transferRef = request.transferRef?.trim();
+  if (transferRef) {
+    params.set('q', transferRef);
+  }
+  return `/finance-tax/bank-reconciliation?${params.toString()}`;
+}
+
+function WithdrawalReconciliationEvidence({
+  request,
+}: {
+  readonly request: AdminProviderWalletWithdrawalRequest;
+}) {
+  if (request.reconciliationState === 'MATCHED') {
+    return (
+      <p className="admin-mt-6">
+        <StatusBadge tone="success">Bank reconciled</StatusBadge>
+      </p>
+    );
+  }
+
+  return (
+    <p className="admin-mt-6">
+      <StatusBadge tone="warning">Bank match pending</StatusBadge>
+    </p>
   );
 }
 

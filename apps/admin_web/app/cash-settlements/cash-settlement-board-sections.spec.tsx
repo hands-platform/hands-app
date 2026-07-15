@@ -15,6 +15,8 @@ describe('CashSettlement board sections', () => {
     );
 
     expect(source).toContain('AdminTraceSummary');
+    expect(source).toContain('defaultKind="live"');
+    expect(source).toContain('defaultScope="Live policy"');
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-12">');
   });
 

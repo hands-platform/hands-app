@@ -63,10 +63,10 @@ export default async function PaymentClearingDetailPage({ params }: PaymentClear
       }
       description="Evidence for one booking payment clearing row. Open this only when finance needs payment, settlement, or bank matching detail."
       metrics={[
-        { helper: 'Clearing state.', label: 'Status', value: entry.status },
-        { helper: 'Clearing row amount.', label: 'Amount', value: <MoneyText amount={entry.amount} currency={entry.currency} /> },
-        { helper: 'Bank reconciliation evidence linked to this row.', label: 'Matches', value: matches.length },
-        { helper: 'Clearing record type.', label: 'Type', value: entry.type },
+        { helper: 'Clearing state.', kind: 'record', label: 'Status', scope: 'Clearing record', value: entry.status },
+        { helper: 'Clearing row amount.', kind: 'record', label: 'Amount', scope: 'Clearing record', value: <MoneyText amount={entry.amount} currency={entry.currency} /> },
+        { helper: 'Bank reconciliation evidence linked to this row.', kind: 'record', label: 'Matches', scope: 'Clearing record', value: matches.length },
+        { helper: 'Clearing record type.', kind: 'record', label: 'Type', scope: 'Clearing record', value: entry.type },
       ]}
       title="Payment Clearing Detail"
     >

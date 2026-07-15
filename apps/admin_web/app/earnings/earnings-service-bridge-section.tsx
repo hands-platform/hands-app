@@ -47,6 +47,8 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
         </AdminTextLink>
       </AdminFilterChipGroup>
       <AdminTraceSummary
+        defaultKind="record"
+        defaultScope="Earning records"
         metrics={[
           { label: 'Service options', value: String(items.length) },
           {

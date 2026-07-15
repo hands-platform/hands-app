@@ -54,10 +54,10 @@ export default async function GeneralLedgerDetailPage({ params }: GeneralLedgerD
       }
       description="Entry-level accounting evidence for a single finance record. Lists stay light; this page loads journal entries only when opened."
       metrics={[
-        { helper: 'Journal batch status.', label: 'Status', value: batch.status },
-        { helper: 'Monthly tax/accounting period.', label: 'Period', value: batch.monthlyPeriod ?? '-' },
-        { helper: 'Batch debit total.', label: 'Debit', value: <MoneyText amount={batch.totalDebit} currency={batch.currency} /> },
-        { helper: 'Batch credit total.', label: 'Credit', value: <MoneyText amount={batch.totalCredit} currency={batch.currency} /> },
+        { helper: 'Journal batch status.', kind: 'record', label: 'Status', scope: 'Journal record', value: batch.status },
+        { helper: 'Monthly tax/accounting period.', kind: 'record', label: 'Period', scope: 'Journal record', value: batch.monthlyPeriod ?? '-' },
+        { helper: 'Batch debit total.', kind: 'record', label: 'Debit', scope: 'Journal record', value: <MoneyText amount={batch.totalDebit} currency={batch.currency} /> },
+        { helper: 'Batch credit total.', kind: 'record', label: 'Credit', scope: 'Journal record', value: <MoneyText amount={batch.totalCredit} currency={batch.currency} /> },
       ]}
       title="General Ledger Detail"
     >

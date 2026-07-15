@@ -1,8 +1,7 @@
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminTraceSummary } from '../../components/admin-overview-card';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { MoneyText } from '../../components/money-text';
-import { StatusBadgeLinkFromPillClass } from '../../components/status-badge';
 
 export type EarningsBatchStateCard = {
   readonly amount: number;
@@ -32,18 +31,19 @@ export function EarningsBatchStateFilterSection({
       resultTone={ledgerCount > 0 ? 'info' : 'warning'}
       title="Earning batch state filters"
     >
-      <AdminFilterChipGroup ariaLabel="Earning batch state" className="admin-mt-12">
-        {cards.map((card) => (
-          <StatusBadgeLinkFromPillClass
-            ariaCurrent={card.state === activeState ? 'page' : undefined}
-            href={card.href}
-            key={card.state}
-            pillClass={activeBatchStateFilterClassName(card.state, activeState)}
-          >
-            {card.label} / {card.count}
-          </StatusBadgeLinkFromPillClass>
-        ))}
-      </AdminFilterChipGroup>
+      <div className="booking-date-filter-bar earnings-filter-group admin-mt-12">
+        <span className="earnings-filter-group-label">State</span>
+        <AdminSegmentedControl
+          activeValue={activeState}
+          ariaLabel="Earning batch state"
+          className="earnings-filter-buttons"
+          options={cards.map((card) => ({
+            href: card.href,
+            label: `${card.label} / ${card.count}`,
+            value: card.state,
+          }))}
+        />
+      </div>
       <AdminTraceSummary
         className="admin-mt-16"
         metrics={cards
@@ -57,8 +57,4 @@ export function EarningsBatchStateFilterSection({
       />
     </AdminTablePanel>
   );
-}
-
-function activeBatchStateFilterClassName(state: string, activeState: string) {
-  return state === activeState ? 'pill-info' : 'pill-neutral';
 }

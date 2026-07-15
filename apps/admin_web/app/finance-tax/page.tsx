@@ -11,8 +11,8 @@ import type {
   AdminProviderWalletWithdrawalRequestSummary,
 } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSection } from '../../components/admin-surface';
 import { MoneyText } from '../../components/money-text';
 import { readSearchParam } from '../../lib/date-range';
 import { FinanceOverviewTablePanel, type FinanceOverviewTableRow } from './finance-overview-table-panel';
@@ -116,7 +116,11 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
     clearingSummary.openCount +
     bankSummary.unmatchedCount +
     monthlyClosingSummary.couponReviewFlagCount +
+    monthlyClosingSummary.paymentFeeReviewFlagCount +
+    monthlyClosingSummary.partnerDepositReconciliationOpenCount +
     monthlyFormulaIssueCount;
+  const monthlyScope = `Period ${monthlyClosingFilters.period}`;
+  const settlementScope = 'Active queue';
   const workflowLinks = buildTaxFinanceWorkflowLinks({
     current: 'overview',
     accountingFilters,
@@ -187,45 +191,61 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
         {
           helper: 'Posted booking settlement records matching the active queue.',
           href: '/finance-tax/booking-settlement-audit',
+          kind: 'record',
           label: 'Snapshot rows',
+          scope: settlementScope,
           value: settlementSummary.count,
         },
         {
           helper: 'Snapshot rows still waiting for declaration, payment, or closeout.',
           href: '/finance-tax/booking-settlement-audit?review=open',
+          kind: 'risk',
           label: 'Open tax rows',
+          scope: 'Needs action',
           value: settlementSummary.openTaxCount,
         },
         {
           helper: 'Customer payment amount captured by posted settlement records.',
+          kind: 'period',
           label: 'Customer paid',
+          scope: settlementScope,
           value: <MoneyText amount={settlementSummary.customerPaymentAmount} currency={currency} />,
         },
         {
           helper: 'Partner payout amount before monthly payout execution.',
+          kind: 'action',
           label: 'Partner payout',
+          scope: 'Pending',
           value: <MoneyText amount={settlementSummary.partnerPayoutAmount} currency={currency} />,
         },
         {
           helper: 'VAT plus PIT withheld for the selected monthly tax period.',
           href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
+          kind: 'period',
           label: 'Partner tax withheld',
+          scope: monthlyScope,
           value: <MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency || currency} />,
         },
         {
           helper: 'Output VAT component from HANDS platform fee records.',
+          kind: 'period',
           label: 'Company VAT',
+          scope: monthlyScope,
           value: <MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />,
         },
         {
           helper: 'Payment processing fee cost recorded on settlement records.',
+          kind: 'period',
           label: 'Payment fees',
+          scope: settlementScope,
           value: <MoneyText amount={settlementSummary.paymentProcessingFee} currency={currency} />,
         },
         {
           helper: 'Partners with taxable settlement rows in the selected period.',
           href: partnerWithholdingTaxHref({ ...withholdingFilters, page: 1 }),
+          kind: 'period',
           label: 'Partners with revenue',
+          scope: monthlyScope,
           value: withholdingSummary.partnerCountWithRevenue,
         },
       ]}
@@ -237,6 +257,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           href={paymentClearingHref({ ...clearingFilters, page: 1, review: 'open' })}
           icon={AlertTriangle}
           label="Open finance risk"
+          scope={openFinanceRiskCount > 0 ? 'Needs action' : monthlyScope}
           tone={openFinanceRiskCount > 0 ? 'danger' : 'success'}
           value={String(openFinanceRiskCount)}
         />
@@ -245,6 +266,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           href={platformVatHref(monthlyClosingFilters)}
           icon={ReceiptText}
           label="Platform VAT"
+          scope={monthlyScope}
           tone={settlementSummary.companyOutputVat > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={settlementSummary.companyOutputVat} currency={currency} />}
         />
@@ -253,6 +275,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           href={partnerWithholdingTaxHref(withholdingFilters)}
           icon={Landmark}
           label="Partner withholding"
+          scope={monthlyScope}
           tone={withholdingSummary.totalPartnerTaxWithheld > 0 ? 'warning' : 'neutral'}
           value={<MoneyText amount={withholdingSummary.totalPartnerTaxWithheld} currency={withholdingSummary.currency} />}
         />
@@ -261,16 +284,17 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
           href={monthlyTaxClosingHref(monthlyClosingFilters)}
           icon={Scale}
           label="Monthly close"
+          scope={monthlyScope}
           tone={monthlyClosingSummary.status === 'CLOSED' ? 'success' : openFinanceRiskCount > 0 ? 'warning' : 'info'}
           value={monthlyClosingSummary.status}
         />
       </FinanceListCommandBoard>
 
-      <AdminFilterPanel
+      <AdminSection
         className="admin-mb-16"
         description="Use the summary APIs first. Open the bounded audit lists only when a finance operator needs booking-level evidence."
-        resultLabel="Summary API"
-        resultTone="success"
+        statusLabel="Summary API"
+        statusTone="success"
         title="Tax finance operating model"
       >
         <FinanceStageList
@@ -309,7 +333,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             },
           ]}
         />
-      </AdminFilterPanel>
+      </AdminSection>
 
       <FinanceOverviewTablePanel
         description="Summary-only command desk for today's finance work. Open bounded lists only when a row-level review is needed."
@@ -321,17 +345,17 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
 
       {showFullSummaryView ? (
         <>
-          <AdminFilterPanel
+          <AdminSection
             className="admin-mb-16"
             description="Company-funded coupons are marketing expense, not reduced platform-fee revenue. This summary reads posted settlement record metadata only."
-            resultLabel="Coupon summary API"
-            resultTone="info"
+            statusLabel="Coupon summary API"
+            statusTone="info"
             title="Coupon finance summary"
           >
             <FinanceStageList
               items={[
                 {
-                  helper: 'Bookings with coupon metadata in the current finance range and queue.',
+                  helper: 'Bookings with coupon metadata in the selected finance range and active queue.',
                   href: bookingSettlementAuditHref(settlementFilters),
                   key: 'coupon-settlement-rows',
                   label: 'Coupon settlement rows',
@@ -392,13 +416,13 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 },
               ]}
             />
-          </AdminFilterPanel>
+          </AdminSection>
 
-          <AdminFilterPanel
+          <AdminSection
             className="admin-mb-16"
             description="This overview stays summary-only. Open the bounded payout and cash-debt queues only when finance needs request-level evidence."
-            resultLabel="Priority links"
-            resultTone="info"
+            statusLabel="Priority links"
+            statusTone="info"
             title="Payout and wallet priority desk"
           >
             <FinanceStageList
@@ -411,14 +435,14 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
                 value: renderFinancePriorityValue(link),
               }))}
             />
-          </AdminFilterPanel>
+          </AdminSection>
         </>
       ) : (
-        <AdminFilterPanel
+        <AdminSection
           className="admin-mb-16"
           description="Default view keeps finance overview focused on current action counts. Open the full summary only when coupon and payout rollups are needed."
-          resultLabel="Compact default"
-          resultTone="info"
+          statusLabel="Compact default"
+          statusTone="info"
           title="Finance optional summary desk"
         >
           <ActionMenu
@@ -433,7 +457,7 @@ export default async function FinanceTaxPage({ searchParams }: FinanceTaxPagePro
             label="Finance optional summary actions"
             variant="button-list"
           />
-        </AdminFilterPanel>
+        </AdminSection>
       )}
 
       <FinanceOverviewTablePanel
@@ -464,6 +488,16 @@ function financeWorkspaceRowForLink(
   },
 ): FinanceOverviewTableRow {
   switch (link.key) {
+    case 'approval-queue':
+      return {
+        actionLabel: 'Review',
+        helper: 'Current payment fee policy reviews and Partner withdrawal actions, separated from completed wallet evidence.',
+        href: link.href,
+        key: link.key,
+        label: link.label,
+        signal: 'QUEUE',
+        value: 'Pending',
+      };
     case 'booking-settlement-audit':
       return {
         actionLabel: 'Review',

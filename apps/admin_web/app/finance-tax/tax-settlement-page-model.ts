@@ -8,6 +8,7 @@ import type {
   AdminBookingPaymentClearingSummary,
   AdminCouponFinanceSummary,
   AdminPaymentFeeSummary,
+  AdminPaymentMethod,
   AdminPlatformVatSummary,
   AdminMonthlyTaxClosing,
   AdminMonthlyTaxClosingStatus,
@@ -20,6 +21,7 @@ import type { AdminDateRange } from '../../lib/date-range';
 import { buildCsvContent, buildCsvDataHref } from '../../lib/csv-export';
 import { formatMoney, shortId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import { paymentFeeEvidenceState } from './payment-fee-evidence-model';
 
 export type BookingSettlementReview =
   | 'all'
@@ -30,7 +32,8 @@ export type BookingSettlementReview =
   | 'posted'
   | 'reversed'
   | 'cash'
-  | 'non-cash';
+  | 'non-cash'
+  | 'payment-fee-evidence';
 
 export type FinanceAccountingReview =
   | 'all'
@@ -48,6 +51,8 @@ export type FinanceAccountingReview =
 
 export type BookingSettlementFilters = {
   readonly page: number;
+  readonly paymentMethod?: AdminPaymentMethod;
+  readonly period?: string;
   readonly range: AdminDateRange;
   readonly review: BookingSettlementReview;
   readonly take: number;
@@ -89,6 +94,7 @@ export type MonthlyTaxClosingRemittanceEvidenceState = {
 
 export type TaxFinanceWorkflowPage =
   | 'overview'
+  | 'approval-queue'
   | 'booking-settlement-audit'
   | 'settlement-reversals'
   | 'general-ledger'
@@ -147,6 +153,7 @@ const BOOKING_SETTLEMENT_REVIEW_VALUES: readonly BookingSettlementReview[] = [
   'reversed',
   'cash',
   'non-cash',
+  'payment-fee-evidence',
 ];
 const FINANCE_ACCOUNTING_REVIEW_VALUES: readonly FinanceAccountingReview[] = [
   'all',
@@ -171,6 +178,7 @@ export const BOOKING_SETTLEMENT_REVIEW_LINKS: readonly {
   { label: 'Declared', review: 'declared' },
   { label: 'Paid', review: 'paid' },
   { label: 'Posted', review: 'posted' },
+  { label: 'Payment fee evidence', review: 'payment-fee-evidence' },
   { label: 'Cash', review: 'cash' },
   { label: 'Non-cash', review: 'non-cash' },
   { label: 'All', review: 'all' },
@@ -222,8 +230,12 @@ export const BANK_RECONCILIATION_REVIEW_LINKS: readonly {
 export function readBookingSettlementFilters(
   params: Record<string, string | string[] | undefined>,
 ): BookingSettlementFilters {
+  const period = normalizeOptionalTaxPeriod(readSearchParam(params.period));
+  const paymentMethod = normalizeOptionalPaymentMethod(readSearchParam(params.paymentMethod));
   return {
     page: readTaxSettlementPage(readSearchParam(params.page)),
+    ...(paymentMethod ? { paymentMethod } : {}),
+    ...(period ? { period } : {}),
     range: normalizeDateRange(readSearchParam(params.range)),
     review: normalizeBookingSettlementReview(readSearchParam(params.review)),
     take: boundedTake(readSearchParam(params.take)),
@@ -269,6 +281,8 @@ export function buildBookingSettlementSnapshotApiHref(filters: BookingSettlement
   if (filters.review !== 'all') {
     params.set('review', filters.review);
   }
+  appendBookingSettlementPeriod(params, filters);
+  appendBookingSettlementPaymentMethod(params, filters);
   params.set('take', String(filters.take));
   appendTaxSettlementSkip(params, filters);
   return `/admin/booking-settlement-snapshots?${params.toString()}`;
@@ -283,6 +297,8 @@ export function buildBookingSettlementSnapshotSummaryApiHref(filters: BookingSet
   if (filters.review !== 'all') {
     params.set('review', filters.review);
   }
+  appendBookingSettlementPeriod(params, filters);
+  appendBookingSettlementPaymentMethod(params, filters);
   return `/admin/booking-settlement-snapshots/summary?${params.toString()}`;
 }
 
@@ -436,6 +452,8 @@ export function bookingSettlementAuditHref(filters: BookingSettlementFilters) {
   if (filters.review !== 'all') {
     params.set('review', filters.review);
   }
+  appendBookingSettlementPeriod(params, filters);
+  appendBookingSettlementPaymentMethod(params, filters);
   appendTaxSettlementUiPagination(params, filters);
   return `/finance-tax/booking-settlement-audit?${params.toString()}`;
 }
@@ -601,12 +619,7 @@ export function buildFinanceSettlementTraceLinks(record: {
 
   if (record.settlementReversalEntryId) {
     links.push({
-      href: bookingSettlementReversalHref({
-        page: 1,
-        range: 'all',
-        review: 'reversed',
-        take: TAX_SETTLEMENT_DEFAULT_TAKE,
-      }),
+      href: bookingSettlementReversalDetailHref(record.settlementReversalEntryId),
       label: 'Settlement reversal',
       value: shortId(record.settlementReversalEntryId),
     });
@@ -719,6 +732,7 @@ export function buildTaxFinanceWorkflowLinks({
   };
   const links: TaxFinanceWorkflowLink[] = [
     { key: 'overview', label: 'Tax overview', href: '/finance-tax' },
+    { key: 'approval-queue', label: 'Finance approval queue', href: '/finance-tax/approval-queue' },
     {
       key: 'booking-settlement-audit',
       label: 'Booking settlement audit',
@@ -852,7 +866,10 @@ export function buildFinanceOperationsPriorityLinks({
     page: 1,
     review: 'unmatched',
   };
-  const closeoutRiskCount = monthlyClosingSummary.openTaxCount + monthlyClosingSummary.couponReviewFlagCount;
+  const closeoutRiskCount =
+    monthlyClosingSummary.openTaxCount +
+    monthlyClosingSummary.couponReviewFlagCount +
+    monthlyClosingSummary.paymentFeeReviewFlagCount;
   return [
     {
       key: 'today-needs-action',
@@ -1087,6 +1104,10 @@ export function emptyProviderWalletWithdrawalRequestSummary(): AdminProviderWall
     bankTransferPendingAmount: 0,
     paidAmount: 0,
     returnedAmount: 0,
+    paidUnreconciled: 0,
+    paidUnreconciledAmount: 0,
+    paidReconciled: 0,
+    paidReconciledAmount: 0,
     currency: 'VND',
   };
 }
@@ -1109,6 +1130,9 @@ export function emptyMonthlyTaxClosingSummary(
     partnerPitWithheldTotal: 0,
     partnerWithholdingTotal: 0,
     paymentProcessingFeeTotal: 0,
+    paymentFeeReviewFlagCount: 0,
+    partnerDepositReconciliationOpenCount: 0,
+    partnerDepositReconciliationOpenAmount: 0,
     couponSettlementCount: 0,
     couponDiscountAmountTotal: 0,
     companyCouponExpenseTotal: 0,
@@ -1211,6 +1235,37 @@ export function buildMonthlyTaxClosingRiskLinks(
       helper: 'Coupon settlement rows that should be checked before the monthly period is closed.',
       href: couponFinanceHref({ ...settlementFilters, page: 1, review: 'open' }),
       signal: 'Coupon review',
+    },
+    {
+      key: 'payment-fee-review-flags',
+      amount: null,
+      currency: null,
+      amountSuffix: null,
+      count: summary.paymentFeeReviewFlagCount,
+      label: 'Payment fee evidence',
+      helper: 'Settlement rows without a resolved payment fee policy or payment-method rule block declaration.',
+      href: bookingSettlementAuditHref({
+        ...settlementFilters,
+        page: 1,
+        period: closingFilters.period,
+        range: 'all',
+        review: 'payment-fee-evidence',
+      }),
+      signal: 'Fee policy review',
+    },
+    {
+      key: 'partner-deposit-reconciliation',
+      amount: summary.partnerDepositReconciliationOpenAmount,
+      currency: summary.currency,
+      amountSuffix: null,
+      count: summary.partnerDepositReconciliationOpenCount,
+      label: 'Partner deposit reconciliation',
+      helper: 'Executed Partner bank deposits still waiting for complete company bank evidence matching.',
+      href: `/finance-tax/partner-bank-deposits?${new URLSearchParams({
+        period: closingFilters.period,
+        review: 'needs-reconciliation',
+      }).toString()}`,
+      signal: 'Bank evidence',
     },
     {
       key: 'cash-debt-gate',
@@ -1393,6 +1448,27 @@ export function emptyPaymentFeeSummary(period = normalizeTaxPeriod('')): AdminPa
     byPaymentMethod: [],
     byPayer: [],
     byTreatment: [],
+    policyReadiness: {
+      activePolicy: null,
+      configuredMethods: [],
+      missingMethods: ['MOMO', 'VNPAY', 'CASH', 'CARD', 'BANK_TRANSFER', 'CUSTOMER_WALLET', 'MANUAL'],
+      status: 'MISSING_ACTIVE_POLICY',
+    },
+    remediationPreview: {
+      status: 'BLOCKED',
+      policyVersionId: null,
+      blockers: [
+        {
+          code: 'ACTIVE_POLICY_REQUIRED',
+          message: 'An active payment fee policy is required before historical fee differences can be previewed.',
+        },
+      ],
+      evidenceReviewCount: 0,
+      evidenceCustomerPaymentAmountTotal: 0,
+      recordedFeeTotal: 0,
+      expectedFeeTotal: null,
+      delta: null,
+    },
   };
 }
 
@@ -1455,6 +1531,12 @@ function buildPaymentFeeSummaryCsvRows(summary: AdminPaymentFeeSummary) {
       settlement_count: summary.settlementCount,
       customer_payment_amount_total: summary.customerPaymentAmountTotal,
       payment_processing_fee_total: summary.paymentProcessingFeeTotal,
+      evidence_review_count: summary.remediationPreview.evidenceReviewCount,
+      evidence_customer_payment_amount_total:
+        summary.remediationPreview.evidenceCustomerPaymentAmountTotal,
+      evidence_recorded_fee_total: summary.remediationPreview.recordedFeeTotal,
+      remediation_expected_fee_total: summary.remediationPreview.expectedFeeTotal ?? '',
+      remediation_delta: summary.remediationPreview.delta ?? '',
     },
     ...summary.byPaymentMethod.map((row) => ({
       section: 'method_breakdown',
@@ -1464,6 +1546,11 @@ function buildPaymentFeeSummaryCsvRows(summary: AdminPaymentFeeSummary) {
       settlement_count: row.settlementCount,
       customer_payment_amount_total: row.customerPaymentAmountTotal,
       payment_processing_fee_total: row.paymentProcessingFeeTotal,
+      evidence_review_count: row.evidenceReviewCount,
+      evidence_customer_payment_amount_total: row.evidenceCustomerPaymentAmountTotal,
+      evidence_recorded_fee_total: row.evidenceRecordedFeeTotal,
+      remediation_expected_fee_total: row.remediationExpectedFeeTotal ?? '',
+      remediation_delta: row.remediationDelta ?? '',
     })),
     ...summary.byPayer.map((row) => ({
       section: 'payer_breakdown',
@@ -1473,6 +1560,11 @@ function buildPaymentFeeSummaryCsvRows(summary: AdminPaymentFeeSummary) {
       settlement_count: row.settlementCount,
       customer_payment_amount_total: row.customerPaymentAmountTotal,
       payment_processing_fee_total: row.paymentProcessingFeeTotal,
+      evidence_review_count: '',
+      evidence_customer_payment_amount_total: '',
+      evidence_recorded_fee_total: '',
+      remediation_expected_fee_total: '',
+      remediation_delta: '',
     })),
     ...summary.byTreatment.map((row) => ({
       section: 'treatment_breakdown',
@@ -1482,6 +1574,11 @@ function buildPaymentFeeSummaryCsvRows(summary: AdminPaymentFeeSummary) {
       settlement_count: row.settlementCount,
       customer_payment_amount_total: row.customerPaymentAmountTotal,
       payment_processing_fee_total: row.paymentProcessingFeeTotal,
+      evidence_review_count: '',
+      evidence_customer_payment_amount_total: '',
+      evidence_recorded_fee_total: '',
+      remediation_expected_fee_total: '',
+      remediation_delta: '',
     })),
   ];
 }
@@ -1514,6 +1611,9 @@ function buildMonthlyTaxClosingSummaryCsvRows(summary: AdminMonthlyTaxClosingSum
       partner_pit_withheld_total: summary.partnerPitWithheldTotal,
       partner_withholding_total: summary.partnerWithholdingTotal,
       payment_processing_fee_total: summary.paymentProcessingFeeTotal,
+      payment_fee_review_flag_count: summary.paymentFeeReviewFlagCount,
+      partner_deposit_reconciliation_open_count: summary.partnerDepositReconciliationOpenCount,
+      partner_deposit_reconciliation_open_amount: summary.partnerDepositReconciliationOpenAmount,
       coupon_settlement_count: summary.couponSettlementCount,
       coupon_discount_amount_total: summary.couponDiscountAmountTotal,
       company_coupon_expense_total: summary.companyCouponExpenseTotal,
@@ -1575,7 +1675,9 @@ export function buildBookingSettlementSnapshotRowsCsvContent(rows: readonly Admi
 }
 
 function buildBookingSettlementSnapshotRowsCsvRows(rows: readonly AdminBookingSettlementSnapshot[]) {
-  return rows.map((row) => ({
+  return rows.map((row) => {
+    const paymentFeeEvidence = paymentFeeEvidenceState(row);
+    return {
       snapshot_id: row.id,
       booking_id: row.bookingId,
       monthly_period: row.monthlyPeriod,
@@ -1596,13 +1698,17 @@ function buildBookingSettlementSnapshotRowsCsvRows(rows: readonly AdminBookingSe
       partner_pit_withheld: row.partnerPitAmount,
       total_partner_tax_withheld: row.partnerWithholdingTotal,
       payment_processing_fee: row.paymentProcessingFee,
+      payment_fee_policy_version_id: row.paymentFeePolicyVersionId ?? '',
+      payment_fee_evidence_state: paymentFeeEvidence.label,
+      payment_fee_evidence_reason: paymentFeeEvidence.reason ?? '',
       platform_fee_gross: row.platformFeeGross,
       platform_fee_net_revenue: row.platformFeeNetRevenue,
       company_output_vat: row.companyOutputVat,
       settlement_status: row.settlementStatus,
       tax_status: row.taxStatus,
       booking_status: row.booking?.status ?? '',
-    }));
+    };
+  });
 }
 
 export function buildBookingSettlementAuditExportHref(filters: BookingSettlementFilters) {
@@ -1614,6 +1720,8 @@ export function buildBookingSettlementAuditExportHref(filters: BookingSettlement
   if (filters.page > 1) {
     params.set('page', String(filters.page));
   }
+  appendBookingSettlementPeriod(params, filters);
+  appendBookingSettlementPaymentMethod(params, filters);
   return `/api/admin/finance-tax/booking-settlement-audit/export?${params.toString()}`;
 }
 
@@ -1793,6 +1901,11 @@ const PAYMENT_FEE_CSV_COLUMNS = [
   'settlement_count',
   'customer_payment_amount_total',
   'payment_processing_fee_total',
+  'evidence_review_count',
+  'evidence_customer_payment_amount_total',
+  'evidence_recorded_fee_total',
+  'remediation_expected_fee_total',
+  'remediation_delta',
 ];
 
 const PARTNER_WITHHOLDING_TAX_ROWS_CSV_COLUMNS = [
@@ -1830,6 +1943,9 @@ const BOOKING_SETTLEMENT_SNAPSHOT_ROWS_CSV_COLUMNS = [
   'partner_pit_withheld',
   'total_partner_tax_withheld',
   'payment_processing_fee',
+  'payment_fee_policy_version_id',
+  'payment_fee_evidence_state',
+  'payment_fee_evidence_reason',
   'platform_fee_gross',
   'platform_fee_net_revenue',
   'company_output_vat',
@@ -1862,6 +1978,9 @@ const MONTHLY_TAX_CLOSING_SUMMARY_CSV_COLUMNS = [
   'partner_pit_withheld_total',
   'partner_withholding_total',
   'payment_processing_fee_total',
+  'payment_fee_review_flag_count',
+  'partner_deposit_reconciliation_open_count',
+  'partner_deposit_reconciliation_open_amount',
   'coupon_settlement_count',
   'coupon_discount_amount_total',
   'company_coupon_expense_total',
@@ -1945,6 +2064,40 @@ function normalizeTaxPeriod(value: string) {
   const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
   const month = parts.find((part) => part.type === 'month')?.value ?? '01';
   return `${year}-${month}`;
+}
+
+function normalizeOptionalTaxPeriod(value: string) {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? value : null;
+}
+
+const ADMIN_PAYMENT_METHODS: readonly AdminPaymentMethod[] = [
+  'MOMO',
+  'VNPAY',
+  'CASH',
+  'CARD',
+  'BANK_TRANSFER',
+  'CUSTOMER_WALLET',
+  'MANUAL',
+];
+
+function normalizeOptionalPaymentMethod(value: string): AdminPaymentMethod | null {
+  const normalized = value.toUpperCase() as AdminPaymentMethod;
+  return ADMIN_PAYMENT_METHODS.includes(normalized) ? normalized : null;
+}
+
+function appendBookingSettlementPeriod(params: URLSearchParams, filters: BookingSettlementFilters) {
+  if (filters.period) {
+    params.set('period', filters.period);
+  }
+}
+
+function appendBookingSettlementPaymentMethod(
+  params: URLSearchParams,
+  filters: BookingSettlementFilters,
+) {
+  if (filters.paymentMethod) {
+    params.set('paymentMethod', filters.paymentMethod);
+  }
 }
 
 function boundedTake(value: string) {

@@ -1,11 +1,13 @@
 import type {
   AdminBankReconciliationSummary,
+  AdminBankReconciliationWithdrawalCandidateSummary,
   AdminBookingPaymentClearingSummary,
   AdminBookingSettlementSnapshotSummary,
   AdminCashSettlementSummary,
   AdminCouponFinanceSummary,
   AdminEarningSummary,
   AdminFinanceOverviewAmountSummary,
+  AdminFinanceOverviewReviewSlaSummary,
   AdminFinanceOverviewSummary,
   AdminFinanceOverviewWalletSummary,
   AdminMonthlyTaxClosingSummary,
@@ -122,10 +124,12 @@ export type FinanceOverviewControlMetric = {
 export type FinanceOverviewSummaryInput = {
   readonly amountSummary: AdminFinanceOverviewAmountSummary;
   readonly bankSummary: AdminBankReconciliationSummary;
+  readonly bankWithdrawalCandidateSummary: AdminBankReconciliationWithdrawalCandidateSummary;
   readonly cashSummary: AdminCashSettlementSummary | null;
   readonly clearingSummary: AdminBookingPaymentClearingSummary;
   readonly couponSummary: AdminCouponFinanceSummary;
   readonly earningsSummary: AdminEarningSummary | null;
+  readonly financeReviewSlaSummary: AdminFinanceOverviewReviewSlaSummary;
   readonly monthlyClosingSummary: AdminMonthlyTaxClosingSummary;
   readonly partnerWithholdingSummary: AdminPartnerWithholdingTaxSummary;
   readonly paymentFeeSummary: AdminPaymentFeeSummary | null;
@@ -159,6 +163,27 @@ export function normalizeFinanceOverviewRange(value: string | undefined): Financ
 
 export function financeOverviewHref(range: FinanceOverviewRange) {
   return `/finance-overview?${new URLSearchParams({ range }).toString()}`;
+}
+
+function financeBankWithdrawalCandidateHref(
+  range: FinanceOverviewRange,
+  candidate: 'eligible' | 'review' | 'strong',
+  owner?: 'unassigned',
+) {
+  return `/finance-tax/bank-reconciliation?${new URLSearchParams({
+    range,
+    review: 'outflow',
+    candidate,
+    ...(owner ? { owner } : {}),
+  }).toString()}`;
+}
+
+function financePartnerBankDepositReconciliationHref(period: string) {
+  return `/finance-tax/partner-bank-deposits?${new URLSearchParams({
+    status: 'EXECUTED',
+    review: 'needs-reconciliation',
+    period,
+  }).toString()}`;
 }
 
 export function buildFinanceOverviewFilters(
@@ -212,10 +237,17 @@ export function emptyFinanceOverviewSummaries(period: string): FinanceOverviewSu
       refundPendingAmount: 0,
     },
     bankSummary: emptyBankReconciliationSummary(),
+    bankWithdrawalCandidateSummary: emptyBankWithdrawalCandidateSummary(),
     cashSummary: null,
     clearingSummary: emptyBookingPaymentClearingSummary(),
     couponSummary: emptyCouponFinanceSummary(),
     earningsSummary: null,
+    financeReviewSlaSummary: {
+      open48To72Count: 0,
+      openOverdueCount: 0,
+      openOver72Count: 0,
+      resolvedInRangeCount: 0,
+    },
     monthlyClosingSummary: emptyMonthlyTaxClosingSummary(period),
     partnerWithholdingSummary: emptyPartnerWithholdingTaxSummary(period),
     paymentFeeSummary: emptyPaymentFeeSummary(period),
@@ -236,14 +268,43 @@ export function emptyFinanceOverviewSummaries(period: string): FinanceOverviewSu
   };
 }
 
+function emptyBankWithdrawalCandidateSummary(): AdminBankReconciliationWithdrawalCandidateSummary {
+  return {
+    assignedCount: 0,
+    assignments: [],
+    currency: 'VND',
+    eligibleCount: 0,
+    noneAmount: 0,
+    noneCount: 0,
+    oldestReviewOccurredAt: null,
+    oldestStrongOccurredAt: null,
+    reviewAmount: 0,
+    reviewCount: 0,
+    reviewOver24hCount: 0,
+    reviewOver48hCount: 0,
+    strongAmount: 0,
+    strongCount: 0,
+    strongOver24hCount: 0,
+    strongOver48hCount: 0,
+    unassignedCount: 0,
+  };
+}
+
 export function financeOverviewSummaryInput(summary: AdminFinanceOverviewSummary): FinanceOverviewSummaryInput {
   return {
     amountSummary: summary.amountSummary,
     bankSummary: summary.bankSummary,
+    bankWithdrawalCandidateSummary: summary.bankWithdrawalCandidateSummary,
     cashSummary: summary.cashSummary,
     clearingSummary: summary.clearingSummary,
     couponSummary: summary.couponSummary,
     earningsSummary: summary.earningsSummary,
+    financeReviewSlaSummary: summary.financeReviewSlaSummary ?? {
+      open48To72Count: 0,
+      openOverdueCount: 0,
+      openOver72Count: 0,
+      resolvedInRangeCount: 0,
+    },
     monthlyClosingSummary: summary.monthlyClosingSummary,
     partnerWithholdingSummary: summary.partnerWithholdingSummary,
     paymentFeeSummary: summary.paymentFeeSummary,
@@ -256,8 +317,44 @@ export function financeOverviewSummaryInput(summary: AdminFinanceOverviewSummary
   };
 }
 
+export function buildFinanceOverviewReviewSlaMetrics(
+  input: Pick<FinanceOverviewSummaryInput, 'financeReviewSlaSummary'>,
+  range: FinanceOverviewRange,
+): FinanceOverviewKpi[] {
+  const { open48To72Count, openOver72Count, resolvedInRangeCount } =
+    input.financeReviewSlaSummary;
+
+  return [
+    {
+      detail: 'Reviews beyond the 48-hour SLA that have not yet crossed 72 hours.',
+      href: '/notifications?range=all&review=finance-overdue',
+      label: 'Open 48–72h',
+      tone: open48To72Count > 0 ? 'warning' : 'success',
+      value: String(open48To72Count),
+    },
+    {
+      detail: 'Reviews unresolved for more than 72 hours and requiring immediate ownership.',
+      href: '/notifications?range=all&review=finance-overdue',
+      label: 'Open 72h+',
+      tone: openOver72Count > 0 ? 'danger' : 'success',
+      value: String(openOver72Count),
+    },
+    {
+      detail: 'Resolved Finance SLA alerts retained as audit evidence for the selected period.',
+      href: `/notifications?${new URLSearchParams({
+        range,
+        review: 'finance-overdue-history',
+      }).toString()}`,
+      label: 'Resolved reviews',
+      tone: 'info',
+      value: String(resolvedInRangeCount),
+    },
+  ];
+}
+
 export function buildFinanceOverviewControlMetrics(
   input: FinanceOverviewSummaryInput,
+  range: FinanceOverviewRange = 'today',
 ): FinanceOverviewControlMetric[] {
   const currency = financeOverviewCurrency(input);
   const revenueShare =
@@ -304,6 +401,30 @@ export function buildFinanceOverviewControlMetrics(
       label: 'Open finance risks',
       tone: openFinanceRiskCount > 0 ? 'danger' : 'success',
       value: String(openFinanceRiskCount),
+    },
+    {
+      detail: `${input.bankWithdrawalCandidateSummary.strongCount} strong / ${input.bankWithdrawalCandidateSummary.reviewCount} review / ${input.bankWithdrawalCandidateSummary.noneCount} without candidate across ${input.bankWithdrawalCandidateSummary.eligibleCount} open outflow transaction(s). ${input.bankWithdrawalCandidateSummary.strongOver24hCount + input.bankWithdrawalCandidateSummary.reviewOver24hCount} over 24h / ${input.bankWithdrawalCandidateSummary.strongOver48hCount + input.bankWithdrawalCandidateSummary.reviewOver48hCount} over 48h.`,
+      href:
+        input.bankWithdrawalCandidateSummary.strongCount > 0
+          ? financeBankWithdrawalCandidateHref(range, 'strong')
+          : input.bankWithdrawalCandidateSummary.reviewCount > 0
+            ? financeBankWithdrawalCandidateHref(range, 'review')
+            : bankReconciliationHref(financeAccountingFilters(range, 'outflow')),
+      label: 'Withdrawal matching',
+      tone:
+        input.bankWithdrawalCandidateSummary.strongOver48hCount +
+            input.bankWithdrawalCandidateSummary.reviewOver48hCount >
+          0
+          ? 'danger'
+          : input.bankWithdrawalCandidateSummary.strongCount > 0
+          ? 'danger'
+          : input.bankWithdrawalCandidateSummary.reviewCount > 0
+            ? 'warning'
+            : 'success',
+      value: String(
+        input.bankWithdrawalCandidateSummary.strongCount +
+          input.bankWithdrawalCandidateSummary.reviewCount,
+      ),
     },
     {
       detail: `${input.monthlyClosingSummary.period} delta ${formatMoney(
@@ -814,13 +935,16 @@ export function buildFinanceOverviewPageSections(input: FinanceOverviewSummaryIn
 export function buildFinanceOverviewVisibleActionItems(
   items: readonly FinanceOverviewActionItem[],
 ): FinanceOverviewActionItem[] {
-  return items.slice(0, 4);
+  const actionable = items.filter((item) => item.tone === 'danger' || item.tone === 'warning');
+  const clear = items.filter((item) => item.tone !== 'danger' && item.tone !== 'warning');
+  return [...actionable, ...clear].slice(0, 4);
 }
 
 export function buildFinanceOverviewActionItems(
   input: Pick<
     FinanceOverviewSummaryInput,
     | 'bankSummary'
+    | 'bankWithdrawalCandidateSummary'
     | 'cashSummary'
     | 'clearingSummary'
     | 'monthlyClosingSummary'
@@ -828,7 +952,7 @@ export function buildFinanceOverviewActionItems(
     | 'settlementSummary'
     | 'withdrawalSummary'
   > &
-    Partial<Pick<FinanceOverviewSummaryInput, 'amountSummary'>>,
+    Partial<Pick<FinanceOverviewSummaryInput, 'amountSummary' | 'financeReviewSlaSummary'>>,
   range: FinanceOverviewRange = 'today',
 ): FinanceOverviewActionItem[] {
   const settlementFilters = financeSettlementFilters(range);
@@ -842,6 +966,13 @@ export function buildFinanceOverviewActionItems(
   const refundPendingAmount = input.amountSummary?.refundPendingAmount ?? 0;
 
   return [
+    {
+      countLabel: `${input.financeReviewSlaSummary?.openOver72Count ?? 0} over 72h`,
+      detail: 'Finance review SLA breaches requiring immediate owner follow-up.',
+      href: '/notifications?range=all&review=finance-overdue',
+      label: 'Finance reviews over 72h',
+      tone: (input.financeReviewSlaSummary?.openOver72Count ?? 0) > 0 ? 'danger' : 'success',
+    },
     {
       amount: input.clearingSummary.amount,
       countLabel: `${input.clearingSummary.openCount} open`,
@@ -859,6 +990,48 @@ export function buildFinanceOverviewActionItems(
       href: bankReconciliationHref(bankFilters),
       label: 'Bank reconciliation unmatched',
       tone: input.bankSummary.unmatchedCount > 0 ? 'danger' : 'success',
+    },
+    {
+      amount: input.monthlyClosingSummary.partnerDepositReconciliationOpenAmount,
+      countLabel: `${input.monthlyClosingSummary.partnerDepositReconciliationOpenCount} open`,
+      currency: input.monthlyClosingSummary.currency,
+      detail: 'Executed Partner deposits whose GL bank debit is not fully matched to imported bank evidence.',
+      href: financePartnerBankDepositReconciliationHref(input.monthlyClosingSummary.period),
+      label: 'Partner deposit reconciliation',
+      tone:
+        input.monthlyClosingSummary.partnerDepositReconciliationOpenCount > 0
+          ? 'danger'
+          : 'success',
+    },
+    {
+      countLabel: `${input.bankWithdrawalCandidateSummary.unassignedCount} unassigned`,
+      detail: 'Open withdrawal reconciliation reviews without an accountable owner.',
+      href: financeBankWithdrawalCandidateHref(range, 'eligible', 'unassigned'),
+      label: 'Unassigned withdrawal reviews',
+      tone: input.bankWithdrawalCandidateSummary.unassignedCount > 0 ? 'danger' : 'success',
+    },
+    {
+      amount: input.bankWithdrawalCandidateSummary.strongAmount,
+      countLabel: `${input.bankWithdrawalCandidateSummary.strongCount} strong`,
+      currency: input.bankWithdrawalCandidateSummary.currency,
+      detail: `Exact transfer evidence ready for reconciliation. ${input.bankWithdrawalCandidateSummary.strongOver24hCount} over 24h / ${input.bankWithdrawalCandidateSummary.strongOver48hCount} over 48h.`,
+      href: financeBankWithdrawalCandidateHref(range, 'strong'),
+      label: 'Strong withdrawal candidates',
+      tone: input.bankWithdrawalCandidateSummary.strongCount > 0 ? 'danger' : 'success',
+    },
+    {
+      amount: input.bankWithdrawalCandidateSummary.reviewAmount,
+      countLabel: `${input.bankWithdrawalCandidateSummary.reviewCount} review`,
+      currency: input.bankWithdrawalCandidateSummary.currency,
+      detail: `Approximate transfer evidence requiring operator review. ${input.bankWithdrawalCandidateSummary.reviewOver24hCount} over 24h / ${input.bankWithdrawalCandidateSummary.reviewOver48hCount} over 48h.`,
+      href: financeBankWithdrawalCandidateHref(range, 'review'),
+      label: 'Withdrawal candidates to review',
+      tone:
+        input.bankWithdrawalCandidateSummary.reviewOver48hCount > 0
+          ? 'danger'
+          : input.bankWithdrawalCandidateSummary.reviewCount > 0
+            ? 'warning'
+            : 'success',
     },
     {
       amount: cashDebtAmount,

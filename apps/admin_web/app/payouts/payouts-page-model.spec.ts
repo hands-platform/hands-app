@@ -8,6 +8,8 @@ describe('payouts page model', () => {
     expect(defaultFilters.range).toBe('today');
     expect(defaultFilters.page).toBe(1);
     expect(defaultFilters.pageSize).toBe(10);
+    expect(defaultFilters.withdrawalPage).toBe(1);
+    expect(defaultFilters.withdrawalReconciliation).toBeNull();
     expect(defaultFilters.withdrawalStatus).toBe('REVIEW_REQUIRED');
     expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
@@ -18,6 +20,29 @@ describe('payouts page model', () => {
       payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&status=REVIEW_REQUIRED',
+      providerWalletWithdrawalRequestSummaryHref:
+        '/admin/provider-wallet/withdrawal-requests/summary?range=30d',
+    });
+  });
+
+  it('builds a separately paginated paid withdrawal reconciliation queue', () => {
+    const filters = buildPayoutFilters({
+      page: '4',
+      range: '30d',
+      withdrawalPage: '3',
+      withdrawalReconciliation: 'unmatched',
+    });
+
+    expect(filters).toMatchObject({
+      page: 4,
+      withdrawalPage: 3,
+      withdrawalReconciliation: 'unmatched',
+      withdrawalStatus: 'PAID',
+    });
+    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
+      payoutBatchesHref: '/admin/payout-batches?range=30d&take=10&skip=30',
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&skip=20&status=PAID&reconciliation=unmatched',
     });
   });
 
@@ -57,7 +82,7 @@ describe('payouts page model', () => {
       earningsHref: '/admin/earnings?range=30d&take=25&skip=50',
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=25&skip=50',
       providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&skip=50&status=REVIEW_REQUIRED',
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&status=REVIEW_REQUIRED',
     });
   });
 });

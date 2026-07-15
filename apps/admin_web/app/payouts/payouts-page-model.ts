@@ -29,6 +29,8 @@ export type PayoutFilters = {
   readonly page: number;
   readonly pageSize: number;
   readonly range: AdminDateRange;
+  readonly withdrawalPage: number;
+  readonly withdrawalReconciliation: 'unmatched' | 'matched' | null;
   readonly withdrawalStatus: AdminProviderWalletWithdrawalRequestStatus | null;
 };
 
@@ -45,13 +47,20 @@ export type PayoutServerPagination<T> = {
 export function buildPayoutFilters(params: Record<string, string | string[] | undefined>): PayoutFilters {
   const rangeParam = readSearchParam(params.range);
   const withdrawalStatusParam = readSearchParam(params.withdrawalStatus);
-  const withdrawalStatus = normalizePayoutWithdrawalStatus(withdrawalStatusParam);
+  const withdrawalReconciliation = normalizeWithdrawalReconciliation(
+    readSearchParam(params.withdrawalReconciliation),
+  );
+  const withdrawalStatus =
+    normalizePayoutWithdrawalStatus(withdrawalStatusParam) ??
+    (withdrawalReconciliation ? 'PAID' : 'REVIEW_REQUIRED');
 
   return {
     page: readPayoutPage(params.page),
     pageSize: readPayoutPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
-    withdrawalStatus: withdrawalStatus ?? 'REVIEW_REQUIRED',
+    withdrawalPage: readPayoutPage(params.withdrawalPage),
+    withdrawalReconciliation,
+    withdrawalStatus,
   };
 }
 
@@ -64,9 +73,19 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
   if (skip > 0) {
     params.set('skip', String(skip));
   }
-  const withdrawalRequestParams = new URLSearchParams(params);
+  const withdrawalRequestParams = new URLSearchParams({
+    range: filters.range,
+    take: String(filters.pageSize),
+  });
+  const withdrawalSkip = (filters.withdrawalPage - 1) * filters.pageSize;
+  if (withdrawalSkip > 0) {
+    withdrawalRequestParams.set('skip', String(withdrawalSkip));
+  }
   if (filters.withdrawalStatus) {
     withdrawalRequestParams.set('status', filters.withdrawalStatus);
+  }
+  if (filters.withdrawalReconciliation) {
+    withdrawalRequestParams.set('reconciliation', filters.withdrawalReconciliation);
   }
 
   return {
@@ -77,6 +96,7 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
     payoutBatchSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
     providerWalletWithdrawalRequestsHref: `/admin/provider-wallet/withdrawal-requests?${withdrawalRequestParams.toString()}`,
+    providerWalletWithdrawalRequestSummaryHref: `/admin/provider-wallet/withdrawal-requests/summary?range=${encodeURIComponent(filters.range)}`,
   };
 }
 
@@ -85,6 +105,8 @@ export function payoutHref(input: {
   readonly pageSize?: number;
   readonly range: AdminDateRange;
   readonly withdrawalStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
+  readonly withdrawalPage?: number;
+  readonly withdrawalReconciliation?: 'unmatched' | 'matched' | null;
 }) {
   const params = new URLSearchParams();
   if (input.range && input.range !== 'today') {
@@ -92,6 +114,12 @@ export function payoutHref(input: {
   }
   if (input.withdrawalStatus) {
     params.set('withdrawalStatus', input.withdrawalStatus);
+  }
+  if (input.withdrawalReconciliation) {
+    params.set('withdrawalReconciliation', input.withdrawalReconciliation);
+  }
+  if (input.withdrawalPage && input.withdrawalPage > 1) {
+    params.set('withdrawalPage', String(input.withdrawalPage));
   }
   if (input.pageSize && input.pageSize !== PAYOUT_OPERATIONS_API_LIMIT) {
     params.set('pageSize', String(input.pageSize));
@@ -101,6 +129,10 @@ export function payoutHref(input: {
   }
   const query = params.toString();
   return query ? `/payouts?${query}` : '/payouts';
+}
+
+function normalizeWithdrawalReconciliation(value: string | null): 'unmatched' | 'matched' | null {
+  return value === 'unmatched' || value === 'matched' ? value : null;
 }
 
 export function buildPayoutServerPagination<T>(

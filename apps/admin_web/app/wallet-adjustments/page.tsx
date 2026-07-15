@@ -1,8 +1,9 @@
 import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
-import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminFinanceOperatorEvidence } from '../../components/admin-finance-operator-evidence';
 import {
   AdminFormControlButton,
   AdminFormGrid,
@@ -14,7 +15,7 @@ import {
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
-import { AdminNoticeCard } from '../../components/admin-surface';
+import { AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
 import { DateTimeText } from '../../components/date-time-text';
 import { MoneyText } from '../../components/money-text';
@@ -83,22 +84,30 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
       metrics={[
         {
           helper: 'Preview from NestJS before any write',
+          kind: 'action',
           label: 'Business boundary',
+          scope: 'Current request',
           value: 'API preview',
         },
         {
           helper: 'Manual adjustments do not create platform fee revenue',
+          kind: preview?.affects.revenue ? 'risk' : 'record',
           label: 'Revenue impact',
+          scope: 'Policy guard',
           value: preview?.affects.revenue ? 'Review' : 'None',
         },
         {
           helper: 'Output VAT belongs to booking settlement, not manual wallet edits',
+          kind: preview?.affects.taxPayable ? 'risk' : 'record',
           label: 'Tax impact',
+          scope: 'Policy guard',
           value: preview?.affects.taxPayable ? 'Review' : 'None',
         },
         {
           helper: 'High amount or tax-sensitive corrections require evidence',
+          kind: preview?.requiresAttachment ? 'risk' : 'action',
           label: 'Attachment',
+          scope: 'Approval evidence',
           value: preview?.requiresAttachment ? 'Required' : 'Conditional',
         },
       ]}
@@ -118,10 +127,10 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         </AdminNoticeCard>
       ) : null}
 
-      <AdminFilterPanel
-        description="Enter the customer or partner profile id, preview the accounting impact, then create only after approval evidence is ready."
-        resultLabel={preview ? 'Preview ready' : 'Preview required'}
-        resultTone={preview ? 'success' : 'warning'}
+      <AdminSection
+        description="Enter the customer or partner profile id, preview the accounting impact, then submit a persistent request for a separate finance approver."
+        statusLabel={preview ? 'Preview ready' : 'Preview required'}
+        statusTone={preview ? 'success' : 'warning'}
         title="Manual adjustment request"
       >
         <AdminFormGrid method="get">
@@ -167,17 +176,15 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
             name="monthlyPeriod"
             placeholder="YYYY-MM"
           />
-          <AdminFormInput
-            defaultValue={formState.approvalId}
-            label="Approval id"
-            name="approvalId"
-            placeholder="Required before create"
-          />
-          <AdminFormInput
-            defaultValue={formState.approvalAdminId}
-            label="Approving admin id"
-            name="approvalAdminId"
-            placeholder="Different admin user id"
+          <AdminFormSelect
+            defaultValue={String(historyFilters.pageSize)}
+            label="History rows"
+            name="pageSize"
+            options={[
+              { label: '10 rows', value: '10' },
+              { label: '25 rows', value: '25' },
+              { label: '50 rows', value: '50' },
+            ]}
           />
           <AdminFormInput
             defaultValue={formState.attachmentUrl}
@@ -196,8 +203,13 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
           />
           <AdminFormControlButton>Preview accounting</AdminFormControlButton>
         </AdminFormGrid>
+        <AdminFilterSummary
+          ariaLabel="Active wallet adjustment request filters"
+          labels={walletAdjustmentActiveFilterLabels(formState, historyFilters)}
+          tone="info"
+        />
         <AdjustmentPolicyChecklist />
-      </AdminFilterPanel>
+      </AdminSection>
 
       <AdminTablePanel
         description={
@@ -246,11 +258,25 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
                 ) : (
                   <AdminInlineFallback>Missing approval</AdminInlineFallback>
                 )}
-                {row.approvalAdminId ? (
-                  <p className="muted">Approved by {row.approvalAdminId}</p>
-                ) : (
+                <AdminFinanceOperatorEvidence
+                  lines={[
+                    {
+                      fallbackId: row.requestedByAdminId,
+                      key: 'requested-by',
+                      label: 'Requested by',
+                      operator: row.requestedBy,
+                    },
+                    {
+                      fallbackId: row.approvalAdminId,
+                      key: 'approved-by',
+                      label: 'Approved by',
+                      operator: row.approvalAdmin,
+                    },
+                  ]}
+                />
+                {!row.approvalAdminId ? (
                   <AdminInlineFallback className="admin-mt-6">Approving admin not stored</AdminInlineFallback>
-                )}
+                ) : null}
                 {row.attachmentUrl ? (
                   <p className="muted">Attachment saved</p>
                 ) : (
@@ -276,11 +302,11 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         />
       </AdminTablePanel>
 
-      <AdminFilterPanel
+      <AdminSection
         className="admin-mt-16"
         description="Preview the balance, approval, accounting impact, and audit evidence before saving this adjustment."
-        resultLabel={preview ? 'No direct DB write' : 'Waiting'}
-        resultTone={preview ? 'success' : 'info'}
+        statusLabel={preview ? 'No direct DB write' : 'Waiting'}
+        statusTone={preview ? 'success' : 'info'}
         title="Accounting preview"
       >
         {preview ? (
@@ -328,7 +354,7 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         ) : (
           <p className="muted">Preview an adjustment to see before/after balance, ledger allocation, tax, revenue, and attachment gates.</p>
         )}
-      </AdminFilterPanel>
+      </AdminSection>
 
       {preview ? (
         <AdminTablePanel
@@ -374,10 +400,10 @@ function AdjustmentPolicyChecklist() {
   return (
     <AdminStageList className="admin-mt-16" aria-label="Manual wallet adjustment policy gates">
       <PreviewFact
-        helper="Approval id and a different approving admin id are required for every creation"
+        helper="A different finance approver must review the saved request before any wallet or ledger write"
         icon={<ShieldCheck aria-hidden="true" size={18} />}
         label="Approval gate"
-        value="Required"
+        value="Separate approver"
       />
       <PreviewFact
         helper="Evidence is required from 10.000.000 VND or more"
@@ -426,8 +452,6 @@ function CreateAdjustmentForm({
   readonly preview: AdminManualWalletAdjustmentPreview;
 }) {
   const missingRequiredAttachment = preview.requiresAttachment && !formState.attachmentUrl;
-  const missingApproval = !formState.approvalId;
-  const missingApprovalAdmin = !formState.approvalAdminId;
   const bookingSettlementOnly = preview.adjustmentType === 'CASH_BOOKING_DEDUCTION';
   const blockedAccountingImpact =
     bookingSettlementOnly ||
@@ -444,12 +468,10 @@ function CreateAdjustmentForm({
         ) : null}
         {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
         {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
-        {missingApproval ? <StatusBadge tone="warning">Approval id required</StatusBadge> : null}
-        {missingApprovalAdmin ? <StatusBadge tone="warning">Approving admin id required</StatusBadge> : null}
         <AdminFormControlButton
-          disabled={missingApproval || missingApprovalAdmin || missingRequiredAttachment || blockedAccountingImpact}
+          disabled={missingRequiredAttachment || blockedAccountingImpact}
         >
-          Create manual adjustment
+          Submit for approval
         </AdminFormControlButton>
       </AdminFilterChipGroup>
     </AdminFormShell>
@@ -465,8 +487,6 @@ function HiddenAdjustmentInputs({ formState }: { readonly formState: WalletAdjus
         ['direction', formState.direction],
         ['adjustmentType', formState.adjustmentType],
         ['amount', formState.amount],
-        ['approvalAdminId', formState.approvalAdminId],
-        ['approvalId', formState.approvalId],
         ['reason', formState.reason],
         ['monthlyPeriod', formState.monthlyPeriod],
         ['attachmentUrl', formState.attachmentUrl],
@@ -487,8 +507,6 @@ async function fetchPreview(formState: WalletAdjustmentFormState) {
     {
       adjustmentType: formState.adjustmentType,
       amount: Number(formState.amount),
-      ...(formState.approvalAdminId ? { approvalAdminId: formState.approvalAdminId } : {}),
-      ...(formState.approvalId ? { approvalId: formState.approvalId } : {}),
       ...(formState.attachmentUrl ? { attachmentUrl: formState.attachmentUrl } : {}),
       direction: formState.direction,
       ...(formState.monthlyPeriod ? { monthlyPeriod: formState.monthlyPeriod } : {}),
@@ -552,8 +570,6 @@ type WalletAdjustmentHistoryFilters = {
 type WalletAdjustmentFormState = {
   readonly adjustmentType: AdminManualWalletAdjustmentType;
   readonly amount: string;
-  readonly approvalAdminId: string;
-  readonly approvalId: string;
   readonly attachmentUrl: string;
   readonly direction: AdminManualWalletAdjustmentDirection;
   readonly intent: string;
@@ -567,8 +583,6 @@ function readWalletAdjustmentFormState(params: Record<string, string | string[] 
   return {
     adjustmentType: readParam(params, 'adjustmentType', 'PARTNER_BONUS') as AdminManualWalletAdjustmentType,
     amount: readParam(params, 'amount'),
-    approvalAdminId: readParam(params, 'approvalAdminId'),
-    approvalId: readParam(params, 'approvalId'),
     attachmentUrl: readParam(params, 'attachmentUrl'),
     direction: readParam(params, 'direction', 'CREDIT') as AdminManualWalletAdjustmentDirection,
     intent: readParam(params, 'intent'),
@@ -638,6 +652,37 @@ function walletAdjustmentHistoryPageHref(
   return query ? `/wallet-adjustments?${query}` : '/wallet-adjustments';
 }
 
+function walletAdjustmentActiveFilterLabels(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
+  const labels = [
+    `Owner: ${optionLabel(ownerOptions, formState.ownerType)}`,
+    `Direction: ${optionLabel(directionOptions, formState.direction)}`,
+    `Type: ${optionLabel(adjustmentTypeOptions, formState.adjustmentType)}`,
+    `History rows: ${historyFilters.pageSize}`,
+  ];
+
+  if (formState.ownerId) {
+    labels.push(`Owner id: ${formState.ownerId}`);
+  }
+  if (formState.amount) {
+    labels.push(`Amount: ${formState.amount} VND`);
+  }
+  if (formState.monthlyPeriod) {
+    labels.push(`Period: ${formState.monthlyPeriod}`);
+  }
+
+  return labels;
+}
+
+function optionLabel<Value extends string>(
+  options: readonly { readonly label: string; readonly value: Value }[],
+  value: Value,
+) {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
 function readParam(params: Record<string, string | string[] | undefined>, key: string, fallback = '') {
   const value = params[key];
   return Array.isArray(value) ? (value[0] ?? fallback) : (value ?? fallback);
@@ -685,6 +730,15 @@ function walletImpactLabel(row: AdminManualWalletAdjustmentRow) {
 }
 
 function walletAdjustmentNotice(notice: string) {
+  if (notice === 'requested') {
+    return {
+      badge: 'Pending',
+      detail: 'The request is stored in Finance Approval Queue. No wallet or accounting ledger has been written yet.',
+      title: 'Manual adjustment submitted',
+      tone: 'success' as const,
+    };
+  }
+
   if (notice === 'created') {
     return {
       badge: 'Saved',
@@ -706,26 +760,8 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'failed') {
     return {
       badge: 'Blocked',
-      detail: 'No wallet impact record was saved. Check owner id, approval id, attachment, and closed-period rules.',
-      title: 'Manual adjustment was not saved',
-      tone: 'danger' as const,
-    };
-  }
-
-  if (notice === 'approval-required') {
-    return {
-      badge: 'Approval',
-      detail: 'No wallet impact record was saved. Every manual wallet adjustment needs an approval id.',
-      title: 'Approval id is required',
-      tone: 'danger' as const,
-    };
-  }
-
-  if (notice === 'approval-admin-required') {
-    return {
-      badge: 'Approval',
-      detail: 'No wallet impact record was saved. A different approving admin id is required.',
-      title: 'Approving admin id is required',
+      detail: 'No approval request was saved. Check owner id, attachment, and closed-period rules.',
+      title: 'Manual adjustment request was not saved',
       tone: 'danger' as const,
     };
   }

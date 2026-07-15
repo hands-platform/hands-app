@@ -84,6 +84,8 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
       />
       <AdminTraceSummary
         className="admin-mt-12"
+        defaultKind="live"
+        defaultScope="Live policy"
         metrics={appliedPolicyCards.map((card) => ({
           detail: card.helper,
           label: card.label,

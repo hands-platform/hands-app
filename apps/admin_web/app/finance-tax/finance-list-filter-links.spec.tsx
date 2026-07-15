@@ -11,13 +11,13 @@ describe('FinanceListFilterLinks', () => {
     );
   });
 
-  it('renders through shared StatusBadgeLink atoms instead of direct link class assembly', () => {
+  it('renders through shared segmented filter atoms instead of direct link class assembly', () => {
     const source = readFileSync('app/finance-tax/finance-list-filter-links.tsx', 'utf8');
 
-    expect(source).toContain('AdminFilterChipGroup');
-    expect(source).toContain('StatusBadgeLinkFromPillClass');
-    expect(source).not.toContain('<div className={group.className');
-    expect(source).not.toContain('statusBadgeToneFromPillClass');
+    expect(source).toContain('AdminSegmentedControl');
+    expect(source).toContain('AdminFilterSummary');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('StatusBadgeLinkFromPillClass');
     expect(source).not.toContain("import Link from 'next/link'");
     expect(source).not.toContain('pillClassBadgeClassName');
     expect(source).not.toContain('className={financeListFilterLinkClassName(link)}');
@@ -35,7 +35,7 @@ describe('FinanceListFilterLinks', () => {
     }
   });
 
-  it('renders filter links with shared pill classes', () => {
+  it('renders filter links with shared Vuexy segmented controls', () => {
     const markup = renderToStaticMarkup(
       <FinanceListFilterLinks
         groups={[
@@ -62,7 +62,14 @@ describe('FinanceListFilterLinks', () => {
       />,
     );
 
-    expect(markup).toContain('class="pill pill-success"');
-    expect(markup).toContain('class="pill pill-neutral"');
+    expect(markup).toContain('class="booking-date-filter-bar finance-list-filter-group"');
+    expect(markup).toContain('class="finance-list-filter-group-label">Range</span>');
+    expect(markup).toContain('class="booking-date-filter-buttons finance-list-filter-buttons"');
+    expect(markup).toContain('class="booking-date-filter-button is-active"');
+    expect(markup).toContain('class="booking-date-filter-button"');
+    expect(markup).toContain('Active finance list filters');
+    expect(markup).toContain('Range: Today');
+    expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain('href="/finance-tax/payment-clearing?range=today"');
   });
 });

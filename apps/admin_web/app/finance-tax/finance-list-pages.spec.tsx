@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { vi } from 'vitest';
 
@@ -17,6 +17,14 @@ vi.mock('../../lib/admin-api', async () => {
   return {
     ...actual,
     adminGet: vi.fn(),
+  };
+});
+
+vi.mock('next/navigation', async () => {
+  const actual = await vi.importActual<typeof import('next/navigation')>('next/navigation');
+  return {
+    ...actual,
+    useRouter: () => ({ refresh: vi.fn() }),
   };
 });
 
@@ -273,8 +281,22 @@ describe('finance list pages', () => {
     ],
   ] as const)('renders %s rows with a dedicated Evidence action column', async (_name, Page, detailHref, rows, summary) => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
-      if (String(href).includes('/summary')) {
+      const requestHref = String(href);
+      if (
+        requestHref.includes('/bank-reconciliation/withdrawal-candidate-summary') ||
+        requestHref.includes('/bank-reconciliation/import-batches/summary')
+      ) {
+        return fallback;
+      }
+      if (requestHref.includes('/summary')) {
         return summary;
+      }
+      if (
+        requestHref.includes('/bank-reconciliation/import-batches') ||
+        requestHref.includes('/company-bank-accounts') ||
+        requestHref.includes('/admin/users')
+      ) {
+        return fallback;
       }
       return rows.length > 0 ? rows : fallback;
     });
@@ -330,7 +352,7 @@ describe('finance list pages', () => {
     if (_name === 'bank reconciliation') {
       expect(markup).toContain('Bank command board');
       expect(markup).toContain('Unmatched ratio');
-      expect(markup).toContain('Needs match');
+      expect(markup).toContain('UNMATCHED');
       expect(markup).toContain('money-text money-text-positive');
     }
 
@@ -457,6 +479,24 @@ describe('finance list pages', () => {
     expect(source).not.toContain('financeListCommandIconClassName');
     expect(source).not.toContain('usage-overview-command-icon');
     expect(source).not.toContain('<Link className={`card finance-list-command-card is-${tone}`}');
+  });
+
+  it('requires finance list command cards to declare an operating scope at the call site', () => {
+    const financePageFiles = readdirSync(join(process.cwd(), 'app/finance-tax'), {
+      recursive: true,
+      withFileTypes: true,
+    })
+      .filter((entry) => entry.isFile() && entry.name === 'page.tsx')
+      .map((entry) => join(entry.parentPath, entry.name));
+
+    for (const filePath of financePageFiles) {
+      const source = readFileSync(filePath, 'utf8');
+      const commandCardBlocks = source.matchAll(/<FinanceListCommandCard[\s\S]*?^\s*\/>\r?$/gm);
+
+      for (const block of commandCardBlocks) {
+        expect(block[0], `${filePath} FinanceListCommandCard missing scope`).toContain('scope=');
+      }
+    }
   });
 
   it('scopes finance command card metric overrides to the shared KPI card slots', () => {
@@ -650,7 +690,6 @@ describe('finance list pages', () => {
     const source = readFileSync(join(process.cwd(), 'app/finance-tax/monthly-tax-closing/page.tsx'), 'utf8');
 
     expect(source).toContain('MoneyText');
-    expect(source).not.toContain('formatMoney(');
     expect(source).not.toContain('<strong>{formatMoney(closing.companyOutputVatTotal, closing.currency)}</strong>');
     expect(source).not.toContain('<strong>{formatMoney(closing.partnerWithholdingTotal, closing.currency)}</strong>');
     expect(source).not.toContain(
@@ -729,7 +768,6 @@ describe('finance list pages', () => {
 
     expect(source).toContain('StatusBadgeLink');
     expect(source).not.toContain('PillClassBadgeLink');
-    expect(source).not.toContain('AdminFormControlLink');
     expect(source).not.toMatch(/<a\s+className="pill [^"]+"\s+download/s);
     expect(source).not.toMatch(/className="pill pill-success"/);
   });

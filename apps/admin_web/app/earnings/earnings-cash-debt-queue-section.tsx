@@ -51,6 +51,8 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
     >
       {items.length ? (
         <AdminTraceSummary
+          defaultKind="risk"
+          defaultScope="Open cash debt"
           metrics={[
             { label: 'Blocked wallets', value: String(items.length) },
             { label: 'Wallet debt', value: <MoneyText amount={totals.debtAmount} currency={currency} /> },

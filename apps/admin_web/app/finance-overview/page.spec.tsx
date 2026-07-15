@@ -32,6 +32,25 @@ describe('FinanceOverviewPage', () => {
             refundPendingAmount: 40_000,
           },
           bankSummary: { amount: 0, clearedCount: 0, count: 0, currency: 'VND', matchedCount: 0, unmatchedCount: 0 },
+          bankWithdrawalCandidateSummary: {
+            assignedCount: 1,
+            assignments: [],
+            currency: 'VND',
+            eligibleCount: 4,
+            noneAmount: 100_000,
+            noneCount: 1,
+            oldestReviewOccurredAt: '2026-07-14T02:00:00.000Z',
+            oldestStrongOccurredAt: '2026-07-12T02:00:00.000Z',
+            reviewAmount: 300_000,
+            reviewCount: 1,
+            reviewOver24hCount: 1,
+            reviewOver48hCount: 0,
+            strongAmount: 800_000,
+            strongCount: 2,
+            strongOver24hCount: 2,
+            strongOver48hCount: 1,
+            unassignedCount: 3,
+          },
           cashSummary: null,
           clearingSummary: { amount: 0, clearedCount: 0, count: 0, currency: 'VND', openCount: 0 },
           couponSummary: {
@@ -49,6 +68,12 @@ describe('FinanceOverviewPage', () => {
             settlementBaseAmount: 100_000_000,
           },
           earningsSummary: null,
+          financeReviewSlaSummary: {
+            open48To72Count: 1,
+            openOverdueCount: 3,
+            openOver72Count: 2,
+            resolvedInRangeCount: 8,
+          },
           monthlyClosingSummary: {
             cashDebtTotal: 0,
             companyOutputVatTotal: 0,
@@ -171,14 +196,29 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');
+    expect(markup).toContain('Finance Review SLA');
+    expect(markup).toContain('Open 48–72h');
+    expect(markup).toContain('Open 72h+');
+    expect(markup).toContain('Resolved reviews');
+    expect(markup).toContain('2 critical');
+    expect(markup).toMatch(
+      /Finance Priority Desk[\s\S]*Finance reviews over 72h[\s\S]*Payment clearing open/,
+    );
+    expect(markup).toContain('/notifications?range=all&amp;review=finance-overdue');
+    expect(markup).toContain('/notifications?range=7d&amp;review=finance-overdue-history');
+    expect(markup).toContain('admin-section-body finance-overview-sla-grid');
+    expect(markup).toContain('finance-overview-sla-card is-danger');
     expect(markup).toContain('Top finance queues');
     expect(markup).toContain('class="finance-overview-page"');
     expect(markup).not.toContain('usage-overview-page');
-    expect(markup).toContain('card admin-section finance-overview-filter-panel');
+    expect(markup).toContain('card admin-filter-panel finance-overview-filter-panel admin-section');
+    expect(markup).toContain('Active finance overview filters');
+    expect(markup).toContain('Range: Last 7 days');
+    expect(markup).toContain('Period: ');
     expect(markup).toContain('booking-date-filter-buttons finance-overview-range-buttons');
     expect(markup).not.toContain('usage-overview-filter-panel');
     expect(markup).not.toContain('usage-overview-range-buttons');
-    expect(markup).not.toContain('card admin-filter-panel finance-overview-filter-panel');
+    expect(markup).not.toContain('card admin-section finance-overview-filter-panel');
     expect(markup).toContain('card admin-section finance-overview-priority-board');
     expect(markup).toContain('admin-section-body finance-overview-priority-grid');
     expect(markup).toContain('card admin-card finance-overview-command-card finance-overview-priority-card');
@@ -198,6 +238,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('6 signals');
     expect(markup).toContain('card admin-section finance-overview-kpi-section');
     expect(markup).toContain('admin-section-body finance-overview-kpi-grid');
+    expect(markup).toContain('class="metric-card-scope is-period"');
+    expect(markup).toContain('class="metric-card-scope is-risk"');
+    expect(markup).toContain('Last 7 days');
+    expect(markup).toContain('Needs action');
     expect(markup).not.toContain('admin-section-body usage-overview-command-grid finance-overview-kpi-grid');
     expect(markup).toContain('card admin-card finance-overview-command-card');
     expect(markup).not.toContain('<article class="card admin-card finance-overview-command-card');
@@ -230,6 +274,10 @@ describe('FinanceOverviewPage', () => {
     expect(markup).toContain('200.000');
     expect(markup).toContain('75.000');
     expect(markup).toContain('Finance Action Lists');
+    expect(markup).toContain('Strong withdrawal candidates');
+    expect(markup).toContain('Withdrawal candidates to review');
+    expect(markup).toContain('/finance-tax/bank-reconciliation?range=7d&amp;review=outflow&amp;candidate=strong');
+    expect(markup).toContain('/finance-tax/bank-reconciliation?range=7d&amp;review=outflow&amp;candidate=review');
     expect(markup).toContain('card admin-section finance-overview-action-card');
     expect(markup).toContain('admin-section-body finance-overview-action-list');
     expect(markup).not.toContain('usage-overview-action-card finance-overview-action-card');
@@ -295,6 +343,29 @@ describe('FinanceOverviewPage', () => {
     expect(css).not.toContain('.finance-overview-kpi-grid .finance-overview-command-card');
   });
 
+  it('labels finance action and control cards with operating scope badges', async () => {
+    const page = await FinanceOverviewPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toMatch(
+      /finance-overview-priority-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Finance reviews over 72h/,
+    );
+    expect(markup).toMatch(
+      /finance-overview-priority-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Strong withdrawal candidates/,
+    );
+    expect(markup).toMatch(
+      /finance-overview-control-card[\s\S]*metric-card-scope is-period">Last 7 days[\s\S]*Revenue separation/,
+    );
+    expect(markup).toMatch(
+      /finance-overview-control-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Open finance risks/,
+    );
+    expect(markup).toMatch(
+      /finance-overview-control-card[\s\S]*metric-card-scope is-risk">Needs action[\s\S]*Withdrawal matching/,
+    );
+  });
+
   it('scopes finance KPI value typography to the direct shared metric-card slot', () => {
     const css = readFileSync('app/globals.css', 'utf8');
 
@@ -324,6 +395,16 @@ describe('FinanceOverviewPage', () => {
       expect(css).not.toContain(`.finance-overview-principle-card.is-${tone} .finance-overview-command-icon`);
       expect(css).not.toContain(`.finance-overview-kpi-grid .is-${tone} .finance-overview-command-icon`);
     }
+  });
+
+  it('does not let finance command-card label selectors override scope badges', () => {
+    const css = readFileSync('app/globals.css', 'utf8');
+
+    expect(css).toContain('.finance-overview-command-card > div > span:not(.metric-card-scope)');
+    expect(css).toContain('.finance-overview-action-item > div > span:not(.metric-card-scope)');
+    expect(css).toContain('.finance-overview-control-card > div > span:not(.metric-card-scope)');
+    expect(css).not.toContain('.finance-overview-command-card > div > span {');
+    expect(css).not.toContain('.finance-overview-control-card > div > span {');
   });
 
   it('scopes finance action and control icon tones to direct icon slots', () => {

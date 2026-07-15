@@ -15,7 +15,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('../../lib/admin-api', () => ({
   adminPostOrThrow: vi.fn(),
   isAdminApiAuthError: (error: unknown) =>
-    error instanceof Error && error.message.startsWith('ADMIN_ACCESS_TOKEN'),
+    error instanceof Error && error.message.startsWith('Admin Web session'),
 }));
 
 const mockedAdminPostOrThrow = vi.mocked(adminPostOrThrow);
@@ -63,7 +63,7 @@ describe('coupon server actions', () => {
     const formData = new FormData();
     formData.set('codes', 'WELCOME10');
     formData.set('percent', '10');
-    mockedAdminPostOrThrow.mockRejectedValue(new Error('ADMIN_ACCESS_TOKEN is expired'));
+    mockedAdminPostOrThrow.mockRejectedValue(new Error('Admin Web session is required for Admin API access'));
 
     await createCoupon(formData);
 

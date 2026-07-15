@@ -16,8 +16,10 @@ describe('CashSettlementFilterSection', () => {
     );
 
     expect(source).toContain("import { AdminTextLink } from '../../components/admin-text-link';");
+    expect(source).toContain("import { AdminSegmentedControl } from '../../components/admin-segmented-control';");
+    expect(source).toContain("import { AdminFilterSummary } from '../../components/admin-filter-summary';");
     expect(source).toContain('<AdminTextLink');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).not.toContain('className="text-link"');
     expect(source).not.toContain("import Link from 'next/link';");
     expect(source).not.toContain('PillClassBadgeLink');
@@ -26,8 +28,18 @@ describe('CashSettlementFilterSection', () => {
     expect(markup).toContain('admin-form-search');
     expect(markup).toContain('admin-form-select');
     expect(markup).toContain('admin-form-control-button');
-    expect(markup).toContain('pill pill-info');
-    expect(markup).toContain('pill pill-neutral');
+    expect(markup).toContain('booking-date-filter-bar cash-settlement-filter-group');
+    expect(markup).toContain('cash-settlement-filter-group-label');
+    expect(markup).toContain('booking-date-filter-buttons cash-settlement-filter-buttons');
+    expect(markup).toContain('booking-date-filter-button is-active');
+    expect(markup).toContain('Active cash settlement filters');
+    expect(markup).toContain('Range: Today');
+    expect(markup).toContain('Queue: Over 24h');
+    expect(markup).toContain('Search: smoke');
+    expect(markup).toContain('/cash-settlements?queue=stale&amp;q=smoke');
+    expect(markup).toContain('/cash-settlements?range=7d&amp;queue=stale&amp;q=smoke');
+    expect(markup).toContain('/cash-settlements?queue=high-debt&amp;q=smoke');
+    expect(markup).not.toContain('pill pill-neutral');
     expect(markup).toContain('aria-current="page"');
     expect(markup).not.toContain('<input aria-label="Search cash settlement queue"');
     expect(markup).not.toContain('filter-pill');

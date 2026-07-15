@@ -26,6 +26,8 @@ describe('RefundFilterBoardSection', () => {
     expect(rendered).toContain('Refund operation filters');
     expect(rendered).toContain('Refund date range: Last 30 days');
     expect(rendered).toContain('Active queue: Requested - customer refund requests waiting for operator processing.');
+    expect(rendered).toContain('Range: Last 30 days');
+    expect(rendered).toContain('Queue: Requested');
     expect(rendered).toContain('Showing 3 of 9');
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('Open refunds');
@@ -33,8 +35,11 @@ describe('RefundFilterBoardSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
+        'booking-date-filter-bar refund-filter-group admin-mb-12',
+        'refund-filter-group-label',
+        'booking-date-filter-buttons refund-filter-buttons',
+        'booking-date-filter-button is-active',
         'pill pill-warn',
-        'pill pill-info',
       ]),
     );
   });
@@ -62,9 +67,11 @@ describe('RefundFilterBoardSection', () => {
   it('uses shared badge link atoms for refund filter shortcuts', () => {
     const source = readFileSync(join(process.cwd(), 'app/refunds/refund-filter-board-section.tsx'), 'utf8');
 
-    expect(source).toContain('AdminFilterChipGroup');
+    expect(source).toContain('AdminSegmentedControl');
+    expect(source).toContain('AdminFilterSummary');
     expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('StatusBadgeLink');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('StatusBadgeLink');
     expect(source).not.toContain('<div className="participant-list admin-mb-12">');
     expect(source).not.toContain('<div className="participant-list">');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');

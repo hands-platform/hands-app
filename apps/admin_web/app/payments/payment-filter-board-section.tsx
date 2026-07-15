@@ -1,6 +1,6 @@
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminTablePanel } from '../../components/admin-table-panel';
-import { StatusBadgeLink } from '../../components/status-badge';
 import type { AdminDateRange } from '../../lib/date-range';
 
 export type PaymentFilterLink = {
@@ -52,35 +52,43 @@ export function PaymentFilterBoardSection({
           Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
         </p>
       ) : null}
-      <AdminFilterChipGroup ariaLabel="Payment date range filters" className="admin-mb-12">
-        {rangeLinks.map((item) => (
-          <StatusBadgeLink
-            ariaCurrent={activeRange === item.range ? 'page' : undefined}
-            href={item.href}
-            key={item.label}
-            tone={activeRange === item.range ? 'info' : 'neutral'}
-          >
-            {item.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
-      <AdminFilterChipGroup ariaLabel="Payment review filters">
-        {isFiltered ? (
-          <StatusBadgeLink href="/payments?range=all&review=all" tone="success">
-            Clear filters
-          </StatusBadgeLink>
-        ) : null}
-        {reviewLinks.map((item) => (
-          <StatusBadgeLink
-            ariaCurrent={review === item.review ? 'page' : undefined}
-            href={item.href}
-            key={item.label}
-            tone={review === item.review ? 'warning' : 'neutral'}
-          >
-            {item.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
+      <AdminFilterSummary
+        ariaLabel="Active payment filters"
+        className="admin-mb-12"
+        labels={[`Range: ${rangeLabel}`, `Queue: ${activeFilterLabel ?? 'All payments'}`]}
+        tone={review ? 'warning' : 'info'}
+      />
+      <div className="booking-date-filter-bar payment-filter-group admin-mb-12">
+        <span className="payment-filter-group-label">Range</span>
+        <AdminSegmentedControl
+          activeValue={activeRange}
+          ariaLabel="Payment date range filters"
+          className="payment-filter-buttons"
+          options={rangeLinks.map((item) => ({
+            href: item.href,
+            label: item.label,
+            value: item.range,
+          }))}
+        />
+      </div>
+      <div className="booking-date-filter-bar payment-filter-group">
+        <span className="payment-filter-group-label">Queue</span>
+        <AdminSegmentedControl
+          activeValue={review || 'all'}
+          ariaLabel="Payment review filters"
+          className="payment-filter-buttons"
+          options={[
+            ...(isFiltered
+              ? [{ href: '/payments?range=all&review=all', label: 'Clear filters', value: 'clear' }]
+              : []),
+            ...reviewLinks.map((item) => ({
+              href: item.href,
+              label: item.label,
+              value: item.review,
+            })),
+          ]}
+        />
+      </div>
     </AdminTablePanel>
   );
 }

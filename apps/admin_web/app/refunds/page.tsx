@@ -50,24 +50,37 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   const decisionChecklist = buildRefundDecisionChecklist(summary);
   const pagination = buildRefundServerPagination(refunds, filters, summary.totalCount);
   const refundRows = buildRefundTableRows(pagination.rows);
+  const refundRangeScope = dateRangeLabel(filters.range);
 
   return (
     <AdminPageTemplate
       description="Refund operations for customer protection, payment ledger alignment, and finance handoff."
       metrics={[
-        { label: 'Total refunds', value: summary.totalCount, helper: 'Refund records matching this queue.' },
         {
+          helper: 'Refund records matching this queue.',
+          kind: 'record',
+          label: 'Total refunds',
+          scope: refundRangeScope,
+          value: summary.totalCount,
+        },
+        {
+          kind: 'action',
           label: 'Requested',
+          scope: 'Pending',
           value: summary.requestedCount,
           helper: 'Customer refund requests waiting for review.',
         },
         {
+          kind: 'period',
           label: 'Refunded bookings',
+          scope: refundRangeScope,
           value: summary.refundedBookingCount,
           helper: 'Bookings already in the refund outcome.',
         },
         {
+          kind: 'risk',
           label: 'Needs update',
+          scope: 'Needs action',
           value: summary.needsUpdateCount,
           helper: 'Refund records whose payment ledger still needs attention.',
         },

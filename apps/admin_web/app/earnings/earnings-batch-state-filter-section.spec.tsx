@@ -10,15 +10,18 @@ describe('EarningsBatchStateFilterSection', () => {
     expect(source).not.toContain('<div className="service-trace-summary admin-mt-16">');
   });
 
-  it('uses the shared Vuexy pill link surface for active filter tone', () => {
+  it('uses the shared Vuexy segmented control surface for active filter tone', () => {
     const source = readFileSync('app/earnings/earnings-batch-state-filter-section.tsx', 'utf8');
 
     expect(source).toContain('AdminTablePanel');
-    expect(source).toContain('StatusBadgeLinkFromPillClass');
+    expect(source).toContain('AdminSegmentedControl');
+    expect(source).not.toContain('AdminFilterChipGroup');
+    expect(source).not.toContain('StatusBadgeLinkFromPillClass');
     expect(source).not.toContain('statusBadgeToneFromPillClass');
     expect(source).not.toContain('className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"');
     expect(source).not.toContain('PillClassBadgeLink');
     expect(source).not.toContain('filter-pill');
+    expect(source).not.toContain('activeBatchStateFilterClassName');
   });
 
   it('uses the shared Vuexy money atom for visible amounts', () => {
@@ -69,8 +72,10 @@ describe('EarningsBatchStateFilterSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section',
-        'pill pill-info',
-        'pill pill-neutral',
+        'booking-date-filter-bar earnings-filter-group admin-mt-12',
+        'earnings-filter-group-label',
+        'booking-date-filter-buttons earnings-filter-buttons',
+        'booking-date-filter-button is-active',
       ]),
     );
     expect(ariaCurrentValuesIn(section)).toContain('page');

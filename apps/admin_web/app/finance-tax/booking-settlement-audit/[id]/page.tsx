@@ -7,10 +7,12 @@ import { AdminPageTemplate } from '../../../../components/admin-page-template';
 import { AdminTextLink } from '../../../../components/admin-text-link';
 import { DateTimeText } from '../../../../components/date-time-text';
 import { MoneyText } from '../../../../components/money-text';
+import { StatusBadge } from '../../../../components/status-badge';
 import { shortId } from '../../../../lib/admin-format';
 import { financePersonName } from '../../finance-participant-label';
 import { FinanceDetailGrid, FinanceDetailInfoItem } from '../../finance-detail-info-item';
 import { FinanceOperatingPath } from '../../finance-operating-path';
+import { paymentFeeEvidenceState } from '../../payment-fee-evidence-model';
 import { financeTaxCloseoutStatusTone } from '../../finance-status-badge-model';
 import { FinanceTablePanel } from '../../finance-table-panel';
 import {
@@ -43,6 +45,7 @@ export default async function BookingSettlementAuditDetailPage({
 
   const coupon = couponSettlementInfo(snapshot);
   const paymentFee = paymentFeePolicyInfo(snapshot);
+  const paymentFeeEvidence = paymentFeeEvidenceState(snapshot);
   const evidenceStatus = settlementEvidenceStatus(snapshot);
   const allocationDelta = settlementAllocationDelta(snapshot);
 
@@ -58,16 +61,20 @@ export default async function BookingSettlementAuditDetailPage({
       }
       description="Single posted booking settlement record for finance, tax, payment fee, coupon, and payout audit evidence."
       metrics={[
-        { helper: 'Booking settlement state.', label: 'Settlement', value: snapshot.settlementStatus },
-        { helper: 'Tax closeout state.', label: 'Tax status', value: snapshot.taxStatus },
+        { helper: 'Booking settlement state.', kind: 'record', label: 'Settlement', scope: 'Settlement record', value: snapshot.settlementStatus },
+        { helper: 'Tax closeout state.', kind: 'record', label: 'Tax status', scope: 'Settlement record', value: snapshot.taxStatus },
         {
           helper: 'Customer amount captured or owed by payment method.',
+          kind: 'record',
           label: 'Customer paid',
+          scope: 'Settlement record',
           value: <MoneyText amount={snapshot.customerPaymentAmount} currency={snapshot.currency} />,
         },
         {
           helper: 'Partner VAT/PIT withheld from this booking.',
+          kind: 'record',
           label: 'Withheld',
+          scope: 'Settlement record',
           value: <MoneyText amount={snapshot.partnerWithholdingTotal} currency={snapshot.currency} />,
         },
       ]}
@@ -233,8 +240,8 @@ export default async function BookingSettlementAuditDetailPage({
 
       <FinanceTablePanel
         description="Payment provider fee evidence is copied to the settlement record so method-specific CARD, MOMO, or VNPAY rules can be audited later."
-        resultLabel={<MoneyText amount={snapshot.paymentProcessingFee} currency={snapshot.currency} />}
-        resultTone={snapshot.paymentProcessingFee > 0 ? 'info' : 'success'}
+        resultLabel={<StatusBadge tone={paymentFeeEvidence.tone}>{paymentFeeEvidence.label}</StatusBadge>}
+        resultTone={paymentFeeEvidence.tone}
         title="Payment fee policy evidence"
       >
         <FinanceDetailGrid>
@@ -247,6 +254,7 @@ export default async function BookingSettlementAuditDetailPage({
           />
           <FinanceDetailInfoItem label="Payer / treatment" value={`${paymentFee.payer} / ${paymentFee.treatment}`} />
           <FinanceDetailInfoItem label="Rule type" value={paymentFee.feeType} />
+          <FinanceDetailInfoItem label="Evidence result" value={paymentFeeEvidence.detail} />
         </FinanceDetailGrid>
       </FinanceTablePanel>
 

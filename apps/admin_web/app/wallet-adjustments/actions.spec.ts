@@ -47,11 +47,9 @@ describe('manual wallet adjustment server actions', () => {
 
     await createManualWalletAdjustment(formData);
 
-    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/wallet-adjustments', {
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith('/admin/wallet-adjustment-requests', {
       adjustmentType: 'PARTNER_BONUS',
       amount: 200000,
-      approvalAdminId: 'finance-admin-2',
-      approvalId: 'approval-2026-06',
       attachmentUrl: 'https://example.test/evidence.pdf',
       direction: 'CREDIT',
       monthlyPeriod: '2026-06',
@@ -60,13 +58,16 @@ describe('manual wallet adjustment server actions', () => {
       reason: 'Completed launch bonus',
     });
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/wallet-adjustments');
+    expect(mockedRevalidatePath).toHaveBeenCalledWith('/finance-tax/approval-queue');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/partners');
     expect(mockedRevalidatePath).toHaveBeenCalledWith('/customers');
     expect(mockedRedirect).toHaveBeenCalledWith(
-      expect.stringContaining('adjustmentNotice=created'),
+      expect.stringContaining('adjustmentNotice=requested'),
     );
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalId='));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalAdminId='));
   });
 
   it('redirects to a form notice when the Admin API rejects creation', async () => {
@@ -126,7 +127,7 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
   });
 
-  it('redirects missing approvals before posting to the Admin API', async () => {
+  it('submits a persistent request without asking the maker for approval identifiers', async () => {
     const formData = new FormData();
     formData.set('ownerType', 'PARTNER');
     formData.set('ownerId', 'provider-1');
@@ -137,8 +138,11 @@ describe('manual wallet adjustment server actions', () => {
 
     await createManualWalletAdjustment(formData);
 
-    expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=approval-required'));
+    expect(mockedAdminPostOrThrow).toHaveBeenCalledWith(
+      '/admin/wallet-adjustment-requests',
+      expect.objectContaining({ ownerId: 'provider-1', amount: 200000 }),
+    );
+    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=requested'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerType=PARTNER'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('ownerId=provider-1'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('direction=CREDIT'));
@@ -163,7 +167,8 @@ describe('manual wallet adjustment server actions', () => {
     expect(mockedAdminPostOrThrow).not.toHaveBeenCalled();
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('adjustmentNotice=attachment-required'));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('amount=10000000'));
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('approvalId=approval-2026-06'));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalId='));
+    expect(mockedRedirect).not.toHaveBeenCalledWith(expect.stringContaining('approvalAdminId='));
     expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('reason=High+amount+adjustment'));
 
     vi.clearAllMocks();

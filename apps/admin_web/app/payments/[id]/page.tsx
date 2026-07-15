@@ -6,6 +6,7 @@ import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFormControlButton, AdminFormControlLink, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminInlineForm } from '../../../components/admin-inline-action-form';
 import { AdminInlineFallback } from '../../../components/admin-inline-fallback';
+import { AdminInlineNotice } from '../../../components/admin-inline-notice';
 import { AdminMetricGrid, AdminPageTemplate } from '../../../components/admin-page-template';
 import { AdminStageItem, AdminStageList } from '../../../components/admin-stage-item';
 import { AdminDetailGrid, AdminDisclosure } from '../../../components/admin-surface';
@@ -25,8 +26,11 @@ import {
   AdminChatMessage,
   AdminPaymentCallbackAttempt,
   AdminPaymentDetail,
+  AdminUser,
   adminGet,
 } from '../../../lib/admin-api';
+import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
+import { buildFinanceApproverOptions } from '../../finance-tax/finance-approver-options';
 import { readSearchParam } from '../../../lib/date-range';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from '../actions';
 import {
@@ -82,6 +86,18 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
     payment.id,
     { cancelHref: `/payments/${payment.id}` },
   );
+  const needsFinanceApproverDirectory = confirmation?.action === 'refund';
+  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
+    ? await Promise.all([
+        getCurrentAdminOperatorAccess(),
+        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
+      ])
+    : [null, []];
+  const financeApproverOptions = buildFinanceApproverOptions(
+    financeApproverUsers,
+    currentOperatorAccess?.id ?? null,
+  );
+  const refundApprovalUnavailable = needsFinanceApproverDirectory && financeApproverOptions.length === 0;
 
   return (
     <AdminPageTemplate
@@ -118,24 +134,60 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
       <AdminMetricGrid
         className="admin-mb-16"
         metrics={[
-          { label: 'Payment status', value: payment.status, helper: paymentStatusHint(payment) },
-          { label: 'Method', value: payment.method, helper: gatewayReferenceLabel(payment) },
-          { label: 'Amount', value: paymentMoney(payment.amount, payment.currency), helper: serviceLabel },
-          { label: 'Booking', value: booking?.status ?? 'Not linked', helper: bookingAddress },
+          {
+            helper: paymentStatusHint(payment),
+            kind: 'record',
+            label: 'Payment status',
+            scope: 'Payment record',
+            value: payment.status,
+          },
+          {
+            helper: gatewayReferenceLabel(payment),
+            kind: 'record',
+            label: 'Method',
+            scope: 'Payment record',
+            value: payment.method,
+          },
+          {
+            helper: serviceLabel,
+            kind: 'record',
+            label: 'Amount',
+            scope: 'Payment record',
+            value: paymentMoney(payment.amount, payment.currency),
+          },
+          {
+            helper: bookingAddress,
+            kind: 'record',
+            label: 'Booking',
+            scope: 'Payment record',
+            value: booking?.status ?? 'Not linked',
+          },
           {
             label: 'Callbacks',
             value: `${callbacks.length} attempt(s)`,
+            kind: callbackReviewCount ? 'risk' : 'record',
+            scope: callbackReviewCount ? 'Needs action' : 'Gateway records',
             helper: `${callbackReviewCount} review item(s)`,
           },
           {
             label: 'Accepted callbacks',
             value: `${acceptedCallbackCount}`,
+            kind: 'record',
+            scope: 'Gateway records',
             helper: 'Accepted or replayed with verified signature.',
           },
-          { label: 'Cash fee gate', value: cashDebt ? 'Blocked' : 'Clear', helper: cashDebtHint(payment) },
+          {
+            label: 'Cash fee gate',
+            value: cashDebt ? 'Blocked' : 'Clear',
+            kind: cashDebt ? 'risk' : 'record',
+            scope: cashDebt ? 'Needs action' : 'Payment record',
+            helper: cashDebtHint(payment),
+          },
           {
             label: 'Audit trail',
             value: `${auditRows.length} event(s)`,
+            kind: 'record',
+            scope: 'Audit records',
             helper: 'Payment and linked booking operation logs.',
           },
         ]}
@@ -147,29 +199,36 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         cashDebtSettlementForm={cashDebt && earning?.id ? <CashDebtSettlementForm payment={payment} /> : null}
         confirmation={
           confirmation ? (
-            <ConfirmDialog
-              action={paymentConfirmationAction(confirmation.action)}
-              cancelHref={confirmation.cancelHref}
-              confirmLabel={confirmation.confirmLabel}
-              description={confirmation.description}
-              disabled={confirmation.disabled}
-              hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
-              id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
-              textInputs={
-                confirmation.action === 'refund'
-                  ? [
-                      {
-                        label: 'Approving admin id',
-                        name: 'approvalAdminId',
-                        placeholder: 'Different admin user id',
-                        required: true,
-                      },
-                    ]
-                  : []
-              }
-              title={confirmation.title}
-              tone={confirmation.tone}
-            />
+            <>
+              {refundApprovalUnavailable ? (
+                <AdminInlineNotice className="admin-mb-16" role="alert" tone="warning">
+                  No other Finance approver is available. Refund execution remains disabled until another operator has the FINANCE_APPROVER role.
+                </AdminInlineNotice>
+              ) : null}
+              <ConfirmDialog
+                action={paymentConfirmationAction(confirmation.action)}
+                cancelHref={confirmation.cancelHref}
+                confirmLabel={confirmation.confirmLabel}
+                description={confirmation.description}
+                disabled={confirmation.disabled || refundApprovalUnavailable}
+                hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
+                id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
+                selectInputs={
+                  confirmation.action === 'refund'
+                    ? [
+                        {
+                          label: 'Separate Finance approver',
+                          name: 'approvalAdminId',
+                          options: [{ label: 'Select Finance approver', value: '' }, ...financeApproverOptions],
+                          required: true,
+                        },
+                      ]
+                    : []
+                }
+                title={confirmation.title}
+                tone={confirmation.tone}
+              />
+            </>
           ) : null
         }
         hasBlockingReview={cashDebt || callbackReviewCount > 0}

@@ -114,6 +114,49 @@ describe('CashSettlementsPage', () => {
     expect(source).not.toContain('formatMoney(');
   });
 
+  it('scopes cash settlement KPI cards by action, risk, and selected period', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href === '/admin/cash-settlement-earnings?range=7d&take=10') {
+        return [] as AdminEarning[];
+      }
+      if (href === '/admin/cash-settlement-summary?range=7d') {
+        const summary: AdminCashSettlementSummary = {
+          cashPaymentRowCount: 4,
+          currency: 'VND',
+          generatedAt: '2026-07-13T00:00:00.000Z',
+          highDebtProviderCount: 1,
+          missingPaymentEvidenceCount: 2,
+          oldestOpenAgeMinutes: 26 * 60,
+          oldestOpenAt: '2026-07-11T22:00:00.000Z',
+          providerCount: 3,
+          rowCount: 4,
+          staleDebtRowCount: 1,
+          topProviderGroups: [],
+          totalCompanyCouponOffset: 25000,
+          totalDebtAmount: 100000,
+          totalPlatformFee: 80000,
+          totalTaxAmount: 20000,
+        };
+        return summary;
+      }
+      return fallback;
+    });
+
+    const page = await CashSettlementsPage({
+      searchParams: Promise.resolve({ range: '7d' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Needs action');
+    expect(markup).toContain('Pending');
+    expect(markup).toContain('Risk');
+    expect(markup).toContain('Last 7 days');
+    expect(markup).toContain('Partner-held cash debt needing follow-up.');
+    expect(markup).toContain('Period coupon offsets already applied to cash settlements.');
+    expect(markup).not.toContain('Visible settlement rows after filters.');
+    expect(markup).not.toContain('Rows older than 24 hours.');
+  });
+
   it('loads the full cash settlement operations playbook only when requested', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href === '/admin/cash-settlement-earnings?range=today&take=10') {

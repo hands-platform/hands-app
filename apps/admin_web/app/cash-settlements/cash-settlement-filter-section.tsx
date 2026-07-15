@@ -4,10 +4,10 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminTextLink } from '../../components/admin-text-link';
-import { StatusBadgeLink } from '../../components/status-badge';
 import { dateRangeLabel } from '../../lib/date-range';
 import {
   cashSettlementHref,
@@ -47,28 +47,29 @@ export function CashSettlementFilterSection({
       resultTone="success"
       title="Cash settlement date range"
     >
-      <AdminFilterChipGroup ariaLabel="Cash settlement date range" className="admin-mt-12">
-        {([
-          { label: 'All dates', range: 'all' },
-          { label: 'Today', range: 'today' },
-          { label: 'Last 7 days', range: '7d' },
-          { label: 'Last 30 days', range: '30d' },
-        ] as const).map((option) => (
-          <StatusBadgeLink
-            ariaCurrent={option.range === filters.range ? 'page' : undefined}
-            href={cashSettlementHref({
+      <div className="booking-date-filter-bar cash-settlement-filter-group admin-mt-12">
+        <span className="cash-settlement-filter-group-label">Range</span>
+        <AdminSegmentedControl
+          activeValue={filters.range}
+          ariaLabel="Cash settlement date range"
+          className="cash-settlement-filter-buttons"
+          options={([
+            { label: 'All dates', range: 'all' },
+            { label: 'Today', range: 'today' },
+            { label: 'Last 7 days', range: '7d' },
+            { label: 'Last 30 days', range: '30d' },
+          ] as const).map((option) => ({
+            href: cashSettlementHref({
               range: option.range,
               pageSize: filters.pageSize,
               queue: filters.queue,
               q: filters.q,
-            })}
-            key={option.range}
-            tone={option.range === filters.range ? 'info' : 'neutral'}
-          >
-            {option.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
+            }),
+            label: option.label,
+            value: option.range,
+          }))}
+        />
+      </div>
       <AdminFormGrid action="/cash-settlements" className="admin-mt-12">
         <input type="hidden" name="range" value={filters.range} />
         <input type="hidden" name="pageSize" value={filters.pageSize} />
@@ -97,23 +98,41 @@ export function CashSettlementFilterSection({
           Clear
         </AdminTextLink>
       </AdminFormGrid>
-      <AdminFilterChipGroup ariaLabel="Cash settlement queue" className="admin-mt-12">
-        {cashSettlementQueueOptions.map((option) => (
-          <StatusBadgeLink
-            ariaCurrent={option.value === filters.queue ? 'page' : undefined}
-            href={cashSettlementHref({ range: filters.range, pageSize: filters.pageSize, queue: option.value, q: filters.q })}
-            key={option.value}
-            tone={option.value === filters.queue ? 'info' : 'neutral'}
-          >
-            {option.label}
-          </StatusBadgeLink>
-        ))}
-      </AdminFilterChipGroup>
-      <p className="muted admin-mt-10">
-        Showing {visibleRowCount} of {totalRowCount} open cash debt row(s) for this filter.
-        {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
-        {filters.queue !== 'all' ? `Queue: ${cashSettlementQueueLabel(filters.queue)}.` : ''}
-      </p>
+      <div className="booking-date-filter-bar cash-settlement-filter-group admin-mt-12">
+        <span className="cash-settlement-filter-group-label">Queue</span>
+        <AdminSegmentedControl
+          activeValue={filters.queue}
+          ariaLabel="Cash settlement queue"
+          className="cash-settlement-filter-buttons"
+          options={cashSettlementQueueOptions.map((option) => ({
+            href: cashSettlementHref({
+              range: filters.range,
+              pageSize: filters.pageSize,
+              queue: option.value,
+              q: filters.q,
+            }),
+            label: option.label,
+            value: option.value,
+          }))}
+        />
+      </div>
+      <AdminFilterSummary
+        ariaLabel="Active cash settlement filters"
+        className="admin-mt-10"
+        labels={buildCashSettlementActiveFilterLabels(filters)}
+        tone="info"
+      />
     </AdminFilterPanel>
   );
+}
+
+function buildCashSettlementActiveFilterLabels(filters: CashSettlementFilters) {
+  const labels = [
+    `Range: ${dateRangeLabel(filters.range)}`,
+    `Queue: ${cashSettlementQueueLabel(filters.queue)}`,
+  ];
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+  return labels;
 }

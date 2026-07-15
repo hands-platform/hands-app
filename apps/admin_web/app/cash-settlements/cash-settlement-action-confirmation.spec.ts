@@ -17,7 +17,7 @@ const settlementRow = {
 } satisfies CashSettlementConfirmationRow;
 
 describe('cash settlement action confirmation', () => {
-  it('builds a Partner deposit confirmation with submitted evidence', () => {
+  it('routes legacy Partner deposit confirmation input to documented admin offset only', () => {
     const confirmation = buildCashSettlementConfirmation([settlementRow], {
       earningId: settlementRow.earning.id,
       settlementMethod: 'PARTNER_DEPOSIT',
@@ -29,13 +29,13 @@ describe('cash settlement action confirmation', () => {
       cancelHref: '/cash-settlements',
       confirmLabel: 'Confirm settlement',
       description:
-        'Partner A will settle 125.000 VND by Partner deposit. Payment method: CASH. Reference: BANK-001.',
+        'Partner A will settle 125.000 VND by admin offset. Payment method: CASH. Reference: BANK-001.',
       earningId: settlementRow.earning.id,
-      settlementMethod: 'PARTNER_DEPOSIT',
+      settlementMethod: 'ADMIN_OFFSET',
       settlementNotes: 'Deposit confirmed by finance.',
       settlementRef: 'BANK-001',
       title: 'Confirm cash settlement earning-?',
-      tone: 'danger',
+      tone: 'warning',
     });
   });
 

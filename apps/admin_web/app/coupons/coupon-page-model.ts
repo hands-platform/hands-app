@@ -96,8 +96,7 @@ export function buildCouponCreateNotice({
 
   if (notice === 'admin-auth') {
     return {
-      detail:
-        'The local Admin API token is missing, expired, or unauthorized. Refresh ADMIN_ACCESS_TOKEN and restart Admin Web before saving coupon changes.',
+      detail: 'Your Admin session is missing, expired, or unauthorized. Sign in again before saving coupon changes.',
       title: 'Admin session expired',
       tone: 'danger',
     };

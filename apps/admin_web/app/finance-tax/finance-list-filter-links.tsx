@@ -1,7 +1,5 @@
-import {
-  StatusBadgeLinkFromPillClass,
-} from '../../components/status-badge';
-import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterSummary } from '../../components/admin-filter-summary';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 
 export const FINANCE_LIST_DATE_RANGE_LINKS = [
   ['Today', 'today'],
@@ -42,22 +40,57 @@ export function FinanceListFilterLinks({ groups }: { readonly groups: readonly F
   return (
     <>
       {groups.map((group, index) => (
-        <AdminFilterChipGroup
-          ariaLabel={`${group.id} finance filters`}
-          className={group.className ?? (index > 0 ? 'admin-mt-10' : undefined)}
+        <div
+          className={mergeClassNames(
+            'booking-date-filter-bar finance-list-filter-group',
+            group.className ?? (index > 0 ? 'admin-mt-10' : undefined),
+          )}
           key={group.id}
         >
-          {group.links.map((link) => (
-            <StatusBadgeLinkFromPillClass
-              href={link.href}
-              key={link.id}
-              pillClass={financeListFilterLinkPillClassName(link)}
-            >
-              {link.label}
-            </StatusBadgeLinkFromPillClass>
-          ))}
-        </AdminFilterChipGroup>
+          <span className="finance-list-filter-group-label">{financeListFilterGroupLabel(group.id)}</span>
+          <AdminSegmentedControl
+            activeValue={String(group.links.find((link) => link.active)?.id ?? '')}
+            ariaLabel={`${group.id} finance filters`}
+            className="finance-list-filter-buttons"
+            options={group.links.map((link) => ({
+              href: link.href,
+              label: link.label,
+              value: String(link.id),
+            }))}
+          />
+        </div>
       ))}
+      <AdminFilterSummary
+        ariaLabel="Active finance list filters"
+        className="admin-mt-10"
+        labels={financeListActiveFilterLabels(groups)}
+        tone="info"
+      />
     </>
   );
+}
+
+function financeListActiveFilterLabels(groups: readonly FinanceListFilterLinkGroup[]) {
+  return groups.flatMap((group) => {
+    const active = group.links.find((link) => link.active);
+    return active ? [`${financeListFilterGroupLabel(group.id)}: ${active.label}`] : [];
+  });
+}
+
+function financeListFilterGroupLabel(id: string) {
+  if (id === 'payment-method') return 'Payment method';
+  if (id === 'period') return 'Period';
+  if (id === 'range') return 'Range';
+  if (id === 'review') return 'Queue';
+  if (id === 'review-owner') return 'Review owner';
+  if (id === 'take') return 'Rows';
+  if (id === 'withdrawal-candidate') return 'Withdrawal candidates';
+  return id;
+}
+
+function mergeClassNames(...classNames: Array<string | undefined>) {
+  return classNames
+    .flatMap((className) => className?.split(/\s+/).filter(Boolean) ?? [])
+    .filter((className, index, values) => values.indexOf(className) === index)
+    .join(' ');
 }
