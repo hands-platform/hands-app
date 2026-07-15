@@ -198,6 +198,7 @@ import {
   ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderControlSelect,
   adminProviderDetailSelect,
+  adminProviderEvidenceDetailSelect,
   adminProviderFinanceDetailSelect,
   adminProviderDetailWithoutDiagnosticsSelect,
   adminProviderDirectorySelect,
@@ -7240,14 +7241,17 @@ export class AdminService {
 
   async getProviderDetail(
     providerProfileId: string,
-    options: { includeDiagnostics?: boolean; view?: 'finance' } = {},
+    options: { includeDiagnostics?: boolean; view?: 'evidence' | 'finance' } = {},
   ) {
     const includeDiagnostics = options.includeDiagnostics !== false;
     const financeView = options.view === 'finance';
+    const evidenceView = options.view === 'evidence';
     const provider = await this.prisma.providerProfile.findUnique({
       where: { id: providerProfileId },
       select: financeView
         ? adminProviderFinanceDetailSelect
+        : evidenceView
+          ? adminProviderEvidenceDetailSelect
         : includeDiagnostics
           ? adminProviderDetailSelect
           : adminProviderDetailWithoutDiagnosticsSelect,
@@ -7297,7 +7301,7 @@ export class AdminService {
           })
         : Promise.resolve([]);
 
-    const auditLogsPromise = financeView
+    const auditLogsPromise = financeView || evidenceView
       ? Promise.resolve([])
       : this.prisma.adminAuditLog.findMany({
           where: providerAuditLogWhere(providerProfileId),
@@ -7305,9 +7309,12 @@ export class AdminService {
           take: ADMIN_PROVIDER_DETAIL_AUDIT_LOG_LIMIT,
           select: adminAuditLogSelect,
         });
-    const payoutBatchesWithOperatorsPromise = this.withPayoutBatchOperators(
-      provider.payoutBatches ?? [],
-    );
+    const providerPayoutBatches = (
+      'payoutBatches' in provider && Array.isArray(provider.payoutBatches)
+        ? provider.payoutBatches
+        : []
+    ) as Array<{ id: string }>;
+    const payoutBatchesWithOperatorsPromise = this.withPayoutBatchOperators(providerPayoutBatches);
 
     const [sharedDeviceMatches, auditLogs, payoutBatches] = await Promise.all([
       sharedDeviceMatchesPromise,

@@ -10,6 +10,7 @@ import {
   adminLocationSnapshotSummarySelect,
   adminProviderDetailSelect,
   adminProviderDetailWithoutDiagnosticsSelect,
+  adminProviderEvidenceDetailSelect,
   adminProviderFinanceDetailSelect,
   adminProviderDirectorySelect,
   adminProviderListBookingSelect,
@@ -151,6 +152,24 @@ describe('admin provider profile selects', () => {
     expect(adminProviderFinanceDetailSelect).not.toHaveProperty('participants');
     expect(adminProviderFinanceDetailSelect).not.toHaveProperty('devices');
     expect(adminProviderFinanceDetailSelect).not.toHaveProperty('sessions');
+  });
+
+  it('keeps the partner evidence detail select limited to approval evidence', () => {
+    expect(adminProviderEvidenceDetailSelect).toMatchObject({
+      agreements: { take: 10 },
+      documents: { take: 50 },
+      locationSnapshots: { take: 10 },
+      services: { select: expect.any(Object) },
+      verification: { select: expect.any(Object) },
+      verificationLogs: { take: 20 },
+    });
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('earnings');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('payoutBatches');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('preferredBookings');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('selectedBookings');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('participants');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('devices');
+    expect(adminProviderEvidenceDetailSelect).not.toHaveProperty('sessions');
   });
 
   it('keeps provider booking and payout summaries location/payment aware', () => {

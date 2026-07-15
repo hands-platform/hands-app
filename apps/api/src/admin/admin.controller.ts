@@ -600,7 +600,7 @@ export class AdminController {
   ) {
     return this.admin.getProviderDetail(providerProfileId, {
       includeDiagnostics: includeDiagnostics !== 'false',
-      ...(view === 'finance' ? { view: 'finance' as const } : {}),
+      ...(view === 'finance' || view === 'evidence' ? { view } : {}),
     });
   }
 

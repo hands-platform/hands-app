@@ -7790,6 +7790,51 @@ describe('AdminService query orchestration', () => {
     expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
   });
 
+  it('loads only partner approval evidence and skips money, booking, and audit relations', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+      providerDevice: {
+        findMany: vi.fn(),
+      },
+      adminAuditLog: {
+        findMany: vi.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.getProviderDetail('provider-1', { includeDiagnostics: false, view: 'evidence' }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [],
+        sharedDeviceMatches: [],
+      }),
+    );
+
+    const select = prisma.providerProfile.findUnique.mock.calls[0]?.[0]?.select;
+    expect(select).toEqual(
+      expect.objectContaining({
+        agreements: expect.any(Object),
+        documents: expect.any(Object),
+        locationSnapshots: expect.any(Object),
+        services: expect.any(Object),
+        verification: expect.any(Object),
+        verificationLogs: expect.any(Object),
+      }),
+    );
+    expect(select).not.toHaveProperty('earnings');
+    expect(select).not.toHaveProperty('payoutBatches');
+    expect(select).not.toHaveProperty('preferredBookings');
+    expect(select).not.toHaveProperty('selectedBookings');
+    expect(select).not.toHaveProperty('participants');
+    expect(select).not.toHaveProperty('devices');
+    expect(select).not.toHaveProperty('sessions');
+    expect(prisma.providerDevice.findMany).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.findMany).not.toHaveBeenCalled();
+  });
+
   it('keeps payment detail callback and audit payloads bounded', async () => {
     const payment = {
       id: 'payment-1',

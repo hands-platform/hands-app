@@ -551,16 +551,17 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const accessView = requestedAccessView === 'diagnostics' && !canLoadPartnerDiagnostics ? 'readiness' : requestedAccessView;
   const shouldLoadAccessDiagnostics = detailSection === 'access' && accessView === 'diagnostics';
   const shouldLoadFinanceRecords = detailSection === 'dossier' && dossierView === 'finance';
+  const shouldLoadEvidenceRecords = detailSection === 'dossier' && dossierView === 'evidence';
   const isPartnerWorkspaceIndex = detailSection === 'full';
   const providerEndpoint =
     detailSection === 'overview' || isPartnerWorkspaceIndex
       ? `/admin/partners/${id}/overview`
       : `/admin/partners/${id}?includeDiagnostics=${shouldLoadAccessDiagnostics ? 'true' : 'false'}${
-          shouldLoadFinanceRecords ? '&view=finance' : ''
+          shouldLoadFinanceRecords ? '&view=finance' : shouldLoadEvidenceRecords ? '&view=evidence' : ''
         }`;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(providerEndpoint, null),
-    shouldLoadFinanceRecords
+    shouldLoadFinanceRecords || shouldLoadEvidenceRecords
       ? Promise.resolve<AdminOperationalPolicySetting[]>([])
       : adminGet<AdminOperationalPolicySetting[]>(PARTNER_DETAIL_OPERATIONAL_POLICY_HREF, []),
   ]);

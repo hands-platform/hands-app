@@ -2533,6 +2533,7 @@ describe('AdminController notification and push actions', () => {
     await expect(controller.providerDetail('partner-1', undefined)).resolves.toEqual({ id: 'partner-1' });
     await expect(controller.providerDetail('partner-1', 'false')).resolves.toEqual({ id: 'partner-1' });
     await expect(controller.providerDetail('partner-1', 'false', 'finance')).resolves.toEqual({ id: 'partner-1' });
+    await expect(controller.providerDetail('partner-1', 'false', 'evidence')).resolves.toEqual({ id: 'partner-1' });
 
     expect(routeMetadata('providerDetail')).toEqual({
       method: RequestMethod.GET,
@@ -2543,6 +2544,10 @@ describe('AdminController notification and push actions', () => {
     expect(admin.getProviderDetail).toHaveBeenNthCalledWith(3, 'partner-1', {
       includeDiagnostics: false,
       view: 'finance',
+    });
+    expect(admin.getProviderDetail).toHaveBeenNthCalledWith(4, 'partner-1', {
+      includeDiagnostics: false,
+      view: 'evidence',
     });
   });
 
