@@ -122,7 +122,7 @@ describe('ProvidersPage', () => {
       return fallback;
     });
 
-    const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'kyc' }) });
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ details: 'all', review: 'kyc' }) });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Partner action snapshot');
@@ -136,6 +136,27 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Current filter summary');
     expect(markup).not.toContain('Current filtered partner set');
     expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
+    expect(markup).toContain('Compact list');
+  });
+
+  it('keeps review queues compact until operations analysis is explicitly loaded', async () => {
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/partners/list-providers/summary')) {
+        return { generatedAt: '2026-06-28T00:00:00.000Z', totalCount: 0 };
+      }
+      if (href.startsWith('/admin/partners/list-providers')) return [];
+      if (href.startsWith('/admin/operational-policy?keys=')) return [];
+      return fallback;
+    });
+
+    const page = await ProvidersPage({ searchParams: Promise.resolve({ review: 'kyc' }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('KYC updates');
+    expect(markup).toContain('Load operations analysis');
+    expect(markup).toContain('/partners?review=kyc&amp;details=all');
+    expect(markup).not.toContain('Partner action snapshot');
+    expect(markup).not.toContain('Partner operations list');
   });
 
   it('keeps marketplace-ready drilldowns on the compact partner list shell', async () => {

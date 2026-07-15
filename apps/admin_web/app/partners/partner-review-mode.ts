@@ -18,12 +18,12 @@ export function partnerPrimaryListMode(review: string): PartnerPrimaryListMode {
   return 'partners';
 }
 
-export function shouldRenderPartnerDeepOpsSections(review: string) {
-  return !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
+export function partnerDeepOpsAvailable(review: string) {
+  return Boolean(review) && !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
 }
 
-export function shouldRenderPartnerOperationsList(review: string) {
-  return !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
+export function shouldLoadPartnerDeepOps(review: string, details: string) {
+  return partnerDeepOpsAvailable(review) && details === 'all';
 }
 
 export function partnerReviewModeContent(review: string): PartnerReviewModeContent | null {

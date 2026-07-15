@@ -12,6 +12,7 @@ import {
   buildPartnerExportHref,
   buildPartnerExportSlug,
   buildPartnerDataHrefs,
+  buildPartnerListHref,
   buildProviderActiveFilters,
   buildProviderFilters,
   emptyProviderMessage,
@@ -76,9 +77,9 @@ import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
 import {
   partnerPrimaryListMode,
+  partnerDeepOpsAvailable,
   partnerReviewModeContent,
-  shouldRenderPartnerDeepOpsSections,
-  shouldRenderPartnerOperationsList,
+  shouldLoadPartnerDeepOps,
 } from './partner-review-mode';
 import {
   buildPartnerChecklistLaneItems,
@@ -147,8 +148,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   });
   const visibleProviders = providerPagination.rows;
   const hiddenProviderCount = Math.max(partnerDirectoryTotalCount - visibleProviders.length, 0);
-  const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
-  const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
+  const detailsMode = readSearchParam(params.details);
+  const deepPartnerOpsAvailable = partnerDeepOpsAvailable(filters.review);
+  const showDeepPartnerOpsSections = shouldLoadPartnerDeepOps(filters.review, detailsMode);
+  const showPartnerOperationsList = showDeepPartnerOpsSections;
   const deepPartnerOps = showDeepPartnerOpsSections
     ? (() => {
         const priorityLane = buildProviderPriorityLane(providers, opsPolicy, {
@@ -216,6 +219,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
   const showAdvancedPartnerFilters = partnerHasAdvancedOperationalFilters(filters);
   const partnerListCsvHref = buildPartnerExportHref(filters);
+  const compactPartnerListHref = buildPartnerListHref(filters);
+  const deepPartnerOpsHref = `${compactPartnerListHref}${compactPartnerListHref.includes('?') ? '&' : '?'}details=all`;
   const accountConfirmation = buildPartnerAccountActionConfirmation(
     allProviders,
     readPartnerAccountConfirmationAction(readSearchParam(params.confirm)),
@@ -239,6 +244,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
 
   return (
     <AdminPageTemplate
+      actions={deepPartnerOpsAvailable ? (
+        <AdminFormControlLink href={showDeepPartnerOpsSections ? compactPartnerListHref : deepPartnerOpsHref}>
+          {showDeepPartnerOpsSections ? 'Compact list' : 'Load operations analysis'}
+        </AdminFormControlLink>
+      ) : undefined}
       contentClassName="partners-page"
       description={
         partnerReviewContent?.description ??

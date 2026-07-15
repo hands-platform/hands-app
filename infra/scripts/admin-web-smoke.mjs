@@ -994,7 +994,14 @@ const pages = [
     path: '/partners?review=unsettled',
     markers: ['Partners', 'Unsettled Partners', 'Settlement-first list'],
   },
-  { path: '/partners?review=kyc', markers: ['Partners', 'KYC review board', 'KYC updates'] },
+  {
+    path: '/partners?review=kyc',
+    markers: ['Partners', 'KYC updates', 'Load operations analysis', 'Compact admin list'],
+  },
+  {
+    path: '/partners?review=kyc&details=all',
+    markers: ['Partners', 'KYC updates', 'KYC review board', 'Compact list'],
+  },
   { path: '/partners?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
   {
     path: '/partners?review=acceptance-blocked',

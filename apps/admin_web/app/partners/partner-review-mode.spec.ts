@@ -1,8 +1,8 @@
 import {
   partnerPrimaryListMode,
+  partnerDeepOpsAvailable,
   partnerReviewModeContent,
-  shouldRenderPartnerOperationsList,
-  shouldRenderPartnerDeepOpsSections,
+  shouldLoadPartnerDeepOps,
 } from './partner-review-mode';
 
 describe('partner review mode content', () => {
@@ -41,19 +41,13 @@ describe('partner review mode content', () => {
     expect(partnerPrimaryListMode('kyc')).toBe('partners');
   });
 
-  it('keeps deep operations boards out of the three primary partner pages', () => {
-    expect(shouldRenderPartnerDeepOpsSections('')).toBe(false);
-    expect(shouldRenderPartnerDeepOpsSections('unapproved')).toBe(false);
-    expect(shouldRenderPartnerDeepOpsSections('unsettled')).toBe(false);
-    expect(shouldRenderPartnerDeepOpsSections('marketplace-ready')).toBe(false);
-    expect(shouldRenderPartnerDeepOpsSections('kyc')).toBe(true);
-  });
-
-  it('keeps the secondary operations list out of the three primary partner pages', () => {
-    expect(shouldRenderPartnerOperationsList('')).toBe(false);
-    expect(shouldRenderPartnerOperationsList('unapproved')).toBe(false);
-    expect(shouldRenderPartnerOperationsList('unsettled')).toBe(false);
-    expect(shouldRenderPartnerOperationsList('marketplace-ready')).toBe(false);
-    expect(shouldRenderPartnerOperationsList('kyc')).toBe(true);
+  it('loads secondary operations analysis only when a review queue explicitly requests it', () => {
+    expect(partnerDeepOpsAvailable('')).toBe(false);
+    expect(partnerDeepOpsAvailable('unapproved')).toBe(false);
+    expect(partnerDeepOpsAvailable('unsettled')).toBe(false);
+    expect(partnerDeepOpsAvailable('marketplace-ready')).toBe(false);
+    expect(partnerDeepOpsAvailable('kyc')).toBe(true);
+    expect(shouldLoadPartnerDeepOps('kyc', '')).toBe(false);
+    expect(shouldLoadPartnerDeepOps('kyc', 'all')).toBe(true);
   });
 });
