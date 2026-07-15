@@ -415,7 +415,7 @@ function readPartnerBookingsView(
 function readPartnerAccessView(
   params: Record<string, string | string[] | undefined>,
 ): PartnerAccessView {
-  if (Boolean(readSearchParam(params.deviceAction))) {
+  if (readSearchParam(params.deviceAction)) {
     return 'diagnostics';
   }
   const accessView = readSearchParam(params.access);

@@ -5,11 +5,11 @@ import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-b
 import type { AdminBooking } from '../../lib/admin-api';
 import {
   buildBookingPostMatchCancellationBoard,
-  type BookingPostMatchCancellationBoard,
+  type BookingPostMatchCancellationBoard as BookingPostMatchCancellationBoardModel,
 } from './booking-post-match-cancellations-model';
 
 export type BookingPostMatchCancellationsSectionProps = {
-  readonly board: BookingPostMatchCancellationBoard;
+  readonly board: BookingPostMatchCancellationBoardModel;
 };
 
 export type BookingPostMatchCancellationBoardProps = {
