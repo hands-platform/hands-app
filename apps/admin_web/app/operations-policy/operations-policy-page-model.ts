@@ -1,6 +1,7 @@
 import { readSearchParam } from '../../lib/date-range';
 
 export type OperationsPolicyDetailsMode = 'summary' | 'all' | 'matching' | 'decisions' | 'audit';
+export type OperationsPolicyDecisionMode = 'editor' | 'evidence';
 
 const SUMMARY_BOOKING_SAMPLE_TAKE = 3;
 const SUMMARY_POLICY_AUDIT_TAKE = 3;
@@ -23,12 +24,14 @@ export type OperationsPolicyLoadPlan = {
   readonly bookingGateAuditHref: string;
   readonly bookingsHref: string;
   readonly detailsMode: OperationsPolicyDetailsMode;
+  readonly decisionMode: OperationsPolicyDecisionMode;
   readonly policyAuditHref: string;
   readonly providersHref: string | null;
   readonly settingsHref: string;
   readonly shouldRenderAdvancedIndex: boolean;
   readonly shouldRenderAuditReview: boolean;
   readonly shouldRenderDecisionReview: boolean;
+  readonly shouldRenderDecisionEvidence: boolean;
   readonly shouldRenderFullDiagnostics: boolean;
   readonly shouldRenderMatchingReview: boolean;
 };
@@ -44,10 +47,12 @@ export function buildOperationsPolicyLoadPlan(
       : requestedDetailsMode;
   const matchingReview = detailsMode === 'matching';
   const decisionReview = detailsMode === 'decisions';
+  const decisionMode = normalizeOperationsPolicyDecisionMode(readSearchParam(params.decision));
+  const decisionEvidence = decisionReview && decisionMode === 'evidence';
   const auditReview = detailsMode === 'audit';
   const bookingsTake = matchingReview
     ? MATCHING_BOOKING_SAMPLE_TAKE
-    : decisionReview
+    : decisionEvidence
       ? DECISION_BOOKING_SAMPLE_TAKE
       : auditReview
         ? AUDIT_BOOKING_SAMPLE_TAKE
@@ -58,13 +63,14 @@ export function buildOperationsPolicyLoadPlan(
     : SUMMARY_BOOKING_GATE_AUDIT_TAKE;
   const providerTake = matchingReview
     ? MATCHING_PROVIDER_SAMPLE_TAKE
-    : decisionReview
+    : decisionEvidence
       ? DECISION_PROVIDER_SAMPLE_TAKE
       : null;
 
   return {
     bookingGateAuditHref: `/admin/audit-logs?action=booking.create.rejected&take=${bookingGateAuditTake}`,
     bookingsHref: `/admin/bookings?take=${bookingsTake}`,
+    decisionMode,
     detailsMode,
     policyAuditHref: `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`,
     providersHref: providerTake
@@ -74,7 +80,8 @@ export function buildOperationsPolicyLoadPlan(
     shouldRenderAdvancedIndex: detailsMode === 'all',
     shouldRenderAuditReview: auditReview,
     shouldRenderDecisionReview: decisionReview,
-    shouldRenderFullDiagnostics: matchingReview || decisionReview || auditReview,
+    shouldRenderDecisionEvidence: decisionEvidence,
+    shouldRenderFullDiagnostics: matchingReview || decisionEvidence || auditReview,
     shouldRenderMatchingReview: matchingReview,
   };
 }
@@ -83,8 +90,18 @@ export function buildOperationsPolicyDetailsHref(detailsMode: OperationsPolicyDe
   return detailsMode === 'summary' ? '/operations-policy' : `/operations-policy?details=${detailsMode}`;
 }
 
+export function buildOperationsPolicyDecisionHref(decisionMode: OperationsPolicyDecisionMode) {
+  return decisionMode === 'editor'
+    ? '/operations-policy?details=decisions'
+    : '/operations-policy?details=decisions&decision=evidence';
+}
+
 function normalizeOperationsPolicyDetailsMode(value: string): OperationsPolicyDetailsMode {
   return value === 'all' || value === 'matching' || value === 'decisions' || value === 'audit'
     ? value
     : 'summary';
+}
+
+function normalizeOperationsPolicyDecisionMode(value: string): OperationsPolicyDecisionMode {
+  return value === 'evidence' ? 'evidence' : 'editor';
 }

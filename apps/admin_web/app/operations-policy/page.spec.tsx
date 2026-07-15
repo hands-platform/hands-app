@@ -163,7 +163,38 @@ describe('OperationsPolicyPage', () => {
 
     expect(markup).toContain('First-pick Partner response window');
     expect(markup).toContain('First-pick acceptance contract');
+    expect(markup).toContain('Decision editor');
+    expect(markup).not.toContain('Owner decision backlog');
+    expect(markup).not.toContain('Current decision pressure');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
+      '/admin/operations-policy/providers?take=20',
+    );
     expect((markup.match(/<form/g) ?? []).length).toBe(2);
+  });
+
+  it('loads the bounded Partner sample only in the decision evidence workspace', async () => {
+    mockedGetAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    const page = await OperationsPolicyPage({
+      searchParams: Promise.resolve({ details: 'decisions', decision: 'evidence' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('Live evidence');
+    expect(markup).toContain('Owner decision backlog');
+    expect(markup).toContain('Current decision pressure');
+    expect(markup).toContain('Open decision editor');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
+      '/admin/operations-policy/providers?take=20',
+    );
   });
 
   it('keeps details=all as a bounded workspace index for Master Admins', async () => {

@@ -1,4 +1,5 @@
 import {
+  buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
   buildOperationsPolicyLoadPlan,
 } from './operations-policy-page-model';
@@ -38,15 +39,26 @@ describe('operations policy page model', () => {
   it('scopes matching, decision, and audit workspaces to bounded data windows', () => {
     const matching = buildOperationsPolicyLoadPlan({ details: 'matching' });
     const decisions = buildOperationsPolicyLoadPlan({ details: 'decisions' });
+    const decisionEvidence = buildOperationsPolicyLoadPlan({
+      details: 'decisions',
+      decision: 'evidence',
+    });
     const audit = buildOperationsPolicyLoadPlan({ details: 'audit' });
 
     expect(new URL(matching.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('20');
     expect(new URL(matching.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
     expect(matching.shouldRenderMatchingReview).toBe(true);
 
-    expect(new URL(decisions.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('15');
-    expect(new URL(decisions.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(decisions.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('3');
+    expect(decisions.providersHref).toBeNull();
+    expect(decisions.decisionMode).toBe('editor');
     expect(decisions.shouldRenderDecisionReview).toBe(true);
+    expect(decisions.shouldRenderDecisionEvidence).toBe(false);
+
+    expect(new URL(decisionEvidence.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('15');
+    expect(new URL(decisionEvidence.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(decisionEvidence.decisionMode).toBe('evidence');
+    expect(decisionEvidence.shouldRenderDecisionEvidence).toBe(true);
 
     expect(new URL(audit.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('10');
     expect(audit.providersHref).toBeNull();
@@ -75,5 +87,9 @@ describe('operations policy page model', () => {
     expect(buildOperationsPolicyDetailsHref('decisions')).toBe('/operations-policy?details=decisions');
     expect(buildOperationsPolicyDetailsHref('audit')).toBe('/operations-policy?details=audit');
     expect(buildOperationsPolicyDetailsHref('summary')).toBe('/operations-policy');
+    expect(buildOperationsPolicyDecisionHref('editor')).toBe('/operations-policy?details=decisions');
+    expect(buildOperationsPolicyDecisionHref('evidence')).toBe(
+      '/operations-policy?details=decisions&decision=evidence',
+    );
   });
 });

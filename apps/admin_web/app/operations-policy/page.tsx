@@ -55,6 +55,7 @@ import { operationalPolicyAuditRows } from './policy-audit-rows';
 import { operationsPolicyNotice } from './policy-notice';
 import { policyDisplayByKey } from './policy-value-display';
 import {
+  buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
   buildOperationsPolicyLoadPlan,
 } from './operations-policy-page-model';
@@ -96,8 +97,9 @@ export default async function OperationsPolicyPage({
   const shouldRenderAdvancedIndex = loadPlan.shouldRenderAdvancedIndex;
   const shouldRenderMatchingReview = loadPlan.shouldRenderMatchingReview;
   const shouldRenderDecisionReview = loadPlan.shouldRenderDecisionReview;
+  const shouldRenderDecisionEvidence = loadPlan.shouldRenderDecisionEvidence;
   const shouldRenderAuditReview = loadPlan.shouldRenderAuditReview;
-  const needsProviderReview = shouldRenderMatchingReview || shouldRenderDecisionReview;
+  const needsProviderReview = shouldRenderMatchingReview || shouldRenderDecisionEvidence;
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
@@ -131,12 +133,13 @@ export default async function OperationsPolicyPage({
   const policyEnforcementTrace = shouldRenderAuditReview
     ? buildPolicyEnforcementTrace(settings)
     : null;
-  const ownerDecisionBacklog = shouldRenderDecisionReview ? operationsOwnerDecisionBacklog() : null;
+  const ownerDecisionBacklog = shouldRenderDecisionEvidence ? operationsOwnerDecisionBacklog() : null;
   const ownerDecisionPressure =
-    shouldRenderDecisionReview && supplySensitivity && acceptanceMatrix
+    shouldRenderDecisionEvidence && supplySensitivity && acceptanceMatrix
       ? buildOwnerDecisionPressure(bookings, providers, supplySensitivity, acceptanceMatrix)
       : null;
-  const shouldRenderDecisionEditor = shouldRenderDecisionReview;
+  const shouldRenderDecisionEditor =
+    shouldRenderDecisionReview && loadPlan.decisionMode === 'editor';
 
   return (
     <AdminPageTemplate
@@ -274,6 +277,31 @@ export default async function OperationsPolicyPage({
         </AdminSection>
       ) : null}
 
+      {shouldRenderDecisionReview ? (
+        <AdminSection
+          className="admin-mb-16"
+          description="Edit owner-approved policy choices separately from the heavier live booking and Partner evidence sample."
+          statusLabel={shouldRenderDecisionEvidence ? 'Live evidence' : 'Decision editor'}
+          statusTone={shouldRenderDecisionEvidence ? 'warning' : 'info'}
+          title="Decision workspace"
+        >
+          <AdminFilterChipGroup ariaLabel="Decision workspaces">
+            <AdminFormControlLink
+              aria-current={!shouldRenderDecisionEvidence ? 'page' : undefined}
+              href={buildOperationsPolicyDecisionHref('editor')}
+            >
+              Decision editor
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={shouldRenderDecisionEvidence ? 'page' : undefined}
+              href={buildOperationsPolicyDecisionHref('evidence')}
+            >
+              Live evidence
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
+
       <AdminSection
         className="admin-mb-16"
         description={
@@ -294,10 +322,24 @@ export default async function OperationsPolicyPage({
                 key={setting.key}
                 setting={setting}
                 bookings={bookings}
-                diagnosticsMode="full"
+                diagnosticsMode="summary"
               />
             ))}
           </AdminDetailGrid>
+        ) : shouldRenderDecisionEvidence ? (
+          <AdminNotePanel className="admin-m-0">
+            <AdminSectionHeader
+              description="This workspace keeps the heavier live sample separate from policy editing. Return to the editor to change an owner-approved decision."
+              status={<StatusBadge tone="warning">Evidence sample</StatusBadge>}
+              title="Decision policy editor"
+            />
+            <AdminFormControlLink
+              className="button-secondary admin-mt-12"
+              href={buildOperationsPolicyDecisionHref('editor')}
+            >
+              Open decision editor
+            </AdminFormControlLink>
+          </AdminNotePanel>
         ) : canLoadFullDiagnostics ? (
           <AdminNotePanel className="admin-m-0">
             <AdminSectionHeader
@@ -323,15 +365,13 @@ export default async function OperationsPolicyPage({
         )}
       </AdminSection>
 
-      {shouldRenderDecisionReview && ownerDecisionBacklog && ownerDecisionPressure ? (
-        <>
-          <OperationsPolicyNextChoicesSection />
+      {shouldRenderDecisionEditor ? <OperationsPolicyNextChoicesSection /> : null}
 
-          <OperationsPolicyOwnerDecisionBacklogSection
-            backlog={ownerDecisionBacklog}
-            pressure={ownerDecisionPressure}
-          />
-        </>
+      {shouldRenderDecisionEvidence && ownerDecisionBacklog ? (
+        <OperationsPolicyOwnerDecisionBacklogSection
+          backlog={ownerDecisionBacklog}
+          pressure={ownerDecisionPressure}
+        />
       ) : null}
     </AdminPageTemplate>
   );

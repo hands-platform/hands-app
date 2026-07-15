@@ -22,6 +22,7 @@ const criticalSmokePaths = [
   '/operations-policy?details=all',
   '/operations-policy?details=matching',
   '/operations-policy?details=decisions',
+  '/operations-policy?details=decisions&decision=evidence',
   '/operations-policy?details=audit',
 ];
 const budgetSmokePaths = [
@@ -519,9 +520,19 @@ const pages = [
       'Operations Policy',
       'Operator decisions',
       'Recommended next choices',
+      'Decision editor',
+      'Change reason',
+    ],
+  },
+  {
+    path: '/operations-policy?details=decisions&decision=evidence',
+    markers: [
+      'Operations Policy',
+      'Operator decisions',
+      'Live evidence',
       'Owner decision backlog',
       'Current decision pressure',
-      'Change reason',
+      'Open decision editor',
     ],
   },
   {

@@ -16,7 +16,7 @@ import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
 import type { OwnerDecisionPressure } from './owner-decision-pressure';
 
 type OperationsPolicyOwnerDecisionBacklogSectionProps = {
-  readonly pressure: OwnerDecisionPressure;
+  readonly pressure?: OwnerDecisionPressure | null;
   readonly backlog: readonly OwnerDecisionBacklogItem[];
 };
 
@@ -32,39 +32,45 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
       statusTone="info"
       title="Owner decision backlog"
     >
-      <AdminNotePanel className="admin-mt-14">
-        <AdminSectionHeader
-          actions={(
-            <StatusBadgeFromPillClass pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
-              {pressure.alertCount} active record(s)
-            </StatusBadgeFromPillClass>
-          )}
-          description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."
-          title="Current decision pressure"
-        />
-        <AdminTraceSummary
-          className="admin-mt-12"
-          metrics={pressure.summary.map((item) => ({
-            detail: item.helper,
-            label: item.label,
-            value: item.value,
-          }))}
-        />
-        <AdminTaskGrid className="admin-mt-14">
-          {pressure.cards.map((item) => (
-            <AdminActionCard
-              actionLabel={item.operatorAction}
-              className={item.className}
-              detail={item.detail}
-              href={item.href}
-              key={item.title}
-              leading={<StatusBadgeFromPillClass pillClass={item.pillClass}>{item.status}</StatusBadgeFromPillClass>}
-              title={item.title}
-              variant="ops-task"
-            />
-          ))}
-        </AdminTaskGrid>
-      </AdminNotePanel>
+      {pressure ? (
+        <AdminNotePanel className="admin-mt-14">
+          <AdminSectionHeader
+            actions={(
+              <StatusBadgeFromPillClass pillClass={pressure.alertCount ? 'pill-warn' : 'pill-success'}>
+                {pressure.alertCount} active record(s)
+              </StatusBadgeFromPillClass>
+            )}
+            description="Data-driven records that tell the owner which policy choice deserves attention first. This keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence."
+            title="Current decision pressure"
+          />
+          <AdminTraceSummary
+            className="admin-mt-12"
+            metrics={pressure.summary.map((item) => ({
+              detail: item.helper,
+              label: item.label,
+              value: item.value,
+            }))}
+          />
+          <AdminTaskGrid className="admin-mt-14">
+            {pressure.cards.map((item) => (
+              <AdminActionCard
+                actionLabel={item.operatorAction}
+                className={item.className}
+                detail={item.detail}
+                href={item.href}
+                key={item.title}
+                leading={(
+                  <StatusBadgeFromPillClass pillClass={item.pillClass}>
+                    {item.status}
+                  </StatusBadgeFromPillClass>
+                )}
+                title={item.title}
+                variant="ops-task"
+              />
+            ))}
+          </AdminTaskGrid>
+        </AdminNotePanel>
+      ) : null}
       <AdminTaskGrid className="admin-mt-14">
         {backlog.map((item) => (
           <AdminTaskCard
