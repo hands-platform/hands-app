@@ -2,6 +2,7 @@ import { readSearchParam } from '../../lib/date-range';
 
 export type OperationsPolicyDetailsMode = 'summary' | 'all' | 'matching' | 'decisions' | 'audit';
 export type OperationsPolicyDecisionMode = 'editor' | 'evidence';
+export type OperationsPolicyMatchingMode = 'policy' | 'supply' | 'simulation';
 
 const SUMMARY_BOOKING_SAMPLE_TAKE = 3;
 const SUMMARY_POLICY_AUDIT_TAKE = 3;
@@ -25,6 +26,7 @@ export type OperationsPolicyLoadPlan = {
   readonly bookingsHref: string;
   readonly detailsMode: OperationsPolicyDetailsMode;
   readonly decisionMode: OperationsPolicyDecisionMode;
+  readonly matchingMode: OperationsPolicyMatchingMode;
   readonly policyAuditHref: string;
   readonly providersHref: string | null;
   readonly settingsHref: string;
@@ -34,6 +36,8 @@ export type OperationsPolicyLoadPlan = {
   readonly shouldRenderDecisionEvidence: boolean;
   readonly shouldRenderFullDiagnostics: boolean;
   readonly shouldRenderMatchingReview: boolean;
+  readonly shouldRenderMatchingSimulation: boolean;
+  readonly shouldRenderMatchingSupply: boolean;
 };
 
 export function buildOperationsPolicyLoadPlan(
@@ -46,11 +50,15 @@ export function buildOperationsPolicyLoadPlan(
       ? 'summary'
       : requestedDetailsMode;
   const matchingReview = detailsMode === 'matching';
+  const matchingMode = normalizeOperationsPolicyMatchingMode(readSearchParam(params.matching));
+  const matchingSupply = matchingReview && matchingMode === 'supply';
+  const matchingSimulation = matchingReview && matchingMode === 'simulation';
+  const matchingEvidence = matchingSupply || matchingSimulation;
   const decisionReview = detailsMode === 'decisions';
   const decisionMode = normalizeOperationsPolicyDecisionMode(readSearchParam(params.decision));
   const decisionEvidence = decisionReview && decisionMode === 'evidence';
   const auditReview = detailsMode === 'audit';
-  const bookingsTake = matchingReview
+  const bookingsTake = matchingEvidence
     ? MATCHING_BOOKING_SAMPLE_TAKE
     : decisionEvidence
       ? DECISION_BOOKING_SAMPLE_TAKE
@@ -61,7 +69,7 @@ export function buildOperationsPolicyLoadPlan(
   const bookingGateAuditTake = auditReview
     ? AUDIT_BOOKING_GATE_TAKE
     : SUMMARY_BOOKING_GATE_AUDIT_TAKE;
-  const providerTake = matchingReview
+  const providerTake = matchingEvidence
     ? MATCHING_PROVIDER_SAMPLE_TAKE
     : decisionEvidence
       ? DECISION_PROVIDER_SAMPLE_TAKE
@@ -72,6 +80,7 @@ export function buildOperationsPolicyLoadPlan(
     bookingsHref: `/admin/bookings?take=${bookingsTake}`,
     decisionMode,
     detailsMode,
+    matchingMode,
     policyAuditHref: `/admin/audit-logs?action=operational_policy.update&take=${policyAuditTake}`,
     providersHref: providerTake
       ? `/admin/operations-policy/providers?take=${providerTake}`
@@ -81,8 +90,10 @@ export function buildOperationsPolicyLoadPlan(
     shouldRenderAuditReview: auditReview,
     shouldRenderDecisionReview: decisionReview,
     shouldRenderDecisionEvidence: decisionEvidence,
-    shouldRenderFullDiagnostics: matchingReview || decisionEvidence || auditReview,
+    shouldRenderFullDiagnostics: matchingEvidence || decisionEvidence || auditReview,
     shouldRenderMatchingReview: matchingReview,
+    shouldRenderMatchingSimulation: matchingSimulation,
+    shouldRenderMatchingSupply: matchingSupply,
   };
 }
 
@@ -96,6 +107,12 @@ export function buildOperationsPolicyDecisionHref(decisionMode: OperationsPolicy
     : '/operations-policy?details=decisions&decision=evidence';
 }
 
+export function buildOperationsPolicyMatchingHref(matchingMode: OperationsPolicyMatchingMode) {
+  return matchingMode === 'policy'
+    ? '/operations-policy?details=matching'
+    : `/operations-policy?details=matching&matching=${matchingMode}`;
+}
+
 function normalizeOperationsPolicyDetailsMode(value: string): OperationsPolicyDetailsMode {
   return value === 'all' || value === 'matching' || value === 'decisions' || value === 'audit'
     ? value
@@ -104,4 +121,8 @@ function normalizeOperationsPolicyDetailsMode(value: string): OperationsPolicyDe
 
 function normalizeOperationsPolicyDecisionMode(value: string): OperationsPolicyDecisionMode {
   return value === 'evidence' ? 'evidence' : 'editor';
+}
+
+function normalizeOperationsPolicyMatchingMode(value: string): OperationsPolicyMatchingMode {
+  return value === 'supply' || value === 'simulation' ? value : 'policy';
 }

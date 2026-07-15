@@ -58,6 +58,7 @@ import {
   buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
   buildOperationsPolicyLoadPlan,
+  buildOperationsPolicyMatchingHref,
 } from './operations-policy-page-model';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -96,38 +97,45 @@ export default async function OperationsPolicyPage({
   const auditLogs = [...policyAuditLogs, ...bookingGateAuditLogs];
   const shouldRenderAdvancedIndex = loadPlan.shouldRenderAdvancedIndex;
   const shouldRenderMatchingReview = loadPlan.shouldRenderMatchingReview;
+  const shouldRenderMatchingSupply = loadPlan.shouldRenderMatchingSupply;
+  const shouldRenderMatchingSimulation = loadPlan.shouldRenderMatchingSimulation;
   const shouldRenderDecisionReview = loadPlan.shouldRenderDecisionReview;
   const shouldRenderDecisionEvidence = loadPlan.shouldRenderDecisionEvidence;
   const shouldRenderAuditReview = loadPlan.shouldRenderAuditReview;
-  const needsProviderReview = shouldRenderMatchingReview || shouldRenderDecisionEvidence;
+  const shouldRenderMatchingEditor =
+    !shouldRenderMatchingReview || loadPlan.matchingMode === 'policy';
+  const needsAcceptanceReview = shouldRenderMatchingSupply || shouldRenderDecisionEvidence;
+  const needsSupplyReview = shouldRenderMatchingSupply || shouldRenderDecisionEvidence;
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = operationsPolicyNotice(params);
-  const matchingPlaybook = shouldRenderMatchingReview
+  const matchingPlaybook = shouldRenderMatchingReview && loadPlan.matchingMode === 'policy'
     ? buildMatchingPlaybook((key) => policyDisplayByKey(settings, key))
     : null;
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
-  const acceptanceMatrix = needsProviderReview
+  const acceptanceMatrix = needsAcceptanceReview
     ? buildBookingAcceptanceMatrix(settings, providers)
     : null;
   const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
   const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
-  const policySimulation = shouldRenderMatchingReview
+  const policySimulation = shouldRenderMatchingSimulation
     ? buildPolicySimulation(settings, bookings, providers)
     : null;
-  const impactDashboard = shouldRenderMatchingReview
+  const impactDashboard = shouldRenderMatchingSimulation
     ? buildPolicyImpactDashboard(settings, bookings)
     : null;
-  const policyEffectAnalysis = shouldRenderMatchingReview
+  const policyEffectAnalysis = shouldRenderMatchingSimulation
     ? buildPolicyOutcomeEffect(settings, bookings)
     : null;
-  const policyDrilldown = shouldRenderMatchingReview ? buildPolicyDrilldown(bookings, settings) : null;
+  const policyDrilldown = shouldRenderMatchingSimulation
+    ? buildPolicyDrilldown(bookings, settings)
+    : null;
   const policyAuditRows = shouldRenderAuditReview ? operationalPolicyAuditRows(auditLogs) : null;
-  const supplySensitivity = needsProviderReview
+  const supplySensitivity = needsSupplyReview
     ? buildPolicySupplySensitivity(settings, bookings, providers)
     : null;
-  const matchingStageImpactPreview = shouldRenderMatchingReview
+  const matchingStageImpactPreview = shouldRenderMatchingSupply
     ? buildMatchingStageImpactPreview(settings, bookings, providers)
     : null;
   const policyEnforcementTrace = shouldRenderAuditReview
@@ -171,15 +179,49 @@ export default async function OperationsPolicyPage({
       <OperationsPolicyRecommendedValueReviewSection review={recommendationReview} />
 
       {shouldRenderMatchingReview ? (
+        <AdminSection
+          className="admin-mb-16"
+          description="Edit matching policy separately from the heavier Partner supply sample and booking simulation."
+          statusLabel={
+            shouldRenderMatchingSupply
+              ? 'Supply evidence'
+              : shouldRenderMatchingSimulation
+                ? 'Simulation'
+                : 'Policy editor'
+          }
+          statusTone={shouldRenderMatchingEditor ? 'info' : 'warning'}
+          title="Matching workspace"
+        >
+          <AdminFilterChipGroup ariaLabel="Matching workspaces">
+            <AdminFormControlLink
+              aria-current={shouldRenderMatchingEditor ? 'page' : undefined}
+              href={buildOperationsPolicyMatchingHref('policy')}
+            >
+              Policy editor
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={shouldRenderMatchingSupply ? 'page' : undefined}
+              href={buildOperationsPolicyMatchingHref('supply')}
+            >
+              Supply evidence
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={shouldRenderMatchingSimulation ? 'page' : undefined}
+              href={buildOperationsPolicyMatchingHref('simulation')}
+            >
+              Simulation
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
+
+      {shouldRenderMatchingSupply ? (
         <>
           <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix!} />
 
           <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity!} />
 
           <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview!} />
-
-          <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
-
         </>
       ) : null}
 
@@ -192,37 +234,53 @@ export default async function OperationsPolicyPage({
         }
         className="admin-mb-16"
         description="These settings are enforced by booking creation, marketplace partner discovery, and partner participation eligibility. Existing open bookings keep their stored expiry time, while new bookings use the latest policy."
-        statusLabel="Admin editable"
-        statusTone="success"
+        statusLabel={shouldRenderMatchingEditor ? 'Admin editable' : 'Read-only evidence'}
+        statusTone={shouldRenderMatchingEditor ? 'success' : 'info'}
         title="Live matching policy"
       >
-        <AdminDetailGrid>
-          {matchingSettings.map((setting) => (
-            <OperationsPolicyForm
-              key={setting.key}
-              setting={setting}
-              bookings={bookings}
-              diagnosticsMode={shouldRenderMatchingReview ? 'full' : 'summary'}
-            />
-          ))}
-          {matchingSettings.length === 0 ? (
-            <AdminNotePanel className="admin-m-0">
-              <AdminEmptyState
-                message="Seed operational policies before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
-                title="No matching policies loaded"
+        {shouldRenderMatchingEditor ? (
+          <AdminDetailGrid>
+            {matchingSettings.map((setting) => (
+              <OperationsPolicyForm
+                key={setting.key}
+                setting={setting}
+                bookings={bookings}
+                diagnosticsMode="summary"
               />
-              {canLoadFullDiagnostics ? (
-                <AdminFormControlLink className="button-secondary" href="/setup">
-                  <Settings size={16} aria-hidden="true" />
-                  Open setup checks
-                </AdminFormControlLink>
-              ) : null}
-            </AdminNotePanel>
-          ) : null}
-        </AdminDetailGrid>
+            ))}
+            {matchingSettings.length === 0 ? (
+              <AdminNotePanel className="admin-m-0">
+                <AdminEmptyState
+                  message="Seed operational policies before editing live matching rules. Each policy update will require a Change reason so operators can audit why the value changed."
+                  title="No matching policies loaded"
+                />
+                {canLoadFullDiagnostics ? (
+                  <AdminFormControlLink className="button-secondary" href="/setup">
+                    <Settings size={16} aria-hidden="true" />
+                    Open setup checks
+                  </AdminFormControlLink>
+                ) : null}
+              </AdminNotePanel>
+            ) : null}
+          </AdminDetailGrid>
+        ) : (
+          <AdminNotePanel className="admin-m-0">
+            <AdminSectionHeader
+              description="The active policy values remain enforced while this workspace focuses on bounded evidence. Return to the policy editor to change a value."
+              status={<StatusBadge tone="warning">Evidence workspace</StatusBadge>}
+              title="Matching policy editor"
+            />
+            <AdminFormControlLink
+              className="button-secondary admin-mt-12"
+              href={buildOperationsPolicyMatchingHref('policy')}
+            >
+              Open policy editor
+            </AdminFormControlLink>
+          </AdminNotePanel>
+        )}
       </AdminSection>
 
-      {shouldRenderMatchingReview ? (
+      {shouldRenderMatchingSimulation ? (
         <>
           <OperationsPolicyLiveSimulatorSection simulation={policySimulation!} />
 
@@ -233,8 +291,10 @@ export default async function OperationsPolicyPage({
 
           <OperationsPolicyDrilldownSection drilldown={policyDrilldown!} />
 
-          <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook!} />
+          <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis!} />
         </>
+      ) : shouldRenderMatchingReview && matchingPlaybook ? (
+        <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
       ) : canLoadFullDiagnostics && !shouldRenderAdvancedIndex ? (
         <AdminSection
           actions={

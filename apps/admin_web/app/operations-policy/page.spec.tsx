@@ -197,6 +197,63 @@ describe('OperationsPolicyPage', () => {
     );
   });
 
+  it('loads matching Partner samples only in supply and simulation workspaces', async () => {
+    mockedGetAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    const policyPage = await OperationsPolicyPage({
+      searchParams: Promise.resolve({ details: 'matching' }),
+    });
+    const policyMarkup = renderToStaticMarkup(policyPage);
+
+    expect(policyMarkup).toContain('Matching workspace');
+    expect(policyMarkup).toContain('Policy editor');
+    expect(policyMarkup).toContain('Booking matching playbook');
+    expect(policyMarkup).not.toContain('Policy sensitivity preview');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).not.toContain(
+      '/admin/operations-policy/providers?take=30',
+    );
+
+    mockedAdminGet.mockClear();
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const supplyPage = await OperationsPolicyPage({
+      searchParams: Promise.resolve({ details: 'matching', matching: 'supply' }),
+    });
+    const supplyMarkup = renderToStaticMarkup(supplyPage);
+
+    expect(supplyMarkup).toContain('Supply evidence');
+    expect(supplyMarkup).toContain('Policy sensitivity preview');
+    expect(supplyMarkup).toContain('Read-only evidence');
+    expect(supplyMarkup).not.toContain('Live policy simulator');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
+      '/admin/operations-policy/providers?take=30',
+    );
+
+    mockedAdminGet.mockClear();
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const simulationPage = await OperationsPolicyPage({
+      searchParams: Promise.resolve({ details: 'matching', matching: 'simulation' }),
+    });
+    const simulationMarkup = renderToStaticMarkup(simulationPage);
+
+    expect(simulationMarkup).toContain('Simulation');
+    expect(simulationMarkup).toContain('Live policy simulator');
+    expect(simulationMarkup).toContain('Policy change impact');
+    expect(simulationMarkup).not.toContain('Policy sensitivity preview');
+    expect(mockedAdminGet.mock.calls.map(([href]) => href)).toContain(
+      '/admin/operations-policy/providers?take=30',
+    );
+  });
+
   it('keeps details=all as a bounded workspace index for Master Admins', async () => {
     mockedGetAccess.mockResolvedValue({
       categories: [],

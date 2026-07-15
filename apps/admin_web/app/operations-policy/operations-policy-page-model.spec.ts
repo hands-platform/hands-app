@@ -2,6 +2,7 @@ import {
   buildOperationsPolicyDecisionHref,
   buildOperationsPolicyDetailsHref,
   buildOperationsPolicyLoadPlan,
+  buildOperationsPolicyMatchingHref,
 } from './operations-policy-page-model';
 
 describe('operations policy page model', () => {
@@ -38,6 +39,14 @@ describe('operations policy page model', () => {
 
   it('scopes matching, decision, and audit workspaces to bounded data windows', () => {
     const matching = buildOperationsPolicyLoadPlan({ details: 'matching' });
+    const matchingSupply = buildOperationsPolicyLoadPlan({
+      details: 'matching',
+      matching: 'supply',
+    });
+    const matchingSimulation = buildOperationsPolicyLoadPlan({
+      details: 'matching',
+      matching: 'simulation',
+    });
     const decisions = buildOperationsPolicyLoadPlan({ details: 'decisions' });
     const decisionEvidence = buildOperationsPolicyLoadPlan({
       details: 'decisions',
@@ -45,9 +54,20 @@ describe('operations policy page model', () => {
     });
     const audit = buildOperationsPolicyLoadPlan({ details: 'audit' });
 
-    expect(new URL(matching.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('20');
-    expect(new URL(matching.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+    expect(new URL(matching.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('3');
+    expect(matching.providersHref).toBeNull();
+    expect(matching.matchingMode).toBe('policy');
     expect(matching.shouldRenderMatchingReview).toBe(true);
+    expect(matching.shouldRenderMatchingSupply).toBe(false);
+    expect(matching.shouldRenderMatchingSimulation).toBe(false);
+
+    expect(new URL(matchingSupply.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(matchingSupply.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+    expect(matchingSupply.shouldRenderMatchingSupply).toBe(true);
+
+    expect(new URL(matchingSimulation.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('20');
+    expect(new URL(matchingSimulation.providersHref!, 'http://admin.local').searchParams.get('take')).toBe('30');
+    expect(matchingSimulation.shouldRenderMatchingSimulation).toBe(true);
 
     expect(new URL(decisions.bookingsHref, 'http://admin.local').searchParams.get('take')).toBe('3');
     expect(decisions.providersHref).toBeNull();
@@ -90,6 +110,13 @@ describe('operations policy page model', () => {
     expect(buildOperationsPolicyDecisionHref('editor')).toBe('/operations-policy?details=decisions');
     expect(buildOperationsPolicyDecisionHref('evidence')).toBe(
       '/operations-policy?details=decisions&decision=evidence',
+    );
+    expect(buildOperationsPolicyMatchingHref('policy')).toBe('/operations-policy?details=matching');
+    expect(buildOperationsPolicyMatchingHref('supply')).toBe(
+      '/operations-policy?details=matching&matching=supply',
+    );
+    expect(buildOperationsPolicyMatchingHref('simulation')).toBe(
+      '/operations-policy?details=matching&matching=simulation',
     );
   });
 });
