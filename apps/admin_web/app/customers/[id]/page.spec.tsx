@@ -44,36 +44,68 @@ describe('CustomerDetailPage', () => {
     });
   });
 
-  it('renders customer operations blocks with the shared Vuexy section surface', async () => {
-    const page = await CustomerDetailPage({
+  it('separates customer operations, account money, and retained records', async () => {
+    const operationsPage = await CustomerDetailPage({
       params: Promise.resolve({ id: 'customer-1' }),
       searchParams: Promise.resolve({}),
     });
-    const markup = renderToStaticMarkup(page);
+    const operationsMarkup = renderToStaticMarkup(operationsPage);
 
-    expect(markup).toContain('admin-page-header admin-page-header-toolbar');
-    expect(markup).toContain('id="customer-operator-command-queue"');
-    expect(markup).toContain('id="record-date-filter"');
-    expect(markup).toContain('id="customer-account-evidence"');
-    expect(markup).toContain('id="customer-account-operations"');
-    expect(markup).toContain('id="customer-record-archive-summary"');
-    expect(markup).not.toContain('id="customer-booking-create-gates"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-operator-command-queue"');
-    expect(markup).toContain('class="card admin-filter-panel customer-record-date-filter-panel admin-mb-16 admin-section" id="record-date-filter"');
-    expect(markup).toContain('Active customer record filters');
-    expect(markup).toContain('Range: All loaded records');
-    expect(markup).toContain('Type: All event types');
-    expect(markup).toContain('Sort: Newest first');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-evidence"');
-    expect(markup).toContain('class="card admin-section admin-mb-16" id="customer-account-operations"');
-    expect(markup).not.toContain('<button type="submit">Add address note</button>');
-    expect(markup).toContain(
+    expect(operationsMarkup).toContain('admin-page-header admin-page-header-toolbar');
+    expect(operationsMarkup).toContain('id="customer-workspace-selector"');
+    expect(operationsMarkup).toContain('Customer operating picture');
+    expect(operationsMarkup).toContain('id="customer-operator-command-queue"');
+    expect(operationsMarkup).not.toContain('id="record-date-filter"');
+    expect(operationsMarkup).not.toContain('id="customer-account-evidence"');
+    expect(operationsMarkup).not.toContain('id="customer-record-archive-summary"');
+    expect(operationsMarkup).not.toContain('id="customer-booking-create-gates"');
+    expect(operationsMarkup).not.toContain('<button type="submit">Add address note</button>');
+    expect(operationsMarkup).toContain(
       'class="admin-form-control-button button button-primary" type="submit">Add address note</button>',
     );
-    expect(markup).toContain('No saved address yet.');
-    expect(markup).toContain('Load record archive');
-    expect(markup).not.toContain('No chat rooms matched this date filter.');
-    expect(markup).toContain('class="empty-state');
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments?')),
+    ).toBe(false);
+
+    mockedAdminGet.mockClear();
+    const accountPage = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-1' }),
+      searchParams: Promise.resolve({ view: 'account' }),
+    });
+    const accountMarkup = renderToStaticMarkup(accountPage);
+
+    expect(accountMarkup).toContain('Customer account and balance');
+    expect(accountMarkup).toContain('id="customer-account-evidence"');
+    expect(accountMarkup).toContain('id="customer-account-operations"');
+    expect(accountMarkup).toContain('Recent manual wallet adjustments');
+    expect(accountMarkup).toContain('No saved address yet.');
+    expect(accountMarkup).not.toContain('Customer operating picture');
+    expect(accountMarkup).not.toContain('id="record-date-filter"');
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) =>
+        href.startsWith('/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=customer-1'),
+      ),
+    ).toBe(true);
+
+    mockedAdminGet.mockClear();
+    const recordsPage = await CustomerDetailPage({
+      params: Promise.resolve({ id: 'customer-1' }),
+      searchParams: Promise.resolve({ view: 'records' }),
+    });
+    const recordsMarkup = renderToStaticMarkup(recordsPage);
+
+    expect(recordsMarkup).toContain('id="record-date-filter"');
+    expect(recordsMarkup).toContain('type="hidden" name="view" value="records"');
+    expect(recordsMarkup).toContain('Active customer record filters');
+    expect(recordsMarkup).toContain('Customer activity action panel');
+    expect(recordsMarkup).toContain('id="customer-record-archive-summary"');
+    expect(recordsMarkup).toContain('Load record archive');
+    expect(recordsMarkup).not.toContain('Customer operating picture');
+    expect(recordsMarkup).not.toContain('id="customer-account-evidence"');
+    expect(recordsMarkup).not.toContain('No chat rooms matched this date filter.');
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/wallet-adjustments?')),
+    ).toBe(false);
   });
 
   it('renders the customer booking create gate section only when gate attempts exist', async () => {
@@ -152,13 +184,13 @@ describe('CustomerDetailPage', () => {
   it('keeps customer chat and audit archive rows collapsed by default', async () => {
     const page = await CustomerDetailPage({
       params: Promise.resolve({ id: 'customer-1' }),
-      searchParams: Promise.resolve({}),
+      searchParams: Promise.resolve({ view: 'records' }),
     });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('id="customer-record-archive-summary"');
     expect(markup).toContain('Load record archive');
-    expect(markup).toContain('/customers/customer-1?records=all#chat-history');
+    expect(markup).toContain('/customers/customer-1?view=records&amp;records=all#chat-history');
     expect(markup).not.toContain('customer-chat-history-section');
     expect(markup).not.toContain('id="notifications"');
   });
@@ -166,7 +198,7 @@ describe('CustomerDetailPage', () => {
   it('uses a protected server export route instead of embedding activity CSV data in the detail HTML', async () => {
     const page = await CustomerDetailPage({
       params: Promise.resolve({ id: 'customer-1' }),
-      searchParams: Promise.resolve({ range: '7d', type: 'BOOKING' }),
+      searchParams: Promise.resolve({ range: '7d', type: 'BOOKING', view: 'records' }),
     });
     const markup = renderToStaticMarkup(page);
 

@@ -1700,6 +1700,7 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer Detail',
+    'Customer workspace view',
     'Customer operating picture',
     'Customer booking situation board',
     'Current / In Progress',
@@ -1708,42 +1709,106 @@ if (customerLinkMatch) {
     'Partner Cancellations',
     'Payment Type',
     'Customer operator command queue',
-    'Customer activity action panel',
-    'Customer contact and evidence',
-    'Customer account operations',
-    'Saved addresses',
-    'Chat and audit record',
     'All customer chats',
-    'Record archive summary',
-    'Matched booking chat archives retained for admin evidence',
-    'Customer notification delivery rows',
-    'Audit logs',
   ];
   const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
   if (missing.length > 0) {
     throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
   }
+  const unexpectedCustomerMarkers = [
+    'Customer account and balance',
+    'Record date filter',
+    'Chat and audit record',
+  ].filter((marker) => customerBody.includes(marker));
+  if (unexpectedCustomerMarkers.length > 0) {
+    throw new Error(
+      `${customerPath} includes deferred markers: ${unexpectedCustomerMarkers.join(', ')}`,
+    );
+  }
   assertNoLegacyVisibleLanguage(customerPath, customerBody);
   console.log(`PASS ${customerPath}`);
 
-  const filteredCustomerBody = await fetchPage(`${customerPath}?range=7d`);
-  const filteredCustomerMarkers = [
+  const customerAccountPath = `${customerPath}?view=account`;
+  const customerAccountBody = await fetchPage(customerAccountPath);
+  const customerAccountMarkers = [
+    'Customer workspace view',
+    'Customer account and balance',
+    'Customer contact and evidence',
+    'Customer account operations',
+    'Saved addresses',
+    'Recent manual wallet adjustments',
+  ];
+  const missingCustomerAccountMarkers = customerAccountMarkers.filter(
+    (marker) => !customerAccountBody.includes(marker),
+  );
+  if (missingCustomerAccountMarkers.length > 0) {
+    throw new Error(
+      `${customerAccountPath} is missing expected markers: ${missingCustomerAccountMarkers.join(', ')}`,
+    );
+  }
+  const unexpectedCustomerAccountMarkers = ['Customer operating picture', 'Record date filter'].filter(
+    (marker) => customerAccountBody.includes(marker),
+  );
+  if (unexpectedCustomerAccountMarkers.length > 0) {
+    throw new Error(
+      `${customerAccountPath} includes deferred markers: ${unexpectedCustomerAccountMarkers.join(', ')}`,
+    );
+  }
+  assertNoLegacyVisibleLanguage(customerAccountPath, customerAccountBody);
+  console.log(`PASS ${customerAccountPath}`);
+
+  const customerRecordsPath = `${customerPath}?view=records&range=7d`;
+  const customerRecordsBody = await fetchPage(customerRecordsPath);
+  const customerRecordsMarkers = [
+    'Customer workspace view',
     'Record date filter',
     'Preset',
     'Record type',
     'Sort order',
     'Apply filter',
+    'Customer activity action panel',
+    'Chat and audit record',
+    'Record archive summary',
+    'Matched booking chat archives retained for admin evidence',
   ];
-  const missingFilteredCustomerMarkers = filteredCustomerMarkers.filter(
-    (marker) => !filteredCustomerBody.includes(marker),
+  const missingCustomerRecordsMarkers = customerRecordsMarkers.filter(
+    (marker) => !customerRecordsBody.includes(marker),
   );
-  if (missingFilteredCustomerMarkers.length > 0) {
+  if (missingCustomerRecordsMarkers.length > 0) {
     throw new Error(
-      `${customerPath}?range=7d is missing expected markers: ${missingFilteredCustomerMarkers.join(', ')}`,
+      `${customerRecordsPath} is missing expected markers: ${missingCustomerRecordsMarkers.join(', ')}`,
     );
   }
-  assertNoLegacyVisibleLanguage(`${customerPath}?range=7d`, filteredCustomerBody);
-  console.log(`PASS ${customerPath}?range=7d`);
+  const unexpectedCustomerRecordsMarkers = [
+    'Customer operating picture',
+    'Customer account and balance',
+  ].filter((marker) => customerRecordsBody.includes(marker));
+  if (unexpectedCustomerRecordsMarkers.length > 0) {
+    throw new Error(
+      `${customerRecordsPath} includes deferred markers: ${unexpectedCustomerRecordsMarkers.join(', ')}`,
+    );
+  }
+  assertNoLegacyVisibleLanguage(customerRecordsPath, customerRecordsBody);
+  console.log(`PASS ${customerRecordsPath}`);
+
+  const customerArchivePath = `${customerPath}?records=all`;
+  const customerArchiveBody = await fetchPage(customerArchivePath);
+  const customerArchiveMarkers = [
+    'Chat history',
+    'Notification and audit records',
+    'Recent customer notifications',
+    'Customer audit trail',
+  ];
+  const missingCustomerArchiveMarkers = customerArchiveMarkers.filter(
+    (marker) => !customerArchiveBody.includes(marker),
+  );
+  if (missingCustomerArchiveMarkers.length > 0) {
+    throw new Error(
+      `${customerArchivePath} is missing expected markers: ${missingCustomerArchiveMarkers.join(', ')}`,
+    );
+  }
+  assertNoLegacyVisibleLanguage(customerArchivePath, customerArchiveBody);
+  console.log(`PASS ${customerArchivePath}`);
 }
 
 const bookingsBody = shouldRunDeepSection('/bookings') ? await fetchPage('/bookings') : '';

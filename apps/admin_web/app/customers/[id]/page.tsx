@@ -114,6 +114,8 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+type CustomerDetailView = 'operations' | 'account' | 'records';
+
 const ACTIVE_STATUSES = [
   'CREATED',
   'OPEN_MATCHING',
@@ -140,19 +142,25 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
-  const shouldRenderRecordArchive = readCustomerRecordArchiveMode(detailSearchParams) === 'all';
+  const recordArchiveMode = readCustomerRecordArchiveMode(detailSearchParams);
+  const requestedDetailView = readCustomerDetailView(detailSearchParams);
+  const detailView = recordArchiveMode === 'all' ? 'records' : requestedDetailView;
+  const shouldRenderRecordArchive = detailView === 'records' && recordArchiveMode === 'all';
+  const shouldLoadManualAdjustments = detailView === 'account';
   const canLoadCustomerDiagnostics = canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
   const [customer, customerManualAdjustmentRows] = await Promise.all([
     adminGet<AdminCustomerDetail | null>(
       `/admin/customers/${id}?includeDiagnostics=${canLoadCustomerDiagnostics ? 'true' : 'false'}`,
       null,
     ),
-    adminGet<AdminManualWalletAdjustmentRow[]>(
-      `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
-        id,
-      )}&take=${CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
-      [],
-    ),
+    shouldLoadManualAdjustments
+      ? adminGet<AdminManualWalletAdjustmentRow[]>(
+          `/admin/wallet-adjustments?ownerType=CUSTOMER&ownerId=${encodeURIComponent(
+            id,
+          )}&take=${CUSTOMER_MANUAL_ADJUSTMENT_HISTORY_LIMIT}`,
+          [],
+        )
+      : Promise.resolve<AdminManualWalletAdjustmentRow[]>([]),
   ]);
 
   if (!customer) {
@@ -421,6 +429,34 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       description={`${customer.user?.fullName ?? 'Unnamed customer'} / ${customer.user?.phone ?? 'No phone'}`}
       title="Customer detail"
     >
+      <AdminSection
+        description="Keep current support decisions, account money, and retained activity records in separate workspaces."
+        id="customer-workspace-selector"
+        title="Customer workspace view"
+      >
+        <AdminFilterChipGroup ariaLabel="Customer detail workspaces">
+          <AdminFormControlLink
+            aria-current={detailView === 'operations' ? 'page' : undefined}
+            href={`/customers/${customer.id}`}
+          >
+            Operations
+          </AdminFormControlLink>
+          <AdminFormControlLink
+            aria-current={detailView === 'account' ? 'page' : undefined}
+            href={`/customers/${customer.id}?view=account`}
+          >
+            Account &amp; money
+          </AdminFormControlLink>
+          <AdminFormControlLink
+            aria-current={detailView === 'records' ? 'page' : undefined}
+            href={`/customers/${customer.id}?view=records`}
+          >
+            Activity records
+          </AdminFormControlLink>
+        </AdminFilterChipGroup>
+      </AdminSection>
+
+      {detailView === 'operations' ? (
       <CustomerDetailSectionBand
         eyebrow="Operations"
         title="Customer operating picture"
@@ -438,15 +474,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           usageSummary={overviewUsageSummary}
         />
       </CustomerDetailSectionBand>
+      ) : null}
 
+      {detailView === 'operations' ? (
       <CustomerBookingOperationBoard
         basePath={`/customers/${id}`}
         groups={customerBookingOperationGroups}
         metrics={customerBookingOperationMetrics}
         searchParams={detailSearchParams}
       />
+      ) : null}
 
-      {shouldRenderReviewRecords ? (
+      {detailView === 'records' && shouldRenderReviewRecords ? (
         <AdminReviewRecordsSection
           basePath={`/customers/${id}`}
           customerReviews={customerReviewRecords.customerReviews}
@@ -458,7 +497,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
       ) : null}
 
-      {shouldRenderBookingCreateGateAttempts ? (
+      {detailView === 'operations' && shouldRenderBookingCreateGateAttempts ? (
         <AdminSection
           actions={
             <>
@@ -510,6 +549,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminSection>
       ) : null}
 
+      {detailView === 'operations' ? (
       <AdminSection
         className="admin-mb-16"
         description="Next factual actions for the customer desk. This queue only points operators to live bookings, chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up."
@@ -539,7 +579,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           ))}
         </AdminStageList>
       </AdminSection>
+      ) : null}
 
+      {detailView === 'records' ? (
       <AdminFilterPanel
         actions={
           <>
@@ -556,6 +598,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         title="Record date filter"
       >
         <AdminFormGrid className="admin-mt-14" action={`/customers/${customer.id}`}>
+          <input name="view" type="hidden" value="records" />
           <AdminFormSelect
             className="admin-directory-filter-select"
             defaultValue={dateFilters.range}
@@ -605,7 +648,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </AdminFormControlLink>
             <AdminFormControlLink
               className="admin-directory-filter-button is-ghost"
-              href={`/customers/${customer.id}`}
+              href={`/customers/${customer.id}?view=records`}
             >
               <X aria-hidden="true" size={16} />
               Clear
@@ -624,7 +667,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           tone="info"
         />
       </AdminFilterPanel>
+      ) : null}
 
+      {detailView === 'records' ? (
       <AdminSection
         className="admin-mb-16"
         description="Facts-only operator view for booking progress, completed work, archived chats, payment records, addresses, and customer contact."
@@ -691,7 +736,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </AdminFormControlButton>
         </AdminFormGrid>
       </AdminSection>
+      ) : null}
 
+      {detailView === 'account' ? (
       <CustomerDetailSectionBand
         eyebrow="Account"
         title="Customer account and balance"
@@ -795,7 +842,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           walletAdjustmentsHref={customerWalletAdjustmentHref}
         />
       </CustomerDetailSectionBand>
+      ) : null}
 
+      {detailView === 'records' ? (
       <CustomerDetailSectionBand
         eyebrow="Records"
         title="Chat and audit record"
@@ -959,6 +1008,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </AdminSection>
         )}
       </CustomerDetailSectionBand>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -1339,6 +1389,13 @@ function readCustomerBookingOperationPage(
 
 function readCustomerRecordArchiveMode(searchParams: Record<string, string | string[] | undefined>) {
   return readCustomerDetailSearchParam(searchParams.records) === 'all' ? 'all' : 'summary';
+}
+
+function readCustomerDetailView(
+  searchParams: Record<string, string | string[] | undefined>,
+): CustomerDetailView {
+  const view = readCustomerDetailSearchParam(searchParams.view);
+  return view === 'account' || view === 'records' ? view : 'operations';
 }
 
 function buildCustomerDetailPageHref(
