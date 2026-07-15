@@ -358,7 +358,7 @@ const vietnamOverviewWithRegion: AdminVietnamOverviewSummary = {
   source: 'stored-address-aggregates',
   windowEndAt: null,
   windowStartAt: null,
-  points: [],
+  regionalSampleLimit: 50,
   regions: [
     {
       activeBookingCount: 1,

@@ -62,6 +62,7 @@ const emptyVietnamOverview: AdminVietnamOverviewSummary = {
   rangeLabel: 'Today',
   windowStartAt: null,
   windowEndAt: null,
+  regionalSampleLimit: 50,
   totals: {
     customerCount: 0,
     activeCustomerCount: 0,
@@ -74,7 +75,6 @@ const emptyVietnamOverview: AdminVietnamOverviewSummary = {
     currency: 'VND',
   },
   regions: [],
-  points: [],
 };
 
 const emptyVietnamOverviewRealtimePointFeed: AdminVietnamOverviewRealtimePointFeed = {
@@ -121,6 +121,7 @@ export default async function VietnamOverviewPage({
     ),
   ]);
   const regions = overview.regions;
+  const regionalSampleLimit = overview.regionalSampleLimit ?? 50;
   const activeRegion = normalizeVietnamOverviewRegionFilter(params?.region, regions);
   const activeRegionCode = activeRegion?.regionCode ?? null;
   const realtimePointSource = realtimePointFeed.realtimePoints;
@@ -647,14 +648,15 @@ export default async function VietnamOverviewPage({
             <StatusBadge tone={activeRegion ? 'primary' : 'neutral'}>
               {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
             </StatusBadge>
+            <StatusBadge tone="warning">Latest {formatNumber(regionalSampleLimit)}/source</StatusBadge>
           </div>
         }
         bodyClassName="vietnam-overview-region-card-body"
         className="vietnam-overview-region-card"
         description={
           activeRegion
-            ? 'Focused period demand, supply, closeout, and paid volume for the selected region.'
-            : `Compare period demand, supply readiness, closeout, cancellations, and paid volume by region for ${overview.rangeLabel}.`
+            ? `Focused location sample for the selected region, bounded to the latest ${formatNumber(regionalSampleLimit)} records per source.`
+            : `Compare the latest ${formatNumber(regionalSampleLimit)} location-bearing records per source by region. National KPI cards above use exact aggregate queries.`
         }
         title={activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}
       >

@@ -4173,6 +4173,7 @@ export type AdminVietnamOverview = {
   rangeLabel: string;
   windowStartAt: string | null;
   windowEndAt: string | null;
+  regionalSampleLimit?: number;
   totals: {
     customerCount: number;
     activeCustomerCount: number;
@@ -4189,7 +4190,7 @@ export type AdminVietnamOverview = {
   realtimePoints?: AdminVietnamOverviewRealtimePoint[];
 };
 
-export type AdminVietnamOverviewSummary = Omit<AdminVietnamOverview, 'realtimePoints'>;
+export type AdminVietnamOverviewSummary = Omit<AdminVietnamOverview, 'points' | 'realtimePoints'>;
 
 export type AdminVietnamOverviewRealtimePointFeed = Pick<
   AdminVietnamOverview,

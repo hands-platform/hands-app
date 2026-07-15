@@ -2098,6 +2098,11 @@ type AdminVietnamOverviewRegion = {
   currency: string;
 };
 
+type AdminVietnamOverviewTotals = Omit<
+  AdminVietnamOverviewRegion,
+  'regionCode' | 'regionName' | 'shortName'
+>;
+
 type AdminVietnamOverviewPointKind =
   | 'customers'
   | 'active'
@@ -3697,7 +3702,8 @@ export class AdminService {
       includePeriodMetrics: true,
       includeRealtimePoints: false,
     });
-    const { realtimePoints, ...summary } = overview;
+    const { points, realtimePoints, ...summary } = overview;
+    void points;
     void realtimePoints;
 
     return summary;
@@ -3771,7 +3777,7 @@ export class AdminService {
       ? ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT
       : (options.realtimeListLimit ?? ADMIN_VIETNAM_REALTIME_POINT_LIST_LIMIT);
 
-    const [customers, providers, bookings, realtimeBookings] = await Promise.all([
+    const [customers, providers, bookings, realtimeBookings, exactTotals] = await Promise.all([
       this.prisma.customerProfile.findMany({
         orderBy: { id: 'desc' },
         take: sourceListLimit,
@@ -3892,6 +3898,13 @@ export class AdminService {
             },
           })
         : Promise.resolve([]),
+      options.includePeriodMetrics
+        ? this.getVietnamOverviewExactTotals({
+            activeCustomerSessionWhere,
+            bookingWhere,
+            stalePartnerSince,
+          })
+        : Promise.resolve<AdminVietnamOverviewTotals | null>(null),
     ]);
     const realtimePoints: AdminVietnamOverviewRealtimePoint[] = [];
 
@@ -4093,20 +4106,86 @@ export class AdminService {
       rangeLabel: window.label,
       windowStartAt: window.startAt?.toISOString() ?? null,
       windowEndAt: window.endAt?.toISOString() ?? null,
-      totals: {
-        customerCount: regionRows.reduce((total, region) => total + region.customerCount, 0),
-        activeCustomerCount: regionRows.reduce((total, region) => total + region.activeCustomerCount, 0),
-        partnerCount: regionRows.reduce((total, region) => total + region.partnerCount, 0),
-        onlinePartnerCount: regionRows.reduce((total, region) => total + region.onlinePartnerCount, 0),
-        activeBookingCount: regionRows.reduce((total, region) => total + region.activeBookingCount, 0),
-        completedBookingCount: regionRows.reduce((total, region) => total + region.completedBookingCount, 0),
-        cancellationCount: regionRows.reduce((total, region) => total + region.cancellationCount, 0),
-        revenueAmount: regionRows.reduce((total, region) => total + region.revenueAmount, 0),
-        currency: 'VND',
-      },
+      regionalSampleLimit: sourceListLimit,
+      totals: exactTotals ?? vietnamOverviewRegionTotals(regionRows),
       regions: regionRows,
       points: [],
       realtimePoints,
+    };
+  }
+
+  private async getVietnamOverviewExactTotals(input: {
+    activeCustomerSessionWhere: Prisma.AppSessionWhereInput;
+    bookingWhere: Prisma.BookingWhereInput;
+    stalePartnerSince: Date;
+  }): Promise<AdminVietnamOverviewTotals> {
+    const [
+      customerCount,
+      activeCustomerCount,
+      partnerCount,
+      onlinePartnerCount,
+      activeBookingCount,
+      completedBookingCount,
+      cancellationCount,
+      paidVolume,
+    ] = await Promise.all([
+      this.prisma.customerProfile.count(),
+      this.prisma.customerProfile.count({
+        where: {
+          user: {
+            appSessions: {
+              some: input.activeCustomerSessionWhere,
+            },
+          },
+        },
+      }),
+      this.prisma.providerProfile.count(),
+      this.prisma.providerProfile.count({
+        where: {
+          status: ProviderStatus.ONLINE_AVAILABLE,
+          user: {
+            appSessions: {
+              some: {
+                role: Role.PROVIDER,
+                lastSeenAt: { gte: input.stalePartnerSince },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.booking.count({
+        where: { status: { in: Array.from(ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES) } },
+      }),
+      this.prisma.booking.count({
+        where: { AND: [input.bookingWhere, { status: BookingStatus.COMPLETED }] },
+      }),
+      this.prisma.booking.count({
+        where: {
+          AND: [
+            input.bookingWhere,
+            { status: { in: Array.from(ADMIN_VIETNAM_CANCELLATION_STATUSES) } },
+          ],
+        },
+      }),
+      this.prisma.payment.aggregate({
+        where: {
+          status: { in: Array.from(ADMIN_VIETNAM_REVENUE_STATUSES) },
+          booking: input.bookingWhere,
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      customerCount,
+      activeCustomerCount,
+      partnerCount,
+      onlinePartnerCount,
+      activeBookingCount,
+      completedBookingCount,
+      cancellationCount,
+      revenueAmount: numberValue(paidVolume._sum.amount),
+      currency: 'VND',
     };
   }
 
@@ -19255,6 +19334,20 @@ function ensureVietnamOverviewRegion(regions: Map<string, AdminVietnamOverviewRe
     completedBookingCount: 0,
     cancellationCount: 0,
     revenueAmount: 0,
+    currency: 'VND',
+  };
+}
+
+function vietnamOverviewRegionTotals(regions: readonly AdminVietnamOverviewRegion[]): AdminVietnamOverviewTotals {
+  return {
+    customerCount: regions.reduce((total, region) => total + region.customerCount, 0),
+    activeCustomerCount: regions.reduce((total, region) => total + region.activeCustomerCount, 0),
+    partnerCount: regions.reduce((total, region) => total + region.partnerCount, 0),
+    onlinePartnerCount: regions.reduce((total, region) => total + region.onlinePartnerCount, 0),
+    activeBookingCount: regions.reduce((total, region) => total + region.activeBookingCount, 0),
+    completedBookingCount: regions.reduce((total, region) => total + region.completedBookingCount, 0),
+    cancellationCount: regions.reduce((total, region) => total + region.cancellationCount, 0),
+    revenueAmount: regions.reduce((total, region) => total + region.revenueAmount, 0),
     currency: 'VND',
   };
 }

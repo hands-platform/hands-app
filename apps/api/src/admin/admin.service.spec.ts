@@ -5135,6 +5135,7 @@ describe('AdminService query orchestration', () => {
     const now = new Date();
     const prisma = {
       customerProfile: {
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
         findMany: vi.fn().mockResolvedValue([
           {
             id: 'customer-1',
@@ -5160,6 +5161,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       providerProfile: {
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
         findMany: vi.fn().mockResolvedValue([
           {
             id: 'provider-1',
@@ -5182,6 +5184,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1).mockResolvedValueOnce(0),
         findMany: vi
           .fn()
           .mockResolvedValueOnce([
@@ -5237,6 +5240,9 @@ describe('AdminService query orchestration', () => {
             },
           ]),
       },
+      payment: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 0 } }),
+      },
     };
     const service = createAdminService(prisma);
 
@@ -5245,8 +5251,18 @@ describe('AdminService query orchestration', () => {
     const serialized = JSON.stringify(overview);
 
     expect(overview).toMatchObject({
+      regionalSampleLimit: 50,
       refreshSeconds: 60,
       source: 'stored-address-aggregates',
+      totals: {
+        activeBookingCount: 1,
+        activeCustomerCount: 1,
+        cancellationCount: 0,
+        completedBookingCount: 1,
+        customerCount: 1,
+        onlinePartnerCount: 1,
+        partnerCount: 1,
+      },
     });
     expect(hcm).toMatchObject({
       activeBookingCount: 1,
@@ -5304,6 +5320,7 @@ describe('AdminService query orchestration', () => {
     const now = new Date();
     const prisma = {
       customerProfile: {
+        count: vi.fn().mockResolvedValueOnce(320).mockResolvedValueOnce(80),
         findMany: vi.fn().mockResolvedValue([
           {
             id: 'customer-1',
@@ -5329,6 +5346,7 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       providerProfile: {
+        count: vi.fn().mockResolvedValueOnce(140).mockResolvedValueOnce(45),
         findMany: vi.fn().mockResolvedValue([
           {
             id: 'provider-1',
@@ -5351,19 +5369,30 @@ describe('AdminService query orchestration', () => {
         ]),
       },
       booking: {
+        count: vi.fn().mockResolvedValueOnce(12).mockResolvedValueOnce(90).mockResolvedValueOnce(4),
         findMany: vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]),
+      },
+      payment: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 12_500_000 } }),
       },
     };
     const service = createAdminService(prisma);
 
     const summary = await service.getVietnamOverviewSummary('today');
 
-    expect(summary.points).toEqual([]);
+    expect(summary).not.toHaveProperty('points');
     expect(summary).not.toHaveProperty('realtimePoints');
     expect(summary.totals).toMatchObject({
-      activeCustomerCount: 1,
-      onlinePartnerCount: 1,
+      activeBookingCount: 12,
+      activeCustomerCount: 80,
+      cancellationCount: 4,
+      completedBookingCount: 90,
+      customerCount: 320,
+      onlinePartnerCount: 45,
+      partnerCount: 140,
+      revenueAmount: 12_500_000,
     });
+    expect(summary.regionalSampleLimit).toBe(50);
     expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
     expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
   });
