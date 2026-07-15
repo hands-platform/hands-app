@@ -15,7 +15,7 @@ export type DashboardViewMode = {
 export type DashboardDataHrefs = {
   readonly appSessionsHref: string | null;
   readonly bookingGateAuditHref: string | null;
-  readonly bookingsHref: string;
+  readonly bookingsHref: string | null;
   readonly cashSettlementSummaryHref: string;
   readonly dashboardSummaryHref: string;
   readonly earningsHref: string | null;
@@ -49,7 +49,6 @@ const DASHBOARD_NOTIFICATION_TAKE = 10;
 const DASHBOARD_AUDIT_TAKE = 10;
 const DASHBOARD_FINANCE_TAKE = 10;
 const DASHBOARD_APP_SESSION_TAKE = 5;
-const DASHBOARD_SUMMARY_BOOKING_TAKE = 5;
 const DASHBOARD_SUMMARY_NOTIFICATION_TAKE = 5;
 const DASHBOARD_SUMMARY_AUDIT_TAKE = 5;
 const DASHBOARD_SUMMARY_FINANCE_TAKE = 5;
@@ -109,10 +108,12 @@ export function buildDashboardDataHrefs(params: DashboardParams): DashboardDataH
           range,
         )
       : null,
-    bookingsHref: `/admin/bookings?${new URLSearchParams({
-      dateRange: range,
-      take: String(limits.bookings),
-    }).toString()}`,
+    bookingsHref: viewMode.shouldRenderFullDashboard
+      ? `/admin/bookings?${new URLSearchParams({
+          dateRange: range,
+          take: String(DASHBOARD_BOOKING_TAKE),
+        }).toString()}`
+      : null,
     earningsHref: requirements.earnings
       ? buildDashboardRangeScopedHref('/admin/earnings', { take: String(limits.finance) }, range)
       : null,
@@ -208,7 +209,6 @@ function dashboardDataLimits(viewMode: DashboardViewMode) {
     return {
       appSessions: DASHBOARD_APP_SESSION_TAKE,
       audit: DASHBOARD_AUDIT_TAKE,
-      bookings: DASHBOARD_BOOKING_TAKE,
       finance: DASHBOARD_FINANCE_TAKE,
       notifications: DASHBOARD_NOTIFICATION_TAKE,
     };
@@ -217,7 +217,6 @@ function dashboardDataLimits(viewMode: DashboardViewMode) {
   return {
     appSessions: DASHBOARD_SUMMARY_APP_SESSION_TAKE,
     audit: DASHBOARD_SUMMARY_AUDIT_TAKE,
-    bookings: DASHBOARD_SUMMARY_BOOKING_TAKE,
     finance: DASHBOARD_SUMMARY_FINANCE_TAKE,
     notifications: DASHBOARD_SUMMARY_NOTIFICATION_TAKE,
   };

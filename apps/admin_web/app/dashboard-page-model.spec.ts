@@ -76,9 +76,9 @@ describe('dashboard page model', () => {
 
   it('keeps default dashboard data requests bounded and scoped to today', () => {
     const hrefs = buildDashboardDataHrefs({});
-    const bookingUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
 
     expect(hrefs.dashboardSummaryHref).toBe('/admin/dashboard/summary?dateRange=today');
+    expect(hrefs.bookingsHref).toBeNull();
     expect(hrefs.partnersHref).toBeNull();
     expect(hrefs.appSessionsHref).toBeNull();
     expect(hrefs.notificationsHref).toBeNull();
@@ -87,9 +87,6 @@ describe('dashboard page model', () => {
     expect(hrefs.earningsHref).toBeNull();
     expect(hrefs.refundsHref).toBeNull();
     expect(hrefs.payoutBatchesHref).toBeNull();
-    expect(bookingUrl.pathname).toBe('/admin/bookings');
-    expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
-    expect(bookingUrl.searchParams.get('take')).toBe('5');
     expect(hrefs.paymentSummaryHref).toBe('/admin/payments/summary?range=today');
     expect(hrefs.earningsSummaryHref).toBe('/admin/earnings/summary?range=today');
     expect(hrefs.refundsSummaryHref).toBe('/admin/refunds/summary?range=today');
@@ -100,6 +97,7 @@ describe('dashboard page model', () => {
 
   it('keeps live operations diagnostics behind explicit details mode', () => {
     const hrefs = buildDashboardDataHrefs({ details: 'operations' });
+    const bookingUrl = new URL(hrefs.bookingsHref ?? '', 'http://admin.local');
     const auditUrl = new URL(hrefs.bookingGateAuditHref ?? '', 'http://admin.local');
     const earningUrl = new URL(hrefs.earningsHref ?? '', 'http://admin.local');
     const notificationsUrl = new URL(hrefs.notificationsHref ?? '', 'http://admin.local');
@@ -109,6 +107,9 @@ describe('dashboard page model', () => {
     const partnersUrl = new URL(hrefs.partnersHref ?? '', 'http://admin.local');
 
     expect(auditUrl.pathname).toBe('/admin/audit-logs');
+    expect(bookingUrl.pathname).toBe('/admin/bookings');
+    expect(bookingUrl.searchParams.get('dateRange')).toBe('today');
+    expect(bookingUrl.searchParams.get('take')).toBe('20');
     expect(auditUrl.searchParams.get('action')).toBe('booking.create.rejected');
     expect(auditUrl.searchParams.get('take')).toBe('10');
     expect(paymentUrl.searchParams.get('take')).toBe('10');
@@ -187,9 +188,8 @@ describe('dashboard page model', () => {
 
   it('preserves selected dashboard range for bounded list requests', () => {
     const hrefs = buildDashboardDataHrefs({ range: '7d' });
-    const bookingUrl = new URL(hrefs.bookingsHref, 'http://admin.local');
 
-    expect(bookingUrl.searchParams.get('dateRange')).toBe('7d');
+    expect(hrefs.bookingsHref).toBeNull();
     expect(hrefs.notificationsHref).toBeNull();
     expect(hrefs.paymentsHref).toBeNull();
     expect(hrefs.earningsHref).toBeNull();
