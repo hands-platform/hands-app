@@ -53,6 +53,8 @@ const budgetSmokePaths = [
   '/finance-tax/payment-fees',
   '/finance-tax/partner-withholding-tax',
   '/finance-tax/finance-approvers',
+  '/finance-tax/approval-queue',
+  '/finance-tax/approval-queue?view=reconciliation',
   '/operations-policy',
   '/cash-settlements',
   '/finance-closeout',
@@ -807,6 +809,26 @@ const pages = [
       'Finance approver operating rule',
       'Finance approver directory',
       'Dual-control guard',
+    ],
+  },
+  {
+    path: '/finance-tax/approval-queue',
+    markers: [
+      'Finance Approval Queue',
+      'Approvals',
+      'Payment fee policy reviews',
+      'Partner bank deposit approval queue',
+      'Partner withdrawal work queue',
+      'Wallet adjustment approval queue',
+    ],
+  },
+  {
+    path: '/finance-tax/approval-queue?view=reconciliation',
+    markers: [
+      'Finance Approval Queue',
+      'Deposit reconciliation',
+      'Partner bank deposit reconciliation queue',
+      'Rows per queue',
     ],
   },
   {

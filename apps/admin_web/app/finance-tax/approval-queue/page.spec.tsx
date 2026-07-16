@@ -135,15 +135,24 @@ describe('FinanceApprovalQueuePage', () => {
     expect(markup).toContain('Partner bank deposit approval queue');
     expect(markup).toContain('BIDV-20260713-001');
     expect(markup).toContain('Receivable recovery');
+    expect(markup).not.toContain('Partner bank deposit reconciliation queue');
     expect(markup).toContain('policyId=policy-1');
     expect(markup).toContain('withdrawalStatus=REQUESTED');
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/finance-approval-queue?take=25', expect.any(Object));
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/provider-wallet/deposit-requests/history?status=EXECUTED&review=needs-reconciliation&skip=0&take=1',
+      expect.any(Object),
+    );
   });
 
   it('defaults the queue to a bounded ten rows', async () => {
     await FinanceApprovalQueuePage({ searchParams: Promise.resolve({ take: '500' }) });
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/finance-approval-queue?take=10', expect.any(Object));
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/provider-wallet/deposit-requests/history?status=EXECUTED&review=needs-reconciliation&skip=0&take=1',
+      expect.any(Object),
+    );
   });
 
   it('shows executed Partner deposits that still need bank reconciliation as a bounded post-approval queue', async () => {
@@ -189,7 +198,9 @@ describe('FinanceApprovalQueuePage', () => {
       return fallback as never;
     });
 
-    const page = await FinanceApprovalQueuePage({ searchParams: Promise.resolve({ take: '10' }) });
+    const page = await FinanceApprovalQueuePage({
+      searchParams: Promise.resolve({ take: '10', view: 'reconciliation' }),
+    });
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('Partner bank deposit reconciliation queue');
@@ -202,6 +213,11 @@ describe('FinanceApprovalQueuePage', () => {
     expect(markup).toContain('Reassign owner');
     expect(markup).toContain('/finance-tax/partner-bank-deposits/deposit-executed-1');
     expect(markup).toContain('q=SMOKE-CASH-FEE-001');
+    expect(markup).not.toContain('Payment fee policy reviews');
+    expect(markup).not.toContain('Partner bank deposit approval queue');
+    expect(markup).not.toContain('Partner withdrawal work queue');
+    expect(markup).not.toContain('Wallet adjustment approval queue');
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/finance-approval-queue?take=1', expect.any(Object));
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/provider-wallet/deposit-requests/history?status=EXECUTED&review=needs-reconciliation&skip=0&take=10',
       expect.any(Object),
@@ -268,6 +284,7 @@ describe('FinanceApprovalQueuePage', () => {
     expect(markup).toContain('Finance Operator · operator@hands.test');
     expect(markup).toContain('minLength="12"');
     expect(markup).toContain('name="confirmationRequestId" value="deposit-executed-1"');
+    expect(markup).toContain('href="/finance-tax/approval-queue?view=reconciliation"');
     expect(mockedGetCurrentAdminOperatorAccess).toHaveBeenCalledTimes(1);
   });
 

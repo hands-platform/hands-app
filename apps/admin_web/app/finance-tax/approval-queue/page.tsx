@@ -8,6 +8,7 @@ import {
 } from '../../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminNoticeCard, AdminSection } from '../../../components/admin-surface';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -49,6 +50,7 @@ type FinanceApprovalConfirmationAction =
   | 'approve-wallet'
   | 'reject-deposit'
   | 'reject-wallet';
+type FinanceApprovalQueueView = 'approvals' | 'reconciliation';
 
 const EMPTY_QUEUE: AdminFinanceApprovalQueue = {
   generatedAt: '',
@@ -91,20 +93,23 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
   const requestedConfirmationAction = financeApprovalConfirmationAction(readSearchParam(params.confirm));
   const requestedReconciliationAssignment =
     readSearchParam(params.confirm) === 'assign-deposit-reconciliation';
+  const queueView = readFinanceApprovalQueueView(params, requestedReconciliationAssignment);
   const requestedConfirmationId = readSearchParam(params.requestId);
+  const approvalTake = queueView === 'approvals' ? take : 1;
+  const reconciliationTake = queueView === 'reconciliation' ? take : 1;
   const [queue, depositReconciliationResponse, currentOperatorAccess, adminUsers] = await Promise.all([
     adminGet<AdminFinanceApprovalQueue>(
-      `/admin/finance-approval-queue?${new URLSearchParams({ take: String(take) }).toString()}`,
-      { ...EMPTY_QUEUE, limit: take },
+      `/admin/finance-approval-queue?${new URLSearchParams({ take: String(approvalTake) }).toString()}`,
+      { ...EMPTY_QUEUE, limit: approvalTake },
     ),
     adminGet<AdminPartnerBankDepositRequestHistory>(
       `/admin/provider-wallet/deposit-requests/history?${new URLSearchParams({
         status: 'EXECUTED',
         review: 'needs-reconciliation',
         skip: '0',
-        take: String(take),
+        take: String(reconciliationTake),
       }).toString()}`,
-      { ...EMPTY_DEPOSIT_RECONCILIATION_QUEUE, pagination: { skip: 0, take, total: 0 } },
+      { ...EMPTY_DEPOSIT_RECONCILIATION_QUEUE, pagination: { skip: 0, take: reconciliationTake, total: 0 } },
     ),
     requestedReconciliationAssignment ? getCurrentAdminOperatorAccess() : Promise.resolve(null),
     requestedReconciliationAssignment
@@ -118,7 +123,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
   const accountingFilters = readFinanceAccountingFilters(params, 'all');
   const monthlyFilters = readMonthlyTaxClosingFilters(params);
   const withholdingFilters = readPartnerWithholdingTaxFilters(params);
-  const currentQueueHref = financeApprovalQueueHref(take);
+  const currentQueueHref = financeApprovalQueueHref(take, queueView);
   const confirmation = buildFinanceApprovalConfirmation(
     queue,
     requestedConfirmationAction,
@@ -138,17 +143,35 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
   return (
     <AdminPageTemplate
       actions={
-        <TaxFinanceWorkflowActions
-          links={buildTaxFinanceWorkflowLinks({
-            accountingFilters,
-            current: 'approval-queue',
-            monthlyFilters,
-            settlementFilters,
-            withholdingFilters,
-          })}
-        />
+        <>
+          <AdminSegmentedControl
+            activeValue={queueView}
+            ariaLabel="Finance queue views"
+            options={[
+              {
+                href: financeApprovalQueueHref(take, 'approvals'),
+                label: 'Approvals',
+                value: 'approvals',
+              },
+              {
+                href: financeApprovalQueueHref(take, 'reconciliation'),
+                label: 'Deposit reconciliation',
+                value: 'reconciliation',
+              },
+            ]}
+          />
+          <TaxFinanceWorkflowActions
+            links={buildTaxFinanceWorkflowLinks({
+              accountingFilters,
+              current: 'approval-queue',
+              monthlyFilters,
+              settlementFilters,
+              withholdingFilters,
+            })}
+          />
+        </>
       }
-      description="Review current finance approvals and hand each item to its source workflow without mixing completed records into the pending queue."
+      description="Review current maker-approver decisions separately from executed deposits that still need bank evidence reconciliation."
       title="Finance Approval Queue"
     >
       {notice ? (
@@ -216,7 +239,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         />
         <FinanceListCommandCard
           detail="Persisted requests waiting for a separate finance approver."
-          href="/finance-tax/approval-queue#wallet-adjustment-requests"
+          href="/finance-tax/approval-queue?view=approvals#wallet-adjustment-requests"
           icon={WalletCards}
           label="Wallet approvals"
           scope="Needs approval"
@@ -225,7 +248,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         />
         <FinanceListCommandCard
           detail="Bank evidence requests waiting for a separate finance approver before wallet and GL execution."
-          href="/finance-tax/approval-queue#partner-bank-deposit-requests"
+          href="/finance-tax/approval-queue?view=approvals#partner-bank-deposit-requests"
           icon={Landmark}
           label="Deposit approvals"
           scope="Needs approval"
@@ -234,7 +257,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         />
         <FinanceListCommandCard
           detail="Executed Partner deposits whose GL bank debit is not fully matched to imported bank evidence."
-          href="/finance-tax/partner-bank-deposits?status=EXECUTED&review=needs-reconciliation"
+          href="/finance-tax/approval-queue?view=reconciliation"
           icon={Landmark}
           label="Deposit reconciliation"
           scope="Post-approval"
@@ -245,12 +268,13 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
 
       <AdminFilterPanel
         className="admin-mb-16"
-        description="The API returns a bounded slice while the KPI counts remain exact for the active queue."
-        resultLabel={`Up to ${queue.limit} rows per queue`}
+        description="The selected queue returns a bounded row slice while summary counts remain exact across approvals and reconciliation."
+        resultLabel={`Up to ${take} rows in this view`}
         resultTone="info"
         title="Queue display"
       >
         <AdminFormGrid method="get">
+          <input name="view" type="hidden" value={queueView} />
           <AdminFormSelect
             defaultValue={String(take)}
             label="Rows per queue"
@@ -267,13 +291,14 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
         </AdminFormGrid>
       </AdminFilterPanel>
 
-      <FinanceTablePanel
-        grouped
-        description="Only the latest request event for a draft policy appears. Rejected, cancelled, stale, and activated policies are excluded."
-        resultLabel={`${queue.summary.paymentFeePolicyPendingCount} pending`}
-        resultTone={queue.summary.paymentFeePolicyPendingCount > 0 ? 'warning' : 'success'}
-        title="Payment fee policy reviews"
-      >
+      {queueView === 'approvals' ? (
+        <FinanceTablePanel
+          grouped
+          description="Only the latest request event for a draft policy appears. Rejected, cancelled, stale, and activated policies are excluded."
+          resultLabel={`${queue.summary.paymentFeePolicyPendingCount} pending`}
+          resultTone={queue.summary.paymentFeePolicyPendingCount > 0 ? 'warning' : 'success'}
+          title="Payment fee policy reviews"
+        >
         <FinanceDataTable
           emptyMessage="No payment fee policy review is pending."
           headers={['Policy', 'Requested by', 'Requested', 'Effective from', 'Reason', 'Action']}
@@ -303,17 +328,19 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             </tr>
           ))}
         </FinanceDataTable>
-      </FinanceTablePanel>
+        </FinanceTablePanel>
+      ) : null}
 
-      <FinanceTablePanel
-        className="admin-mt-16"
-        description="These deposits are already executed. They need bank evidence matching, not another approval or another wallet/GL posting."
-        grouped
-        id="partner-bank-deposit-reconciliation"
-        resultLabel={`${depositReconciliationQueue.reconciliationSummary.openCount} open`}
-        resultTone={depositReconciliationQueue.reconciliationSummary.openCount > 0 ? 'danger' : 'success'}
-        title="Partner bank deposit reconciliation queue"
-      >
+      {queueView === 'reconciliation' ? (
+        <FinanceTablePanel
+          className="admin-mt-16"
+          description="These deposits are already executed. They need bank evidence matching, not another approval or another wallet/GL posting."
+          grouped
+          id="partner-bank-deposit-reconciliation"
+          resultLabel={`${depositReconciliationQueue.reconciliationSummary.openCount} open`}
+          resultTone={depositReconciliationQueue.reconciliationSummary.openCount > 0 ? 'danger' : 'success'}
+          title="Partner bank deposit reconciliation queue"
+        >
         <FinanceDataTable
           emptyMessage="Every executed Partner bank deposit is fully reconciled to imported bank evidence."
           headers={['Partner', 'Transfer reference', 'Remaining', 'SLA', 'Review owner', 'Executed', 'Action']}
@@ -379,17 +406,19 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             );
           })}
         </FinanceDataTable>
-      </FinanceTablePanel>
+        </FinanceTablePanel>
+      ) : null}
 
-      <FinanceTablePanel
-        className="admin-mt-16"
-        description="The maker records bank evidence and the requested balance allocation. A different finance approver executes the deposit atomically into the Partner wallet, balanced GL, and audit trail."
-        grouped
-        id="partner-bank-deposit-requests"
-        resultLabel={`${queue.summary.partnerBankDepositPendingCount} pending`}
-        resultTone={queue.summary.partnerBankDepositPendingCount > 0 ? 'warning' : 'success'}
-        title="Partner bank deposit approval queue"
-      >
+      {queueView === 'approvals' ? (
+        <FinanceTablePanel
+          className="admin-mt-16"
+          description="The maker records bank evidence and the requested balance allocation. A different finance approver executes the deposit atomically into the Partner wallet, balanced GL, and audit trail."
+          grouped
+          id="partner-bank-deposit-requests"
+          resultLabel={`${queue.summary.partnerBankDepositPendingCount} pending`}
+          resultTone={queue.summary.partnerBankDepositPendingCount > 0 ? 'warning' : 'success'}
+          title="Partner bank deposit approval queue"
+        >
         <FinanceDataTable
           emptyMessage="No Partner bank deposit request is waiting for approval."
           headers={['Partner', 'Bank evidence', 'Amount', 'Allocation preview', 'Requested by', 'Decision']}
@@ -450,16 +479,18 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             </tr>
           ))}
         </FinanceDataTable>
-      </FinanceTablePanel>
+        </FinanceTablePanel>
+      ) : null}
 
-      <FinanceTablePanel
-        className="admin-mt-16"
-        grouped
-        description={`Open withdrawal exposure is ${formatMoney(queue.summary.withdrawalOpenAmount, queue.summary.withdrawalCurrency)}. Each row opens the filtered payout workflow.`}
-        resultLabel={`${queue.summary.withdrawalOpenCount} open`}
-        resultTone={queue.summary.withdrawalOpenCount > 0 ? 'warning' : 'success'}
-        title="Partner withdrawal work queue"
-      >
+      {queueView === 'approvals' ? (
+        <FinanceTablePanel
+          className="admin-mt-16"
+          grouped
+          description={`Open withdrawal exposure is ${formatMoney(queue.summary.withdrawalOpenAmount, queue.summary.withdrawalCurrency)}. Each row opens the filtered payout workflow.`}
+          resultLabel={`${queue.summary.withdrawalOpenCount} open`}
+          resultTone={queue.summary.withdrawalOpenCount > 0 ? 'warning' : 'success'}
+          title="Partner withdrawal work queue"
+        >
         <FinanceDataTable
           emptyMessage="No Partner withdrawal requires finance action."
           headers={['Partner', 'Status', 'Amount', 'Bank account', 'Requested', 'Action']}
@@ -490,17 +521,19 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             </tr>
           ))}
         </FinanceDataTable>
-      </FinanceTablePanel>
+        </FinanceTablePanel>
+      ) : null}
 
-      <FinanceTablePanel
-        className="admin-mt-16"
-        description="Each request preserves the maker's accounting preview. Approval recalculates the live balance and refuses stale requests before writing wallet or GL entries."
-        grouped
-        id="wallet-adjustment-requests"
-        resultLabel={`${queue.summary.walletAdjustmentPendingCount} pending`}
-        resultTone={queue.summary.walletAdjustmentPendingCount > 0 ? 'warning' : 'success'}
-        title="Wallet adjustment approval queue"
-      >
+      {queueView === 'approvals' ? (
+        <FinanceTablePanel
+          className="admin-mt-16"
+          description="Each request preserves the maker's accounting preview. Approval recalculates the live balance and refuses stale requests before writing wallet or GL entries."
+          grouped
+          id="wallet-adjustment-requests"
+          resultLabel={`${queue.summary.walletAdjustmentPendingCount} pending`}
+          resultTone={queue.summary.walletAdjustmentPendingCount > 0 ? 'warning' : 'success'}
+          title="Wallet adjustment approval queue"
+        >
         <FinanceDataTable
           emptyMessage="No manual wallet adjustment request is waiting for approval."
           headers={['Owner', 'Request', 'Amount', 'Balance preview', 'Requested by', 'Evidence', 'Decision']}
@@ -550,20 +583,23 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
             </tr>
           ))}
         </FinanceDataTable>
-      </FinanceTablePanel>
+        </FinanceTablePanel>
+      ) : null}
 
-      <AdminSection
-        actions={<AdminFormControlLink className="button-secondary" href="/wallet-adjustments?view=records">Open wallet records</AdminFormControlLink>}
-        className="admin-mt-16"
-        description="Executed requests remain available as immutable wallet, GL, approval, and audit evidence."
-        statusLabel={`${queue.walletAdjustmentEvidence.last7dCount} completed in 7 days`}
-        statusTone="neutral"
-        title="Wallet adjustment records"
-      >
-        <p className="muted">
-          Use Wallet Adjustments to inspect request ID, approving admin, before and after balance, accounting impact, attachment, and reversal evidence. Completed records stay outside the pending queue.
-        </p>
-      </AdminSection>
+      {queueView === 'approvals' ? (
+        <AdminSection
+          actions={<AdminFormControlLink className="button-secondary" href="/wallet-adjustments?view=records">Open wallet records</AdminFormControlLink>}
+          className="admin-mt-16"
+          description="Executed requests remain available as immutable wallet, GL, approval, and audit evidence."
+          statusLabel={`${queue.walletAdjustmentEvidence.last7dCount} completed in 7 days`}
+          statusTone="neutral"
+          title="Wallet adjustment records"
+        >
+          <p className="muted">
+            Use Wallet Adjustments to inspect request ID, approving admin, before and after balance, accounting impact, attachment, and reversal evidence. Completed records stay outside the pending queue.
+          </p>
+        </AdminSection>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -581,8 +617,20 @@ function financeApprovalConfirmationAction(value: string): FinanceApprovalConfir
     : null;
 }
 
-function financeApprovalQueueHref(take: number) {
-  return take === 25 ? '/finance-tax/approval-queue?take=25' : '/finance-tax/approval-queue';
+function readFinanceApprovalQueueView(
+  params: Record<string, string | string[] | undefined>,
+  requestedReconciliationAssignment: boolean,
+): FinanceApprovalQueueView {
+  if (requestedReconciliationAssignment) return 'reconciliation';
+  return readSearchParam(params.view) === 'reconciliation' ? 'reconciliation' : 'approvals';
+}
+
+function financeApprovalQueueHref(take: number, view: FinanceApprovalQueueView) {
+  const search = new URLSearchParams();
+  if (view === 'reconciliation') search.set('view', 'reconciliation');
+  if (take === 25) search.set('take', '25');
+  const query = search.toString();
+  return query ? `/finance-tax/approval-queue?${query}` : '/finance-tax/approval-queue';
 }
 
 function financeApprovalConfirmHref(
@@ -596,7 +644,11 @@ function financeApprovalConfirmHref(
 }
 
 function depositReconciliationAssignmentHref(take: number, requestId: string) {
-  const search = new URLSearchParams({ confirm: 'assign-deposit-reconciliation', requestId });
+  const search = new URLSearchParams({
+    confirm: 'assign-deposit-reconciliation',
+    requestId,
+    view: 'reconciliation',
+  });
   if (take === 25) search.set('take', '25');
   return `/finance-tax/approval-queue?${search.toString()}`;
 }
