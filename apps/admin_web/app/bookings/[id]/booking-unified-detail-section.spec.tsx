@@ -104,6 +104,38 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup.match(/is-secondary/g)).toHaveLength(7);
   });
 
+  it('separates the command summary from people and activity detail', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture(),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 3,
+    });
+
+    const summaryMarkup = normalizedText(
+      renderToStaticMarkup(
+        <BookingUnifiedDetailSection unifiedDetail={unifiedDetail} view="summary" />,
+      ),
+    );
+    const detailMarkup = normalizedText(
+      renderToStaticMarkup(
+        <BookingUnifiedDetailSection unifiedDetail={unifiedDetail} view="details" />,
+      ),
+    );
+
+    expect(summaryMarkup).toContain('Unified booking detail');
+    expect(summaryMarkup).not.toContain('Customer detail');
+    expect(summaryMarkup).not.toContain('Matched Partner detail');
+    expect(summaryMarkup).not.toContain('Finance detail');
+    expect(detailMarkup).not.toContain('Unified booking detail');
+    expect(detailMarkup).toContain('Customer detail');
+    expect(detailMarkup).toContain('Matched Partner detail');
+    expect(detailMarkup).toContain('Finance detail');
+  });
+
   it('summarizes live customer location against the reservation address snapshot', () => {
     const unifiedDetail = bookingUnifiedDetail({
       addressLine: 'Cau Giay, Ha Noi',

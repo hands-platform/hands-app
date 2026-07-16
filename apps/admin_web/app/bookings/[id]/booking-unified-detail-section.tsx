@@ -17,55 +17,69 @@ import type {
 
 export type BookingUnifiedDetailSectionProps = {
   readonly unifiedDetail: BookingUnifiedDetail;
+  readonly view?: BookingUnifiedDetailSectionView;
 };
 
-export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDetailSectionProps) {
+export type BookingUnifiedDetailSectionView = 'all' | 'details' | 'summary';
+
+export function BookingUnifiedDetailSection({
+  unifiedDetail,
+  view = 'all',
+}: BookingUnifiedDetailSectionProps) {
+  const showSummary = view !== 'details';
+  const showDetails = view !== 'summary';
+
   return (
     <>
-      <AdminSection
-        actions={
-          <StatusBadgeFromPillClass pillClass={unifiedDetail.statusTone}>
-            {unifiedDetail.statusLabel}
-          </StatusBadgeFromPillClass>
-        }
-        className="admin-mb-16 booking-unified-summary-card"
-        description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."
-        id="booking-unified-detail"
-        title="Unified booking detail"
-      >
+      {showSummary ? (
+        <AdminSection
+          actions={
+            <StatusBadgeFromPillClass pillClass={unifiedDetail.statusTone}>
+              {unifiedDetail.statusLabel}
+            </StatusBadgeFromPillClass>
+          }
+          className="admin-mb-16 booking-unified-summary-card"
+          description="One booking record for realtime, in-progress, completed, and post-match cancellation updates."
+          id="booking-unified-detail"
+          title="Unified booking detail"
+        >
+          <AdminTraceSummary
+            className="admin-mt-12"
+            metrics={unifiedDetail.summaryCards.map((card) => ({
+              detail: card.helper,
+              href: card.href,
+              label: card.label,
+              value: card.value,
+            }))}
+          />
+        </AdminSection>
+      ) : null}
 
-        <AdminTraceSummary
-          className="admin-mt-12"
-          metrics={unifiedDetail.summaryCards.map((card) => ({
-            detail: card.helper,
-            href: card.href,
-            label: card.label,
-            value: card.value,
-          }))}
-        />
-      </AdminSection>
+      {showDetails ? (
+        <>
+          <BookingUnifiedRows
+            helper="Customer profile, service address, live location, and service request."
+            id="booking-customer-detail"
+            rows={unifiedDetail.customerRows}
+            title="Customer detail"
+          />
 
-      <BookingUnifiedRows
-        helper="Customer profile, service address, live location, and service request."
-        id="booking-customer-detail"
-        rows={unifiedDetail.customerRows}
-        title="Customer detail"
-      />
+          <BookingUnifiedRows
+            helper="Requested, matched, participating Partner, and location checkpoints."
+            id="booking-matched-partner-detail"
+            rows={unifiedDetail.matchedPartnerRows}
+            title="Matched Partner detail"
+          />
 
-      <BookingUnifiedRows
-        helper="Requested, matched, participating Partner, and location checkpoints."
-        id="booking-matched-partner-detail"
-        rows={unifiedDetail.matchedPartnerRows}
-        title="Matched Partner detail"
-      />
-
-      <BookingUnifiedRows
-        helper="Closeout, charge, payout, fee, tax, and wallet impact."
-        id="booking-finance-system-detail"
-        rows={unifiedDetail.financeRows}
-        title="Finance detail"
-        variant="finance"
-      />
+          <BookingUnifiedRows
+            helper="Closeout, charge, payout, fee, tax, and wallet impact."
+            id="booking-finance-system-detail"
+            rows={unifiedDetail.financeRows}
+            title="Finance detail"
+            variant="finance"
+          />
+        </>
+      ) : null}
     </>
   );
 }

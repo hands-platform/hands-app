@@ -226,6 +226,7 @@ type PageProps = {
 
 export type BookingDetailWorkspace = 'overview' | 'records' | 'diagnostics';
 export type BookingDetailDiagnosticsView = 'history' | 'settlement';
+export type BookingDetailOverviewView = 'command' | 'activity';
 
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
@@ -288,6 +289,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const detailSearchParams = searchParams ? await searchParams : {};
   const requestedWorkspace = readBookingDetailWorkspace(detailSearchParams);
   const diagnosticsView = readBookingDetailDiagnosticsView(detailSearchParams);
+  const overviewView = readBookingDetailOverviewView(detailSearchParams);
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canViewDeveloperDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
   const detailWorkspace =
@@ -872,7 +874,33 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
       ) : null}
 
       {detailWorkspace === 'overview' ? (
-        <BookingUnifiedDetailSection {...unifiedDetailProps} />
+        <AdminSection
+          description="Current command state and retained activity evidence are separated for faster review."
+          id="booking-overview-mode-selector"
+          title="Overview mode"
+        >
+          <AdminFilterChipGroup ariaLabel="Booking overview modes">
+            <AdminFormControlLink
+              aria-current={overviewView === 'command' ? 'page' : undefined}
+              href={`/bookings/${booking.id}`}
+            >
+              Command
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={overviewView === 'activity' ? 'page' : undefined}
+              href={`/bookings/${booking.id}?overview=activity`}
+            >
+              People &amp; activity
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
+
+      {detailWorkspace === 'overview' ? (
+        <BookingUnifiedDetailSection
+          {...unifiedDetailProps}
+          view={overviewView === 'command' ? 'summary' : 'details'}
+        />
       ) : null}
 
       {detailWorkspace === 'records' ? (
@@ -887,7 +915,7 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         />
       ) : null}
 
-      {detailWorkspace === 'overview' ? (
+      {detailWorkspace === 'overview' && overviewView === 'activity' ? (
         <BookingDetailChatTranscriptSection
           archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
           messages={visibleMessages}
@@ -895,22 +923,24 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         />
       ) : null}
 
-      {detailWorkspace === 'overview' ? (
+      {detailWorkspace === 'overview' && overviewView === 'activity' ? (
         <BookingDetailLifecycleListSection booking={booking} />
       ) : null}
 
-      {detailWorkspace === 'overview' && showPostMatchDecisionBelowLifecycle && (
+      {detailWorkspace === 'overview' && overviewView === 'command' && showPostMatchDecisionBelowLifecycle && (
         <BookingDetailPostMatchDecisionSection
           bookingId={booking.id}
           outcomeReview={outcomeReview}
         />
       )}
 
-      {detailWorkspace === 'overview' ? (
+      {detailWorkspace === 'overview' && overviewView === 'command' ? (
         <BookingActionStatusSections {...actionStatusSectionsProps} />
       ) : null}
 
-      {detailWorkspace === 'overview' && sectionVisibility.showCloseoutReadiness && (
+      {detailWorkspace === 'overview' &&
+      overviewView === 'command' &&
+      sectionVisibility.showCloseoutReadiness && (
         <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
       )}
 
@@ -1047,6 +1077,13 @@ export function readBookingDetailDiagnosticsView(
 ): BookingDetailDiagnosticsView {
   const rawDiagnostics = Array.isArray(params.diagnostics) ? params.diagnostics[0] : params.diagnostics;
   return rawDiagnostics === 'settlement' ? 'settlement' : 'history';
+}
+
+export function readBookingDetailOverviewView(
+  params: Record<string, string | string[] | undefined>,
+): BookingDetailOverviewView {
+  const rawOverview = Array.isArray(params.overview) ? params.overview[0] : params.overview;
+  return rawOverview === 'activity' ? 'activity' : 'command';
 }
 
 async function loadBookingDetailPageData(

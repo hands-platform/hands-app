@@ -6,6 +6,7 @@ import { adminGet } from '../../../lib/admin-api';
 import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
 import BookingDetailPage, {
   readBookingDetailDiagnosticsView,
+  readBookingDetailOverviewView,
   readBookingDetailWorkspace,
 } from './page';
 
@@ -202,6 +203,14 @@ describe('BookingDetailPage data loading', () => {
     expect(readBookingDetailDiagnosticsView({ diagnostics: 'unknown' })).toBe('history');
   });
 
+  it('defaults the overview to command and accepts only the activity subview explicitly', () => {
+    expect(readBookingDetailOverviewView({})).toBe('command');
+    expect(readBookingDetailOverviewView({ overview: 'command' })).toBe('command');
+    expect(readBookingDetailOverviewView({ overview: 'activity' })).toBe('activity');
+    expect(readBookingDetailOverviewView({ overview: ['activity', 'command'] })).toBe('activity');
+    expect(readBookingDetailOverviewView({ overview: 'unknown' })).toBe('command');
+  });
+
   it('loads marketplace provider candidates only for non-terminal booking details', () => {
     expect(shouldLoadBookingDetailMarketplaceProviders(null)).toBe(false);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'COMPLETED' } as never)).toBe(false);
@@ -240,7 +249,12 @@ describe('BookingDetailPage data loading', () => {
     expect(source).toContain('id="booking-workspace-selector"');
     expect(source).toContain('ariaLabel="Booking detail workspaces"');
     expect(source).toContain('id="booking-diagnostics-workspace-selector"');
+    expect(source).toContain('id="booking-overview-mode-selector"');
+    expect(source).toContain('ariaLabel="Booking overview modes"');
     expect(source).toContain("detailWorkspace === 'overview'");
+    expect(source).toContain("overviewView === 'command'");
+    expect(source).toContain("overviewView === 'activity'");
+    expect(source).toContain("view={overviewView === 'command' ? 'summary' : 'details'}");
     expect(source).toContain("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure");
     expect(source).toContain("diagnosticsView === 'history'");
     expect(source).toContain("diagnosticsView === 'settlement'");
