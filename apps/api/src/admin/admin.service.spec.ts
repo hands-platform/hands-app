@@ -2284,7 +2284,7 @@ describe('AdminService query orchestration', () => {
     );
   });
 
-  it('filters chat archive rows server-side and clamps requested limits', async () => {
+  it('filters chat archive rows server-side and returns only the latest message preview', async () => {
     const prisma = {
       booking: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -2344,7 +2344,10 @@ describe('AdminService query orchestration', () => {
           chatRoom: {
             select: expect.objectContaining({
               _count: { select: { messages: true } },
-              messages: expect.objectContaining({ take: 25 }),
+              messages: expect.objectContaining({
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+              }),
             }),
           },
         }),
@@ -2352,6 +2355,23 @@ describe('AdminService query orchestration', () => {
         take: 50,
       }),
     );
+  });
+
+  it('allows the retained missing-room API filter without contradictory chat-room predicates', async () => {
+    const prisma = {
+      booking: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listChatArchive({ status: 'missing-room' })).resolves.toEqual([]);
+
+    const query = prisma.booking.findMany.mock.calls[0]?.[0] as {
+      where: { AND: unknown[] };
+    };
+    expect(query.where.AND).toContainEqual({ chatRoom: { is: null } });
+    expect(query.where.AND).not.toContainEqual({ chatRoom: { isNot: null } });
   });
 
   it('counts chat archive summaries with the same server filters', async () => {

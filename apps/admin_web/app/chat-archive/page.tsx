@@ -5,15 +5,9 @@ import {
   Filter,
   MessageSquare,
   User,
-  Users,
   Wrench,
   X,
 } from 'lucide-react';
-import {
-  AdminChatWindow,
-  type AdminChatWindowMessage,
-  type AdminChatWindowMessageRole,
-} from '../../components/admin-chat-window';
 import {
   AdminDataTable,
   AdminTablePaginationFooter,
@@ -22,9 +16,6 @@ import {
 import { AdminEmptyState } from '../../components/admin-empty-state';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
-import { AdminTraceSummary } from '../../components/admin-overview-card';
-import { AdminStageList } from '../../components/admin-stage-item';
-import { AdminDisclosureCard, AdminSection } from '../../components/admin-surface';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import {
   AdminFormControlButton,
@@ -38,7 +29,7 @@ import {
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { DateTimeText } from '../../components/date-time-text';
-import { StatusBadge, StatusBadgeFromPillClass } from '../../components/status-badge';
+import { StatusBadgeFromPillClass } from '../../components/status-badge';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
@@ -56,16 +47,8 @@ import {
 } from './chat-archive-page-model';
 
 type ChatArchiveSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type ChatArchiveSenderRole = 'ADMIN' | 'CUSTOMER' | 'PROVIDER' | 'SYSTEM';
 
-const CHAT_REPAIR_HEADERS = [
-  'Booking',
-  'Issue',
-  'Customer',
-  'Partner',
-  'Service',
-  'Operator action',
-  'Open',
-] as const;
 const CHAT_ARCHIVE_INDEX_HEADERS = [
   'Booking',
   'Status',
@@ -99,12 +82,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     archiveSummaryHref,
     dateFilters,
     filters,
-    repairBookingsHref,
   } = buildChatArchiveLoadPlan(params);
-  const [bookings, archiveSummaryResponse, allBookings] = await Promise.all([
+  const [bookings, archiveSummaryResponse] = await Promise.all([
     adminGet<AdminBookingDetail[]>(archiveHref, []),
     adminGet<unknown>(archiveSummaryHref, null),
-    adminGet<AdminBookingDetail[]>(repairBookingsHref, []),
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
   const pageSummary = buildChatArchiveSummary(rooms);
@@ -116,13 +97,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     totalRooms === 0 || rooms.length === 0
       ? 0
       : Math.min(totalRooms, (activePage - 1) * archivePageSize + rooms.length);
-  const repairRows = filterChatRepairRows(
-    buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
-    filters,
-    dateFilters,
-  );
-  const repairSummary = buildChatRepairSummary(repairRows);
-  const visibleRepairRows = repairRows.slice(0, 30);
   const messageCsvHref = buildCsvDataHref(
     rooms.flatMap((room) =>
       room.messages.map((message) => ({
@@ -164,13 +138,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             <MessageSquare aria-hidden="true" size={16} />
             Audit log
           </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/customers">
-            <User aria-hidden="true" size={16} />
-            Customers
-          </AdminFormControlLink>
-          <AdminFormControlLink className="button-secondary" href="/partners">
-            <Users aria-hidden="true" size={16} />
-            Partners
+          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat-repair">
+            <Wrench aria-hidden="true" size={16} />
+            Chat repair
           </AdminFormControlLink>
         </>
       }
@@ -213,13 +183,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           helper: 'Chat room exists but no message',
         },
         {
-          label: 'Missing rooms',
-          value: repairSummary.missingRooms.toString(),
-          kind: 'risk',
-          scope: 'Needs action',
-          helper: 'Matched booking needs a chat room',
-        },
-        {
           label: 'Latest message',
           value: 'None',
           valueDateTimeFallback: 'None',
@@ -258,7 +221,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               { label: 'Completed', value: 'completed' },
               { label: 'Cancelled / expired / refunded', value: 'closed' },
               { label: 'Room without messages', value: 'no-message' },
-              { label: 'Matched without room', value: 'missing-room' },
             ]}
           />
           <AdminFormSelect
@@ -311,7 +273,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               href={messageCsvHref}
             >
               <Download aria-hidden="true" size={16} />
-              Export evidence CSV
+              Export page preview CSV
             </AdminFormControlLink>
             <span className="muted">
               {rooms.length} room(s), {summary.messageCount} message(s)
@@ -326,122 +288,8 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </AdminFilterPanel>
 
       <AdminTableSection
-        actions={
-          <AdminFormControlLink className="button-secondary" href="/bookings?view=chat-repair">
-            <Wrench aria-hidden="true" size={16} />
-            Booking chat repair
-          </AdminFormControlLink>
-        }
         className="admin-mb-16"
-        description="Matched and completed bookings should have retained chat evidence. Use this audit queue to find missing rooms or rooms where no message has been stored yet."
-        title="Chat integrity repair queue"
-      >
-        <AdminTraceSummary
-          className="admin-mt-12"
-          metrics={[
-            {
-              key: 'repair-rows',
-              label: 'Repair rows',
-              value: repairRows.length,
-              detail: dateFilters.label,
-            },
-            {
-              key: 'missing-room',
-              label: 'Missing room',
-              value: repairSummary.missingRooms,
-              detail: 'Matched booking has no room.',
-            },
-            {
-              key: 'empty-room',
-              label: 'Empty room',
-              value: repairSummary.emptyRooms,
-              detail: 'Room exists with no retained message.',
-            },
-            {
-              key: 'completed-affected',
-              label: 'Completed affected',
-              value: repairSummary.completedRows,
-              detail: 'Completed work needing archive confirmation.',
-            },
-          ]}
-        />
-        {repairRows.length ? (
-          <AdminTableScroll>
-            <AdminDataTable emptyMessage={null} headers={CHAT_REPAIR_HEADERS} rowCount={visibleRepairRows.length}>
-              {visibleRepairRows.map((row) => (
-                <tr key={`${row.booking.id}-${row.issue}`}>
-                  <td>
-                    <strong>{shortId(row.booking.id)}</strong>
-                    <p className="muted">
-                      <DateTimeText value={row.booking.updatedAt ?? row.booking.createdAt} />
-                    </p>
-                  </td>
-                  <td>
-                    <StatusBadgeFromPillClass pillClass={row.pillClass}>{row.issue}</StatusBadgeFromPillClass>
-                    <p className="muted">{row.detail}</p>
-                  </td>
-                  <td>
-                    <ChatArchivePersonCell
-                      avatarStatus={row.customerAvatarStatus}
-                      href={row.customerId ? `/customers/${row.customerId}#chat-history` : null}
-                      label={row.customerName}
-                      phone={row.customerPhone}
-                    />
-                  </td>
-                  <td>
-                    <ChatArchivePersonCell
-                      avatarStatus={row.partnerAvatarStatus}
-                      href={row.partnerId ? `/partners/${row.partnerId}#booking-chat-records` : null}
-                      label={row.partnerName}
-                      phone={row.partnerPhone}
-                      variant="partner"
-                    />
-                  </td>
-                  <td>{row.serviceLabel}</td>
-                  <td>{row.operatorAction}</td>
-                  <td>
-                    <div className="actions">
-                      <AdminFormControlLink
-                        className="button-secondary chat-inline-action"
-                        href={`/bookings/${row.booking.id}#chat`}
-                      >
-                        <CalendarCheck aria-hidden="true" size={14} />
-                        Booking
-                      </AdminFormControlLink>
-                      {row.customerId ? (
-                        <AdminFormControlLink
-                          className="button-secondary chat-inline-action"
-                          href={`/customers/${row.customerId}#chat-history`}
-                        >
-                          <User aria-hidden="true" size={14} />
-                          Customer
-                        </AdminFormControlLink>
-                      ) : null}
-                      {row.partnerId ? (
-                        <AdminFormControlLink
-                          className="button-secondary chat-inline-action"
-                          href={`/partners/${row.partnerId}#booking-chat-records`}
-                        >
-                          <Briefcase aria-hidden="true" size={14} />
-                          Partner
-                        </AdminFormControlLink>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </AdminDataTable>
-          </AdminTableScroll>
-        ) : (
-          <p className="muted admin-mt-12">
-            No chat repair row matches this filter.
-          </p>
-        )}
-      </AdminTableSection>
-
-      <AdminTableSection
-        className="admin-mb-16"
-        description="One row per retained booking chat room. The list loads a bounded message preview; open the booking, customer, or Partner detail for full operational context before making an admin decision."
+        description="One row per retained booking chat room. The list loads only the latest message timestamp; open the booking Activity workspace for the complete retained conversation."
         statusLabel={`${rooms.length} row(s)`}
         statusTone="info"
         title="Chat evidence index"
@@ -494,14 +342,14 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <div className="actions">
                     <AdminFormControlLink
                       className="button-secondary chat-inline-action"
-                      href={`#${chatRoomDomId(room.roomId)}`}
+                      href={`/bookings/${room.booking.id}?overview=activity#booking-chat-history`}
                     >
                       <MessageSquare aria-hidden="true" size={14} />
                       Chat
                     </AdminFormControlLink>
                     <AdminFormControlLink
                       className="button-secondary chat-inline-action"
-                      href={`/bookings/${room.booking.id}#chat`}
+                      href={`/bookings/${room.booking.id}?overview=activity#booking-chat-history`}
                     >
                       <CalendarCheck aria-hidden="true" size={14} />
                       Booking
@@ -543,44 +391,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         />
       </AdminTableSection>
 
-      <AdminSection
-        description="Open a preview here for quick audit triage. Full retained chat stays available from the connected booking, customer, and Partner detail pages."
-        statusLabel="Retained for review"
-        statusTone="info"
-        title="Chat window previews"
-      >
-        <AdminStageList className="admin-mt-16 chat-transcript-list">
-          {rooms.slice(0, 12).map((room) => (
-            <AdminDisclosureCard
-              className="chat-transcript-room admin-chat-transcript-disclosure"
-              id={chatRoomDomId(room.roomId)}
-              key={`${room.roomId}-messages`}
-              open={rooms.length === 1}
-            >
-              <summary className="admin-chat-transcript-summary">
-                <div>
-                  <h3>
-                    {room.customerName} / {room.partnerName}
-                  </h3>
-                  <p className="muted">
-                    Booking {shortId(room.booking.id)} / {room.booking.status} / {room.serviceLabel}
-                  </p>
-                </div>
-                <StatusBadge tone="info">
-                  {room.messages.length} shown / {room.messageCount} total
-                </StatusBadge>
-              </summary>
-              <AdminChatWindow
-                avatarLabel={room.customerName}
-                className="admin-mt-12"
-                messages={chatArchiveWindowMessages(room.messages)}
-                subtitle={`${room.partnerName} / ${room.serviceLabel}`}
-                title={room.customerName}
-              />
-            </AdminDisclosureCard>
-          ))}
-        </AdminStageList>
-      </AdminSection>
     </AdminPageTemplate>
   );
 }
@@ -609,8 +419,6 @@ function chatArchiveStatusFilterLabel(status: string) {
       return 'Cancelled / expired / refunded';
     case 'no-message':
       return 'Room without messages';
-    case 'missing-room':
-      return 'Matched without room';
     default:
       return status;
   }
@@ -706,7 +514,6 @@ function filterChatRooms(
     if (filters.status === 'completed' && room.booking.status !== 'COMPLETED') return false;
     if (filters.status === 'closed' && !isClosedStatus(room.booking.status)) return false;
     if (filters.status === 'no-message' && room.messageCount > 0) return false;
-    if (filters.status === 'missing-room') return false;
     return true;
   });
 }
@@ -762,105 +569,6 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
   };
 }
 
-function buildChatRepairRows(
-  bookings: AdminBookingDetail[],
-  archiveRows: ReturnType<typeof buildChatRoomRow>[],
-) {
-  const archiveByBookingId = new Map(archiveRows.map((row) => [row.booking.id, row]));
-  return bookings
-    .filter((booking) => shouldHaveChatArchive(booking.status))
-    .map((booking) => {
-      const archive = archiveByBookingId.get(booking.id);
-      const messageCount = archive?.messageCount ?? bookingChatMessageCount(booking);
-      if (booking.chatRoom && messageCount > 0) return null;
-      const customerName =
-        booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
-      const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
-      const partner = booking.selectedProvider ?? booking.preferredProvider;
-      const partnerName = partnerDisplayText(
-        partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No Partner',
-      );
-      const partnerPhone = partner?.user?.phone ?? 'No phone';
-      const missingRoom = !booking.chatRoom;
-
-      return {
-        booking,
-        issue: missingRoom ? 'Missing room' : 'No message',
-        detail: missingRoom
-          ? 'Matched booking should create a customer and Partner chat room.'
-          : 'Chat room exists, but no retained message is stored yet.',
-        operatorAction: missingRoom
-          ? 'Open booking detail and verify chat creation handoff.'
-          : 'Confirm whether the first service message was sent or needs follow-up.',
-        customerId: booking.customerProfileId,
-        customerName,
-        customerPhone,
-        customerAvatarStatus: bookingCustomerChatAvatarStatus(booking),
-        partnerId: partner?.id,
-        partnerName,
-        partnerPhone,
-        partnerAvatarStatus: bookingPartnerChatAvatarStatus(booking),
-        serviceLabel: bookingServiceLabel(booking),
-        pillClass: missingRoom ? 'pill-danger' : 'pill-warn',
-      };
-    })
-    .filter((row): row is NonNullable<typeof row> => Boolean(row))
-    .sort(
-      (left, right) =>
-        dateMs(right.booking.updatedAt ?? right.booking.createdAt) -
-        dateMs(left.booking.updatedAt ?? left.booking.createdAt),
-    );
-}
-
-function filterChatRepairRows(
-  rows: ReturnType<typeof buildChatRepairRows>,
-  filters: ChatArchiveFilters,
-  dateFilters: DetailDateFilters,
-) {
-  const query = filters.q.toLowerCase();
-  return rows.filter((row) => {
-    const rowInDate =
-      isWithinDetailDateFilter(row.booking.createdAt, dateFilters) ||
-      isWithinDetailDateFilter(row.booking.updatedAt, dateFilters);
-    if (!rowInDate) return false;
-    if (filters.status === 'active' && !isActiveStatus(row.booking.status)) return false;
-    if (filters.status === 'completed' && row.booking.status !== 'COMPLETED') return false;
-    if (filters.status === 'closed' && !isClosedStatus(row.booking.status)) return false;
-    if (filters.status === 'no-message' && row.issue !== 'No message') return false;
-    if (filters.status === 'missing-room' && row.issue !== 'Missing room') return false;
-    if (filters.sender) return false;
-    if (!query) return true;
-    return [
-      row.booking.id,
-      row.booking.status,
-      row.customerId,
-      row.customerName,
-      row.customerPhone,
-      row.partnerId,
-      row.partnerName,
-      row.partnerPhone,
-      row.serviceLabel,
-      row.issue,
-      row.detail,
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(query);
-  });
-}
-
-function buildChatRepairSummary(rows: ReturnType<typeof buildChatRepairRows>) {
-  return {
-    missingRooms: rows.filter((row) => row.issue === 'Missing room').length,
-    emptyRooms: rows.filter((row) => row.issue === 'No message').length,
-    completedRows: rows.filter((row) => row.booking.status === 'COMPLETED').length,
-  };
-}
-
-function shouldHaveChatArchive(status: string) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(status);
-}
-
 function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {
   const messages = rooms.flatMap((room) => room.messages);
   const messageCount = rooms.reduce((sum, room) => sum + room.messageCount, 0);
@@ -880,20 +588,7 @@ function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {
   };
 }
 
-function chatArchiveWindowMessages(messages: readonly AdminChatMessage[]): AdminChatWindowMessage[] {
-  return messages.map((message) => {
-    const role = senderRole(message);
-    return {
-      body: message.body,
-      createdDateTime: message.createdAt,
-      id: message.id,
-      role,
-      senderLabel: senderLabel(message),
-    };
-  });
-}
-
-function senderRole(message: AdminChatMessage): AdminChatWindowMessageRole {
+function senderRole(message: AdminChatMessage): ChatArchiveSenderRole {
   const roles = message.sender?.roles ?? [];
   if (roles.includes('CUSTOMER')) return 'CUSTOMER';
   if (roles.includes('PROVIDER')) return 'PROVIDER';
@@ -952,10 +647,6 @@ function statusPillClass(status: string) {
   if (isActiveStatus(status)) return 'pill-info';
   if (isClosedStatus(status)) return 'pill-warn';
   return 'pill-neutral';
-}
-
-function chatRoomDomId(roomId: string) {
-  return `chat-room-${roomId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 }
 
 function dateMs(value?: string | null) {

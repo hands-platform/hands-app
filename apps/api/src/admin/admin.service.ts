@@ -450,7 +450,7 @@ const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;
 const ADMIN_BOOKING_LIST_LIMIT = 50;
 const ADMIN_CALENDAR_EVENT_LIST_LIMIT = 200;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
-const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 25;
+const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 1;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
 const ADMIN_OPERATOR_PASSWORD_MIN_LENGTH = 8;
@@ -7947,7 +7947,7 @@ export class AdminService {
             id: true,
             _count: { select: { messages: true } },
             messages: {
-              orderBy: { createdAt: 'asc' },
+              orderBy: { createdAt: 'desc' },
               take: ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT,
               select: {
                 id: true,
@@ -18522,9 +18522,10 @@ function adminChatArchiveListSkip(value: number | string | null | undefined): nu
 }
 
 function adminChatArchiveWhere(query: AdminChatArchiveListQuery): Prisma.BookingWhereInput {
+  const status = normalizeNullable(query.status)?.toLowerCase();
   return {
     AND: [
-      { chatRoom: { isNot: null } },
+      status === 'missing-room' ? null : { chatRoom: { isNot: null } },
       adminBookingListDateWhere(query),
       adminChatArchiveStatusWhere(query.status),
       adminChatArchiveSenderWhere(query.sender),

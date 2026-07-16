@@ -5,7 +5,6 @@ import {
 import { readSearchParam } from '../../lib/date-range';
 
 const CHAT_ARCHIVE_DEFAULT_TAKE = 10;
-const CHAT_REPAIR_BOOKING_DEFAULT_TAKE = 10;
 
 export type ChatArchiveFilters = {
   readonly q: string;
@@ -21,7 +20,6 @@ export type ChatArchiveLoadPlan = {
   readonly archiveSummaryHref: string;
   readonly dateFilters: DetailDateFilters;
   readonly filters: ChatArchiveFilters;
-  readonly repairBookingsHref: string;
 };
 
 export function buildChatArchiveLoadPlan(
@@ -49,7 +47,6 @@ export function buildChatArchiveLoadPlan(
     archiveSummaryHref: buildChatArchiveSummaryApiHref(filters, dateFilters, hasExplicitDateBounds),
     dateFilters,
     filters,
-    repairBookingsHref: buildRepairBookingsApiHref(dateFilters, hasExplicitDateBounds),
   };
 }
 
@@ -59,8 +56,13 @@ export function readChatArchiveFilters(
   return {
     q: readSearchParam(params.q).trim(),
     sender: readSearchParam(params.sender).trim(),
-    status: readSearchParam(params.status).trim(),
+    status: normalizeChatArchiveStatus(readSearchParam(params.status)),
   };
+}
+
+function normalizeChatArchiveStatus(value: string) {
+  const status = value.trim();
+  return ['active', 'completed', 'closed', 'no-message'].includes(status) ? status : '';
 }
 
 function buildChatArchiveApiHref(
@@ -111,13 +113,6 @@ function buildChatArchivePageHref(
   if (activePage > 1) params.set('page', String(activePage));
   const query = params.toString();
   return query ? `/chat-archive?${query}` : '/chat-archive';
-}
-
-function buildRepairBookingsApiHref(dateFilters: DetailDateFilters, hasExplicitDateBounds: boolean) {
-  const params = new URLSearchParams();
-  appendDateParams(params, dateFilters, hasExplicitDateBounds);
-  params.set('take', String(CHAT_REPAIR_BOOKING_DEFAULT_TAKE));
-  return `/admin/bookings?${params.toString()}`;
 }
 
 function readChatArchivePage(value: string | string[] | undefined) {

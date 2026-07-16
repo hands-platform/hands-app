@@ -8,7 +8,6 @@ describe('chat archive page model', () => {
     expect(plan.archivePageSize).toBe(10);
     expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=today&take=10');
     expect(plan.archiveSummaryHref).toBe('/admin/chat-archive/summary?dateRange=today');
-    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=today&take=10');
   });
 
   it('passes search, sender, status, and custom dates through to bounded API requests', () => {
@@ -25,9 +24,6 @@ describe('chat archive page model', () => {
     );
     expect(plan.archiveSummaryHref).toBe(
       '/admin/chat-archive/summary?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&status=completed&sender=partner&q=late',
-    );
-    expect(plan.repairBookingsHref).toBe(
-      '/admin/bookings?dateRange=custom&dateFrom=2026-06-01&dateTo=2026-06-02&take=10',
     );
   });
 
@@ -55,7 +51,13 @@ describe('chat archive page model', () => {
     expect(plan.filters.q).toBe('booking-1');
     expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=all&q=booking-1&take=10');
     expect(plan.archiveSummaryHref).toBe('/admin/chat-archive/summary?dateRange=all&q=booking-1');
-    expect(plan.repairBookingsHref).toBe('/admin/bookings?dateRange=all&take=10');
     expect(plan.archivePageHref(2)).toBe('/chat-archive?q=booking-1&range=all&page=2');
+  });
+
+  it('keeps missing-room repair out of retained-chat evidence filters', () => {
+    const plan = buildChatArchiveLoadPlan({ status: 'missing-room' });
+
+    expect(plan.filters.status).toBe('');
+    expect(plan.archiveHref).toBe('/admin/chat-archive?dateRange=today&take=10');
   });
 });

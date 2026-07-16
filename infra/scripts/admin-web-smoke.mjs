@@ -495,9 +495,8 @@ const pages = [
     markers: [
       'Chat Evidence Search',
       'Chat evidence filters',
-      'Chat integrity repair queue',
       'Chat evidence index',
-      'Chat window previews',
+      'Export page preview CSV',
     ],
   },
   {
@@ -505,12 +504,8 @@ const pages = [
     markers: ['Chat Evidence Search', 'Chat evidence filters', 'Sender', 'Chat evidence index'],
   },
   {
-    path: '/chat-archive?status=missing-room',
-    markers: ['Chat Evidence Search', 'Matched without room', 'Chat integrity repair queue', 'Missing room'],
-  },
-  {
     path: '/chat-archive?status=no-message',
-    markers: ['Chat Evidence Search', 'Room without messages', 'Chat integrity repair queue', 'Empty room'],
+    markers: ['Chat Evidence Search', 'Room without messages', 'Chat evidence index', 'Empty room'],
   },
   {
     path: '/customers?sort=booking-count',

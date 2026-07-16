@@ -24,12 +24,13 @@ describe('ChatArchivePage', () => {
     mockedAdminGet.mockReset();
   });
 
-  it('uses the shared Vuexy trace summary atom for repair queue metrics', () => {
-    expect(pageSource).toContain('AdminTraceSummary');
-    expect(pageSource).not.toContain('<div className="service-trace-summary admin-mt-12">');
+  it('keeps chat repair in the booking operations queue instead of duplicating it', () => {
+    expect(pageSource).toContain('/bookings?view=chat-repair');
+    expect(pageSource).not.toContain('AdminTraceSummary');
+    expect(pageSource).not.toContain('Chat integrity repair queue');
   });
 
-  it('renders retained chat totals separately from bounded preview messages', async () => {
+  it('renders retained chat totals separately from the latest-message list preview', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/chat-archive/summary')) {
         return {
@@ -66,12 +67,12 @@ describe('ChatArchivePage', () => {
     expect(markup).toContain('<span class="metric-card-scope is-record">All loaded records</span>');
     expect(markup).toContain('<span class="metric-card-scope is-live">Current open</span>');
     expect(markup).toContain('<span class="metric-card-scope is-risk">Needs action</span>');
-    expect(markup).toContain('Chat window previews');
-    expect(markup).toContain('2 shown / 42 total');
+    expect(markup).not.toContain('Chat window previews');
+    expect(markup).toContain('/bookings/booking-1?overview=activity#booking-chat-history');
+    expect(markup).toContain('Export page preview CSV');
     expect(markup).toContain('admin-section');
-    expect(markup).toContain('Chat integrity repair queue');
     expect(markup).toContain('Chat evidence index');
-    expect(markup).toContain('class="card admin-card admin-disclosure chat-transcript-room admin-chat-transcript-disclosure"');
+    expect(markup).not.toContain('admin-chat-transcript-disclosure');
     expect(markup).toContain('vuexy-booking-table-card vuexy-booking-table-group admin-mb-16');
     expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table');
   });
@@ -93,7 +94,7 @@ describe('ChatArchivePage', () => {
     const markup = renderToStaticMarkup(page);
 
     expect(markup).toContain('1 room(s), 42 message(s)');
-    expect(markup).toContain('1 shown / 42 total');
+    expect(markup).toContain('Sender: Partner messages');
   });
 
   it('keeps audit filters on shared AdminForm atoms', async () => {
@@ -168,8 +169,8 @@ describe('ChatArchivePage', () => {
 
   it('uses the shared AdminFormControlLink atom for button-style archive actions', () => {
     expect(pageSource).toContain('AdminFormControlLink');
-    expect(pageSource).toContain('AdminDisclosureCard');
-    expect(pageSource).toContain('AdminStageList');
+    expect(pageSource).not.toContain('AdminDisclosureCard');
+    expect(pageSource).not.toContain('AdminStageList');
     expect(pageSource).not.toContain('<div className="setup-stage-list');
     expect(pageSource).not.toContain('<Link className="button button-secondary"');
     expect(pageSource).not.toContain('className="button button-secondary chat-inline-action"');
@@ -178,7 +179,6 @@ describe('ChatArchivePage', () => {
 
   it('keeps visible chat status chips on shared badge atoms', () => {
     expect(pageSource).toContain('AdminEmptyState');
-    expect(pageSource).toContain('StatusBadge');
     expect(pageSource).toContain('StatusBadgeFromPillClass');
     expect(pageSource).not.toContain('statusBadgeToneFromPillClass');
     expect(pageSource).not.toContain('PillClassBadge');
@@ -202,9 +202,10 @@ describe('ChatArchivePage', () => {
     expect(pageSource).not.toContain('latestMessageAt: latestMessageAt ? formatDate(latestMessageAt)');
   });
 
-  it('passes raw retained chat timestamps to the shared date atom instead of formatting locally', () => {
-    expect(pageSource).toContain('createdDateTime: message.createdAt');
-    expect(pageSource).not.toContain('createdLabel: formatDate(message.createdAt)');
+  it('keeps full transcript rendering in the booking activity workspace', () => {
+    expect(pageSource).toContain('?overview=activity#booking-chat-history');
+    expect(pageSource).not.toContain('AdminChatWindow');
+    expect(pageSource).not.toContain('chatArchiveWindowMessages');
   });
 
   it('uses the shared table pagination footer for the chat evidence index', () => {
