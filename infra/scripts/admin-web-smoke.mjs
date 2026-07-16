@@ -1260,6 +1260,15 @@ const pages = [
     ],
   },
   {
+    path: '/partners?details=all',
+    markers: [
+      'Partners',
+      'Compact list',
+      'List-first partner control view',
+      'Partner operations list',
+    ],
+  },
+  {
     path: '/partners?review=unapproved',
     markers: ['Partners', 'Unapproved Partners', 'Approval-first list'],
   },
