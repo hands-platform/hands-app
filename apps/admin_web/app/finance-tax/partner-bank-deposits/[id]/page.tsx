@@ -67,7 +67,7 @@ export default async function PartnerBankDepositDetailPage({ params, searchParam
           <AdminFormControlLink href="/cash-settlements">Cash debt</AdminFormControlLink>
           <AdminFormControlLink href="/finance-tax/bank-reconciliation">Bank reconciliation</AdminFormControlLink>
           {request.status === 'REQUESTED' ? (
-            <AdminFormControlLink href="/finance-tax/approval-queue#partner-bank-deposit-requests">Review approval</AdminFormControlLink>
+            <AdminFormControlLink href="/finance-tax/approval-queue?view=approvals#partner-bank-deposit-requests">Review approval</AdminFormControlLink>
           ) : null}
         </>
       }

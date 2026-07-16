@@ -89,6 +89,10 @@ describe('Finance Approval Queue actions', () => {
     formData.set('confirmationRequestId', 'deposit-request-1');
     formData.set('assigneeAdminId', 'finance-operator-1');
     formData.set('reason', ' Own overdue bank evidence ');
+    formData.set(
+      'redirectTo',
+      '/finance-tax/approval-queue?view=reconciliation&take=25&confirm=assign-deposit-reconciliation',
+    );
 
     await assignPartnerBankDepositReconciliationReview(formData);
 
@@ -99,7 +103,9 @@ describe('Finance Approval Queue actions', () => {
         reason: 'Own overdue bank evidence',
       },
     );
-    expect(mockedRedirect).toHaveBeenCalledWith(expect.stringContaining('assignmentNotice=assigned'));
+    expect(mockedRedirect).toHaveBeenCalledWith(
+      '/finance-tax/approval-queue?view=reconciliation&take=25&assignmentNotice=assigned&requestId=deposit-request-1',
+    );
   });
 
   it('blocks deposit reconciliation assignment without confirmation and a meaningful reason', async () => {

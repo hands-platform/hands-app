@@ -18,6 +18,7 @@ describe('PartnerBankDepositDetailPage evidence links', () => {
   });
 
   it('renders request decisions and cash-debt allocation operators with hydrated identities', () => {
+    expect(source).toContain('/finance-tax/approval-queue?view=approvals#partner-bank-deposit-requests');
     expect(source).toContain('adminIdentityLabel(request.requestedBy, request.requestedByAdminId)');
     expect(source).toContain('adminIdentityLabel(request.approvedBy, request.approvedByAdminId)');
     expect(source).toContain('adminIdentityLabel(request.rejectedBy, request.rejectedByAdminId)');

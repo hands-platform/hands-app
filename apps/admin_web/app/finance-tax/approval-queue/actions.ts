@@ -131,9 +131,11 @@ function approvalQueueReturnTo(value: FormDataEntryValue | null) {
   if (url.origin !== 'http://localhost' || url.pathname !== '/finance-tax/approval-queue') {
     return '/finance-tax/approval-queue';
   }
-  return url.searchParams.get('take') === '25'
-    ? '/finance-tax/approval-queue?take=25'
-    : '/finance-tax/approval-queue';
+  const search = new URLSearchParams();
+  if (url.searchParams.get('view') === 'reconciliation') search.set('view', 'reconciliation');
+  if (url.searchParams.get('take') === '25') search.set('take', '25');
+  const query = search.toString();
+  return query ? `/finance-tax/approval-queue?${query}` : '/finance-tax/approval-queue';
 }
 
 function approvalQueueNoticeHref(baseHref: string, notice: string, requestId: string) {
