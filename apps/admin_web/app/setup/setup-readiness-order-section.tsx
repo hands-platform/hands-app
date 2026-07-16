@@ -99,7 +99,10 @@ function ReadinessRow({
               <CommandCopyRow command={command} key={`${check.category}-${command}`} />
             ))}
             {commandMode === 'summary' && allCommands.length > commands.length ? (
-              <StatusBadgeLink tone="neutral" href={`/setup?commands=all#${setupAnchorForReadinessCheck(check)}`}>
+              <StatusBadgeLink
+                tone="neutral"
+                href={setupCommandHref(setupAnchorForReadinessCheck(check))}
+              >
                 Show {allCommands.length - commands.length} command(s)
               </StatusBadgeLink>
             ) : null}
@@ -135,4 +138,8 @@ function readinessStatusPillClass(status: string) {
 
 function setupAnchorForReadinessCheck(check: AdminExternalReadiness['checks'][number]) {
   return check.category === 'push' ? 'notifications' : check.category;
+}
+
+function setupCommandHref(groupId: string) {
+  return `/setup?commands=all&group=${encodeURIComponent(groupId)}#${groupId}`;
 }

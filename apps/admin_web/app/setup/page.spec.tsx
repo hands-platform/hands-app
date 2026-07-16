@@ -45,6 +45,18 @@ describe('SetupPage', () => {
     expect(markup).toContain('class="setup-page"');
   });
 
+  it('loads one focused command group instead of every setup command pack', async () => {
+    const page = await SetupPage({
+      searchParams: Promise.resolve({ commands: 'all', group: 'notifications' }),
+    });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('id="notifications"');
+    expect(markup).toContain('FCM push notifications');
+    expect(markup).not.toContain('id="maps"');
+    expect(markup).not.toContain('id="payments"');
+  });
+
   it('scopes setup header rules to root, direct cards, detail-grid cards, and stack cards', () => {
     expect(globalCss).toContain('.setup-page > .ops-section-header > div,');
     expect(globalCss).toContain('.setup-page > .card > .ops-section-header > div,');

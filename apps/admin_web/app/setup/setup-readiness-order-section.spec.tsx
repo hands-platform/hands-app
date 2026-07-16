@@ -134,7 +134,7 @@ describe('SetupReadinessOrderSection', () => {
 
     expect(rendered).not.toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('Show 14 command(s)');
-    expect(hrefsIn(section)).toContain('/setup?commands=all#notifications');
+    expect(hrefsIn(section)).toContain('/setup?commands=all&group=notifications#notifications');
     expect(classNamesIn(section)).not.toContain('command-copy-row');
   });
 

@@ -36,6 +36,11 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
   const params = (await searchParams) ?? {};
   const commandMode = readSetupCommandMode(params.commands);
   const showSetupDetails = commandMode === 'full' || readSearchParam(params.details) === 'all';
+  const focusedSetupGroupId =
+    commandMode === 'full'
+      ? resolveFocusedSetupGroupId(readSearchParam(params.group))
+      : null;
+  const showExpandedSupportingDetails = showSetupDetails && !focusedSetupGroupId;
   const readiness = await apiGet<AdminExternalReadiness>('/health/external', {
     ok: false,
     timestamp: new Date(0).toISOString(),
@@ -54,7 +59,14 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
     externalRegistrationPlan,
     readinessUnavailable,
   );
-  const setupGroupDetails = showSetupDetails ? buildSetupGroupDetails(readiness, setupOrder) : [];
+  const setupGroupDetails = showSetupDetails
+    ? buildSetupGroupDetails(
+        readiness,
+        focusedSetupGroupId
+          ? setupOrder.filter((group) => group.id === focusedSetupGroupId)
+          : setupOrder,
+      )
+    : [];
 
   return (
     <AdminPageTemplate
@@ -73,26 +85,26 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
       <SetupProgressControlSection
         sequence={projectControlSequence}
         verifiedBaseline={verifiedBaseline}
-        showCommandDetails={showSetupDetails}
+        showCommandDetails={showExpandedSupportingDetails}
       />
 
       <SetupRegistrationHandoffSection
         registrationPlan={registrationPlan}
-        visibleLimit={showSetupDetails ? undefined : DEFAULT_SETUP_REGISTRATION_LIMIT}
+        visibleLimit={showExpandedSupportingDetails ? undefined : DEFAULT_SETUP_REGISTRATION_LIMIT}
       />
 
       <AdminDetailGrid ariaLabel="Setup operator actions and migration runway" className="admin-mb-16">
         <SetupOperatorActionsSection
           nextActions={nextActions}
           deferredActions={deferredActions}
-          showCommandDetails={showSetupDetails}
+          showCommandDetails={showExpandedSupportingDetails}
         />
 
         <SetupMigrationRunwaySection groupStatuses={groupStatuses} />
       </AdminDetailGrid>
 
       <SetupReadinessOrderSection
-        commandMode={commandMode}
+        commandMode={focusedSetupGroupId ? 'summary' : commandMode}
         readinessChecks={readiness.checks}
         recommendedOrder={setupOrder}
       />
@@ -100,8 +112,8 @@ export default async function SetupPage({ searchParams }: { searchParams?: Setup
       <SetupExternalBacklogSection
         missingCount={summary.missing}
         backlog={externalBacklog}
-        backlogLimit={showSetupDetails ? undefined : DEFAULT_SETUP_BACKLOG_LIMIT}
-        showCommands={showSetupDetails}
+        backlogLimit={showExpandedSupportingDetails ? undefined : DEFAULT_SETUP_BACKLOG_LIMIT}
+        showCommands={showExpandedSupportingDetails}
       />
 
       {showSetupDetails ? (
@@ -120,4 +132,14 @@ function readSetupCommandMode(value: string | string[] | undefined): 'full' | 's
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function resolveFocusedSetupGroupId(requestedGroupId: string) {
+  if (requestedGroupId && setupOrder.some((group) => group.id === requestedGroupId)) {
+    return requestedGroupId;
+  }
+
+  return setupOrder.some((group) => group.id === 'notifications')
+    ? 'notifications'
+    : (setupOrder[0]?.id ?? null);
 }

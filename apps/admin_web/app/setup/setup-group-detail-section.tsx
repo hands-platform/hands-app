@@ -131,7 +131,10 @@ function SetupCommandSummary({
         Full command packs are hidden from the default setup payload. Use the first command above for the
         immediate check, or open the full command list when you are actively working this setup group.
       </p>
-      <StatusBadgeLink tone="neutral" href={`/setup?commands=all#${groupId}`}>
+      <StatusBadgeLink
+        tone="neutral"
+        href={`/setup?commands=all&group=${encodeURIComponent(groupId)}#${groupId}`}
+      >
         Show full command set ({commands.length})
       </StatusBadgeLink>
     </div>
