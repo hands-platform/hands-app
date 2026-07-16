@@ -104,7 +104,7 @@ const FINANCE_OVERDUE_TYPES = [
   'admin.finance.bank_transaction.review_escalated',
 ] as const;
 const FINANCE_OVERDUE_TYPE_SET: ReadonlySet<string> = new Set(FINANCE_OVERDUE_TYPES);
-const NOTIFICATION_TABLE_PAGE_SIZE = 20;
+const NOTIFICATION_TABLE_PAGE_SIZE = 10;
 const NOTIFICATION_TABLE_DELIVERY_LIMIT = 2;
 const NOTIFICATION_API_TAKE = NOTIFICATION_TABLE_PAGE_SIZE;
 const DAY_MS = 24 * 60 * 60 * 1000;

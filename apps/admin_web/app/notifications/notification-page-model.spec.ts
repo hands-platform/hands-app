@@ -794,18 +794,18 @@ describe('notification page model', () => {
 
     expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(25);
     expect(model.notifications).toHaveLength(25);
-    expect(model.notificationRows).toHaveLength(5);
+    expect(model.notificationRows).toHaveLength(10);
     expect(model.notificationPagination).toMatchObject({
-      from: 21,
+      from: 11,
       page: 2,
-      to: 25,
-      totalPages: 2,
+      to: 20,
+      totalPages: 3,
       totalRows: 25,
     });
   });
 
   it('uses server notification summary for range totals without loading every row', () => {
-    const notifications = Array.from({ length: 20 }, (_, index) =>
+    const notifications = Array.from({ length: 10 }, (_, index) =>
       notification({
         createdAt: `2026-06-${String(index + 1).padStart(2, '0')}T10:00:00.000Z`,
         deliveries: [],
@@ -826,13 +826,13 @@ describe('notification page model', () => {
 
     expect(model.metrics.find((metric) => metric.label === 'Total')?.value).toBe(2400);
     expect(model.totalCount).toBe(2400);
-    expect(model.loadedCount).toBe(20);
-    expect(model.notificationRows).toHaveLength(20);
+    expect(model.loadedCount).toBe(10);
+    expect(model.notificationRows).toHaveLength(10);
     expect(model.notificationPagination).toMatchObject({
-      from: 21,
+      from: 11,
       page: 2,
-      to: 40,
-      totalPages: 120,
+      to: 20,
+      totalPages: 240,
       totalRows: 2400,
     });
   });
@@ -1451,9 +1451,9 @@ describe('notification page model', () => {
       'all',
     ]);
     expect(notificationDateRangeLabel('30d')).toBe('Last 30 days');
-    expect(buildNotificationApiHref({ range: 'all', review: 'all' })).toBe('/admin/notifications?take=20');
+    expect(buildNotificationApiHref({ range: 'all', review: 'all' })).toBe('/admin/notifications?take=10');
     expect(buildNotificationApiHref({ page: '3', range: 'all', review: 'all' })).toBe(
-      '/admin/notifications?take=20&skip=40',
+      '/admin/notifications?take=10&skip=20',
     );
     expect(buildNotificationSummaryApiHref({ range: 'all', review: 'all' })).toBe(
       '/admin/notifications/summary',
@@ -1461,7 +1461,7 @@ describe('notification page model', () => {
     const defaultApiHref = buildNotificationApiHref({});
     const defaultApiUrl = new URL(defaultApiHref, 'http://admin.local');
     expect(defaultApiUrl.pathname).toBe('/admin/notifications');
-    expect(defaultApiUrl.searchParams.get('take')).toBe('20');
+    expect(defaultApiUrl.searchParams.get('take')).toBe('10');
     expect(defaultApiUrl.searchParams.get('review')).toBe('needs-retry');
     expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('from') ?? ''))).toBe(true);
     expect(Number.isFinite(Date.parse(defaultApiUrl.searchParams.get('to') ?? ''))).toBe(true);
@@ -1482,8 +1482,8 @@ describe('notification page model', () => {
     });
     const filteredApiUrl = new URL(filteredApiHref, 'http://admin.local');
     expect(filteredApiUrl.pathname).toBe('/admin/notifications');
-    expect(filteredApiUrl.searchParams.get('take')).toBe('20');
-    expect(filteredApiUrl.searchParams.get('skip')).toBe('20');
+    expect(filteredApiUrl.searchParams.get('take')).toBe('10');
+    expect(filteredApiUrl.searchParams.get('skip')).toBe('10');
     expect(filteredApiUrl.searchParams.get('review')).toBe('failed');
     expect(filteredApiUrl.searchParams.get('booking')).toBe('booking-1');
     const filteredSummaryHref = buildNotificationSummaryApiHref({
@@ -1776,7 +1776,7 @@ describe('notification page model', () => {
     });
 
     expect(model.totalCount).toBe(45);
-    expect(model.notificationPagination).toMatchObject({ from: 1, to: 1, totalPages: 3, totalRows: 45 });
+    expect(model.notificationPagination).toMatchObject({ from: 1, to: 1, totalPages: 5, totalRows: 45 });
     expect(model.notificationRows[0]).toMatchObject({
       userLabel: '3 Admin recipients',
       userPhone: '6 retained recipient alerts',
@@ -1821,7 +1821,7 @@ describe('notification page model', () => {
     const apiHref = buildNotificationApiHref({ range: 'all', review: 'all', user: 'user-1' });
     const apiUrl = new URL(apiHref, 'http://admin.local');
     expect(apiUrl.pathname).toBe('/admin/notifications');
-    expect(apiUrl.searchParams.get('take')).toBe('20');
+    expect(apiUrl.searchParams.get('take')).toBe('10');
     expect(apiUrl.searchParams.get('user')).toBe('user-1');
 
     const summaryHref = buildNotificationSummaryApiHref({ range: 'all', review: 'all', user: 'user-1' });
@@ -1857,7 +1857,7 @@ describe('notification page model', () => {
       range: 'all',
       review: 'finance-overdue',
     })).toBe(
-      '/admin/notifications?take=20&review=finance-overdue&financeAge=48-72&financeOwner=unassigned',
+      '/admin/notifications?take=10&review=finance-overdue&financeAge=48-72&financeOwner=unassigned',
     );
     expect(buildNotificationSummaryApiHref({
       financeAge: '72-plus',
