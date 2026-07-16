@@ -19612,20 +19612,6 @@ describe('AdminService query orchestration', () => {
 
   it('builds Finance Overview summary from ledger balances and amount aggregates without write side effects', async () => {
     const prisma = {
-      customerWalletLedgerEntry: {
-        groupBy: vi.fn().mockResolvedValue([
-          { customerProfileId: 'customer-1', currency: 'VND', _sum: { amount: 100000 } },
-          { customerProfileId: 'customer-2', currency: 'VND', _sum: { amount: 30000 } },
-          { customerProfileId: 'customer-3', currency: 'VND', _sum: { amount: -5000 } },
-        ]),
-      },
-      providerWalletLedgerEntry: {
-        groupBy: vi.fn().mockResolvedValue([
-          { providerProfileId: 'provider-1', currency: 'VND', _sum: { amount: 200000 } },
-          { providerProfileId: 'provider-2', currency: 'VND', _sum: { amount: -70000 } },
-          { providerProfileId: 'provider-3', currency: 'VND', _sum: { amount: 0 } },
-        ]),
-      },
       refund: {
         aggregate: vi
           .fn()
@@ -19638,9 +19624,22 @@ describe('AdminService query orchestration', () => {
       adminAuditLog: {
         count: vi.fn().mockResolvedValue(5),
       },
-      $queryRaw: vi.fn().mockResolvedValue([
-        { openOverdueCount: 3n, openOver72Count: 1n },
-      ]),
+      $queryRaw: vi.fn().mockImplementation((query: { strings: readonly string[] }) => {
+        const queryText = query.strings.join('?');
+        if (queryText.includes('customer_balances')) {
+          return Promise.resolve([
+            {
+              customerWalletAccountCount: 2n,
+              customerWalletLiabilityAmount: 130000n,
+              partnerPositiveWalletAccountCount: 1n,
+              partnerWalletLiabilityAmount: 200000n,
+              partnerNegativeWalletAccountCount: 1n,
+              negativePartnerWalletAmount: 70000n,
+            },
+          ]);
+        }
+        return Promise.resolve([{ openOverdueCount: 3n, openOver72Count: 1n }]);
+      }),
     };
     const service = createAdminService(prisma);
     vi.spyOn(service, 'bookingSettlementSnapshotSummary').mockResolvedValue({
@@ -19745,14 +19744,14 @@ describe('AdminService query orchestration', () => {
     });
     expect(result.settlementSummary.platformFeeNetRevenue).toBe(220000);
     expect(result.bankWithdrawalCandidateSummary.strongCount).toBe(1);
-    expect(prisma.customerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
-      by: ['customerProfileId', 'currency'],
-      _sum: { amount: true },
-    });
-    expect(prisma.providerWalletLedgerEntry.groupBy).toHaveBeenCalledWith({
-      by: ['providerProfileId', 'currency'],
-      _sum: { amount: true },
-    });
+    const walletQuery = prisma.$queryRaw.mock.calls
+      .map(([query]) => query as { strings: readonly string[]; values: readonly unknown[] })
+      .find((query) => query.strings.join('?').includes('customer_balances'));
+    const walletQueryText = walletQuery?.strings.join('?') ?? '';
+    expect(walletQueryText).toContain('GROUP BY ledger."customerProfileId", ledger."currency"');
+    expect(walletQueryText).toContain('GROUP BY ledger."providerProfileId", ledger."currency"');
+    expect(walletQueryText).toContain('WHERE balance > 0');
+    expect(walletQueryText).toContain('WHERE balance < 0');
     expect(prisma.refund.aggregate).toHaveBeenCalledTimes(2);
     expect(prisma.payment.aggregate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -19760,16 +19759,15 @@ describe('AdminService query orchestration', () => {
         where: expect.objectContaining({ status: PaymentStatus.FAILED }),
       }),
     );
-    const financeReviewQuery = prisma.$queryRaw.mock.calls[0]?.[0] as {
-      strings: readonly string[];
-      values: readonly unknown[];
-    };
-    const financeReviewQueryText = financeReviewQuery.strings.join('?');
+    const financeReviewQuery = prisma.$queryRaw.mock.calls
+      .map(([query]) => query as { strings: readonly string[]; values: readonly unknown[] })
+      .find((query) => query.strings.join('?').includes('openOverdueCount'));
+    const financeReviewQueryText = financeReviewQuery?.strings.join('?') ?? '';
     expect(financeReviewQueryText).toContain('assignment."createdAt"');
     expect(financeReviewQueryText).toContain('batch_import."createdAt"');
     expect(financeReviewQueryText).toContain("notification.\"data\"->>'assignmentAuditLogId'");
-    expect(financeReviewQuery.values).toContain('company_bank_transaction.batch_import');
-    expect(financeReviewQuery.values.some((value) => value instanceof Date)).toBe(true);
+    expect(financeReviewQuery?.values).toContain('company_bank_transaction.batch_import');
+    expect(financeReviewQuery?.values.some((value) => value instanceof Date)).toBe(true);
     expect(prisma.adminAuditLog.count).toHaveBeenCalledWith({
       where: {
         action: 'company_bank_transaction.review_escalation_resolved',

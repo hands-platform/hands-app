@@ -2066,6 +2066,15 @@ type AdminProviderBookingSummaryRow = AdminProviderBookingSummary & {
   providerId: string;
 };
 
+type AdminFinanceOverviewWalletSummaryRow = {
+  customerWalletAccountCount: bigint | number;
+  customerWalletLiabilityAmount: bigint | number;
+  partnerPositiveWalletAccountCount: bigint | number;
+  partnerWalletLiabilityAmount: bigint | number;
+  partnerNegativeWalletAccountCount: bigint | number;
+  negativePartnerWalletAmount: bigint | number;
+};
+
 type AdminDashboardAppPresenceIntersectionRow = {
   activeBookingCustomers: unknown;
   liveActiveBookingCustomers: unknown;
@@ -8992,34 +9001,65 @@ export class AdminService {
   }
 
   private async financeOverviewWalletSummary() {
-    const [customerGroups, partnerGroups] = await Promise.all([
-      this.prisma.customerWalletLedgerEntry.groupBy({
-        by: ['customerProfileId', 'currency'],
-        _sum: { amount: true },
-      }),
-      this.prisma.providerWalletLedgerEntry.groupBy({
-        by: ['providerProfileId', 'currency'],
-        _sum: { amount: true },
-      }),
-    ]);
-    const customerPositiveBalances = customerGroups
-      .map((group) => group._sum.amount ?? 0)
-      .filter((amount) => amount > 0);
-    const partnerPositiveBalances = partnerGroups
-      .map((group) => group._sum.amount ?? 0)
-      .filter((amount) => amount > 0);
-    const partnerNegativeBalances = partnerGroups
-      .map((group) => group._sum.amount ?? 0)
-      .filter((amount) => amount < 0);
+    const rows = await this.prisma.$queryRaw<AdminFinanceOverviewWalletSummaryRow[]>(Prisma.sql`
+      WITH customer_balances AS (
+        SELECT
+          ledger."customerProfileId",
+          ledger."currency",
+          SUM(ledger."amount")::bigint AS balance
+        FROM "CustomerWalletLedgerEntry" ledger
+        GROUP BY ledger."customerProfileId", ledger."currency"
+      ),
+      partner_balances AS (
+        SELECT
+          ledger."providerProfileId",
+          ledger."currency",
+          SUM(ledger."amount")::bigint AS balance
+        FROM "ProviderWalletLedgerEntry" ledger
+        GROUP BY ledger."providerProfileId", ledger."currency"
+      )
+      SELECT
+        (
+          SELECT COUNT(*)::bigint
+          FROM customer_balances
+          WHERE balance > 0
+        ) AS "customerWalletAccountCount",
+        COALESCE((
+          SELECT SUM(balance)::bigint
+          FROM customer_balances
+          WHERE balance > 0
+        ), 0)::bigint AS "customerWalletLiabilityAmount",
+        (
+          SELECT COUNT(*)::bigint
+          FROM partner_balances
+          WHERE balance > 0
+        ) AS "partnerPositiveWalletAccountCount",
+        COALESCE((
+          SELECT SUM(balance)::bigint
+          FROM partner_balances
+          WHERE balance > 0
+        ), 0)::bigint AS "partnerWalletLiabilityAmount",
+        (
+          SELECT COUNT(*)::bigint
+          FROM partner_balances
+          WHERE balance < 0
+        ) AS "partnerNegativeWalletAccountCount",
+        ABS(COALESCE((
+          SELECT SUM(balance)::bigint
+          FROM partner_balances
+          WHERE balance < 0
+        ), 0))::bigint AS "negativePartnerWalletAmount"
+    `);
+    const row = rows[0];
 
     return {
       currency: 'VND',
-      customerWalletAccountCount: customerPositiveBalances.length,
-      customerWalletLiabilityAmount: sumNumbers(customerPositiveBalances),
-      partnerPositiveWalletAccountCount: partnerPositiveBalances.length,
-      partnerWalletLiabilityAmount: sumNumbers(partnerPositiveBalances),
-      partnerNegativeWalletAccountCount: partnerNegativeBalances.length,
-      negativePartnerWalletAmount: Math.abs(sumNumbers(partnerNegativeBalances)),
+      customerWalletAccountCount: numberValue(row?.customerWalletAccountCount),
+      customerWalletLiabilityAmount: numberValue(row?.customerWalletLiabilityAmount),
+      partnerPositiveWalletAccountCount: numberValue(row?.partnerPositiveWalletAccountCount),
+      partnerWalletLiabilityAmount: numberValue(row?.partnerWalletLiabilityAmount),
+      partnerNegativeWalletAccountCount: numberValue(row?.partnerNegativeWalletAccountCount),
+      negativePartnerWalletAmount: numberValue(row?.negativePartnerWalletAmount),
     };
   }
 
@@ -17938,10 +17978,6 @@ function bankReconciliationWithdrawalCandidateWaitingMeta(occurredAt: Date, now 
       waitingHours >= 48 ? ('OVER_48H' as const) : waitingHours >= 24 ? ('OVER_24H' as const) : ('CURRENT' as const),
     waitingHours,
   };
-}
-
-function sumNumbers(values: readonly number[]) {
-  return values.reduce((total, value) => total + value, 0);
 }
 
 function percentageValue(numerator: number, denominator: number) {
