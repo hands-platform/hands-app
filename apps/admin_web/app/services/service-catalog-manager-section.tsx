@@ -93,7 +93,6 @@ export function ServiceCatalogManagerSection({
 function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) {
   const activeCount = group.items.filter((service) => service.active).length;
   const durationSet = new Set(group.items.map((service) => service.durationMin));
-  const translations = readableTranslations(group.nameTranslations);
 
   return (
     <AdminCard className="service-menu-card">
@@ -107,37 +106,24 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
             Edit
           </AdminFormControlLink>
         }
-        description={
-          translations.length ? (
-            <div className="service-menu-language-list">
-              {translations.map((translation) => (
-                <span key={translation.key}>
-                  <strong>{translation.label}</strong>
-                  {translation.value}
-                </span>
-              ))}
-            </div>
-          ) : null
-        }
         title={group.label}
       />
 
       <div className="service-menu-inline-pills">
-        <StatusBadge tone="info">{group.items.length} option(s)</StatusBadge>
-        <StatusBadge tone={activeCount ? 'success' : 'neutral'}>
-          {activeCount ? `${activeCount} active` : 'Inactive'}
-        </StatusBadge>
-        <StatusBadge tone="neutral">
-          Missing {SERVICE_DURATIONS.filter((duration) => !durationSet.has(duration)).join(', ') || 'none'}
+        <p className="muted">
+          {group.items.length} option(s); Missing{' '}
+          {SERVICE_DURATIONS.filter((duration) => !durationSet.has(duration)).join(', ') || 'none'}
+        </p>
+        <StatusBadge tone={activeCount === group.items.length ? 'success' : activeCount ? 'warning' : 'neutral'}>
+          {activeCount ? `${activeCount}/${group.items.length} active` : 'Inactive'}
         </StatusBadge>
       </div>
 
       <div className="service-menu-duration-grid">
-        {SERVICE_DURATIONS.map((duration) => (
+        {group.items.map((service) => (
           <ServiceDurationPanel
-            duration={duration}
-            key={`${group.key}-${duration}`}
-            service={group.items.find((item) => item.durationMin === duration)}
+            key={service.id}
+            service={service}
           />
         ))}
       </div>
@@ -146,46 +132,24 @@ function ServiceCatalogCard({ group }: { readonly group: ServiceCatalogGroup }) 
 }
 
 function ServiceDurationPanel({
-  duration,
   service,
 }: {
-  readonly duration: (typeof SERVICE_DURATIONS)[number];
-  readonly service?: AdminServiceCatalogItem;
+  readonly service: AdminServiceCatalogItem;
 }) {
-  if (!service) {
-    return (
-      <AdminCard className="service-menu-duration-panel is-empty">
-        <strong>{duration} min</strong>
-        <StatusBadge tone="neutral">Not set</StatusBadge>
-      </AdminCard>
-    );
-  }
-
   const payoutRule = serviceBasePayoutRule(service);
 
   return (
-    <AdminCard className="service-menu-duration-panel">
-      <div>
-        <strong>{duration} min</strong>
-        <StatusBadge tone={service.active ? 'success' : 'neutral'}>
-          {service.active ? 'Active' : 'Off'}
-        </StatusBadge>
-      </div>
-      <dl>
-        <div>
-          <dt>Base</dt>
-          <dd>
-            <MoneyText amount={service.basePrice} />
-          </dd>
-        </div>
-        <div>
-          <dt>Partner</dt>
-          <dd>
-            <MoneyText amount={payoutRule?.providerPayoutAmount} />
-          </dd>
-        </div>
-      </dl>
-    </AdminCard>
+    <div className="service-menu-duration-row">
+      <strong>{service.durationMin} min</strong>
+      <span>
+        <small>Base</small>
+        <MoneyText amount={service.basePrice} />
+      </span>
+      <span>
+        <small>Partner</small>
+        <MoneyText amount={payoutRule?.providerPayoutAmount} />
+      </span>
+    </div>
   );
 }
 
@@ -376,15 +340,4 @@ function serviceDialogHref(mode: 'new' | 'edit', groupKey: string | null) {
 
 function servicesReturnHref() {
   return '/services';
-}
-
-function readableTranslations(translations: Record<string, string> | null | undefined) {
-  if (!translations) {
-    return [];
-  }
-  return SERVICE_TRANSLATION_FIELDS.map((field) => ({
-    key: field.key,
-    label: field.key.toUpperCase(),
-    value: translations[field.key],
-  })).filter((translation) => translation.value);
 }

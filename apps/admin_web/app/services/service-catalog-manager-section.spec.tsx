@@ -12,6 +12,7 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).not.toContain('<span className="pill pill-neutral">');
     expect(sectionSource).not.toContain('<span className="pill pill-neutral">Not set</span>');
     expect(sectionSource).not.toContain("<span className={service.active ? 'pill pill-success' : 'pill pill-neutral'}>");
+    expect(sectionSource).not.toContain('service-menu-duration-panel is-empty');
   });
 
   it('uses shared money atoms for service catalog duration prices', () => {
@@ -25,14 +26,10 @@ describe('ServiceCatalogManagerSection', () => {
     expect(css).toContain('.service-catalog-manager-card > .admin-section-header {');
     expect(css).toContain('.service-catalog-manager-card > .admin-section-header .button');
     expect(css).toContain('.service-menu-card > .admin-card-header > div > h3');
-    expect(css).toContain('.service-menu-language-list > span');
-    expect(css).toContain('.service-menu-language-list > span > strong');
-    expect(css).toContain('.service-menu-duration-panel > div:first-child > strong');
-    expect(css).toContain('.service-menu-duration-panel.is-empty > strong');
+    expect(css).toContain('.service-menu-duration-row > strong');
     expect(css).not.toContain('.service-menu-card h3');
-    expect(css).not.toContain('.service-menu-language-list span');
-    expect(css).not.toContain('.service-menu-language-list strong');
-    expect(css).not.toContain('.service-menu-duration-panel strong');
+    expect(css).not.toContain('.service-menu-language-list');
+    expect(css).not.toContain('.service-menu-duration-panel');
     expect(css).not.toContain('.service-catalog-manager-card .admin-filter-panel-header');
     expect(css).not.toContain('.service-catalog-manager-card .admin-section-header');
   });
@@ -89,8 +86,8 @@ describe('ServiceCatalogManagerSection', () => {
     expect(sectionSource).not.toContain('service-menu-dialog-field');
     expect(classNames).not.toContain('calendar-field');
     expect(sectionSource).not.toContain('className="calendar-field"');
-    expect(classNames).toContain('card admin-card service-menu-duration-panel');
-    expect(classNames).toContain('card admin-card service-menu-duration-panel is-empty');
+    expect(classNames).toContain('service-menu-duration-row');
+    expect(classNames.some((className) => className.includes('service-menu-duration-panel'))).toBe(false);
     expect(classNames).toContain('ops-section-header admin-section-header admin-card-header');
     expect(classNames).toContain('admin-form-control-button button button-primary');
     expect(classNames).toContain('admin-form-control-link button button-primary');
