@@ -146,6 +146,49 @@ describe('admin api auth guard', () => {
     );
   });
 
+  it('keeps env master writes authorized when the stored operator row has no Master role', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({ cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}` }) as never,
+    );
+    vi.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        return Response.json({
+          categories: [],
+          email: 'master@example.com',
+          id: 'stored-master-1',
+          roles: ['ADMIN'],
+        });
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      if (url.endsWith('/admin/bank-reconciliation/bank-1/matches')) {
+        return Response.json({ ok: true, path: url, method: init?.method });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    await expect(
+      adminPostOrThrow('/admin/bank-reconciliation/bank-1/matches', {
+        amount: 500000,
+        paymentClearingEntryId: 'clearing-1',
+      }),
+    ).resolves.toMatchObject({ method: 'POST' });
+  });
+
   it('treats an empty admin operator access response as no stored setup for env master writes', async () => {
     const sessionSecret = 'test-session-secret';
     process.env = {

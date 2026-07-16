@@ -224,7 +224,7 @@ function checkCustomerFinalSelectionContract() {
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
     'Stage 3 choice',
-    'Customer Choice',
+    'customer final selection',
     'legacy Provider wording',
   ]);
 }

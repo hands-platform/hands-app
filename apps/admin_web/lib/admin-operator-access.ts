@@ -6,6 +6,7 @@ import {
   adminPost,
   type AdminOperatorAccess,
 } from './admin-api';
+import { resolveEnvMasterAdminAccess } from './admin-env-master-access';
 import { getAdminWebSession } from './admin-session';
 import {
   adminOperatorCategoryForPath,
@@ -36,7 +37,7 @@ export const getCurrentAdminOperatorAccess = cache(async function getCurrentAdmi
     null,
   );
 
-  return access ?? envMasterAdminAccessForIdentity(identity);
+  return resolveEnvMasterAdminAccess(identity, access);
 });
 
 export async function getAdminOperatorPageAccess(
@@ -94,23 +95,4 @@ async function currentAdminWebSessionIdentity() {
   } catch {
     return null;
   }
-}
-
-function envMasterAdminAccessForIdentity(identity: string): AdminOperatorAccess | null {
-  const configuredEmail = process.env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
-  const normalizedIdentity = identity.trim().toLowerCase();
-
-  if (!configuredEmail || normalizedIdentity !== configuredEmail) {
-    return null;
-  }
-
-  return {
-    categories: [],
-    email: configuredEmail,
-    fullName: 'Master Admin',
-    id: 'admin-web-env-master',
-    phone: null,
-    roles: ['ADMIN', 'MASTER_ADMIN'],
-    updatedAt: null,
-  };
 }

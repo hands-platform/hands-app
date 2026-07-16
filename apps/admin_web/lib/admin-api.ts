@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 
 import { getAdminWebSession } from './admin-session';
 import { createAdminWebApiToken } from './admin-api-token';
+import { resolveEnvMasterAdminAccess } from './admin-env-master-access';
 import {
   adminOperatorCategoryForAdminApiPath,
   adminOperatorUncategorizedWriteApiAllowlistReason,
@@ -4594,12 +4595,12 @@ async function fetchAdminOperatorAccess(identity: string) {
   );
 
   if (!response.ok) {
-    return envMasterAdminAccessForIdentity(identity);
+    return resolveEnvMasterAdminAccess(identity, null);
   }
 
   const responseText = await response.text();
   const access = responseText.trim() ? (JSON.parse(responseText) as AdminOperatorAccess | null) : null;
-  return access ?? envMasterAdminAccessForIdentity(identity);
+  return resolveEnvMasterAdminAccess(identity, access);
 }
 
 async function recordAdminOperatorActivityForIdentity(
@@ -4631,24 +4632,4 @@ async function recordAdminOperatorActivityForIdentity(
   } catch {
     // Activity logging must never make a successful admin action fail.
   }
-}
-
-
-function envMasterAdminAccessForIdentity(identity: string): AdminOperatorAccess | null {
-  const configuredEmail = process.env.ADMIN_WEB_LOGIN_EMAIL?.trim().toLowerCase();
-  const normalizedIdentity = identity.trim().toLowerCase();
-
-  if (!configuredEmail || normalizedIdentity !== configuredEmail) {
-    return null;
-  }
-
-  return {
-    categories: [],
-    email: configuredEmail,
-    fullName: 'Master Admin',
-    id: 'admin-web-env-master',
-    phone: null,
-    roles: ['ADMIN', 'MASTER_ADMIN'],
-    updatedAt: null,
-  };
 }

@@ -118,6 +118,56 @@ describe('admin operator page access', () => {
     );
   });
 
+  it('keeps the configured env Master Admin unrestricted when a stored ADMIN row exists', async () => {
+    const sessionSecret = 'test-session-secret';
+    process.env = {
+      ...process.env,
+      ADMIN_ACCESS_TOKEN: 'server-admin-token',
+      ADMIN_WEB_LOGIN_EMAIL: 'master@example.com',
+      ADMIN_WEB_SESSION_COOKIE_SECRET: sessionSecret,
+    };
+    const sessionCookieValue = createAdminWebSessionCookieValue({
+      expiresAtMs: Date.now() + 60_000,
+      secret: sessionSecret,
+      sub: 'master@example.com',
+    });
+    vi.mocked(headers).mockResolvedValue(
+      new Headers({
+        cookie: `${ADMIN_WEB_SESSION_COOKIE_NAME}=${sessionCookieValue}`,
+      }) as never,
+    );
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/admin/users/admin-operator-access')) {
+        return Response.json({
+          categories: [],
+          email: 'master@example.com',
+          id: 'stored-master-1',
+          roles: ['ADMIN'],
+        });
+      }
+      if (url.includes('/admin/operator-activity')) {
+        return Response.json({ ok: true });
+      }
+      return new Response('{}', { status: 404 });
+    });
+
+    const access = await getAdminOperatorPageAccess('/bookings');
+
+    expect(access).toMatchObject({
+      allowed: true,
+      category: 'BOOKINGS_REALTIME',
+      access: {
+        id: 'stored-master-1',
+        roles: ['ADMIN', 'MASTER_ADMIN'],
+      },
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/operator-activity'),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
   it('wraps the current operator access lookup in the React server request cache', () => {
     const source = readFileSync('lib/admin-operator-access.ts', 'utf8');
 

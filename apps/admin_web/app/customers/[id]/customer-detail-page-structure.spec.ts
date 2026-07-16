@@ -11,7 +11,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminTablePaginationFooter');
     expect(pageSource).toContain('const shouldRenderReviewRecords =');
-    expect(pageSource).toContain('{shouldRenderReviewRecords ? (');
+    expect(pageSource).toContain("{detailView === 'records' && shouldRenderReviewRecords ? (");
     expect(pageSource).toContain('const filteredChatBookings = shouldRenderRecordArchive');
     expect(pageSource).toContain('buildCustomerChatArchiveBookings(bookings, dateFilters)');
     expect(pageSource).toContain('buildCustomerChatArchiveSummaryBookings(bookings, dateFilters)');
@@ -66,7 +66,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Filtered notices');
     expect(pageSource).not.toContain('Customer information');
     expect(pageSource).not.toContain('#customer-info');
-    expect(pageSource).not.toContain('Customer workspace');
+    expect(pageSource).toContain('title="Customer workspace view"');
+    expect(pageSource).toContain('href={`/customers/${customer.id}?view=account`}');
+    expect(pageSource).toContain('href={`/customers/${customer.id}?view=records`}');
     expect(pageSource).not.toContain('CustomerDetailShortcutStrip');
     expect(pageSource).not.toContain('Booking and cancellation history');
     expect(pageSource).not.toContain('customer-booking-history-section');

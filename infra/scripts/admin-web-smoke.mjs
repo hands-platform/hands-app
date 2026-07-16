@@ -251,6 +251,7 @@ const pages = [
       'Booking diagnostics',
       'Dispatch evidence map',
       'Retained evidence signals',
+      'No-show evidence',
       'Evidence queue shortcuts',
       'Booking loaded',
     ],
@@ -393,7 +394,13 @@ const pages = [
   },
   {
     path: '/bookings?view=customer-choice',
-    markers: ['Booking Monitor', 'Stage 3 choice', 'Booking workspace filters', 'Current workspace:'],
+    markers: [
+      'Booking Monitor',
+      'Stage 3 choice',
+      'customer final selection',
+      'Booking workspace filters',
+      'Current workspace:',
+    ],
   },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
   { path: '/bookings?view=no-supply', markers: ['Booking Monitor', 'No supply'] },
@@ -1157,7 +1164,13 @@ const pages = [
   },
   {
     path: '/partners?review=kyc&details=all',
-    markers: ['Partners', 'KYC updates', 'KYC review board', 'Compact list'],
+    markers: [
+      'Partners',
+      'KYC updates',
+      'KYC review board',
+      'List-first partner control view',
+      'Compact list',
+    ],
   },
   { path: '/partners?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
   {
@@ -1519,6 +1532,9 @@ function isAllowedVisibleLanguageViolation(path, label, match) {
 for (const page of smokePages) {
   const body = await fetchPage(page.path);
   pageBodies.set(page.path, body);
+  if (body.includes('>Access restricted<') || body.includes('Page content is hidden.')) {
+    throw new Error(`${page.path} rendered the operator access-denied surface.`);
+  }
   if (!runBudgetSmoke) {
     const visibleText = runDirectSmoke ? visibleTextFromHtml(body) : '';
     const missing = page.markers.filter(
@@ -1648,7 +1664,12 @@ if (providerLinkMatch) {
         },
         {
           query: 'section=control&control=reference',
-          markers: ['Partner control workspace', 'Developer reference', 'Partner operations digest'],
+          markers: [
+            'Partner control workspace',
+            'Developer reference',
+            'Partner operations digest',
+            'Partner operating ledger',
+          ],
           excludedMarkers: ['Partner operator command queue', 'Partner review records'],
         },
         {
@@ -1876,7 +1897,7 @@ if (bookingLinkMatch) {
     'Unified booking detail',
     'Customer detail',
     'Matched Partner detail',
-    'Finance and system detail',
+    'Finance detail',
     'Booking review records',
     'Customer and Partner chat history',
     'Booking lifecycle timeline',
