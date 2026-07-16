@@ -71,6 +71,7 @@ const FINANCE_CLOSEOUT_API_LIMIT = 10;
 const FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE = 10;
 
 export type FinanceCloseoutWorkspace = 'operations' | 'settlement';
+export type FinanceCloseoutSettlementMode = 'queue' | 'batch';
 export type FinanceCloseoutSettlementAge = 'backlog' | '24-72h' | '3-7d' | '7d-plus' | 'recent' | 'all';
 export type FinanceCloseoutSettlementTrack =
   | 'canonical'
@@ -428,6 +429,15 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
   const rangeParam = readSearchParam(params.range);
   const range = rangeParam ? normalizeDateRange(rangeParam) : 'today';
   const requestedWorkspace = readSearchParam(params.view);
+  const requestedSettlementMode = readSearchParam(params.settlementMode);
+  const hasSettlementQueueIntent = [
+    params.checkpointBookingId,
+    params.repairBookingId,
+    params.repairNotice,
+  ].some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value)));
+  const hasSettlementBatchIntent = [params.reviewBookingId, params.settlementDryRun].some((value) =>
+    Array.isArray(value) ? value.length > 0 : Boolean(value),
+  );
   const hasLegacySettlementIntent = [
     params.checkpointBookingId,
     params.q,
@@ -436,6 +446,7 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
     params.reviewBookingId,
     params.settlementAge,
     params.settlementDryRun,
+    params.settlementMode,
     params.settlementPage,
     params.settlementPaymentMethod,
     params.settlementPeriod,
@@ -443,6 +454,11 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
   ].some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value)));
   const workspace: FinanceCloseoutWorkspace =
     requestedWorkspace === 'settlement' || hasLegacySettlementIntent ? 'settlement' : 'operations';
+  const settlementMode: FinanceCloseoutSettlementMode = hasSettlementQueueIntent
+    ? 'queue'
+    : requestedSettlementMode === 'batch' || hasSettlementBatchIntent
+      ? 'batch'
+      : 'queue';
   const settlementAge = normalizeFinanceCloseoutSettlementAge(readSearchParam(params.settlementAge));
   const settlementPaymentMethod = normalizeFinanceCloseoutSettlementPaymentMethod(
     readSearchParam(params.settlementPaymentMethod),
@@ -456,6 +472,7 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
     label: dateRangeLabel(range),
     settlementAge,
     settlementAgeLabel: financeCloseoutSettlementAgeLabel(settlementAge),
+    settlementMode,
     settlementPage,
     settlementPageSize: FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE,
     settlementPaymentMethod,
@@ -523,6 +540,7 @@ export function buildFinanceCloseoutPageHref(
   overrides: Partial<{
     range: AdminDateRange;
     settlementAge: FinanceCloseoutSettlementAge;
+    settlementMode: FinanceCloseoutSettlementMode;
     settlementPage: number;
     settlementPaymentMethod: FinanceCloseoutSettlementPaymentMethod;
     settlementPeriod: string;
@@ -530,18 +548,23 @@ export function buildFinanceCloseoutPageHref(
     settlementTrack: FinanceCloseoutSettlementTrack;
   }> = {},
 ) {
+  const settlementMode = overrides.settlementMode ?? filters.settlementMode;
   const params = new URLSearchParams({
     range: overrides.range ?? filters.range,
-    settlementAge: overrides.settlementAge ?? filters.settlementAge,
-    settlementPage: String(overrides.settlementPage ?? filters.settlementPage),
     settlementPaymentMethod: overrides.settlementPaymentMethod ?? filters.settlementPaymentMethod,
     settlementPeriod: overrides.settlementPeriod ?? filters.settlementPeriod,
-    settlementTrack: overrides.settlementTrack ?? filters.settlementTrack,
     view: 'settlement',
   });
-  const query = overrides.settlementQuery ?? filters.settlementQuery;
-  if (query) {
-    params.set('q', query);
+  if (settlementMode === 'batch') {
+    params.set('settlementMode', 'batch');
+  } else {
+    params.set('settlementAge', overrides.settlementAge ?? filters.settlementAge);
+    params.set('settlementPage', String(overrides.settlementPage ?? filters.settlementPage));
+    params.set('settlementTrack', overrides.settlementTrack ?? filters.settlementTrack);
+    const query = overrides.settlementQuery ?? filters.settlementQuery;
+    if (query) {
+      params.set('q', query);
+    }
   }
   return `/finance-closeout?${params.toString()}`;
 }
@@ -554,7 +577,10 @@ export function buildFinanceCloseoutSettlementRepairHref(
   filters: ReturnType<typeof buildFinanceCloseoutFilters>,
   bookingId: string,
 ) {
-  const url = new URL(buildFinanceCloseoutPageHref(filters), 'http://admin.local');
+  const url = new URL(
+    buildFinanceCloseoutPageHref(filters, { settlementMode: 'queue' }),
+    'http://admin.local',
+  );
   url.searchParams.set('repairBookingId', bookingId);
   return `${url.pathname}?${url.searchParams.toString()}`;
 }
@@ -562,7 +588,10 @@ export function buildFinanceCloseoutSettlementRepairHref(
 export function buildFinanceCloseoutSettlementDryRunHref(
   filters: ReturnType<typeof buildFinanceCloseoutFilters>,
 ) {
-  const url = new URL(buildFinanceCloseoutPageHref(filters), 'http://admin.local');
+  const url = new URL(
+    buildFinanceCloseoutPageHref(filters, { settlementMode: 'batch' }),
+    'http://admin.local',
+  );
   url.searchParams.set('settlementDryRun', '1');
   return `${url.pathname}?${url.searchParams.toString()}`;
 }

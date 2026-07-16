@@ -62,10 +62,33 @@ describe('FinanceCloseoutPage', () => {
     const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
 
     expect(markup).toContain('Settlement gap filters');
+    expect(markup).toContain('Settlement backlog');
+    expect(markup).not.toContain('Historical settlement dry-run');
     expect(markup).not.toContain('Closeout reconciliation board');
     expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
+    expect(hrefs).toContain(
+      '/admin/booking-settlement-gaps?age=backlog&skip=0&take=10&track=canonical',
+    );
     expect(hrefs.some((href) => href.startsWith('/admin/payments?'))).toBe(false);
     expect(hrefs.some((href) => href.startsWith('/admin/earnings?'))).toBe(false);
+  });
+
+  it('loads the historical batch workspace without fetching the settlement backlog', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ settlementMode: 'batch', view: 'settlement' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(markup).toContain('Historical batch filters');
+    expect(markup).toContain('Historical settlement dry-run');
+    expect(markup).not.toContain('Settlement gap filters');
+    expect(markup).not.toContain('Settlement backlog');
+    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
+    expect(hrefs.some((href) => href.startsWith('/admin/booking-settlement-gaps?'))).toBe(false);
+    expect(hrefs.some((href) => href.includes('/dry-run?'))).toBe(false);
   });
 
   it('shows blocking checkpoint codes when a repair write needs accounting review', async () => {
