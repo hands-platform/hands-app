@@ -144,6 +144,7 @@ import {
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
 import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
+import { AdminEmptyState } from '../../../components/admin-empty-state';
 import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
 import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
@@ -224,6 +225,7 @@ type PageProps = {
 };
 
 export type BookingDetailWorkspace = 'overview' | 'records' | 'diagnostics';
+export type BookingDetailDiagnosticsView = 'history' | 'settlement';
 
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
@@ -285,25 +287,33 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
   const requestedWorkspace = readBookingDetailWorkspace(detailSearchParams);
+  const diagnosticsView = readBookingDetailDiagnosticsView(detailSearchParams);
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const canViewDeveloperDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
   const detailWorkspace =
     requestedWorkspace === 'diagnostics' && !canViewDeveloperDiagnostics
       ? 'overview'
       : requestedWorkspace;
-  const includeDeveloperDiagnostics = detailWorkspace === 'diagnostics';
+  const includeOperationalRecords = detailWorkspace === 'records';
+  const includeDeveloperDiagnostics =
+    detailWorkspace === 'diagnostics' && diagnosticsView === 'history';
   const {
     booking,
     operationalPolicies,
     providers,
     rawNotifications,
-  } = await loadBookingDetailPageData(id, includeDeveloperDiagnostics);
+  } = await loadBookingDetailPageData(
+    id,
+    includeDeveloperDiagnostics,
+    includeOperationalRecords,
+  );
 
   if (!booking) {
     notFound();
   }
 
   const needsFinanceApproverDirectory = Boolean(
+    includeDeveloperDiagnostics &&
     booking.payment?.id && booking.payment.status !== 'REFUNDED' && booking.payment.status !== 'RELEASED',
   );
   const financeApproverUsers = needsFinanceApproverDirectory
@@ -791,16 +801,9 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const showOperatorAdvancedRecordsDisclosure =
     sectionVisibility.showDispatchDisclosure ||
     sectionVisibility.showEvidenceDisclosure;
-  const showDeveloperDiagnosticsDisclosure =
-    sectionVisibility.showHistoryDisclosure ||
-    sectionVisibility.showSettlementDisclosure;
   const operatorAdvancedRecordSummaryItems = [
     sectionVisibility.showEvidenceDisclosure ? { label: 'Evidence', tone: 'pill-info' } : null,
     sectionVisibility.showDispatchDisclosure ? { label: 'Dispatch', tone: 'pill-success' } : null,
-  ].filter((item): item is { label: string; tone: string } => Boolean(item));
-  const developerDiagnosticSummaryItems = [
-    sectionVisibility.showHistoryDisclosure ? { label: 'History', tone: 'pill-warn' } : null,
-    sectionVisibility.showSettlementDisclosure ? { label: 'Settlement', tone: 'pill-neutral' } : null,
   ].filter((item): item is { label: string; tone: string } => Boolean(item));
 
   return (
@@ -837,13 +840,36 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
           {canViewDeveloperDiagnostics ? (
             <AdminFormControlLink
               aria-current={detailWorkspace === 'diagnostics' ? 'page' : undefined}
-              href={`/bookings/${booking.id}?section=diagnostics`}
+              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=history`}
             >
               Developer diagnostics
             </AdminFormControlLink>
           ) : null}
         </AdminFilterChipGroup>
       </AdminSection>
+
+      {detailWorkspace === 'diagnostics' ? (
+        <AdminSection
+          description="History and settlement evidence are loaded independently."
+          id="booking-diagnostics-workspace-selector"
+          title="Developer diagnostics view"
+        >
+          <AdminFilterChipGroup ariaLabel="Booking Developer diagnostics workspaces">
+            <AdminFormControlLink
+              aria-current={diagnosticsView === 'history' ? 'page' : undefined}
+              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=history`}
+            >
+              History &amp; audit
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              aria-current={diagnosticsView === 'settlement' ? 'page' : undefined}
+              href={`/bookings/${booking.id}?section=diagnostics&diagnostics=settlement`}
+            >
+              Settlement &amp; finance
+            </AdminFormControlLink>
+          </AdminFilterChipGroup>
+        </AdminSection>
+      ) : null}
 
       {detailWorkspace === 'overview' ? (
         <BookingUnifiedDetailSection {...unifiedDetailProps} />
@@ -934,54 +960,75 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         </BookingDetailDisclosureGroup>
       )}
 
-      {detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (
+      {detailWorkspace === 'diagnostics' &&
+      diagnosticsView === 'history' &&
+      sectionVisibility.showHistoryDisclosure ? (
         <BookingDetailDisclosureGroup
-          helper="Visible to Master Admin and Developer/System operators for history, audit, trace, and full record review."
+          helper="Visible to Master Admin and Developer/System operators for movement, audit, trace, and activity review."
           label="Diagnostics"
           open
-          summaryItems={developerDiagnosticSummaryItems}
-          title="Developer/System records"
+          summaryItems={[{ label: 'History', tone: 'pill-warn' }]}
+          title="Developer/System history"
         >
-          {sectionVisibility.showHistoryDisclosure && (
-            <div className="booking-detail-advanced-section">
-              <div className="booking-detail-advanced-heading">
-                <StatusBadge tone="warning">History</StatusBadge>
-                <span className="booking-detail-advanced-heading-copy">
-                  <strong>Operating movement and audit trail</strong>
-                  <small>Movement history, notifications, audit rows, and activity export.</small>
-                </span>
-              </div>
-              <BookingOperatingLedgerSection {...operatingLedgerProps} />
-              <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
-              <BookingOperatingTimelineSection {...operatingTimelineProps} />
-              <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-              <BookingChatLifecycleSection {...chatLifecycleProps} />
-              <BookingOpsCommandCenter {...opsCommandCenterProps} />
-              <BookingAlertTraceSection {...alertTraceProps} />
-              <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
-              <BookingAttentionChecksSection {...attentionChecksProps} />
-              <BookingActivityPanel {...activityPanelProps} />
+          <div className="booking-detail-advanced-section">
+            <div className="booking-detail-advanced-heading">
+              <StatusBadge tone="warning">History</StatusBadge>
+              <span className="booking-detail-advanced-heading-copy">
+                <strong>Operating movement and audit trail</strong>
+                <small>Movement history, notifications, audit rows, and activity export.</small>
+              </span>
             </div>
-          )}
-
-          {sectionVisibility.showSettlementDisclosure && (
-            <div className="booking-detail-advanced-section">
-              <div className="booking-detail-advanced-heading">
-                <StatusBadge tone="neutral">Settlement</StatusBadge>
-                <span className="booking-detail-advanced-heading-copy">
-                  <strong>Wallet, payout, pricing, and full records</strong>
-                  <small>Wallet evidence, payout eligibility, pricing, and full record detail.</small>
-                </span>
-              </div>
-              <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-              <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
-              <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
-              <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
-              <BookingRecordDetailSections {...recordDetailSectionsProps} />
-            </div>
-          )}
+            <BookingOperatingLedgerSection {...operatingLedgerProps} />
+            <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+            <BookingOperatingTimelineSection {...operatingTimelineProps} />
+            <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+            <BookingChatLifecycleSection {...chatLifecycleProps} />
+            <BookingOpsCommandCenter {...opsCommandCenterProps} />
+            <BookingAlertTraceSection {...alertTraceProps} />
+            <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
+            <BookingAttentionChecksSection {...attentionChecksProps} />
+            <BookingActivityPanel {...activityPanelProps} />
+          </div>
         </BookingDetailDisclosureGroup>
-      )}
+      ) : null}
+
+      {detailWorkspace === 'diagnostics' &&
+      diagnosticsView === 'settlement' &&
+      sectionVisibility.showSettlementDisclosure ? (
+        <BookingDetailDisclosureGroup
+          helper="Visible to Master Admin and Developer/System operators for wallet, payout, pricing, and finance record review."
+          label="Diagnostics"
+          open
+          summaryItems={[{ label: 'Settlement', tone: 'pill-neutral' }]}
+          title="Developer/System settlement"
+        >
+          <div className="booking-detail-advanced-section">
+            <div className="booking-detail-advanced-heading">
+              <StatusBadge tone="neutral">Settlement</StatusBadge>
+              <span className="booking-detail-advanced-heading-copy">
+                <strong>Wallet, payout, pricing, and full records</strong>
+                <small>Wallet evidence, payout eligibility, pricing, and full record detail.</small>
+              </span>
+            </div>
+            <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
+            <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
+            <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
+            <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
+            <BookingRecordDetailSections {...recordDetailSectionsProps} />
+          </div>
+        </BookingDetailDisclosureGroup>
+      ) : null}
+
+      {detailWorkspace === 'diagnostics' &&
+      ((diagnosticsView === 'history' && !sectionVisibility.showHistoryDisclosure) ||
+        (diagnosticsView === 'settlement' && !sectionVisibility.showSettlementDisclosure)) ? (
+        <AdminSection title={diagnosticsView === 'history' ? 'Developer/System history' : 'Developer/System settlement'}>
+          <AdminEmptyState
+            framed
+            message="No retained records are available for this diagnostics workspace."
+          />
+        </AdminSection>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -995,9 +1042,17 @@ export function readBookingDetailWorkspace(
   return 'overview';
 }
 
+export function readBookingDetailDiagnosticsView(
+  params: Record<string, string | string[] | undefined>,
+): BookingDetailDiagnosticsView {
+  const rawDiagnostics = Array.isArray(params.diagnostics) ? params.diagnostics[0] : params.diagnostics;
+  return rawDiagnostics === 'settlement' ? 'settlement' : 'history';
+}
+
 async function loadBookingDetailPageData(
   id: string,
   includeDeveloperDiagnostics: boolean,
+  includeOperationalRecords: boolean,
 ): Promise<BookingDetailPageData> {
   const encodedId = encodeURIComponent(id);
   const [booking, operationalPolicies, rawNotifications] = await Promise.all([
@@ -1005,7 +1060,9 @@ async function loadBookingDetailPageData(
       `/admin/bookings/${encodedId}?includeDiagnostics=${includeDeveloperDiagnostics ? 'true' : 'false'}`,
       null,
     ),
-    adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, []),
+    includeOperationalRecords
+      ? adminGet<AdminOperationalPolicySetting[]>(BOOKING_DETAIL_OPERATIONAL_POLICY_HREF, [])
+      : Promise.resolve([]),
     includeDeveloperDiagnostics
       ? adminGet<AdminNotification[]>(
           `/admin/bookings/${encodedId}/notifications?take=${BOOKING_DETAIL_NOTIFICATION_ROW_PREVIEW_LIMIT}`,
@@ -1013,7 +1070,7 @@ async function loadBookingDetailPageData(
         )
       : Promise.resolve([]),
   ]);
-  const providers = shouldLoadBookingDetailMarketplaceProviders(booking)
+  const providers = includeOperationalRecords && shouldLoadBookingDetailMarketplaceProviders(booking)
     ? await adminGet<AdminProvider[]>(
         `/admin/bookings/${encodedId}/marketplace-providers?take=${BOOKING_DETAIL_MARKETPLACE_PROVIDER_PREVIEW_LIMIT}`,
         [],

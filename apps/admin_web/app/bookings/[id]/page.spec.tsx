@@ -4,7 +4,10 @@ import { vi } from 'vitest';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
 import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
-import BookingDetailPage, { readBookingDetailWorkspace } from './page';
+import BookingDetailPage, {
+  readBookingDetailDiagnosticsView,
+  readBookingDetailWorkspace,
+} from './page';
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
@@ -38,7 +41,10 @@ describe('BookingDetailPage data loading', () => {
     mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
 
     await expect(
-      BookingDetailPage({ params: Promise.resolve({ id: 'booking-policy-load' }) }),
+      BookingDetailPage({
+        params: Promise.resolve({ id: 'booking-policy-load' }),
+        searchParams: Promise.resolve({ section: 'records' }),
+      }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
     const policyHref = mockedAdminGet.mock.calls
@@ -53,6 +59,18 @@ describe('BookingDetailPage data loading', () => {
       [],
     );
     expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/operational-policy', []);
+  });
+
+  it('skips operational record policy queries for the overview workspace', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    await expect(
+      BookingDetailPage({ params: Promise.resolve({ id: 'booking-overview-load' }) }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(
+      mockedAdminGet.mock.calls.some(([href]) => href.startsWith('/admin/operational-policy')),
+    ).toBe(false);
   });
 
   it('loads notification diagnostics only when the full booking detail view is requested', async () => {
@@ -138,6 +156,35 @@ describe('BookingDetailPage data loading', () => {
     );
   });
 
+  it('does not load audit or notification diagnostics for the settlement workspace', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+    mockedGetCurrentAdminOperatorAccess.mockResolvedValue({
+      categories: [],
+      email: 'master@example.com',
+      fullName: 'Master Admin',
+      id: 'master-1',
+      phone: null,
+      roles: ['ADMIN', 'MASTER_ADMIN'],
+      updatedAt: null,
+    });
+
+    await expect(
+      BookingDetailPage({
+        params: Promise.resolve({ id: 'booking-settlement-diagnostics-load' }),
+        searchParams: Promise.resolve({ diagnostics: 'settlement', section: 'diagnostics' }),
+      }),
+    ).rejects.toThrow('NEXT_NOT_FOUND');
+
+    expect(mockedAdminGet).toHaveBeenCalledWith(
+      '/admin/bookings/booking-settlement-diagnostics-load?includeDiagnostics=false',
+      null,
+    );
+    expect(mockedAdminGet).not.toHaveBeenCalledWith(
+      '/admin/bookings/booking-settlement-diagnostics-load/notifications?take=12',
+      [],
+    );
+  });
+
   it('maps booking detail workspace query values without breaking the legacy full link', () => {
     expect(readBookingDetailWorkspace({})).toBe('overview');
     expect(readBookingDetailWorkspace({ section: 'records' })).toBe('records');
@@ -145,6 +192,14 @@ describe('BookingDetailPage data loading', () => {
     expect(readBookingDetailWorkspace({ section: 'full' })).toBe('diagnostics');
     expect(readBookingDetailWorkspace({ section: ['records', 'diagnostics'] })).toBe('records');
     expect(readBookingDetailWorkspace({ section: 'unknown' })).toBe('overview');
+  });
+
+  it('defaults diagnostics to history and accepts only the settlement subview explicitly', () => {
+    expect(readBookingDetailDiagnosticsView({})).toBe('history');
+    expect(readBookingDetailDiagnosticsView({ diagnostics: 'history' })).toBe('history');
+    expect(readBookingDetailDiagnosticsView({ diagnostics: 'settlement' })).toBe('settlement');
+    expect(readBookingDetailDiagnosticsView({ diagnostics: ['settlement', 'history'] })).toBe('settlement');
+    expect(readBookingDetailDiagnosticsView({ diagnostics: 'unknown' })).toBe('history');
   });
 
   it('loads marketplace provider candidates only for non-terminal booking details', () => {
@@ -168,13 +223,13 @@ describe('BookingDetailPage data loading', () => {
   it('keeps deep diagnostic booking records behind the already-resolved Developer/System gate', () => {
     const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
 
-    expect(source).toContain('showDeveloperDiagnosticsDisclosure');
     expect(source).not.toContain('AdminDeveloperSystemSection');
-    expect(source).toContain("detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure");
-    expect(source.indexOf("{detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (")).toBeLessThan(
+    expect(source).toContain("diagnosticsView === 'history'");
+    expect(source).toContain("diagnosticsView === 'settlement'");
+    expect(source.indexOf("diagnosticsView === 'history'")).toBeLessThan(
       source.indexOf('<BookingOperatingLedgerSection'),
     );
-    expect(source.indexOf("{detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (")).toBeLessThan(
+    expect(source.indexOf("diagnosticsView === 'settlement'")).toBeLessThan(
       source.indexOf('<BookingRecordDetailSections'),
     );
   });
@@ -184,9 +239,11 @@ describe('BookingDetailPage data loading', () => {
 
     expect(source).toContain('id="booking-workspace-selector"');
     expect(source).toContain('ariaLabel="Booking detail workspaces"');
+    expect(source).toContain('id="booking-diagnostics-workspace-selector"');
     expect(source).toContain("detailWorkspace === 'overview'");
     expect(source).toContain("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure");
-    expect(source).toContain("detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure");
+    expect(source).toContain("diagnosticsView === 'history'");
+    expect(source).toContain("diagnosticsView === 'settlement'");
     expect(source.indexOf("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure")).toBeLessThan(
       source.indexOf('<BookingEvidenceSections'),
     );

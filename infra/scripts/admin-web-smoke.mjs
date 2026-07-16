@@ -1909,7 +1909,11 @@ if (bookingLinkMatch) {
   ];
   const bookingWorkspaceTargets = [
     {
-      forbiddenMarkers: ['Booking review records', 'Developer/System records'],
+      forbiddenMarkers: [
+        'Booking review records',
+        'Developer/System history',
+        'Developer/System settlement',
+      ],
       markers: [
         ...bookingAuthorityContractMarkers,
         'Booking workspace view',
@@ -1921,7 +1925,7 @@ if (bookingLinkMatch) {
       path: bookingPath,
     },
     {
-      forbiddenMarkers: ['Unified booking detail', 'Developer/System records'],
+      forbiddenMarkers: ['Unified booking detail', 'Developer/System history', 'Developer/System settlement'],
       markers: [
         'Booking workspace view',
         'Booking review records',
@@ -1931,14 +1935,34 @@ if (bookingLinkMatch) {
       path: `${bookingPath}?section=records`,
     },
     {
-      forbiddenMarkers: ['Unified booking detail', 'Booking review records'],
-      markers: [
-        'Booking workspace view',
-        'Developer/System records',
-        'Operating movement and audit trail',
+      forbiddenMarkers: [
+        'Unified booking detail',
+        'Booking review records',
+        'Developer/System settlement',
         'Wallet, payout, pricing, and full records',
       ],
-      path: `${bookingPath}?section=diagnostics`,
+      markers: [
+        'Booking workspace view',
+        'Developer diagnostics view',
+        'Developer/System history',
+        'Operating movement and audit trail',
+      ],
+      path: `${bookingPath}?section=diagnostics&diagnostics=history`,
+    },
+    {
+      forbiddenMarkers: [
+        'Unified booking detail',
+        'Booking review records',
+        'Developer/System history',
+        'Operating movement and audit trail',
+      ],
+      markers: [
+        'Booking workspace view',
+        'Developer diagnostics view',
+        'Developer/System settlement',
+        'Wallet, payout, pricing, and full records',
+      ],
+      path: `${bookingPath}?section=diagnostics&diagnostics=settlement`,
     },
   ];
   let bookingBody = '';
