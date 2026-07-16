@@ -8,7 +8,7 @@ const DEFAULT_SAMPLES = 5;
 const DEFAULT_WARMUPS = 1;
 const DEFAULT_TIMEOUT_MS = 5_000;
 
-const readTargets = [
+const coreReadTargets = [
   {
     label: 'partners-list',
     path: '/admin/partners/list-providers?take=10',
@@ -23,6 +23,49 @@ const readTargets = [
     label: 'bookings-list',
     path: '/admin/bookings?take=1',
     budget: { p90Ms: 750, maxBytes: 128 * 1024 },
+  },
+];
+
+const financeReadTargets = [
+  {
+    label: 'payment-clearing-list',
+    path: '/admin/booking-payment-clearing?take=20&range=30d&review=all',
+    budget: { p90Ms: 1_000, maxBytes: 160 * 1024 },
+  },
+  {
+    label: 'payment-clearing-summary',
+    path: '/admin/booking-payment-clearing/summary?range=30d&review=all',
+    budget: { p90Ms: 750, maxBytes: 32 * 1024 },
+  },
+  {
+    label: 'general-ledger-list',
+    path: '/admin/accounting-journal-batches?take=20&range=30d&review=all',
+    budget: { p90Ms: 1_000, maxBytes: 160 * 1024 },
+  },
+  {
+    label: 'general-ledger-summary',
+    path: '/admin/accounting-journal-batches/summary?range=30d&review=all',
+    budget: { p90Ms: 750, maxBytes: 32 * 1024 },
+  },
+  {
+    label: 'bank-reconciliation-list',
+    path: '/admin/bank-reconciliation?take=20&range=30d&review=all',
+    budget: { p90Ms: 1_000, maxBytes: 192 * 1024 },
+  },
+  {
+    label: 'bank-reconciliation-summary',
+    path: '/admin/bank-reconciliation/summary?range=30d&review=all',
+    budget: { p90Ms: 750, maxBytes: 64 * 1024 },
+  },
+  {
+    label: 'wallet-adjustments-list',
+    path: '/admin/wallet-adjustments?take=20',
+    budget: { p90Ms: 1_000, maxBytes: 160 * 1024 },
+  },
+  {
+    label: 'wallet-adjustments-summary',
+    path: '/admin/wallet-adjustments/summary',
+    budget: { p90Ms: 750, maxBytes: 32 * 1024 },
   },
 ];
 
@@ -74,6 +117,34 @@ export function evaluateBudget(metric, budget) {
   return violations;
 }
 
+export function buildReadTargets(bookingId, period) {
+  const encodedBookingId = encodeURIComponent(bookingId);
+  return [
+    ...coreReadTargets,
+    {
+      label: 'booking-overview',
+      path: `/admin/bookings/${encodedBookingId}?includeDiagnostics=false`,
+      budget: { p90Ms: 750, maxBytes: 128 * 1024 },
+    },
+    {
+      label: 'booking-diagnostics',
+      path: `/admin/bookings/${encodedBookingId}?includeDiagnostics=true`,
+      budget: { p90Ms: 1_000, maxBytes: 192 * 1024 },
+    },
+    {
+      label: 'booking-notifications',
+      path: `/admin/bookings/${encodedBookingId}/notifications?take=8`,
+      budget: { p90Ms: 750, maxBytes: 96 * 1024 },
+    },
+    {
+      label: 'finance-overview',
+      path: `/admin/finance-overview?range=7d&period=${encodeURIComponent(period)}`,
+      budget: { p90Ms: 1_000, maxBytes: 96 * 1024 },
+    },
+    ...financeReadTargets,
+  ];
+}
+
 export async function runAdminApiReadBudget(options = {}) {
   const envFile = options.envFile ?? '.env';
   const { env } = loadMergedEnv(envFile);
@@ -105,37 +176,15 @@ export async function runAdminApiReadBudget(options = {}) {
   const report = options.report ?? console.log;
   const common = { baseUrl, fetchImpl, timeoutMs, token };
 
-  const bookingList = await requestAdminJson(readTargets[2].path, common);
+  const bookingListTarget = coreReadTargets.find((target) => target.label === 'bookings-list');
+  const bookingList = await requestAdminJson(bookingListTarget.path, common);
   const bookingId = options.bookingId ?? env.ADMIN_API_BUDGET_BOOKING_ID ?? firstBookingId(bookingList.body);
   if (!bookingId) {
     throw new Error('No booking is available for Admin API detail budget checks.');
   }
 
   const period = options.period ?? env.ADMIN_API_BUDGET_PERIOD ?? new Date().toISOString().slice(0, 7);
-  const encodedBookingId = encodeURIComponent(bookingId);
-  const targets = [
-    ...readTargets,
-    {
-      label: 'booking-overview',
-      path: `/admin/bookings/${encodedBookingId}?includeDiagnostics=false`,
-      budget: { p90Ms: 750, maxBytes: 128 * 1024 },
-    },
-    {
-      label: 'booking-diagnostics',
-      path: `/admin/bookings/${encodedBookingId}?includeDiagnostics=true`,
-      budget: { p90Ms: 1_000, maxBytes: 192 * 1024 },
-    },
-    {
-      label: 'booking-notifications',
-      path: `/admin/bookings/${encodedBookingId}/notifications?take=8`,
-      budget: { p90Ms: 750, maxBytes: 96 * 1024 },
-    },
-    {
-      label: 'finance-overview',
-      path: `/admin/finance-overview?range=7d&period=${encodeURIComponent(period)}`,
-      budget: { p90Ms: 1_000, maxBytes: 96 * 1024 },
-    },
-  ];
+  const targets = buildReadTargets(bookingId, period);
 
   const failures = [];
   const metrics = [];

@@ -169,6 +169,7 @@ function Invoke-SmokeWithApi {
   )
 
   Invoke-Check "api readiness against local services" "Invoke-RestMethod $ApiBaseUrl/health/ready | ConvertTo-Json -Depth 5"
+  Invoke-Check "admin api read budget against local services" "`$env:ADMIN_API_BASE_URL='$ApiBaseUrl'; node infra\scripts\admin-api-read-budget.mjs --enforce-budget"
   Invoke-Check "api smoke against local services" "`$env:API_BASE_URL='$ApiBaseUrl'; `$env:SOCKET_BASE_URL='$SocketBaseUrl'; node infra\scripts\api-smoke.mjs"
   Invoke-Check "realtime smoke against local services" "`$env:API_BASE_URL='$ApiBaseUrl'; `$env:SOCKET_BASE_URL='$SocketBaseUrl'; node infra\scripts\realtime-smoke.mjs"
   if ($IncludeSupabaseAuthSmoke) {
@@ -243,6 +244,7 @@ try {
 $global:LASTEXITCODE = 0
 
 Invoke-Check "script syntax: api smoke" "node --check infra\scripts\api-smoke.mjs"
+Invoke-Check "script syntax: admin api budget" "node --check infra\scripts\admin-api-read-budget.mjs"
 Invoke-Check "script syntax: admin web smoke" "node --check infra\scripts\admin-web-smoke.mjs"
 Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
 Invoke-Check "script syntax: supabase auth smoke" "node --check infra\scripts\supabase-auth-smoke.mjs"

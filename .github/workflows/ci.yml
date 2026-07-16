@@ -42,6 +42,9 @@ jobs:
       - name: Test Admin Web
         run: npm run test --workspace @massage-vn/admin-web
 
+      - name: Test Admin API read budget contract
+        run: npm run admin:api-budget:test
+
       - name: Typecheck API
         run: npm run typecheck --workspace @massage-vn/api
 
@@ -59,6 +62,7 @@ jobs:
       - name: Script syntax checks
         run: |
           node --check infra/scripts/api-smoke.mjs
+          node --check infra/scripts/admin-api-read-budget.mjs
           node --check infra/scripts/check-env.mjs
           node --check infra/scripts/supabase-location-exposure-smoke.mjs
           node --check apps/api/prisma/seed.js

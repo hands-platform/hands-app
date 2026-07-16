@@ -2,12 +2,38 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildReadTargets,
   evaluateBudget,
   normalizeAdminApiBaseUrl,
   percentile,
   positiveInteger,
   summarizeSamples,
 } from './admin-api-read-budget.mjs';
+
+test('covers core and Finance read models without unbounded list paths', () => {
+  const targets = buildReadTargets('booking/id with spaces', '2026-07');
+  const labels = new Set(targets.map((target) => target.label));
+
+  for (const label of [
+    'partners-list',
+    'bookings-list',
+    'finance-overview',
+    'payment-clearing-list',
+    'general-ledger-list',
+    'bank-reconciliation-list',
+    'wallet-adjustments-list',
+  ]) {
+    assert.equal(labels.has(label), true, `${label} must remain in the read budget manifest`);
+  }
+
+  assert.equal(
+    targets.find((target) => target.label === 'booking-overview')?.path,
+    '/admin/bookings/booking%2Fid%20with%20spaces?includeDiagnostics=false',
+  );
+  for (const target of targets.filter((item) => item.label.endsWith('-list'))) {
+    assert.match(target.path, /[?&]take=\d+/);
+  }
+});
 
 test('normalizes the Admin API base URL without retaining query data', () => {
   assert.equal(normalizeAdminApiBaseUrl('http://localhost:3000'), 'http://localhost:3000/api');
