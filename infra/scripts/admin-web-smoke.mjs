@@ -58,6 +58,7 @@ const budgetSmokePaths = [
   '/operations-policy',
   '/cash-settlements',
   '/finance-closeout',
+  '/finance-closeout?view=settlement',
   '/payouts',
   '/payouts?details=all',
   '/wallet-adjustments',
@@ -844,6 +845,8 @@ const pages = [
     path: '/finance-closeout',
     markers: [
       'Finance Closeout',
+      'Closeout workspace',
+      'Operations closeout',
       'Finance date range',
       'Closeout reconciliation board',
       'Payment-to-earning checks',
@@ -851,6 +854,18 @@ const pages = [
       'Shift close action map',
       'Payout release checks',
     ],
+    forbiddenMarkers: ['Settlement gap filters', 'Settlement backlog'],
+  },
+  {
+    path: '/finance-closeout?view=settlement',
+    markers: [
+      'Finance Closeout',
+      'Closeout workspace',
+      'Settlement repair',
+      'Settlement gap filters',
+      'Settlement backlog',
+    ],
+    forbiddenMarkers: ['Closeout reconciliation board', 'Payment-to-earning checks'],
   },
   {
     path: '/finance-closeout?range=7d',

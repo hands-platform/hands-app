@@ -70,6 +70,7 @@ const PAYOUT_REFERENCE_REQUIRED_STATUSES = ['PROCESSING', 'PAID'];
 const FINANCE_CLOSEOUT_API_LIMIT = 10;
 const FINANCE_CLOSEOUT_SETTLEMENT_PAGE_SIZE = 10;
 
+export type FinanceCloseoutWorkspace = 'operations' | 'settlement';
 export type FinanceCloseoutSettlementAge = 'backlog' | '24-72h' | '3-7d' | '7d-plus' | 'recent' | 'all';
 export type FinanceCloseoutSettlementTrack =
   | 'canonical'
@@ -426,6 +427,22 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
 export function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
   const rangeParam = readSearchParam(params.range);
   const range = rangeParam ? normalizeDateRange(rangeParam) : 'today';
+  const requestedWorkspace = readSearchParam(params.view);
+  const hasLegacySettlementIntent = [
+    params.checkpointBookingId,
+    params.q,
+    params.repairBookingId,
+    params.repairNotice,
+    params.reviewBookingId,
+    params.settlementAge,
+    params.settlementDryRun,
+    params.settlementPage,
+    params.settlementPaymentMethod,
+    params.settlementPeriod,
+    params.settlementTrack,
+  ].some((value) => (Array.isArray(value) ? value.length > 0 : Boolean(value)));
+  const workspace: FinanceCloseoutWorkspace =
+    requestedWorkspace === 'settlement' || hasLegacySettlementIntent ? 'settlement' : 'operations';
   const settlementAge = normalizeFinanceCloseoutSettlementAge(readSearchParam(params.settlementAge));
   const settlementPaymentMethod = normalizeFinanceCloseoutSettlementPaymentMethod(
     readSearchParam(params.settlementPaymentMethod),
@@ -446,6 +463,7 @@ export function buildFinanceCloseoutFilters(params: Record<string, string | stri
     settlementQuery,
     settlementTrack,
     settlementTrackLabel: financeCloseoutSettlementTrackLabel(settlementTrack),
+    workspace,
   };
 }
 
@@ -519,12 +537,17 @@ export function buildFinanceCloseoutPageHref(
     settlementPaymentMethod: overrides.settlementPaymentMethod ?? filters.settlementPaymentMethod,
     settlementPeriod: overrides.settlementPeriod ?? filters.settlementPeriod,
     settlementTrack: overrides.settlementTrack ?? filters.settlementTrack,
+    view: 'settlement',
   });
   const query = overrides.settlementQuery ?? filters.settlementQuery;
   if (query) {
     params.set('q', query);
   }
   return `/finance-closeout?${params.toString()}`;
+}
+
+export function buildFinanceCloseoutOperationsHref(range: AdminDateRange) {
+  return range === 'today' ? '/finance-closeout' : `/finance-closeout?range=${range}`;
 }
 
 export function buildFinanceCloseoutSettlementRepairHref(

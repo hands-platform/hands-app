@@ -40,6 +40,7 @@ import {
   buildFinanceCloseoutApiHrefs,
   buildFinanceCloseoutEvidenceChecklist,
   buildFinanceCloseoutFilters,
+  buildFinanceCloseoutOperationsHref,
   buildFinanceCloseoutPageHref,
   buildFinanceCloseoutSettlementBatchReviewHref,
   buildFinanceCloseoutSettlementRepairHref,
@@ -71,12 +72,32 @@ type FinanceCloseoutPageProps = {
 export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildFinanceCloseoutFilters(params);
+  const isSettlementWorkspace = filters.workspace === 'settlement';
   const repairBookingId = readPageParam(params, 'repairBookingId');
   const checkpointBookingId = readPageParam(params, 'checkpointBookingId');
   const repairNotice = readPageParam(params, 'repairNotice');
   const shouldRunSettlementDryRun = readPageParam(params, 'settlementDryRun') === '1';
   const reviewBookingIds = readPageParamList(params, 'reviewBookingId', 10);
   const apiHrefs = buildFinanceCloseoutApiHrefs(filters);
+  const emptyEarningsSummary: AdminEarningSummary = {
+    count: 0,
+    grossAmount: 0,
+    platformFee: 0,
+    withholdingAmount: 0,
+    netAmount: 0,
+    pendingNetAmount: 0,
+    availableNetAmount: 0,
+    paidNetAmount: 0,
+    currency: 'VND',
+  };
+  const emptySettlementGaps: AdminBookingSettlementGapList = {
+    generatedAt: '',
+    hasNext: false,
+    items: [],
+    skip: (filters.settlementPage - 1) * filters.settlementPageSize,
+    take: filters.settlementPageSize,
+    total: 0,
+  };
   const [
     payments,
     paymentSummary,
@@ -94,46 +115,41 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
     selectedRepairPreviews,
     repairCheckpoint,
   ] = await Promise.all([
-    adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
-    adminGet<AdminPaymentSummary | null>(apiHrefs.paymentSummaryHref, null),
-    adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
-    adminGet<AdminRefundSummary | null>(apiHrefs.refundSummaryHref, null),
-    adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, {
-      count: 0,
-      grossAmount: 0,
-      platformFee: 0,
-      withholdingAmount: 0,
-      netAmount: 0,
-      pendingNetAmount: 0,
-      availableNetAmount: 0,
-      paidNetAmount: 0,
-      currency: 'VND',
-    }),
-    adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
-    adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
-    adminGet<AdminCashSettlementSummary | null>(apiHrefs.cashSettlementSummaryHref, null),
-    adminGet<AdminBookingSettlementGapList>(apiHrefs.bookingSettlementGapsHref, {
-      generatedAt: '',
-      hasNext: false,
-      items: [],
-      skip: (filters.settlementPage - 1) * filters.settlementPageSize,
-      take: filters.settlementPageSize,
-      total: 0,
-    }),
+    isSettlementWorkspace ? Promise.resolve<AdminPayment[]>([]) : adminGet<AdminPayment[]>(apiHrefs.paymentsHref, []),
+    isSettlementWorkspace
+      ? Promise.resolve<AdminPaymentSummary | null>(null)
+      : adminGet<AdminPaymentSummary | null>(apiHrefs.paymentSummaryHref, null),
+    isSettlementWorkspace ? Promise.resolve<AdminRefund[]>([]) : adminGet<AdminRefund[]>(apiHrefs.refundsHref, []),
+    isSettlementWorkspace
+      ? Promise.resolve<AdminRefundSummary | null>(null)
+      : adminGet<AdminRefundSummary | null>(apiHrefs.refundSummaryHref, null),
+    isSettlementWorkspace
+      ? Promise.resolve<AdminEarningSummary>(emptyEarningsSummary)
+      : adminGet<AdminEarningSummary>(apiHrefs.earningsSummaryHref, emptyEarningsSummary),
+    isSettlementWorkspace ? Promise.resolve<AdminEarning[]>([]) : adminGet<AdminEarning[]>(apiHrefs.earningsHref, []),
+    isSettlementWorkspace
+      ? Promise.resolve<AdminPayoutBatch[]>([])
+      : adminGet<AdminPayoutBatch[]>(apiHrefs.payoutBatchesHref, []),
+    isSettlementWorkspace
+      ? Promise.resolve<AdminCashSettlementSummary | null>(null)
+      : adminGet<AdminCashSettlementSummary | null>(apiHrefs.cashSettlementSummaryHref, null),
+    isSettlementWorkspace
+      ? adminGet<AdminBookingSettlementGapList>(apiHrefs.bookingSettlementGapsHref, emptySettlementGaps)
+      : Promise.resolve<AdminBookingSettlementGapList>(emptySettlementGaps),
     adminGet<AdminBookingSettlementGapSummary | null>(apiHrefs.bookingSettlementGapSummaryHref, null),
-    shouldRunSettlementDryRun
+    isSettlementWorkspace && shouldRunSettlementDryRun
       ? adminGet<AdminBookingSettlementGapDryRun | null>(apiHrefs.bookingSettlementGapDryRunHref, null)
       : Promise.resolve<AdminBookingSettlementGapDryRun | null>(null),
-    repairBookingId
+    isSettlementWorkspace && repairBookingId
       ? adminGet<AdminBookingSettlementGapRepairPreview | null>(
           `/admin/booking-settlement-gaps/${encodeURIComponent(repairBookingId)}/preview`,
           null,
         )
       : Promise.resolve<AdminBookingSettlementGapRepairPreview | null>(null),
-    repairBookingId
+    isSettlementWorkspace && repairBookingId
       ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
       : Promise.resolve<AdminUser[]>([]),
-    reviewBookingIds.length
+    isSettlementWorkspace && reviewBookingIds.length
       ? Promise.all(
           reviewBookingIds.map((bookingId) =>
             adminGet<AdminBookingSettlementGapRepairPreview | null>(
@@ -143,7 +159,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           ),
         )
       : Promise.resolve<Array<AdminBookingSettlementGapRepairPreview | null>>([]),
-    checkpointBookingId
+    isSettlementWorkspace && checkpointBookingId
       ? adminGet<AdminBookingSettlementRepairCheckpoint | null>(
           `/admin/booking-settlement-gaps/${encodeURIComponent(checkpointBookingId)}/checkpoint`,
           null,
@@ -185,58 +201,102 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
 
   return (
     <AdminPageTemplate
-      description="End-of-shift reconciliation board for payment holds, refunds, earnings, cash wallet debt, and payout releases."
-      metrics={[
-        {
-          helper: 'Completed bookings older than 24 hours without a settlement snapshot.',
-          kind: 'risk',
-          label: 'Settlement backlog',
-          scope: 'Backlog >24h',
-          value: settlementGapSummary?.backlog ?? settlementGaps.total,
-        },
-        {
-          helper: 'Payment holds and cash rows to close for this range.',
-          kind: 'action',
-          label: 'Open payment items',
-          scope: closeoutRangeScope,
-          value: reconciliation.openPaymentCount,
-        },
-        {
-          helper: 'Refund cases still open for this range.',
-          kind: 'risk',
-          label: 'Refund items',
-          scope: closeoutRangeScope,
-          value: reconciliation.openRefundCount,
-        },
-        {
-          label: 'Cash debt',
-          value: <MoneyText amount={reconciliation.cashDebtAmount} currency={currency} />,
-          helper: 'Partner cash-fee debt needing settlement evidence for this range.',
-          kind: 'risk',
-          scope: closeoutRangeScope,
-        },
-        {
-          label: 'Available payout',
-          value: <MoneyText amount={filteredEarningsSummary.availableNetAmount} currency={currency} />,
-          helper: 'Partner net waiting for payout batching in this range.',
-          kind: 'action',
-          scope: closeoutRangeScope,
-        },
-        {
-          helper: 'Payout batches still waiting for release checks.',
-          kind: 'action',
-          label: 'Open payout batches',
-          scope: closeoutRangeScope,
-          value: reconciliation.openPayoutCount,
-        },
-        {
-          helper: 'Payment or payout references to complete before handoff.',
-          kind: 'risk',
-          label: 'Missing refs',
-          scope: closeoutRangeScope,
-          value: reconciliation.missingReferenceCount,
-        },
-      ]}
+      description={
+        isSettlementWorkspace
+          ? 'Controlled review and repair workspace for completed bookings without a retained settlement snapshot.'
+          : 'End-of-shift operations board for payment holds, refunds, earnings, cash wallet debt, and payout releases.'
+      }
+      metrics={
+        isSettlementWorkspace
+          ? [
+              {
+                helper: 'Completed bookings older than 24 hours without a settlement snapshot.',
+                kind: 'risk',
+                label: 'Settlement backlog',
+                scope: 'Backlog >24h',
+                value: settlementGapSummary?.backlog ?? settlementGaps.total,
+              },
+              {
+                helper: 'Canonical booking evidence can be reconstructed through the guarded repair flow.',
+                kind: 'action',
+                label: 'Canonical repair',
+                scope: 'Repair queue',
+                value: settlementGapSummary?.canonical ?? 0,
+              },
+              {
+                helper: 'Historical paid evidence is ready for preview and dual approval.',
+                kind: 'action',
+                label: 'Historical ready',
+                scope: 'Repair queue',
+                value: settlementGapSummary?.historicalReady ?? 0,
+              },
+              {
+                helper: 'Evidence must be corrected before a settlement snapshot can be created.',
+                kind: 'risk',
+                label: 'Evidence blocked',
+                scope: 'Needs review',
+                value: settlementGapSummary?.evidenceBlocked ?? 0,
+              },
+              {
+                helper: 'Finance must inspect these rows before choosing a repair path.',
+                kind: 'risk',
+                label: 'Manual review',
+                scope: 'Needs review',
+                value: settlementGapSummary?.manualReview ?? 0,
+              },
+            ]
+          : [
+              {
+                helper: 'Completed bookings older than 24 hours without a settlement snapshot.',
+                kind: 'risk',
+                label: 'Settlement backlog',
+                scope: 'Backlog >24h',
+                value: settlementGapSummary?.backlog ?? 0,
+              },
+              {
+                helper: 'Payment holds and cash rows to close for this range.',
+                kind: 'action',
+                label: 'Open payment items',
+                scope: closeoutRangeScope,
+                value: reconciliation.openPaymentCount,
+              },
+              {
+                helper: 'Refund cases still open for this range.',
+                kind: 'risk',
+                label: 'Refund items',
+                scope: closeoutRangeScope,
+                value: reconciliation.openRefundCount,
+              },
+              {
+                label: 'Cash debt',
+                value: <MoneyText amount={reconciliation.cashDebtAmount} currency={currency} />,
+                helper: 'Partner cash-fee debt needing settlement evidence for this range.',
+                kind: 'risk',
+                scope: closeoutRangeScope,
+              },
+              {
+                label: 'Available payout',
+                value: <MoneyText amount={filteredEarningsSummary.availableNetAmount} currency={currency} />,
+                helper: 'Partner net waiting for payout batching in this range.',
+                kind: 'action',
+                scope: closeoutRangeScope,
+              },
+              {
+                helper: 'Payout batches still waiting for release checks.',
+                kind: 'action',
+                label: 'Open payout batches',
+                scope: closeoutRangeScope,
+                value: reconciliation.openPayoutCount,
+              },
+              {
+                helper: 'Payment or payout references to complete before handoff.',
+                kind: 'risk',
+                label: 'Missing refs',
+                scope: closeoutRangeScope,
+                value: reconciliation.missingReferenceCount,
+              },
+            ]
+      }
       title="Finance Closeout"
     >
       {repairNotice ? (
@@ -265,10 +325,35 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       ) : null}
 
       <AdminFilterPanel
+        className="admin-mt-16 admin-mb-16"
+        description="Daily closeout work and historical settlement repair are loaded independently."
+        resultLabel={isSettlementWorkspace ? 'Settlement repair' : 'Operations closeout'}
+        title="Closeout workspace"
+      >
+        <AdminSegmentedControl
+          activeValue={filters.workspace}
+          ariaLabel="Finance closeout workspaces"
+          options={[
+            {
+              href: buildFinanceCloseoutOperationsHref(filters.range),
+              label: 'Operations closeout',
+              value: 'operations',
+            },
+            {
+              href: buildFinanceCloseoutPageHref(filters, { settlementPage: 1 }),
+              label: 'Settlement repair',
+              value: 'settlement',
+            },
+          ]}
+        />
+      </AdminFilterPanel>
+
+      {!isSettlementWorkspace ? (
+        <AdminFilterPanel
         actions={
           <AdminTextLink href="/audit-log?bucket=Finance%2FCloseout">Open finance audit</AdminTextLink>
         }
-        className="admin-mt-16 admin-mb-16"
+        className="admin-mb-16"
         description={
           <>
             Range: {filters.label}. Refunds, earnings, payout batches, and local cash debt use record dates.
@@ -286,22 +371,22 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
             className="finance-closeout-filter-buttons"
             options={[
               {
-                href: buildFinanceCloseoutPageHref(filters, { range: 'all', settlementPage: 1 }),
+                href: buildFinanceCloseoutOperationsHref('all'),
                 label: 'All records',
                 value: 'all',
               },
               {
-                href: buildFinanceCloseoutPageHref(filters, { range: 'today', settlementPage: 1 }),
+                href: buildFinanceCloseoutOperationsHref('today'),
                 label: 'Today',
                 value: 'today',
               },
               {
-                href: buildFinanceCloseoutPageHref(filters, { range: '7d', settlementPage: 1 }),
+                href: buildFinanceCloseoutOperationsHref('7d'),
                 label: 'Last 7 days',
                 value: '7d',
               },
               {
-                href: buildFinanceCloseoutPageHref(filters, { range: '30d', settlementPage: 1 }),
+                href: buildFinanceCloseoutOperationsHref('30d'),
                 label: 'Last 30 days',
                 value: '30d',
               },
@@ -314,8 +399,10 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           tone="info"
         />
       </AdminFilterPanel>
+      ) : null}
 
-      <AdminFilterPanel
+      {isSettlementWorkspace ? (
+        <AdminFilterPanel
         actions={
           <AdminTextLink
             href={buildFinanceCloseoutPageHref(filters, {
@@ -370,6 +457,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           className="admin-directory-filter-grid admin-mt-12"
           method="get"
         >
+          <input name="view" type="hidden" value="settlement" />
           <input name="range" type="hidden" value={filters.range} />
           <input name="settlementAge" type="hidden" value={filters.settlementAge} />
           <input name="settlementPage" type="hidden" value="1" />
@@ -418,55 +506,62 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           tone={(settlementGapSummary?.backlog ?? 0) > 0 ? 'warning' : 'success'}
         />
       </AdminFilterPanel>
+      ) : null}
 
-      <FinanceCloseoutSettlementBacklogSection
-        hrefForPage={(page) => buildFinanceCloseoutPageHref(filters, { settlementPage: page })}
-        hrefForRepair={(bookingId) => buildFinanceCloseoutSettlementRepairHref(filters, bookingId)}
-        pagination={settlementPagination}
-        reviewFormState={{
-          q: filters.settlementQuery,
-          range: filters.range,
-          settlementAge: filters.settlementAge,
-          settlementPage: filters.settlementPage,
-          settlementPaymentMethod: filters.settlementPaymentMethod,
-          settlementPeriod: filters.settlementPeriod,
-          settlementTrack: filters.settlementTrack,
-        }}
-        rows={settlementGaps.items}
-      />
+      {isSettlementWorkspace ? (
+        <>
+          <FinanceCloseoutSettlementBacklogSection
+            hrefForPage={(page) => buildFinanceCloseoutPageHref(filters, { settlementPage: page })}
+            hrefForRepair={(bookingId) => buildFinanceCloseoutSettlementRepairHref(filters, bookingId)}
+            pagination={settlementPagination}
+            reviewFormState={{
+              q: filters.settlementQuery,
+              range: filters.range,
+              settlementAge: filters.settlementAge,
+              settlementPage: filters.settlementPage,
+              settlementPaymentMethod: filters.settlementPaymentMethod,
+              settlementPeriod: filters.settlementPeriod,
+              settlementTrack: filters.settlementTrack,
+            }}
+            rows={settlementGaps.items}
+          />
 
-      <FinanceCloseoutSettlementDryRunSection
-        clearHref={buildFinanceCloseoutPageHref(filters)}
-        hrefForBatch={(bookingIds) => buildFinanceCloseoutSettlementBatchReviewHref(filters, bookingIds)}
-        report={settlementDryRun}
-        runHref={buildFinanceCloseoutSettlementDryRunHref(filters)}
-      />
+          <FinanceCloseoutSettlementDryRunSection
+            clearHref={buildFinanceCloseoutPageHref(filters)}
+            hrefForBatch={(bookingIds) => buildFinanceCloseoutSettlementBatchReviewHref(filters, bookingIds)}
+            report={settlementDryRun}
+            runHref={buildFinanceCloseoutSettlementDryRunHref(filters)}
+          />
 
-      <FinanceCloseoutSettlementBatchPreviewSection
-        clearHref={buildFinanceCloseoutPageHref(filters)}
-        hrefForRepair={(bookingId) => buildFinanceCloseoutSettlementRepairHref(filters, bookingId)}
-        previews={selectedSettlementPreviews}
-      />
+          <FinanceCloseoutSettlementBatchPreviewSection
+            clearHref={buildFinanceCloseoutPageHref(filters)}
+            hrefForRepair={(bookingId) => buildFinanceCloseoutSettlementRepairHref(filters, bookingId)}
+            previews={selectedSettlementPreviews}
+          />
+        </>
+      ) : (
+        <>
+          <FinanceCloseoutTaskBoardSection tasks={closeoutTasks} />
 
-      <FinanceCloseoutTaskBoardSection tasks={closeoutTasks} />
+          <FinanceCloseoutPaymentEarningSection currency={currency} summary={filteredEarningsSummary} />
 
-      <FinanceCloseoutPaymentEarningSection currency={currency} summary={filteredEarningsSummary} />
+          <FinanceCloseoutCashDebtHandoffSection
+            cashDebtAmount={reconciliation.cashDebtAmount}
+            currency={currency}
+            oldestOpenAt={cashSummary?.oldestOpenAt}
+            providerCount={cashSummary?.providerCount ?? 0}
+            rowCount={cashSummary?.rowCount ?? 0}
+          />
 
-      <FinanceCloseoutCashDebtHandoffSection
-        cashDebtAmount={reconciliation.cashDebtAmount}
-        currency={currency}
-        oldestOpenAt={cashSummary?.oldestOpenAt}
-        providerCount={cashSummary?.providerCount ?? 0}
-        rowCount={cashSummary?.rowCount ?? 0}
-      />
+          <FinanceCloseoutEvidenceChecklistSection items={evidenceChecklist} />
 
-      <FinanceCloseoutEvidenceChecklistSection items={evidenceChecklist} />
+          <FinanceCloseoutShiftActionMapSection items={shiftCloseActionMap} />
 
-      <FinanceCloseoutShiftActionMapSection items={shiftCloseActionMap} />
+          <FinanceCloseoutPayoutReleaseChecksSection rows={handoffRows} />
+        </>
+      )}
 
-      <FinanceCloseoutPayoutReleaseChecksSection rows={handoffRows} />
-
-      {repairBookingId ? (
+      {isSettlementWorkspace && repairBookingId ? (
         <FinanceCloseoutSettlementRepairDrawer
           action={repairBookingSettlementGapAction}
           approvers={financeApprovers}

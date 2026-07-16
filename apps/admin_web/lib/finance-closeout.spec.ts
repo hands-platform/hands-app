@@ -12,6 +12,7 @@ import {
   buildFinanceCloseoutApiHrefs,
   buildFinanceCloseoutEvidenceChecklist,
   buildFinanceCloseoutFilters,
+  buildFinanceCloseoutOperationsHref,
   buildFinanceCloseoutPageHref,
   buildFinanceCloseoutSettlementBatchReviewHref,
   buildFinanceCloseoutSettlementRepairHref,
@@ -40,8 +41,14 @@ describe('finance closeout helpers', () => {
       settlementQuery: '',
       settlementTrack: 'canonical',
       settlementTrackLabel: 'Canonical',
+      workspace: 'operations',
     });
     expect(buildFinanceCloseoutFilters({ range: 'all' }).range).toBe('all');
+    expect(buildFinanceCloseoutFilters({ view: 'settlement' }).workspace).toBe('settlement');
+    expect(buildFinanceCloseoutFilters({ repairBookingId: 'legacy-gap' }).workspace).toBe('settlement');
+    expect(buildFinanceCloseoutFilters({ repairNotice: 'invalid' }).workspace).toBe('settlement');
+    expect(buildFinanceCloseoutOperationsHref('today')).toBe('/finance-closeout');
+    expect(buildFinanceCloseoutOperationsHref('7d')).toBe('/finance-closeout?range=7d');
     expect(buildFinanceCloseoutApiHrefs(rangeFilters)).toEqual({
       bookingSettlementGapDryRunHref: '/admin/booking-settlement-gaps/dry-run?take=100',
       bookingSettlementGapSummaryHref: '/admin/booking-settlement-gaps/summary',
@@ -81,19 +88,19 @@ describe('finance closeout helpers', () => {
       '/admin/booking-settlement-gaps?age=7d-plus&skip=20&take=10&track=historical-ready&q=booking+1&period=2026-07&paymentMethod=MOMO',
     );
     expect(buildFinanceCloseoutPageHref(filters, { settlementPage: 2 })).toBe(
-      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=2&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1',
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=2&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&view=settlement&q=booking+1',
     );
     expect(buildFinanceCloseoutSettlementRepairHref(filters, 'gap-21')).toBe(
-      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&repairBookingId=gap-21',
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&view=settlement&q=booking+1&repairBookingId=gap-21',
     );
     expect(hrefs.bookingSettlementGapDryRunHref).toBe(
       '/admin/booking-settlement-gaps/dry-run?take=100&period=2026-07&paymentMethod=MOMO',
     );
     expect(buildFinanceCloseoutSettlementDryRunHref(filters)).toBe(
-      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&settlementDryRun=1',
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&view=settlement&q=booking+1&settlementDryRun=1',
     );
     expect(buildFinanceCloseoutSettlementBatchReviewHref(filters, ['gap-21', 'gap-22', 'gap-21'])).toBe(
-      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&q=booking+1&settlementDryRun=1&reviewBookingId=gap-21&reviewBookingId=gap-22',
+      '/finance-closeout?range=7d&settlementAge=7d-plus&settlementPage=3&settlementPaymentMethod=MOMO&settlementPeriod=2026-07&settlementTrack=historical-ready&view=settlement&q=booking+1&settlementDryRun=1&reviewBookingId=gap-21&reviewBookingId=gap-22',
     );
     expect(buildFinanceCloseoutSettlementPagination(list)).toEqual({
       from: 21,

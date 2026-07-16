@@ -38,6 +38,36 @@ describe('FinanceCloseoutPage', () => {
     mockedAdminGet.mockReset();
   });
 
+  it('loads only daily operations APIs in the default closeout workspace', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await FinanceCloseoutPage({});
+    const markup = renderToStaticMarkup(page);
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(markup).toContain('Operations closeout');
+    expect(markup).not.toContain('Settlement gap filters');
+    expect(hrefs).toContain('/admin/payments?range=today&take=10&review=needs-action');
+    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
+    expect(hrefs.some((href) => href.startsWith('/admin/booking-settlement-gaps?'))).toBe(false);
+  });
+
+  it('loads only settlement repair APIs in the settlement workspace', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const page = await FinanceCloseoutPage({
+      searchParams: Promise.resolve({ view: 'settlement' }),
+    });
+    const markup = renderToStaticMarkup(page);
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(markup).toContain('Settlement gap filters');
+    expect(markup).not.toContain('Closeout reconciliation board');
+    expect(hrefs).toContain('/admin/booking-settlement-gaps/summary');
+    expect(hrefs.some((href) => href.startsWith('/admin/payments?'))).toBe(false);
+    expect(hrefs.some((href) => href.startsWith('/admin/earnings?'))).toBe(false);
+  });
+
   it('shows blocking checkpoint codes when a repair write needs accounting review', async () => {
     const checkpoint: AdminBookingSettlementRepairCheckpoint = {
       blockingFailures: ['JOURNAL_BALANCED', 'PAYMENT_CLEARING_EXPECTATION'],
