@@ -42,6 +42,10 @@ test('covers bounded core, Finance, customer, chat and notification read models'
     targets.find((target) => target.label === 'notifications-list')?.path,
     '/admin/notifications?take=20&from=2026-07-15T12%3A00%3A00.000Z&to=2026-07-16T12%3A00%3A00.000Z',
   );
+  assert.deepEqual(targets.find((target) => target.label === 'partners-list')?.budget, {
+    p90Ms: 500,
+    maxBytes: 64 * 1024,
+  });
   assert.deepEqual(targets.find((target) => target.label === 'chat-archive-list')?.budget, {
     p90Ms: 500,
     maxBytes: 64 * 1024,

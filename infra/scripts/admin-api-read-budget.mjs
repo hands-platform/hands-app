@@ -12,7 +12,7 @@ const coreReadTargets = [
   {
     label: 'partners-list',
     path: '/admin/partners/list-providers?take=10',
-    budget: { p90Ms: 750, maxBytes: 96 * 1024 },
+    budget: { p90Ms: 500, maxBytes: 64 * 1024 },
   },
   {
     label: 'partners-summary',

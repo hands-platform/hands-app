@@ -13,6 +13,7 @@ import {
   adminProviderEvidenceDetailSelect,
   adminProviderFinanceDetailSelect,
   adminProviderDirectorySelect,
+  adminProviderDirectoryUserSelect,
   adminProviderListBookingSelect,
   adminProviderListEarningSelect,
   adminProviderListParticipantSelect,
@@ -55,6 +56,24 @@ describe('admin provider profile selects', () => {
       sizeBytes: true,
       createdAt: true,
     });
+  });
+
+  it('keeps partner directory identity rows limited to list-facing fields', () => {
+    expect(adminProviderDirectoryUserSelect).toMatchObject({
+      phone: true,
+      fullName: true,
+      createdAt: true,
+      supabaseUserId: true,
+      pushDevices: { take: 2 },
+      fileAssets: { take: 2 },
+    });
+    expect(adminProviderDirectoryUserSelect).not.toHaveProperty('email');
+    expect(adminProviderDirectoryUserSelect).not.toHaveProperty('roles');
+    expect(adminProviderDirectorySelect).not.toHaveProperty('dateOfBirth');
+    expect(adminProviderDirectorySelect).not.toHaveProperty('facebookId');
+    expect(adminProviderDirectorySelect).not.toHaveProperty('bio');
+    expect(adminProviderDirectorySelect).not.toHaveProperty('serviceArea');
+    expect(adminProviderDirectorySelect).not.toHaveProperty('updatedAt');
   });
 
   it('keeps provider list booking and participant rows lightweight', () => {

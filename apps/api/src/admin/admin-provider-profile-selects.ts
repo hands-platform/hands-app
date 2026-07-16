@@ -419,6 +419,28 @@ export const adminProviderListUserSelect = {
   },
 } satisfies Prisma.UserSelect;
 
+export const adminProviderDirectoryUserSelect = {
+  phone: true,
+  fullName: true,
+  createdAt: true,
+  supabaseUserId: true,
+  pushDevices: {
+    orderBy: adminProviderPushDeviceReachabilityOrder,
+    take: 2,
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 2,
+    select: adminProviderListPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
 export const adminProviderListBookingSelect = {
   id: true,
   status: true,
@@ -581,24 +603,13 @@ export const adminProviderListSelect = {
 
 export const adminProviderDirectorySelect = {
   id: true,
-  userId: true,
   displayName: true,
   legalName: true,
-  dateOfBirth: true,
   gender: true,
-  facebookId: true,
-  activityNickname: true,
-  bio: true,
-  experienceYears: true,
-  specialties: true,
-  languages: true,
-  serviceStyle: true,
   residentialAddress: true,
   city: true,
-  serviceArea: true,
   level: true,
   status: true,
-  ratingAvg: true,
   reviewCount: true,
   currentLat: true,
   currentLng: true,
@@ -606,10 +617,7 @@ export const adminProviderDirectorySelect = {
   nextAvailableAt: true,
   blockedAt: true,
   blockedReason: true,
-  trustedAt: true,
-  deletedAt: true,
-  updatedAt: true,
-  user: { select: adminProviderListUserSelect },
+  user: { select: adminProviderDirectoryUserSelect },
   verification: { select: adminProviderListVerificationSelect },
   kyc: { select: adminProviderKycSummarySelect },
   documents: {
