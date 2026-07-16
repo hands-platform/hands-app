@@ -2,6 +2,7 @@ import {
   buildFinanceOverviewActionItems,
   buildFinanceOverviewApiHrefs,
   buildFinanceOverviewControlMetrics,
+  buildFinanceOverviewFilters,
   buildFinanceOverviewKpis,
   buildFinanceOverviewPrimaryKpis,
   buildFinanceOverviewReviewSlaMetrics,
@@ -11,6 +12,7 @@ import {
   emptyFinanceOverviewSummaries,
   financeOverviewHref,
   normalizeFinanceOverviewRange,
+  normalizeFinanceOverviewWorkspace,
 } from './finance-overview-model';
 import {
   emptyBankReconciliationSummary,
@@ -32,7 +34,11 @@ describe('finance-overview-model', () => {
   });
 
   it('builds summary API hrefs from one bounded range', () => {
-    const hrefs = buildFinanceOverviewApiHrefs({ range: '7d', period: '2026-07' });
+    const hrefs = buildFinanceOverviewApiHrefs({
+      range: '7d',
+      period: '2026-07',
+      workspace: 'command',
+    });
 
     expect(hrefs.overviewSummaryHref).toBe('/admin/finance-overview?range=7d&period=2026-07');
     expect(hrefs.settlementSummaryHref).toBe('/admin/booking-settlement-snapshots/summary?range=7d');
@@ -508,5 +514,11 @@ describe('finance-overview-model', () => {
 
   it('preserves range in UI hrefs', () => {
     expect(financeOverviewHref('90d')).toBe('/finance-overview?range=90d');
+    expect(financeOverviewHref('30d', { period: '2026-07', workspace: 'flow' })).toBe(
+      '/finance-overview?range=30d&period=2026-07&view=flow',
+    );
+    expect(buildFinanceOverviewFilters({}).workspace).toBe('command');
+    expect(buildFinanceOverviewFilters({ view: 'queues' }).workspace).toBe('queues');
+    expect(normalizeFinanceOverviewWorkspace('unknown')).toBe('command');
   });
 });

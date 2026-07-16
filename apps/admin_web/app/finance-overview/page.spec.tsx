@@ -187,12 +187,30 @@ describe('FinanceOverviewPage', () => {
   });
 
   it('renders finance overview with actual company revenue separated from gross payment', async () => {
-    const page = await FinanceOverviewPage({
+    const commandPage = await FinanceOverviewPage({
       searchParams: Promise.resolve({ range: '7d' }),
     });
-    const markup = renderToStaticMarkup(page);
+    const flowPage = await FinanceOverviewPage({
+      searchParams: Promise.resolve({ range: '7d', view: 'flow' }),
+    });
+    const queuesPage = await FinanceOverviewPage({
+      searchParams: Promise.resolve({ range: '7d', view: 'queues' }),
+    });
+    const commandMarkup = renderToStaticMarkup(commandPage);
+    const flowMarkup = renderToStaticMarkup(flowPage);
+    const queuesMarkup = renderToStaticMarkup(queuesPage);
+    const markup = `${commandMarkup}${flowMarkup}${queuesMarkup}`;
 
     expect(markup).toContain('Finance Overview');
+    expect(commandMarkup).toContain('Finance Priority Desk');
+    expect(commandMarkup).not.toContain('Finance Action Lists');
+    expect(commandMarkup).not.toContain('finance-overview-principle-grid');
+    expect(flowMarkup).toContain('finance-overview-principle-grid');
+    expect(flowMarkup).toContain('finance-overview-section-grid');
+    expect(flowMarkup).not.toContain('Finance Priority Desk');
+    expect(queuesMarkup).toContain('Finance Action Lists');
+    expect(queuesMarkup).not.toContain('Core Finance KPI');
+    expect(markup).toContain('Finance overview workspaces');
     expect(markup).toContain('admin-page-header admin-page-header-toolbar');
     expect(markup).toContain('Finance control board');
     expect(markup).toContain('Finance Priority Desk');

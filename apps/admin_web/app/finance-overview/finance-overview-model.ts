@@ -49,10 +49,12 @@ import {
 } from '../finance-tax/tax-settlement-page-model';
 
 export type FinanceOverviewRange = AdminDateRange;
+export type FinanceOverviewWorkspace = 'command' | 'flow' | 'queues';
 
 export type FinanceOverviewFilters = {
   readonly period: string;
   readonly range: FinanceOverviewRange;
+  readonly workspace: FinanceOverviewWorkspace;
 };
 
 export type FinanceOverviewApiHrefs = {
@@ -161,8 +163,17 @@ export function normalizeFinanceOverviewRange(value: string | undefined): Financ
   return range === 'all' ? 'today' : range;
 }
 
-export function financeOverviewHref(range: FinanceOverviewRange) {
-  return `/finance-overview?${new URLSearchParams({ range }).toString()}`;
+export function financeOverviewHref(
+  range: FinanceOverviewRange,
+  options: {
+    readonly period?: string;
+    readonly workspace?: FinanceOverviewWorkspace;
+  } = {},
+) {
+  const params = new URLSearchParams({ range });
+  if (options.period) params.set('period', options.period);
+  if (options.workspace && options.workspace !== 'command') params.set('view', options.workspace);
+  return `/finance-overview?${params.toString()}`;
 }
 
 function financeBankWithdrawalCandidateHref(
@@ -192,7 +203,12 @@ export function buildFinanceOverviewFilters(
   return {
     period: readFinanceOverviewPeriod(params.period),
     range: normalizeFinanceOverviewRange(readFirstParam(params.range)),
+    workspace: normalizeFinanceOverviewWorkspace(readFirstParam(params.view)),
   };
+}
+
+export function normalizeFinanceOverviewWorkspace(value: string | undefined): FinanceOverviewWorkspace {
+  return value === 'flow' || value === 'queues' ? value : 'command';
 }
 
 export function buildFinanceOverviewApiHrefs(filters: FinanceOverviewFilters): FinanceOverviewApiHrefs {

@@ -61,6 +61,14 @@ export default async function FinanceOverviewPage({
 }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildFinanceOverviewFilters(params);
+  const isCommandWorkspace = filters.workspace === 'command';
+  const isFlowWorkspace = filters.workspace === 'flow';
+  const workspaceLabel =
+    filters.workspace === 'flow'
+      ? 'Money flow'
+      : filters.workspace === 'queues'
+        ? 'Action queues'
+        : 'Command';
   const hrefs = buildFinanceOverviewApiHrefs(filters);
   const fallback = emptyFinanceOverviewSummaries(filters.period);
   const overviewSummary = await adminGet<AdminFinanceOverviewSummary>(hrefs.overviewSummaryHref, {
@@ -71,72 +79,85 @@ export default async function FinanceOverviewPage({
   });
   const overviewInput = financeOverviewSummaryInput(overviewSummary);
   const { couponSummary, settlementSummary } = overviewInput;
-  const controlMetrics = buildFinanceOverviewControlMetrics(overviewInput, filters.range);
-  const primaryKpis = buildFinanceOverviewPrimaryKpis(overviewInput);
-  const reviewSlaMetrics = buildFinanceOverviewReviewSlaMetrics(overviewInput, filters.range);
-  const sections = buildFinanceOverviewPageSections(overviewInput);
-  const actionItems = buildFinanceOverviewActionItems(overviewInput, filters.range);
-  const visibleActionItems = buildFinanceOverviewVisibleActionItems(actionItems);
+  const controlMetrics = isCommandWorkspace
+    ? buildFinanceOverviewControlMetrics(overviewInput, filters.range)
+    : [];
+  const primaryKpis = isCommandWorkspace ? buildFinanceOverviewPrimaryKpis(overviewInput) : [];
+  const reviewSlaMetrics = isCommandWorkspace
+    ? buildFinanceOverviewReviewSlaMetrics(overviewInput, filters.range)
+    : [];
+  const sections = isFlowWorkspace ? buildFinanceOverviewPageSections(overviewInput) : [];
+  const actionItems = isFlowWorkspace ? [] : buildFinanceOverviewActionItems(overviewInput, filters.range);
+  const visibleActionItems =
+    filters.workspace === 'queues' ? buildFinanceOverviewVisibleActionItems(actionItems) : [];
   const priorityItems = actionItems.filter((item) => item.tone === 'danger' || item.tone === 'warning');
   const priorityDeskItems = priorityItems.length > 0 ? priorityItems.slice(0, 4) : actionItems.slice(0, 4);
   const rangeLabel = buildFinanceOverviewRangeLabel(filters.range);
-  const netRevenueEstimate =
-    settlementSummary.platformFeeNetRevenue -
-    couponSummary.companyCouponExpense -
-    settlementSummary.paymentProcessingFee;
-  const principleCards = [
-    {
-      detail: 'Customer paid amount is not company revenue.',
-      icon: <CircleDollarSign size={19} aria-hidden="true" />,
-      label: 'Gross customer payment',
-      tone: 'primary',
-      value: (
-        <MoneyText
-          amount={settlementSummary.customerPaymentAmount}
-          currency={settlementSummary.currency}
-        />
-      ),
-    },
-    {
-      detail: 'Platform fee net revenue is the revenue base.',
-      icon: <ReceiptText size={19} aria-hidden="true" />,
-      label: 'Actual company revenue',
-      tone: 'success',
-      value: (
-        <MoneyText
-          amount={settlementSummary.platformFeeNetRevenue}
-          currency={settlementSummary.currency}
-        />
-      ),
-    },
-    {
-      detail: 'Partner payout stays payable until payout or withdrawal closeout.',
-      icon: <WalletCards size={19} aria-hidden="true" />,
-      label: 'Partner payable',
-      tone: 'warning',
-      value: (
-        <MoneyText
-          amount={settlementSummary.partnerPayoutAmount}
-          currency={settlementSummary.currency}
-        />
-      ),
-    },
-    {
-      detail: 'Net revenue estimate excludes gross pass-through payment volume.',
-      icon: <ShieldCheck size={19} aria-hidden="true" />,
-      label: 'Net estimate',
-      tone: 'info',
-      value: <MoneyText amount={netRevenueEstimate} currency={settlementSummary.currency} />,
-    },
-  ];
+  const netRevenueEstimate = isFlowWorkspace
+    ? settlementSummary.platformFeeNetRevenue -
+      couponSummary.companyCouponExpense -
+      settlementSummary.paymentProcessingFee
+    : 0;
+  const principleCards = isFlowWorkspace
+    ? [
+        {
+          detail: 'Customer paid amount is not company revenue.',
+          icon: <CircleDollarSign size={19} aria-hidden="true" />,
+          label: 'Gross customer payment',
+          tone: 'primary',
+          value: (
+            <MoneyText
+              amount={settlementSummary.customerPaymentAmount}
+              currency={settlementSummary.currency}
+            />
+          ),
+        },
+        {
+          detail: 'Platform fee net revenue is the revenue base.',
+          icon: <ReceiptText size={19} aria-hidden="true" />,
+          label: 'Actual company revenue',
+          tone: 'success',
+          value: (
+            <MoneyText
+              amount={settlementSummary.platformFeeNetRevenue}
+              currency={settlementSummary.currency}
+            />
+          ),
+        },
+        {
+          detail: 'Partner payout stays payable until payout or withdrawal closeout.',
+          icon: <WalletCards size={19} aria-hidden="true" />,
+          label: 'Partner payable',
+          tone: 'warning',
+          value: (
+            <MoneyText
+              amount={settlementSummary.partnerPayoutAmount}
+              currency={settlementSummary.currency}
+            />
+          ),
+        },
+        {
+          detail: 'Net revenue estimate excludes gross pass-through payment volume.',
+          icon: <ShieldCheck size={19} aria-hidden="true" />,
+          label: 'Net estimate',
+          tone: 'info',
+          value: <MoneyText amount={netRevenueEstimate} currency={settlementSummary.currency} />,
+        },
+      ]
+    : [];
 
   return (
     <AdminPageTemplate
       contentClassName="finance-overview-page"
-      description="Money-flow command view for gross payments, platform-fee revenue, Partner payable, wallet liability, refunds, tax, and reconciliation risk."
+      description={
+        isCommandWorkspace
+          ? 'Current Finance risks, priority queues, and core operating signals.'
+          : isFlowWorkspace
+            ? 'Accounting flow for gross payments, platform revenue, Partner payable, wallet liability, tax, and reconciliation.'
+            : 'Bounded Finance action queues linked to their source evidence pages.'
+      }
       title="Finance Overview"
     >
-
       <AdminFilterPanel
         actions={
           <>
@@ -146,15 +167,49 @@ export default async function FinanceOverviewPage({
         }
         className="finance-overview-filter-panel"
         description="This page reads summary APIs only. Row-level evidence stays in bounded Finance/Tax lists."
-        resultLabel={`Period ${filters.period}`}
+        resultLabel={`${workspaceLabel} · ${filters.period}`}
         title="Finance range"
       >
+        <AdminSegmentedControl
+          activeValue={filters.workspace}
+          ariaLabel="Finance overview workspaces"
+          className="finance-overview-workspace-buttons"
+          options={[
+            {
+              href: financeOverviewHref(filters.range, {
+                period: filters.period,
+                workspace: 'command',
+              }),
+              label: 'Command',
+              value: 'command',
+            },
+            {
+              href: financeOverviewHref(filters.range, {
+                period: filters.period,
+                workspace: 'flow',
+              }),
+              label: 'Money flow',
+              value: 'flow',
+            },
+            {
+              href: financeOverviewHref(filters.range, {
+                period: filters.period,
+                workspace: 'queues',
+              }),
+              label: 'Action queues',
+              value: 'queues',
+            },
+          ]}
+        />
         <AdminSegmentedControl
           activeValue={filters.range}
           ariaLabel="Finance overview range"
           className="finance-overview-range-buttons"
           options={financeOverviewRangeOptions.map((option) => ({
-            href: financeOverviewHref(option.value),
+            href: financeOverviewHref(option.value, {
+              period: filters.period,
+              workspace: filters.workspace,
+            }),
             label: option.label,
             value: option.value,
           }))}
@@ -162,118 +217,131 @@ export default async function FinanceOverviewPage({
         <FinancePeriodFilterForm
           action="/finance-overview"
           className="finance-overview-period-form"
-          hiddenFields={[{ name: 'range', value: filters.range }]}
+          hiddenFields={[
+            { name: 'range', value: filters.range },
+            ...(filters.workspace === 'command' ? [] : [{ name: 'view', value: filters.workspace }]),
+          ]}
           period={filters.period}
           periodLabel="Monthly tax period"
         />
         <AdminFilterSummary
           ariaLabel="Active finance overview filters"
-          labels={[`Range: ${rangeLabel}`, `Period: ${filters.period}`]}
+          labels={[`Workspace: ${workspaceLabel}`, `Range: ${rangeLabel}`, `Period: ${filters.period}`]}
           tone="info"
         />
       </AdminFilterPanel>
 
-      <AdminSection
-        bodyClassName="finance-overview-sla-grid"
-        className="finance-overview-sla-section"
-        description="Current 48-hour review backlog and resolved audit evidence stay separate."
-        statusLabel={
-          overviewInput.financeReviewSlaSummary.openOver72Count > 0
-            ? `${overviewInput.financeReviewSlaSummary.openOver72Count} critical`
-            : overviewInput.financeReviewSlaSummary.open48To72Count > 0
-              ? `${overviewInput.financeReviewSlaSummary.open48To72Count} approaching 72h`
-            : 'SLA clear'
-        }
-        statusTone={
-          overviewInput.financeReviewSlaSummary.openOver72Count > 0
-            ? 'danger'
-            : overviewInput.financeReviewSlaSummary.open48To72Count > 0
-              ? 'warning'
-              : 'success'
-        }
-        title="Finance Review SLA"
-      >
-        {reviewSlaMetrics.map((metric) => (
-          <FinanceReviewSlaCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
-        ))}
-      </AdminSection>
+      {isCommandWorkspace ? (
+        <>
+          <AdminSection
+            bodyClassName="finance-overview-sla-grid"
+            className="finance-overview-sla-section"
+            description="Current 48-hour review backlog and resolved audit evidence stay separate."
+            statusLabel={
+              overviewInput.financeReviewSlaSummary.openOver72Count > 0
+                ? `${overviewInput.financeReviewSlaSummary.openOver72Count} critical`
+                : overviewInput.financeReviewSlaSummary.open48To72Count > 0
+                  ? `${overviewInput.financeReviewSlaSummary.open48To72Count} approaching 72h`
+                  : 'SLA clear'
+            }
+            statusTone={
+              overviewInput.financeReviewSlaSummary.openOver72Count > 0
+                ? 'danger'
+                : overviewInput.financeReviewSlaSummary.open48To72Count > 0
+                  ? 'warning'
+                  : 'success'
+            }
+            title="Finance Review SLA"
+          >
+            {reviewSlaMetrics.map((metric) => (
+              <FinanceReviewSlaCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
+            ))}
+          </AdminSection>
 
-      <AdminSection
-        bodyClassName="finance-overview-priority-grid"
-        className="finance-overview-priority-board"
-        description="Top finance queues stay above the KPI wall so operators see risk first."
-        statusLabel={priorityItems.length > 0 ? `${priorityItems.length} need review` : 'All clear'}
-        statusTone={priorityItems.length > 0 ? 'warning' : 'success'}
-        title="Finance Priority Desk"
-      >
-        {priorityDeskItems.map((item) => (
-          <FinancePriorityItem item={item} key={item.label} />
-        ))}
-      </AdminSection>
+          <AdminSection
+            bodyClassName="finance-overview-priority-grid"
+            className="finance-overview-priority-board"
+            description="Top finance queues stay above the KPI wall so operators see risk first."
+            statusLabel={priorityItems.length > 0 ? `${priorityItems.length} need review` : 'All clear'}
+            statusTone={priorityItems.length > 0 ? 'warning' : 'success'}
+            title="Finance Priority Desk"
+          >
+            {priorityDeskItems.map((item) => (
+              <FinancePriorityItem item={item} key={item.label} />
+            ))}
+          </AdminSection>
 
-      <AdminOverviewCommandGrid
-        ariaLabel="Finance control board"
-        baseClassName={financeOverviewCommandGridClassName}
-        className="finance-overview-control-board"
-      >
-        {controlMetrics.map((metric) => (
-          <FinanceControlMetricCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
-        ))}
-      </AdminOverviewCommandGrid>
+          <AdminOverviewCommandGrid
+            ariaLabel="Finance control board"
+            baseClassName={financeOverviewCommandGridClassName}
+            className="finance-overview-control-board"
+          >
+            {controlMetrics.map((metric) => (
+              <FinanceControlMetricCard key={metric.label} metric={metric} rangeLabel={rangeLabel} />
+            ))}
+          </AdminOverviewCommandGrid>
 
-      <AdminOverviewCommandGrid
-        ariaLabel="Finance accounting principles"
-        baseClassName={financeOverviewCommandGridClassName}
-        className="finance-overview-principle-grid"
-      >
-        {principleCards.map((card) => (
-          <AdminOverviewCommandCard
-            baseClassName={financeOverviewCommandCardClassName}
-            className={`finance-overview-principle-card is-${card.tone}`}
-            detail={card.detail}
-            icon={card.icon}
-            iconClassName={financeOverviewCommandIconClassName}
-            key={card.label}
-            label={card.label}
-            value={card.value}
-          />
-        ))}
-      </AdminOverviewCommandGrid>
+          <AdminSection
+            bodyClassName="finance-overview-kpi-grid"
+            className="finance-overview-kpi-section"
+            description="Six top-level signals. Detailed wallet, refund, tax, and settlement evidence stays in Money flow."
+            statusLabel={`${primaryKpis.length} signals`}
+            title="Core Finance KPI"
+          >
+            {primaryKpis.map((kpi) => (
+              <FinanceKpiCard key={kpi.label} kpi={kpi} rangeLabel={rangeLabel} />
+            ))}
+          </AdminSection>
+        </>
+      ) : null}
 
-      <AdminSection
-        bodyClassName="finance-overview-kpi-grid"
-        className="finance-overview-kpi-section"
-        description="Six top-level signals. Detailed wallet, refund, tax, and settlement evidence remains below."
-        statusLabel={`${primaryKpis.length} signals`}
-        title="Core Finance KPI"
-      >
-        {primaryKpis.map((kpi) => (
-          <FinanceKpiCard key={kpi.label} kpi={kpi} rangeLabel={rangeLabel} />
-        ))}
-      </AdminSection>
+      {isFlowWorkspace ? (
+        <>
+          <AdminOverviewCommandGrid
+            ariaLabel="Finance accounting principles"
+            baseClassName={financeOverviewCommandGridClassName}
+            className="finance-overview-principle-grid"
+          >
+            {principleCards.map((card) => (
+              <AdminOverviewCommandCard
+                baseClassName={financeOverviewCommandCardClassName}
+                className={`finance-overview-principle-card is-${card.tone}`}
+                detail={card.detail}
+                icon={card.icon}
+                iconClassName={financeOverviewCommandIconClassName}
+                key={card.label}
+                label={card.label}
+                value={card.value}
+              />
+            ))}
+          </AdminOverviewCommandGrid>
 
-      <AdminOverviewCommandGrid
-        ariaLabel="Finance overview sections"
-        baseClassName={financeOverviewCommandGridClassName}
-        className="finance-overview-section-grid"
-      >
-        {sections.map((section) => (
-          <FinanceOverviewSectionCard key={section.title} section={section} />
-        ))}
-      </AdminOverviewCommandGrid>
+          <AdminOverviewCommandGrid
+            ariaLabel="Finance overview sections"
+            baseClassName={financeOverviewCommandGridClassName}
+            className="finance-overview-section-grid"
+          >
+            {sections.map((section) => (
+              <FinanceOverviewSectionCard key={section.title} section={section} />
+            ))}
+          </AdminOverviewCommandGrid>
+        </>
+      ) : null}
 
-      <AdminSection
-        actions={<AlertTriangle size={18} aria-hidden="true" />}
-        bodyClassName="finance-overview-action-list"
-        className="finance-overview-action-card"
-        description="Top finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
-        statusLabel={`${visibleActionItems.length} queues`}
-        title="Finance Action Lists"
-      >
-        {visibleActionItems.map((item) => (
-          <FinanceActionItem key={item.label} item={item} />
-        ))}
-      </AdminSection>
+      {filters.workspace === 'queues' ? (
+        <AdminSection
+          actions={<AlertTriangle size={18} aria-hidden="true" />}
+          bodyClassName="finance-overview-action-list"
+          className="finance-overview-action-card"
+          description="Top finance queues. Each link opens a bounded evidence list instead of pulling all rows into this overview."
+          statusLabel={`${visibleActionItems.length} queues`}
+          title="Finance Action Lists"
+        >
+          {visibleActionItems.map((item) => (
+            <FinanceActionItem key={item.label} item={item} />
+          ))}
+        </AdminSection>
+      ) : null}
     </AdminPageTemplate>
   );
 }

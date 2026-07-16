@@ -41,6 +41,8 @@ const budgetSmokePaths = [
   '/reviews',
   '/notifications',
   '/finance-overview',
+  '/finance-overview?view=flow',
+  '/finance-overview?view=queues',
   '/finance-tax',
   '/finance-tax/payment-clearing',
   '/finance-tax/general-ledger',
@@ -685,13 +687,30 @@ const pages = [
   },
   {
     path: '/finance-overview',
+    markers: ['Finance Overview', 'Finance range', 'Finance Priority Desk', 'Core Finance KPI'],
+    forbiddenMarkers: ['Gross customer payment', 'Finance Action Lists'],
+  },
+  {
+    path: '/finance-overview?view=flow',
     markers: [
       'Finance Overview',
       'Finance range',
-      'Finance Priority Desk',
-      'Core Finance KPI',
-      'Finance Action Lists',
+      'Money flow',
+      'Gross customer payment',
+      'Revenue &amp; Platform Fee',
     ],
+    forbiddenMarkers: ['Finance Priority Desk', 'Finance Action Lists'],
+  },
+  {
+    path: '/finance-overview?view=queues',
+    markers: [
+      'Finance Overview',
+      'Finance range',
+      'Action queues',
+      'Finance Action Lists',
+      'Strong withdrawal candidates',
+    ],
+    forbiddenMarkers: ['Finance Priority Desk', 'Gross customer payment'],
   },
   {
     path: '/finance-tax',
