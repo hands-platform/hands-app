@@ -54,6 +54,10 @@ api:
 admin:
     npm.cmd run verify:admin:fast
 
+# Read-only live Admin API latency and payload budget.
+api-budget:
+    npm.cmd run admin:api-budget:strict
+
 # Static final authority guard.
 authority:
     npm.cmd run authority:check

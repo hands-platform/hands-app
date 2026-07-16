@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import {
+  evaluateBudget,
+  normalizeAdminApiBaseUrl,
+  percentile,
+  positiveInteger,
+  summarizeSamples,
+} from './admin-api-read-budget.mjs';
+
+test('normalizes the Admin API base URL without retaining query data', () => {
+  assert.equal(normalizeAdminApiBaseUrl('http://localhost:3000'), 'http://localhost:3000/api');
+  assert.equal(normalizeAdminApiBaseUrl('http://localhost:3000/api/'), 'http://localhost:3000/api');
+  assert.equal(
+    normalizeAdminApiBaseUrl('https://api.example.com/internal/api?token=removed#fragment'),
+    'https://api.example.com/internal/api',
+  );
+});
+
+test('bounds sample configuration and calculates stable percentiles', () => {
+  assert.equal(positiveInteger('7', 5, 10), 7);
+  assert.equal(positiveInteger('0', 5, 10), 5);
+  assert.equal(positiveInteger('50', 5, 10), 10);
+  assert.equal(percentile([50, 10, 40, 20, 30], 0.9), 50);
+  assert.equal(percentile([], 0.9), 0);
+});
+
+test('summarizes response samples without retaining response bodies', () => {
+  assert.deepEqual(
+    summarizeSamples([
+      { status: 200, bytes: 1024, durationMs: 30 },
+      { status: 200, bytes: 2048, durationMs: 10 },
+      { status: 200, bytes: 1536, durationMs: 20 },
+    ]),
+    { status: 200, bytes: 2048, medianMs: 20, p90Ms: 30 },
+  );
+});
+
+test('reports latency and payload violations independently', () => {
+  assert.deepEqual(
+    evaluateBudget(
+      { status: 200, medianMs: 400, p90Ms: 800, bytes: 120 * 1024 },
+      { p90Ms: 750, maxBytes: 96 * 1024 },
+    ),
+    ['p90 800ms > 750ms', 'size 120KB > 96KB'],
+  );
+  assert.deepEqual(
+    evaluateBudget(
+      { status: 200, medianMs: 50, p90Ms: 75, bytes: 10 * 1024 },
+      { p90Ms: 750, maxBytes: 96 * 1024 },
+    ),
+    [],
+  );
+});
