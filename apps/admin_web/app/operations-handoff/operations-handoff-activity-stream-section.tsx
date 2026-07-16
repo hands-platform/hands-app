@@ -36,7 +36,7 @@ export function OperationsHandoffActivityStreamSection({
             href={csvHref}
           >
             <Download aria-hidden="true" size={16} />
-            Export activity CSV
+            Export visible rows
           </AdminFormControlLink>
           <AdminFormControlLink className="button-secondary" href="/audit-log">
             <FileClock aria-hidden="true" size={16} />

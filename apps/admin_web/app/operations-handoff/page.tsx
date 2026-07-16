@@ -37,6 +37,7 @@ import { buildImmediateActionQueue } from './operations-handoff-immediate-action
 import { OperationsHandoffImmediateActionSection } from './operations-handoff-immediate-action-section';
 import { buildOperatorNotes } from './operations-handoff-operator-notes';
 import { OperationsHandoffOperatorNotesSection } from './operations-handoff-operator-notes-section';
+import { paginateOperationsHandoffRows } from './operations-handoff-pagination';
 import {
   buildHandoffReadinessChecklist,
   countOpenHandoffChecklistItems,
@@ -169,7 +170,9 @@ export default async function OperationsHandoffPage({
       )
     : [];
   const activityStreamCsvHref = shouldRenderFullDetails
-    ? buildActivityStreamCsvHref(activityStream)
+    ? buildActivityStreamCsvHref(
+        paginateOperationsHandoffRows(activityStream, filters.detailPages.activity).rows,
+      )
     : '';
   const handoffChecklist = buildHandoffReadinessChecklist({
     bookings,

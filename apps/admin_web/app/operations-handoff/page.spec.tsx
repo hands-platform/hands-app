@@ -121,6 +121,9 @@ describe('OperationsHandoffPage', () => {
 
   it('uses the shared Vuexy detail grid atom for brief and note panels', () => {
     expect(pageSource).toContain('AdminDetailGrid');
+    expect(pageSource).toContain(
+      'paginateOperationsHandoffRows(activityStream, filters.detailPages.activity).rows',
+    );
     expect(pageSource).not.toContain('<section className="detail-grid admin-mb-16"');
   });
 

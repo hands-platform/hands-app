@@ -1,6 +1,6 @@
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
-export const OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE = 10;
+export const OPERATIONS_HANDOFF_DETAIL_PAGE_SIZE = 3;
 
 export type OperationsHandoffPagination = {
   readonly activePage: number;

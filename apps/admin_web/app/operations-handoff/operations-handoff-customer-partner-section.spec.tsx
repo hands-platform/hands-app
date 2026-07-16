@@ -129,11 +129,15 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
     const markup = renderToStaticMarkup(section);
 
     expect(rendered).not.toContain('Customer 2');
-    expect(rendered).toContain('Customer 11');
-    expect(markup).toContain('Showing 11 to 12 of 12 customer signals');
+    expect(rendered).toContain('Customer 4');
+    expect(rendered).toContain('Customer 6');
+    expect(rendered).not.toContain('Customer 7');
+    expect(markup).toContain('Showing 4 to 6 of 12 customer signals');
     expect(rendered).not.toContain('Partner 2');
-    expect(rendered).toContain('Partner 11');
-    expect(markup).toContain('Showing 11 to 12 of 12 partner signals');
+    expect(rendered).toContain('Partner 4');
+    expect(rendered).toContain('Partner 6');
+    expect(rendered).not.toContain('Partner 7');
+    expect(markup).toContain('Showing 4 to 6 of 12 partner signals');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;customerPage=1"');
     expect(markup).toContain('href="/operations-handoff?details=all&amp;partnerPage=1"');
   });

@@ -38,7 +38,7 @@ describe('OperationsHandoffActivityStreamSection', () => {
     const rendered = textContent(section);
 
     expect(rendered).toContain('Unified activity stream');
-    expect(rendered).toContain('Export activity CSV');
+    expect(rendered).toContain('Export visible rows');
     expect(rendered).toContain('Booking chats');
     expect(rendered).toContain('Review reason');
     expect(rendered).toContain('Notification');
