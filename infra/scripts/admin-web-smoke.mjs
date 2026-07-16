@@ -1277,7 +1277,7 @@ const pages = [
       'Partners',
       'KYC updates',
       'KYC review board',
-      'List-first partner control view',
+      'Compact admin list',
       'Compact list',
     ],
   },

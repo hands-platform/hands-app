@@ -15,7 +15,6 @@ import {
   buildPartnerListHref,
   buildProviderActiveFilters,
   buildProviderFilters,
-  emptyProviderMessage,
   partnerRowsPagination,
   partnerHasAdvancedOperationalFilters,
   partnerSortLabel,
@@ -24,7 +23,6 @@ import { buildProviderOpsPolicy, buildProviderOpsPolicyApiHref } from './partner
 import { partnerUnsettledWalletBalance as providerUnsettledWalletBalance } from './partner-activity-facts';
 import {
   filterPartners as filterProviders,
-  partnerHasOpenControl as hasOpenPartnerControl,
   sortPartners as sortProviders,
   type PartnerListQueryDeps,
 } from './partner-list-query';
@@ -32,9 +30,7 @@ import {
   partnerBackupMatchingEligibility,
   partnerCanAcceptBookingNow,
   partnerHasHardAcceptanceBlocker,
-  providerActionHint,
   providerDispatchReady,
-  providerReviewIssues,
 } from './partner-list-readiness';
 import { nextPartnerListAction as nextProviderListAction } from './partner-list-actions';
 import {
@@ -55,25 +51,15 @@ import { PartnerKycReviewBoardSection } from './partner-kyc-review-board-section
 import { PartnerReviewQueueSection } from './partner-review-queue-section';
 import { buildPartnerShiftHandoff } from './partner-shift-handoff';
 import { PartnerShiftHandoffSection } from './partner-shift-handoff-section';
-import { PartnerLegacyOperationsTableSection } from './partner-legacy-operations-table-section';
 import { buildPartnerOperationRow } from './partner-operation-row';
 import { PartnerFilterBoard } from './partner-filter-board';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
 import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import { buildPartnerMasterRow } from './partner-master-row';
-import { buildPartnerOpsBadges } from './partner-ops-badges';
 import { PartnerChecklistLaneSection } from './partner-checklist-lane-section';
 import { PartnerChecklistWorkQueueSection } from './partner-checklist-work-queue-section';
 import { PartnerDispatchHandoffSection } from './partner-dispatch-handoff-section';
-import { PartnerLocationCell } from './partner-location-cell';
-import { PartnerSecurityCell } from './partner-security-cell';
-import { PartnerActionsCell } from './partner-actions-cell';
-import { PartnerServicesCell } from './partner-services-cell';
-import { PartnerFilesCell } from './partner-files-cell';
-import { PartnerPushDevicesCell } from './partner-push-devices-cell';
-import { PartnerOnboardingCell } from './partner-onboarding-cell';
-import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
 import {
   partnerPrimaryListMode,
@@ -98,14 +84,6 @@ import {
   buildPartnerPushDeviceActionConfirmation,
   readPartnerPushDeviceConfirmationAction,
 } from './partner-push-device-action-confirmation';
-import {
-  partnerAccountActionMenuItems,
-  partnerBankReviewActionMenuItems,
-  partnerDocumentReviewActionMenuItems,
-  partnerKycReviewActionMenuItems,
-  partnerPublicMediaReviewActionMenuItems,
-  partnerTaxReviewActionMenuItems,
-} from './partner-action-menu-items';
 import {
   partnerAccountServerAction,
   partnerPushDeviceServerAction,
@@ -151,7 +129,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const detailsMode = readSearchParam(params.details);
   const deepPartnerOpsAvailable = partnerDeepOpsAvailable(filters.review);
   const showDeepPartnerOpsSections = shouldLoadPartnerDeepOps(filters.review, detailsMode);
-  const showPartnerOperationsList = showDeepPartnerOpsSections;
+  const showGeneralPartnerDeepOps = showDeepPartnerOpsSections && filters.review !== 'kyc';
+  const showPartnerOperationsList = showGeneralPartnerDeepOps;
   const deepPartnerOps = showDeepPartnerOpsSections
     ? (() => {
         const priorityLane = buildProviderPriorityLane(providers, opsPolicy, {
@@ -367,71 +346,32 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       ) : null}
       {deepPartnerOps ? (
         <>
-          <PartnerChecklistWorkQueueSection
-            partnerName={providerDisplayName}
-            queue={deepPartnerOps.dailyActionQueue}
-          />
-          <PartnerDispatchHandoffSection handoff={deepPartnerOps.dispatchHandoff} />
-          <PartnerShiftHandoffSection handoff={deepPartnerOps.shiftHandoff} />
-          <PartnerCommandCenterSection lanes={deepPartnerOps.commandCenter} />
-          <PartnerMarketplaceHoldBoardSection board={deepPartnerOps.acceptanceBlockerBoard} />
+          {showGeneralPartnerDeepOps ? (
+            <>
+              <PartnerChecklistWorkQueueSection
+                partnerName={providerDisplayName}
+                queue={deepPartnerOps.dailyActionQueue}
+              />
+              <PartnerDispatchHandoffSection handoff={deepPartnerOps.dispatchHandoff} />
+              <PartnerShiftHandoffSection handoff={deepPartnerOps.shiftHandoff} />
+              <PartnerCommandCenterSection lanes={deepPartnerOps.commandCenter} />
+              <PartnerMarketplaceHoldBoardSection board={deepPartnerOps.acceptanceBlockerBoard} />
+            </>
+          ) : null}
           <PartnerKycReviewBoardSection board={deepPartnerOps.kycReviewBoard} />
-          <PartnerDispatchForecastSection
-            forecast={deepPartnerOps.dispatchForecast}
-            staleLocationMinutes={opsPolicy.staleLocationMinutes}
-          />
-          <PartnerReviewQueueSection queue={deepPartnerOps.reviewQueue} />
-          <PartnerChecklistLaneSection
-            blockedCount={deepPartnerOps.priorityLane.blockedCount}
-            items={deepPartnerOps.priorityLaneItems}
-          />
-          <PartnerLegacyOperationsTableSection
-            emptyMessage={emptyProviderMessage(activeFilters)}
-            hiddenPartnerCount={hiddenProviderCount}
-            partnerName={providerDisplayName}
-            providers={visibleProviders}
-            renderActions={(provider) => (
-              <PartnerActionsCell
-                actions={partnerAccountActionMenuItems(provider)}
-                partnerName={providerDisplayName(provider)}
+          {showGeneralPartnerDeepOps ? (
+            <>
+              <PartnerDispatchForecastSection
+                forecast={deepPartnerOps.dispatchForecast}
+                staleLocationMinutes={opsPolicy.staleLocationMinutes}
               />
-            )}
-            renderFiles={(provider) => (
-              <PartnerFilesCell
-                partnerName={providerDisplayName(provider)}
-                provider={provider}
-                publicMediaActions={partnerPublicMediaReviewActionMenuItems}
+              <PartnerReviewQueueSection queue={deepPartnerOps.reviewQueue} />
+              <PartnerChecklistLaneSection
+                blockedCount={deepPartnerOps.priorityLane.blockedCount}
+                items={deepPartnerOps.priorityLaneItems}
               />
-            )}
-            renderLocation={(provider) => <PartnerLocationCell provider={provider} opsPolicy={opsPolicy} />}
-            renderOnboarding={(provider) => (
-              <PartnerOnboardingCell
-                bankActions={partnerBankReviewActionMenuItems}
-                documentActions={partnerDocumentReviewActionMenuItems}
-                kycActions={partnerKycReviewActionMenuItems}
-                partnerName={providerDisplayName(provider)}
-                provider={provider}
-                taxActions={partnerTaxReviewActionMenuItems}
-              />
-            )}
-            renderOpsReadiness={(provider) => (
-              <PartnerOpsReadinessCell
-                actionHint={providerActionHint(provider, opsPolicy)}
-                eligibility={partnerBackupMatchingEligibility(provider, opsPolicy)}
-                hasOpenControl={hasOpenPartnerControl(provider)}
-                issues={providerReviewIssues(provider, opsPolicy)}
-                nextAction={nextProviderListAction(provider, opsPolicy)}
-                opsBadges={buildPartnerOpsBadges(provider, opsPolicy, {
-                  canAcceptBookingNow: partnerCanAcceptBookingNow,
-                })}
-                opsPolicy={opsPolicy}
-                provider={provider}
-              />
-            )}
-            renderPushDevices={(provider) => <PartnerPushDevicesCell provider={provider} />}
-            renderSecurity={(provider) => <PartnerSecurityCell provider={provider} />}
-            renderServices={(provider) => <PartnerServicesCell provider={provider} />}
-          />
+            </>
+          ) : null}
         </>
       ) : null}
     </AdminPageTemplate>

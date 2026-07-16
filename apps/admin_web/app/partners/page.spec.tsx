@@ -136,6 +136,10 @@ describe('ProvidersPage', () => {
     expect(markup).not.toContain('Current filter summary');
     expect(markup).not.toContain('Current filtered partner set');
     expect(markup).not.toContain('<div class="card"><p>Total partners</p>');
+    expect(markup).not.toContain('partner-legacy-table');
+    expect(markup).toContain('KYC review board');
+    expect(markup).not.toContain('Partner operations list');
+    expect(markup).not.toContain('Dispatch forecast');
     expect(markup).toContain('Compact list');
   });
 
