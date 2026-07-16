@@ -93,7 +93,7 @@ const customerAndChatReadTargets = [
   {
     label: 'chat-archive-list',
     path: '/admin/chat-archive?dateRange=30d&take=20',
-    budget: { p90Ms: 1_000, maxBytes: 256 * 1024 },
+    budget: { p90Ms: 500, maxBytes: 64 * 1024 },
   },
   {
     label: 'chat-archive-summary',

@@ -2,7 +2,7 @@ import { BellRing, CalendarClock, HandCoins, ListChecks, ReceiptText, Sparkles }
 import {
   AdminAuditLog,
   AdminBooking,
-  AdminBookingDetail,
+  AdminChatArchiveBooking,
   AdminCashSettlementSummary,
   AdminCustomer,
   AdminEarning,
@@ -107,8 +107,8 @@ export default async function OperationsHandoffPage({
       emptyCashSettlementSummary(),
     ),
     dataHrefs.chatArchiveHref
-      ? adminGet<AdminBookingDetail[]>(dataHrefs.chatArchiveHref, [])
-      : Promise.resolve<AdminBookingDetail[]>([]),
+      ? adminGet<AdminChatArchiveBooking[]>(dataHrefs.chatArchiveHref, [])
+      : Promise.resolve<AdminChatArchiveBooking[]>([]),
   ]);
   const shouldRenderFullDetails = filters.detailsMode === 'all';
 

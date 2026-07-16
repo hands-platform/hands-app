@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { vi } from 'vitest';
 
-import type { AdminBookingDetail } from '../../lib/admin-api';
+import type { AdminChatArchiveBooking } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import ChatArchivePage from './page';
 
@@ -228,7 +228,7 @@ function chatArchiveBooking({
   previewIncludesPartner = true,
 }: {
   readonly previewIncludesPartner?: boolean;
-} = {}): AdminBookingDetail {
+} = {}): AdminChatArchiveBooking {
   const previewMessages = previewIncludesPartner
     ? [
         {
@@ -279,20 +279,14 @@ function chatArchiveBooking({
     customerProfile: {
       id: 'customer-1',
       user: {
-        id: 'customer-user-1',
         fullName: 'Demo Customer',
         phone: '+84900001111',
-        roles: ['CUSTOMER'],
       },
     },
     id: 'booking-1',
-    participants: [],
-    preferredProviderId: null,
-    selectedProviderId: 'provider-1',
     selectedProvider: {
       id: 'provider-1',
       displayName: 'Smoke Partner',
-      status: 'ONLINE_BUSY',
       user: {
         fullName: 'Smoke Partner',
         phone: '+84900002222',
@@ -300,8 +294,6 @@ function chatArchiveBooking({
     },
     services: [
       {
-        price: 400000,
-        quantity: 1,
         service: {
           name: 'Deep Tissue',
           durationMin: 60,
@@ -310,5 +302,5 @@ function chatArchiveBooking({
     ],
     status: 'IN_SERVICE',
     updatedAt: '2026-06-29T01:12:00.000Z',
-  } as AdminBookingDetail;
+  };
 }

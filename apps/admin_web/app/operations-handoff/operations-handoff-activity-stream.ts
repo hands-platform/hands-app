@@ -1,4 +1,9 @@
-import type { AdminAuditLog, AdminBooking, AdminBookingDetail, AdminNotification } from '../../lib/admin-api';
+import type {
+  AdminAuditLog,
+  AdminBooking,
+  AdminChatArchiveBooking,
+  AdminNotification,
+} from '../../lib/admin-api';
 import { formatMoney, shortDisplayId } from '../../lib/admin-format';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { isInDateRange } from '../../lib/date-range';
@@ -19,7 +24,7 @@ type FinanceActivityRow = {
 
 type UnifiedActivityStreamInput = {
   readonly bookings: readonly AdminBooking[];
-  readonly chatArchive: readonly AdminBookingDetail[];
+  readonly chatArchive: readonly AdminChatArchiveBooking[];
   readonly auditLogs: readonly AdminAuditLog[];
   readonly notifications: readonly AdminNotification[];
   readonly financeRows: readonly FinanceActivityRow[];
@@ -84,7 +89,7 @@ type ChatArchiveMessage = {
   };
 };
 
-function buildChatActivityRows(chatArchive: readonly AdminBookingDetail[]): ActivityStreamSourceRow[] {
+function buildChatActivityRows(chatArchive: readonly AdminChatArchiveBooking[]): ActivityStreamSourceRow[] {
   return chatArchive.flatMap((booking) =>
     chatArchiveMessages(booking)
       .slice(-5)
@@ -109,10 +114,8 @@ function buildChatActivityRows(chatArchive: readonly AdminBookingDetail[]): Acti
   );
 }
 
-function chatArchiveMessages(booking: AdminBookingDetail): readonly ChatArchiveMessage[] {
-  return (
-    (booking.chatRoom as { messages?: readonly ChatArchiveMessage[] } | null)?.messages ?? []
-  );
+function chatArchiveMessages(booking: AdminChatArchiveBooking): readonly ChatArchiveMessage[] {
+  return booking.chatRoom?.messages ?? [];
 }
 
 function buildAuditActivityRows(auditLogs: readonly AdminAuditLog[]): ActivityStreamSourceRow[] {

@@ -30,7 +30,7 @@ import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { DateTimeText } from '../../components/date-time-text';
 import { StatusBadgeFromPillClass } from '../../components/status-badge';
-import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
+import { AdminChatArchiveBooking, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -84,7 +84,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
     filters,
   } = buildChatArchiveLoadPlan(params);
   const [bookings, archiveSummaryResponse] = await Promise.all([
-    adminGet<AdminBookingDetail[]>(archiveHref, []),
+    adminGet<AdminChatArchiveBooking[]>(archiveHref, []),
     adminGet<unknown>(archiveSummaryHref, null),
   ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
@@ -518,7 +518,7 @@ function filterChatRooms(
   });
 }
 
-function buildChatRoomRow(booking: AdminBookingDetail) {
+function buildChatRoomRow(booking: AdminChatArchiveBooking) {
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => dateMs(left.createdAt) - dateMs(right.createdAt),
   );
@@ -609,7 +609,7 @@ function displaySenderRole(role: string) {
   return 'System';
 }
 
-function bookingServiceLabel(booking: AdminBookingDetail) {
+function bookingServiceLabel(booking: AdminChatArchiveBooking) {
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
@@ -625,13 +625,13 @@ function isClosedStatus(status: string) {
   return ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status);
 }
 
-function bookingCustomerChatAvatarStatus(booking: AdminBookingDetail): AdminAvatarStatus {
+function bookingCustomerChatAvatarStatus(booking: AdminChatArchiveBooking): AdminAvatarStatus {
   if (isWorkingStatus(booking.status)) return 'working';
   if (booking.status === 'OPEN_MATCHING' || booking.status === 'CREATED') return 'matching';
   return 'offline';
 }
 
-function bookingPartnerChatAvatarStatus(booking: AdminBookingDetail): AdminAvatarStatus {
+function bookingPartnerChatAvatarStatus(booking: AdminChatArchiveBooking): AdminAvatarStatus {
   if (isWorkingStatus(booking.status)) return 'working';
   if (booking.status === 'OPEN_MATCHING') return 'matching';
   if (booking.selectedProvider || booking.preferredProvider) return 'offline';

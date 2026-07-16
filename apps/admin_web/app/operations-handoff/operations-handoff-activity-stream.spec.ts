@@ -1,7 +1,7 @@
 import type {
   AdminAuditLog,
   AdminBooking,
-  AdminBookingDetail,
+  AdminChatArchiveBooking,
   AdminNotification,
 } from '../../lib/admin-api';
 import { buildUnifiedActivityStream, filterActivityStreamByRange } from './operations-handoff-activity-stream';
@@ -149,12 +149,12 @@ function booking(input: Partial<AdminBooking>): AdminBooking {
   } as AdminBooking;
 }
 
-function chatBooking(input: Partial<AdminBookingDetail>): AdminBookingDetail {
+function chatBooking(input: Partial<AdminChatArchiveBooking>): AdminChatArchiveBooking {
   return {
     chatRoom: null,
     id: 'booking-chat',
     ...input,
-  } as AdminBookingDetail;
+  } as AdminChatArchiveBooking;
 }
 
 function auditLog(input: Partial<AdminAuditLog>): AdminAuditLog {

@@ -1464,6 +1464,39 @@ export type AdminBooking = {
   } | null;
 };
 
+export type AdminChatArchiveBooking = {
+  id: string;
+  customerProfileId?: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+  customerProfile?: {
+    id?: string;
+    user?: { fullName?: string | null; phone?: string };
+  };
+  preferredProvider?: {
+    id?: string;
+    displayName?: string | null;
+    user?: { fullName?: string | null; phone?: string };
+  };
+  selectedProvider?: {
+    id?: string;
+    displayName?: string | null;
+    user?: { fullName?: string | null; phone?: string };
+  };
+  services?: Array<{
+    service?: {
+      name?: string;
+      durationMin?: number;
+    };
+  }>;
+  chatRoom?: {
+    id: string;
+    _count?: { messages?: number };
+    messages?: AdminChatMessage[];
+  } | null;
+};
+
 export type AdminBookingMatchingEvidence = {
   readonly stage: 'OPEN_MARKETPLACE_ACTIVE' | 'MATCHED' | 'SERVICE_ACTIVE' | 'CLOSED' | 'CREATED';
   readonly finalSelection:

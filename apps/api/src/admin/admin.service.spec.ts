@@ -2341,20 +2341,69 @@ describe('AdminService query orchestration', () => {
         },
         orderBy: { updatedAt: 'desc' },
         select: expect.objectContaining({
+          customerProfile: {
+            select: {
+              id: true,
+              user: { select: { fullName: true, phone: true } },
+            },
+          },
           chatRoom: {
             select: expect.objectContaining({
               _count: { select: { messages: true } },
               messages: expect.objectContaining({
                 orderBy: { createdAt: 'desc' },
+                select: {
+                  body: true,
+                  createdAt: true,
+                  id: true,
+                  sender: {
+                    select: {
+                      fullName: true,
+                      id: true,
+                      phone: true,
+                      roles: true,
+                    },
+                  },
+                },
                 take: 1,
               }),
             }),
+          },
+          preferredProvider: {
+            select: {
+              displayName: true,
+              id: true,
+              user: { select: { fullName: true, phone: true } },
+            },
+          },
+          selectedProvider: {
+            select: {
+              displayName: true,
+              id: true,
+              user: { select: { fullName: true, phone: true } },
+            },
+          },
+          services: {
+            orderBy: { id: 'asc' },
+            take: 1,
+            select: {
+              service: {
+                select: {
+                  durationMin: true,
+                  name: true,
+                },
+              },
+            },
           },
         }),
         skip: 100,
         take: 50,
       }),
     );
+    const select = prisma.booking.findMany.mock.calls[0]?.[0]?.select;
+    expect(select).not.toHaveProperty('participants');
+    expect(select).not.toHaveProperty('payment');
+    expect(select).not.toHaveProperty('review');
   });
 
   it('allows the retained missing-room API filter without contradictory chat-room predicates', async () => {

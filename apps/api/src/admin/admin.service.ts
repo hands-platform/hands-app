@@ -148,6 +148,7 @@ import {
   adminChatMessageSummarySelect,
   adminCustomerBookingListSelect,
 } from './admin-booking-selects';
+import { adminChatArchiveBookingSelect } from './admin-chat-archive-selects';
 import { adminBookingDetailSelect, adminPaymentDetailSelect } from './admin-booking-detail-selects';
 import {
   adminEarningSummarySelect,
@@ -176,7 +177,6 @@ import {
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
 import {
-  adminBookingServiceSummarySelect,
   adminServiceCatalogSelect,
   adminServiceMutationSelect,
   adminServicePayoutRuleMutationSelect,
@@ -450,7 +450,6 @@ const ADMIN_APP_SESSION_STALE_WINDOW_MS = 24 * 60 * 60_000;
 const ADMIN_BOOKING_LIST_LIMIT = 50;
 const ADMIN_CALENDAR_EVENT_LIST_LIMIT = 200;
 const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 50;
-const ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT = 1;
 const ADMIN_USER_LIST_LIMIT = 50;
 const ADMIN_OPERATOR_ROLES = [Role.ADMIN, Role.FINANCE_APPROVER, Role.MASTER_ADMIN] as const;
 const ADMIN_OPERATOR_PASSWORD_MIN_LENGTH = 8;
@@ -7924,50 +7923,7 @@ export class AdminService {
       orderBy: { updatedAt: 'desc' },
       skip: skip > 0 ? skip : undefined,
       take: adminChatArchiveListTake(query.take),
-      select: {
-        id: true,
-        customerProfileId: true,
-        preferredProviderId: true,
-        selectedProviderId: true,
-        status: true,
-        scheduledStartAt: true,
-        scheduledEndAt: true,
-        createdAt: true,
-        updatedAt: true,
-        customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-        preferredProvider: { select: adminProviderSummarySelect },
-        selectedProvider: { select: adminProviderSummarySelect },
-        participants: {
-          orderBy: { joinedAt: 'asc' },
-          select: {
-            id: true,
-            providerProfileId: true,
-            status: true,
-            joinedAt: true,
-            respondedAt: true,
-            providerProfile: { select: adminProviderSummarySelect },
-          },
-        },
-        services: { select: adminBookingServiceSummarySelect },
-        payment: { select: adminPaymentSummarySelect },
-        review: true,
-        chatRoom: {
-          select: {
-            id: true,
-            _count: { select: { messages: true } },
-            messages: {
-              orderBy: { createdAt: 'desc' },
-              take: ADMIN_CHAT_ARCHIVE_MESSAGE_PREVIEW_LIMIT,
-              select: {
-                id: true,
-                body: true,
-                createdAt: true,
-                sender: { select: { id: true, phone: true, fullName: true, roles: true } },
-              },
-            },
-          },
-        },
-      },
+      select: adminChatArchiveBookingSelect,
     });
   }
 
