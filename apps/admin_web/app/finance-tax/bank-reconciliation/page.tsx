@@ -30,6 +30,7 @@ import {
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../../components/admin-segmented-control';
 import { AdminDisclosure, AdminSection } from '../../../components/admin-surface';
 import { AdminTextLink } from '../../../components/admin-text-link';
 import { DateTimeText } from '../../../components/date-time-text';
@@ -55,6 +56,10 @@ import {
 import { BankReconciliationConfirmationDisclosure } from './bank-reconciliation-confirmation-disclosure';
 import { buildBankReconciliationReviewOwnerOptions } from './bank-reconciliation-review-owner-model';
 import {
+  bankReconciliationWorkspaceHref,
+  readBankReconciliationWorkspace,
+} from './bank-reconciliation-workspace-model';
+import {
   BANK_RECONCILIATION_REVIEW_LINKS,
   FINANCE_ACCOUNTING_PAGE_SIZE_LINKS,
   bankReconciliationDetailHref,
@@ -79,6 +84,10 @@ type WithdrawalCandidateFilter = 'all' | 'eligible' | 'none' | 'review' | 'stron
 
 export default async function BankReconciliationPage({ searchParams }: BankReconciliationPageProps) {
   const params = searchParams ? await searchParams : {};
+  const workspace = readBankReconciliationWorkspace(params);
+  const isOperationsWorkspace = workspace === 'operations';
+  const isImportsWorkspace = workspace === 'imports';
+  const isManualWorkspace = workspace === 'manual';
   const filters = readFinanceAccountingFilters(params, 'unmatched');
   const transactionQuery = readParam(params, 'q').trim();
   const withdrawalCandidate = withdrawalCandidateFilter(readParam(params, 'candidate'));
@@ -102,6 +111,11 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
   const requestedBatchImportId = readParam(params, 'batchImportId');
   const currentOperatorAccess = await getCurrentAdminOperatorAccess();
   const currentOperatorId = currentOperatorAccess?.id ?? null;
+  const needsAdminDirectory =
+    isImportsWorkspace ||
+    isManualWorkspace ||
+    requestedReviewOwnerConfirmation ||
+    requestedBatchOwnerConfirmation;
   const [
     summary,
     withdrawalCandidateSummary,
@@ -109,59 +123,66 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
     companyBankAccounts,
     importHistory,
     importBatchSummary,
+    adminUsers,
   ] = await Promise.all([
-    adminGet<AdminBankReconciliationSummary>(
-      bankReconciliationApiHref(
-        buildBankReconciliationSummaryApiHref(filters),
-        transactionQuery,
-        withdrawalCandidate,
-        reviewOwner,
-        currentOperatorId,
-      ),
-      emptyBankReconciliationSummary(),
-    ),
-    adminGet<AdminBankReconciliationWithdrawalCandidateSummary>(
-      buildWithdrawalCandidateSummaryApiHref(filters.range, transactionQuery),
-      emptyWithdrawalCandidateSummary(),
-    ),
-    adminGet<AdminCompanyBankTransaction[]>(
-      bankReconciliationApiHref(
-        buildBankReconciliationApiHref(filters),
-        transactionQuery,
-        withdrawalCandidate,
-        reviewOwner,
-        currentOperatorId,
-      ),
-      [],
-    ),
-    adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ACTIVE', []),
-    adminGet<AdminCompanyBankTransactionImportBatchHistory>(
-      buildImportHistoryApiHref({
-        page: importHistoryPage,
-        q: importHistoryQuery,
-        range: importHistoryRange,
-        review: importHistoryReview,
-        take: importHistoryTake,
-      }),
-      { items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } },
-    ),
-    adminGet<AdminCompanyBankTransactionImportBatchSummary>(
-      '/admin/bank-reconciliation/import-batches/summary',
-      {
-        batchCount: 0,
-        escalatedNeedsReconciliationCount: 0,
-        needsReconciliationCount: 0,
-        noTransactionCount: 0,
-        oldestOpenImportedAt: null,
-        reconciledCount: 0,
-        staleNeedsReconciliationCount: 0,
-      },
-    ),
+    isOperationsWorkspace
+      ? adminGet<AdminBankReconciliationSummary>(
+          bankReconciliationApiHref(
+            buildBankReconciliationSummaryApiHref(filters),
+            transactionQuery,
+            withdrawalCandidate,
+            reviewOwner,
+            currentOperatorId,
+          ),
+          emptyBankReconciliationSummary(),
+        )
+      : Promise.resolve(emptyBankReconciliationSummary()),
+    isOperationsWorkspace
+      ? adminGet<AdminBankReconciliationWithdrawalCandidateSummary>(
+          buildWithdrawalCandidateSummaryApiHref(filters.range, transactionQuery),
+          emptyWithdrawalCandidateSummary(),
+        )
+      : Promise.resolve(emptyWithdrawalCandidateSummary()),
+    isOperationsWorkspace
+      ? adminGet<AdminCompanyBankTransaction[]>(
+          bankReconciliationApiHref(
+            buildBankReconciliationApiHref(filters),
+            transactionQuery,
+            withdrawalCandidate,
+            reviewOwner,
+            currentOperatorId,
+          ),
+          [],
+        )
+      : Promise.resolve([] as AdminCompanyBankTransaction[]),
+    isImportsWorkspace || isManualWorkspace
+      ? adminGet<AdminCompanyBankAccount[]>('/admin/company-bank-accounts?status=ACTIVE', [])
+      : Promise.resolve([] as AdminCompanyBankAccount[]),
+    isImportsWorkspace
+      ? adminGet<AdminCompanyBankTransactionImportBatchHistory>(
+          buildImportHistoryApiHref({
+            page: importHistoryPage,
+            q: importHistoryQuery,
+            range: importHistoryRange,
+            review: importHistoryReview,
+            take: importHistoryTake,
+          }),
+          { items: [], pagination: { skip: 0, take: importHistoryTake, total: 0 } },
+        )
+      : Promise.resolve({
+          items: [],
+          pagination: { skip: 0, take: importHistoryTake, total: 0 },
+        } as AdminCompanyBankTransactionImportBatchHistory),
+    isOperationsWorkspace || isImportsWorkspace
+      ? adminGet<AdminCompanyBankTransactionImportBatchSummary>(
+          '/admin/bank-reconciliation/import-batches/summary',
+          emptyImportBatchSummary(),
+        )
+      : Promise.resolve(emptyImportBatchSummary()),
+    needsAdminDirectory
+      ? adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+      : Promise.resolve([] as AdminUser[]),
   ]);
-  const adminUsers = await adminGet<AdminUser[]>(
-    '/admin/users?take=50&role=ADMIN&view=finance-approver-directory',
-    [],
-  );
   const financeApproverOptions = buildFinanceApproverOptions(adminUsers, currentOperatorId);
   const pagination = buildTaxSettlementServerPagination(transactions, filters, summary.count);
   const currentOperatorReviewCount = currentOperatorId
@@ -279,6 +300,48 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </AdminInlineNotice>
       ) : null}
 
+      <AdminFilterPanel
+        className="admin-mb-16"
+        description={
+          isOperationsWorkspace
+            ? 'Review live unmatched bank transactions and assign evidence work without loading statement tools.'
+            : isImportsWorkspace
+              ? 'Review CSV statement imports, import provenance, and unresolved imported rows.'
+              : 'Create one missing bank statement row with independent Finance approval and retained evidence.'
+        }
+        resultLabel={
+          isOperationsWorkspace
+            ? 'Operations'
+            : isImportsWorkspace
+              ? 'Statement imports'
+              : 'Manual entry'
+        }
+        resultTone={isManualWorkspace ? 'warning' : 'info'}
+        title="Bank reconciliation workspace"
+      >
+        <AdminSegmentedControl
+          activeValue={workspace}
+          ariaLabel="Bank reconciliation workspaces"
+          options={[
+            {
+              href: bankReconciliationWorkspaceHref('operations'),
+              label: 'Operations',
+              value: 'operations',
+            },
+            {
+              href: bankReconciliationWorkspaceHref('imports'),
+              label: 'Statement imports',
+              value: 'imports',
+            },
+            {
+              href: bankReconciliationWorkspaceHref('manual'),
+              label: 'Manual entry',
+              value: 'manual',
+            },
+          ]}
+        />
+      </AdminFilterPanel>
+
       {showBatchOwnerConfirmation && requestedImportBatch ? (
         <ConfirmDialog
           action={assignImportBatchOwnerAction}
@@ -318,6 +381,8 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         </AdminInlineNotice>
       ) : null}
 
+      {isOperationsWorkspace ? (
+        <>
       <FinanceListCommandBoard ariaLabel="Bank command board">
         <FinanceListCommandCard
           detail={`${summary.unmatchedCount} bank transaction(s) still need linked evidence matching.`}
@@ -633,7 +698,11 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           ]}
         />
       </AdminFilterPanel>
+        </>
+      ) : null}
 
+      {isImportsWorkspace ? (
+        <>
       <AdminSection
         className="admin-mb-16"
         description="Review a CSV statement before any row is saved. Exact duplicates and invalid rows stay blocked; potential duplicates require explicit row selection."
@@ -665,6 +734,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
         title="Statement import history filters"
       >
         <AdminFormShell action="/finance-tax/bank-reconciliation" className="filter-form" method="get">
+          <input name="workspace" type="hidden" value="imports" />
           {bankReconciliationFilterHiddenInputs(params)}
           <AdminFormSearch
             defaultValue={importHistoryQuery}
@@ -774,7 +844,10 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           pagination={importHistoryPagination(importHistory, importHistoryPage)}
         />
       </FinanceTablePanel>
+        </>
+      ) : null}
 
+      {isManualWorkspace ? (
       <AdminSection
         className="admin-mb-16"
         description="Create one bank statement row from manual evidence. Imported rows start unmatched and can be reconciled from the transaction detail page."
@@ -816,11 +889,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
             <input
               name="redirectTo"
               type="hidden"
-              value={queueHref(
-                { ...filters, page: 1, review: 'unmatched' },
-                transactionQuery,
-                withdrawalCandidate,
-              )}
+              value={bankReconciliationWorkspaceHref('manual')}
             />
             <AdminFormSelect
               disabled={financeApproverOptions.length === 0}
@@ -890,7 +959,9 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           </AdminFormGrid>
         </AdminDisclosure>
       </AdminSection>
+      ) : null}
 
+      {isOperationsWorkspace ? (
       <FinanceTablePanel
         grouped
         description={
@@ -1055,6 +1126,7 @@ export default async function BankReconciliationPage({ searchParams }: BankRecon
           pagination={pagination}
         />
       </FinanceTablePanel>
+      ) : null}
     </AdminPageTemplate>
   );
 }
@@ -1261,6 +1333,18 @@ function emptyWithdrawalCandidateSummary(): AdminBankReconciliationWithdrawalCan
   };
 }
 
+function emptyImportBatchSummary(): AdminCompanyBankTransactionImportBatchSummary {
+  return {
+    batchCount: 0,
+    escalatedNeedsReconciliationCount: 0,
+    needsReconciliationCount: 0,
+    noTransactionCount: 0,
+    oldestOpenImportedAt: null,
+    reconciledCount: 0,
+    staleNeedsReconciliationCount: 0,
+  };
+}
+
 function bankReconciliationQueueHref(
   filters: Parameters<typeof bankReconciliationHref>[0],
   query: string,
@@ -1363,7 +1447,7 @@ function importHistoryPagination(history: AdminCompanyBankTransactionImportBatch
 }
 
 function importHistoryHref(params: Record<string, string | string[] | undefined>, page: number) {
-  const search = new URLSearchParams();
+  const search = new URLSearchParams({ workspace: 'imports' });
   for (const key of [
     'range',
     'review',
@@ -1425,7 +1509,7 @@ function bankTransactionReviewAssignment(transaction: AdminCompanyBankTransactio
 }
 
 function clearImportHistoryHref(params: Record<string, string | string[] | undefined>) {
-  const search = new URLSearchParams();
+  const search = new URLSearchParams({ workspace: 'imports' });
   for (const key of ['range', 'review', 'take', 'candidate', 'owner', 'q']) {
     const value = readParam(params, key);
     if (value) search.set(key, value);
@@ -1438,7 +1522,7 @@ function importHistoryReconciliationWorkHref(
   params: Record<string, string | string[] | undefined>,
   review: 'needs-reconciliation' | 'stale' | 'escalated',
 ) {
-  const search = new URLSearchParams();
+  const search = new URLSearchParams({ workspace: 'imports' });
   for (const key of ['range', 'review', 'take', 'candidate', 'owner', 'q']) {
     const value = readParam(params, key);
     if (value) search.set(key, value);
