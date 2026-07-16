@@ -57,6 +57,8 @@ export type CouponTableRow = {
 };
 
 type CouponsTableSectionProps = {
+  readonly editCouponId?: string;
+  readonly editHrefForCoupon: (couponId: string) => string;
   readonly rows: readonly CouponTableRow[];
   readonly updateAction: (formData: FormData) => Promise<void>;
   readonly usageCouponId?: string;
@@ -76,6 +78,8 @@ const COUPON_USAGE_PAGE_SIZE = 10;
 const usageHeaders = ['Request Time', 'Customer', 'Partner', 'Service Type', 'Amount', 'Discount', 'State', 'Reversal'];
 
 export function CouponsTableSection({
+  editCouponId,
+  editHrefForCoupon,
   rows,
   updateAction,
   usageCouponId,
@@ -98,6 +102,8 @@ export function CouponsTableSection({
             {section.rows.length > 0 ? (
               section.rows.map((row) => (
                 <CouponManagementCard
+                  editHref={editHrefForCoupon(row.id)}
+                  editShouldOpen={editCouponId === row.id}
                   key={row.id}
                   row={row}
                   updateAction={updateAction}
@@ -117,12 +123,16 @@ export function CouponsTableSection({
 }
 
 function CouponManagementCard({
+  editHref,
+  editShouldOpen,
   row,
   updateAction,
   usageHrefForPage,
   usagePage,
   usageShouldOpen,
 }: {
+  readonly editHref: string;
+  readonly editShouldOpen: boolean;
   readonly row: CouponTableRow;
   readonly updateAction: (formData: FormData) => Promise<void>;
   readonly usageHrefForPage: (couponId: string, page: number) => string;
@@ -161,6 +171,9 @@ function CouponManagementCard({
       <div className="coupon-section-footer">
         <span>{usageCount > 0 ? `Used ${usageCount} booking(s)` : 'Booking usage loads on demand'}</span>
         <span>{row.opsHint}</span>
+        <AdminTextLink href={editHref}>
+          Edit coupon
+        </AdminTextLink>
         <AdminTextLink href={usageHrefForPage(row.id, 1)}>
           View usage
         </AdminTextLink>
@@ -169,47 +182,51 @@ function CouponManagementCard({
         </AdminTextLink>
       </div>
 
-      <AdminDisclosure className="coupon-section-disclosure">
-        <summary>Edit coupon</summary>
-        <AdminFormShell action={updateAction} className="coupon-edit-form">
-          <input name="couponId" type="hidden" value={row.id} />
-          <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
-          <AdminFormDateTime
-            className="admin-form-control-fluid"
-            defaultValue={row.startsAtInputValue}
-            label="Starts"
-            labelVisibility="visible"
-            name="startsAt"
-          />
-          <AdminFormDateTime
-            className="admin-form-control-fluid"
-            defaultValue={row.endsAtInputValue}
-            label="Ends"
-            labelVisibility="visible"
-            name="endsAt"
-          />
-          <AdminFormCheckbox
-            defaultChecked={row.active}
-            label={`${row.code} active`}
-            name="active"
-          >
-            <span>Active</span>
-          </AdminFormCheckbox>
-          <AdminFormControlButton className="button-primary" type="submit">
-            Save
-          </AdminFormControlButton>
-        </AdminFormShell>
-      </AdminDisclosure>
+      {editShouldOpen ? (
+        <AdminDisclosure className="coupon-section-disclosure" open>
+          <summary>Edit coupon</summary>
+          <AdminFormShell action={updateAction} className="coupon-edit-form">
+            <input name="couponId" type="hidden" value={row.id} />
+            <AdminFormInput defaultValue={row.percentValue} label="Discount %" max="100" min="1" name="percent" type="number" />
+            <AdminFormDateTime
+              className="admin-form-control-fluid"
+              defaultValue={row.startsAtInputValue}
+              label="Starts"
+              labelVisibility="visible"
+              name="startsAt"
+            />
+            <AdminFormDateTime
+              className="admin-form-control-fluid"
+              defaultValue={row.endsAtInputValue}
+              label="Ends"
+              labelVisibility="visible"
+              name="endsAt"
+            />
+            <AdminFormCheckbox
+              defaultChecked={row.active}
+              label={`${row.code} active`}
+              name="active"
+            >
+              <span>Active</span>
+            </AdminFormCheckbox>
+            <AdminFormControlButton className="button-primary" type="submit">
+              Save
+            </AdminFormControlButton>
+          </AdminFormShell>
+        </AdminDisclosure>
+      ) : null}
 
-      <AdminDisclosure className="coupon-section-disclosure" open={usageShouldOpen ? true : undefined}>
-        <summary>Booking usage</summary>
-        <CouponUsageBookingTable
-          hrefForPage={(page) => usageHrefForPage(row.id, page)}
-          page={usagePage}
-          rows={row.usageBookings}
-          totalCount={row.usageBookingCount}
-        />
-      </AdminDisclosure>
+      {usageShouldOpen ? (
+        <AdminDisclosure className="coupon-section-disclosure" open>
+          <summary>Booking usage</summary>
+          <CouponUsageBookingTable
+            hrefForPage={(page) => usageHrefForPage(row.id, page)}
+            page={usagePage}
+            rows={row.usageBookings}
+            totalCount={row.usageBookingCount}
+          />
+        </AdminDisclosure>
+      ) : null}
     </AdminCard>
   );
 }

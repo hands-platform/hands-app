@@ -6,11 +6,14 @@ const sectionSource = readFileSync(new URL('./coupons-table-section.tsx', import
 const globalCss = readFileSync('app/globals.css', 'utf8');
 
 describe('CouponsTableSection', () => {
-  it('renders coupon cards with edit fields and booking usage', () => {
+  it('renders edit fields and booking usage only for the selected coupon', () => {
     const section = CouponsTableSection({
+      editCouponId: 'coupon-1',
+      editHrefForCoupon: (couponId) => `/coupons?editCouponId=${couponId}`,
       rows: [buildRow()],
       updateAction: async () => {},
       usageHrefForPage: (couponId, page) => `/coupons?usageCouponId=${couponId}&usagePage=${page}`,
+      usageCouponId: 'coupon-1',
       usagePage: 1,
     });
 
@@ -35,6 +38,7 @@ describe('CouponsTableSection', () => {
     expect(rendered).toContain('Smoke Partner');
     expect(rendered).toContain('REVERSED');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
+    expect(hrefsIn(section)).toContain('/coupons?editCouponId=coupon-1');
     expect(hrefsIn(section)).toContain('/coupons?confirm=delete&couponId=coupon-1');
     expect(elementTypesIn(section)).not.toContain('article');
     expect(classNamesIn(section)).toEqual(
@@ -83,8 +87,27 @@ describe('CouponsTableSection', () => {
     expect(JSON.stringify(section)).not.toContain('<input defaultChecked={row.active}');
   });
 
+  it('keeps default coupon cards compact until an operator selects an action', () => {
+    const section = CouponsTableSection({
+      editHrefForCoupon: (couponId) => `/coupons?editCouponId=${couponId}`,
+      rows: [buildRow(), { ...buildRow(), code: 'SUMMER15', id: 'coupon-2' }],
+      updateAction: async () => {},
+      usageHrefForPage: (couponId, page) => `/coupons?usageCouponId=${couponId}&usagePage=${page}`,
+      usagePage: 1,
+    });
+    const rendered = textContent(section);
+
+    expect(rendered).toContain('Edit coupon');
+    expect(rendered).toContain('View usage');
+    expect(rendered).not.toContain('Discount %');
+    expect(rendered).not.toContain('Booking usage');
+    expect(classNamesIn(section)).not.toContain('coupon-edit-form');
+    expect(classNamesIn(section)).not.toContain('coupon-usage-list');
+  });
+
   it('renders empty state when no coupons exist', () => {
     const section = CouponsTableSection({
+      editHrefForCoupon: (couponId) => `/coupons?editCouponId=${couponId}`,
       rows: [],
       updateAction: async () => {},
       usageHrefForPage: (couponId, page) => `/coupons?usageCouponId=${couponId}&usagePage=${page}`,

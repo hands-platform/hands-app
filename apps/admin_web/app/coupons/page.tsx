@@ -41,6 +41,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
     notice: readSingleParam(params.couponNotice),
   });
   const confirmAction = readSingleParam(params.confirm);
+  const editCouponId = readSingleParam(params.editCouponId);
   const usageCouponId = readSingleParam(params.usageCouponId);
   const couponPage = readPositiveInteger(readSingleParam(params.couponPage));
   const couponSkip = (couponPage - 1) * COUPON_LIST_PAGE_SIZE;
@@ -61,7 +62,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
       : Promise.resolve<AdminCouponUsagePage | null>(null),
   ]);
   const couponModel = buildCouponPageModel(withCouponUsagePage(coupons, usagePageResult));
-  const usageSearchParams = couponUsageSearchParams(params);
+  const panelSearchParams = couponPanelSearchParams(params);
   const couponListSearchParams = couponListSearchParamsWithoutPaging(params);
   const couponTotalPages = Math.max(1, Math.ceil(couponSummary.totalCount / COUPON_LIST_PAGE_SIZE));
   const couponListFrom =
@@ -181,10 +182,12 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         </AdminFormGrid>
       </AdminSection>
       <CouponsTableSection
+        editCouponId={editCouponId}
+        editHrefForCoupon={(couponId) => couponEditHref(panelSearchParams, couponId)}
         rows={couponModel.couponRows}
         updateAction={updateCoupon}
         usageCouponId={usageCouponId}
-        usageHrefForPage={(couponId, page) => couponUsageHref(usageSearchParams, couponId, page)}
+        usageHrefForPage={(couponId, page) => couponUsageHref(panelSearchParams, couponId, page)}
         usagePage={usagePage}
       />
       {couponTotalPages > 1 ? (
@@ -216,11 +219,20 @@ function readPositiveInteger(value: string) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 }
 
-function couponUsageSearchParams(params: Record<string, string | string[] | undefined>) {
+function couponPanelSearchParams(params: Record<string, string | string[] | undefined>) {
   const next = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
-    if (key === 'confirm' || key === 'couponId' || key === 'usageCouponId' || key === 'usagePage') {
+    if (
+      key === 'confirm' ||
+      key === 'couponId' ||
+      key === 'editCouponId' ||
+      key === 'usageCouponId' ||
+      key === 'usagePage' ||
+      key === 'couponNotice' ||
+      key === 'created' ||
+      key === 'failed'
+    ) {
       continue;
     }
 
@@ -243,6 +255,7 @@ function couponListSearchParamsWithoutPaging(params: Record<string, string | str
       key === 'confirm' ||
       key === 'couponId' ||
       key === 'couponPage' ||
+      key === 'editCouponId' ||
       key === 'usageCouponId' ||
       key === 'usagePage' ||
       key === 'couponNotice' ||
@@ -286,6 +299,13 @@ function couponUsageHref(baseParams: URLSearchParams, couponId: string, page: nu
 
   const query = next.toString();
   return query ? `/coupons?${query}` : '/coupons';
+}
+
+function couponEditHref(baseParams: URLSearchParams, couponId: string) {
+  const next = new URLSearchParams(baseParams);
+  next.set('editCouponId', couponId);
+
+  return `/coupons?${next.toString()}`;
 }
 
 function emptyCouponUsagePage(couponId: string, page: number): AdminCouponUsagePage {

@@ -46,6 +46,16 @@ describe('CouponsPage', () => {
     expect(hrefs).toContain('/admin/coupons/coupon-1/usage?take=10&skip=20');
   });
 
+  it('does not fetch usage when only coupon editing is selected', async () => {
+    await CouponsPage({
+      searchParams: Promise.resolve({ editCouponId: 'coupon-1' }),
+    });
+
+    const hrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(hrefs.some((href) => String(href).includes('/usage?'))).toBe(false);
+  });
+
   it('paginates the coupon list with server skip and take', async () => {
     await CouponsPage({
       searchParams: Promise.resolve({ couponPage: '3' }),
