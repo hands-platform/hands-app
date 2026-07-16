@@ -26,11 +26,15 @@ const chatArchivePageModelSource = readFileSync(chatArchivePageModelPath, 'utf8'
 const usageOverviewPageModelSource = readFileSync(usageOverviewPageModelPath, 'utf8');
 const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
-function sourceBetween(startMarker, endMarker) {
-  const start = adminServiceSource.indexOf(startMarker);
+function sourceBetweenIn(source, startMarker, endMarker) {
+  const start = source.indexOf(startMarker);
   if (start === -1) return '';
-  const end = adminServiceSource.indexOf(endMarker, start + startMarker.length);
-  return adminServiceSource.slice(start, end === -1 ? undefined : end);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  return source.slice(start, end === -1 ? undefined : end);
+}
+
+function sourceBetween(startMarker, endMarker) {
+  return sourceBetweenIn(adminServiceSource, startMarker, endMarker);
 }
 
 const providerListSource = sourceBetween('async listProviders', 'async getProviderDetail');
@@ -40,6 +44,11 @@ const pushCampaignListSource = sourceBetween('listAdminPushCampaigns', 'async ad
 const pushCampaignSummarySource = sourceBetween('async adminPushCampaignSummary', 'async previewAdminPushCampaign');
 const pushCampaignPreviewSource = sourceBetween('async previewAdminPushCampaign', 'async createAdminPushCampaign');
 const pushCampaignCreateSource = sourceBetween('async createAdminPushCampaign', 'async retryNotification');
+const customerDirectorySelectSource = sourceBetweenIn(
+  adminCustomerSelectsSource,
+  'export const adminCustomerDirectorySelect',
+  'const adminCustomerNotificationDeliverySelect',
+);
 
 if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 50;')) {
   violations.push({
@@ -239,7 +248,7 @@ const notificationTakeIsBounded =
   notificationListSource.includes('take: normalizeNotificationBoardTake(options.take),') ||
   (
     notificationListSource.includes('const take = normalizeNotificationBoardTake(options.take);') &&
-    /const args:\s*Prisma\.NotificationFindManyArgs\s*=\s*\{[\s\S]*?\btake,/.test(notificationListSource)
+    /const args:[\s\S]*?=\s*\{[\s\S]*?\btake,/.test(notificationListSource)
   );
 
 if (!notificationTakeIsBounded) {
@@ -394,43 +403,46 @@ if (!adminServiceSource.includes('const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 10;')) {
+if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT = 10;')) {
   violations.push({
     area: 'admin customer query',
-    file: 'apps/api/src/admin/admin.service.ts',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
     message: 'Customer list booking relations must keep a 10-row guard.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;')) {
+if (
+  !customerDirectorySelectSource.includes('_count: { select: { selectedLocations: true } },') ||
+  customerDirectorySelectSource.includes('selectedLocations: {')
+) {
   violations.push({
     area: 'admin customer query',
-    file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list selected-location relations must keep a 5-row guard.',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
+    message: 'Customer list must count selected locations without hydrating location rows.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;')) {
+if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT = 1;')) {
   violations.push({
     area: 'admin customer query',
-    file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list app-session relations must keep a 3-row guard.',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
+    message: 'Customer list app-session relations must keep a one-row latest-session guard.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;')) {
+if (!adminCustomerSelectsSource.includes('export const ADMIN_CUSTOMER_DIRECTORY_PUSH_DEVICE_LIMIT = 3;')) {
   violations.push({
     area: 'admin customer query',
-    file: 'apps/api/src/admin/admin.service.ts',
+    file: 'apps/api/src/admin/admin-customer-selects.ts',
     message: 'Customer list push-device relations must keep a 3-row guard.',
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;')) {
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 1;')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Customer list audit-log memo relations must keep a 3-row per-customer guard.',
+    message: 'Customer list audit-log memo preview must keep a one-row per-customer guard.',
   });
 }
 
