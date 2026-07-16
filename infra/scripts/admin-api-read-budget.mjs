@@ -83,7 +83,7 @@ const customerAndChatReadTargets = [
   {
     label: 'app-sessions-list',
     path: '/admin/app-sessions?take=20',
-    budget: { p90Ms: 750, maxBytes: 128 * 1024 },
+    budget: { p90Ms: 500, maxBytes: 64 * 1024 },
   },
   {
     label: 'app-sessions-summary',

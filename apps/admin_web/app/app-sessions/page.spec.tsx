@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { vi } from 'vitest';
 
-import type { AdminAppSession } from '../../lib/admin-api';
+import type { AdminAppSessionDirectoryRow } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import AppSessionsPage from './page';
 
@@ -28,7 +28,6 @@ describe('AppSessionsPage', () => {
     const serverSession = {
       active: false,
       appVersion: '1.0.0',
-      createdAt: '2026-06-28T09:00:00.000Z',
       deviceId: 'server-device-token',
       expiresAt: '2026-06-28T09:01:00.000Z',
       id: 'server-session-row',
@@ -36,14 +35,13 @@ describe('AppSessionsPage', () => {
       lastSeenAt: '2026-06-28T09:00:00.000Z',
       platform: 'IOS',
       role: 'CUSTOMER',
-      updatedAt: '2026-06-28T09:00:00.000Z',
       user: {
         fullName: 'Server Trusted Session',
         id: 'server-user-row',
         phone: '+84900003333',
       },
       userId: 'server-user-row',
-    } as AdminAppSession;
+    } as AdminAppSessionDirectoryRow;
 
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (String(href).startsWith('/admin/app-sessions/summary')) {

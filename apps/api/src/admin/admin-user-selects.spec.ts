@@ -50,9 +50,23 @@ describe('admin user selects', () => {
       deliveries: expect.objectContaining({ orderBy: { attemptedAt: 'desc' }, take: 3 }),
     });
     expect(adminAppSessionListSelect.user.select).toMatchObject({
-      id: true,
       phone: true,
       pushDevices: expect.objectContaining({ take: 3 }),
+    });
+    expect(adminAppSessionListSelect).not.toHaveProperty('createdAt');
+    expect(adminAppSessionListSelect).not.toHaveProperty('updatedAt');
+    expect(adminAppSessionListSelect.user.select).not.toHaveProperty('email');
+    expect(adminAppSessionListSelect.user.select).not.toHaveProperty('roles');
+    expect(adminAppSessionListSelect.user.select.customerProfile.select).toEqual({ id: true });
+    expect(adminAppSessionListSelect.user.select.providerProfile.select).toEqual({
+      id: true,
+      displayName: true,
+    });
+    expect(adminAppSessionListSelect.user.select.pushDevices.select).toEqual({
+      id: true,
+      platform: true,
+      enabled: true,
+      lastSeenAt: true,
     });
   });
 });

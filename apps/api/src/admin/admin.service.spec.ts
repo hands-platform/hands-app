@@ -1750,6 +1750,16 @@ describe('AdminService query orchestration', () => {
       take: 50,
       select: expect.any(Object),
     });
+    const sessionSelect = prisma.appSession.findMany.mock.calls[0][0].select;
+    expect(sessionSelect).not.toHaveProperty('createdAt');
+    expect(sessionSelect.user.select).not.toHaveProperty('email');
+    expect(sessionSelect.user.select.customerProfile.select).toEqual({ id: true });
+    expect(sessionSelect.user.select.pushDevices.select).toEqual({
+      id: true,
+      platform: true,
+      enabled: true,
+      lastSeenAt: true,
+    });
   });
 
   it('summarizes app sessions with aggregate counts instead of full session hydration', async () => {

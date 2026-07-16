@@ -355,6 +355,24 @@ export type AdminAppSession = {
   user?: AdminUser | null;
 };
 
+export type AdminAppSessionDirectoryRow = Omit<
+  AdminAppSession,
+  'createdAt' | 'deviceLanguage' | 'lastLoginAddress' | 'updatedAt' | 'user'
+> & {
+  user?: {
+    phone?: string;
+    fullName?: string | null;
+    customerProfile?: { id: string } | null;
+    providerProfile?: { id: string; displayName?: string | null } | null;
+    pushDevices?: Array<{
+      id: string;
+      platform?: string;
+      enabled: boolean;
+      lastSeenAt?: string;
+    }>;
+  } | null;
+};
+
 export type AdminAppSessionSummary = {
   expired: number;
   generatedAt: string;

@@ -101,25 +101,26 @@ export const adminAppSessionListSelect = {
   active: true,
   lastSeenAt: true,
   expiresAt: true,
-  createdAt: true,
-  updatedAt: true,
   user: {
     select: {
-      ...adminUserSummarySelect,
-      customerProfile: { select: { id: true, userId: true, addresses: true } },
+      phone: true,
+      fullName: true,
+      customerProfile: { select: { id: true } },
       providerProfile: {
         select: {
           id: true,
           displayName: true,
-          status: true,
-          currentLocationUpdatedAt: true,
-          blockedAt: true,
         },
       },
       pushDevices: {
         orderBy: { updatedAt: 'desc' },
         take: 3,
-        select: adminUserListPushDeviceSelect,
+        select: {
+          id: true,
+          platform: true,
+          enabled: true,
+          lastSeenAt: true,
+        },
       },
     },
   },

@@ -3,7 +3,7 @@ import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminTableSection } from '../../components/admin-table-panel';
 import { StatusBadge } from '../../components/status-badge';
-import type { AdminAppSession, AdminAppSessionSummary } from '../../lib/admin-api';
+import type { AdminAppSessionDirectoryRow, AdminAppSessionSummary } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import { formatRelativeTime } from '../../lib/admin-format';
@@ -62,7 +62,7 @@ export default async function AppSessionsPage({
 }) {
   const filters = buildSessionFilters((await searchParams) ?? {});
   const [loadedSessions, serverSummary] = await Promise.all([
-    adminGet<AdminAppSession[]>(buildAppSessionApiHref(filters), []),
+    adminGet<AdminAppSessionDirectoryRow[]>(buildAppSessionApiHref(filters), []),
     adminGet<AdminAppSessionSummary | null>(buildAppSessionSummaryApiHref(filters), null),
   ]);
   const sessions = loadedSessions;
@@ -135,7 +135,7 @@ export default async function AppSessionsPage({
   );
 }
 
-function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSessionTableRow[] {
+function buildAppSessionTableRows(sessions: readonly AdminAppSessionDirectoryRow[]): AppSessionTableRow[] {
   return sessions.map((session) => {
     const state = sessionState(session);
     const partnerId = session.user?.providerProfile?.id;
@@ -175,7 +175,7 @@ const sessionQuickFilters: AppSessionQuickFilter[] = [
 ];
 
 function buildSessionSummary(
-  sessions: AdminAppSession[],
+  sessions: AdminAppSessionDirectoryRow[],
   serverSummary?: AdminAppSessionSummary | null,
 ): Array<[string, string, string]> {
   const states = sessions.map(sessionState);
@@ -231,7 +231,7 @@ function sessionSummaryMetricMeta(label: string) {
 }
 
 function buildSessionCommandCards(
-  sessions: AdminAppSession[],
+  sessions: AdminAppSessionDirectoryRow[],
   checkRows: ReturnType<typeof buildSessionCheckRows>,
 ): SessionCommandCard[] {
   const liveCustomers = sessions.filter(
@@ -308,7 +308,7 @@ function buildSessionCommandCards(
   ];
 }
 
-function buildRoleRows(sessions: AdminAppSession[]): AppSessionRoleRow[] {
+function buildRoleRows(sessions: AdminAppSessionDirectoryRow[]): AppSessionRoleRow[] {
   const roles = new Map<string, SessionRoleAccumulator>();
   for (const session of sessions) {
     const role = session.role === 'PROVIDER' ? 'PARTNER' : session.role;
@@ -320,7 +320,7 @@ function buildRoleRows(sessions: AdminAppSession[]): AppSessionRoleRow[] {
   return [...roles.values()].sort((left, right) => right.total - left.total);
 }
 
-function buildPlatformRows(sessions: AdminAppSession[]): AppSessionPlatformRow[] {
+function buildPlatformRows(sessions: AdminAppSessionDirectoryRow[]): AppSessionPlatformRow[] {
   const rows = new Map<string, SessionPlatformAccumulator>();
   for (const session of sessions) {
     const platform = session.platform ?? 'unknown';
@@ -334,7 +334,7 @@ function buildPlatformRows(sessions: AdminAppSession[]): AppSessionPlatformRow[]
   );
 }
 
-function buildVersionRows(sessions: AdminAppSession[]): AppSessionVersionRow[] {
+function buildVersionRows(sessions: AdminAppSessionDirectoryRow[]): AppSessionVersionRow[] {
   const rows = new Map<string, SessionVersionAccumulator>();
   for (const session of sessions) {
     const version = session.appVersion ?? 'unknown';
@@ -350,9 +350,9 @@ function buildVersionRows(sessions: AdminAppSession[]): AppSessionVersionRow[] {
   );
 }
 
-function buildSessionCheckRows(sessions: AdminAppSession[]): SessionCheckQueueItem[] {
+function buildSessionCheckRows(sessions: AdminAppSessionDirectoryRow[]): SessionCheckQueueItem[] {
   const rows: SessionCheckQueueItem[] = [];
-  const byDevice = new Map<string, AdminAppSession[]>();
+  const byDevice = new Map<string, AdminAppSessionDirectoryRow[]>();
 
   for (const session of sessions) {
     const state = sessionState(session);
@@ -402,7 +402,7 @@ function buildSessionCheckRows(sessions: AdminAppSession[]): SessionCheckQueueIt
   return rows.sort((left, right) => left.status.localeCompare(right.status));
 }
 
-function sessionState(session: AdminAppSession): SessionState {
+function sessionState(session: AdminAppSessionDirectoryRow): SessionState {
   if (session.active && session.expiresAt && Date.parse(session.expiresAt) >= Date.now()) {
     return 'live';
   }
@@ -426,7 +426,7 @@ function sessionStatePill(state: SessionState) {
   return 'pill-danger';
 }
 
-function sessionUserLabel(session: AdminAppSession) {
+function sessionUserLabel(session: AdminAppSessionDirectoryRow) {
   return (
     session.user?.providerProfile?.displayName ??
     session.user?.fullName ??

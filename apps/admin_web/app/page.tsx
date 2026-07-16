@@ -41,7 +41,7 @@ import {
   AdminDashboardSummary,
   AdminEarning,
   AdminEarningSummary,
-  AdminAppSession,
+  AdminAppSessionDirectoryRow,
   AdminNotification,
   AdminNotificationBoardSummary,
   AdminOperationalPolicySetting,
@@ -382,7 +382,7 @@ const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: s
 function buildFullDashboardData(input: {
   activePayoutBatches: AdminPayoutBatch[];
   appPresence: AdminDashboardSummary['appPresence'];
-  appSessions: AdminAppSession[];
+  appSessions: AdminAppSessionDirectoryRow[];
   bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
   bookings: AdminBooking[];
   cashDebtRows: AdminEarning[];
@@ -541,7 +541,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       ? Promise.resolve(startShiftSummaryResponse.payoutBatches)
       : adminGet<AdminPayoutBatchSummary | null>(dashboardDataHrefs.payoutBatchSummaryHref, null),
     dashboardDataHrefs.appSessionsHref
-      ? adminGet<AdminAppSession[]>(dashboardDataHrefs.appSessionsHref, [])
+      ? adminGet<AdminAppSessionDirectoryRow[]>(dashboardDataHrefs.appSessionsHref, [])
       : Promise.resolve([]),
     dashboardDataHrefs.bookingGateAuditHref
       ? adminGet<AdminAuditLog[]>(dashboardDataHrefs.bookingGateAuditHref, [])
@@ -4336,7 +4336,7 @@ function buildPaymentMethodMix(payments: AdminPayment[]) {
 function buildPartnerOpsQueue(
   providers: AdminProvider[],
   cashDebtRows: AdminEarning[],
-  sessions: AdminAppSession[],
+  sessions: AdminAppSessionDirectoryRow[],
 ) {
   const cashDebtByPartner = new Map<string, number>();
   for (const earning of cashDebtRows) {
@@ -4694,7 +4694,7 @@ function providerHasFirstRevenue(provider: AdminProvider) {
   );
 }
 
-function appSessionState(session: AdminAppSession) {
+function appSessionState(session: AdminAppSessionDirectoryRow) {
   if (session.active && session.expiresAt && Date.parse(session.expiresAt) >= Date.now()) {
     return 'live';
   }
