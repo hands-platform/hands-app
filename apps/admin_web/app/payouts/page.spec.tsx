@@ -67,7 +67,7 @@ describe('PayoutsPage', () => {
     });
 
     const page = await PayoutsPage({
-      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
+      searchParams: Promise.resolve({ range: 'today' }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -75,10 +75,8 @@ describe('PayoutsPage', () => {
     expect(markup).toContain(
       'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-date-range-card',
     );
-    expect(markup).toContain(
-      'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group payout-release-policy-card',
-    );
-    expect(markup).toContain('table vuexy-data-table vuexy-booking-table admin-data-table payout-release-cycle-table');
+    expect(markup).toContain('Payout batch list');
+    expect(markup).not.toContain('Payout batch release policy desk');
   });
 
   it('keeps the default payout workspace focused and defers full evidence reads', async () => {
@@ -92,9 +90,61 @@ describe('PayoutsPage', () => {
 
     expect(requestedHrefs).not.toContain('/admin/earnings?range=today&take=10');
     expect(requestedHrefs).not.toContain(payoutPolicyHref);
-    expect(markup).toContain('Full payout evidence');
+    expect(markup).toContain('Payout workspaces');
+    expect(markup).toContain('Release policy');
+    expect(markup).toContain('Audit evidence');
+    expect(markup).toContain('Records');
     expect(markup).not.toContain('Payout batch release policy desk');
     expect(markup).not.toContain('Payout inclusion audit');
+  });
+
+  it('keeps policy, audit, and record evidence in separate payout workspaces', async () => {
+    mockedAdminGet.mockImplementation(async (_href, fallback) => fallback);
+
+    const policyPage = await PayoutsPage({
+      searchParams: Promise.resolve({ details: 'all', range: 'today' }),
+    });
+    const policyMarkup = renderToStaticMarkup(policyPage);
+    const policyHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(policyMarkup).toContain('Payout batch release policy desk');
+    expect(policyMarkup).not.toContain('Payout inclusion audit');
+    expect(policyMarkup).not.toContain('Payout batch list');
+    expect(policyHrefs).toContain('/admin/earnings?range=today&take=10');
+    expect(policyHrefs).toContain(payoutPolicyHref);
+    expect(policyHrefs).not.toContain(
+      '/admin/provider-wallet/withdrawal-requests?range=today&take=10&status=REVIEW_REQUIRED',
+    );
+
+    mockedAdminGet.mockClear();
+    const auditPage = await PayoutsPage({
+      searchParams: Promise.resolve({ details: 'all', range: 'today', view: 'audit' }),
+    });
+    const auditMarkup = renderToStaticMarkup(auditPage);
+    const auditHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(auditMarkup).toContain('Payout inclusion audit');
+    expect(auditMarkup).toContain('Payout service evidence');
+    expect(auditMarkup).toContain('Payout status lanes');
+    expect(auditMarkup).not.toContain('Payout batch release policy desk');
+    expect(auditMarkup).not.toContain('Payout batch list');
+    expect(auditHrefs).toContain('/admin/earnings?range=today&take=10');
+    expect(auditHrefs).not.toContain(payoutPolicyHref);
+
+    mockedAdminGet.mockClear();
+    const recordsPage = await PayoutsPage({
+      searchParams: Promise.resolve({ details: 'all', range: 'today', view: 'records' }),
+    });
+    const recordsMarkup = renderToStaticMarkup(recordsPage);
+    const recordHrefs = mockedAdminGet.mock.calls.map(([href]) => href);
+
+    expect(recordsMarkup).toContain('Partner wallet withdrawal requests');
+    expect(recordsMarkup).toContain('Payout batch list');
+    expect(recordsMarkup).not.toContain('Payout money flow');
+    expect(recordsMarkup).not.toContain('Payout batch release policy desk');
+    expect(recordsMarkup).not.toContain('Payout inclusion audit');
+    expect(recordHrefs).not.toContain('/admin/earnings?range=today&take=10');
+    expect(recordHrefs).not.toContain(payoutPolicyHref);
   });
 
   it('uses the payout summary endpoint for top-level payout metrics', async () => {

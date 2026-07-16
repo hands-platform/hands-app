@@ -12,6 +12,8 @@ describe('payouts page model', () => {
     expect(defaultFilters.withdrawalPage).toBe(1);
     expect(defaultFilters.withdrawalReconciliation).toBeNull();
     expect(defaultFilters.withdrawalStatus).toBe('REVIEW_REQUIRED');
+    expect(defaultFilters.workspace).toBe('operations');
+    expect(rangeFilters.workspace).toBe('policy');
     expect(buildPayoutFilters({ range: 'all' }).range).toBe('all');
     expect(buildPayoutOperationsApiHrefs(rangeFilters)).toEqual({
       earningsHref: '/admin/earnings?range=30d&take=10',
@@ -19,10 +21,8 @@ describe('payouts page model', () => {
         '/admin/operational-policy?keys=payout.batch_cycle_policy%2Ccash.settlement_clearance_policy%2Cwallet.negative_balance_gate%2Cmatching.marketplace_partner_radius_meters%2Cmatching.backup_provider_radius_meters',
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=10',
       payoutBatchSummaryHref: '/admin/payout-batches/summary?range=30d',
-      providerWalletWithdrawalRequestsHref:
-        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&status=REVIEW_REQUIRED',
-      providerWalletWithdrawalRequestSummaryHref:
-        '/admin/provider-wallet/withdrawal-requests/summary?range=30d',
+      providerWalletWithdrawalRequestsHref: null,
+      providerWalletWithdrawalRequestSummaryHref: null,
     });
   });
 
@@ -49,7 +49,6 @@ describe('payouts page model', () => {
 
   it('passes withdrawal status filters only to partner wallet withdrawal requests', () => {
     const filters = buildPayoutFilters({
-      details: 'all',
       range: '7d',
       withdrawalStatus: 'BANK_TRANSFER_PENDING',
     });
@@ -59,7 +58,7 @@ describe('payouts page model', () => {
       withdrawalStatus: 'BANK_TRANSFER_PENDING',
     });
     expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      earningsHref: '/admin/earnings?range=7d&take=10',
+      earningsHref: null,
       payoutBatchesHref: '/admin/payout-batches?range=7d&take=10',
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=7d&take=10&status=BANK_TRANSFER_PENDING',
@@ -72,6 +71,7 @@ describe('payouts page model', () => {
       page: '3',
       pageSize: '25',
       range: '30d',
+      view: 'records',
       withdrawalStatus: 'REVIEW_REQUIRED',
     });
 
@@ -82,7 +82,7 @@ describe('payouts page model', () => {
       withdrawalStatus: 'REVIEW_REQUIRED',
     });
     expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
-      earningsHref: '/admin/earnings?range=30d&take=25&skip=50',
+      earningsHref: null,
       payoutBatchesHref: '/admin/payout-batches?range=30d&take=25&skip=50',
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=30d&take=25&status=REVIEW_REQUIRED',
@@ -105,5 +105,37 @@ describe('payouts page model', () => {
         withdrawalStatus: 'PAID',
       }),
     ).toBe('/payouts?details=all&range=30d&withdrawalStatus=PAID&withdrawalPage=3&pageSize=25&page=2');
+  });
+
+  it('separates policy, audit, and record evidence reads', () => {
+    const policyFilters = buildPayoutFilters({ details: 'all', range: '30d' });
+    const auditFilters = buildPayoutFilters({ details: 'all', range: '30d', view: 'audit' });
+    const recordFilters = buildPayoutFilters({ details: 'all', range: '30d', view: 'records' });
+
+    expect(policyFilters.workspace).toBe('policy');
+    expect(auditFilters.workspace).toBe('audit');
+    expect(recordFilters.workspace).toBe('records');
+    expect(buildPayoutOperationsApiHrefs(policyFilters)).toMatchObject({
+      earningsHref: '/admin/earnings?range=30d&take=10',
+      operationalPolicyHref: expect.stringContaining('/admin/operational-policy?keys='),
+      providerWalletWithdrawalRequestsHref: null,
+    });
+    expect(buildPayoutOperationsApiHrefs(auditFilters)).toMatchObject({
+      earningsHref: '/admin/earnings?range=30d&take=10',
+      operationalPolicyHref: null,
+      providerWalletWithdrawalRequestsHref: null,
+    });
+    expect(buildPayoutOperationsApiHrefs(recordFilters)).toMatchObject({
+      earningsHref: null,
+      operationalPolicyHref: null,
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=30d&take=10&status=REVIEW_REQUIRED',
+    });
+    expect(payoutHref({ range: '30d', workspace: 'audit' })).toBe(
+      '/payouts?details=all&view=audit&range=30d',
+    );
+    expect(payoutHref({ range: '30d', workspace: 'records' })).toBe(
+      '/payouts?details=all&view=records&range=30d',
+    );
   });
 });

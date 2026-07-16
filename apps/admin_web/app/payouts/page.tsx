@@ -83,7 +83,18 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const params = searchParams ? await searchParams : {};
   const filters = buildPayoutFilters(params);
-  const showFullEvidence = filters.details === 'all';
+  const isOperationsWorkspace = filters.workspace === 'operations';
+  const isPolicyWorkspace = filters.workspace === 'policy';
+  const isAuditWorkspace = filters.workspace === 'audit';
+  const isRecordsWorkspace = filters.workspace === 'records';
+  const workspaceLabel =
+    filters.workspace === 'policy'
+      ? 'Release policy'
+      : filters.workspace === 'audit'
+        ? 'Audit evidence'
+        : filters.workspace === 'records'
+          ? 'Records'
+          : 'Operations';
   const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
   const payoutRangeScope = dateRangeLabel(filters.range);
   const apiHrefs = buildPayoutOperationsApiHrefs(filters);
@@ -103,11 +114,15 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     apiHrefs.operationalPolicyHref
       ? adminGet<AdminOperationalPolicySetting[]>(apiHrefs.operationalPolicyHref, [])
       : Promise.resolve([] as AdminOperationalPolicySetting[]),
-    adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, []),
-    adminGet<AdminProviderWalletWithdrawalRequestSummary | null>(
-      apiHrefs.providerWalletWithdrawalRequestSummaryHref,
-      null,
-    ),
+    apiHrefs.providerWalletWithdrawalRequestsHref
+      ? adminGet<AdminProviderWalletWithdrawalRequest[]>(apiHrefs.providerWalletWithdrawalRequestsHref, [])
+      : Promise.resolve([] as AdminProviderWalletWithdrawalRequest[]),
+    apiHrefs.providerWalletWithdrawalRequestSummaryHref
+      ? adminGet<AdminProviderWalletWithdrawalRequestSummary | null>(
+          apiHrefs.providerWalletWithdrawalRequestSummaryHref,
+          null,
+        )
+      : Promise.resolve(null),
   ]);
   const batches = sortBatches(allBatches);
   const earnings = allEarnings;
@@ -127,23 +142,24 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         withdrawalTotal,
       )
     : null;
-  const commandSignals = buildPayoutCommandSignals(batches);
-  const payoutLanes = showFullEvidence ? buildPayoutLanes(batches) : [];
-  const payoutStatusLanes = showFullEvidence ? buildPayoutStatusLanes(payoutLanes) : [];
-  const serviceEvidence = buildPayoutServiceEvidence(batches);
-  const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
-  const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
+  const commandSignals = isOperationsWorkspace ? buildPayoutCommandSignals(batches) : [];
+  const payoutLanes = isAuditWorkspace ? buildPayoutLanes(batches) : [];
+  const payoutStatusLanes = isAuditWorkspace ? buildPayoutStatusLanes(payoutLanes) : [];
+  const serviceEvidence =
+    isOperationsWorkspace || isAuditWorkspace ? buildPayoutServiceEvidence(batches) : [];
+  const moneyFlowCards = isOperationsWorkspace ? buildPayoutMoneyFlowCards(summary, serviceEvidence) : [];
+  const moneyFlowChecks = isOperationsWorkspace ? buildPayoutMoneyFlowChecks(batches, serviceEvidence) : [];
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
-  const appliedPayoutPolicyCards = showFullEvidence ? buildAppliedPayoutPolicyCards(liveOperationsPolicy) : [];
-  const releasePolicyDesk = showFullEvidence ? buildPayoutReleasePolicyDesk(batches, earnings, summary) : [];
-  const releaseCycleBoard = showFullEvidence ? buildPayoutReleaseCycleBoard(batches, earnings) : [];
-  const marketplaceUnblockBridge = showFullEvidence
+  const appliedPayoutPolicyCards = isPolicyWorkspace ? buildAppliedPayoutPolicyCards(liveOperationsPolicy) : [];
+  const releasePolicyDesk = isPolicyWorkspace ? buildPayoutReleasePolicyDesk(batches, earnings, summary) : [];
+  const releaseCycleBoard = isPolicyWorkspace ? buildPayoutReleaseCycleBoard(batches, earnings) : [];
+  const marketplaceUnblockBridge = isPolicyWorkspace
     ? buildPayoutMarketplaceUnblockBridge(batches, earnings, summary)
     : [];
-  const releaseQueue = buildPayoutReleaseQueue(batches);
-  const releaseBlockerRows = buildPayoutReleaseBlockerRows(releaseQueue);
-  const partnerFinanceQueueRows = buildPayoutPartnerFinanceQueueRows(batches);
-  const inclusionAudit = showFullEvidence ? buildPayoutInclusionAudit(earnings, batches) : null;
+  const releaseQueue = isOperationsWorkspace ? buildPayoutReleaseQueue(batches) : [];
+  const releaseBlockerRows = isOperationsWorkspace ? buildPayoutReleaseBlockerRows(releaseQueue) : [];
+  const partnerFinanceQueueRows = isOperationsWorkspace ? buildPayoutPartnerFinanceQueueRows(batches) : [];
+  const inclusionAudit = isAuditWorkspace ? buildPayoutInclusionAudit(earnings, batches) : null;
   const confirmationBatchId = readSearchParam(params.payoutBatchId);
   const confirmationBatch = allBatches.find((batch) => batch.id === confirmationBatchId);
   const confirmation = buildPayoutActionConfirmation(
@@ -269,29 +285,46 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
 
       <AdminTablePanel
         className="payout-date-range-card"
-        description={`Range: ${dateRangeLabel(filters.range)}. The default view keeps current payout decisions first; full evidence adds policy, audit, and service traces.`}
+        description={`Range: ${dateRangeLabel(filters.range)}. Operations stays action-first; policy, audit, and record evidence load in separate workspaces.`}
         footer={
           <AdminFilterChipGroup ariaLabel="Payout evidence views">
-            <AdminTextLink
-              href={payoutHref({
-                details: showFullEvidence ? 'operations' : 'all',
-                page: filters.page,
-                pageSize: filters.pageSize,
-                range: filters.range,
-                withdrawalPage: filters.withdrawalPage,
-                withdrawalReconciliation: filters.withdrawalReconciliation,
-                withdrawalStatus: filters.withdrawalStatus,
-              })}
-            >
-              {showFullEvidence ? 'Operational view' : 'Full payout evidence'}
-            </AdminTextLink>
             <AdminTextLink href="/finance-closeout">Open finance closeout</AdminTextLink>
           </AdminFilterChipGroup>
         }
-        resultLabel={`${summary.total} batch(es)`}
+        resultLabel={`${workspaceLabel} · ${summary.total} batch(es)`}
         resultTone={summary.total > 0 ? 'info' : 'warning'}
         title="Payout date range"
       >
+        <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
+          <span className="payout-range-filter-group-label">Workspace</span>
+          <AdminSegmentedControl
+            activeValue={filters.workspace}
+            ariaLabel="Payout workspaces"
+            className="payout-workspace-filter-buttons"
+            options={[
+              {
+                href: payoutHref({ range: filters.range, workspace: 'operations' }),
+                label: 'Operations',
+                value: 'operations',
+              },
+              {
+                href: payoutHref({ range: filters.range, workspace: 'policy' }),
+                label: 'Release policy',
+                value: 'policy',
+              },
+              {
+                href: payoutHref({ range: filters.range, workspace: 'audit' }),
+                label: 'Audit evidence',
+                value: 'audit',
+              },
+              {
+                href: payoutHref({ range: filters.range, workspace: 'records' }),
+                label: 'Records',
+                value: 'records',
+              },
+            ]}
+          />
+        </div>
         <div className="booking-date-filter-bar payout-range-filter-group admin-mt-12">
           <span className="payout-range-filter-group-label">Range</span>
           <AdminSegmentedControl
@@ -299,15 +332,15 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             ariaLabel="Payout date range"
             className="payout-range-filter-buttons"
             options={[
-              { href: payoutHref({ details: filters.details, range: 'all' }), label: 'All dates', value: 'all' },
-              { href: payoutHref({ details: filters.details, range: 'today' }), label: 'Today', value: 'today' },
-              { href: payoutHref({ details: filters.details, range: '7d' }), label: 'Last 7 days', value: '7d' },
-              { href: payoutHref({ details: filters.details, range: '30d' }), label: 'Last 30 days', value: '30d' },
+              { href: payoutHref({ range: 'all', workspace: filters.workspace }), label: 'All dates', value: 'all' },
+              { href: payoutHref({ range: 'today', workspace: filters.workspace }), label: 'Today', value: 'today' },
+              { href: payoutHref({ range: '7d', workspace: filters.workspace }), label: 'Last 7 days', value: '7d' },
+              { href: payoutHref({ range: '30d', workspace: filters.workspace }), label: 'Last 30 days', value: '30d' },
             ]}
           />
         </div>
       </AdminTablePanel>
-      {showFullEvidence ? (
+      {isPolicyWorkspace ? (
         <AdminTablePanel
           className="payout-release-policy-card"
           description="Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected batch timing stays configurable from Operations Policy."
@@ -408,44 +441,53 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </AdminTablePanel>
       ) : null}
 
-      <PayoutMoneyFlowSection
-        cards={moneyFlowCards}
-        checks={moneyFlowChecks}
-        currency={summary.currency}
-        rangeLabel={dateRangeLabel(filters.range)}
-      />
+      {isOperationsWorkspace ? (
+        <>
+          <PayoutMoneyFlowSection
+            cards={moneyFlowCards}
+            checks={moneyFlowChecks}
+            currency={summary.currency}
+            rangeLabel={dateRangeLabel(filters.range)}
+          />
 
-      <PayoutCommandQueueSection signals={commandSignals} />
+          <PayoutCommandQueueSection signals={commandSignals} />
+        </>
+      ) : null}
 
       {inclusionAudit ? <PayoutInclusionAuditSection audit={inclusionAudit} /> : null}
 
-      <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
+      {isOperationsWorkspace ? (
+        <>
+          <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
+          <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
+        </>
+      ) : null}
 
-      <PayoutPartnerFinanceQueueSection rows={partnerFinanceQueueRows} />
+      {isOperationsWorkspace || isRecordsWorkspace ? (
+        <PayoutWalletWithdrawalRequestSection
+          activeReconciliation={filters.withdrawalReconciliation}
+          activeStatus={filters.withdrawalStatus}
+          pagination={withdrawalPagination}
+          paginationHrefForPage={(withdrawalPage) =>
+            payoutHref({
+              page: filters.page,
+              pageSize: filters.pageSize,
+              range: filters.range,
+              withdrawalPage,
+              withdrawalReconciliation: filters.withdrawalReconciliation,
+              withdrawalStatus: filters.withdrawalStatus,
+              workspace: filters.workspace,
+            })
+          }
+          range={filters.range}
+          requests={walletWithdrawalRequests}
+          financeApproverOptions={financeApproverOptions}
+          summary={walletWithdrawalSummary}
+          updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
+        />
+      ) : null}
 
-      <PayoutWalletWithdrawalRequestSection
-        activeReconciliation={filters.withdrawalReconciliation}
-        activeStatus={filters.withdrawalStatus}
-        pagination={withdrawalPagination}
-        paginationHrefForPage={(withdrawalPage) =>
-          payoutHref({
-            details: filters.details,
-            page: filters.page,
-            pageSize: filters.pageSize,
-            range: filters.range,
-            withdrawalPage,
-            withdrawalReconciliation: filters.withdrawalReconciliation,
-            withdrawalStatus: filters.withdrawalStatus,
-          })
-        }
-        range={filters.range}
-        requests={walletWithdrawalRequests}
-        financeApproverOptions={financeApproverOptions}
-        summary={walletWithdrawalSummary}
-        updateWithdrawalRequestAction={updateProviderWalletWithdrawalRequest}
-      />
-
-      {showFullEvidence ? (
+      {isAuditWorkspace ? (
         <PayoutServiceEvidenceSection
           batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}
           currency={summary.currency}
@@ -453,24 +495,28 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
       ) : null}
 
-      {showFullEvidence ? <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} /> : null}
+      {isAuditWorkspace ? (
+        <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} />
+      ) : null}
 
-      <PayoutBatchListSection
-        pagination={payoutBatchPagination}
-        paginationHrefForPage={(page) =>
-          payoutHref({
-            details: filters.details,
-            page,
-            pageSize: filters.pageSize,
-            range: filters.range,
-            withdrawalPage: filters.withdrawalPage,
-            withdrawalReconciliation: filters.withdrawalReconciliation,
-            withdrawalStatus: filters.withdrawalStatus,
-          })
-        }
-        rows={payoutBatchPagination.rows}
-        updateTransferRefAction={updatePayoutTransferRef}
-      />
+      {isOperationsWorkspace || isRecordsWorkspace ? (
+        <PayoutBatchListSection
+          pagination={payoutBatchPagination}
+          paginationHrefForPage={(page) =>
+            payoutHref({
+              page,
+              pageSize: filters.pageSize,
+              range: filters.range,
+              withdrawalPage: filters.withdrawalPage,
+              withdrawalReconciliation: filters.withdrawalReconciliation,
+              withdrawalStatus: filters.withdrawalStatus,
+              workspace: filters.workspace,
+            })
+          }
+          rows={payoutBatchPagination.rows}
+          updateTransferRefAction={updatePayoutTransferRef}
+        />
+      ) : null}
     </AdminPageTemplate>
   );
 }

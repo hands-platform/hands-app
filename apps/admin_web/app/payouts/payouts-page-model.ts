@@ -25,6 +25,8 @@ const PAYOUT_OPERATIONAL_POLICY_KEYS = [
   LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
 ] as const;
 
+export type PayoutWorkspace = 'operations' | 'policy' | 'audit' | 'records';
+
 export type PayoutFilters = {
   readonly details: 'operations' | 'all';
   readonly page: number;
@@ -33,6 +35,7 @@ export type PayoutFilters = {
   readonly withdrawalPage: number;
   readonly withdrawalReconciliation: 'unmatched' | 'matched' | null;
   readonly withdrawalStatus: AdminProviderWalletWithdrawalRequestStatus | null;
+  readonly workspace: PayoutWorkspace;
 };
 
 export type PayoutServerPagination<T> = {
@@ -47,6 +50,7 @@ export type PayoutServerPagination<T> = {
 
 export function buildPayoutFilters(params: Record<string, string | string[] | undefined>): PayoutFilters {
   const rangeParam = readSearchParam(params.range);
+  const details = readSearchParam(params.details) === 'all' ? 'all' : 'operations';
   const withdrawalStatusParam = readSearchParam(params.withdrawalStatus);
   const withdrawalReconciliation = normalizeWithdrawalReconciliation(
     readSearchParam(params.withdrawalReconciliation),
@@ -56,13 +60,14 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
     (withdrawalReconciliation ? 'PAID' : 'REVIEW_REQUIRED');
 
   return {
-    details: readSearchParam(params.details) === 'all' ? 'all' : 'operations',
+    details,
     page: readPayoutPage(params.page),
     pageSize: readPayoutPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     withdrawalPage: readPayoutPage(params.withdrawalPage),
     withdrawalReconciliation,
     withdrawalStatus,
+    workspace: normalizePayoutWorkspace(details, readSearchParam(params.view)),
   };
 }
 
@@ -89,19 +94,27 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
   if (filters.withdrawalReconciliation) {
     withdrawalRequestParams.set('reconciliation', filters.withdrawalReconciliation);
   }
+  const needsWithdrawalData = filters.workspace === 'operations' || filters.workspace === 'records';
 
   return {
-    earningsHref: filters.details === 'all' ? `/admin/earnings?${params.toString()}` : null,
+    earningsHref:
+      filters.workspace === 'policy' || filters.workspace === 'audit'
+        ? `/admin/earnings?${params.toString()}`
+        : null,
     operationalPolicyHref:
-      filters.details === 'all'
+      filters.workspace === 'policy'
         ? `/admin/operational-policy?${new URLSearchParams({
             keys: PAYOUT_OPERATIONAL_POLICY_KEYS.join(','),
           }).toString()}`
         : null,
     payoutBatchSummaryHref: `/admin/payout-batches/summary?range=${encodeURIComponent(filters.range)}`,
     payoutBatchesHref: `/admin/payout-batches?${params.toString()}`,
-    providerWalletWithdrawalRequestsHref: `/admin/provider-wallet/withdrawal-requests?${withdrawalRequestParams.toString()}`,
-    providerWalletWithdrawalRequestSummaryHref: `/admin/provider-wallet/withdrawal-requests/summary?range=${encodeURIComponent(filters.range)}`,
+    providerWalletWithdrawalRequestsHref: needsWithdrawalData
+      ? `/admin/provider-wallet/withdrawal-requests?${withdrawalRequestParams.toString()}`
+      : null,
+    providerWalletWithdrawalRequestSummaryHref: needsWithdrawalData
+      ? `/admin/provider-wallet/withdrawal-requests/summary?range=${encodeURIComponent(filters.range)}`
+      : null,
   };
 }
 
@@ -113,10 +126,15 @@ export function payoutHref(input: {
   readonly withdrawalStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
   readonly withdrawalPage?: number;
   readonly withdrawalReconciliation?: 'unmatched' | 'matched' | null;
+  readonly workspace?: PayoutWorkspace;
 }) {
   const params = new URLSearchParams();
-  if (input.details === 'all') {
+  const workspace = input.workspace ?? (input.details === 'all' ? 'policy' : 'operations');
+  if (workspace !== 'operations') {
     params.set('details', 'all');
+  }
+  if (workspace === 'audit' || workspace === 'records') {
+    params.set('view', workspace);
   }
   if (input.range && input.range !== 'today') {
     params.set('range', input.range);
@@ -138,6 +156,16 @@ export function payoutHref(input: {
   }
   const query = params.toString();
   return query ? `/payouts?${query}` : '/payouts';
+}
+
+function normalizePayoutWorkspace(
+  details: PayoutFilters['details'],
+  value: string,
+): PayoutWorkspace {
+  if (details !== 'all') {
+    return 'operations';
+  }
+  return value === 'audit' || value === 'records' ? value : 'policy';
 }
 
 function normalizeWithdrawalReconciliation(value: string | null): 'unmatched' | 'matched' | null {
