@@ -91,6 +91,7 @@
     "auth:supabase-phone-smoke": "node infra/scripts/supabase-phone-auth-smoke.mjs",
     "admin:web-smoke": "node infra/scripts/admin-web-smoke.mjs",
     "admin:web-smoke:budget": "node infra/scripts/admin-web-smoke.mjs --budget",
+    "admin:web-smoke:budget:strict": "node infra/scripts/admin-web-smoke.mjs --budget --enforce-budget",
     "admin:web-smoke:critical": "node infra/scripts/admin-web-smoke.mjs --critical",
     "admin:bootstrap-operator": "node infra/scripts/bootstrap-admin-operator.mjs",
     "admin:secrets:rotate-local": "powershell -ExecutionPolicy Bypass -File infra/scripts/rotate-local-admin-secrets.ps1",

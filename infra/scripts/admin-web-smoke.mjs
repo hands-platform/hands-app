@@ -75,8 +75,9 @@ const runCriticalSmoke =
   rawSmokeArgs.includes('--critical') || env.ADMIN_WEB_SMOKE_MODE === 'critical';
 const runBudgetSmoke =
   rawSmokeArgs.includes('--budget') || env.ADMIN_WEB_SMOKE_MODE === 'budget';
+const enforceRouteBudget = rawSmokeArgs.includes('--enforce-budget');
 const requestedSmokeArgs = rawSmokeArgs
-  .filter((value) => value !== '--critical' && value !== '--budget')
+  .filter((value) => value !== '--critical' && value !== '--budget' && value !== '--enforce-budget')
   .flatMap((value) => value.split(','))
   .map((path) => path.trim())
   .filter(Boolean);
@@ -1422,9 +1423,9 @@ const smokePages =
       ? pages.filter((page) => requestedSmokePaths.includes(page.path))
       : pages;
 const FETCH_TIMEOUT_MS = Number(env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
-const ROUTE_BUDGET_WARN_MS = Number(env.ADMIN_WEB_SMOKE_WARN_MS ?? 5_000);
-const ROUTE_BUDGET_WARN_BYTES = Number(env.ADMIN_WEB_SMOKE_WARN_BYTES ?? 2_000_000);
-const ENFORCE_ROUTE_BUDGET = env.ADMIN_WEB_SMOKE_ENFORCE_BUDGET === '1';
+const ROUTE_BUDGET_WARN_MS = Number(env.ADMIN_WEB_SMOKE_WARN_MS ?? 2_000);
+const ROUTE_BUDGET_WARN_BYTES = Number(env.ADMIN_WEB_SMOKE_WARN_BYTES ?? 256 * 1024);
+const ENFORCE_ROUTE_BUDGET = enforceRouteBudget || env.ADMIN_WEB_SMOKE_ENFORCE_BUDGET === '1';
 const pageBodies = new Map();
 const routeMetrics = [];
 const smokeCookieHeader = await loadSmokeCookieHeader();
