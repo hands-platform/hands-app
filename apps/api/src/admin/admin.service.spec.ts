@@ -18255,6 +18255,53 @@ describe('AdminService query orchestration', () => {
     expect(JSON.stringify(select)).not.toContain('token');
   });
 
+  it('compacts raw provider responses before returning notification board rows', async () => {
+    const prisma = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            data: null,
+            deliveries: [
+              {
+                id: 'delivery-1',
+                response: {
+                  body: {
+                    error: {
+                      details: [{ errorCode: 'messaging/mismatched-credential' }],
+                      message: 'Firebase project mismatch',
+                    },
+                    providerDebug: 'large internal payload',
+                  },
+                  statusCode: 403,
+                },
+              },
+            ],
+            id: 'notification-1',
+            type: 'booking.updated',
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const result = await service.listNotifications();
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        deliveries: [
+          expect.objectContaining({
+            response: {
+              failureCode: 'messaging/mismatched-credential',
+              reason: 'Firebase project mismatch',
+              statusCode: 403,
+            },
+          }),
+        ],
+      }),
+    ]);
+    expect(JSON.stringify(result)).not.toContain('providerDebug');
+  });
+
   it('caps notification board take to the board maximum', async () => {
     const prisma = {
       notification: {

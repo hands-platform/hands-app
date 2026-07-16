@@ -76,6 +76,7 @@ import {
   OPERATIONAL_POLICY_DEFINITIONS,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
+import { compactNotificationDeliveryResponse } from '../notifications/notification-delivery-failure';
 import {
   DEFAULT_NOTIFICATION_TEMPLATES,
   NOTIFICATION_TEMPLATE_LOCALES,
@@ -16893,7 +16894,9 @@ export class AdminService {
           notificationFinanceReviewPageQuery(options, financeReviewState, take, skip),
         )
       : [];
-    const args: Prisma.NotificationFindManyArgs = {
+    const args: Prisma.NotificationFindManyArgs & {
+      select: typeof adminNotificationBoardListSelect;
+    } = {
       orderBy: { createdAt: 'desc' },
       take,
       select: adminNotificationBoardListSelect,
@@ -16919,7 +16922,7 @@ export class AdminService {
       return incidentId ? [incidentId] : [];
     }))];
     if (incidentIds.length === 0) {
-      return notifications;
+      return compactNotificationBoardDeliveryResponses(notifications);
     }
 
     const recoveries = await this.prisma.adminAuditLog.findMany({
@@ -16944,7 +16947,7 @@ export class AdminService {
       );
     }
 
-    return notifications.map((notification) => {
+    return compactNotificationBoardDeliveryResponses(notifications.map((notification) => {
       const incidentId = notificationBackgroundJobIncidentId(notification);
       if (!incidentId) return notification;
       const recoveredAt = recoveryByIncidentId.get(incidentId) ?? null;
@@ -16956,7 +16959,7 @@ export class AdminService {
           incidentStatus: recoveredAt ? 'RECOVERED' : 'OPEN',
         },
       };
-    });
+    }));
   }
 
   async notificationSummary(options: NotificationBoardSummaryOptions = {}) {
@@ -25489,6 +25492,18 @@ function jsonObject(value: Prisma.JsonValue | null): Record<string, Prisma.JsonV
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, Prisma.JsonValue>)
     : {};
+}
+
+function compactNotificationBoardDeliveryResponses<
+  T extends { deliveries?: Array<{ response: Prisma.JsonValue | null }> },
+>(notifications: readonly T[]) {
+  return notifications.map((notification) => ({
+    ...notification,
+    deliveries: (notification.deliveries ?? []).map((delivery) => ({
+      ...delivery,
+      response: compactNotificationDeliveryResponse(delivery.response),
+    })),
+  }));
 }
 
 function adminBankReconciliationMatchAuditMetadata(
