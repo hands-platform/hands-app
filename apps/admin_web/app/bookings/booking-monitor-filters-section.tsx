@@ -46,6 +46,7 @@ type BookingMonitorFiltersSectionProps = {
   readonly showEmptyViewOptions?: boolean;
   readonly view: BookingPageView;
   readonly viewCounts: ReadonlyMap<string, number>;
+  readonly viewHrefFor?: (value: BookingPageView) => string;
   readonly viewOptions: readonly BookingMonitorViewOption[];
   readonly visibleBookingCount: number;
 };
@@ -69,7 +70,7 @@ const bookingMonitorViewCategories: readonly BookingMonitorViewCategory[] = [
   {
     key: 'archive',
     title: 'Records / Audit',
-    description: 'Full booking history for investigation, retained evidence, and audit review.',
+    description: 'Latest booking records in the selected period for investigation and retained evidence review.',
   },
 ];
 
@@ -118,6 +119,7 @@ export function BookingMonitorFiltersSection({
   showEmptyViewOptions = false,
   view,
   viewCounts,
+  viewHrefFor = defaultViewHrefFor,
   viewOptions,
   visibleBookingCount,
 }: BookingMonitorFiltersSectionProps) {
@@ -221,7 +223,7 @@ export function BookingMonitorFiltersSection({
               <div className="booking-monitor-view-category-title-row">
                 <span>{category.title}</span>
                 <span className="booking-monitor-view-category-count">
-                  {bookingMonitorCategoryBookingCount(options, viewCounts)} total
+                  {bookingMonitorCategoryBookingCount(category.key, baseVisibleBookingCount, options, viewCounts)} shown
                 </span>
               </div>
               <p>{category.description}</p>
@@ -231,9 +233,14 @@ export function BookingMonitorFiltersSection({
               ariaLabel={`${category.title} booking views`}
               className="booking-monitor-view-options"
               options={options.map((option) => ({
-                href: '#booking-operation-filters',
+                href: viewHrefFor(option.view),
                 label: `${option.label} · ${viewCounts.get(option.view) ?? 0}`,
                 onClick: (event) => {
+                  const targetCategory = bookingMonitorViewCategoryByView[option.view];
+                  const currentCategory = bookingMonitorViewCategoryByView[view];
+                  if (targetCategory !== currentCategory) {
+                    return;
+                  }
                   event.preventDefault();
                   onViewChange(option.view);
                 },
@@ -256,10 +263,25 @@ function defaultDateRangeHrefFor(value: BookingDateRangeFilter) {
   return `?dateRange=${value}`;
 }
 
+function defaultViewHrefFor(value: BookingPageView) {
+  return `?view=${value}`;
+}
+
 function bookingMonitorCategoryBookingCount(
+  categoryKey: BookingMonitorViewCategoryKey,
+  baseVisibleBookingCount: number,
   options: readonly BookingMonitorViewOption[],
   viewCounts: ReadonlyMap<string, number>,
 ) {
+  if (categoryKey === 'realtime' && viewCounts.has('active')) {
+    return viewCounts.get('active') ?? 0;
+  }
+  if (categoryKey === 'archive' && viewCounts.has('all')) {
+    return viewCounts.get('all') ?? 0;
+  }
+  if (categoryKey === 'completed' || categoryKey === 'postMatchCancellations') {
+    return baseVisibleBookingCount;
+  }
   return options.reduce((total, option) => total + (viewCounts.get(option.view) ?? 0), 0);
 }
 

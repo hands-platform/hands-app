@@ -197,9 +197,10 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
   },
   {
     view: 'all',
-    label: 'All bookings',
-    description: 'full booking history for investigation, finance follow-up, and audit review.',
-    operatorHint: 'Use this when you need cancelled, completed, refunded, or old matching records.',
+    label: 'Recent records',
+    description: 'latest booking records across all states within the selected period.',
+    operatorHint:
+      'Use this for a quick recent lookup. Use Completed or Post-match Cancellations for dedicated closeout review.',
   },
 ];
 

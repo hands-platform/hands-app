@@ -36,4 +36,13 @@ describe('booking monitor route load plan', () => {
       '/admin/bookings?dateRange=7d&statusGroup=post-match-cancellations&take=10',
     );
   });
+
+  it('loads recent records across statuses only when the records workspace is explicit', () => {
+    expect(
+      buildBookingMonitorRouteLoadPlan({ dateRange: '7d', view: 'all' }, 'all').bookingsHref,
+    ).toBe('/admin/bookings?dateRange=7d&take=10');
+    expect(
+      buildBookingMonitorRouteLoadPlan({ dateRange: '7d', view: 'matching' }, 'all').bookingsHref,
+    ).toBe('/admin/bookings?dateRange=7d&statusGroup=realtime&take=10');
+  });
 });

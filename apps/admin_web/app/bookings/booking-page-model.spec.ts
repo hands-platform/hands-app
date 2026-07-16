@@ -22,7 +22,7 @@ describe('buildBookingsPageModel', () => {
     expect(model.initialView).toBe('marketplace');
   });
 
-  it('falls back to all-bookings monitor defaults when params are missing', () => {
+  it('falls back to the live operations monitor when params are missing', () => {
     const model = buildBookingsPageModel({
       auditLogs: [],
       params: undefined,
@@ -32,7 +32,7 @@ describe('buildBookingsPageModel', () => {
     expect(model.bookingCreateRejections).toEqual([]);
     expect(model.initialEvidenceFilter).toBe('all');
     expect(model.initialGateFilter).toBe('all');
-    expect(model.initialView).toBe('all');
+    expect(model.initialView).toBe('active');
     expect(model.liveOperationsPolicy).toBeTruthy();
   });
 });

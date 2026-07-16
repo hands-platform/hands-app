@@ -11,10 +11,11 @@ describe('booking page search params', () => {
     expect(readBookingView(['chat-repair', 'all'])).toBe('chat-repair');
   });
 
-  it('falls back to status-driven archived views before active', () => {
+  it('falls back to status-driven archived views before the live operations default', () => {
     expect(readBookingView('unknown', 'EXPIRED')).toBe('expired');
     expect(readBookingView(undefined, 'NO_SHOW')).toBe('no-show');
-    expect(readBookingView('unknown', 'COMPLETED')).toBe('all');
+    expect(readBookingView('unknown', 'COMPLETED')).toBe('active');
+    expect(readBookingView(undefined)).toBe('active');
   });
 
   it('normalizes evidence and gate filters with safe defaults', () => {

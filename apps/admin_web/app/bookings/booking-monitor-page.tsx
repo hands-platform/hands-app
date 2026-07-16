@@ -25,7 +25,7 @@ type BookingMonitorRouteProps = {
 
 const bookingMonitorRouteConfig = {
   all: {
-    defaultView: 'all',
+    defaultView: 'active',
     pageDescription:
       'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
     pagePath: '/bookings',
@@ -55,7 +55,7 @@ const bookingMonitorRouteConfig = {
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
     summaryLabels: ['Closeout checks', 'Payment checks', 'Pricing checks', 'Refund review', 'Expired'],
-    tableGroupKeys: ['completed'],
+    tableGroupKeys: ['completed', 'closed-records'],
     viewOptions: completedBookingViewOptions,
   },
   postMatchCancellations: {

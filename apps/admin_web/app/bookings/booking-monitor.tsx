@@ -329,16 +329,26 @@ export function BookingMonitor({
       }),
     [customDateFrom, customDateTo, dateRangePath, dateRangeSearchParams],
   );
+  const viewHrefFor = useCallback(
+    (nextView: BookingPageView) =>
+      bookingViewHref({
+        path: dateRangePath,
+        searchParams: dateRangeSearchParams,
+        view: nextView,
+      }),
+    [dateRangePath, dateRangeSearchParams],
+  );
 
   useEffect(() => {
     const syncTimer = window.setTimeout(() => {
+      setView(initialView);
       setDateRangeFilter(initialDateRangeFilter);
       setCustomDateFrom(initialCustomDateFrom);
       setCustomDateTo(initialCustomDateTo);
     }, 0);
 
     return () => window.clearTimeout(syncTimer);
-  }, [initialCustomDateFrom, initialCustomDateTo, initialDateRangeFilter]);
+  }, [initialCustomDateFrom, initialCustomDateTo, initialDateRangeFilter, initialView]);
 
   return (
     <AdminPageTemplate
@@ -389,6 +399,7 @@ export function BookingMonitor({
         showEmptyViewOptions={showEmptyViewOptions}
         view={view}
         viewCounts={bookingViewCounts}
+        viewHrefFor={viewHrefFor}
         viewOptions={viewOptions}
         visibleBookingCount={visibleBookings.length}
       />
@@ -396,8 +407,9 @@ export function BookingMonitor({
       {showBookingList && (
         <BookingMonitorListSection
           emptyMessage="No bookings match the current filters."
+          hideEmptyGroups={view === 'all'}
           rows={bookingListRows}
-          visibleGroupKeys={tableGroupKeys}
+          visibleGroupKeys={view === 'all' ? undefined : tableGroupKeys}
         />
       )}
 
@@ -438,6 +450,21 @@ function bookingDateRangeHref({
     params.delete('dateTo');
   }
 
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function bookingViewHref({
+  path,
+  searchParams,
+  view,
+}: {
+  readonly path: string;
+  readonly searchParams: readonly (readonly [string, string])[];
+  readonly view: BookingPageView;
+}) {
+  const params = new URLSearchParams(searchParams.map(([key, value]) => [key, value]));
+  params.set('view', view);
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }

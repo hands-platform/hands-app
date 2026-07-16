@@ -44,7 +44,7 @@ import type { AdminNavSection } from '../lib/admin-navigation';
 import { hrefMatchesPath } from '../lib/admin-nav-match';
 
 const iconByLabel = {
-  'All Bookings': CalendarClock,
+  'Live Bookings': CalendarClock,
   'App Presence': Activity,
   'App Session Diagnostics': Activity,
   'Audit Log': FileClock,

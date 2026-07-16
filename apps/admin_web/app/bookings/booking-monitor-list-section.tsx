@@ -150,6 +150,7 @@ export type BookingMonitorListRow = {
 
 type BookingMonitorListSectionProps = {
   readonly emptyMessage: string;
+  readonly hideEmptyGroups?: boolean;
   readonly rows: readonly BookingMonitorListRow[];
   readonly visibleGroupKeys?: readonly BookingTableGroupKey[];
 };
@@ -158,6 +159,7 @@ export type BookingTableGroupKey =
   | 'pre-match'
   | 'post-match-in-progress'
   | 'completed'
+  | 'closed-records'
   | 'post-match-cancellations-pending'
   | 'post-match-cancellations-resolved';
 
@@ -275,6 +277,13 @@ const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
     title: 'Closeout Records',
   },
   {
+    countTone: 'pill-neutral',
+    description: 'Cancelled, expired, and refunded records retained for support and finance lookup.',
+    emptyMessage: 'No other closed booking records in this result set.',
+    key: 'closed-records',
+    title: 'Other Closed Records',
+  },
+  {
     countTone: 'pill-warn',
     description: 'Partner-side cancellations and no-show reviews still needing admin evidence review.',
     emptyMessage: 'No pending post-match cancellation reviews in this result set.',
@@ -300,12 +309,18 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
 
 export function BookingMonitorListSection({
   emptyMessage,
+  hideEmptyGroups = false,
   rows,
   visibleGroupKeys,
 }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(
-    () => buildBookingTableGroups(rows, visibleGroupKeys),
-    [rows, visibleGroupKeys],
+    () => {
+      const groups = buildBookingTableGroups(rows, visibleGroupKeys);
+      return hideEmptyGroups && rows.length > 0
+        ? groups.filter((group) => group.rows.length > 0)
+        : groups;
+    },
+    [hideEmptyGroups, rows, visibleGroupKeys],
   );
   return (
     <>
@@ -1387,11 +1402,14 @@ function bookingTableGroupKey(booking: AdminBooking): BookingTableGroupKey | nul
       return 'post-match-in-progress';
     case 'COMPLETED':
       return 'completed';
+    case 'EXPIRED':
+    case 'REFUNDED':
+      return 'closed-records';
     case 'NO_SHOW':
       return 'post-match-cancellations-pending';
     case 'CANCELLED':
       if (!bookingHasPostMatchEvidence(booking)) {
-        return null;
+        return 'closed-records';
       }
       return postMatchCancellationResolution(booking) === 'pending'
         ? 'post-match-cancellations-pending'

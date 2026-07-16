@@ -314,6 +314,7 @@ describe('BookingMonitorListSection', () => {
     );
     expect(rendered).toContain('Live In Progress');
     expect(rendered).toContain('Closeout Records');
+    expect(rendered).toContain('Other Closed Records');
     expect(rendered).toContain('Cancellation Review / Needs Action');
     expect(rendered).toContain('Cancellation Records / Resolved');
     expect(rendered).toContain('No post-match bookings are in progress.');
@@ -342,7 +343,7 @@ describe('BookingMonitorListSection', () => {
       markup.split(
         'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
       ).length - 1,
-    ).toBe(5);
+    ).toBe(6);
     expect(markup).not.toContain('vuexy-booking-table-groups');
     expect(markup).toContain('href="/bookings/booking_123456789"');
     expect(markup).toContain('href="/customers/customer_123"');
@@ -431,9 +432,11 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Waiting Customer');
     expect(rendered).toContain('Working Customer');
     expect(markup).not.toContain('id="booking-table-completed-title"');
+    expect(markup).not.toContain('id="booking-table-closed-records-title"');
     expect(markup).not.toContain('id="booking-table-post-match-cancellations-pending-title"');
     expect(markup).not.toContain('id="booking-table-post-match-cancellations-resolved-title"');
     expect(markup).not.toContain('>Closeout Records</h2>');
+    expect(markup).not.toContain('>Other Closed Records</h2>');
     expect(markup).not.toContain('>Cancellation Review / Needs Action</h2>');
     expect(markup).not.toContain('>Cancellation Records / Resolved</h2>');
     expect(rendered).not.toContain('Completed Customer');
@@ -443,6 +446,41 @@ describe('BookingMonitorListSection', () => {
         'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group admin-section"',
       ).length - 1,
     ).toBe(2);
+  });
+
+  it('shows terminal records and hides unrelated empty groups in the recent records workspace', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No recent booking records."
+        hideEmptyGroups
+        rows={[
+          bookingRowFixture({
+            customerName: 'Expired Customer',
+            id: 'booking_expired',
+            openedDateLabel: '12 Jun 2026, 10:00',
+            status: 'EXPIRED',
+            statusChangedAt: '2026-06-12T03:15:00.000Z',
+          }),
+          bookingRowFixture({
+            customerName: 'Refunded Customer',
+            id: 'booking_refunded',
+            openedDateLabel: '12 Jun 2026, 10:05',
+            status: 'REFUNDED',
+            statusChangedAt: '2026-06-12T03:20:00.000Z',
+          }),
+        ]}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Other Closed Records');
+    expect(rendered).toContain('Expired Customer');
+    expect(rendered).toContain('Refunded Customer');
+    expect(rendered).not.toContain('Live / Today Bookings');
+    expect(rendered).not.toContain('Live In Progress');
+    expect(rendered).not.toContain('Closeout Records');
   });
 
   it('shows the actual matched Partner in post-match in-progress rows', () => {

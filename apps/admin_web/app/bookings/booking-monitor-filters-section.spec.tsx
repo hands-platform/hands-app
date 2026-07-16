@@ -13,9 +13,9 @@ describe('BookingMonitorFiltersSection', () => {
       view: 'active' as const,
     },
     {
-      description: 'Full booking history.',
-      label: 'All bookings',
-      operatorHint: 'Use this for audit review.',
+      description: 'Latest booking records.',
+      label: 'Recent records',
+      operatorHint: 'Use this for a quick recent lookup.',
       view: 'all' as const,
     },
     {
@@ -87,9 +87,9 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('Search booking/customer/Partner');
     expect(rendered).not.toContain('Clear list filters');
     expect(rendered).toContain('Active bookings · 3');
-    expect(rendered).toContain('All bookings · 7');
+    expect(rendered).toContain('Recent records · 7');
     expect(rendered).toContain('Live / Today');
-    expect(rendered).toContain('3 total');
+    expect(rendered).toContain('3 shown');
     expect(rendered).toContain('Closeout / Today');
     expect(rendered).toContain('Closeout ops · 2');
     expect(rendered).toContain('Cancellation Review');
@@ -131,7 +131,7 @@ describe('BookingMonitorFiltersSection', () => {
     );
 
     expect(rendered).toContain('No-show · 0');
-    expect(rendered).toContain('All bookings · 7');
+    expect(rendered).toContain('Recent records · 7');
     expect(rendered).toContain('Cancellation Review');
     expect(rendered).not.toContain('Post-match cancellations · 0');
   });
@@ -191,7 +191,7 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Closeout ops · 2');
     expect(rendered).not.toContain('Live / Today');
     expect(rendered).not.toContain('Cancellation Review');
-    expect(rendered).not.toContain('All bookings');
+    expect(rendered).not.toContain('Recent records');
   });
 
   it('uses the shared Vuexy segmented atom for route workspace filters', () => {
@@ -221,7 +221,41 @@ describe('BookingMonitorFiltersSection', () => {
     expect(source).toContain('<legend className="booking-monitor-view-category-heading">');
     expect(markup).toContain('booking-date-filter-buttons booking-monitor-view-options');
     expect(markup).toContain('booking-date-filter-button is-active');
-    expect(markup).toContain('href="#booking-operation-filters"');
+    expect(markup).toContain('href="?view=active"');
+  });
+
+  it('uses the unique active booking count instead of summing overlapping live queues', () => {
+    const markup = renderToStaticMarkup(
+      BookingMonitorFiltersSection({
+        activeView: viewOptions[0],
+        baseVisibleBookingCount: 7,
+        onViewChange: vi.fn(),
+        view: 'active',
+        viewCounts: new Map([
+          ['active', 3],
+          ['matching', 3],
+          ['all', 7],
+        ]),
+        viewOptions: [
+          viewOptions[0],
+          {
+            description: 'Matching work.',
+            label: 'Matching ops',
+            operatorHint: 'Review matching.',
+            view: 'matching',
+          },
+          viewOptions[1],
+        ],
+        visibleBookingCount: 3,
+      }),
+    );
+
+    expect(markup).toContain(
+      '<span>Live / Today</span><span class="booking-monitor-view-category-count">3 shown</span>',
+    );
+    expect(markup).not.toContain(
+      '<span>Live / Today</span><span class="booking-monitor-view-category-count">6 shown</span>',
+    );
   });
 
   it('uses the shared Vuexy table panel wrapper for the filter card', () => {

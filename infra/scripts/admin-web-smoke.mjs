@@ -196,7 +196,7 @@ const pages = [
       'Vietnam Overview',
       'Marketing Analytics',
       'Bookings',
-      'All Bookings',
+      'Live Bookings',
       'Completed',
       'Post-match Cancellations',
       'Partners',

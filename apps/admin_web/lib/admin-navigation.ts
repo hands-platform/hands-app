@@ -50,7 +50,7 @@ export const adminNavSections: AdminNavSection[] = [
     links: [
       {
         href: '/bookings',
-        label: 'All Bookings',
+        label: 'Live Bookings',
         description:
           'Live booking workspace for request intake, matching, Partner coordination, chat repair, and active service checks.',
       },

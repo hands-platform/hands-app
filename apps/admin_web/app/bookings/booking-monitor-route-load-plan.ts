@@ -38,9 +38,12 @@ function bookingListApiPath(
 ) {
   const searchParams = new URLSearchParams();
   const dateRange = readSingleSearchParam(params?.dateRange) ?? 'today';
+  const statusGroup = bookingListStatusGroup(kind, readSingleSearchParam(params?.view));
 
   searchParams.set('dateRange', dateRange);
-  searchParams.set('statusGroup', bookingListStatusGroup(kind));
+  if (statusGroup) {
+    searchParams.set('statusGroup', statusGroup);
+  }
   searchParams.set('take', String(BOOKING_MONITOR_LIST_TAKE));
   if (dateRange === 'custom') {
     setOptionalSearchParam(searchParams, 'dateFrom', readSingleSearchParam(params?.dateFrom) ?? '');
@@ -50,7 +53,7 @@ function bookingListApiPath(
   return `/admin/bookings?${searchParams.toString()}`;
 }
 
-function bookingListStatusGroup(kind: BookingMonitorRouteKind) {
+function bookingListStatusGroup(kind: BookingMonitorRouteKind, view?: string) {
   switch (kind) {
     case 'completed':
       return 'completed';
@@ -58,7 +61,7 @@ function bookingListStatusGroup(kind: BookingMonitorRouteKind) {
       return 'post-match-cancellations';
     case 'all':
     default:
-      return 'realtime';
+      return view === 'all' ? undefined : 'realtime';
   }
 }
 

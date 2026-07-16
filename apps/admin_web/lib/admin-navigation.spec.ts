@@ -46,7 +46,7 @@ describe('admin navigation', () => {
     expect(linksByHref.get('/partners/overview')).toBe('Partners: Partner Overview');
     expect(linksByHref.get('/marketing-analytics')).toBe('Growth & Communications: Marketing Analytics');
 
-    expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
+    expect(linksByHref.get('/bookings')).toBe('Bookings: Live Bookings');
     expect(linksByHref.get('/customers')).toBe('Customers: Customers');
     expect(linksByHref.get('/reviews')).toBe('Customers: Customer Reviews');
     expect(linksByHref.get('/reviews/partner-customer-evaluations')).toBe('Customers: Partner Evaluations');
