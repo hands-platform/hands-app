@@ -69,6 +69,39 @@ const financeReadTargets = [
   },
 ];
 
+const customerAndChatReadTargets = [
+  {
+    label: 'customers-list',
+    path: '/admin/customers?take=20',
+    budget: { p90Ms: 1_000, maxBytes: 256 * 1024 },
+  },
+  {
+    label: 'customers-summary',
+    path: '/admin/customers/summary',
+    budget: { p90Ms: 750, maxBytes: 32 * 1024 },
+  },
+  {
+    label: 'app-sessions-list',
+    path: '/admin/app-sessions?take=20',
+    budget: { p90Ms: 750, maxBytes: 128 * 1024 },
+  },
+  {
+    label: 'app-sessions-summary',
+    path: '/admin/app-sessions/summary',
+    budget: { p90Ms: 750, maxBytes: 32 * 1024 },
+  },
+  {
+    label: 'chat-archive-list',
+    path: '/admin/chat-archive?dateRange=30d&take=20',
+    budget: { p90Ms: 1_000, maxBytes: 256 * 1024 },
+  },
+  {
+    label: 'chat-archive-summary',
+    path: '/admin/chat-archive/summary?dateRange=30d',
+    budget: { p90Ms: 1_000, maxBytes: 32 * 1024 },
+  },
+];
+
 export function normalizeAdminApiBaseUrl(value = DEFAULT_API_BASE_URL) {
   const url = new URL(value);
   const pathname = url.pathname.replace(/\/+$/, '');
@@ -117,8 +150,9 @@ export function evaluateBudget(metric, budget) {
   return violations;
 }
 
-export function buildReadTargets(bookingId, period) {
+export function buildReadTargets(bookingId, period, now = new Date()) {
   const encodedBookingId = encodeURIComponent(bookingId);
+  const notificationWindow = recentNotificationWindow(now);
   return [
     ...coreReadTargets,
     {
@@ -142,6 +176,27 @@ export function buildReadTargets(bookingId, period) {
       budget: { p90Ms: 1_000, maxBytes: 96 * 1024 },
     },
     ...financeReadTargets,
+    ...customerAndChatReadTargets,
+    {
+      label: 'notifications-list',
+      path: `/admin/notifications?take=20&${notificationWindow}`,
+      budget: { p90Ms: 1_000, maxBytes: 256 * 1024 },
+    },
+    {
+      label: 'notifications-summary',
+      path: `/admin/notifications/summary?${notificationWindow}`,
+      budget: { p90Ms: 1_000, maxBytes: 64 * 1024 },
+    },
+    {
+      label: 'push-campaigns-list',
+      path: `/admin/notifications/push-campaigns?take=20&${notificationWindow}`,
+      budget: { p90Ms: 750, maxBytes: 128 * 1024 },
+    },
+    {
+      label: 'push-campaigns-summary',
+      path: `/admin/notifications/push-campaigns/summary?${notificationWindow}`,
+      budget: { p90Ms: 750, maxBytes: 32 * 1024 },
+    },
   ];
 }
 
@@ -255,6 +310,15 @@ function parseJson(source) {
   } catch {
     throw new Error('Admin API read smoke received a non-JSON response.');
   }
+}
+
+function recentNotificationWindow(now) {
+  const to = new Date(now);
+  if (Number.isNaN(to.getTime())) {
+    throw new Error('Admin API read budget requires a valid measurement timestamp.');
+  }
+  const from = new Date(to.getTime() - 24 * 60 * 60 * 1_000);
+  return new URLSearchParams({ from: from.toISOString(), to: to.toISOString() }).toString();
 }
 
 function formatMilliseconds(value) {

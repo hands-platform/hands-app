@@ -10,8 +10,8 @@ import {
   summarizeSamples,
 } from './admin-api-read-budget.mjs';
 
-test('covers core and Finance read models without unbounded list paths', () => {
-  const targets = buildReadTargets('booking/id with spaces', '2026-07');
+test('covers bounded core, Finance, customer, chat and notification read models', () => {
+  const targets = buildReadTargets('booking/id with spaces', '2026-07', new Date('2026-07-16T12:00:00.000Z'));
   const labels = new Set(targets.map((target) => target.label));
 
   for (const label of [
@@ -22,6 +22,11 @@ test('covers core and Finance read models without unbounded list paths', () => {
     'general-ledger-list',
     'bank-reconciliation-list',
     'wallet-adjustments-list',
+    'customers-list',
+    'app-sessions-list',
+    'chat-archive-list',
+    'notifications-list',
+    'push-campaigns-list',
   ]) {
     assert.equal(labels.has(label), true, `${label} must remain in the read budget manifest`);
   }
@@ -33,6 +38,10 @@ test('covers core and Finance read models without unbounded list paths', () => {
   for (const target of targets.filter((item) => item.label.endsWith('-list'))) {
     assert.match(target.path, /[?&]take=\d+/);
   }
+  assert.equal(
+    targets.find((target) => target.label === 'notifications-list')?.path,
+    '/admin/notifications?take=20&from=2026-07-15T12%3A00%3A00.000Z&to=2026-07-16T12%3A00%3A00.000Z',
+  );
 });
 
 test('normalizes the Admin API base URL without retaining query data', () => {
