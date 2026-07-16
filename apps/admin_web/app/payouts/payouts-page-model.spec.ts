@@ -10,6 +10,7 @@ describe('payouts page model', () => {
     expect(defaultFilters.page).toBe(1);
     expect(defaultFilters.pageSize).toBe(10);
     expect(defaultFilters.withdrawalPage).toBe(1);
+    expect(defaultFilters.withdrawalPartnerId).toBeNull();
     expect(defaultFilters.withdrawalReconciliation).toBeNull();
     expect(defaultFilters.withdrawalStatus).toBe('REVIEW_REQUIRED');
     expect(defaultFilters.workspace).toBe('operations');
@@ -63,6 +64,29 @@ describe('payouts page model', () => {
       providerWalletWithdrawalRequestsHref:
         '/admin/provider-wallet/withdrawal-requests?range=7d&take=10&status=BANK_TRANSFER_PENDING',
     });
+  });
+
+  it('scopes Partner withdrawal evidence without widening payout batch reads', () => {
+    const filters = buildPayoutFilters({
+      range: 'today',
+      withdrawalPartnerId: 'partner-profile-1',
+      withdrawalStatus: 'PAID',
+    });
+
+    expect(filters.withdrawalPartnerId).toBe('partner-profile-1');
+    expect(buildPayoutOperationsApiHrefs(filters)).toMatchObject({
+      payoutBatchesHref: '/admin/payout-batches?range=today&take=10',
+      providerWalletWithdrawalRequestsHref:
+        '/admin/provider-wallet/withdrawal-requests?range=today&take=10&status=PAID&providerProfileId=partner-profile-1',
+    });
+    expect(
+      payoutHref({
+        range: 'today',
+        withdrawalPartnerId: 'partner-profile-1',
+        withdrawalStatus: 'PAID',
+      }),
+    ).toBe('/payouts?withdrawalStatus=PAID&withdrawalPartnerId=partner-profile-1');
+    expect(buildPayoutFilters({ withdrawalPartnerId: '../invalid' }).withdrawalPartnerId).toBeNull();
   });
 
   it('turns payout list page state into bounded API skip offsets', () => {

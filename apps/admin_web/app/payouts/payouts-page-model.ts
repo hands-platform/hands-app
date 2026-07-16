@@ -33,6 +33,7 @@ export type PayoutFilters = {
   readonly pageSize: number;
   readonly range: AdminDateRange;
   readonly withdrawalPage: number;
+  readonly withdrawalPartnerId: string | null;
   readonly withdrawalReconciliation: 'unmatched' | 'matched' | null;
   readonly withdrawalStatus: AdminProviderWalletWithdrawalRequestStatus | null;
   readonly workspace: PayoutWorkspace;
@@ -52,6 +53,7 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
   const rangeParam = readSearchParam(params.range);
   const details = readSearchParam(params.details) === 'all' ? 'all' : 'operations';
   const withdrawalStatusParam = readSearchParam(params.withdrawalStatus);
+  const withdrawalPartnerId = readPayoutPartnerId(params.withdrawalPartnerId);
   const withdrawalReconciliation = normalizeWithdrawalReconciliation(
     readSearchParam(params.withdrawalReconciliation),
   );
@@ -65,6 +67,7 @@ export function buildPayoutFilters(params: Record<string, string | string[] | un
     pageSize: readPayoutPageSize(params.pageSize),
     range: rangeParam ? normalizeDateRange(rangeParam) : 'today',
     withdrawalPage: readPayoutPage(params.withdrawalPage),
+    withdrawalPartnerId,
     withdrawalReconciliation,
     withdrawalStatus,
     workspace: normalizePayoutWorkspace(details, readSearchParam(params.view)),
@@ -90,6 +93,9 @@ export function buildPayoutOperationsApiHrefs(filters: PayoutFilters) {
   }
   if (filters.withdrawalStatus) {
     withdrawalRequestParams.set('status', filters.withdrawalStatus);
+  }
+  if (filters.withdrawalPartnerId) {
+    withdrawalRequestParams.set('providerProfileId', filters.withdrawalPartnerId);
   }
   if (filters.withdrawalReconciliation) {
     withdrawalRequestParams.set('reconciliation', filters.withdrawalReconciliation);
@@ -125,6 +131,7 @@ export function payoutHref(input: {
   readonly range: AdminDateRange;
   readonly withdrawalStatus?: AdminProviderWalletWithdrawalRequestStatus | null;
   readonly withdrawalPage?: number;
+  readonly withdrawalPartnerId?: string | null;
   readonly withdrawalReconciliation?: 'unmatched' | 'matched' | null;
   readonly workspace?: PayoutWorkspace;
 }) {
@@ -141,6 +148,9 @@ export function payoutHref(input: {
   }
   if (input.withdrawalStatus) {
     params.set('withdrawalStatus', input.withdrawalStatus);
+  }
+  if (input.withdrawalPartnerId) {
+    params.set('withdrawalPartnerId', input.withdrawalPartnerId);
   }
   if (input.withdrawalReconciliation) {
     params.set('withdrawalReconciliation', input.withdrawalReconciliation);
@@ -215,4 +225,9 @@ function readPayoutPageSize(value: string | string[] | undefined) {
     return PAYOUT_OPERATIONS_API_LIMIT;
   }
   return Math.min(Math.trunc(pageSize), PAYOUT_OPERATIONS_API_MAX_LIMIT);
+}
+
+function readPayoutPartnerId(value: string | string[] | undefined) {
+  const partnerId = readSearchParam(value).trim();
+  return partnerId && partnerId.length <= 128 && /^[A-Za-z0-9_-]+$/u.test(partnerId) ? partnerId : null;
 }

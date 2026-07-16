@@ -207,6 +207,7 @@ try {
         bankTransactionId,
         lockJournalId: storedLockJournal.id,
         paidJournalId: paidJournal.id,
+        providerProfileId: ids.providerProfile,
         transferRef,
         withdrawalRequestId,
       })
@@ -391,7 +392,9 @@ function assertBalancedJournal(journal, { debitAccount, creditAccount }) {
 async function verifyAdminWebEvidence(evidence) {
   const directPages = [
     {
-      path: '/payouts?range=today&withdrawalStatus=PAID&pageSize=10',
+      path:
+        `/payouts?range=today&withdrawalStatus=PAID&pageSize=10&withdrawalPartnerId=` +
+        encodeURIComponent(evidence.providerProfileId),
       markers: ['Payouts', 'Partner wallet withdrawal requests', 'Withdrawal Smoke Partner', 'Paid', evidence.transferRef],
     },
     {
