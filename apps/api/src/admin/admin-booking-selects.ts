@@ -139,34 +139,73 @@ export const adminBookingListSelect = {
 
 export const adminCustomerBookingListSelect = {
   id: true,
-  customerProfileId: true,
   preferredProviderId: true,
   selectedProviderId: true,
   status: true,
-  scheduledStartAt: true,
-  scheduledEndAt: true,
-  expiresAt: true,
-  matchedAt: true,
-  matchSource: true,
-  closedAt: true,
   closedByRole: true,
-  closedReason: true,
-  closedNote: true,
   createdAt: true,
   updatedAt: true,
-  metadata: false,
   address: true,
-  lat: true,
-  lng: true,
-  preferredProvider: { select: adminProviderBookingListSummarySelect },
-  selectedProvider: { select: adminProviderBookingListSummarySelect },
-  services: { select: adminBookingListServiceSummarySelect },
-  addressSnapshot: { select: adminAddressSnapshotListSelect },
-  payment: { select: adminPaymentSummarySelect },
+  preferredProvider: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: adminUserIdentitySelect },
+    },
+  },
+  selectedProvider: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: adminUserIdentitySelect },
+    },
+  },
+  services: {
+    select: {
+      service: {
+        select: {
+          name: true,
+          durationMin: true,
+        },
+      },
+    },
+  },
+  addressSnapshot: {
+    select: {
+      id: true,
+      address: true,
+      addressText: true,
+    },
+  },
+  payment: {
+    select: {
+      id: true,
+      method: true,
+      status: true,
+      amount: true,
+      refunds: {
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+    },
+  },
   refunds: {
     orderBy: { createdAt: 'desc' },
     take: 5,
-    select: adminRefundSummarySelect,
+    select: {
+      id: true,
+      bookingId: true,
+      paymentId: true,
+      amount: true,
+      status: true,
+      createdAt: true,
+    },
   },
   chatRoom: { select: { id: true } },
 } satisfies Prisma.BookingSelect;

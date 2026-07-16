@@ -4,7 +4,7 @@ import {
   AdminBooking,
   AdminChatArchiveBooking,
   AdminCashSettlementSummary,
-  AdminCustomer,
+  AdminCustomerDirectoryRow,
   AdminEarning,
   AdminNotification,
   AdminNotificationBoardSummary,
@@ -88,8 +88,8 @@ export default async function OperationsHandoffPage({
   ] = await Promise.all([
     adminGet<AdminBooking[]>(dataHrefs.bookingsHref, []),
     dataHrefs.customersHref
-      ? adminGet<AdminCustomer[]>(dataHrefs.customersHref, [])
-      : Promise.resolve<AdminCustomer[]>([]),
+      ? adminGet<AdminCustomerDirectoryRow[]>(dataHrefs.customersHref, [])
+      : Promise.resolve<AdminCustomerDirectoryRow[]>([]),
     dataHrefs.partnersHref
       ? adminGet<AdminProvider[]>(dataHrefs.partnersHref, [])
       : Promise.resolve<AdminProvider[]>([]),

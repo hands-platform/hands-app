@@ -1,5 +1,8 @@
 import { Prisma } from '@prisma/client';
-import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
+import {
+  adminCustomerBookingListSelect,
+  adminCustomerDetailBookingSelect,
+} from './admin-booking-selects';
 import { adminProviderBookingListSummarySelect } from './admin-provider-selects';
 import { adminBookingServiceSummarySelect } from './admin-service-selects';
 import {
@@ -9,6 +12,65 @@ import {
 } from './admin-user-selects';
 
 export const ADMIN_CUSTOMER_DETAIL_NOTIFICATION_LIMIT = 10;
+export const ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT = 10;
+export const ADMIN_CUSTOMER_DIRECTORY_PUSH_DEVICE_LIMIT = 3;
+export const ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT = 1;
+
+const adminCustomerDirectoryAppSessionSelect = {
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  deviceLanguage: true,
+  lastLoginAddress: true,
+  ipAddress: true,
+  active: true,
+  lastSeenAt: true,
+} satisfies Prisma.AppSessionSelect;
+
+const adminCustomerDirectoryPushDeviceSelect = {
+  id: true,
+  platform: true,
+  enabled: true,
+  lastSeenAt: true,
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    take: 1,
+    select: { status: true },
+  },
+} satisfies Prisma.PushDeviceSelect;
+
+const adminCustomerDirectoryUserSelect = {
+  id: true,
+  phone: true,
+  email: true,
+  fullName: true,
+  createdAt: true,
+  updatedAt: true,
+  appSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT,
+    select: adminCustomerDirectoryAppSessionSelect,
+  },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: ADMIN_CUSTOMER_DIRECTORY_PUSH_DEVICE_LIMIT,
+    select: adminCustomerDirectoryPushDeviceSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+export const adminCustomerDirectorySelect = {
+  id: true,
+  userId: true,
+  gender: true,
+  addresses: true,
+  user: { select: adminCustomerDirectoryUserSelect },
+  _count: { select: { selectedLocations: true } },
+  bookings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT,
+    select: adminCustomerBookingListSelect,
+  },
+} satisfies Prisma.CustomerProfileSelect;
 
 const adminCustomerNotificationDeliverySelect = {
   id: true,

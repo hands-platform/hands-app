@@ -7413,7 +7413,13 @@ describe('AdminService query orchestration', () => {
         },
       }),
     );
-    expect(prisma.customerProfile.findMany.mock.calls[0][0].select.bookings.take).toBeLessThanOrEqual(10);
+    const directorySelect = prisma.customerProfile.findMany.mock.calls[0][0].select;
+    expect(directorySelect.bookings.take).toBeLessThanOrEqual(10);
+    expect(directorySelect.user.select.appSessions.take).toBe(1);
+    expect(directorySelect.user.select.pushDevices.take).toBeLessThanOrEqual(3);
+    expect(directorySelect.user.select.pushDevices.select.deliveries.select).toEqual({ status: true });
+    expect(directorySelect).not.toHaveProperty('selectedLocations');
+    expect(directorySelect._count).toEqual({ select: { selectedLocations: true } });
   });
 
   it('exposes customer directory summary counts through the same safe filters', async () => {
@@ -7577,44 +7583,50 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce([
             {
               customerProfileId: 'customer-1',
-              _count: { _all: 17 },
-              _max: { updatedAt: lastBookingAt, createdAt: new Date('2026-06-20T10:00:00.000Z') },
-            },
-          ])
-          .mockResolvedValueOnce([
-            {
-              customerProfileId: 'customer-1',
-              _count: { _all: 12 },
-              _max: {
-                updatedAt: lastCompletedBookingAt,
-                createdAt: new Date('2026-06-19T10:00:00.000Z'),
-              },
-            },
-          ])
-          .mockResolvedValueOnce([
-            {
-              customerProfileId: 'customer-1',
               status: BookingStatus.CREATED,
               closedByRole: null,
               _count: { _all: 2 },
+              _max: { updatedAt: lastBookingAt, createdAt: new Date('2026-06-20T10:00:00.000Z') },
             },
             {
               customerProfileId: 'customer-1',
               status: BookingStatus.OPEN_MATCHING,
               closedByRole: null,
               _count: { _all: 3 },
+              _max: {
+                updatedAt: new Date('2026-06-18T12:00:00.000Z'),
+                createdAt: new Date('2026-06-18T10:00:00.000Z'),
+              },
+            },
+            {
+              customerProfileId: 'customer-1',
+              status: BookingStatus.COMPLETED,
+              closedByRole: null,
+              _count: { _all: 7 },
+              _max: {
+                updatedAt: lastCompletedBookingAt,
+                createdAt: new Date('2026-06-19T10:00:00.000Z'),
+              },
             },
             {
               customerProfileId: 'customer-1',
               status: BookingStatus.CANCELLED,
               closedByRole: Role.PROVIDER,
               _count: { _all: 4 },
+              _max: {
+                updatedAt: new Date('2026-06-17T12:00:00.000Z'),
+                createdAt: new Date('2026-06-17T10:00:00.000Z'),
+              },
             },
             {
               customerProfileId: 'customer-1',
               status: BookingStatus.NO_SHOW,
               closedByRole: null,
               _count: { _all: 1 },
+              _max: {
+                updatedAt: new Date('2026-06-16T12:00:00.000Z'),
+                createdAt: new Date('2026-06-16T10:00:00.000Z'),
+              },
             },
           ]),
       },
@@ -7633,7 +7645,7 @@ describe('AdminService query orchestration', () => {
           adminClosedBookingCount: 0,
           bookingCount: 17,
           closedBookingCount: 5,
-          completedBookingCount: 12,
+          completedBookingCount: 7,
           customerClosedBookingCount: 0,
           lastBookingAt,
           lastCompletedBookingAt,
@@ -7642,7 +7654,13 @@ describe('AdminService query orchestration', () => {
         },
       }),
     ]);
-    expect(prisma.booking.groupBy).toHaveBeenCalledTimes(3);
+    expect(prisma.booking.groupBy).toHaveBeenCalledTimes(1);
+    expect(prisma.booking.groupBy).toHaveBeenCalledWith({
+      by: ['customerProfileId', 'status', 'closedByRole'],
+      where: { customerProfileId: { in: ['customer-1'] } },
+      _count: { _all: true },
+      _max: { updatedAt: true, createdAt: true },
+    });
   });
 
   it('includes persisted matching decision fields in partner overview booking queries', async () => {

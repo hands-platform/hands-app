@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import type { AdminCustomer } from '../../../../../lib/admin-api';
+import type { AdminCustomerDirectoryRow } from '../../../../../lib/admin-api';
 import { adminGet } from '../../../../../lib/admin-api';
 import { requireAdminWebAccess } from '../../../../../lib/admin-session';
 import { buildCsvContent } from '../../../../../lib/csv-export';
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const filters = buildCustomerFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const hrefs = buildCustomerDataHrefs(filters);
-  const customers = await adminGet<AdminCustomer[]>(hrefs.listHref, []);
+  const customers = await adminGet<AdminCustomerDirectoryRow[]>(hrefs.listHref, []);
   const rows = buildCustomerExportRows(customers.map(buildCustomerRow));
   const csv = buildCsvContent(rows, [...CUSTOMER_EXPORT_COLUMNS]);
 

@@ -104,7 +104,21 @@ describe('admin booking selects', () => {
 
   it('keeps customer booking detail rows bounded for nested activity', () => {
     expect(adminCustomerBookingListSelect.chatRoom).toMatchObject({ select: { id: true } });
-    expect(adminCustomerBookingListSelect).toHaveProperty('metadata', false);
+    expect(adminCustomerBookingListSelect).not.toHaveProperty('metadata');
+    expect(adminCustomerBookingListSelect).not.toHaveProperty('lat');
+    expect(adminCustomerBookingListSelect).not.toHaveProperty('lng');
+    expect(adminCustomerBookingListSelect).not.toHaveProperty('scheduledStartAt');
+    expect(adminCustomerBookingListSelect.preferredProvider.select).toEqual({
+      id: true,
+      displayName: true,
+      user: { select: { id: true, phone: true, fullName: true } },
+    });
+    expect(adminCustomerBookingListSelect.services.select.service.select).toEqual({
+      name: true,
+      durationMin: true,
+    });
+    expect(adminCustomerBookingListSelect.payment.select).not.toHaveProperty('providerRef');
+    expect(adminCustomerBookingListSelect.payment.select.refunds).toMatchObject({ take: 5 });
     expect(adminCustomerDetailBookingSelect).toHaveProperty('metadata', false);
     expect(adminCustomerDetailBookingSelect.walletLedgerEntries).toMatchObject({ take: 5 });
     expect(adminCustomerDetailBookingSelect.opsTasks).toMatchObject({ take: 5 });

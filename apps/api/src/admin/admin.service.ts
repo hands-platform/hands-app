@@ -146,7 +146,6 @@ import {
   ADMIN_BOOKING_CHAT_MESSAGE_LIST_LIMIT,
   adminBookingListSelect,
   adminChatMessageSummarySelect,
-  adminCustomerBookingListSelect,
 } from './admin-booking-selects';
 import { adminChatArchiveBookingSelect } from './admin-chat-archive-selects';
 import { adminBookingDetailSelect, adminPaymentDetailSelect } from './admin-booking-detail-selects';
@@ -158,6 +157,7 @@ import {
   adminRefundListSelect,
 } from './admin-payment-selects';
 import {
+  adminCustomerDirectorySelect,
   adminCustomerDetailSelect,
   adminCustomerDetailWithoutDiagnosticsSelect,
 } from './admin-customer-selects';
@@ -212,11 +212,9 @@ import {
 } from './admin-provider-profile-selects';
 import {
   adminAppSessionListSelect,
-  adminAppSessionSummarySelect,
   adminFinanceApproverDirectoryUserSelect,
   adminNotificationBoardListSelect,
   adminNotificationListSelect,
-  adminPushDeviceSummarySelect,
   adminUserAuthSelect,
   adminUserListSelect,
   adminUserSummarySelect,
@@ -490,11 +488,7 @@ const ADMIN_OPERATOR_PERMISSION_CATEGORIES = [
 ] as const;
 const ADMIN_CUSTOMER_DIRECTORY_DEFAULT_LIMIT = 25;
 const ADMIN_CUSTOMER_DIRECTORY_MAX_LIMIT = 100;
-const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 10;
-const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
-const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
-const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
-const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 1;
 const ADMIN_PARTNER_CONTROL_LOCATION_FRESHNESS_MINUTES = 90;
 const ADMIN_PROVIDER_REPORT_LIST_LIMIT = 50;
 const ADMIN_REFERRAL_PARENT_LIST_DEFAULT_LIMIT = 10;
@@ -2761,43 +2755,7 @@ export class AdminService {
       ...(skip > 0 ? { skip } : {}),
       take: adminCustomerDirectoryTake(options.take),
       ...(where ? { where } : {}),
-      select: {
-        id: true,
-        userId: true,
-        gender: true,
-        addresses: true,
-        user: {
-          select: {
-            ...adminUserSummarySelect,
-            appSessions: {
-              orderBy: { lastSeenAt: 'desc' },
-              take: ADMIN_CUSTOMER_LIST_SESSION_LIMIT,
-              select: adminAppSessionSummarySelect,
-            },
-            pushDevices: {
-              orderBy: { updatedAt: 'desc' },
-              take: ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT,
-              select: adminPushDeviceSummarySelect,
-            },
-          },
-        },
-        selectedLocations: {
-          orderBy: { createdAt: 'desc' },
-          take: ADMIN_CUSTOMER_LIST_LOCATION_LIMIT,
-          select: {
-            id: true,
-            latitude: true,
-            longitude: true,
-            addressText: true,
-            createdAt: true,
-          },
-        },
-        bookings: {
-          orderBy: { createdAt: 'desc' },
-          take: ADMIN_CUSTOMER_LIST_BOOKING_LIMIT,
-          select: adminCustomerBookingListSelect,
-        },
-      },
+      select: adminCustomerDirectorySelect,
     });
 
     if (customers.length === 0) {
@@ -2813,12 +2771,16 @@ export class AdminService {
       ),
     ]);
 
-    return customers.map((customer) => ({
-      ...customer,
-      activitySummary: activitySummaries.get(customer.id) ?? emptyCustomerActivitySummary(),
-      auditLogs: logsByTarget.get(`customer:${customer.id}`) ?? [],
-      auditLogCount: countByTarget.get(`customer:${customer.id}`) ?? 0,
-    }));
+    return customers.map((customer) => {
+      const { _count, ...directoryRow } = customer;
+      return {
+        ...directoryRow,
+        selectedLocationCount: _count?.selectedLocations ?? 0,
+        activitySummary: activitySummaries.get(customer.id) ?? emptyCustomerActivitySummary(),
+        auditLogs: logsByTarget.get(`customer:${customer.id}`) ?? [],
+        auditLogCount: countByTarget.get(`customer:${customer.id}`) ?? 0,
+      };
+    });
   }
 
   async customerSummary(options: AdminCustomerDirectorySummaryOptions = {}) {
@@ -17567,39 +17529,30 @@ export class AdminService {
     );
 
     const customerWhere = { customerProfileId: { in: customerIds } };
-    const [bookingRows, completedRows, statusRows] = await Promise.all([
-      this.prisma.booking.groupBy({
-        by: ['customerProfileId'],
-        where: customerWhere,
-        _count: { _all: true },
-        _max: { updatedAt: true, createdAt: true },
-      }),
-      this.prisma.booking.groupBy({
-        by: ['customerProfileId'],
-        where: { ...customerWhere, status: BookingStatus.COMPLETED },
-        _count: { _all: true },
-        _max: { updatedAt: true, createdAt: true },
-      }),
-      this.prisma.booking.groupBy({
-        by: ['customerProfileId', 'status', 'closedByRole'],
-        where: customerWhere,
-        _count: { _all: true },
-      }),
-    ]);
+    const statusRows = await this.prisma.booking.groupBy({
+      by: ['customerProfileId', 'status', 'closedByRole'],
+      where: customerWhere,
+      _count: { _all: true },
+      _max: { updatedAt: true, createdAt: true },
+    });
 
-    for (const row of bookingRows) {
-      const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
-      summary.bookingCount = row._count._all;
-      summary.lastBookingAt = latestDate(row._max.updatedAt, row._max.createdAt);
-    }
-    for (const row of completedRows) {
-      const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
-      summary.completedBookingCount = row._count._all;
-      summary.lastCompletedBookingAt = latestDate(row._max.updatedAt, row._max.createdAt);
-    }
     for (const row of statusRows) {
       const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
       const count = integerValue(row._count._all);
+      summary.bookingCount += count;
+      summary.lastBookingAt = latestDate(
+        summary.lastBookingAt,
+        row._max.updatedAt,
+        row._max.createdAt,
+      );
+      if (row.status === BookingStatus.COMPLETED) {
+        summary.completedBookingCount += count;
+        summary.lastCompletedBookingAt = latestDate(
+          summary.lastCompletedBookingAt,
+          row._max.updatedAt,
+          row._max.createdAt,
+        );
+      }
       if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(row.status)) {
         summary.activeBookingCount += count;
       }

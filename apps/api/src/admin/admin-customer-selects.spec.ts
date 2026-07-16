@@ -7,12 +7,45 @@ import {
   ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
   ADMIN_CUSTOMER_DETAIL_REVIEW_LIMIT,
   ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT,
+  ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT,
+  ADMIN_CUSTOMER_DIRECTORY_PUSH_DEVICE_LIMIT,
+  ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT,
+  adminCustomerDirectorySelect,
   adminCustomerDetailSelect,
   adminCustomerDetailWithoutDiagnosticsSelect,
   adminCustomerNotificationSelect,
 } from './admin-customer-selects';
 
 describe('admin customer selects', () => {
+  it('keeps customer directory rows compact while preserving operator evidence', () => {
+    expect(adminCustomerDirectorySelect.bookings).toMatchObject({
+      take: ADMIN_CUSTOMER_DIRECTORY_BOOKING_LIMIT,
+    });
+    expect(adminCustomerDirectorySelect.user.select.appSessions).toMatchObject({
+      take: ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT,
+      select: expect.objectContaining({
+        deviceId: true,
+        deviceLanguage: true,
+        ipAddress: true,
+        lastSeenAt: true,
+      }),
+    });
+    expect(adminCustomerDirectorySelect.user.select.pushDevices).toMatchObject({
+      take: ADMIN_CUSTOMER_DIRECTORY_PUSH_DEVICE_LIMIT,
+      select: expect.objectContaining({
+        enabled: true,
+        lastSeenAt: true,
+        deliveries: { orderBy: { attemptedAt: 'desc' }, take: 1, select: { status: true } },
+      }),
+    });
+    expect(adminCustomerDirectorySelect.user.select.pushDevices.select.deliveries.select).not.toHaveProperty(
+      'response',
+    );
+    expect(adminCustomerDirectorySelect).not.toHaveProperty('selectedLocations');
+    expect(adminCustomerDirectorySelect._count).toEqual({ select: { selectedLocations: true } });
+    expect(ADMIN_CUSTOMER_DIRECTORY_SESSION_LIMIT).toBe(1);
+  });
+
   it('keeps customer notifications bounded with delivery context', () => {
     expect(adminCustomerNotificationSelect.deliveries).toMatchObject({
       orderBy: { attemptedAt: 'desc' },

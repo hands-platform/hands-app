@@ -943,6 +943,38 @@ export type AdminCustomer = {
   auditLogCount?: number;
 };
 
+export type AdminCustomerDirectoryRow = Omit<AdminCustomer, 'selectedLocations' | 'user'> & {
+  selectedLocationCount: number;
+  user?: {
+    id?: string;
+    phone?: string;
+    email?: string | null;
+    fullName?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    appSessions?: Array<
+      Pick<
+        AdminAppSession,
+        | 'active'
+        | 'appVersion'
+        | 'deviceId'
+        | 'deviceLanguage'
+        | 'ipAddress'
+        | 'lastLoginAddress'
+        | 'lastSeenAt'
+        | 'platform'
+      >
+    >;
+    pushDevices?: Array<{
+      id: string;
+      platform: string;
+      enabled: boolean;
+      lastSeenAt?: string;
+      deliveries?: Array<{ status: string }>;
+    }>;
+  };
+};
+
 export type AdminCustomerSummary = {
   generatedAt?: string;
   genderBreakdown?: {

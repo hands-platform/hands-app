@@ -46,6 +46,10 @@ test('covers bounded core, Finance, customer, chat and notification read models'
     p90Ms: 500,
     maxBytes: 64 * 1024,
   });
+  assert.deepEqual(targets.find((target) => target.label === 'customers-list')?.budget, {
+    p90Ms: 500,
+    maxBytes: 64 * 1024,
+  });
 });
 
 test('normalizes the Admin API base URL without retaining query data', () => {

@@ -1,5 +1,5 @@
 import { formatDateTime as formatDate } from '../../lib/admin-format';
-import type { AdminCustomer } from '../../lib/admin-api';
+import type { AdminCustomerDirectoryRow } from '../../lib/admin-api';
 import { bookingLatestActivityAt } from '../../lib/admin-booking-time';
 import type { CustomerFilters } from './customer-filters';
 
@@ -63,7 +63,7 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
   return sorted;
 }
 
-export function buildCustomerRow(customer: AdminCustomer) {
+export function buildCustomerRow(customer: AdminCustomerDirectoryRow) {
   const bookings = customer.bookings ?? [];
   const activitySummary = customer.activitySummary;
   const payments = bookings.map((booking) => booking.payment).filter(Boolean);
@@ -113,7 +113,7 @@ export function buildCustomerRow(customer: AdminCustomer) {
   const capturedSpend = payments
     .filter((payment) => payment?.status === 'CAPTURED')
     .reduce((sum, payment) => sum + Number(payment?.amount ?? 0), 0);
-  const addressCount = readAddressCount(customer.addresses) + (customer.selectedLocations?.length ?? 0);
+  const addressCount = readAddressCount(customer.addresses) + customer.selectedLocationCount;
   const bookingCount = activitySummary?.bookingCount ?? bookings.length;
   const lastBookingAt =
     activitySummary?.lastBookingAt ??
@@ -350,17 +350,17 @@ export function buildCustomerFilterSummary(
   ];
 }
 
-function shouldHaveCustomerChatRoom(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+function shouldHaveCustomerChatRoom(booking: NonNullable<AdminCustomerDirectoryRow['bookings']>[number]) {
   return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status);
 }
 
-function bookingServiceLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+function bookingServiceLabel(booking: NonNullable<AdminCustomerDirectoryRow['bookings']>[number]) {
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
 }
 
-function bookingPartnerLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+function bookingPartnerLabel(booking: NonNullable<AdminCustomerDirectoryRow['bookings']>[number]) {
   return (
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
@@ -372,7 +372,7 @@ function bookingPartnerLabel(booking: NonNullable<AdminCustomer['bookings']>[num
   );
 }
 
-function bookingAddressLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+function bookingAddressLabel(booking: NonNullable<AdminCustomerDirectoryRow['bookings']>[number]) {
   return (
     booking.addressSnapshot?.addressText ??
     stringifyAddress(booking.addressSnapshot?.address) ??
@@ -382,7 +382,7 @@ function bookingAddressLabel(booking: NonNullable<AdminCustomer['bookings']>[num
 }
 
 function sessionDeviceLabel(
-  session?: NonNullable<NonNullable<AdminCustomer['user']>['appSessions']>[number],
+  session?: NonNullable<NonNullable<AdminCustomerDirectoryRow['user']>['appSessions']>[number],
 ) {
   if (!session) return 'No session';
   const platform = session.platform ?? 'Unknown platform';
@@ -390,7 +390,7 @@ function sessionDeviceLabel(
   return `${platform} / ${appVersion} / ${compactText(session.deviceId, 18)}`;
 }
 
-function readCustomerDeviceLanguage(customer: AdminCustomer) {
+function readCustomerDeviceLanguage(customer: AdminCustomerDirectoryRow) {
   const latestSession = customer.user?.appSessions?.[0];
   const metadataCandidates = [
     latestSession?.deviceLanguage,
@@ -443,7 +443,7 @@ function displayCustomerRegionName(region: string) {
   }
 }
 
-function readCustomerGender(customer: AdminCustomer) {
+function readCustomerGender(customer: AdminCustomerDirectoryRow) {
   const user = customer.user ?? {};
   const value = [
     readObjectText(customer as Record<string, unknown>, 'gender'),
@@ -475,7 +475,7 @@ function customerGenderLabel(gender: string) {
   return labels[gender] ?? 'Not captured';
 }
 
-function readCustomerLastLoginAddress(customer: AdminCustomer) {
+function readCustomerLastLoginAddress(customer: AdminCustomerDirectoryRow) {
   const latestSession = customer.user?.appSessions?.[0];
   const metadataCandidates = [
     latestSession?.lastLoginAddress,

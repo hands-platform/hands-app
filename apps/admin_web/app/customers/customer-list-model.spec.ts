@@ -1,4 +1,4 @@
-import type { AdminBooking, AdminCustomer } from '../../lib/admin-api';
+import type { AdminBooking, AdminCustomerDirectoryRow } from '../../lib/admin-api';
 import { buildCustomerRow, buildServerCustomerPagination } from './customer-list-model';
 
 function booking(input: Partial<AdminBooking> & { id: string }): AdminBooking {
@@ -8,13 +8,14 @@ function booking(input: Partial<AdminBooking> & { id: string }): AdminBooking {
   } as AdminBooking;
 }
 
-function customer(input: Partial<AdminCustomer> = {}): AdminCustomer {
+function customer(input: Partial<AdminCustomerDirectoryRow> = {}): AdminCustomerDirectoryRow {
   return {
     id: 'customer-001',
+    selectedLocationCount: 0,
     userId: 'user-001',
     user: { id: 'user-001', phone: '+84123456789', roles: ['CUSTOMER'] },
     ...input,
-  } as AdminCustomer;
+  } as AdminCustomerDirectoryRow;
 }
 
 describe('customer list model', () => {

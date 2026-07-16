@@ -2,7 +2,7 @@ import type {
   AdminAppSession,
   AdminBooking,
   AdminCashSettlementSummary,
-  AdminCustomer,
+  AdminCustomerDirectoryRow,
   AdminProvider,
 } from '../../lib/admin-api';
 import {
@@ -99,15 +99,7 @@ describe('operations handoff signal models', () => {
             status: 'COMPLETED',
           }),
         ],
-        selectedLocations: [
-          {
-            addressText: 'Ho Chi Minh City',
-            createdAt: '2026-06-14T00:00:00.000Z',
-            id: 'location-1',
-            latitude: 10.7,
-            longitude: 106.6,
-          },
-        ],
+        selectedLocationCount: 1,
         user: { fullName: 'Customer Mai' },
       }),
     ]);
@@ -260,14 +252,14 @@ function session(input: Partial<AdminAppSession>): AdminAppSession {
   } as AdminAppSession;
 }
 
-function customer(input: Partial<AdminCustomer>): AdminCustomer {
+function customer(input: Partial<AdminCustomerDirectoryRow>): AdminCustomerDirectoryRow {
   return {
     bookings: [],
     id: 'customer-1',
-    selectedLocations: [],
+    selectedLocationCount: 0,
     user: { phone: '0900000000' },
     ...input,
-  } as AdminCustomer;
+  } as AdminCustomerDirectoryRow;
 }
 
 function partner(input: Partial<AdminProvider>): AdminProvider {

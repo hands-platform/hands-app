@@ -2,7 +2,7 @@ import { CalendarClock, Star } from 'lucide-react';
 import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { adminGet } from '../../lib/admin-api';
-import type { AdminCustomer, AdminCustomerSummary } from '../../lib/admin-api';
+import type { AdminCustomerDirectoryRow, AdminCustomerSummary } from '../../lib/admin-api';
 import {
   buildCustomerActiveFilters,
   buildCustomerDataHrefs,
@@ -28,7 +28,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const filters = buildCustomerFilters(searchParams ? await searchParams : {});
   const dataHrefs = buildCustomerDataHrefs(filters);
   const [customers, serverSummary] = await Promise.all([
-    adminGet<AdminCustomer[]>(dataHrefs.listHref, []),
+    adminGet<AdminCustomerDirectoryRow[]>(dataHrefs.listHref, []),
     adminGet<AdminCustomerSummary>(dataHrefs.summaryHref, { totalCount: 0 }),
   ]);
   const rows = customers.map(buildCustomerRow);

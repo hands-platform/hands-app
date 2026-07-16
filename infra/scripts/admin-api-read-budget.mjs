@@ -73,7 +73,7 @@ const customerAndChatReadTargets = [
   {
     label: 'customers-list',
     path: '/admin/customers?take=20',
-    budget: { p90Ms: 1_000, maxBytes: 256 * 1024 },
+    budget: { p90Ms: 500, maxBytes: 64 * 1024 },
   },
   {
     label: 'customers-summary',

@@ -3,7 +3,7 @@ import type {
   AdminAppSessionSummary,
   AdminBooking,
   AdminCashSettlementSummary,
-  AdminCustomer,
+  AdminCustomerDirectoryRow,
   AdminProvider,
 } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -72,7 +72,7 @@ export function buildPresence(
   };
 }
 
-export function buildCustomerSignals(customers: readonly AdminCustomer[]) {
+export function buildCustomerSignals(customers: readonly AdminCustomerDirectoryRow[]) {
   return customers
     .map((customer) => {
       const bookings = customer.bookings ?? [];
@@ -88,7 +88,7 @@ export function buildCustomerSignals(customers: readonly AdminCustomer[]) {
         }),
         completedCount: completed.length,
         detail: `${bookings.length} booking(s), ${formatMoney(paidAmount, 'VND')} payment total, ${
-          customer.selectedLocations?.length ?? 0
+          customer.selectedLocationCount
         } saved location(s).`,
         lastWorkLabel: lastWork
           ? `Last booking ${shortDisplayId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}`
