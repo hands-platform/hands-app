@@ -96,6 +96,37 @@ describe('TaxPolicyPage', () => {
     expect(markup).not.toContain('<div class="calendar-field full-span"><span>');
   });
 
+  it('renders one selected policy editor while keeping every loaded version in the index', async () => {
+    const activePolicy = taxPolicyFixture();
+    const inactivePolicy = {
+      ...taxPolicyFixture(),
+      id: 'tax-policy-2',
+      name: 'Previous withholding policy',
+      status: 'INACTIVE',
+    } satisfies AdminTaxPolicyVersion;
+    mockedAdminGet.mockImplementation(async (href, fallback) => {
+      if (href.startsWith('/admin/tax-policy-versions')) {
+        return [activePolicy, inactivePolicy];
+      }
+      return fallback;
+    });
+
+    const defaultMarkup = renderToStaticMarkup(
+      await TaxPolicyPage({ searchParams: Promise.resolve({ details: 'editor' }) }),
+    );
+    const inactiveMarkup = renderToStaticMarkup(
+      await TaxPolicyPage({
+        searchParams: Promise.resolve({ details: 'editor', policyId: inactivePolicy.id }),
+      }),
+    );
+
+    expect(defaultMarkup).toContain('Previous withholding policy');
+    expect(defaultMarkup.match(/Update policy/g)).toHaveLength(1);
+    expect(defaultMarkup).toContain('/tax-policy?details=editor&amp;policyId=tax-policy-2');
+    expect(inactiveMarkup.match(/Update policy/g)).toHaveLength(1);
+    expect(inactiveMarkup).toContain('Editing');
+  });
+
   it('renders each tax policy workspace on shared Vuexy admin surfaces', async () => {
     mockedAdminGet.mockImplementation(async (href, fallback) => {
       if (href.startsWith('/admin/tax-policy-versions')) {

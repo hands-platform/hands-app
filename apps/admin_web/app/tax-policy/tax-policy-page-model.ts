@@ -47,6 +47,10 @@ export function buildTaxPolicyDetailsHref(detailsMode: TaxPolicyDetailsMode) {
   return detailsMode === 'summary' ? '/tax-policy' : `/tax-policy?details=${detailsMode}`;
 }
 
+export function buildTaxPolicyEditorHref(policyId: string) {
+  return `/tax-policy?details=editor&policyId=${encodeURIComponent(policyId)}`;
+}
+
 function normalizeTaxPolicyDetailsMode(value: string): TaxPolicyDetailsMode {
   return value === 'all' || value === 'editor' || value === 'audit' || value === 'records'
     ? value

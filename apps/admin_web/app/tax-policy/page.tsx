@@ -24,7 +24,11 @@ import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTa
 import { buildTaxPolicyAuditSummary } from './tax-policy-audit-summary';
 import { buildTaxPolicySnapshotConsistency } from './tax-policy-snapshot-consistency';
 import { taxPolicyNotice } from './tax-policy-notice';
-import { buildTaxPolicyDetailsHref, buildTaxPolicyLoadPlan } from './tax-policy-page-model';
+import {
+  buildTaxPolicyDetailsHref,
+  buildTaxPolicyEditorHref,
+  buildTaxPolicyLoadPlan,
+} from './tax-policy-page-model';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
@@ -60,6 +64,15 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const notice = taxPolicyNotice(params);
   const auditSummary = buildTaxPolicyAuditSummary(auditLogs);
   const snapshotConsistency = buildTaxPolicySnapshotConsistency(recentEarnings);
+  const requestedEditorPolicyId = readSearchParam(params, 'policyId');
+  const editorPolicyId =
+    policies.find((policy) => policy.id === requestedEditorPolicyId)?.id ??
+    policies.find((policy) => policy.status === 'ACTIVE')?.id ??
+    policies[0]?.id ??
+    null;
+  const editorPolicies = editorPolicyId
+    ? policies.filter((policy) => policy.id === editorPolicyId)
+    : [];
 
   return (
     <AdminPageTemplate
@@ -276,8 +289,47 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </AdminFormGrid>
       </AdminSection>
 
+      <AdminSection
+        actions={<StatusBadge tone="info">{policies.length} loaded</StatusBadge>}
+        className="admin-mb-16 tax-policy-version-index-card"
+        description="Open one policy version at a time. This keeps inactive history available without loading every rule editor into the page."
+        title="Policy versions"
+      >
+        <AdminStageList>
+          {policies.map((policy) => (
+            <AdminStageItem key={policy.id}>
+              <StatusBadgeFromPillClass pillClass={policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}>
+                {policy.status}
+              </StatusBadgeFromPillClass>
+              <div>
+                <strong>{policy.name}</strong>
+                <p className="muted">
+                  <DateTimeText fallback="No date" value={policy.effectiveFrom} /> /{' '}
+                  {(policy.rules ?? []).length} rule(s)
+                </p>
+              </div>
+              <AdminTextLink href={buildTaxPolicyEditorHref(policy.id)}>
+                {policy.id === editorPolicyId ? 'Editing' : 'Edit'}
+              </AdminTextLink>
+            </AdminStageItem>
+          ))}
+          {policies.length === 0 ? (
+            <AdminStageItem>
+              <span>EMPTY</span>
+              <div>
+                <AdminEmptyState
+                  message="Create a policy version to begin configuring withholding rules."
+                  title="No tax policy versions"
+                />
+              </div>
+              <small>-</small>
+            </AdminStageItem>
+          ) : null}
+        </AdminStageList>
+      </AdminSection>
+
       <AdminDetailGrid className="tax-policy-version-grid">
-        {policies.map((policy) => (
+        {editorPolicies.map((policy) => (
           <AdminCard className="tax-policy-version-card" key={policy.id}>
             <AdminSectionHeader
               description={

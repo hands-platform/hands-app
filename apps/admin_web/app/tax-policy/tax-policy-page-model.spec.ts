@@ -1,4 +1,8 @@
-import { buildTaxPolicyDetailsHref, buildTaxPolicyLoadPlan } from './tax-policy-page-model';
+import {
+  buildTaxPolicyDetailsHref,
+  buildTaxPolicyEditorHref,
+  buildTaxPolicyLoadPlan,
+} from './tax-policy-page-model';
 
 describe('tax policy page model', () => {
   it('keeps the default operator summary bounded and skips evidence queries', () => {
@@ -48,5 +52,8 @@ describe('tax policy page model', () => {
     expect(buildTaxPolicyDetailsHref('editor')).toBe('/tax-policy?details=editor');
     expect(buildTaxPolicyDetailsHref('audit')).toBe('/tax-policy?details=audit');
     expect(buildTaxPolicyDetailsHref('records')).toBe('/tax-policy?details=records');
+    expect(buildTaxPolicyEditorHref('policy id/1')).toBe(
+      '/tax-policy?details=editor&policyId=policy%20id%2F1',
+    );
   });
 });
