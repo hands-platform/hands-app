@@ -119,6 +119,12 @@ function Set-LocalServiceDefaults {
   Set-DefaultEnvIfMissing -Key "S3_ACCESS_KEY" -Value "minioadmin"
   Set-DefaultEnvIfMissing -Key "S3_SECRET_KEY" -Value "minioadmin"
   Set-DefaultEnvIfMissing -Key "S3_PUBLIC_BASE_URL" -Value "http://localhost:9000/massage-vn"
+
+  # The broad local smoke exercises placeholder CARD/MOMO/VNPAY booking states. The API
+  # ignores this override in production, and an explicit local false value remains authoritative.
+  if ([Environment]::GetEnvironmentVariable("NODE_ENV", "Process") -ne "production") {
+    Set-DefaultEnvIfMissing -Key "ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS" -Value "true"
+  }
 }
 
 function Clear-ApiDist {

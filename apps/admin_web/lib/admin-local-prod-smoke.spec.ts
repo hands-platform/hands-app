@@ -50,6 +50,17 @@ describe('local production Admin smoke scripts', () => {
     expect(adminBuildIndex).toBeGreaterThan(nodeEnvIndex);
   });
 
+  it('enables placeholder payment authorization only as a non-production local default', () => {
+    const startScript = readFileSync('../../infra/scripts/start-hands-local.ps1', 'utf8');
+
+    expect(startScript).toContain(
+      'if ([Environment]::GetEnvironmentVariable("NODE_ENV", "Process") -ne "production")',
+    );
+    expect(startScript).toContain(
+      'Set-DefaultEnvIfMissing -Key "ALLOW_PLACEHOLDER_PAYMENT_AUTHORIZATIONS" -Value "true"',
+    );
+  });
+
   it('stops Next 16 production Admin listeners left behind by the wrapper process', () => {
     const stopScript = readFileSync('../../infra/scripts/stop-hands-local.ps1', 'utf8');
 

@@ -82,6 +82,10 @@ describe('API smoke contract', () => {
 
     expect(scriptSource).toContain('ensureSmokeCompanyBankAccount');
     expect(scriptSource).toContain("'/admin/bank-reconciliation/transactions'");
+    expect(scriptSource).toContain('confirmPotentialDuplicate: true');
+    expect(scriptSource).toContain(
+      "operatorReason: 'Reviewed repeatable API smoke bank evidence before import.'",
+    );
     expect(scriptSource).toContain('`/admin/bank-reconciliation/${smokeBankTransaction.id}/matches`');
     expect(scriptSource).toContain("paymentClearingEntry?.status !== 'CLEARED'");
     expect(scriptSource).toContain('smokeBankReconciliationMatch.match?.amount !== completedPaymentClearingEntry.amount');
