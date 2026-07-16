@@ -4,7 +4,7 @@ import { vi } from 'vitest';
 import { getCurrentAdminOperatorAccess } from '../../../lib/admin-operator-access';
 import { adminGet } from '../../../lib/admin-api';
 import { shouldLoadBookingDetailMarketplaceProviders } from './booking-detail-marketplace-provider-loader';
-import BookingDetailPage from './page';
+import BookingDetailPage, { readBookingDetailWorkspace } from './page';
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
@@ -138,6 +138,15 @@ describe('BookingDetailPage data loading', () => {
     );
   });
 
+  it('maps booking detail workspace query values without breaking the legacy full link', () => {
+    expect(readBookingDetailWorkspace({})).toBe('overview');
+    expect(readBookingDetailWorkspace({ section: 'records' })).toBe('records');
+    expect(readBookingDetailWorkspace({ section: 'diagnostics' })).toBe('diagnostics');
+    expect(readBookingDetailWorkspace({ section: 'full' })).toBe('diagnostics');
+    expect(readBookingDetailWorkspace({ section: ['records', 'diagnostics'] })).toBe('records');
+    expect(readBookingDetailWorkspace({ section: 'unknown' })).toBe('overview');
+  });
+
   it('loads marketplace provider candidates only for non-terminal booking details', () => {
     expect(shouldLoadBookingDetailMarketplaceProviders(null)).toBe(false);
     expect(shouldLoadBookingDetailMarketplaceProviders({ status: 'COMPLETED' } as never)).toBe(false);
@@ -161,11 +170,25 @@ describe('BookingDetailPage data loading', () => {
 
     expect(source).toContain('showDeveloperDiagnosticsDisclosure');
     expect(source).not.toContain('AdminDeveloperSystemSection');
-    expect(source.indexOf('{showDeveloperDiagnosticsDisclosure && (')).toBeLessThan(
+    expect(source).toContain("detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure");
+    expect(source.indexOf("{detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (")).toBeLessThan(
       source.indexOf('<BookingOperatingLedgerSection'),
     );
-    expect(source.indexOf('{showDeveloperDiagnosticsDisclosure && (')).toBeLessThan(
+    expect(source.indexOf("{detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (")).toBeLessThan(
       source.indexOf('<BookingRecordDetailSections'),
+    );
+  });
+
+  it('renders overview, operational records, and diagnostics as separate booking workspaces', () => {
+    const source = readFileSync('app/bookings/[id]/page.tsx', 'utf8');
+
+    expect(source).toContain('id="booking-workspace-selector"');
+    expect(source).toContain('ariaLabel="Booking detail workspaces"');
+    expect(source).toContain("detailWorkspace === 'overview'");
+    expect(source).toContain("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure");
+    expect(source).toContain("detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure");
+    expect(source.indexOf("detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure")).toBeLessThan(
+      source.indexOf('<BookingEvidenceSections'),
     );
   });
 });

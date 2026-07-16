@@ -1888,24 +1888,15 @@ const bookingLinkMatch = bookingsBody.match(
 );
 if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
-  const bookingBody = await fetchPage(bookingPath);
-  const bookingMarkers = [
+  const bookingAuthorityContractMarkers = [
     'NestJS business authority',
     'MVP authority contract',
     'customer fallback partner choice',
     'wallet gate',
-    'Unified booking detail',
-    'Customer detail',
-    'Matched Partner detail',
-    'Finance detail',
-    'Booking review records',
-    'Customer and Partner chat history',
-    'Booking lifecycle timeline',
     'Connected operations records',
     'Operator action availability',
     'Booking gate reason',
     'Booking full record index',
-    'Service / Price',
     'Finance evidence',
     'Cash settlement desk',
     'Tax policy',
@@ -1915,19 +1906,60 @@ if (bookingLinkMatch) {
     'All customer chats',
     'All Partner chats',
     'Service pricing evidence',
-    'Open customer record',
-    'Open Partner',
-    'Payment record',
-    'Partner earning',
-    'Participating',
   ];
-  const missing = bookingMarkers.filter((marker) => !bookingBody.includes(marker));
-  if (missing.length > 0) {
-    throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);
+  const bookingWorkspaceTargets = [
+    {
+      forbiddenMarkers: ['Booking review records', 'Developer/System records'],
+      markers: [
+        ...bookingAuthorityContractMarkers,
+        'Booking workspace view',
+        'Unified booking detail',
+        'Customer and Partner chat history',
+        'Booking lifecycle timeline',
+        'Operator action availability',
+      ],
+      path: bookingPath,
+    },
+    {
+      forbiddenMarkers: ['Unified booking detail', 'Developer/System records'],
+      markers: [
+        'Booking workspace view',
+        'Booking review records',
+        'Operational records',
+        'Booking full record index',
+      ],
+      path: `${bookingPath}?section=records`,
+    },
+    {
+      forbiddenMarkers: ['Unified booking detail', 'Booking review records'],
+      markers: [
+        'Booking workspace view',
+        'Developer/System records',
+        'Operating movement and audit trail',
+        'Wallet, payout, pricing, and full records',
+      ],
+      path: `${bookingPath}?section=diagnostics`,
+    },
+  ];
+  let bookingBody = '';
+  for (const target of bookingWorkspaceTargets) {
+    const body = await fetchPage(target.path);
+    const missing = target.markers.filter((marker) => !body.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${target.path} is missing expected markers: ${missing.join(', ')}`);
+    }
+    const unexpected = target.forbiddenMarkers.filter((marker) => body.includes(marker));
+    if (unexpected.length > 0) {
+      throw new Error(`${target.path} rendered another booking workspace: ${unexpected.join(', ')}`);
+    }
+    if (body.includes('>Access restricted<') || body.includes('Page content is hidden.')) {
+      throw new Error(`${target.path} rendered the operator access-denied surface.`);
+    }
+    assertNoLegacyVisibleLanguage(target.path, body);
+    console.log(`PASS ${target.path}`);
+    if (target.path === bookingPath) bookingBody = body;
   }
   assertSelectedParticipantCountedInCustomerShortlist(bookingPath, bookingBody);
-  assertNoLegacyVisibleLanguage(bookingPath, bookingBody);
-  console.log(`PASS ${bookingPath}`);
 }
 
 const paymentsBody = shouldRunDeepSection('/payments') ? await fetchPage('/payments') : '';

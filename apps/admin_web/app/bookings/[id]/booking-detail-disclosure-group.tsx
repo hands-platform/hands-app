@@ -11,6 +11,7 @@ export type BookingDetailDisclosureGroupProps = {
   children: ReactNode;
   helper: string;
   label: string;
+  open?: boolean;
   summaryItems?: readonly BookingDetailDisclosureSummaryItem[];
   title: string;
 };
@@ -19,6 +20,7 @@ export function BookingDetailDisclosureGroup({
   children,
   helper,
   label,
+  open = false,
   summaryItems = [],
   title,
 }: BookingDetailDisclosureGroupProps) {
@@ -27,7 +29,7 @@ export function BookingDetailDisclosureGroup({
     : '';
 
   return (
-    <AdminDisclosure className="booking-detail-section-disclosure">
+    <AdminDisclosure className="booking-detail-section-disclosure" open={open}>
       <summary
         aria-label={`${label}: ${title}. ${helper}${summaryLabel}`}
         className="booking-detail-section-summary"

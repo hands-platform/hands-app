@@ -144,7 +144,10 @@ import {
   reviewRecordsForBooking,
 } from '../../../components/admin-review-records-section';
 import { canViewAdminDeveloperSystem } from '../../../components/admin-developer-system-section';
+import { AdminFilterChipGroup } from '../../../components/admin-filter-chip-group';
+import { AdminFormControlLink } from '../../../components/admin-form-controls';
 import { AdminPageTemplate } from '../../../components/admin-page-template';
+import { AdminSection } from '../../../components/admin-surface';
 import { StatusBadge } from '../../../components/status-badge';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
@@ -220,6 +223,8 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+export type BookingDetailWorkspace = 'overview' | 'records' | 'diagnostics';
+
 type BookingDetailPageData = {
   booking: AdminBookingDetail | null;
   operationalPolicies: AdminOperationalPolicySetting[];
@@ -279,10 +284,14 @@ const BOOKING_DETAIL_OPERATIONAL_POLICY_HREF = `/admin/operational-policy?${new 
 export default async function BookingDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
-  const developerDiagnosticsRequested = shouldLoadBookingDetailDeveloperDiagnostics(detailSearchParams);
-  const includeDeveloperDiagnostics =
-    developerDiagnosticsRequested &&
-    canViewAdminDeveloperSystem(await getCurrentAdminOperatorAccess());
+  const requestedWorkspace = readBookingDetailWorkspace(detailSearchParams);
+  const currentOperatorAccess = await getCurrentAdminOperatorAccess();
+  const canViewDeveloperDiagnostics = canViewAdminDeveloperSystem(currentOperatorAccess);
+  const detailWorkspace =
+    requestedWorkspace === 'diagnostics' && !canViewDeveloperDiagnostics
+      ? 'overview'
+      : requestedWorkspace;
+  const includeDeveloperDiagnostics = detailWorkspace === 'diagnostics';
   const {
     booking,
     operationalPolicies,
@@ -297,12 +306,9 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   const needsFinanceApproverDirectory = Boolean(
     booking.payment?.id && booking.payment.status !== 'REFUNDED' && booking.payment.status !== 'RELEASED',
   );
-  const [currentOperatorAccess, financeApproverUsers] = needsFinanceApproverDirectory
-    ? await Promise.all([
-        getCurrentAdminOperatorAccess(),
-        adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', []),
-      ])
-    : [null, []];
+  const financeApproverUsers = needsFinanceApproverDirectory
+    ? await adminGet<AdminUser[]>('/admin/users?take=50&role=ADMIN&view=finance-approver-directory', [])
+    : [];
   const financeApproverOptions = buildFinanceApproverOptions(
     financeApproverUsers,
     currentOperatorAccess?.id ?? null,
@@ -806,43 +812,87 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
     >
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
 
-      <BookingUnifiedDetailSection {...unifiedDetailProps} />
+      <AdminSection
+        description={
+          canViewDeveloperDiagnostics
+            ? 'Overview, operational records, and Developer diagnostics.'
+            : 'Overview and operational records.'
+        }
+        id="booking-workspace-selector"
+        title="Booking workspace view"
+      >
+        <AdminFilterChipGroup ariaLabel="Booking detail workspaces">
+          <AdminFormControlLink
+            aria-current={detailWorkspace === 'overview' ? 'page' : undefined}
+            href={`/bookings/${booking.id}`}
+          >
+            Overview
+          </AdminFormControlLink>
+          <AdminFormControlLink
+            aria-current={detailWorkspace === 'records' ? 'page' : undefined}
+            href={`/bookings/${booking.id}?section=records`}
+          >
+            Operational records
+          </AdminFormControlLink>
+          {canViewDeveloperDiagnostics ? (
+            <AdminFormControlLink
+              aria-current={detailWorkspace === 'diagnostics' ? 'page' : undefined}
+              href={`/bookings/${booking.id}?section=diagnostics`}
+            >
+              Developer diagnostics
+            </AdminFormControlLink>
+          ) : null}
+        </AdminFilterChipGroup>
+      </AdminSection>
 
-      <AdminReviewRecordsSection
-        basePath={`/bookings/${id}`}
-        customerReviews={bookingReviewRecords.customerReviews}
-        description="Customer review and Partner evaluation records attached to this booking."
-        id="booking-review-records"
-        partnerEvaluations={bookingReviewRecords.partnerEvaluations}
-        searchParams={detailSearchParams}
-        title="Booking review records"
-      />
+      {detailWorkspace === 'overview' ? (
+        <BookingUnifiedDetailSection {...unifiedDetailProps} />
+      ) : null}
 
-      <BookingDetailChatTranscriptSection
-        archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-        messages={visibleMessages}
-        totalMessages={messageCount}
-      />
+      {detailWorkspace === 'records' ? (
+        <AdminReviewRecordsSection
+          basePath={`/bookings/${id}`}
+          customerReviews={bookingReviewRecords.customerReviews}
+          description="Customer review and Partner evaluation records attached to this booking."
+          id="booking-review-records"
+          partnerEvaluations={bookingReviewRecords.partnerEvaluations}
+          searchParams={detailSearchParams}
+          title="Booking review records"
+        />
+      ) : null}
 
-      <BookingDetailLifecycleListSection booking={booking} />
+      {detailWorkspace === 'overview' ? (
+        <BookingDetailChatTranscriptSection
+          archiveHref={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+          messages={visibleMessages}
+          totalMessages={messageCount}
+        />
+      ) : null}
 
-      {showPostMatchDecisionBelowLifecycle && (
+      {detailWorkspace === 'overview' ? (
+        <BookingDetailLifecycleListSection booking={booking} />
+      ) : null}
+
+      {detailWorkspace === 'overview' && showPostMatchDecisionBelowLifecycle && (
         <BookingDetailPostMatchDecisionSection
           bookingId={booking.id}
           outcomeReview={outcomeReview}
         />
       )}
 
-      <BookingActionStatusSections {...actionStatusSectionsProps} />
+      {detailWorkspace === 'overview' ? (
+        <BookingActionStatusSections {...actionStatusSectionsProps} />
+      ) : null}
 
-      {sectionVisibility.showCloseoutReadiness && (
+      {detailWorkspace === 'overview' && sectionVisibility.showCloseoutReadiness && (
         <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
       )}
 
-      {showOperatorAdvancedRecordsDisclosure && (
+      {detailWorkspace === 'records' && showOperatorAdvancedRecordsDisclosure && (
         <BookingDetailDisclosureGroup
           helper="Open only when an operator needs evidence or dispatch records for the booking."
           label="Records"
+          open
           summaryItems={operatorAdvancedRecordSummaryItems}
           title="Operational records"
         >
@@ -884,10 +934,11 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
         </BookingDetailDisclosureGroup>
       )}
 
-      {showDeveloperDiagnosticsDisclosure && (
+      {detailWorkspace === 'diagnostics' && showDeveloperDiagnosticsDisclosure && (
         <BookingDetailDisclosureGroup
           helper="Visible to Master Admin and Developer/System operators for history, audit, trace, and full record review."
           label="Diagnostics"
+          open
           summaryItems={developerDiagnosticSummaryItems}
           title="Developer/System records"
         >
@@ -935,9 +986,13 @@ export default async function BookingDetailPage({ params, searchParams }: PagePr
   );
 }
 
-function shouldLoadBookingDetailDeveloperDiagnostics(params: Record<string, string | string[] | undefined>) {
+export function readBookingDetailWorkspace(
+  params: Record<string, string | string[] | undefined>,
+): BookingDetailWorkspace {
   const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
-  return rawSection === 'full' || rawSection === 'diagnostics';
+  if (rawSection === 'records') return 'records';
+  if (rawSection === 'full' || rawSection === 'diagnostics') return 'diagnostics';
+  return 'overview';
 }
 
 async function loadBookingDetailPageData(

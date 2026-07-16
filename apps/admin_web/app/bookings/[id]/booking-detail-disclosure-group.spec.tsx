@@ -45,4 +45,15 @@ describe('BookingDetailDisclosureGroup', () => {
     expect(markup).toContain('Open only when an operator needs the full record.');
     expect(markup).toContain('Record body');
   });
+
+  it('can open the selected records workspace without changing the default disclosure behavior', () => {
+    const markup = renderToStaticMarkup(
+      <BookingDetailDisclosureGroup helper="Selected workspace" label="Records" open title="Operational records">
+        <span>Visible record</span>
+      </BookingDetailDisclosureGroup>,
+    );
+
+    expect(markup).toContain('<details class="admin-disclosure booking-detail-section-disclosure" open="">');
+    expect(markup).toContain('Visible record');
+  });
 });
