@@ -17806,30 +17806,16 @@ export class AdminService {
     );
 
     const providerWhere = { providerProfileId: { in: providerIds } };
-    const [grossRows, pendingRows, availableRows, walletRows, completedRows] = await Promise.all([
+    const [statusRows, walletRows] = await Promise.all([
       this.prisma.providerEarning.groupBy({
-        by: ['providerProfileId'],
+        by: ['providerProfileId', 'status'],
         where: {
           ...providerWhere,
           status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] },
         },
-        _sum: { grossAmount: true, platformFee: true },
-      }),
-      this.prisma.providerEarning.groupBy({
-        by: ['providerProfileId'],
-        where: {
-          ...providerWhere,
-          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        },
-        _sum: { netAmount: true },
-      }),
-      this.prisma.providerEarning.groupBy({
-        by: ['providerProfileId'],
-        where: {
-          ...providerWhere,
-          status: EarningStatus.AVAILABLE,
-        },
-        _sum: { netAmount: true },
+        _count: { _all: true },
+        _max: { paidAt: true, availableAt: true, createdAt: true },
+        _sum: { grossAmount: true, netAmount: true, platformFee: true },
       }),
       this.prisma.providerEarning.groupBy({
         by: ['providerProfileId'],
@@ -17840,41 +17826,34 @@ export class AdminService {
         },
         _sum: { netAmount: true },
       }),
-      this.prisma.providerEarning.groupBy({
-        by: ['providerProfileId'],
-        where: {
-          ...providerWhere,
-          status: { in: [EarningStatus.AVAILABLE, EarningStatus.PAID] },
-        },
-        _count: { _all: true },
-        _max: { paidAt: true, availableAt: true, createdAt: true },
-      }),
     ]);
 
-    for (const row of grossRows) {
+    for (const row of statusRows) {
       const summary = ensureProviderActivitySummary(summaries, row.providerProfileId);
-      summary.grossRevenue = numberValue(row._sum.grossAmount);
-      summary.platformFee = numberValue(row._sum.platformFee);
-    }
-    for (const row of pendingRows) {
-      ensureProviderActivitySummary(summaries, row.providerProfileId).pendingPayout = numberValue(
-        row._sum.netAmount,
-      );
-    }
-    for (const row of availableRows) {
-      ensureProviderActivitySummary(summaries, row.providerProfileId).availablePayout = numberValue(
-        row._sum.netAmount,
-      );
+      const netAmount = numberValue(row._sum.netAmount);
+      summary.grossRevenue += numberValue(row._sum.grossAmount);
+      summary.platformFee += numberValue(row._sum.platformFee);
+
+      if (row.status === EarningStatus.PENDING || row.status === EarningStatus.AVAILABLE) {
+        summary.pendingPayout += netAmount;
+      }
+      if (row.status === EarningStatus.AVAILABLE) {
+        summary.availablePayout += netAmount;
+      }
+      if (row.status === EarningStatus.AVAILABLE || row.status === EarningStatus.PAID) {
+        summary.completedWorkCount += integerValue(row._count._all);
+        summary.lastCompletedWorkAt = latestDate(
+          summary.lastCompletedWorkAt,
+          row._max.paidAt,
+          row._max.availableAt,
+          row._max.createdAt,
+        );
+      }
     }
     for (const row of walletRows) {
       ensureProviderActivitySummary(summaries, row.providerProfileId).walletBalance = numberValue(
         row._sum.netAmount,
       );
-    }
-    for (const row of completedRows) {
-      const summary = ensureProviderActivitySummary(summaries, row.providerProfileId);
-      summary.completedWorkCount = row._count._all;
-      summary.lastCompletedWorkAt = latestDate(row._max.paidAt, row._max.availableAt, row._max.createdAt);
     }
 
     return summaries;

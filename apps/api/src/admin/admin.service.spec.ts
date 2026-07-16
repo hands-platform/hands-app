@@ -5698,36 +5698,38 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
-              _sum: { grossAmount: 1_200_000, platformFee: 240_000 },
+              status: EarningStatus.PENDING,
+              _count: { _all: 0 },
+              _max: { paidAt: null, availableAt: null, createdAt: null },
+              _sum: { grossAmount: 300_000, netAmount: 250_000, platformFee: 60_000 },
             },
-          ])
-          .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
-              _sum: { netAmount: 700_000 },
+              status: EarningStatus.AVAILABLE,
+              _count: { _all: 1 },
+              _max: {
+                paidAt: null,
+                availableAt: new Date('2026-06-19T10:00:00.000Z'),
+                createdAt: new Date('2026-06-18T10:00:00.000Z'),
+              },
+              _sum: { grossAmount: 400_000, netAmount: 450_000, platformFee: 80_000 },
             },
-          ])
-          .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
-              _sum: { netAmount: 450_000 },
+              status: EarningStatus.PAID,
+              _count: { _all: 2 },
+              _max: {
+                paidAt: latestWorkAt,
+                availableAt: null,
+                createdAt: new Date('2026-06-19T10:00:00.000Z'),
+              },
+              _sum: { grossAmount: 500_000, netAmount: 380_000, platformFee: 100_000 },
             },
           ])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
               _sum: { netAmount: -120_000 },
-            },
-          ])
-          .mockResolvedValueOnce([
-            {
-              providerProfileId: 'provider-1',
-              _count: { _all: 3 },
-              _max: {
-                paidAt: latestWorkAt,
-                availableAt: null,
-                createdAt: new Date('2026-06-19T10:00:00.000Z'),
-              },
             },
           ]),
       },
@@ -5752,6 +5754,26 @@ describe('AdminService query orchestration', () => {
         },
       }),
     ]);
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledTimes(2);
+    expect(prisma.providerEarning.groupBy).toHaveBeenNthCalledWith(1, {
+      by: ['providerProfileId', 'status'],
+      where: {
+        providerProfileId: { in: ['provider-1'] },
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] },
+      },
+      _count: { _all: true },
+      _max: { paidAt: true, availableAt: true, createdAt: true },
+      _sum: { grossAmount: true, netAmount: true, platformFee: true },
+    });
+    expect(prisma.providerEarning.groupBy).toHaveBeenNthCalledWith(2, {
+      by: ['providerProfileId'],
+      where: {
+        providerProfileId: { in: ['provider-1'] },
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
   });
 
   it('adds server-computed booking summaries to provider list rows', async () => {
@@ -5977,15 +5999,12 @@ describe('AdminService query orchestration', () => {
         groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
               _sum: { netAmount: -80000 },
             },
-          ])
-          .mockResolvedValueOnce([]),
+          ]),
       },
       adminAuditLog: {
         groupBy: vi.fn().mockResolvedValue([]),
@@ -6988,15 +7007,12 @@ describe('AdminService query orchestration', () => {
         groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
               _sum: { netAmount: -120000 },
             },
-          ])
-          .mockResolvedValueOnce([]),
+          ]),
       },
     };
     const service = createAdminService(prisma);
@@ -7047,20 +7063,19 @@ describe('AdminService query orchestration', () => {
       providerEarning: {
         groupBy: vi
           .fn()
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
-              _sum: { netAmount: -90000 },
+              status: EarningStatus.PAID,
+              _count: { _all: 4 },
+              _max: { paidAt: new Date('2026-06-20T10:00:00.000Z'), availableAt: null, createdAt: null },
+              _sum: { grossAmount: 0, netAmount: 0, platformFee: 0 },
             },
           ])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
-              _count: { _all: 4 },
-              _max: { paidAt: new Date('2026-06-20T10:00:00.000Z'), availableAt: null, createdAt: null },
+              _sum: { netAmount: -90000 },
             },
           ]),
       },
@@ -7115,15 +7130,12 @@ describe('AdminService query orchestration', () => {
         groupBy: vi
           .fn()
           .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([])
           .mockResolvedValueOnce([
             {
               providerProfileId: 'provider-1',
               _sum: { netAmount: -70000 },
             },
-          ])
-          .mockResolvedValueOnce([]),
+          ]),
       },
     };
     const service = createAdminService(prisma);
