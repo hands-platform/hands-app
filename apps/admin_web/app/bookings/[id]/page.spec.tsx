@@ -54,7 +54,7 @@ describe('BookingDetailPage data loading', () => {
     expect(policyHref).toBe(
       '/admin/operational-policy?keys=matching.provider_response_window_minutes%2Cmatching.marketplace_partner_radius_meters%2Cmatching.marketplace_partner_location_max_age_minutes%2Cmatching.travel_buffer_minutes%2Cmatching.preferred_accept_mode%2Cmatching.marketplace_open_mode%2Cwallet.negative_balance_gate%2Cdecision.action_evidence_gate_mode%2Ccash.settlement_clearance_policy%2Cmatching.first_pick_expiry_action_policy%2Ccancellation.after_match_policy%2Cno_show.evidence_requirement_policy%2Cno_show.partner_report_policy%2Cnotification.partner_alert_channel%2Cpayout.batch_cycle_policy',
     );
-    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/bookings/booking-policy-load/notifications?take=12', []);
+    expect(mockedAdminGet).not.toHaveBeenCalledWith('/admin/bookings/booking-policy-load/notifications?take=8', []);
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
       '/admin/bookings/booking-policy-load/marketplace-providers?take=40',
       [],
@@ -94,7 +94,7 @@ describe('BookingDetailPage data loading', () => {
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
     expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/bookings/booking-diagnostics-load/notifications?take=12',
+      '/admin/bookings/booking-diagnostics-load/notifications?take=8',
       [],
     );
   });
@@ -119,7 +119,7 @@ describe('BookingDetailPage data loading', () => {
     ).rejects.toThrow('NEXT_NOT_FOUND');
 
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-ordinary-full-load/notifications?take=12',
+      '/admin/bookings/booking-ordinary-full-load/notifications?take=8',
       [],
     );
     expect(mockedAdminGet).toHaveBeenCalledWith(
@@ -181,7 +181,7 @@ describe('BookingDetailPage data loading', () => {
       null,
     );
     expect(mockedAdminGet).not.toHaveBeenCalledWith(
-      '/admin/bookings/booking-settlement-diagnostics-load/notifications?take=12',
+      '/admin/bookings/booking-settlement-diagnostics-load/notifications?take=8',
       [],
     );
   });
