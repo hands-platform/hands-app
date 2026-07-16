@@ -553,7 +553,7 @@ export default async function FinanceApprovalQueuePage({ searchParams }: Finance
       </FinanceTablePanel>
 
       <AdminSection
-        actions={<AdminFormControlLink className="button-secondary" href="/wallet-adjustments">Open wallet records</AdminFormControlLink>}
+        actions={<AdminFormControlLink className="button-secondary" href="/wallet-adjustments?view=records">Open wallet records</AdminFormControlLink>}
         className="admin-mt-16"
         description="Executed requests remain available as immutable wallet, GL, approval, and audit evidence."
         statusLabel={`${queue.walletAdjustmentEvidence.last7dCount} completed in 7 days`}
@@ -721,7 +721,7 @@ function buildFinanceApprovalConfirmation(
       : `${adjustment.ownerName ?? adjustment.ownerId}: reject this ${formatMoney(adjustment.amount, adjustment.currency)} wallet request without changing wallet, bank, cash, tax, or ledger balances.`,
     hiddenInputs,
     requestId,
-    supportingLinks: [{ href: '/wallet-adjustments', label: 'Open wallet records' }],
+    supportingLinks: [{ href: '/wallet-adjustments?view=records', label: 'Open wallet records' }],
     textInputs,
     title: isApprove ? 'Approve and execute wallet adjustment?' : 'Reject wallet adjustment request?',
     tone: isApprove ? 'warning' as const : 'danger' as const,

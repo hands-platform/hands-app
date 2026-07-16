@@ -2,6 +2,7 @@ import { CheckCircle2, FileWarning, ShieldCheck } from 'lucide-react';
 import { AdminTablePaginationFooter } from '../../components/admin-data-table';
 
 import { AdminFilterChipGroup } from '../../components/admin-filter-chip-group';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminFilterSummary } from '../../components/admin-filter-summary';
 import { AdminFinanceOperatorEvidence } from '../../components/admin-finance-operator-evidence';
 import {
@@ -14,6 +15,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminInlineFallback } from '../../components/admin-inline-fallback';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminSegmentedControl } from '../../components/admin-segmented-control';
 import { AdminStageItem, AdminStageList } from '../../components/admin-stage-item';
 import { AdminNoticeCard, AdminSection } from '../../components/admin-surface';
 import { AdminTablePanel } from '../../components/admin-table-panel';
@@ -62,13 +64,20 @@ const WALLET_ADJUSTMENT_HISTORY_MAX_TAKE = 50;
 
 export default async function WalletAdjustmentsPage({ searchParams }: WalletAdjustmentsPageProps) {
   const params = searchParams ? await searchParams : {};
+  const workspaceView = readWalletAdjustmentWorkspaceView(params);
   const formState = readWalletAdjustmentFormState(params);
   const historyFilters = readWalletAdjustmentHistoryFilters(params);
   const notice = walletAdjustmentNotice(readParam(params, 'adjustmentNotice'));
   const [preview, adjustmentRows, adjustmentSummary] = await Promise.all([
-    formState.intent === 'preview' ? fetchPreview(formState) : Promise.resolve(null),
-    fetchAdjustmentHistory(formState, historyFilters),
-    fetchAdjustmentHistorySummary(formState),
+    workspaceView === 'request' && formState.intent === 'preview'
+      ? fetchPreview(formState)
+      : Promise.resolve(null),
+    workspaceView === 'records'
+      ? fetchAdjustmentHistory(formState, historyFilters)
+      : Promise.resolve([] as AdminManualWalletAdjustmentRow[]),
+    workspaceView === 'records'
+      ? fetchAdjustmentHistorySummary(formState, historyFilters)
+      : Promise.resolve({ total: 0 } as AdminManualWalletAdjustmentSummary),
   ]);
   const currency = preview?.currency ?? 'VND';
   const adjustmentTotal = walletAdjustmentSummaryTotal(adjustmentSummary);
@@ -80,37 +89,25 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
 
   return (
     <AdminPageTemplate
-      description="Manual wallet credits, debits, reversals, approval evidence, and accounting preview. This workspace never moves bank or cash accounts."
-      metrics={[
-        {
-          helper: 'Preview from NestJS before any write',
-          kind: 'action',
-          label: 'Business boundary',
-          scope: 'Current request',
-          value: 'API preview',
-        },
-        {
-          helper: 'Manual adjustments do not create platform fee revenue',
-          kind: preview?.affects.revenue ? 'risk' : 'record',
-          label: 'Revenue impact',
-          scope: 'Policy guard',
-          value: preview?.affects.revenue ? 'Review' : 'None',
-        },
-        {
-          helper: 'Output VAT belongs to booking settlement, not manual wallet edits',
-          kind: preview?.affects.taxPayable ? 'risk' : 'record',
-          label: 'Tax impact',
-          scope: 'Policy guard',
-          value: preview?.affects.taxPayable ? 'Review' : 'None',
-        },
-        {
-          helper: 'High amount or tax-sensitive corrections require evidence',
-          kind: preview?.requiresAttachment ? 'risk' : 'action',
-          label: 'Attachment',
-          scope: 'Approval evidence',
-          value: preview?.requiresAttachment ? 'Required' : 'Conditional',
-        },
-      ]}
+      actions={
+        <AdminSegmentedControl
+          activeValue={workspaceView}
+          ariaLabel="Wallet adjustment workspace"
+          options={[
+            {
+              href: walletAdjustmentWorkspaceHref('request', formState, historyFilters),
+              label: 'New request',
+              value: 'request',
+            },
+            {
+              href: walletAdjustmentWorkspaceHref('records', formState, historyFilters),
+              label: 'Records',
+              value: 'records',
+            },
+          ]}
+        />
+      }
+      description="Create an approval-controlled wallet adjustment or inspect immutable wallet and accounting records. Manual adjustments never move bank or cash accounts."
       title="Wallet Adjustments"
     >
       {notice ? (
@@ -127,189 +124,231 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
         </AdminNoticeCard>
       ) : null}
 
-      <AdminSection
-        description="Enter the customer or partner profile id, preview the accounting impact, then submit a persistent request for a separate finance approver."
-        statusLabel={preview ? 'Preview ready' : 'Preview required'}
-        statusTone={preview ? 'success' : 'warning'}
-        title="Manual adjustment request"
-      >
-        <AdminFormGrid method="get">
-          <input name="intent" type="hidden" value="preview" />
-          <AdminFormSelect
-            defaultValue={formState.ownerType}
-            label="Wallet owner type"
-            name="ownerType"
-            options={ownerOptions}
-          />
-          <AdminFormInput
-            defaultValue={formState.ownerId}
-            label="Owner profile id"
-            name="ownerId"
-            placeholder="customer or partner profile id"
-            required
-          />
-          <AdminFormSelect
-            defaultValue={formState.direction}
-            label="Adjustment direction"
-            name="direction"
-            options={directionOptions}
-          />
-          <AdminFormSelect
-            defaultValue={formState.adjustmentType}
-            label="Adjustment type"
-            name="adjustmentType"
-            options={adjustmentTypeOptions}
-          />
-          <AdminFormInput
-            defaultValue={formState.amount}
-            label="Amount"
-            min={1}
-            name="amount"
-            placeholder="Amount in VND"
-            required
-            step={1}
-            type="number"
-          />
-          <AdminFormInput
-            defaultValue={formState.monthlyPeriod}
-            label="Monthly period"
-            name="monthlyPeriod"
-            placeholder="YYYY-MM"
-          />
-          <AdminFormSelect
-            defaultValue={String(historyFilters.pageSize)}
-            label="History rows"
-            name="pageSize"
-            options={[
-              { label: '10 rows', value: '10' },
-              { label: '25 rows', value: '25' },
-              { label: '50 rows', value: '50' },
-            ]}
-          />
-          <AdminFormInput
-            defaultValue={formState.attachmentUrl}
-            label="Attachment URL"
-            name="attachmentUrl"
-            placeholder="Evidence URL for high-risk adjustments"
-          />
-          <AdminFormTextarea
-            className="admin-grid-span-2"
-            defaultValue={formState.reason}
-            label="Reason"
-            name="reason"
-            placeholder="Operational reason visible in audit log"
-            required
-            rows={3}
-          />
-          <AdminFormControlButton>Preview accounting</AdminFormControlButton>
-        </AdminFormGrid>
-        <AdminFilterSummary
-          ariaLabel="Active wallet adjustment request filters"
-          labels={walletAdjustmentActiveFilterLabels(formState, historyFilters)}
-          tone="info"
-        />
-        <AdjustmentPolicyChecklist />
-      </AdminSection>
-
-      <AdminTablePanel
-        description={
-          formState.ownerId
-            ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
-            : 'Showing the latest manual wallet adjustments only. Use owner id to narrow the list before reviewing old data.'
-        }
-        resultLabel={`${adjustmentTotal} total`}
-        resultTone={adjustmentTotal > 0 ? 'info' : 'warning'}
-        title="Manual adjustment history"
-      >
-        <FinanceDataTable
-          emptyMessage="No manual wallet adjustment ledger rows found for this filter."
-          headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
-          rowCount={historyPagination.rows.length}
+      {workspaceView === 'request' ? (
+        <AdminSection
+          description="Enter the customer or partner profile id, preview the accounting impact, then submit a persistent request for a separate finance approver."
+          statusLabel={preview ? 'Preview ready' : 'Preview required'}
+          statusTone={preview ? 'success' : 'warning'}
+          title="Manual adjustment request"
         >
-          {historyPagination.rows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <strong>
-                  <DateTimeText value={row.createdAt} />
-                </strong>
-                <p className="muted">{row.ledgerType}</p>
-              </td>
-              <td>
-                <strong>{row.ownerLabel}</strong>
-                <p className="muted">{row.ownerType}</p>
-              </td>
-              <td>
-                <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
-                  {row.direction}
-                </StatusBadge>
-                <p className="muted admin-mt-6">{row.adjustmentType}</p>
-              </td>
-              <td>
-                <strong>
-                  <MoneyText amount={row.amount} currency={row.currency} />
-                </strong>
-                <p className="muted">
-                  Delta <MoneyText amount={row.walletDelta} currency={row.currency} />
-                </p>
-              </td>
-              <td>
-                {row.approvalId ? (
-                  <strong>{row.approvalId}</strong>
-                ) : (
-                  <AdminInlineFallback>Missing approval</AdminInlineFallback>
-                )}
-                <AdminFinanceOperatorEvidence
-                  lines={[
-                    {
-                      fallbackId: row.requestedByAdminId,
-                      key: 'requested-by',
-                      label: 'Requested by',
-                      operator: row.requestedBy,
-                    },
-                    {
-                      fallbackId: row.approvalAdminId,
-                      key: 'approved-by',
-                      label: 'Approved by',
-                      operator: row.approvalAdmin,
-                    },
-                  ]}
-                />
-                {!row.approvalAdminId ? (
-                  <AdminInlineFallback className="admin-mt-6">Approving admin not stored</AdminInlineFallback>
-                ) : null}
-                {row.attachmentUrl ? (
-                  <p className="muted">Attachment saved</p>
-                ) : (
-                  <AdminInlineFallback className="admin-mt-6">No attachment</AdminInlineFallback>
-                )}
-              </td>
-              <td>
-                <strong>{formatBalanceChange(row)}</strong>
-                <p className="muted">{walletImpactLabel(row)}</p>
-              </td>
-              <td>{row.reason ? row.reason : <AdminInlineFallback>No reason stored</AdminInlineFallback>}</td>
-            </tr>
-          ))}
-        </FinanceDataTable>
-        <AdminTablePaginationFooter
-          activePage={historyPagination.page}
-          ariaLabel="Manual wallet adjustment history pages"
-          from={historyPagination.from}
-          hrefForPage={(page) => walletAdjustmentHistoryPageHref(formState, historyFilters, page)}
-          to={historyPagination.to}
-          totalPages={historyPagination.totalPages}
-          totalRows={historyPagination.totalRows}
-        />
-      </AdminTablePanel>
+          <AdminFormGrid method="get">
+            <input name="intent" type="hidden" value="preview" />
+            <AdminFormSelect
+              defaultValue={formState.ownerType}
+              label="Wallet owner type"
+              name="ownerType"
+              options={ownerOptions}
+            />
+            <AdminFormInput
+              defaultValue={formState.ownerId}
+              label="Owner profile id"
+              name="ownerId"
+              placeholder="customer or partner profile id"
+              required
+            />
+            <AdminFormSelect
+              defaultValue={formState.direction}
+              label="Adjustment direction"
+              name="direction"
+              options={directionOptions}
+            />
+            <AdminFormSelect
+              defaultValue={formState.adjustmentType}
+              label="Adjustment type"
+              name="adjustmentType"
+              options={adjustmentTypeOptions}
+            />
+            <AdminFormInput
+              defaultValue={formState.amount}
+              label="Amount"
+              min={1}
+              name="amount"
+              placeholder="Amount in VND"
+              required
+              step={1}
+              type="number"
+            />
+            <AdminFormInput
+              defaultValue={formState.monthlyPeriod}
+              label="Monthly period"
+              name="monthlyPeriod"
+              placeholder="YYYY-MM"
+            />
+            <AdminFormInput
+              defaultValue={formState.attachmentUrl}
+              label="Attachment URL"
+              name="attachmentUrl"
+              placeholder="Evidence URL for high-risk adjustments"
+            />
+            <AdminFormTextarea
+              className="admin-grid-span-2"
+              defaultValue={formState.reason}
+              label="Reason"
+              name="reason"
+              placeholder="Operational reason visible in audit log"
+              required
+              rows={3}
+            />
+            <AdminFormControlButton>Preview accounting</AdminFormControlButton>
+          </AdminFormGrid>
+          <AdminFilterSummary
+            ariaLabel="Active wallet adjustment request filters"
+            labels={walletAdjustmentRequestLabels(formState)}
+            tone="info"
+          />
+          <AdjustmentPolicyChecklist />
+        </AdminSection>
+      ) : null}
 
-      <AdminSection
-        className="admin-mt-16"
-        description="Preview the balance, approval, accounting impact, and audit evidence before saving this adjustment."
-        statusLabel={preview ? 'No direct DB write' : 'Waiting'}
-        statusTone={preview ? 'success' : 'info'}
-        title="Accounting preview"
-      >
-        {preview ? (
+      {workspaceView === 'records' ? (
+        <>
+          <AdminFilterPanel
+            className="admin-mb-16"
+            description="Filter immutable manual adjustment ledger entries by wallet owner. Results stay server paginated and do not load account balances or unrelated finance evidence."
+            resultLabel={`${adjustmentTotal} matching record(s)`}
+            resultTone={adjustmentTotal > 0 ? 'info' : 'warning'}
+            title="Record filters"
+          >
+            <AdminFormGrid method="get">
+              <input name="view" type="hidden" value="records" />
+              <AdminFormSelect
+                defaultValue={walletAdjustmentHistoryOwnerType(formState, historyFilters) ?? ''}
+                label="Wallet owner"
+                name="ownerType"
+                options={[{ label: 'All wallet owners', value: '' }, ...ownerOptions]}
+              />
+              <AdminFormInput
+                defaultValue={formState.ownerId}
+                label="Owner profile id"
+                name="ownerId"
+                placeholder="Optional customer or partner profile id"
+              />
+              <AdminFormSelect
+                defaultValue={String(historyFilters.pageSize)}
+                label="Rows per page"
+                name="pageSize"
+                options={[
+                  { label: '10 rows', value: '10' },
+                  { label: '25 rows', value: '25' },
+                  { label: '50 rows', value: '50' },
+                ]}
+              />
+              <AdminFormControlButton>Apply filters</AdminFormControlButton>
+            </AdminFormGrid>
+            <AdminFilterSummary
+              ariaLabel="Active wallet adjustment record filters"
+              labels={walletAdjustmentRecordFilterLabels(formState, historyFilters)}
+              tone="info"
+            />
+          </AdminFilterPanel>
+
+          <AdminTablePanel
+            description={
+              formState.ownerId
+                ? `Showing recent manual wallet adjustments for ${formState.ownerType.toLowerCase()} ${formState.ownerId}.`
+                : historyFilters.ownerType
+                  ? `Showing manual wallet adjustments for ${optionLabel(ownerOptions, historyFilters.ownerType).toLowerCase()} records.`
+                  : 'Showing the latest manual wallet adjustments only. Use owner id to narrow the list before reviewing old data.'
+            }
+            resultLabel={`${adjustmentTotal} total`}
+            resultTone={adjustmentTotal > 0 ? 'info' : 'warning'}
+            title="Manual adjustment history"
+          >
+            <FinanceDataTable
+              emptyMessage="No manual wallet adjustment ledger rows found for this filter."
+              headers={['Created', 'Owner', 'Adjustment', 'Amount', 'Approval', 'Balance', 'Reason']}
+              rowCount={historyPagination.rows.length}
+            >
+              {historyPagination.rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>
+                      <DateTimeText value={row.createdAt} />
+                    </strong>
+                    <p className="muted">{row.ledgerType}</p>
+                  </td>
+                  <td>
+                    <strong>{row.ownerLabel}</strong>
+                    <p className="muted">{row.ownerType}</p>
+                  </td>
+                  <td>
+                    <StatusBadge tone={row.direction === 'CREDIT' ? 'success' : 'warning'}>
+                      {row.direction}
+                    </StatusBadge>
+                    <p className="muted admin-mt-6">{row.adjustmentType}</p>
+                  </td>
+                  <td>
+                    <strong>
+                      <MoneyText amount={row.amount} currency={row.currency} />
+                    </strong>
+                    <p className="muted">
+                      Delta <MoneyText amount={row.walletDelta} currency={row.currency} />
+                    </p>
+                  </td>
+                  <td>
+                    {row.approvalId ? (
+                      <strong>{row.approvalId}</strong>
+                    ) : (
+                      <AdminInlineFallback>Missing approval</AdminInlineFallback>
+                    )}
+                    <AdminFinanceOperatorEvidence
+                      lines={[
+                        {
+                          fallbackId: row.requestedByAdminId,
+                          key: 'requested-by',
+                          label: 'Requested by',
+                          operator: row.requestedBy,
+                        },
+                        {
+                          fallbackId: row.approvalAdminId,
+                          key: 'approved-by',
+                          label: 'Approved by',
+                          operator: row.approvalAdmin,
+                        },
+                      ]}
+                    />
+                    {!row.approvalAdminId ? (
+                      <AdminInlineFallback className="admin-mt-6">
+                        Approving admin not stored
+                      </AdminInlineFallback>
+                    ) : null}
+                    {row.attachmentUrl ? (
+                      <p className="muted">Attachment saved</p>
+                    ) : (
+                      <AdminInlineFallback className="admin-mt-6">No attachment</AdminInlineFallback>
+                    )}
+                  </td>
+                  <td>
+                    <strong>{formatBalanceChange(row)}</strong>
+                    <p className="muted">{walletImpactLabel(row)}</p>
+                  </td>
+                  <td>
+                    {row.reason ? row.reason : <AdminInlineFallback>No reason stored</AdminInlineFallback>}
+                  </td>
+                </tr>
+              ))}
+            </FinanceDataTable>
+            <AdminTablePaginationFooter
+              activePage={historyPagination.page}
+              ariaLabel="Manual wallet adjustment history pages"
+              from={historyPagination.from}
+              hrefForPage={(page) => walletAdjustmentHistoryPageHref(formState, historyFilters, page)}
+              to={historyPagination.to}
+              totalPages={historyPagination.totalPages}
+              totalRows={historyPagination.totalRows}
+            />
+          </AdminTablePanel>
+        </>
+      ) : null}
+
+      {workspaceView === 'request' && preview ? (
+        <AdminSection
+          className="admin-mt-16"
+          description="Preview the balance, approval, accounting impact, and audit evidence before saving this adjustment."
+          statusLabel={preview ? 'No direct DB write' : 'Waiting'}
+          statusTone={preview ? 'success' : 'info'}
+          title="Accounting preview"
+        >
           <AdminStageList>
             <PreviewFact
               helper={
@@ -345,26 +384,23 @@ export default async function WalletAdjustmentsPage({ searchParams }: WalletAdju
               }
             />
             <PreviewFact
-              helper={preview.requiresAttachment ? 'Attach approval/evidence before create' : 'Approval id still required'}
+              helper={
+                preview.requiresAttachment
+                  ? 'Attach approval/evidence before create'
+                  : 'Approval id still required'
+              }
               icon={<FileWarning aria-hidden="true" size={18} />}
               label="Approval gate"
               value={preview.requiresAttachment ? 'Attachment required' : 'Attachment optional'}
             />
           </AdminStageList>
-        ) : (
-          <p className="muted">Preview an adjustment to see before/after balance, ledger allocation, tax, revenue, and attachment gates.</p>
-        )}
-      </AdminSection>
+        </AdminSection>
+      ) : null}
 
       {preview ? (
         <AdminTablePanel
           description="Debit and credit legs are shown as an operator preview. No booking revenue or company VAT is created here."
-          footer={
-            <CreateAdjustmentForm
-              formState={formState}
-              preview={preview}
-            />
-          }
+          footer={<CreateAdjustmentForm formState={formState} preview={preview} />}
           resultLabel={preview.requiresApproval ? 'Approval required' : undefined}
           resultTone="warning"
           title="Accounting entries"
@@ -463,14 +499,10 @@ function CreateAdjustmentForm({
     <AdminFormShell action={createManualWalletAdjustment}>
       <HiddenAdjustmentInputs formState={formState} />
       <AdminFilterChipGroup ariaLabel="Create manual wallet adjustment gates">
-        {blockedAccountingImpact ? (
-          <StatusBadge tone="danger">Blocked accounting impact</StatusBadge>
-        ) : null}
+        {blockedAccountingImpact ? <StatusBadge tone="danger">Blocked accounting impact</StatusBadge> : null}
         {bookingSettlementOnly ? <StatusBadge tone="danger">Use booking settlement</StatusBadge> : null}
         {missingRequiredAttachment ? <StatusBadge tone="warning">Attachment required</StatusBadge> : null}
-        <AdminFormControlButton
-          disabled={missingRequiredAttachment || blockedAccountingImpact}
-        >
+        <AdminFormControlButton disabled={missingRequiredAttachment || blockedAccountingImpact}>
           Submit for approval
         </AdminFormControlButton>
       </AdminFilterChipGroup>
@@ -528,9 +560,12 @@ async function fetchAdjustmentHistory(
   );
 }
 
-async function fetchAdjustmentHistorySummary(formState: WalletAdjustmentFormState) {
+async function fetchAdjustmentHistorySummary(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
   return adminGet<AdminManualWalletAdjustmentSummary>(
-    buildAdjustmentHistorySummaryHref(formState),
+    buildAdjustmentHistorySummaryHref(formState, historyFilters),
     { total: 0 },
   );
 }
@@ -540,8 +575,11 @@ function buildAdjustmentHistoryHref(
   historyFilters: WalletAdjustmentHistoryFilters,
 ) {
   const params = new URLSearchParams();
+  const ownerType = walletAdjustmentHistoryOwnerType(formState, historyFilters);
+  if (ownerType) {
+    params.set('ownerType', ownerType);
+  }
   if (formState.ownerId) {
-    params.set('ownerType', formState.ownerType);
     params.set('ownerId', formState.ownerId);
   }
   params.set('take', String(historyFilters.pageSize));
@@ -552,10 +590,16 @@ function buildAdjustmentHistoryHref(
   return `/admin/wallet-adjustments?${params.toString()}`;
 }
 
-function buildAdjustmentHistorySummaryHref(formState: WalletAdjustmentFormState) {
+function buildAdjustmentHistorySummaryHref(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
   const params = new URLSearchParams();
+  const ownerType = walletAdjustmentHistoryOwnerType(formState, historyFilters);
+  if (ownerType) {
+    params.set('ownerType', ownerType);
+  }
   if (formState.ownerId) {
-    params.set('ownerType', formState.ownerType);
     params.set('ownerId', formState.ownerId);
   }
   const query = params.toString();
@@ -563,9 +607,12 @@ function buildAdjustmentHistorySummaryHref(formState: WalletAdjustmentFormState)
 }
 
 type WalletAdjustmentHistoryFilters = {
+  readonly ownerType: AdminManualWalletAdjustmentOwnerType | null;
   readonly page: number;
   readonly pageSize: number;
 };
+
+type WalletAdjustmentWorkspaceView = 'request' | 'records';
 
 type WalletAdjustmentFormState = {
   readonly adjustmentType: AdminManualWalletAdjustmentType;
@@ -579,7 +626,9 @@ type WalletAdjustmentFormState = {
   readonly reason: string;
 };
 
-function readWalletAdjustmentFormState(params: Record<string, string | string[] | undefined>): WalletAdjustmentFormState {
+function readWalletAdjustmentFormState(
+  params: Record<string, string | string[] | undefined>,
+): WalletAdjustmentFormState {
   return {
     adjustmentType: readParam(params, 'adjustmentType', 'PARTNER_BONUS') as AdminManualWalletAdjustmentType,
     amount: readParam(params, 'amount'),
@@ -596,13 +645,26 @@ function readWalletAdjustmentFormState(params: Record<string, string | string[] 
 function readWalletAdjustmentHistoryFilters(
   params: Record<string, string | string[] | undefined>,
 ): WalletAdjustmentHistoryFilters {
+  const ownerType = readParam(params, 'ownerType');
   return {
+    ownerType: ownerOptions.some((option) => option.value === ownerType)
+      ? (ownerType as AdminManualWalletAdjustmentOwnerType)
+      : null,
     page: readPositiveIntParam(params, 'page', 1),
     pageSize: Math.min(
       readPositiveIntParam(params, 'pageSize', WALLET_ADJUSTMENT_HISTORY_TAKE),
       WALLET_ADJUSTMENT_HISTORY_MAX_TAKE,
     ),
   };
+}
+
+function readWalletAdjustmentWorkspaceView(
+  params: Record<string, string | string[] | undefined>,
+): WalletAdjustmentWorkspaceView {
+  const requestedView = readParam(params, 'view');
+  if (requestedView === 'records') return 'records';
+  if (requestedView === 'request') return 'request';
+  return readParam(params, 'ownerType') && !readParam(params, 'ownerId') ? 'records' : 'request';
 }
 
 function buildWalletAdjustmentHistoryPagination(
@@ -637,9 +699,12 @@ function walletAdjustmentHistoryPageHref(
   filters: WalletAdjustmentHistoryFilters,
   page: number,
 ) {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ view: 'records' });
+  const ownerType = walletAdjustmentHistoryOwnerType(formState, filters);
+  if (ownerType) {
+    params.set('ownerType', ownerType);
+  }
   if (formState.ownerId) {
-    params.set('ownerType', formState.ownerType);
     params.set('ownerId', formState.ownerId);
   }
   if (filters.pageSize !== WALLET_ADJUSTMENT_HISTORY_TAKE) {
@@ -648,19 +713,14 @@ function walletAdjustmentHistoryPageHref(
   if (page > 1) {
     params.set('page', String(page));
   }
-  const query = params.toString();
-  return query ? `/wallet-adjustments?${query}` : '/wallet-adjustments';
+  return `/wallet-adjustments?${params.toString()}`;
 }
 
-function walletAdjustmentActiveFilterLabels(
-  formState: WalletAdjustmentFormState,
-  historyFilters: WalletAdjustmentHistoryFilters,
-) {
+function walletAdjustmentRequestLabels(formState: WalletAdjustmentFormState) {
   const labels = [
     `Owner: ${optionLabel(ownerOptions, formState.ownerType)}`,
     `Direction: ${optionLabel(directionOptions, formState.direction)}`,
     `Type: ${optionLabel(adjustmentTypeOptions, formState.adjustmentType)}`,
-    `History rows: ${historyFilters.pageSize}`,
   ];
 
   if (formState.ownerId) {
@@ -674,6 +734,47 @@ function walletAdjustmentActiveFilterLabels(
   }
 
   return labels;
+}
+
+function walletAdjustmentRecordFilterLabels(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
+  const ownerType = walletAdjustmentHistoryOwnerType(formState, historyFilters);
+  const ownerLabel = ownerType ? optionLabel(ownerOptions, ownerType) : 'All wallet owners';
+  const labels = [`Owner: ${ownerLabel}`, `Rows per page: ${historyFilters.pageSize}`];
+  if (formState.ownerId) {
+    labels.push(`Owner id: ${formState.ownerId}`);
+  }
+  return labels;
+}
+
+function walletAdjustmentWorkspaceHref(
+  view: WalletAdjustmentWorkspaceView,
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
+  const params = new URLSearchParams();
+  params.set('view', view);
+  const ownerType = walletAdjustmentHistoryOwnerType(formState, historyFilters);
+  if (ownerType) {
+    params.set('ownerType', ownerType);
+  }
+  if (formState.ownerId) {
+    params.set('ownerId', formState.ownerId);
+  }
+  if (view === 'records' && historyFilters.pageSize !== WALLET_ADJUSTMENT_HISTORY_TAKE) {
+    params.set('pageSize', String(historyFilters.pageSize));
+  }
+  const query = params.toString();
+  return `/wallet-adjustments?${query}`;
+}
+
+function walletAdjustmentHistoryOwnerType(
+  formState: WalletAdjustmentFormState,
+  historyFilters: WalletAdjustmentHistoryFilters,
+) {
+  return historyFilters.ownerType ?? (formState.ownerId ? formState.ownerType : null);
 }
 
 function optionLabel<Value extends string>(
@@ -733,7 +834,8 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'requested') {
     return {
       badge: 'Pending',
-      detail: 'The request is stored in Finance Approval Queue. No wallet or accounting ledger has been written yet.',
+      detail:
+        'The request is stored in Finance Approval Queue. No wallet or accounting ledger has been written yet.',
       title: 'Manual adjustment submitted',
       tone: 'success' as const,
     };
@@ -788,7 +890,8 @@ function walletAdjustmentNotice(notice: string) {
   if (notice === 'monthly-period-invalid') {
     return {
       badge: 'Period',
-      detail: 'No wallet impact record was saved. Monthly period must use YYYY-MM before finance can save it.',
+      detail:
+        'No wallet impact record was saved. Monthly period must use YYYY-MM before finance can save it.',
       title: 'Monthly period is invalid',
       tone: 'danger' as const,
     };

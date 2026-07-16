@@ -26,13 +26,11 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminPost.mockReset();
   });
 
-  it('scopes wallet adjustment guardrail KPI cards to the current request context', () => {
-    expect(pageSource).toContain("scope: 'Current request'");
-    expect(pageSource).toContain("scope: 'Policy guard'");
-    expect(pageSource).toContain("scope: 'Approval evidence'");
-    expect(pageSource).toContain("kind: 'action'");
-    expect(pageSource).toContain("kind: preview?.affects.revenue ? 'risk' : 'record'");
-    expect(pageSource).toContain("kind: preview?.requiresAttachment ? 'risk' : 'action'");
+  it('separates the adjustment request from immutable records without policy-only KPI cards', () => {
+    expect(pageSource).toContain('AdminSegmentedControl');
+    expect(pageSource).toContain("workspaceView === 'request'");
+    expect(pageSource).toContain("workspaceView === 'records'");
+    expect(pageSource).not.toContain("scope: 'Policy guard'");
   });
 
   it('explains approval and attachment gates before operators create an adjustment', async () => {
@@ -43,7 +41,6 @@ describe('WalletAdjustmentsPage', () => {
     expect(markup).toContain('Owner: Partner wallet');
     expect(markup).toContain('Direction: Credit wallet');
     expect(markup).toContain('Type: Partner bonus');
-    expect(markup).toContain('History rows: 10');
     expect(markup).toContain(
       'A different finance approver must review the saved request before any wallet or ledger write',
     );
@@ -56,25 +53,19 @@ describe('WalletAdjustmentsPage', () => {
   it('keeps wallet adjustment history filters visible and bounded', async () => {
     const page = await WalletAdjustmentsPage({
       searchParams: Promise.resolve({
-        adjustmentType: 'PENALTY',
-        amount: '100000',
-        direction: 'DEBIT',
-        monthlyPeriod: '2026-06',
         ownerId: 'provider-1',
         ownerType: 'PARTNER',
         pageSize: '25',
+        view: 'records',
       }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(markup).toContain('History rows');
-    expect(markup).toContain('Active wallet adjustment request filters');
+    expect(markup).toContain('Rows per page');
+    expect(markup).toContain('Active wallet adjustment record filters');
     expect(markup).toContain('Owner id: provider-1');
-    expect(markup).toContain('Direction: Debit wallet');
-    expect(markup).toContain('Type: Penalty');
-    expect(markup).toContain('History rows: 25');
-    expect(markup).toContain('Amount: 100000 VND');
-    expect(markup).toContain('Period: 2026-06');
+    expect(markup).toContain('Owner: Partner wallet');
+    expect(markup).toContain('Rows per page: 25');
     expect(mockedAdminGet).toHaveBeenCalledWith(
       '/admin/wallet-adjustments?ownerType=PARTNER&ownerId=provider-1&take=25',
       [],
@@ -340,7 +331,7 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminGet.mockResolvedValueOnce({ total: 1 });
 
     const page = await WalletAdjustmentsPage({
-      searchParams: Promise.resolve({ ownerId: 'provider-1', ownerType: 'PARTNER' }),
+      searchParams: Promise.resolve({ ownerId: 'provider-1', ownerType: 'PARTNER', view: 'records' }),
     });
     const markup = renderToStaticMarkup(page);
 
@@ -386,12 +377,14 @@ describe('WalletAdjustmentsPage', () => {
     );
     expect(pageSource).not.toContain('<strong>{formatMoney(row.amount, row.currency)}</strong>');
     expect(pageSource).not.toContain('<strong>{formatDateTime(row.createdAt)}</strong>');
-    expect(pageSource).not.toContain('<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>');
     expect(pageSource).not.toContain(
-      '<p className="muted">{row.attachmentUrl ? \'Attachment saved\' : \'No attachment\'}</p>',
+      '<p className="muted">Delta {formatMoney(row.walletDelta, row.currency)}</p>',
+    );
+    expect(pageSource).not.toContain(
+      "<p className=\"muted\">{row.attachmentUrl ? 'Attachment saved' : 'No attachment'}</p>",
     );
     expect(pageSource).not.toContain('{row.ownerType} / {row.ownerPhone}');
-    expect(pageSource).not.toContain('<strong>{row.approvalId ?? \'Missing approval\'}</strong>');
+    expect(pageSource).not.toContain("<strong>{row.approvalId ?? 'Missing approval'}</strong>");
     expect(pageSource).not.toContain(
       "{row.approvalAdminId ? `Approved by ${row.approvalAdminId}` : 'Approving admin not stored'}",
     );
@@ -403,9 +396,11 @@ describe('WalletAdjustmentsPage', () => {
 
   it('uses the shared Vuexy notice card atom for action notices', () => {
     expect(pageSource).toContain('AdminNoticeCard');
-    expect(pageSource).toContain('tone={notice.tone === \'success\' ? \'success\' : \'danger\'}');
+    expect(pageSource).toContain("tone={notice.tone === 'success' ? 'success' : 'danger'}");
     expect(pageSource).not.toContain('className={`card admin-mb-16 admin-notice-card');
-    expect(pageSource).not.toContain("notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'");
+    expect(pageSource).not.toContain(
+      "notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'",
+    );
   });
 
   it('uses the shared Vuexy form grid atom for the preview request form', () => {
@@ -415,7 +410,9 @@ describe('WalletAdjustmentsPage', () => {
 
   it('uses the shared chip group atom for create adjustment action status badges', () => {
     expect(pageSource).toContain('AdminFilterChipGroup');
-    expect(pageSource).not.toContain('<AdminFormShell action={createManualWalletAdjustment} className="participant-list">');
+    expect(pageSource).not.toContain(
+      '<AdminFormShell action={createManualWalletAdjustment} className="participant-list">',
+    );
   });
 
   it('uses the shared table pagination footer for adjustment history', () => {
@@ -431,20 +428,14 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminGet.mockResolvedValueOnce({ total: 62 });
 
     const page = await WalletAdjustmentsPage({
-      searchParams: Promise.resolve({ page: '3', pageSize: '20' }),
+      searchParams: Promise.resolve({ page: '3', pageSize: '20', view: 'records' }),
     });
     const markup = renderToStaticMarkup(page);
 
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/wallet-adjustments?take=20&skip=40',
-      [],
-    );
-    expect(mockedAdminGet).toHaveBeenCalledWith(
-      '/admin/wallet-adjustments/summary',
-      { total: 0 },
-    );
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments?take=20&skip=40', []);
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments/summary', { total: 0 });
     expect(markup).toMatch(/Showing\s+0\s+to\s+0\s+of\s+62\s+entries/);
-    expect(markup).toContain('/wallet-adjustments?pageSize=20&amp;page=4');
+    expect(markup).toContain('/wallet-adjustments?view=records&amp;pageSize=20&amp;page=4');
   });
 
   it('caps manual wallet adjustment history page size to protect the default admin payload', async () => {
@@ -452,9 +443,35 @@ describe('WalletAdjustmentsPage', () => {
     mockedAdminGet.mockResolvedValueOnce({ total: 120 });
 
     await WalletAdjustmentsPage({
-      searchParams: Promise.resolve({ pageSize: '500' }),
+      searchParams: Promise.resolve({ pageSize: '500', view: 'records' }),
     });
 
     expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments?take=50', []);
+  });
+
+  it('does not load immutable ledger history in the default request workspace', async () => {
+    const page = await WalletAdjustmentsPage({});
+    const markup = renderToStaticMarkup(page);
+
+    expect(mockedAdminGet).not.toHaveBeenCalled();
+    expect(markup).toContain('Manual adjustment request');
+    expect(markup).toContain('Records');
+    expect(markup).toContain('/wallet-adjustments?view=request');
+    expect(markup).not.toContain('Manual adjustment history');
+    expect(markup).not.toContain('Accounting preview');
+  });
+
+  it('applies an owner type record filter even when no owner id is supplied', async () => {
+    mockedAdminGet.mockResolvedValueOnce([]);
+    mockedAdminGet.mockResolvedValueOnce({ total: 0 });
+
+    await WalletAdjustmentsPage({
+      searchParams: Promise.resolve({ ownerType: 'CUSTOMER' }),
+    });
+
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments?ownerType=CUSTOMER&take=10', []);
+    expect(mockedAdminGet).toHaveBeenCalledWith('/admin/wallet-adjustments/summary?ownerType=CUSTOMER', {
+      total: 0,
+    });
   });
 });

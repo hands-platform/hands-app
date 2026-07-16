@@ -57,6 +57,7 @@ const budgetSmokePaths = [
   '/cash-settlements',
   '/finance-closeout',
   '/wallet-adjustments',
+  '/wallet-adjustments?view=records',
 ];
 const runCriticalSmoke =
   rawSmokeArgs.includes('--critical') || env.ADMIN_WEB_SMOKE_MODE === 'critical';
@@ -848,9 +849,18 @@ const pages = [
     markers: [
       'Wallet Adjustments',
       'Manual adjustment request',
-      'Manual adjustment history',
-      'Accounting preview',
+      'New request',
+      'Records',
       'Owner profile id',
+    ],
+  },
+  {
+    path: '/wallet-adjustments?view=records',
+    markers: [
+      'Wallet Adjustments',
+      'Record filters',
+      'Manual adjustment history',
+      'Rows per page',
     ],
   },
   {

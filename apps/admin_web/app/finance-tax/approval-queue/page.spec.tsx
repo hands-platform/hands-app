@@ -131,6 +131,7 @@ describe('FinanceApprovalQueuePage', () => {
     expect(markup).toContain('Approve &amp; execute');
     expect(markup).toContain('Recovery bonus');
     expect(markup).toContain('Wallet adjustment records');
+    expect(markup).toContain('/wallet-adjustments?view=records');
     expect(markup).toContain('Partner bank deposit approval queue');
     expect(markup).toContain('BIDV-20260713-001');
     expect(markup).toContain('Receivable recovery');
