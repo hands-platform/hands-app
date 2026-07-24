@@ -24,27 +24,9 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   @override
   Future<List<dynamic>> requestBookings() async {
     final openItems = await openBookings();
-    final ownItems = await listBookings();
-    final merged = <String, Map<String, dynamic>>{};
-
-    for (final item in [...openItems, ...ownItems]) {
-      if (item is Map<String, dynamic>) {
-        final id = item['id'] as String?;
-        if (id != null) {
-          merged[id] = item;
-        }
-      }
-    }
-
-    const activeStatuses = {
-      'OPEN_MATCHING',
-      'MATCHED',
-      'PROVIDER_ON_THE_WAY',
-      'ARRIVED',
-      'IN_SERVICE',
-    };
-    return merged.values
-        .where((booking) => activeStatuses.contains(booking['status']))
+    return openItems
+        .whereType<Map<String, dynamic>>()
+        .where((booking) => booking['status'] == 'OPEN_MATCHING')
         .toList()
       ..sort((left, right) {
         final leftValue =

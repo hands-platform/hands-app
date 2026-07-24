@@ -8,6 +8,51 @@ import 'package:provider_app/src/features/booking/data/repositories/provider_boo
 import 'package:provider_app/src/features/booking/domain/services/provider_booking_detail_view_tracker.dart';
 
 void main() {
+  test('requestBookings keeps confirmed work out of the request queue',
+      () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+
+    final requestPaths = <String>[];
+    server.listen((request) async {
+      requestPaths.add(request.uri.path);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode([
+        {
+          'id': 'request-newer',
+          'status': 'OPEN_MATCHING',
+          'openedAt': '2026-07-24T02:00:00.000Z',
+        },
+        {
+          'id': 'confirmed-booking',
+          'status': 'MATCHED',
+          'openedAt': '2026-07-24T03:00:00.000Z',
+        },
+        {
+          'id': 'request-older',
+          'status': 'OPEN_MATCHING',
+          'openedAt': '2026-07-24T01:00:00.000Z',
+        },
+      ]));
+      await request.response.close();
+    });
+
+    final repository = ProviderBookingRepositoryImpl(
+      ApiClient(baseUrl: 'http://127.0.0.1:${server.port}'),
+      RealtimeSocket(baseUrl: 'http://127.0.0.1:${server.port}'),
+    );
+
+    final result = await repository.requestBookings();
+
+    expect(requestPaths, ['/partner/bookings/open']);
+    expect(result.map((booking) => booking['id']), [
+      'request-newer',
+      'request-older',
+    ]);
+    expect(result.every((booking) => booking['status'] == 'OPEN_MATCHING'),
+        isTrue);
+  });
+
   test('cancelBooking posts the partner cancellation note and action location',
       () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
