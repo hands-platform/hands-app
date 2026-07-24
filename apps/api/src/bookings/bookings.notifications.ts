@@ -109,7 +109,7 @@ export function selectedPartnerMatchedProviderNotification(
     type: 'booking.matched',
     title: 'You were selected',
     body: 'The customer selected you for this booking.',
-    data: { bookingId },
+    data: { bookingId, destination: 'jobs' },
   };
 }
 
@@ -135,7 +135,7 @@ export function firstPickMatchedProviderNotification(userId: string, bookingId: 
     type: 'booking.matched',
     title: 'You were matched',
     body: 'Your first-pick request was accepted and matched.',
-    data: { bookingId },
+    data: { bookingId, destination: 'jobs' },
   };
 }
 

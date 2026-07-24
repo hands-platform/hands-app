@@ -35,10 +35,12 @@ void main() {
     expect(intent.bookingId, 'booking-1');
   });
 
-  test('Partner notification opens booking from booking payload', () {
+  test('Partner open-request notification opens Requests from booking payload',
+      () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',
       'providerProfileId': 'provider-1',
+      'type': 'booking.requested',
     });
 
     expect(intent.destination, PushNotificationOpenDestination.booking);
@@ -46,13 +48,36 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
-  test('Partner notification opens explicit app destination without ids', () {
+  test('Partner matched notification opens Jobs from legacy typed payload', () {
     final intent = PushNotificationOpenIntent.fromData({
-      'destination': 'jobs',
+      'bookingId': 'booking-1',
+      'type': 'booking.matched',
     });
 
     expect(intent.destination, PushNotificationOpenDestination.jobs);
-    expect(intent.hasBooking, isFalse);
+    expect(intent.bookingId, 'booking-1');
+  });
+
+  test('Partner notification honors explicit destination and retains ids', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'destination': 'jobs',
+      'bookingId': 'booking-1',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.jobs);
+    expect(intent.bookingId, 'booking-1');
+    expect(intent.hasBooking, isTrue);
+  });
+
+  test('Partner service notification opens chat when room id is present', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'type': 'service.started',
+      'bookingId': 'booking-1',
+      'chatRoomId': 'chat-room-1',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.chat);
+    expect(intent.chatRoomId, 'chat-room-1');
   });
 
   test('Partner notification falls back to notification center', () {

@@ -33,6 +33,18 @@ class PushNotificationOpenIntent {
       _stringValue(data, 'destination') ?? _stringValue(data, 'appDestination'),
     );
 
+    if (explicitDestination != null) {
+      return PushNotificationOpenIntent._(
+        destination: explicitDestination,
+        bookingId: bookingId,
+        chatRoomId: chatRoomId,
+        paymentId: paymentId,
+        earningId: earningId,
+        payoutBatchId: payoutBatchId,
+        providerProfileId: providerProfileId,
+      );
+    }
+
     if (chatRoomId != null) {
       return PushNotificationOpenIntent._(
         destination: PushNotificationOpenDestination.chat,
@@ -63,6 +75,14 @@ class PushNotificationOpenIntent {
       );
     }
 
+    if (_isJobsNotification(notificationType)) {
+      return PushNotificationOpenIntent._(
+        destination: PushNotificationOpenDestination.jobs,
+        bookingId: bookingId,
+        providerProfileId: providerProfileId,
+      );
+    }
+
     if (bookingId != null) {
       return PushNotificationOpenIntent._(
         destination: PushNotificationOpenDestination.booking,
@@ -76,10 +96,6 @@ class PushNotificationOpenIntent {
         destination: PushNotificationOpenDestination.providerProfile,
         providerProfileId: providerProfileId,
       );
-    }
-
-    if (explicitDestination != null) {
-      return PushNotificationOpenIntent._(destination: explicitDestination);
     }
 
     return const PushNotificationOpenIntent._(
@@ -104,6 +120,10 @@ bool _isPaymentNotification(String? type) {
 
 bool _isEarningsNotification(String? type) {
   return type == 'earning.created' || type == 'provider.payout_batch.updated';
+}
+
+bool _isJobsNotification(String? type) {
+  return type == 'booking.matched' || type == 'service.started';
 }
 
 String? _stringValue(Map<String, Object?> data, String key) {

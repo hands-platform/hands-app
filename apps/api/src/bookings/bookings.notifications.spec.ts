@@ -124,7 +124,7 @@ describe('booking notification payloads', () => {
       type: 'booking.matched',
       title: 'You were selected',
       body: 'The customer selected you for this booking.',
-      data: { bookingId: 'booking-1' },
+      data: { bookingId: 'booking-1', destination: 'jobs' },
     });
 
     expect(
